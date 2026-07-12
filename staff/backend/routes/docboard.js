@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const db = require('../db');
 const { verifyStaffToken } = require('../middleware/auth');
 const { requireRoles } = require('../middleware/auth');
 const docboardService = require('../services/DocBoardService');
@@ -63,6 +64,28 @@ router.use('/operation-data', (req, res, next) => {
   next();
 });
 router.use('/operation-data', operationDataRoutes);
+
+router.get('/users', async (req, res) => {
+  try {
+    const [users] = await db.query(`
+      SELECT
+        u.new_id AS id,
+        COALESCE(NULLIF(TRIM(u.name), ''), 'Tanpa Nama') AS name,
+        COALESCE(NULLIF(r.display_name, ''), NULLIF(u.role, ''), 'Staff') AS role,
+        CASE WHEN u.is_active = 1 THEN TRUE ELSE FALSE END AS is_active
+      FROM users u
+      LEFT JOIN roles r ON r.id = u.role_id
+      WHERE u.user_type = 'staff'
+      ORDER BY u.is_active DESC, u.name ASC
+    `);
+
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, users });
+  } catch (error) {
+    logger.error('DocBoard users list error:', error);
+    res.status(500).json({ success: false, message: 'Gagal memuat daftar pengguna' });
+  }
+});
 
 router.get('/monitor/gambiran', async (req, res) => {
   try {

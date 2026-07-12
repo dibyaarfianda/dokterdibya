@@ -12,6 +12,7 @@ import GambiranMonitor from './views/GambiranMonitor';
 import GambiranAudit from './views/GambiranAudit';
 import Notifications from './views/Notifications';
 import Settings from './views/Settings';
+import Users from './views/Users';
 import Analytics from './views/Analytics';
 import SpaceSchedule from './views/SpaceSchedule';
 import CommandDashboard from './views/CommandDashboard';
@@ -87,6 +88,7 @@ export default function App() {
           <SpaceSchedule path="/docboard/procedures" space="tindakan" />
           <NandaOnlyRoute path="/docboard/personal" component={SpaceSchedule} space="pribadi" />
           <Analytics path="/docboard/analytics" />
+          <Users path="/docboard/users" />
           <Settings path="/docboard/settings" />
           <Settings path="/docboard/settings/preferences" mode="preferences" />
           <Calendar default />

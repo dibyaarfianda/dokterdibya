@@ -76,6 +76,13 @@ const icons = {
       <path d="M7 10h3l2-3 2 6 2-3h1" />
     </svg>
   ),
+  users: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
   settings: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="3" />
@@ -223,6 +230,7 @@ export default function Settings({ mode = 'menu' }) {
           <MoreMenuItem title="Ilmiah" desc={isNanda ? 'Agenda ilmiah dan diskusi kasus' : 'Confidential'} icon={icons.calendar} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/scientific')} />
           <MoreMenuItem title="Pribadi" desc={isNanda ? 'Agenda pribadi' : 'Confidential'} icon={icons.private} color="#EA580C" bg="#FFF7ED" onClick={() => route('/docboard/personal')} />
           <MoreMenuItem title="Statistik Operasi" desc="Lihat data dan tren operasi" icon={icons.chart} color="#3B82F6" bg="#EEF2FF" onClick={() => route('/docboard/analytics')} />
+          <MoreMenuItem title="Pengguna" desc="Daftar pengguna DocBoard" icon={icons.users} color="#7C3AED" bg="#F5F3FF" onClick={() => route('/docboard/users')} />
           <MoreMenuItem title="Setting" desc="Notifikasi, sinkronisasi, dan pengaturan DocBoard" icon={icons.settings} color="#64748B" bg="#F1F5F9" onClick={() => route('/docboard/settings/preferences')} />
         </div>
 

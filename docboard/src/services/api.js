@@ -402,6 +402,11 @@ export const api = {
     return request('/sync/status');
   },
 
+  // Staff directory
+  getUsers() {
+    return request('/users');
+  },
+
   // Practice schedules
   getSchedules() {
     return request('/schedules');
