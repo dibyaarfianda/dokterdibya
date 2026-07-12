@@ -54,7 +54,7 @@ describe('Sunday Clinic billing audit implementation', () => {
         expect(billingJs).toContain("{ code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }");
         expect(billingJs).not.toContain('Buku Kontrol');
         expect(billingJs).not.toContain('Buku Panduan Lengkap & ANC');
-        expect(sundayClinicMain).toContain("const COMPONENT_VERSION = '3.0.11';");
+        expect(sundayClinicMain).toContain("const COMPONENT_VERSION = '3.0.12';");
     });
 
     test('Sunday Clinic route writes billing audit logs on key mutations', () => {

@@ -51,14 +51,16 @@ class PDFGenerator {
     async generateInvoice(billingData, patientData, recordData) {
         return new Promise((resolve, reject) => {
             try {
+                const invoiceReference = recordData.invoiceReference || recordData.mrId;
+                const invoiceTitle = recordData.invoiceTitle || 'Invoice Pembayaran';
                 // A6 format: 105mm x 148mm = 297.6 x 419.5 points
                 const doc = new PDFDocument({
                     size: 'A6',
                     margin: 15,
                     info: {
-                        Title: `Invoice ${recordData.mrId}`,
+                        Title: `Invoice ${invoiceReference}`,
                         Author: 'Dr. Dibya Private Clinic',
-                        Subject: 'Invoice Pembayaran',
+                        Subject: invoiceTitle,
                         Creator: 'Sunday Clinic System'
                     }
                 });
@@ -67,7 +69,7 @@ class PDFGenerator {
                 const chunks = [];
                 doc.on('data', chunk => chunks.push(chunk));
 
-                const filename = `${recordData.mrId}inv.pdf`;
+                const filename = `${invoiceReference}inv.pdf`;
 
                 const pageWidth = doc.page.width;
                 const leftMargin = 15;
@@ -92,7 +94,7 @@ class PDFGenerator {
                 y += 18;
                 doc.fontSize(12)
                    .font('Helvetica-Bold')
-                   .text('Invoice Pembayaran', leftMargin, y, { width: contentWidth, align: 'center' });
+                   .text(invoiceTitle, leftMargin, y, { width: contentWidth, align: 'center' });
                 y += 16;
                 doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.5).stroke();
 
@@ -104,7 +106,7 @@ class PDFGenerator {
 
                 // Separate items by type
                 const tindakanItems = (billingData.items || []).filter(item =>
-                    item.item_type === 'tindakan' || item.item_type === 'konsultasi'
+                    item.item_type === 'tindakan' || item.item_type === 'konsultasi' || item.item_type === 'admin'
                 );
                 const obatItems = (billingData.items || []).filter(item =>
                     item.item_type === 'obat' || item.item_type === 'alkes'
@@ -117,11 +119,11 @@ class PDFGenerator {
                     sum + ((item.quantity || 1) * (item.price || 0)), 0
                 );
 
-                // Rincian Layanan & Tindakan
+                // Rincian Layanan, Tindakan, and administrative add-ons
                 if (tindakanItems.length > 0) {
                     y += 20;
                     doc.fontSize(9).font('Helvetica-Bold')
-                       .text('Rincian Layanan & Tindakan', leftMargin, y);
+                       .text('Rincian Layanan & Administratif', leftMargin, y);
 
                     y += 12;
                     doc.fontSize(8).font('Helvetica-Bold');
@@ -141,10 +143,10 @@ class PDFGenerator {
                         y += 12;
                     });
 
-                    // Subtotal Tindakan
+                    // Subtotal layanan and administrative add-ons
                     y += 5;
                     doc.font('Helvetica-Bold');
-                    doc.text('Subtotal Tindakan', leftMargin + 80, y);
+                    doc.text('Subtotal Layanan', leftMargin + 80, y);
                     doc.text(this.formatRupiah(tindakanTotal), leftMargin, y, { width: contentWidth, align: 'right' });
                 }
 
@@ -248,7 +250,7 @@ class PDFGenerator {
                 const chunks = [];
                 doc.on('data', chunk => chunks.push(chunk));
 
-                const filename = `${recordData.mrId}e.pdf`;
+                const filename = `${recordData.invoiceReference || recordData.mrId}e.pdf`;
 
                 // Label dimensions for 3-column layout
                 const labelWidth = 180;

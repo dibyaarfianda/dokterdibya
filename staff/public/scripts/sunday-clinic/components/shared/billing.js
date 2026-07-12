@@ -37,6 +37,608 @@ function formatDateTime(value) {
     });
 }
 
+const ADDITIONAL_BILLING_ADD_ONS = [
+    { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 },
+    { code: 'S03', name: 'Buku Ginekologi', price: 25000 },
+    { code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }
+];
+
+let additionalBillingModalState = null;
+let additionalBillingPaymentState = null;
+
+function getAdditionalBillingToken() {
+    return window.getToken?.();
+}
+
+function refreshBillingSection() {
+    if (window.handleSectionChange) {
+        window.handleSectionChange('billing', { pushHistory: false });
+    }
+}
+
+function showModal(modal) {
+    if (window.$ && window.$.fn && window.$.fn.modal) {
+        window.$(modal).modal('show');
+        return;
+    }
+    modal.style.display = 'block';
+    modal.classList.add('show');
+}
+
+function hideModal(modal) {
+    if (window.$ && window.$.fn && window.$.fn.modal) {
+        window.$(modal).modal('hide');
+        return;
+    }
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+}
+
+function setAdditionalBillingModalError(message = '') {
+    const errorElement = document.getElementById('additional-billing-modal-error');
+    if (!errorElement) return;
+    errorElement.textContent = message;
+    errorElement.style.display = message ? 'block' : 'none';
+}
+
+function getAdditionalBillingItemMeta(item) {
+    if (item.item_type === 'admin') {
+        const addOn = ADDITIONAL_BILLING_ADD_ONS.find(entry => entry.code === item.item_code);
+        return {
+            name: addOn?.name || item.item_name || 'Item administratif',
+            price: Number(addOn?.price ?? item.price ?? 0)
+        };
+    }
+
+    const obat = additionalBillingModalState?.obatList?.find(
+        entry => Number(entry.id) === Number(item.obat_id ?? item.obatId)
+    );
+    return {
+        name: obat?.name || item.item_name || 'Obat',
+        price: Number(obat?.price ?? item.price ?? 0)
+    };
+}
+
+function renderAdditionalBillingObatOptions(filterText = '') {
+    const select = document.getElementById('additional-billing-obat-select');
+    if (!select || !additionalBillingModalState) return;
+
+    const previousValue = select.value;
+    const normalizedFilter = filterText.trim().toLowerCase();
+    const options = (additionalBillingModalState.obatList || [])
+        .filter(item => !normalizedFilter ||
+            String(item.name || '').toLowerCase().includes(normalizedFilter) ||
+            String(item.code || '').toLowerCase().includes(normalizedFilter))
+        .map(item => `<option value="${Number(item.id)}">${escapeHtml(item.name)}${item.code ? ` (${escapeHtml(item.code)})` : ''} - ${formatRupiah(item.price)}</option>`)
+        .join('');
+
+    select.innerHTML = '<option value="">Pilih obat</option>' + options;
+    if (previousValue && select.querySelector(`option[value="${previousValue}"]`)) {
+        select.value = previousValue;
+    }
+}
+
+function renderAdditionalBillingModalItems() {
+    const container = document.getElementById('additional-billing-modal-items');
+    const totalElement = document.getElementById('additional-billing-modal-total');
+    if (!container || !totalElement || !additionalBillingModalState) return;
+
+    const items = additionalBillingModalState.items || [];
+    const total = items.reduce((sum, item) => {
+        const meta = getAdditionalBillingItemMeta(item);
+        return sum + (Number(item.quantity || 0) * meta.price);
+    }, 0);
+
+    totalElement.textContent = formatRupiah(total);
+    if (items.length === 0) {
+        container.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada item.</td></tr>';
+        return;
+    }
+
+    container.innerHTML = items.map((item, index) => {
+        const meta = getAdditionalBillingItemMeta(item);
+        const subtitle = item.item_type === 'obat' && item.caraPakai
+            ? `<small class="text-muted d-block">${escapeHtml(item.caraPakai)}</small>`
+            : '';
+        return `
+            <tr>
+                <td>
+                    ${escapeHtml(meta.name)}
+                    ${subtitle}
+                </td>
+                <td><span class="badge badge-light">${item.item_type === 'obat' ? 'Obat' : 'Surat/Buku'}</span></td>
+                <td class="text-center">${Number(item.quantity || 0)}</td>
+                <td class="text-right">${formatRupiah(meta.price * Number(item.quantity || 0))}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-outline-danger additional-billing-remove-item"
+                            data-item-index="${index}" title="Hapus item" aria-label="Hapus item">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function toggleAdditionalBillingPicker() {
+    const itemType = document.getElementById('additional-billing-item-type')?.value || 'obat';
+    const obatFields = document.getElementById('additional-billing-obat-fields');
+    const addOnFields = document.getElementById('additional-billing-addon-fields');
+    if (obatFields) obatFields.style.display = itemType === 'obat' ? '' : 'none';
+    if (addOnFields) addOnFields.style.display = itemType === 'admin' ? '' : 'none';
+}
+
+function ensureAdditionalBillingEditorModal() {
+    let modal = document.getElementById('additional-billing-modal');
+    if (!modal) {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal fade" id="additional-billing-modal" tabindex="-1" role="dialog" aria-labelledby="additionalBillingModalTitle" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="additionalBillingModalTitle"><i class="fas fa-plus-circle mr-2"></i>Tagihan Tambahan</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="additional-billing-modal-error" class="alert alert-danger" style="display:none;"></div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="additional-billing-item-type">Jenis</label>
+                                        <select id="additional-billing-item-type" class="form-control">
+                                            <option value="obat">Obat</option>
+                                            <option value="admin">Surat / Buku</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label for="additional-billing-item-quantity">Jumlah</label>
+                                        <input id="additional-billing-item-quantity" class="form-control" type="number" min="1" max="1000" value="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-flex align-items-end pb-3">
+                                    <button type="button" class="btn btn-outline-primary btn-block" id="additional-billing-add-item">
+                                        <i class="fas fa-plus mr-1"></i>Tambah Item
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="additional-billing-obat-fields">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="additional-billing-obat-search">Cari Obat</label>
+                                            <input id="additional-billing-obat-search" class="form-control" type="search" placeholder="Nama atau kode obat">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label for="additional-billing-obat-select">Obat</label>
+                                            <select id="additional-billing-obat-select" class="form-control"></select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="additional-billing-cara-pakai">Aturan Pakai</label>
+                                            <input id="additional-billing-cara-pakai" class="form-control" type="text" maxlength="500">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="additional-billing-latin-sig">Signa Latin</label>
+                                            <input id="additional-billing-latin-sig" class="form-control" type="text" maxlength="500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="additional-billing-addon-fields" style="display:none;">
+                                <div class="form-group">
+                                    <label for="additional-billing-addon-select">Surat / Buku</label>
+                                    <select id="additional-billing-addon-select" class="form-control">
+                                        ${ADDITIONAL_BILLING_ADD_ONS.map(item => `<option value="${item.code}">${escapeHtml(item.name)} - ${formatRupiah(item.price)}</option>`).join('')}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm table-bordered mb-1">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Item</th>
+                                            <th>Jenis</th>
+                                            <th class="text-center">Qty</th>
+                                            <th class="text-right">Total</th>
+                                            <th style="text-align: center !important; vertical-align: middle !important; width: 54px; min-width: 54px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="additional-billing-modal-items"></tbody>
+                                    <tfoot>
+                                        <tr class="font-weight-bold">
+                                            <td colspan="3" class="text-right">TOTAL</td>
+                                            <td class="text-right" id="additional-billing-modal-total">Rp 0</td>
+                                            <td></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-primary" id="additional-billing-save-draft"><i class="fas fa-save mr-1"></i>Simpan Draft</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+        modal = document.getElementById('additional-billing-modal');
+    }
+
+    if (modal.dataset.bound === '1') return modal;
+    modal.dataset.bound = '1';
+
+    document.getElementById('additional-billing-item-type')?.addEventListener('change', toggleAdditionalBillingPicker);
+    document.getElementById('additional-billing-obat-search')?.addEventListener('input', event => {
+        renderAdditionalBillingObatOptions(event.target.value || '');
+    });
+    document.getElementById('additional-billing-add-item')?.addEventListener('click', () => {
+        if (!additionalBillingModalState) return;
+        const itemType = document.getElementById('additional-billing-item-type')?.value || 'obat';
+        const quantity = Number(document.getElementById('additional-billing-item-quantity')?.value || 0);
+        if (!Number.isInteger(quantity) || quantity <= 0 || quantity > 1000) {
+            setAdditionalBillingModalError('Jumlah item harus berupa angka bulat antara 1 dan 1000.');
+            return;
+        }
+
+        if (itemType === 'obat') {
+            const obatId = Number(document.getElementById('additional-billing-obat-select')?.value || 0);
+            const obat = additionalBillingModalState.obatList.find(item => Number(item.id) === obatId);
+            if (!obat) {
+                setAdditionalBillingModalError('Pilih obat terlebih dahulu.');
+                return;
+            }
+            additionalBillingModalState.items.push({
+                item_type: 'obat',
+                obat_id: obat.id,
+                item_name: obat.name,
+                price: Number(obat.price || 0),
+                quantity,
+                caraPakai: document.getElementById('additional-billing-cara-pakai')?.value || '',
+                latinSig: document.getElementById('additional-billing-latin-sig')?.value || ''
+            });
+        } else {
+            const code = document.getElementById('additional-billing-addon-select')?.value || '';
+            const addOn = ADDITIONAL_BILLING_ADD_ONS.find(item => item.code === code);
+            if (!addOn) {
+                setAdditionalBillingModalError('Pilih surat atau buku terlebih dahulu.');
+                return;
+            }
+            additionalBillingModalState.items.push({
+                item_type: 'admin',
+                item_code: addOn.code,
+                item_name: addOn.name,
+                price: addOn.price,
+                quantity
+            });
+        }
+
+        setAdditionalBillingModalError('');
+        document.getElementById('additional-billing-item-quantity').value = '1';
+        renderAdditionalBillingModalItems();
+    });
+
+    document.getElementById('additional-billing-modal-items')?.addEventListener('click', event => {
+        const button = event.target.closest('.additional-billing-remove-item');
+        if (!button || !additionalBillingModalState) return;
+        const index = Number(button.dataset.itemIndex);
+        if (!Number.isInteger(index)) return;
+        additionalBillingModalState.items.splice(index, 1);
+        renderAdditionalBillingModalItems();
+    });
+
+    document.getElementById('additional-billing-save-draft')?.addEventListener('click', async function() {
+        if (!additionalBillingModalState) return;
+        if (additionalBillingModalState.items.length === 0) {
+            setAdditionalBillingModalError('Tambahkan minimal satu item.');
+            return;
+        }
+
+        const token = getAdditionalBillingToken();
+        if (!token) return;
+        const isEditing = !!additionalBillingModalState.additionalBillingId;
+        const endpoint = isEditing
+            ? `/api/sunday-clinic/billing/${additionalBillingModalState.mrId}/additional/${additionalBillingModalState.additionalBillingId}`
+            : `/api/sunday-clinic/billing/${additionalBillingModalState.mrId}/additional`;
+
+        try {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan';
+            setAdditionalBillingModalError('');
+            const response = await fetch(endpoint, {
+                method: isEditing ? 'PUT' : 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ items: additionalBillingModalState.items })
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal menyimpan tagihan tambahan.');
+            }
+
+            hideModal(modal);
+            window.showSuccess?.(result.message || 'Tagihan tambahan disimpan.');
+            refreshBillingSection();
+        } catch (error) {
+            setAdditionalBillingModalError(error.message || 'Gagal menyimpan tagihan tambahan.');
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-save mr-1"></i>Simpan Draft';
+        }
+    });
+
+    return modal;
+}
+
+async function openAdditionalBillingEditor(billing = null) {
+    const mrId = window.routeMrSlug;
+    const token = getAdditionalBillingToken();
+    if (!mrId || !token) return;
+
+    const modal = ensureAdditionalBillingEditorModal();
+    additionalBillingModalState = {
+        mrId,
+        additionalBillingId: billing?.id || null,
+        items: (billing?.items || []).map(item => ({
+            item_type: item.item_type,
+            obat_id: item.item_data?.obatId,
+            item_code: item.item_code,
+            item_name: item.item_name,
+            price: Number(item.price || 0),
+            quantity: Number(item.quantity || 1),
+            caraPakai: item.item_data?.caraPakai || item.item_data?.cara_pakai || '',
+            latinSig: item.item_data?.latinSig || item.item_data?.latin_sig || ''
+        })),
+        obatList: []
+    };
+
+    document.getElementById('additionalBillingModalTitle').innerHTML = billing
+        ? '<i class="fas fa-edit mr-2"></i>Ubah Tagihan Tambahan'
+        : '<i class="fas fa-plus-circle mr-2"></i>Tagihan Tambahan';
+    document.getElementById('additional-billing-obat-search').value = '';
+    document.getElementById('additional-billing-item-type').value = 'obat';
+    toggleAdditionalBillingPicker();
+    setAdditionalBillingModalError('');
+    renderAdditionalBillingModalItems();
+    showModal(modal);
+
+    try {
+        const response = await fetch('/api/obat?active=true', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Gagal memuat daftar obat.');
+        }
+        additionalBillingModalState.obatList = Array.isArray(result.data) ? result.data : [];
+        renderAdditionalBillingObatOptions();
+        renderAdditionalBillingModalItems();
+    } catch (error) {
+        setAdditionalBillingModalError(error.message || 'Gagal memuat daftar obat.');
+    }
+}
+
+function ensureAdditionalBillingPaymentModal() {
+    let modal = document.getElementById('additional-billing-payment-modal');
+    if (!modal) {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal fade" id="additional-billing-payment-modal" tabindex="-1" role="dialog" aria-labelledby="additionalBillingPaymentModalTitle" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="additionalBillingPaymentModalTitle"><i class="fas fa-money-bill-wave mr-2"></i>Catat Pembayaran</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                        </div>
+                        <div class="modal-body">
+                            <div id="additional-billing-payment-error" class="alert alert-danger" style="display:none;"></div>
+                            <div class="form-group">
+                                <label for="additional-billing-payment-method">Metode Pembayaran</label>
+                                <select id="additional-billing-payment-method" class="form-control">
+                                    <option value="cash">Tunai</option>
+                                    <option value="debit">Debit</option>
+                                    <option value="transfer">Transfer</option>
+                                </select>
+                            </div>
+                            <div class="form-group mb-0">
+                                <label for="additional-billing-payment-notes">Catatan</label>
+                                <textarea id="additional-billing-payment-notes" class="form-control" rows="3" maxlength="2000"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-primary" id="additional-billing-payment-save"><i class="fas fa-check mr-1"></i>Tandai Lunas</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+        modal = document.getElementById('additional-billing-payment-modal');
+    }
+
+    if (modal.dataset.bound === '1') return modal;
+    modal.dataset.bound = '1';
+    document.getElementById('additional-billing-payment-save')?.addEventListener('click', async function() {
+        if (!additionalBillingPaymentState) return;
+        const token = getAdditionalBillingToken();
+        if (!token) return;
+
+        const errorElement = document.getElementById('additional-billing-payment-error');
+        try {
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memproses';
+            errorElement.style.display = 'none';
+            const response = await fetch(
+                `/api/sunday-clinic/billing/${additionalBillingPaymentState.mrId}/additional/${additionalBillingPaymentState.additionalBillingId}/mark-paid`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        payment_method: document.getElementById('additional-billing-payment-method').value,
+                        notes: document.getElementById('additional-billing-payment-notes').value
+                    })
+                }
+            );
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal mencatat pembayaran tagihan tambahan.');
+            }
+
+            hideModal(modal);
+            window.showSuccess?.(result.message || 'Pembayaran tagihan tambahan dicatat.');
+            refreshBillingSection();
+        } catch (error) {
+            errorElement.textContent = error.message || 'Gagal mencatat pembayaran tagihan tambahan.';
+            errorElement.style.display = 'block';
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check mr-1"></i>Tandai Lunas';
+        }
+    });
+
+    return modal;
+}
+
+function openAdditionalBillingPaymentModal(billing) {
+    const mrId = window.routeMrSlug;
+    if (!mrId || !billing?.id) return;
+    const modal = ensureAdditionalBillingPaymentModal();
+    additionalBillingPaymentState = { mrId, additionalBillingId: billing.id };
+    document.getElementById('additional-billing-payment-method').value = 'cash';
+    document.getElementById('additional-billing-payment-notes').value = '';
+    const errorElement = document.getElementById('additional-billing-payment-error');
+    errorElement.style.display = 'none';
+    showModal(modal);
+}
+
+async function runAdditionalBillingAction(action, billing) {
+    const mrId = window.routeMrSlug;
+    const token = getAdditionalBillingToken();
+    if (!mrId || !token || !billing?.id) return;
+
+    if (action === 'edit') {
+        await openAdditionalBillingEditor(billing);
+        return;
+    }
+    if (action === 'mark-paid') {
+        openAdditionalBillingPaymentModal(billing);
+        return;
+    }
+
+    const requiresConfirmation = action === 'confirm';
+    if (requiresConfirmation && !window.confirm(`Konfirmasi tagihan tambahan ${billing.reference_number}?`)) {
+        return;
+    }
+
+    const endpointSuffix = {
+        confirm: 'confirm',
+        'print-invoice': 'print-invoice',
+        'print-etiket': 'print-etiket'
+    }[action];
+    if (!endpointSuffix) return;
+
+    try {
+        const response = await fetch(
+            `/api/sunday-clinic/billing/${mrId}/additional/${billing.id}/${endpointSuffix}`,
+            {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }
+        );
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || 'Gagal memproses tagihan tambahan.');
+        }
+
+        if (result.downloadUrl) {
+            window.open(result.downloadUrl, '_blank');
+        }
+        window.showSuccess?.(result.message || 'Tagihan tambahan berhasil diproses.');
+        refreshBillingSection();
+    } catch (error) {
+        window.showError?.(error.message || 'Gagal memproses tagihan tambahan.');
+    }
+}
+
+function getAdditionalBillingStatusBadge(status) {
+    if (status === 'confirmed') return '<span class="badge badge-success">Dikonfirmasi</span>';
+    if (status === 'paid') return '<span class="badge badge-primary">Lunas</span>';
+    return '<span class="badge badge-warning">Draft</span>';
+}
+
+function renderAdditionalBillingPanel(additionalBillings) {
+    const rows = additionalBillings.map(billing => {
+        const items = Array.isArray(billing.items) ? billing.items : [];
+        const itemSummary = items.map(item => `${item.item_name || '-'} x${Number(item.quantity || 0)}`).join(', ');
+        const hasObat = items.some(item => item.item_type === 'obat' && Number(item.quantity || 0) > 0);
+        const actionButtons = [];
+
+        if (billing.status === 'draft') {
+            actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-primary" data-additional-billing-action="edit" data-additional-billing-id="${billing.id}" title="Ubah draft" aria-label="Ubah draft"><i class="fas fa-edit"></i></button>`);
+            actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-success" data-additional-billing-action="confirm" data-additional-billing-id="${billing.id}" title="Konfirmasi tagihan" aria-label="Konfirmasi tagihan"><i class="fas fa-check"></i></button>`);
+        } else if (billing.status === 'confirmed') {
+            actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-primary" data-additional-billing-action="mark-paid" data-additional-billing-id="${billing.id}" title="Tandai lunas" aria-label="Tandai lunas"><i class="fas fa-money-bill-wave"></i></button>`);
+        }
+
+        if (billing.status === 'confirmed' || billing.status === 'paid') {
+            actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-success" data-additional-billing-action="print-invoice" data-additional-billing-id="${billing.id}" title="Cetak invoice" aria-label="Cetak invoice"><i class="fas fa-receipt"></i></button>`);
+            if (hasObat) {
+                actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-secondary" data-additional-billing-action="print-etiket" data-additional-billing-id="${billing.id}" title="Cetak etiket" aria-label="Cetak etiket"><i class="fas fa-tag"></i></button>`);
+            }
+        }
+
+        return `
+            <tr>
+                <td><strong>${escapeHtml(billing.reference_number || '-')}</strong><small class="d-block text-muted">${escapeHtml(formatDateTime(billing.created_at))}</small></td>
+                <td><span title="${escapeHtml(itemSummary)}">${escapeHtml(itemSummary || '-')}</span></td>
+                <td class="text-right font-weight-bold">${formatRupiah(billing.total)}</td>
+                <td class="text-center">${getAdditionalBillingStatusBadge(billing.status)}</td>
+                <td style="text-align: center !important; vertical-align: middle !important; white-space: nowrap;">${actionButtons.join(' ')}</td>
+            </tr>
+        `;
+    }).join('');
+
+    return `
+        <section class="pt-4 mt-4 border-top" id="additional-billing-panel">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="fas fa-plus-circle text-primary mr-2"></i>Tagihan Tambahan</h5>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-create-additional-billing">
+                    <i class="fas fa-plus mr-1"></i>Buat Tagihan Tambahan
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Referensi</th>
+                            <th>Item</th>
+                            <th class="text-right">Total</th>
+                            <th style="text-align: center !important; vertical-align: middle !important; width: 116px; min-width: 116px;">Status</th>
+                            <th style="text-align: center !important; vertical-align: middle !important; width: 150px; min-width: 150px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows || '<tr><td colspan="5" class="text-center text-muted">Belum ada tagihan tambahan.</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    `;
+}
+
 export default {
     /**
      * Render the Billing form
@@ -731,9 +1333,10 @@ export default {
     async renderObstetriFormat(state) {
         // Load billing data from API
         let billing = { items: [], status: 'draft' };
+        let additionalBillings = [];
+        const mrId = state.recordData?.mrId || state.recordData?.mr_id || state.currentMrId;
 
         try {
-            const mrId = state.recordData?.mrId || state.recordData?.mr_id || state.currentMrId;
             if (mrId) {
                 const token = window.getToken?.();
                 if (token) {
@@ -757,6 +1360,26 @@ export default {
         const status = billing.status || 'draft';
         const hasPendingPayment = !!billing.has_pending_payment;
         const canEditBilling = status !== 'paid' && !(status === 'confirmed' && hasPendingPayment);
+
+        if (status === 'paid' && mrId) {
+            try {
+                const token = getAdditionalBillingToken();
+                if (token) {
+                    const response = await fetch(`/api/sunday-clinic/billing/${mrId}/additional`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (response.ok && result.success && Array.isArray(result.data)) {
+                        additionalBillings = result.data;
+                    } else if (!response.ok) {
+                        throw new Error(result.message || 'Gagal memuat tagihan tambahan.');
+                    }
+                }
+            } catch (error) {
+                console.error('[Billing] Failed to load additional billing data:', error);
+            }
+        }
+        this.additionalBillings = additionalBillings;
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -971,6 +1594,8 @@ export default {
                     <div class="mt-3">
                         ${actionsHtml}
                     </div>
+
+                    ${status === 'paid' ? renderAdditionalBillingPanel(additionalBillings) : ''}
                 </div>
             </div>
         `;
@@ -982,6 +1607,24 @@ export default {
     async afterRender(state) {
         // Setup billing button handlers
         setTimeout(() => {
+            const additionalBillingsById = new Map(
+                (this.additionalBillings || []).map(billing => [Number(billing.id), billing])
+            );
+            const createAdditionalBillingButton = document.getElementById('btn-create-additional-billing');
+            if (createAdditionalBillingButton) {
+                createAdditionalBillingButton.addEventListener('click', () => openAdditionalBillingEditor());
+            }
+            document.querySelectorAll('[data-additional-billing-action]').forEach(button => {
+                button.addEventListener('click', async () => {
+                    const billing = additionalBillingsById.get(Number(button.dataset.additionalBillingId));
+                    if (!billing) {
+                        window.showError?.('Tagihan tambahan tidak ditemukan. Muat ulang halaman.');
+                        return;
+                    }
+                    await runAdditionalBillingAction(button.dataset.additionalBillingAction, billing);
+                });
+            });
+
             // 0. Admin item checkboxes
             const adminCheckboxes = document.querySelectorAll('.admin-item-checkbox');
             adminCheckboxes.forEach(checkbox => {

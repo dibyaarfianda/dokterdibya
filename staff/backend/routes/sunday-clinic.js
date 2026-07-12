@@ -20,10 +20,21 @@ const {
 const {
     getActorFromRequest,
     getBillingSnapshot,
-    logBillingAudit
+    getAdditionalBillingSnapshot,
+    logBillingAudit,
+    logAdditionalBillingAudit
 } = require('../services/SundayClinicBillingAuditService');
 
 const createPatientNotification = patientNotifications.createPatientNotification;
+
+const ADDITIONAL_BILLING_ADD_ONS = Object.freeze({
+    S02: { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 },
+    S03: { code: 'S03', name: 'Buku Ginekologi', price: 25000 },
+    S04: { code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }
+});
+const ADDITIONAL_BILLING_PAYMENT_METHODS = new Set(['cash', 'debit', 'transfer']);
+const ADDITIONAL_BILLING_MAX_ITEMS = 50;
+const ADDITIONAL_BILLING_MAX_QUANTITY = 1000;
 
 // Import realtime sync for broadcasting notifications
 let realtimeSync = null;
@@ -105,6 +116,85 @@ async function ensureBillingTables() {
                 INDEX idx_action (action),
                 INDEX idx_created_at (created_at),
                 FOREIGN KEY (billing_id) REFERENCES sunday_clinic_billings(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS sunday_clinic_additional_billings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                parent_billing_id INT NOT NULL,
+                mr_id VARCHAR(50) NOT NULL,
+                patient_id VARCHAR(10) NOT NULL,
+                sequence_number INT UNSIGNED NOT NULL,
+                reference_number VARCHAR(80) NOT NULL,
+                subtotal DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                total DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                status ENUM('draft', 'confirmed', 'paid') NOT NULL DEFAULT 'draft',
+                payment_method ENUM('cash', 'debit', 'transfer') NULL,
+                payment_notes TEXT NULL,
+                confirmed_at TIMESTAMP NULL,
+                confirmed_by VARCHAR(255) NULL,
+                paid_at TIMESTAMP NULL,
+                paid_by VARCHAR(255) NULL,
+                invoice_printed_at TIMESTAMP NULL,
+                invoice_printed_by VARCHAR(255) NULL,
+                invoice_url VARCHAR(500) NULL,
+                etiket_printed_at TIMESTAMP NULL,
+                etiket_printed_by VARCHAR(255) NULL,
+                etiket_url VARCHAR(500) NULL,
+                created_by VARCHAR(255) NULL,
+                last_modified_by VARCHAR(255) NULL,
+                last_modified_at TIMESTAMP NULL,
+                metadata JSON NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY uq_sunday_clinic_additional_parent_sequence (parent_billing_id, sequence_number),
+                UNIQUE KEY uq_sunday_clinic_additional_reference (reference_number),
+                INDEX idx_sunday_clinic_additional_mr_id (mr_id),
+                INDEX idx_sunday_clinic_additional_status (status),
+                INDEX idx_sunday_clinic_additional_patient_id (patient_id),
+                CONSTRAINT fk_sunday_clinic_additional_parent
+                    FOREIGN KEY (parent_billing_id) REFERENCES sunday_clinic_billings(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS sunday_clinic_additional_billing_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                additional_billing_id INT NOT NULL,
+                item_type ENUM('obat', 'admin') NOT NULL,
+                item_code VARCHAR(50) NULL,
+                item_name VARCHAR(255) NOT NULL,
+                quantity INT NOT NULL DEFAULT 1,
+                price DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                total DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                item_data JSON NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_sunday_clinic_additional_item_billing (additional_billing_id),
+                CONSTRAINT fk_sunday_clinic_additional_item_billing
+                    FOREIGN KEY (additional_billing_id) REFERENCES sunday_clinic_additional_billings(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS sunday_clinic_additional_billing_audit_logs (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                additional_billing_id INT NOT NULL,
+                mr_id VARCHAR(50) NOT NULL,
+                action VARCHAR(50) NOT NULL,
+                actor_user_id VARCHAR(64) NULL,
+                actor_name VARCHAR(255) NOT NULL,
+                actor_role VARCHAR(100) NULL,
+                summary TEXT NULL,
+                before_snapshot JSON NULL,
+                after_snapshot JSON NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_sunday_clinic_additional_audit_billing (additional_billing_id),
+                INDEX idx_sunday_clinic_additional_audit_mr_id (mr_id),
+                INDEX idx_sunday_clinic_additional_audit_action (action),
+                INDEX idx_sunday_clinic_additional_audit_created_at (created_at),
+                CONSTRAINT fk_sunday_clinic_additional_audit_billing
+                    FOREIGN KEY (additional_billing_id) REFERENCES sunday_clinic_additional_billings(id) ON DELETE CASCADE
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         `);
 
@@ -259,6 +349,216 @@ async function writeBillingAudit(client, req, payload) {
         ...payload,
         ...actor
     });
+}
+
+async function writeAdditionalBillingAudit(client, req, payload) {
+    const actor = getActorFromRequest(req);
+    return logAdditionalBillingAudit(client, {
+        ...payload,
+        ...actor
+    });
+}
+
+function createAdditionalBillingError(message, statusCode = 400) {
+    const error = new Error(message);
+    error.statusCode = statusCode;
+    return error;
+}
+
+function parseAdditionalBillingId(value) {
+    const additionalBillingId = Number(value);
+    if (!Number.isSafeInteger(additionalBillingId) || additionalBillingId <= 0) {
+        throw createAdditionalBillingError('ID tagihan tambahan tidak valid.');
+    }
+    return additionalBillingId;
+}
+
+function normalizeAdditionalBillingText(value, label, maxLength = 500) {
+    if (value === undefined || value === null || value === '') {
+        return '';
+    }
+    if (typeof value !== 'string') {
+        throw createAdditionalBillingError(`${label} tidak valid.`);
+    }
+    const normalized = value.trim();
+    if (normalized.length > maxLength) {
+        throw createAdditionalBillingError(`${label} terlalu panjang.`);
+    }
+    return normalized;
+}
+
+async function normalizeAdditionalBillingItems(connection, rawItems) {
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
+        throw createAdditionalBillingError('Tagihan tambahan harus berisi minimal satu item.');
+    }
+    if (rawItems.length > ADDITIONAL_BILLING_MAX_ITEMS) {
+        throw createAdditionalBillingError(`Maksimal ${ADDITIONAL_BILLING_MAX_ITEMS} item per tagihan tambahan.`);
+    }
+
+    const normalizedItems = [];
+    for (const rawItem of rawItems) {
+        if (!rawItem || typeof rawItem !== 'object') {
+            throw createAdditionalBillingError('Format item tagihan tambahan tidak valid.');
+        }
+
+        const itemType = typeof rawItem.item_type === 'string'
+            ? rawItem.item_type.trim().toLowerCase()
+            : '';
+        const quantity = Number(rawItem.quantity);
+        if (!Number.isSafeInteger(quantity) || quantity <= 0 || quantity > ADDITIONAL_BILLING_MAX_QUANTITY) {
+            throw createAdditionalBillingError(`Jumlah item harus berupa angka bulat antara 1 dan ${ADDITIONAL_BILLING_MAX_QUANTITY}.`);
+        }
+
+        if (itemType === 'obat') {
+            const obatId = Number(rawItem.obat_id ?? rawItem.obatId ?? rawItem.id);
+            if (!Number.isSafeInteger(obatId) || obatId <= 0) {
+                throw createAdditionalBillingError('Obat tagihan tambahan tidak valid.');
+            }
+
+            const [[obat]] = await connection.query(
+                `SELECT id, code, name, price, unit
+                 FROM obat
+                 WHERE id = ? AND is_active = 1
+                 LIMIT 1`,
+                [obatId]
+            );
+            if (!obat) {
+                throw createAdditionalBillingError('Obat tidak ditemukan atau sudah tidak aktif.');
+            }
+
+            const caraPakai = normalizeAdditionalBillingText(rawItem.caraPakai ?? rawItem.cara_pakai, 'Aturan pakai');
+            const latinSig = normalizeAdditionalBillingText(rawItem.latinSig ?? rawItem.latin_sig, 'Signa latin');
+            const price = Number(obat.price || 0);
+
+            normalizedItems.push({
+                item_type: 'obat',
+                item_code: obat.code || null,
+                item_name: obat.name,
+                quantity,
+                price,
+                total: price * quantity,
+                item_data: {
+                    source: 'additional-billing',
+                    obatId: obat.id,
+                    unit: obat.unit || '',
+                    caraPakai,
+                    latinSig
+                }
+            });
+            continue;
+        }
+
+        if (itemType === 'admin') {
+            const code = typeof (rawItem.item_code || rawItem.code) === 'string'
+                ? (rawItem.item_code || rawItem.code).trim().toUpperCase()
+                : '';
+            const addOn = ADDITIONAL_BILLING_ADD_ONS[code];
+            if (!addOn) {
+                throw createAdditionalBillingError('Item surat atau buku tidak tersedia untuk tagihan tambahan.');
+            }
+
+            normalizedItems.push({
+                item_type: 'admin',
+                item_code: addOn.code,
+                item_name: addOn.name,
+                quantity,
+                price: addOn.price,
+                total: addOn.price * quantity,
+                item_data: {
+                    source: 'additional-billing',
+                    catalog: 'additional-addon'
+                }
+            });
+            continue;
+        }
+
+        throw createAdditionalBillingError('Jenis item tagihan tambahan tidak didukung.');
+    }
+
+    return normalizedItems;
+}
+
+async function insertAdditionalBillingItems(connection, additionalBillingId, items) {
+    for (const item of items) {
+        await connection.query(
+            `INSERT INTO sunday_clinic_additional_billing_items
+             (additional_billing_id, item_type, item_code, item_name, quantity, price, total, item_data)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                additionalBillingId,
+                item.item_type,
+                item.item_code,
+                item.item_name,
+                item.quantity,
+                item.price,
+                item.total,
+                JSON.stringify(item.item_data || {})
+            ]
+        );
+    }
+}
+
+async function getAdditionalBillingRecordForUpdate(connection, mrId, additionalBillingId) {
+    const [[additionalBilling]] = await connection.query(
+        `SELECT ab.*, parent.status AS parent_billing_status
+         FROM sunday_clinic_additional_billings ab
+         JOIN sunday_clinic_billings parent ON parent.id = ab.parent_billing_id
+         WHERE ab.id = ? AND ab.mr_id = ?
+         FOR UPDATE`,
+        [additionalBillingId, mrId]
+    );
+
+    if (!additionalBilling) {
+        throw createAdditionalBillingError('Tagihan tambahan tidak ditemukan.', 404);
+    }
+    if (additionalBilling.parent_billing_status !== 'paid') {
+        throw createAdditionalBillingError('Tagihan utama harus lunas sebelum tagihan tambahan diproses.');
+    }
+
+    return additionalBilling;
+}
+
+async function loadAdditionalBillingDocument(mrId, additionalBillingId) {
+    const [[billing]] = await db.query(
+        `SELECT ab.*
+         FROM sunday_clinic_additional_billings ab
+         JOIN sunday_clinic_billings parent ON parent.id = ab.parent_billing_id
+         WHERE ab.id = ? AND ab.mr_id = ? AND parent.status = 'paid'`,
+        [additionalBillingId, mrId]
+    );
+
+    if (!billing) {
+        throw createAdditionalBillingError('Tagihan tambahan tidak ditemukan.', 404);
+    }
+    if (!['confirmed', 'paid'].includes(billing.status)) {
+        throw createAdditionalBillingError('Tagihan tambahan harus dikonfirmasi sebelum dicetak.');
+    }
+
+    const [items] = await db.query(
+        `SELECT * FROM sunday_clinic_additional_billing_items
+         WHERE additional_billing_id = ?
+         ORDER BY id ASC`,
+        [additionalBillingId]
+    );
+    billing.items = items.map(item => ({
+        ...item,
+        item_data: typeof item.item_data === 'string'
+            ? (parseJson(item.item_data, 'additional_billing_item') || {})
+            : (item.item_data || {})
+    }));
+
+    const [[record]] = await db.query(
+        `SELECT r.*, p.full_name, p.birth_date, p.phone
+         FROM sunday_clinic_records r
+         JOIN patients p ON r.patient_id = p.id
+         WHERE r.mr_id = ?`,
+        [mrId]
+    );
+    if (!record) {
+        throw createAdditionalBillingError('Data pasien untuk tagihan tambahan tidak ditemukan.', 404);
+    }
+
+    return { billing, record };
 }
 
 function parseAuditSnapshot(value) {
@@ -3662,6 +3962,647 @@ router.post('/billing/:mrId/print-invoice', verifyToken, async (req, res, next) 
     }
 });
 
+// List additional billings created after the main billing was paid.
+router.get('/billing/:mrId/additional', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    }
+    if (isPatientUser(req)) {
+        return res.status(403).json({ success: false, message: 'Pasien tidak dapat mengakses tagihan tambahan.' });
+    }
+
+    try {
+        const [[parentBilling]] = await db.query(
+            'SELECT id FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+        if (!parentBilling) {
+            return res.status(404).json({ success: false, message: 'Tagihan utama tidak ditemukan.' });
+        }
+
+        const [rows] = await db.query(
+            `SELECT id
+             FROM sunday_clinic_additional_billings
+             WHERE parent_billing_id = ?
+             ORDER BY sequence_number DESC, id DESC`,
+            [parentBilling.id]
+        );
+
+        const snapshots = await Promise.all(
+            rows.map(row => getAdditionalBillingSnapshot(db, row.id))
+        );
+        const additionalBillings = snapshots
+            .filter(Boolean)
+            .map(snapshot => ({ ...snapshot.billing, items: snapshot.items }));
+
+        res.json({ success: true, data: additionalBillings });
+    } catch (error) {
+        logger.error('Failed to load Sunday Clinic additional billings', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+// Create a new, separate billing for items requested after the main billing is paid.
+router.post('/billing/:mrId/additional', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    let connection;
+    let transactionStarted = false;
+
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    }
+    if (isPatientUser(req)) {
+        return res.status(403).json({ success: false, message: 'Pasien tidak dapat membuat tagihan tambahan.' });
+    }
+
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        transactionStarted = true;
+
+        const [[parentBilling]] = await connection.query(
+            `SELECT id, patient_id, status
+             FROM sunday_clinic_billings
+             WHERE mr_id = ?
+             FOR UPDATE`,
+            [normalizedMrId]
+        );
+        if (!parentBilling) {
+            throw createAdditionalBillingError('Tagihan utama tidak ditemukan.', 404);
+        }
+        if (parentBilling.status !== 'paid') {
+            throw createAdditionalBillingError('Tagihan tambahan hanya dapat dibuat setelah tagihan utama lunas.');
+        }
+
+        const items = await normalizeAdditionalBillingItems(connection, req.body.items);
+        const [[sequenceRow]] = await connection.query(
+            `SELECT COALESCE(MAX(sequence_number), 0) + 1 AS next_sequence
+             FROM sunday_clinic_additional_billings
+             WHERE parent_billing_id = ?`,
+            [parentBilling.id]
+        );
+        const sequenceNumber = Number(sequenceRow.next_sequence || 1);
+        const referenceNumber = `${normalizedMrId}-T${String(sequenceNumber).padStart(2, '0')}`;
+        const total = items.reduce((sum, item) => sum + Number(item.total || 0), 0);
+        const actor = getActorFromRequest(req);
+
+        const [insertResult] = await connection.query(
+            `INSERT INTO sunday_clinic_additional_billings
+             (parent_billing_id, mr_id, patient_id, sequence_number, reference_number,
+              subtotal, total, status, created_by, last_modified_by, last_modified_at, metadata)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, NOW(), ?)`,
+            [
+                parentBilling.id,
+                normalizedMrId,
+                parentBilling.patient_id,
+                sequenceNumber,
+                referenceNumber,
+                total,
+                total,
+                actor.actorName,
+                actor.actorName,
+                JSON.stringify({ source: 'staff-panel' })
+            ]
+        );
+
+        await insertAdditionalBillingItems(connection, insertResult.insertId, items);
+        const afterSnapshot = await getAdditionalBillingSnapshot(connection, insertResult.insertId);
+        await writeAdditionalBillingAudit(connection, req, {
+            additionalBillingId: insertResult.insertId,
+            mrId: normalizedMrId,
+            action: 'additional_billing_created',
+            summary: `Tagihan tambahan ${referenceNumber} dibuat dengan ${items.length} item.`,
+            beforeSnapshot: null,
+            afterSnapshot
+        });
+
+        await connection.commit();
+        transactionStarted = false;
+
+        res.status(201).json({
+            success: true,
+            message: 'Tagihan tambahan berhasil dibuat sebagai draft.',
+            data: { ...afterSnapshot.billing, items: afterSnapshot.items }
+        });
+    } catch (error) {
+        if (transactionStarted) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback additional billing creation', { error: rollbackError.message });
+            }
+        }
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ success: false, message: error.message });
+        }
+        logger.error('Failed to create Sunday Clinic additional billing', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
+// Replace draft additional-billing items without touching the paid main billing.
+router.put('/billing/:mrId/additional/:additionalBillingId', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    let connection;
+    let transactionStarted = false;
+
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    }
+    if (isPatientUser(req)) {
+        return res.status(403).json({ success: false, message: 'Pasien tidak dapat mengubah tagihan tambahan.' });
+    }
+
+    try {
+        const additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        transactionStarted = true;
+
+        const additionalBilling = await getAdditionalBillingRecordForUpdate(
+            connection,
+            normalizedMrId,
+            additionalBillingId
+        );
+        if (additionalBilling.status !== 'draft') {
+            throw createAdditionalBillingError('Hanya tagihan tambahan draft yang dapat diubah.');
+        }
+
+        const beforeSnapshot = await getAdditionalBillingSnapshot(connection, additionalBillingId);
+        const items = await normalizeAdditionalBillingItems(connection, req.body.items);
+        const total = items.reduce((sum, item) => sum + Number(item.total || 0), 0);
+
+        await connection.query(
+            'DELETE FROM sunday_clinic_additional_billing_items WHERE additional_billing_id = ?',
+            [additionalBillingId]
+        );
+        await insertAdditionalBillingItems(connection, additionalBillingId, items);
+
+        const actor = getActorFromRequest(req);
+        await connection.query(
+            `UPDATE sunday_clinic_additional_billings
+             SET subtotal = ?, total = ?, last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
+             WHERE id = ?`,
+            [total, total, actor.actorName, additionalBillingId]
+        );
+
+        const afterSnapshot = await getAdditionalBillingSnapshot(connection, additionalBillingId);
+        await writeAdditionalBillingAudit(connection, req, {
+            additionalBillingId,
+            mrId: normalizedMrId,
+            action: 'additional_billing_updated',
+            summary: `Tagihan tambahan ${additionalBilling.reference_number} diperbarui.`,
+            beforeSnapshot,
+            afterSnapshot
+        });
+
+        await connection.commit();
+        transactionStarted = false;
+
+        res.json({
+            success: true,
+            message: 'Tagihan tambahan draft berhasil diperbarui.',
+            data: { ...afterSnapshot.billing, items: afterSnapshot.items }
+        });
+    } catch (error) {
+        if (transactionStarted) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback additional billing update', { error: rollbackError.message });
+            }
+        }
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ success: false, message: error.message });
+        }
+        logger.error('Failed to update Sunday Clinic additional billing', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
+router.post('/billing/:mrId/additional/:additionalBillingId/confirm', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    let connection;
+    let transactionStarted = false;
+
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    }
+    if (isPatientUser(req)) {
+        return res.status(403).json({ success: false, message: 'Pasien tidak dapat mengonfirmasi tagihan tambahan.' });
+    }
+
+    try {
+        const additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        transactionStarted = true;
+
+        const additionalBilling = await getAdditionalBillingRecordForUpdate(
+            connection,
+            normalizedMrId,
+            additionalBillingId
+        );
+        if (additionalBilling.status !== 'draft') {
+            throw createAdditionalBillingError('Tagihan tambahan ini bukan draft.');
+        }
+
+        const [[itemCount]] = await connection.query(
+            `SELECT COUNT(*) AS count
+             FROM sunday_clinic_additional_billing_items
+             WHERE additional_billing_id = ?`,
+            [additionalBillingId]
+        );
+        if (!Number(itemCount.count || 0)) {
+            throw createAdditionalBillingError('Tagihan tambahan harus berisi minimal satu item.');
+        }
+
+        const beforeSnapshot = await getAdditionalBillingSnapshot(connection, additionalBillingId);
+        const actor = getActorFromRequest(req);
+        await connection.query(
+            `UPDATE sunday_clinic_additional_billings
+             SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?,
+                 last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
+             WHERE id = ?`,
+            [actor.actorName, actor.actorName, additionalBillingId]
+        );
+
+        const afterSnapshot = await getAdditionalBillingSnapshot(connection, additionalBillingId);
+        await writeAdditionalBillingAudit(connection, req, {
+            additionalBillingId,
+            mrId: normalizedMrId,
+            action: 'additional_billing_confirmed',
+            summary: `Tagihan tambahan ${additionalBilling.reference_number} dikonfirmasi.`,
+            beforeSnapshot,
+            afterSnapshot
+        });
+
+        await connection.commit();
+        transactionStarted = false;
+
+        res.json({
+            success: true,
+            message: 'Tagihan tambahan berhasil dikonfirmasi.',
+            data: { ...afterSnapshot.billing, items: afterSnapshot.items }
+        });
+    } catch (error) {
+        if (transactionStarted) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback additional billing confirmation', { error: rollbackError.message });
+            }
+        }
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ success: false, message: error.message });
+        }
+        logger.error('Failed to confirm Sunday Clinic additional billing', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
+router.post('/billing/:mrId/additional/:additionalBillingId/mark-paid', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    let lockName = null;
+    let lockAcquired = false;
+
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    }
+    if (isPatientUser(req)) {
+        return res.status(403).json({ success: false, message: 'Pasien tidak dapat menandai tagihan tambahan lunas.' });
+    }
+
+    try {
+        const additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
+        const paymentMethod = typeof req.body.payment_method === 'string'
+            ? req.body.payment_method.trim().toLowerCase()
+            : '';
+        if (!ADDITIONAL_BILLING_PAYMENT_METHODS.has(paymentMethod)) {
+            throw createAdditionalBillingError('Metode pembayaran tagihan tambahan harus tunai, debit, atau transfer.');
+        }
+        const paymentNotes = normalizeAdditionalBillingText(req.body.notes, 'Catatan pembayaran', 2000);
+
+        const [[existingBilling]] = await db.query(
+            `SELECT id
+             FROM sunday_clinic_additional_billings
+             WHERE id = ? AND mr_id = ?`,
+            [additionalBillingId, normalizedMrId]
+        );
+        if (!existingBilling) {
+            throw createAdditionalBillingError('Tagihan tambahan tidak ditemukan.', 404);
+        }
+
+        lockName = `sunday_additional_mark_paid_${additionalBillingId}`;
+        const [[lockRow]] = await db.query('SELECT GET_LOCK(?, 5) AS acquired', [lockName]);
+        lockAcquired = Number(lockRow?.acquired || 0) === 1;
+        if (!lockAcquired) {
+            return res.status(409).json({
+                success: false,
+                message: 'Tagihan tambahan sedang diproses oleh request lain. Silakan coba lagi.'
+            });
+        }
+
+        const [[additionalBilling]] = await db.query(
+            `SELECT ab.*, parent.status AS parent_billing_status
+             FROM sunday_clinic_additional_billings ab
+             JOIN sunday_clinic_billings parent ON parent.id = ab.parent_billing_id
+             WHERE ab.id = ? AND ab.mr_id = ?`,
+            [additionalBillingId, normalizedMrId]
+        );
+        if (!additionalBilling) {
+            throw createAdditionalBillingError('Tagihan tambahan tidak ditemukan.', 404);
+        }
+        if (additionalBilling.parent_billing_status !== 'paid') {
+            throw createAdditionalBillingError('Tagihan utama harus lunas sebelum pembayaran tambahan dicatat.');
+        }
+        if (additionalBilling.status === 'paid') {
+            throw createAdditionalBillingError('Tagihan tambahan sudah dibayar.');
+        }
+        if (additionalBilling.status !== 'confirmed') {
+            throw createAdditionalBillingError('Tagihan tambahan harus dikonfirmasi sebelum pembayaran.');
+        }
+
+        const beforeSnapshot = await getAdditionalBillingSnapshot(db, additionalBillingId);
+        const [obatItems] = await db.query(
+            `SELECT abi.item_code, abi.item_name, abi.quantity,
+                    COALESCE(
+                        NULLIF(CAST(JSON_UNQUOTE(JSON_EXTRACT(abi.item_data, '$.obatId')) AS UNSIGNED), 0),
+                        (SELECT o.id FROM obat o WHERE abi.item_code IS NOT NULL AND o.code = abi.item_code LIMIT 1),
+                        (SELECT o.id FROM obat o WHERE LOWER(TRIM(o.name)) = LOWER(TRIM(abi.item_name)) ORDER BY o.is_active DESC, o.id ASC LIMIT 1)
+                    ) AS obat_id
+             FROM sunday_clinic_additional_billing_items abi
+             WHERE abi.additional_billing_id = ? AND abi.item_type = 'obat'`,
+            [additionalBillingId]
+        );
+
+        const invalidObatItems = obatItems.filter(item => !item.obat_id);
+        if (invalidObatItems.length > 0) {
+            throw createAdditionalBillingError(
+                `Data obat tidak valid: ${invalidObatItems.map(item => item.item_name || item.item_code || 'tanpa nama').join(', ')}.`
+            );
+        }
+
+        const requiredByObatId = new Map();
+        for (const item of obatItems) {
+            const obatId = Number(item.obat_id);
+            const quantity = Number(item.quantity || 0);
+            requiredByObatId.set(obatId, (requiredByObatId.get(obatId) || 0) + quantity);
+        }
+
+        if (requiredByObatId.size > 0) {
+            const obatIds = Array.from(requiredByObatId.keys());
+            const placeholders = obatIds.map(() => '?').join(',');
+            const [stocks] = await db.query(
+                `SELECT id, name, stock FROM obat WHERE id IN (${placeholders})`,
+                obatIds
+            );
+            const [deductionRows] = await db.query(
+                `SELECT obat_id, ABS(SUM(quantity)) AS deducted_qty
+                 FROM stock_movements
+                 WHERE reference_type = 'sunday_clinic_additional_billing'
+                   AND reference_id = ?
+                   AND movement_type = 'sale'
+                   AND obat_id IN (${placeholders})
+                 GROUP BY obat_id`,
+                [additionalBillingId, ...obatIds]
+            );
+            const stockByObatId = new Map(stocks.map(row => [Number(row.id), row]));
+            const deductedByObatId = new Map(
+                deductionRows.map(row => [Number(row.obat_id), Number(row.deducted_qty || 0)])
+            );
+            const insufficient = [];
+
+            for (const obatId of obatIds) {
+                const row = stockByObatId.get(obatId);
+                const requiredQuantity = requiredByObatId.get(obatId) || 0;
+                const alreadyDeducted = deductedByObatId.get(obatId) || 0;
+                const remainingQuantity = Math.max(0, requiredQuantity - alreadyDeducted);
+                const available = Number(row?.stock || 0);
+                if (!row || available < remainingQuantity) {
+                    insufficient.push({
+                        obatId,
+                        name: row?.name || `Obat ID ${obatId}`,
+                        required: remainingQuantity,
+                        available
+                    });
+                }
+            }
+
+            if (insufficient.length > 0) {
+                throw createAdditionalBillingError(
+                    `Stok tidak cukup untuk: ${insufficient.map(item => `${item.name} (butuh ${item.required}, tersedia ${item.available})`).join('; ')}`
+                );
+            }
+
+            const InventoryService = require('../services/InventoryService');
+            for (const obatId of obatIds) {
+                const requiredQuantity = requiredByObatId.get(obatId) || 0;
+                const alreadyDeducted = deductedByObatId.get(obatId) || 0;
+                const remainingQuantity = Math.max(0, requiredQuantity - alreadyDeducted);
+                if (!remainingQuantity) {
+                    continue;
+                }
+
+                await InventoryService.deductStockFIFO(
+                    obatId,
+                    remainingQuantity,
+                    'sunday_clinic_additional_billing',
+                    additionalBillingId,
+                    req.user?.name || req.user?.id || 'system'
+                );
+            }
+        }
+
+        const actor = getActorFromRequest(req);
+        const [updateResult] = await db.query(
+            `UPDATE sunday_clinic_additional_billings
+             SET status = 'paid', payment_method = ?, payment_notes = ?, paid_at = NOW(), paid_by = ?,
+                 last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
+             WHERE id = ? AND status = 'confirmed'`,
+            [paymentMethod, paymentNotes || null, actor.actorName, actor.actorName, additionalBillingId]
+        );
+        if (!updateResult.affectedRows) {
+            throw createAdditionalBillingError('Status tagihan tambahan berubah. Muat ulang halaman dan coba lagi.', 409);
+        }
+
+        const afterSnapshot = await getAdditionalBillingSnapshot(db, additionalBillingId);
+        await writeAdditionalBillingAudit(db, req, {
+            additionalBillingId,
+            mrId: normalizedMrId,
+            action: 'additional_billing_marked_paid',
+            summary: `Tagihan tambahan ${additionalBilling.reference_number} ditandai lunas (${paymentMethod}).`,
+            beforeSnapshot,
+            afterSnapshot
+        });
+
+        await activityLogger.logFromRequest(
+            req,
+            'Additional Billing Paid',
+            `Marked additional billing ${additionalBilling.reference_number} paid for MR: ${normalizedMrId}`
+        );
+
+        res.json({
+            success: true,
+            message: 'Pembayaran tagihan tambahan berhasil dicatat.',
+            data: { ...afterSnapshot.billing, items: afterSnapshot.items }
+        });
+    } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ success: false, message: error.message });
+        }
+        logger.error('Failed to mark Sunday Clinic additional billing as paid', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (lockAcquired && lockName) {
+            try {
+                await db.query('SELECT RELEASE_LOCK(?)', [lockName]);
+            } catch (releaseError) {
+                logger.error('Failed to release additional billing payment lock', {
+                    mrId: normalizedMrId,
+                    lockName,
+                    error: releaseError.message
+                });
+            }
+        }
+    }
+});
+
+router.post('/billing/:mrId/additional/:additionalBillingId/print-invoice', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    }
+    if (isPatientUser(req)) {
+        return res.status(403).json({ success: false, message: 'Pasien tidak dapat mencetak tagihan tambahan.' });
+    }
+
+    try {
+        const additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
+        const { billing, record } = await loadAdditionalBillingDocument(normalizedMrId, additionalBillingId);
+        const pdfGenerator = require('../utils/pdf-generator');
+        const result = await pdfGenerator.generateInvoice(
+            billing,
+            { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
+            {
+                mrId: normalizedMrId,
+                invoiceReference: billing.reference_number,
+                invoiceTitle: 'Invoice Tagihan Tambahan'
+            }
+        );
+
+        const actor = getActorFromRequest(req);
+        await db.query(
+            `UPDATE sunday_clinic_additional_billings
+             SET invoice_printed_at = NOW(), invoice_printed_by = ?, invoice_url = ?
+             WHERE id = ?`,
+            [actor.actorName, result.r2Key, additionalBillingId]
+        );
+
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+        await activityLogger.logFromRequest(
+            req,
+            'Print Additional Billing Invoice',
+            `Printed additional billing invoice ${billing.reference_number} for MR: ${normalizedMrId}`
+        );
+
+        res.json({ success: true, downloadUrl: signedUrl, filename: result.filename });
+    } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ success: false, message: error.message });
+        }
+        logger.error('Failed to print Sunday Clinic additional billing invoice', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+router.post('/billing/:mrId/additional/:additionalBillingId/print-etiket', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    }
+    if (isPatientUser(req)) {
+        return res.status(403).json({ success: false, message: 'Pasien tidak dapat mencetak etiket tagihan tambahan.' });
+    }
+
+    try {
+        const additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
+        const { billing, record } = await loadAdditionalBillingDocument(normalizedMrId, additionalBillingId);
+        if (!billing.items.some(item => item.item_type === 'obat' && Number(item.quantity) > 0)) {
+            throw createAdditionalBillingError('Tagihan tambahan ini tidak memiliki item obat untuk dicetak etikelnya.');
+        }
+
+        const pdfGenerator = require('../utils/pdf-generator');
+        const result = await pdfGenerator.generateEtiket(
+            billing,
+            { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
+            { mrId: normalizedMrId, invoiceReference: billing.reference_number }
+        );
+
+        const actor = getActorFromRequest(req);
+        await db.query(
+            `UPDATE sunday_clinic_additional_billings
+             SET etiket_printed_at = NOW(), etiket_printed_by = ?, etiket_url = ?
+             WHERE id = ?`,
+            [actor.actorName, result.r2Key, additionalBillingId]
+        );
+
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+        await activityLogger.logFromRequest(
+            req,
+            'Print Additional Billing Etiket',
+            `Printed additional billing etiket ${billing.reference_number} for MR: ${normalizedMrId}`
+        );
+
+        res.json({ success: true, downloadUrl: signedUrl, filename: result.filename });
+    } catch (error) {
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ success: false, message: error.message });
+        }
+        logger.error('Failed to print Sunday Clinic additional billing etiket', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
 // Print invoice (cashier action)
 router.post('/billing/:mrId/print', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
@@ -5021,6 +5962,20 @@ router.delete('/records/:mrId', verifyToken, requireSuperadmin, async (req, res,
         await connection.beginTransaction();
 
         try {
+            // Delete additional billing items before their parent bills for explicit cleanup.
+            await connection.query(
+                `DELETE FROM sunday_clinic_additional_billing_items
+                 WHERE additional_billing_id IN (
+                    SELECT id FROM sunday_clinic_additional_billings WHERE mr_id = ?
+                 )`,
+                [mrId]
+            );
+
+            await connection.query(
+                'DELETE FROM sunday_clinic_additional_billings WHERE mr_id = ?',
+                [mrId]
+            );
+
             // Delete related billing items first (if any)
             await connection.query(
                 'DELETE FROM sunday_clinic_billing_items WHERE billing_id IN (SELECT id FROM sunday_clinic_billings WHERE mr_id = ?)',
