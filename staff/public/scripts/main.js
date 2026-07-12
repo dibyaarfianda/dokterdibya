@@ -1917,10 +1917,13 @@ function showDocboardPage() {
     if (pages.docboard) {
         pages.docboard.classList.remove('d-none');
         const iframe = document.getElementById('docboard-iframe');
-        if (iframe && !iframe.getAttribute('data-loaded')) {
+        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v295';
+        const docboardUrl = `/docboard/?embed=${encodeURIComponent(embedVersion)}`;
+        if (iframe && iframe.getAttribute('data-docboard-version') !== embedVersion) {
             localStorage.setItem('docboard_token', token);
-            iframe.src = '/docboard/';
+            iframe.src = docboardUrl;
             iframe.setAttribute('data-loaded', '1');
+            iframe.setAttribute('data-docboard-version', embedVersion);
         }
         // On mobile: make iframe fill the whole screen
         if (window.innerWidth <= 991) {

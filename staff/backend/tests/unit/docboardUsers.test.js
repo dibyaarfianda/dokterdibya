@@ -36,6 +36,9 @@ describe('DocBoard staff directory', () => {
     const index = readRepoFile('docboard', 'index.html');
     const main = readRepoFile('docboard', 'src', 'main.jsx');
     const server = readRepoFile('staff', 'backend', 'server.js');
+    const staffMain = readRepoFile('staff', 'public', 'scripts', 'main.js');
+    const staffHtml = readRepoFile('staff', 'public', 'index-adminlte.html');
+    const staffServiceWorker = readRepoFile('staff', 'public', 'sw.js');
 
     expect(serviceWorker).toContain("docboard-pwa-20260712-7");
     expect(index).toContain('docboard-20260712-7');
@@ -46,5 +49,9 @@ describe('DocBoard staff directory', () => {
     expect(serviceWorker).toContain("event.data?.type === 'SKIP_WAITING'");
     expect(server).toContain("filePath.endsWith('sw.js')");
     expect(server).toContain("'no-store, no-cache, must-revalidate'");
+    expect(staffMain).toContain('data-docboard-version');
+    expect(staffMain).toContain('/docboard/?embed=${encodeURIComponent(embedVersion)}');
+    expect(staffHtml).toContain("window.STAFF_CACHE_VERSION = 'v295';");
+    expect(staffServiceWorker).toContain("STAFF_PWA_VERSION = 'v295'");
   });
 });
