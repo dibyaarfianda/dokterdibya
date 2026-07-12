@@ -21,7 +21,7 @@ import Confidential from './views/Confidential';
 import { initAuth, isLoggedIn, isLoading, user } from './stores/auth';
 import { startUnreadPolling, stopUnreadPolling } from './stores/notifications';
 import { queueCount, syncState } from './services/api';
-import { isNandaUser } from './utils/access';
+import { canAccessScientificSchedule, isNandaUser } from './utils/access';
 import { signal } from '@preact/signals';
 
 export const currentUrl = signal(typeof window !== 'undefined' ? window.location.pathname : '/docboard/');
@@ -32,6 +32,10 @@ function handleRoute(e) {
 
 function NandaOnlyRoute({ component: Component, ...props }) {
   return isNandaUser(user.value) ? <Component {...props} /> : <Confidential />;
+}
+
+function ScientificScheduleRoute(props) {
+  return canAccessScientificSchedule(user.value) ? <SpaceSchedule {...props} /> : <Confidential />;
 }
 
 export default function App() {
@@ -84,7 +88,7 @@ export default function App() {
           <NandaOnlyRoute path="/docboard/audit" component={GambiranAudit} />
           <Notifications path="/docboard/notifications" />
           <CommandDashboard path="/docboard/command" />
-          <NandaOnlyRoute path="/docboard/scientific" component={SpaceSchedule} space="ilmiah" />
+          <ScientificScheduleRoute path="/docboard/scientific" space="ilmiah" />
           <SpaceSchedule path="/docboard/procedures" space="tindakan" />
           <NandaOnlyRoute path="/docboard/personal" component={SpaceSchedule} space="pribadi" />
           <Analytics path="/docboard/analytics" />

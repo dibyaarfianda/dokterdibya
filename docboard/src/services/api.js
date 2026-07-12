@@ -124,6 +124,10 @@ export function clearToken() {
 
 export { queueCount, syncState };
 
+function isNetworkError(error) {
+  return error?.name === 'TypeError' || error?.message === 'Failed to fetch';
+}
+
 async function request(path, options = {}) {
   const token = getToken();
   const headers = {
@@ -284,6 +288,7 @@ export async function listSpaceSchedules(space, filters = {}) {
     const data = await request(`/space-schedules?${params.toString()}`);
     return data.schedules || [];
   } catch (err) {
+    if (!isNetworkError(err)) throw err;
     console.warn('Using local DocBoard space schedules fallback:', err.message);
     return localListSpaceSchedules(space);
   }
@@ -294,6 +299,7 @@ export async function listDaySpaceSchedules(date) {
     const data = await request(`/space-schedules?date=${encodeURIComponent(date)}`);
     return data.schedules || [];
   } catch (err) {
+    if (!isNetworkError(err)) throw err;
     console.warn('Using local DocBoard day space schedules fallback:', err.message);
     return loadSpaceSchedules().filter((schedule) => schedule.schedule_date === date);
   }
@@ -304,6 +310,7 @@ export async function getSpaceScheduleCalendar(year, month) {
     const data = await request(`/space-schedules/calendar/${year}/${month}`);
     return data.days || {};
   } catch (err) {
+    if (!isNetworkError(err)) throw err;
     console.warn('Using local DocBoard space calendar fallback:', err.message);
     const days = {};
     loadSpaceSchedules().forEach((schedule) => {
@@ -325,6 +332,7 @@ export async function addSpaceSchedule(space, data) {
     });
     if (result.schedule) return result.schedule;
   } catch (err) {
+    if (!isNetworkError(err)) throw err;
     console.warn('Saving DocBoard space schedule locally:', err.message);
   }
   return localAddSpaceSchedule(space, data);
@@ -338,6 +346,7 @@ export async function updateSpaceSchedule(space, id, data) {
     });
     if (result.schedule) return result.schedule;
   } catch (err) {
+    if (!isNetworkError(err)) throw err;
     console.warn('Updating DocBoard space schedule locally:', err.message);
   }
   return localUpdateSpaceSchedule(space, id, data).find((schedule) => schedule.id === id) || null;
@@ -351,6 +360,7 @@ export async function updateSpaceScheduleStatus(space, id, status) {
     });
     if (result.schedule) return result.schedule;
   } catch (err) {
+    if (!isNetworkError(err)) throw err;
     console.warn('Updating DocBoard space schedule status locally:', err.message);
   }
   return localUpdateSpaceScheduleStatus(space, id, status).find((schedule) => schedule.id === id) || null;
@@ -365,6 +375,7 @@ export async function deleteSpaceSchedule(space, id) {
     }, 1800);
     return true;
   } catch (err) {
+    if (!isNetworkError(err)) throw err;
     console.warn('Deleting DocBoard space schedule locally:', err.message);
   }
   localDeleteSpaceSchedule(space, id);

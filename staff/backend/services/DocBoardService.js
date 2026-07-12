@@ -92,9 +92,15 @@ class DocBoardService {
 
     if (filters.excludeRestrictedSpaces) {
       clauses.push("space NOT IN ('ilmiah', 'pribadi')");
-    } else if (filters.excludePrivate) {
-      clauses.push('space <> ?');
-      params.push('pribadi');
+    } else {
+      if (filters.excludeScientific) {
+        clauses.push('space <> ?');
+        params.push('ilmiah');
+      }
+      if (filters.excludePrivate) {
+        clauses.push('space <> ?');
+        params.push('pribadi');
+      }
     }
     if (filters.space) {
       clauses.push('space = ?');
@@ -140,6 +146,7 @@ class DocBoardService {
     const schedules = await this.getSpaceSchedules(userId, {
       start: startDate,
       end: endStr,
+      excludeScientific: options.excludeScientific,
       excludePrivate: options.excludePrivate,
       excludeRestrictedSpaces: options.excludeRestrictedSpaces
     });

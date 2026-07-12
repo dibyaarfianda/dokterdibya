@@ -5,7 +5,7 @@ import { api } from '../services/api';
 import { LOCATIONS, SYNC_STATUS } from '../utils/constants';
 import { relativeTime } from '../utils/date';
 import { isPushSupported, isPushSubscribed, subscribeToPush, unsubscribeFromPush } from '../utils/push';
-import { isNandaUser } from '../utils/access';
+import { canAccessScientificSchedule, isNandaUser } from '../utils/access';
 
 const NOTIF_PREFS = [
   { key: 'notify_new_booking', label: 'Operasi Baru', desc: 'Saat operasi dijadwalkan' },
@@ -100,6 +100,7 @@ export default function Settings({ mode = 'menu' }) {
   const [prefs, setPrefs] = useState({ notify_new_booking: true, notify_status_change: true, notify_reminder: true, notify_sync_failure: true });
   const [prefsLoading, setPrefsLoading] = useState(false);
   const isNanda = isNandaUser(user.value);
+  const canAccessScientific = canAccessScientificSchedule(user.value);
 
   useEffect(() => {
     loadSyncStatus();
@@ -227,7 +228,7 @@ export default function Settings({ mode = 'menu' }) {
           <MoreMenuItem title="Data" desc={isNanda ? 'Data operasi rumah sakit' : 'Confidential'} icon={icons.data} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/data')} />
           <MoreMenuItem title="Monitor Pasien" desc={isNanda ? 'Admission & operasi Gambiran' : 'Confidential'} icon={icons.monitor} color="#047857" bg="#ECFDF5" onClick={() => route('/docboard/monitor')} />
           <MoreMenuItem title="Audit" desc={isNanda ? 'Audit operasi Gambiran' : 'Confidential'} icon={icons.audit} color="#0891B2" bg="#ECFEFF" onClick={() => route('/docboard/audit')} />
-          <MoreMenuItem title="Ilmiah" desc={isNanda ? 'Agenda ilmiah dan diskusi kasus' : 'Confidential'} icon={icons.calendar} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/scientific')} />
+          <MoreMenuItem title="Ilmiah" desc={canAccessScientific ? 'Agenda ilmiah dan diskusi kasus' : 'Confidential'} icon={icons.calendar} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/scientific')} />
           <MoreMenuItem title="Pribadi" desc={isNanda ? 'Agenda pribadi' : 'Confidential'} icon={icons.private} color="#EA580C" bg="#FFF7ED" onClick={() => route('/docboard/personal')} />
           <MoreMenuItem title="Statistik Operasi" desc="Lihat data dan tren operasi" icon={icons.chart} color="#3B82F6" bg="#EEF2FF" onClick={() => route('/docboard/analytics')} />
           <MoreMenuItem title="Pengguna" desc="Daftar pengguna DocBoard" icon={icons.users} color="#7C3AED" bg="#F5F3FF" onClick={() => route('/docboard/users')} />

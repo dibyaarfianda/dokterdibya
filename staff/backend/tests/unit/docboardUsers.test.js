@@ -35,7 +35,7 @@ describe('DocBoard staff directory', () => {
     const serviceWorker = readRepoFile('docboard', 'public', 'sw.js');
     const index = readRepoFile('docboard', 'index.html');
 
-    expect(serviceWorker).toContain("docboard-pwa-20260712-4");
-    expect(index).toContain('docboard-20260712-4');
+    expect(serviceWorker).toContain("docboard-pwa-20260712-5");
+    expect(index).toContain('docboard-20260712-5');
   });
 });
