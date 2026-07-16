@@ -64,9 +64,10 @@ function daysBetween(firstDate, secondDate) {
 }
 
 function mapRow(row) {
-    const hasJourney = Boolean(row.journey_id);
+    const hasJourney = Boolean(row.journey_id) && Number(row.journey_model_version || 1) === 2;
     const doctorJourney = hasJourney ? {
         id: row.journey_id,
+        model_version: Number(row.journey_model_version),
         transfer_status: row.journey_transfer_status || 'unknown',
         confidence: row.journey_confidence || 'unknown',
         origin_doctor: row.journey_origin_doctor_name ? {
@@ -79,6 +80,11 @@ function mapRow(row) {
             key: row.journey_last_cppt_doctor_key || null,
             source: row.journey_last_cppt_doctor_source || null,
         } : null,
+        last_visit_doctor: row.journey_last_visit_doctor_name ? {
+            name: row.journey_last_visit_doctor_name,
+            key: row.journey_last_visit_doctor_key || null,
+            source: row.journey_last_visit_doctor_source || null,
+        } : null,
         procedure_doctor: row.journey_procedure_doctor_name ? {
             name: row.journey_procedure_doctor_name,
             key: row.journey_procedure_doctor_key || null,
@@ -90,6 +96,7 @@ function mapRow(row) {
             source: row.journey_final_doctor_source || null,
         } : null,
         transition_count: Number(row.journey_transition_count || 0),
+        visit_count: Number(row.journey_visit_count || 0),
         checked_at: row.journey_checked_at || null,
         error_message: row.journey_error_message || null,
         analysis_status: row.journey_error_message ? 'failed' : 'ready',
@@ -329,6 +336,7 @@ class OperationAuditService {
                     operation.doctor_name, operation.doctor_key, operation.doctor_source,
                     operation.fetched_at, operation.last_synced_at,
                     journey.id AS journey_id,
+                    journey.model_version AS journey_model_version,
                     journey.transfer_status AS journey_transfer_status,
                     journey.confidence AS journey_confidence,
                     journey.origin_doctor_name AS journey_origin_doctor_name,
@@ -337,6 +345,9 @@ class OperationAuditService {
                     journey.last_cppt_doctor_name AS journey_last_cppt_doctor_name,
                     journey.last_cppt_doctor_key AS journey_last_cppt_doctor_key,
                     journey.last_cppt_doctor_source AS journey_last_cppt_doctor_source,
+                    journey.last_visit_doctor_name AS journey_last_visit_doctor_name,
+                    journey.last_visit_doctor_key AS journey_last_visit_doctor_key,
+                    journey.last_visit_doctor_source AS journey_last_visit_doctor_source,
                     journey.procedure_doctor_name AS journey_procedure_doctor_name,
                     journey.procedure_doctor_key AS journey_procedure_doctor_key,
                     journey.procedure_doctor_source AS journey_procedure_doctor_source,
@@ -344,6 +355,7 @@ class OperationAuditService {
                     journey.final_doctor_key AS journey_final_doctor_key,
                     journey.final_doctor_source AS journey_final_doctor_source,
                     journey.transition_count AS journey_transition_count,
+                    journey.visit_count AS journey_visit_count,
                     journey.checked_at AS journey_checked_at,
                     journey.error_message AS journey_error_message
                FROM operation_data_index operation
@@ -467,7 +479,8 @@ class OperationAuditService {
             { header: 'Sumber Dokter', key: 'doctor_source', width: 15 },
             { header: 'Dokter Awal', key: 'origin_doctor', width: 30 },
             { header: 'Pindah Dokter', key: 'transfer', width: 18 },
-            { header: 'CPPT Terakhir', key: 'last_cppt_doctor', width: 30 },
+            { header: 'Jumlah Kunjungan', key: 'visit_count', width: 18 },
+            { header: 'Dokter Kunjungan Terakhir', key: 'last_visit_doctor', width: 32 },
             { header: 'Operator Tindakan', key: 'procedure_doctor', width: 30 },
             { header: 'Dokter Akhir', key: 'final_doctor', width: 30 },
             { header: 'Keyakinan', key: 'journey_confidence', width: 16 },
@@ -492,7 +505,8 @@ class OperationAuditService {
             transfer: row.doctor_journey?.transfer_status === 'yes'
                 ? 'Ya'
                 : (row.doctor_journey?.transfer_status === 'no' ? 'Tidak' : 'Belum pasti'),
-            last_cppt_doctor: row.doctor_journey?.last_cppt_doctor?.name || '',
+            visit_count: row.doctor_journey?.visit_count || '',
+            last_visit_doctor: row.doctor_journey?.last_visit_doctor?.name || '',
             procedure_doctor: row.doctor_journey?.procedure_doctor?.name || '',
             final_doctor: row.doctor_journey?.final_doctor?.name || '',
             journey_confidence: row.doctor_journey?.confidence === 'verified'

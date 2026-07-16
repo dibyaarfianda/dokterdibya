@@ -9,6 +9,7 @@ function operation(overrides = {}) {
         source_key: 'gambiran:pendaftaran:11002',
         case_id: 'med0000426904',
         simrs_operasi_id: '11002',
+        model_version: 2,
         mr_id: '512995',
         patient_name: 'Pasien Audit',
         doctor_key: 'dibya',
@@ -22,11 +23,15 @@ function cachedRow(overrides = {}) {
         operation_data_id: 77,
         facility: 'gambiran',
         simrs_operasi_id: '11002',
+        model_version: 2,
         transfer_status: 'yes',
         confidence: 'verified',
         origin_doctor_name: 'dr. Dokter Awal',
         origin_doctor_key: 'dokter awal',
         origin_doctor_source: 'cppt_author',
+        last_visit_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
+        last_visit_doctor_key: 'dibya arfianda',
+        last_visit_doctor_source: 'visit_record',
         procedure_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
         procedure_doctor_key: 'dibya arfianda',
         procedure_doctor_source: 'operation_registration',
@@ -34,6 +39,7 @@ function cachedRow(overrides = {}) {
         final_doctor_key: 'dibya arfianda',
         final_doctor_source: 'operation_operator',
         transition_count: 1,
+        visit_count: 3,
         timeline_json: '[]',
         consultants_json: '[]',
         checked_at: '2026-07-16 04:30:00',
@@ -61,14 +67,18 @@ describe('OperationDoctorJourneyService', () => {
                     simrs_operasi_id: '11002',
                     case_id: 'med0000426904',
                     patient: { mr_id: '512995' },
+                    model_version: 2,
                     transfer_status: 'yes',
                     confidence: 'verified',
                     origin_doctor: { name: 'dr. Dokter Awal', key: 'dokter awal', source: 'cppt_author' },
                     last_cppt_doctor: { name: 'dr. Dibya', key: 'dibya', source: 'cppt_author' },
+                    last_visit_doctor: { name: 'dr. Dibya', key: 'dibya', source: 'visit_record' },
                     procedure_doctor: { name: 'dr. Dibya', key: 'dibya', source: 'operation_registration' },
                     final_doctor: { name: 'dr. Dibya', key: 'dibya', source: 'operation_operator' },
                     transition_count: 1,
-                    timeline: [{ evidence_type: 'cppt_author' }],
+                    visit_count: 3,
+                    visits: [{ case_id: 'med0000400001', doctor_source: 'visit_record' }],
+                    timeline: [{ case_id: 'med0000400001', doctor_source: 'visit_record' }],
                     consultants: [],
                     source_hash: 'a'.repeat(64),
                     checked_at: '2026-07-16T04:30:00.000Z'
@@ -90,8 +100,15 @@ describe('OperationDoctorJourneyService', () => {
                 headers: expect.objectContaining({ 'X-API-Key': 'shared-test-key' })
             })
         );
-        expect(db.query.mock.calls.some(([sql]) => sql.includes('INSERT INTO operation_doctor_journeys'))).toBe(true);
-        expect(result.doctor_journey).toEqual(expect.objectContaining({ transfer_status: 'yes', transition_count: 1 }));
+        const insertCall = db.query.mock.calls.find(([sql]) => sql.includes('INSERT INTO operation_doctor_journeys'));
+        expect(insertCall).toBeTruthy();
+        expect((insertCall[0].match(/\?/g) || []).length).toBe(insertCall[1].length);
+        expect(result.doctor_journey).toEqual(expect.objectContaining({
+            model_version: 2,
+            transfer_status: 'yes',
+            transition_count: 1,
+            visit_count: 3
+        }));
     });
 
     test('rejects stale case identity and records the failed attempt', async () => {
@@ -122,7 +139,7 @@ describe('OperationDoctorJourneyService', () => {
         });
 
         await expect(service.refreshForAuditRow(77)).rejects.toThrow(/caseId/);
-        expect(db.query.mock.calls.some(([sql]) => sql.includes("VALUES (?, ?, ?, 'unknown'"))).toBe(true);
+        expect(db.query.mock.calls.some(([sql]) => sql.includes("VALUES (?, ?, ?, 2, 'unknown'"))).toBe(true);
     });
 
     test('returns an explicit not-analyzed state when no cache exists', async () => {
@@ -135,5 +152,23 @@ describe('OperationDoctorJourneyService', () => {
         const result = await service.getForAuditRow(77);
         expect(result.analysis_status).toBe('not_analyzed');
         expect(result.doctor_journey).toBeNull();
+    });
+
+    test('hides v1 cache rows and selects them for the v2 backfill', async () => {
+        const db = {
+            query: jest.fn()
+                .mockResolvedValueOnce([[operation()]])
+                .mockResolvedValueOnce([[cachedRow({ model_version: 1 })]])
+                .mockResolvedValueOnce([[]])
+        };
+        const service = new OperationDoctorJourneyService({ db, apiKey: 'key', fetchImpl: jest.fn() });
+
+        const detail = await service.getForAuditRow(77);
+        const pending = await service.listPending({ limit: 50 });
+
+        expect(detail.analysis_status).toBe('not_analyzed');
+        expect(detail.doctor_journey).toBeNull();
+        expect(pending).toEqual([]);
+        expect(db.query.mock.calls[2][0]).toContain('COALESCE(journey.model_version, 1) < 2');
     });
 });

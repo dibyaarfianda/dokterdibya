@@ -19,6 +19,7 @@ const JOURNEY_TABLE_SQL = `CREATE TABLE IF NOT EXISTS operation_doctor_journeys 
   operation_data_id BIGINT UNSIGNED NOT NULL,
   facility VARCHAR(64) NOT NULL,
   simrs_operasi_id VARCHAR(100) NOT NULL,
+  model_version SMALLINT UNSIGNED NOT NULL DEFAULT 2,
   transfer_status ENUM('yes','no','unknown') NOT NULL DEFAULT 'unknown',
   confidence ENUM('verified','supported','unknown') NOT NULL DEFAULT 'unknown',
   origin_doctor_name VARCHAR(255) NULL,
@@ -27,6 +28,9 @@ const JOURNEY_TABLE_SQL = `CREATE TABLE IF NOT EXISTS operation_doctor_journeys 
   last_cppt_doctor_name VARCHAR(255) NULL,
   last_cppt_doctor_key VARCHAR(191) NULL,
   last_cppt_doctor_source VARCHAR(64) NULL,
+  last_visit_doctor_name VARCHAR(255) NULL,
+  last_visit_doctor_key VARCHAR(191) NULL,
+  last_visit_doctor_source VARCHAR(64) NULL,
   procedure_doctor_name VARCHAR(255) NULL,
   procedure_doctor_key VARCHAR(191) NULL,
   procedure_doctor_source VARCHAR(64) NULL,
@@ -34,6 +38,7 @@ const JOURNEY_TABLE_SQL = `CREATE TABLE IF NOT EXISTS operation_doctor_journeys 
   final_doctor_key VARCHAR(191) NULL,
   final_doctor_source VARCHAR(64) NULL,
   transition_count INT UNSIGNED NOT NULL DEFAULT 0,
+  visit_count INT UNSIGNED NOT NULL DEFAULT 0,
   timeline_json LONGTEXT NULL,
   consultants_json LONGTEXT NULL,
   source_hash CHAR(64) NULL,
@@ -101,6 +106,28 @@ function validateDuplicateGroup(rows) {
 async function ensureTables(pool) {
   await pool.query(ARCHIVE_TABLE_SQL);
   await pool.query(JOURNEY_TABLE_SQL);
+  await ensureJourneyV2Columns(pool);
+}
+
+async function ensureJourneyV2Columns(pool) {
+  const required = [
+    ['model_version', 'SMALLINT UNSIGNED NOT NULL DEFAULT 1'],
+    ['last_visit_doctor_name', 'VARCHAR(255) NULL'],
+    ['last_visit_doctor_key', 'VARCHAR(191) NULL'],
+    ['last_visit_doctor_source', 'VARCHAR(64) NULL'],
+    ['visit_count', 'INT UNSIGNED NOT NULL DEFAULT 0'],
+  ];
+  const [columns] = await pool.query(
+    `SELECT COLUMN_NAME
+       FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'operation_doctor_journeys'`
+  );
+  const existing = new Set(columns.map(row => row.COLUMN_NAME));
+  for (const [name, definition] of required) {
+    if (existing.has(name)) continue;
+    await pool.query(`ALTER TABLE operation_doctor_journeys ADD COLUMN ${name} ${definition}`);
+  }
 }
 
 async function loadDuplicateGroups(pool) {
@@ -240,6 +267,7 @@ module.exports = {
   archiveAndDeleteDuplicates,
   canonicalSourceKey,
   ensureCanonicalUniqueIndex,
+  ensureJourneyV2Columns,
   loadDuplicateGroups,
   migrate,
   validateDuplicateGroup,

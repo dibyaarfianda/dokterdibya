@@ -1,4 +1,5 @@
 const dbPool = require('../db');
+const JOURNEY_MODEL_VERSION = 2;
 
 function trim(value) {
   return value === undefined || value === null ? '' : String(value).trim();
@@ -31,24 +32,30 @@ function doctorFromColumns(row, prefix) {
 
 function mapCachedRow(row) {
   if (!row) return null;
+  const modelVersion = Number(row.model_version || 1);
+  const visits = parseJson(row.timeline_json, []);
   return {
     id: row.id,
     operation_data_id: row.operation_data_id,
     facility: row.facility,
     simrs_operasi_id: row.simrs_operasi_id,
+    model_version: modelVersion,
     transfer_status: row.transfer_status || 'unknown',
     confidence: row.confidence || 'unknown',
     origin_doctor: doctorFromColumns(row, 'origin'),
     last_cppt_doctor: doctorFromColumns(row, 'last_cppt'),
+    last_visit_doctor: doctorFromColumns(row, 'last_visit'),
     procedure_doctor: doctorFromColumns(row, 'procedure'),
     final_doctor: doctorFromColumns(row, 'final'),
     transition_count: Number(row.transition_count || 0),
-    timeline: parseJson(row.timeline_json, []),
+    visit_count: Number(row.visit_count || visits.length || 0),
+    visits,
+    timeline: visits,
     consultants: parseJson(row.consultants_json, []),
     source_hash: row.source_hash || null,
     checked_at: row.checked_at || null,
     error_message: row.error_message || null,
-    analysis_status: row.error_message ? 'failed' : 'ready',
+    analysis_status: row.error_message ? 'failed' : (modelVersion === JOURNEY_MODEL_VERSION ? 'ready' : 'stale'),
   };
 }
 
@@ -105,9 +112,10 @@ class OperationDoctorJourneyService {
       error.status = 404;
       throw error;
     }
-    const journey = record.simrs_operasi_id
+    const cached = record.simrs_operasi_id
       ? await this.getCached(record.facility, record.simrs_operasi_id)
       : null;
+    const journey = cached?.model_version === JOURNEY_MODEL_VERSION ? cached : null;
     return {
       record,
       doctor_journey: journey,
@@ -163,36 +171,43 @@ class OperationDoctorJourneyService {
     if (responseMr && recordMr && responseMr !== recordMr) throw new Error('Nomor rekam medis hasil journey tidak cocok');
     if (!['yes', 'no', 'unknown'].includes(journey.transfer_status)) throw new Error('Status perpindahan tidak valid');
     if (!['verified', 'supported', 'unknown'].includes(journey.confidence)) throw new Error('Keyakinan journey tidak valid');
+    if (Number(journey.model_version) !== JOURNEY_MODEL_VERSION) throw new Error('Versi model journey tidak valid');
+    if (!Array.isArray(journey.visits || journey.timeline)) throw new Error('Daftar kunjungan journey tidak valid');
   }
 
   async saveSuccess(record, journey) {
     const checkedAt = mysqlDate(journey.checked_at);
     await this.db.query(
       `INSERT INTO operation_doctor_journeys
-         (operation_data_id, facility, simrs_operasi_id, transfer_status, confidence,
-          origin_doctor_name, origin_doctor_key, origin_doctor_source,
-          last_cppt_doctor_name, last_cppt_doctor_key, last_cppt_doctor_source,
-          procedure_doctor_name, procedure_doctor_key, procedure_doctor_source,
-          final_doctor_name, final_doctor_key, final_doctor_source,
-          transition_count, timeline_json, consultants_json, source_hash, checked_at, error_message)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+         (operation_data_id, facility, simrs_operasi_id, model_version, transfer_status, confidence,
+           origin_doctor_name, origin_doctor_key, origin_doctor_source,
+           last_cppt_doctor_name, last_cppt_doctor_key, last_cppt_doctor_source,
+           last_visit_doctor_name, last_visit_doctor_key, last_visit_doctor_source,
+           procedure_doctor_name, procedure_doctor_key, procedure_doctor_source,
+           final_doctor_name, final_doctor_key, final_doctor_source,
+           transition_count, visit_count, timeline_json, consultants_json, source_hash, checked_at, error_message)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
        ON DUPLICATE KEY UPDATE
           operation_data_id = VALUES(operation_data_id),
+          model_version = VALUES(model_version),
           transfer_status = VALUES(transfer_status), confidence = VALUES(confidence),
           origin_doctor_name = VALUES(origin_doctor_name), origin_doctor_key = VALUES(origin_doctor_key), origin_doctor_source = VALUES(origin_doctor_source),
           last_cppt_doctor_name = VALUES(last_cppt_doctor_name), last_cppt_doctor_key = VALUES(last_cppt_doctor_key), last_cppt_doctor_source = VALUES(last_cppt_doctor_source),
+          last_visit_doctor_name = VALUES(last_visit_doctor_name), last_visit_doctor_key = VALUES(last_visit_doctor_key), last_visit_doctor_source = VALUES(last_visit_doctor_source),
           procedure_doctor_name = VALUES(procedure_doctor_name), procedure_doctor_key = VALUES(procedure_doctor_key), procedure_doctor_source = VALUES(procedure_doctor_source),
           final_doctor_name = VALUES(final_doctor_name), final_doctor_key = VALUES(final_doctor_key), final_doctor_source = VALUES(final_doctor_source),
-          transition_count = VALUES(transition_count), timeline_json = VALUES(timeline_json), consultants_json = VALUES(consultants_json),
+          transition_count = VALUES(transition_count), visit_count = VALUES(visit_count), timeline_json = VALUES(timeline_json), consultants_json = VALUES(consultants_json),
           source_hash = VALUES(source_hash), checked_at = VALUES(checked_at), error_message = NULL`,
       [
-        record.id, record.facility, record.simrs_operasi_id, journey.transfer_status, journey.confidence,
+        record.id, record.facility, record.simrs_operasi_id, JOURNEY_MODEL_VERSION, journey.transfer_status, journey.confidence,
         doctorField(journey.origin_doctor, 'name'), doctorField(journey.origin_doctor, 'key'), doctorField(journey.origin_doctor, 'source'),
         doctorField(journey.last_cppt_doctor, 'name'), doctorField(journey.last_cppt_doctor, 'key'), doctorField(journey.last_cppt_doctor, 'source'),
+        doctorField(journey.last_visit_doctor, 'name'), doctorField(journey.last_visit_doctor, 'key'), doctorField(journey.last_visit_doctor, 'source'),
         doctorField(journey.procedure_doctor, 'name'), doctorField(journey.procedure_doctor, 'key'), doctorField(journey.procedure_doctor, 'source'),
         doctorField(journey.final_doctor, 'name'), doctorField(journey.final_doctor, 'key'), doctorField(journey.final_doctor, 'source'),
         Math.max(0, Number(journey.transition_count) || 0),
-        JSON.stringify(Array.isArray(journey.timeline) ? journey.timeline : []),
+        Math.max(0, Number(journey.visit_count) || (journey.visits || journey.timeline || []).length || 0),
+        JSON.stringify(Array.isArray(journey.visits) ? journey.visits : (Array.isArray(journey.timeline) ? journey.timeline : [])),
         JSON.stringify(Array.isArray(journey.consultants) ? journey.consultants : []),
         trim(journey.source_hash) || null,
         checkedAt,
@@ -205,11 +220,11 @@ class OperationDoctorJourneyService {
     const message = trim(error.message || error).slice(0, 1000) || 'Analisis journey gagal';
     await this.db.query(
       `INSERT INTO operation_doctor_journeys
-         (operation_data_id, facility, simrs_operasi_id, transfer_status, confidence,
+         (operation_data_id, facility, simrs_operasi_id, model_version, transfer_status, confidence,
           transition_count, timeline_json, consultants_json, checked_at, error_message)
-       VALUES (?, ?, ?, 'unknown', 'unknown', 0, '[]', '[]', NOW(), ?)
+       VALUES (?, ?, ?, ${JOURNEY_MODEL_VERSION}, 'unknown', 'unknown', 0, '[]', '[]', NOW(), ?)
        ON DUPLICATE KEY UPDATE
-          operation_data_id = VALUES(operation_data_id), checked_at = NOW(), error_message = VALUES(error_message)`,
+          operation_data_id = VALUES(operation_data_id), model_version = VALUES(model_version), checked_at = NOW(), error_message = VALUES(error_message)`,
       [record.id, record.facility, record.simrs_operasi_id, message]
     );
   }
@@ -260,7 +275,7 @@ class OperationDoctorJourneyService {
           AND operation.simrs_operasi_id IS NOT NULL
           AND operation.simrs_operasi_id <> ''
           AND operation.source_key = CONCAT('gambiran:pendaftaran:', operation.simrs_operasi_id)
-          AND (journey.id IS NULL OR ${failureClause})
+          AND (journey.id IS NULL OR COALESCE(journey.model_version, 1) < ${JOURNEY_MODEL_VERSION} OR ${failureClause})
         ORDER BY operation.operation_date DESC, operation.id DESC
         LIMIT ?`,
       params

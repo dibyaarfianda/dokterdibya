@@ -4182,7 +4182,7 @@ input { font-family: inherit; }
 }
 
 .audit-journey-button {
-  min-width: 52px;
+  min-width: 62px;
   min-height: 34px;
   border: 1px solid #BFDBFE;
   border-radius: 8px;
@@ -4441,7 +4441,7 @@ input { font-family: inherit; }
 
 .audit-journey-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   padding: 14px 16px 0;
 }
@@ -4592,6 +4592,46 @@ input { font-family: inherit; }
   line-height: 1.35;
 }
 
+.audit-journey-visit-doctor,
+.audit-journey-procedure {
+  display: grid;
+  grid-template-columns: minmax(105px, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: baseline;
+  margin-top: 7px;
+}
+
+.audit-journey-visit-doctor span,
+.audit-journey-procedure span {
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.audit-journey-visit-doctor strong,
+.audit-journey-procedure strong {
+  color: var(--text-primary);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.audit-journey-procedure {
+  padding: 7px 9px;
+  border-left: 3px solid #2563EB;
+  background: #EFF6FF;
+}
+
+.audit-journey-event.ambiguous {
+  border-left: 3px solid #D97706;
+  padding-left: 10px;
+}
+
+.audit-journey-event.operation {
+  background: #F8FBFF;
+}
+
 .audit-journey-event-meta {
   display: flex;
   flex-wrap: wrap;
@@ -4642,16 +4682,13 @@ input { font-family: inherit; }
 
   .audit-row-actions {
     align-content: center;
-    width: 52px;
+    width: 62px;
   }
 
   .audit-journey-summary {
     grid-template-columns: 1fr 1fr;
   }
 
-  .audit-journey-summary > div:first-child {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 390px) {

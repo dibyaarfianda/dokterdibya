@@ -20,27 +20,39 @@ function token() {
 }
 
 function journey(status = 'unknown') {
-  const timeline = Array.from({ length: 18 }, (_, index) => ({
-    date: `2025-04-${String(Math.min(20 + Math.floor(index / 8), 21)).padStart(2, '0')}`,
-    time: `${String(8 + (index % 10)).padStart(2, '0')}:15`,
-    case_id: 'med0000426904',
-    location: index < 8 ? 'Poli Obstetri dan Ginekologi' : 'Kirana - Ruang III',
-    doctor_name: index < 7 ? 'dr. Dokter Awal Dengan Nama Panjang' : 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.',
-    doctor_key: index < 7 ? 'dokter awal' : 'dibya arfianda',
-    evidence_type: index === 17 ? 'operation_operator' : (index === 10 ? 'consultant_cppt' : 'cppt_author'),
-    confidence: 'verified',
-    note: index === 10 ? 'Konsultan non-Obgyn pada CPPT' : 'Penulis CPPT dokter',
+  const visits = Array.from({ length: 9 }, (_, index) => ({
+    date: `2025-${String(Math.min(index + 1, 4)).padStart(2, '0')}-${String(3 + index).padStart(2, '0')}`,
+    time: `${String(8 + (index % 4)).padStart(2, '0')}:15`,
+    case_id: `med${String(426896 + index).padStart(10, '0')}`,
+    diagnosis: index === 8 ? 'O82 - Delivery by caesarean section' : 'Z35.9 - Supervision of high-risk pregnancy, unspecified',
+    location: index < 8 ? 'Rawat Jalan - BKIA' : 'Rawat Inap - Kirana - Ruang III',
+    visit_type: index < 8 ? 'Rawat Jalan' : 'Rawat Inap',
+    doctor_name: index < 5 ? 'dr. Dokter Awal Dengan Nama Panjang' : 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.',
+    doctor_key: index < 5 ? 'dokter awal' : 'dibya arfianda',
+    doctor_source: index === 4 ? 'cppt_author_fallback' : 'visit_record',
+    confidence: index === 4 ? 'supported' : 'verified',
+    resolution_status: index === 4 ? 'ambiguous' : 'resolved',
+    doctor_candidates: index === 4 ? [
+      { name: 'dr. Dokter Awal Dengan Nama Panjang' },
+      { name: 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.' },
+    ] : [],
+    is_operation_visit: index === 8,
+    procedure_doctor: index === 8 ? { name: 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.', key: 'dibya arfianda', source: 'operation_registration' } : null,
+    note: index === 4 ? 'Dokter kunjungan berbeda dengan penulis CPPT.' : null,
   }));
   return {
     id: 90,
+    model_version: 2,
     transfer_status: status,
     confidence: status === 'unknown' ? 'unknown' : 'verified',
-    origin_doctor: { name: 'dr. Dokter Awal Dengan Nama Panjang', key: 'dokter awal', source: 'cppt_author' },
-    last_cppt_doctor: { name: 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.', key: 'dibya arfianda', source: 'cppt_author' },
+    origin_doctor: { name: 'dr. Dokter Awal Dengan Nama Panjang', key: 'dokter awal', source: 'visit_record' },
+    last_visit_doctor: { name: 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.', key: 'dibya arfianda', source: 'visit_record' },
     procedure_doctor: { name: 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.', key: 'dibya arfianda', source: 'operation_registration' },
     final_doctor: { name: 'dr. Dibya Arfianda, Sp.OG, M.Ked.Klin.', key: 'dibya arfianda', source: 'operation_operator' },
     transition_count: status === 'yes' ? 1 : 0,
-    timeline,
+    visit_count: visits.length,
+    visits,
+    timeline: visits,
     consultants: [],
     checked_at: '2026-07-16T04:30:00.000Z',
     analysis_status: 'ready',
@@ -191,8 +203,8 @@ async function runViewport(browser, name, viewport) {
   assert.ok(auditRequests.some(url => url.includes('transfer=yes')));
 
   const firstRow = page.locator('.audit-row').nth(0);
-  await firstRow.getByRole('button', { name: 'Alur' }).click();
-  await page.getByText('Memuat alur dokter...').waitFor();
+  await firstRow.getByRole('button', { name: 'Riwayat' }).click();
+  await page.getByText('Memuat riwayat kunjungan...').waitFor();
   await page.getByText('Bukti belum cukup untuk menyatakan pasien pindah atau tidak pindah dokter.').waitFor();
   await assertModalAboveNavigation(page);
   const panel = page.locator('.audit-journey-panel');
@@ -209,13 +221,13 @@ async function runViewport(browser, name, viewport) {
   await page.getByRole('button', { name: 'Tutup' }).click();
 
   const secondRow = page.locator('.audit-row').nth(1);
-  await secondRow.getByRole('button', { name: 'Alur' }).click();
+  await secondRow.getByRole('button', { name: 'Riwayat' }).click();
   await page.getByText('SIMRS sementara tidak tersedia').waitFor();
   await page.getByRole('button', { name: 'Tutup' }).click();
 
   const thirdRow = page.locator('.audit-row').nth(2);
-  await thirdRow.getByRole('button', { name: 'Alur' }).click();
-  await page.getByText('Alur dokter belum dianalisis.').waitFor();
+  await thirdRow.getByRole('button', { name: 'Riwayat' }).click();
+  await page.getByText('Riwayat kunjungan belum dianalisis.').waitFor();
   await page.getByRole('button', { name: 'Analisis sekarang' }).click();
   await page.getByText('Pindah dokter', { exact: true }).last().waitFor();
   await page.getByRole('button', { name: 'Tutup' }).click();

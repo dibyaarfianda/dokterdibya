@@ -404,7 +404,7 @@ function AuditRow({ row, onOpenPathology, onOpenJourney }) {
             <span>{finalDoctor || 'Dokter akhir belum diketahui'}</span>
           </div>
           <div class="audit-doctor-evidence">
-            <span>CPPT akhir: {journey?.last_cppt_doctor?.name || '-'}</span>
+            <span>Kunjungan terakhir: {journey?.last_visit_doctor?.name || '-'}</span>
             <span>Tindakan: {journey?.procedure_doctor?.name || '-'}</span>
           </div>
         </div>
@@ -415,7 +415,7 @@ function AuditRow({ row, onOpenPathology, onOpenJourney }) {
         )}
       </div>
       <div class="audit-row-actions">
-        <button type="button" class="audit-journey-button" onClick={() => onOpenJourney(row)}>Alur</button>
+        <button type="button" class="audit-journey-button" onClick={() => onOpenJourney(row)}>Riwayat</button>
         <button type="button" class="audit-pa-button" onClick={() => onOpenPathology(row)}>PA</button>
       </div>
     </div>
@@ -438,9 +438,13 @@ function evidenceLabel(value) {
   const labels = {
     cppt_author: 'Penulis CPPT dokter',
     cppt_advice: 'Advis/kolaborasi CPPT',
+    cppt_author_fallback: 'Dokter dari CPPT kunjungan',
+    cppt_advice_fallback: 'Dokter dari advis kunjungan',
+    visit_record: 'Dokter tercatat pada kunjungan',
     operation_operator: 'Operator tindakan',
     operation_registration: 'Pendaftaran operasi',
     last_relevant_cppt: 'CPPT relevan terakhir',
+    last_relevant_visit: 'Dokter kunjungan terakhir',
     dpjp_support: 'DPJP pendukung',
     consultant_cppt: 'Konsultan CPPT',
     consultant_advice: 'Advis konsultan',
@@ -451,7 +455,7 @@ function evidenceLabel(value) {
 function DoctorJourneyPanel({ row, loading, refreshing, error, data, onRefresh, onClose }) {
   const journey = data?.doctor_journey;
   const analysisStatus = data?.analysis_status || (journey ? journey.analysis_status : 'not_analyzed');
-  const timeline = journey?.timeline || [];
+  const timeline = journey?.visits || journey?.timeline || [];
   const failed = analysisStatus === 'failed' || Boolean(journey?.error_message);
   const notAnalyzed = analysisStatus === 'not_analyzed' && !journey;
   const ambiguous = journey?.transfer_status === 'unknown';
@@ -461,14 +465,14 @@ function DoctorJourneyPanel({ row, loading, refreshing, error, data, onRefresh, 
       <div class="audit-pa-panel audit-journey-panel">
         <div class="audit-pa-header">
           <div>
-            <h2 id="doctor-journey-title">Alur Dokter</h2>
+            <h2 id="doctor-journey-title">Riwayat Kunjungan</h2>
             <p>{row?.patient_name || '-'} {row?.mr_id ? `- RM ${row.mr_id}` : ''}</p>
           </div>
           <button type="button" class="audit-pa-close" onClick={onClose} aria-label="Tutup">&times;</button>
         </div>
 
         {loading ? (
-          <div class="audit-pa-state">Memuat alur dokter...</div>
+          <div class="audit-pa-state">Memuat riwayat kunjungan...</div>
         ) : error && !journey ? (
           <div class="audit-journey-empty">
             <div class="audit-pa-state error">{error}</div>
@@ -478,7 +482,7 @@ function DoctorJourneyPanel({ row, loading, refreshing, error, data, onRefresh, 
           </div>
         ) : notAnalyzed ? (
           <div class="audit-journey-empty">
-            <div class="audit-pa-state">Alur dokter belum dianalisis.</div>
+            <div class="audit-pa-state">Riwayat kunjungan belum dianalisis.</div>
             <button type="button" class="btn-primary" disabled={refreshing} onClick={onRefresh}>
               {refreshing ? 'Menganalisis...' : 'Analisis sekarang'}
             </button>
@@ -495,6 +499,10 @@ function DoctorJourneyPanel({ row, loading, refreshing, error, data, onRefresh, 
                 <strong>{confidenceLabel(journey?.confidence)}</strong>
               </div>
               <div>
+                <span>Kunjungan</span>
+                <strong>{journey?.visit_count || timeline.length || 0}</strong>
+              </div>
+              <div>
                 <span>Transisi</span>
                 <strong>{journey?.transition_count || 0}</strong>
               </div>
@@ -507,36 +515,50 @@ function DoctorJourneyPanel({ row, loading, refreshing, error, data, onRefresh, 
             )}
 
             <div class="audit-journey-doctors">
-              <JourneyDoctor label="Dokter awal" doctor={journey?.origin_doctor} />
-              <JourneyDoctor label="CPPT terakhir" doctor={journey?.last_cppt_doctor} />
+              <JourneyDoctor label="Dokter kontrol awal" doctor={journey?.origin_doctor} />
+              <JourneyDoctor label="Kunjungan terakhir" doctor={journey?.last_visit_doctor} />
               <JourneyDoctor label="Operator tindakan" doctor={journey?.procedure_doctor} />
               <JourneyDoctor label="Dokter akhir" doctor={journey?.final_doctor} />
             </div>
 
             <div class="audit-journey-content">
               <div class="audit-journey-title-row">
-                <h3>Timeline Bukti</h3>
+                <h3>Riwayat Kunjungan Obgyn</h3>
                 <button type="button" class="btn-secondary" disabled={refreshing} onClick={onRefresh}>
                   {refreshing ? 'Memeriksa...' : 'Periksa ulang'}
                 </button>
               </div>
               {timeline.length === 0 ? (
-                <div class="audit-pa-state">Belum ada bukti CPPT yang dapat dipakai.</div>
+                <div class="audit-pa-state">Belum ada kunjungan Obgyn yang dapat dipakai.</div>
               ) : (
                 <div class="audit-journey-timeline">
                   {timeline.map((item, index) => (
-                    <div class={`audit-journey-event ${item.evidence_type || ''}`} key={`${item.case_id || ''}-${item.date || ''}-${item.time || ''}-${item.doctor_key || index}`}>
+                    <div class={`audit-journey-event visit ${item.resolution_status || 'unknown'} ${item.is_operation_visit ? 'operation' : ''}`} key={item.case_id || index}>
                       <div class="audit-journey-event-time">
                         <strong>{formatDate(item.date)}</strong>
                         <span>{formatTime(item.time)}</span>
                       </div>
                       <div class="audit-journey-event-body">
-                        <strong>{item.doctor_name || 'Dokter belum diketahui'}</strong>
+                        <strong>{item.diagnosis || 'Kunjungan Obgyn'}</strong>
                         <span>{item.location || 'Lokasi tidak tersedia'}</span>
+                        <div class="audit-journey-visit-doctor">
+                          <span>Dokter kunjungan</span>
+                          <strong>{item.doctor_name || 'Belum diketahui'}</strong>
+                        </div>
                         <div class="audit-journey-event-meta">
-                          <span>{evidenceLabel(item.evidence_type)}</span>
+                          {item.visit_type && <span>{item.visit_type}</span>}
+                          <span>{evidenceLabel(item.doctor_source)}</span>
                           <span>{confidenceLabel(item.confidence)}</span>
                         </div>
+                        {item.is_operation_visit && item.procedure_doctor && (
+                          <div class="audit-journey-procedure">
+                            <span>Tindakan</span>
+                            <strong>{item.procedure_doctor.name}</strong>
+                          </div>
+                        )}
+                        {item.resolution_status === 'ambiguous' && item.doctor_candidates?.length > 0 && (
+                          <p>Kandidat dokter: {item.doctor_candidates.map(candidate => candidate.name).join(', ')}</p>
+                        )}
                         {item.note && <p>{item.note}</p>}
                       </div>
                     </div>

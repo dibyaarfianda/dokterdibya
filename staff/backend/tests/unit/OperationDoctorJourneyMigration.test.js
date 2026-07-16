@@ -1,6 +1,7 @@
 const {
     canonicalSourceKey,
     ensureCanonicalUniqueIndex,
+    ensureJourneyV2Columns,
     validateDuplicateGroup
 } = require('../../scripts/migrate-operation-doctor-journeys');
 
@@ -79,5 +80,24 @@ describe('operation doctor journey canonical migration', () => {
         expect(generatedColumnSql).toContain("WHEN facility = 'gambiran'");
         expect(generatedColumnSql).toContain('ELSE NULL');
         expect(queries.some(sql => sql.includes('ADD UNIQUE KEY uq_operation_data_gambiran_operasi'))).toBe(true);
+    });
+
+    test('adds visit-based journey columns without rewriting existing rows', async () => {
+        const queries = [];
+        const pool = {
+            query: jest.fn(async (sql) => {
+                queries.push(sql);
+                if (sql.includes('information_schema.COLUMNS')) {
+                    return [[{ COLUMN_NAME: 'timeline_json' }]];
+                }
+                return [[], []];
+            })
+        };
+
+        await ensureJourneyV2Columns(pool);
+
+        expect(queries.some(sql => sql.includes('ADD COLUMN model_version'))).toBe(true);
+        expect(queries.some(sql => sql.includes('ADD COLUMN last_visit_doctor_name'))).toBe(true);
+        expect(queries.some(sql => sql.includes('ADD COLUMN visit_count'))).toBe(true);
     });
 });

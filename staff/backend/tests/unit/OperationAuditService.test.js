@@ -40,6 +40,7 @@ function row(overrides) {
         patient_age: '34 tahun',
         fetched_at: '2026-06-02 01:00:00',
         last_synced_at: '2026-06-02 01:00:00',
+        journey_model_version: 2,
         ...overrides
     };
 }
@@ -227,6 +228,9 @@ describe('OperationAuditService', () => {
                 journey_confidence: 'verified',
                 journey_origin_doctor_name: 'dr. Dokter Awal',
                 journey_origin_doctor_key: 'dokter awal',
+                journey_last_visit_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
+                journey_last_visit_doctor_key: 'dibya arfianda',
+                journey_visit_count: 3,
                 journey_procedure_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
                 journey_procedure_doctor_key: 'dibya arfianda',
                 journey_final_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
@@ -282,10 +286,11 @@ describe('OperationAuditService', () => {
                 journey_transfer_status: 'yes',
                 journey_confidence: 'verified',
                 journey_origin_doctor_name: 'dr. Dokter Awal',
-                journey_last_cppt_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
+                journey_last_visit_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
                 journey_procedure_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
                 journey_final_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
-                journey_transition_count: 1
+                journey_transition_count: 1,
+                journey_visit_count: 4
             })]]
         ]);
         const service = new OperationAuditService(db);
@@ -315,7 +320,8 @@ describe('OperationAuditService', () => {
             'Operasi Ulang 30 Hari',
             'Dokter Awal',
             'Pindah Dokter',
-            'CPPT Terakhir',
+            'Jumlah Kunjungan',
+            'Dokter Kunjungan Terakhir',
             'Operator Tindakan',
             'Dokter Akhir',
             'Keyakinan',
