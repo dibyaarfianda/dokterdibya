@@ -91,6 +91,24 @@ describe('OperationDataService doctor metadata', () => {
         expect(params).toEqual(expect.arrayContaining(['34 tahun']));
     });
 
+    test('rejects a Gambiran operation ID from a non-registration source', async () => {
+        const result = await operationData.upsertIndex([{
+            facility: 'gambiran',
+            source_key: 'gambiran:med0000709328:11002',
+            simrs_operasi_id: '11002',
+            patient_name: 'Pasien Audit',
+            operation_date: '2025-04-21',
+            r2_key: 'operation-data/gambiran/2025-04-21/stale.json'
+        }]);
+
+        expect(result.saved).toBe(0);
+        expect(result.errors).toEqual([expect.objectContaining({
+            source_key: 'gambiran:med0000709328:11002',
+            message: expect.stringContaining('canonical registration source')
+        })]);
+        expect(db.query).not.toHaveBeenCalled();
+    });
+
     test('archiveRecords derives doctor metadata from legacy payload DPJP when index item has none', async () => {
         db.query.mockResolvedValue([{ affectedRows: 1 }]);
         r2Storage.uploadJson.mockResolvedValue({ key: 'operation-data/gambiran/2026-06-18/item.json' });

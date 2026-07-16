@@ -536,6 +536,14 @@ export const api = {
     return request(`/audit/gambiran/${encodeURIComponent(id)}/pathology`);
   },
 
+  getGambiranAuditDoctorJourney(id) {
+    return request(`/audit/gambiran/${encodeURIComponent(id)}/doctor-journey`);
+  },
+
+  refreshGambiranAuditDoctorJourney(id) {
+    return request(`/audit/gambiran/${encodeURIComponent(id)}/doctor-journey/refresh`, { method: 'POST' });
+  },
+
   getGambiranAuditXlsUrl(params = {}) {
     const token = getToken();
     const qs = new URLSearchParams({ ...params, token }).toString();

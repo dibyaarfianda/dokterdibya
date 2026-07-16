@@ -17,6 +17,13 @@ const REPEAT_OPTIONS = [
   { value: 'no', label: 'Tanpa ulang' },
 ];
 
+const TRANSFER_OPTIONS = [
+  { value: 'all', label: 'Semua Alur Dokter' },
+  { value: 'yes', label: 'Pindah dokter' },
+  { value: 'no', label: 'Tidak pindah' },
+  { value: 'unknown', label: 'Belum pasti' },
+];
+
 const DOCTOR_SOURCE_OPTIONS = [
   { value: 'all', label: 'Semua Sumber Dokter' },
   { value: 'operator', label: 'Operator' },
@@ -58,6 +65,7 @@ export default function GambiranAudit() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [pathologyPanel, setPathologyPanel] = useState({ open: false, row: null, loading: false, error: null, data: null });
+  const [journeyPanel, setJourneyPanel] = useState({ open: false, row: null, loading: false, refreshing: false, error: null, data: null });
   const [filters, setFilters] = useState({
     start: defaultStartDate(),
     end: today(),
@@ -72,11 +80,30 @@ export default function GambiranAudit() {
     ageMax: '',
     sort: 'date_desc',
     repeat: 'all',
+    transfer: 'all',
+    procedureDoctor: '',
+    finalDoctor: '',
   });
 
   useEffect(() => {
     loadAudit(1);
-  }, [filters.start, filters.end, filters.doctor, filters.repeat, filters.doctorSource, filters.sort]);
+  }, [filters.start, filters.end, filters.doctor, filters.repeat, filters.transfer, filters.doctorSource, filters.sort]);
+
+  useEffect(() => {
+    if (!pathologyPanel.open && !journeyPanel.open) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKeyDown = event => {
+      if (event.key !== 'Escape') return;
+      if (journeyPanel.open) closeJourney();
+      else closePathology();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [pathologyPanel.open, journeyPanel.open]);
 
   async function loadAudit(page = 1, append = false) {
     if (append) setLoadingMore(true);
@@ -121,6 +148,9 @@ export default function GambiranAudit() {
       ageMax: '',
       sort: 'date_desc',
       repeat: 'all',
+      transfer: 'all',
+      procedureDoctor: '',
+      finalDoctor: '',
     });
   }
 
@@ -141,6 +171,37 @@ export default function GambiranAudit() {
 
   function closePathology() {
     setPathologyPanel({ open: false, row: null, loading: false, error: null, data: null });
+  }
+
+  async function openJourney(row) {
+    setJourneyPanel({ open: true, row, loading: true, refreshing: false, error: null, data: null });
+    try {
+      const result = await api.getGambiranAuditDoctorJourney(row.id);
+      setJourneyPanel({ open: true, row, loading: false, refreshing: false, error: null, data: result });
+    } catch (err) {
+      console.error('Failed to load Gambiran doctor journey:', err);
+      setJourneyPanel({ open: true, row, loading: false, refreshing: false, error: err.message || 'Gagal memuat alur dokter', data: null });
+    }
+  }
+
+  async function refreshJourney() {
+    const row = journeyPanel.row;
+    if (!row) return;
+    setJourneyPanel(current => ({ ...current, refreshing: true, error: null }));
+    try {
+      const result = await api.refreshGambiranAuditDoctorJourney(row.id);
+      setJourneyPanel({ open: true, row, loading: false, refreshing: false, error: null, data: result });
+      setRows(current => current.map(item => item.id === row.id
+        ? { ...item, doctor_journey: result.doctor_journey, doctor_journey_status: result.analysis_status }
+        : item));
+    } catch (err) {
+      console.error('Failed to refresh Gambiran doctor journey:', err);
+      setJourneyPanel(current => ({ ...current, loading: false, refreshing: false, error: err.message || 'Pemeriksaan ulang alur dokter gagal' }));
+    }
+  }
+
+  function closeJourney() {
+    setJourneyPanel({ open: false, row: null, loading: false, refreshing: false, error: null, data: null });
   }
 
   const topOperation = summary.by_operation?.[0]?.operation_name || '-';
@@ -207,6 +268,18 @@ export default function GambiranAudit() {
             placeholder="Umur maks"
             onInput={event => setFilters({ ...filters, ageMax: event.currentTarget.value })}
           />
+          <input
+            type="search"
+            value={filters.procedureDoctor}
+            placeholder="Operator tindakan"
+            onInput={event => setFilters({ ...filters, procedureDoctor: event.currentTarget.value })}
+          />
+          <input
+            type="search"
+            value={filters.finalDoctor}
+            placeholder="Dokter akhir"
+            onInput={event => setFilters({ ...filters, finalDoctor: event.currentTarget.value })}
+          />
         </div>
         <div class="audit-filter-row">
           <select value={filters.doctor} onChange={event => setFilters({ ...filters, doctor: event.currentTarget.value })}>
@@ -214,6 +287,9 @@ export default function GambiranAudit() {
           </select>
           <select value={filters.repeat} onChange={event => setFilters({ ...filters, repeat: event.currentTarget.value })}>
             {REPEAT_OPTIONS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
+          </select>
+          <select value={filters.transfer} onChange={event => setFilters({ ...filters, transfer: event.currentTarget.value })}>
+            {TRANSFER_OPTIONS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
           </select>
           <select value={filters.doctorSource} onChange={event => setFilters({ ...filters, doctorSource: event.currentTarget.value })}>
             {DOCTOR_SOURCE_OPTIONS.map(item => <option value={item.value} key={item.value}>{item.label}</option>)}
@@ -233,6 +309,7 @@ export default function GambiranAudit() {
 
       <div class="audit-summary-grid">
         <SummaryCard label="Total" value={summary.total || 0} />
+        <SummaryCard label="Pindah Dokter" value={summary.transfer_count || 0} tone="transfer" />
         <SummaryCard label="Ulang 30 Hari" value={summary.repeat_count || 0} tone="warn" />
         <SummaryCard label="Terbanyak" value={topOperation} small />
       </div>
@@ -255,7 +332,7 @@ export default function GambiranAudit() {
         </div>
       ) : (
         <div class="operation-data-list">
-          {rows.map(row => <AuditRow key={row.id} row={row} onOpenPathology={openPathology} />)}
+          {rows.map(row => <AuditRow key={row.id} row={row} onOpenPathology={openPathology} onOpenJourney={openJourney} />)}
         </div>
       )}
 
@@ -274,6 +351,18 @@ export default function GambiranAudit() {
           onClose={closePathology}
         />
       )}
+
+      {journeyPanel.open && (
+        <DoctorJourneyPanel
+          row={journeyPanel.row}
+          loading={journeyPanel.loading}
+          refreshing={journeyPanel.refreshing}
+          error={journeyPanel.error}
+          data={journeyPanel.data}
+          onRefresh={refreshJourney}
+          onClose={closeJourney}
+        />
+      )}
     </div>
   );
 }
@@ -287,8 +376,11 @@ function SummaryCard({ label, value, tone, small }) {
   );
 }
 
-function AuditRow({ row, onOpenPathology }) {
+function AuditRow({ row, onOpenPathology, onOpenJourney }) {
   const repeat = row.repeat_after;
+  const journey = row.doctor_journey;
+  const origin = journey?.origin_doctor?.name;
+  const finalDoctor = journey?.final_doctor?.name;
   return (
     <div class={`operation-data-row audit-row ${row.repeat_within_30d ? 'has-repeat' : ''}`}>
       <div class="operation-data-date">
@@ -305,6 +397,17 @@ function AuditRow({ row, onOpenPathology }) {
           {row.repeat_within_30d && <span class="audit-repeat-chip">Ulang 30 hari</span>}
         </div>
         {row.diagnosis && <div class="operation-data-diagnosis">{row.diagnosis}</div>}
+        <div class={`audit-doctor-flow ${journey?.transfer_status || 'unknown'}`}>
+          <div class="audit-doctor-flow-main">
+            <span>{origin || 'Dokter awal belum diketahui'}</span>
+            <strong aria-hidden="true">&rarr;</strong>
+            <span>{finalDoctor || 'Dokter akhir belum diketahui'}</span>
+          </div>
+          <div class="audit-doctor-evidence">
+            <span>CPPT akhir: {journey?.last_cppt_doctor?.name || '-'}</span>
+            <span>Tindakan: {journey?.procedure_doctor?.name || '-'}</span>
+          </div>
+        </div>
         {repeat && (
           <div class="audit-repeat-detail">
             Operasi berikutnya: {formatDate(repeat.operation_date)} {formatTime(repeat.operation_time)} - {repeat.operation_name || 'Operasi'}
@@ -312,8 +415,148 @@ function AuditRow({ row, onOpenPathology }) {
         )}
       </div>
       <div class="audit-row-actions">
+        <button type="button" class="audit-journey-button" onClick={() => onOpenJourney(row)}>Alur</button>
         <button type="button" class="audit-pa-button" onClick={() => onOpenPathology(row)}>PA</button>
       </div>
+    </div>
+  );
+}
+
+function transferLabel(status) {
+  if (status === 'yes') return 'Pindah dokter';
+  if (status === 'no') return 'Tidak pindah';
+  return 'Belum pasti';
+}
+
+function confidenceLabel(value) {
+  if (value === 'verified') return 'Terverifikasi';
+  if (value === 'supported') return 'Didukung bukti';
+  return 'Belum pasti';
+}
+
+function evidenceLabel(value) {
+  const labels = {
+    cppt_author: 'Penulis CPPT dokter',
+    cppt_advice: 'Advis/kolaborasi CPPT',
+    operation_operator: 'Operator tindakan',
+    operation_registration: 'Pendaftaran operasi',
+    last_relevant_cppt: 'CPPT relevan terakhir',
+    dpjp_support: 'DPJP pendukung',
+    consultant_cppt: 'Konsultan CPPT',
+    consultant_advice: 'Advis konsultan',
+  };
+  return labels[value] || value || 'Bukti klinis';
+}
+
+function DoctorJourneyPanel({ row, loading, refreshing, error, data, onRefresh, onClose }) {
+  const journey = data?.doctor_journey;
+  const analysisStatus = data?.analysis_status || (journey ? journey.analysis_status : 'not_analyzed');
+  const timeline = journey?.timeline || [];
+  const failed = analysisStatus === 'failed' || Boolean(journey?.error_message);
+  const notAnalyzed = analysisStatus === 'not_analyzed' && !journey;
+  const ambiguous = journey?.transfer_status === 'unknown';
+
+  return (
+    <div class="audit-pa-overlay audit-journey-overlay" role="dialog" aria-modal="true" aria-labelledby="doctor-journey-title">
+      <div class="audit-pa-panel audit-journey-panel">
+        <div class="audit-pa-header">
+          <div>
+            <h2 id="doctor-journey-title">Alur Dokter</h2>
+            <p>{row?.patient_name || '-'} {row?.mr_id ? `- RM ${row.mr_id}` : ''}</p>
+          </div>
+          <button type="button" class="audit-pa-close" onClick={onClose} aria-label="Tutup">&times;</button>
+        </div>
+
+        {loading ? (
+          <div class="audit-pa-state">Memuat alur dokter...</div>
+        ) : error && !journey ? (
+          <div class="audit-journey-empty">
+            <div class="audit-pa-state error">{error}</div>
+            <button type="button" class="btn-primary" disabled={refreshing} onClick={onRefresh}>
+              {refreshing ? 'Menganalisis...' : 'Coba lagi'}
+            </button>
+          </div>
+        ) : notAnalyzed ? (
+          <div class="audit-journey-empty">
+            <div class="audit-pa-state">Alur dokter belum dianalisis.</div>
+            <button type="button" class="btn-primary" disabled={refreshing} onClick={onRefresh}>
+              {refreshing ? 'Menganalisis...' : 'Analisis sekarang'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div class="audit-journey-summary">
+              <div>
+                <span>Status</span>
+                <strong class={`journey-status ${journey?.transfer_status || 'unknown'}`}>{transferLabel(journey?.transfer_status)}</strong>
+              </div>
+              <div>
+                <span>Keyakinan</span>
+                <strong>{confidenceLabel(journey?.confidence)}</strong>
+              </div>
+              <div>
+                <span>Transisi</span>
+                <strong>{journey?.transition_count || 0}</strong>
+              </div>
+            </div>
+
+            {error && <div class="audit-pa-state error">{error}</div>}
+            {failed && !error && <div class="audit-pa-state error">{journey?.error_message || 'Analisis terakhir gagal.'}</div>}
+            {ambiguous && !failed && (
+              <div class="audit-pa-state">Bukti belum cukup untuk menyatakan pasien pindah atau tidak pindah dokter.</div>
+            )}
+
+            <div class="audit-journey-doctors">
+              <JourneyDoctor label="Dokter awal" doctor={journey?.origin_doctor} />
+              <JourneyDoctor label="CPPT terakhir" doctor={journey?.last_cppt_doctor} />
+              <JourneyDoctor label="Operator tindakan" doctor={journey?.procedure_doctor} />
+              <JourneyDoctor label="Dokter akhir" doctor={journey?.final_doctor} />
+            </div>
+
+            <div class="audit-journey-content">
+              <div class="audit-journey-title-row">
+                <h3>Timeline Bukti</h3>
+                <button type="button" class="btn-secondary" disabled={refreshing} onClick={onRefresh}>
+                  {refreshing ? 'Memeriksa...' : 'Periksa ulang'}
+                </button>
+              </div>
+              {timeline.length === 0 ? (
+                <div class="audit-pa-state">Belum ada bukti CPPT yang dapat dipakai.</div>
+              ) : (
+                <div class="audit-journey-timeline">
+                  {timeline.map((item, index) => (
+                    <div class={`audit-journey-event ${item.evidence_type || ''}`} key={`${item.case_id || ''}-${item.date || ''}-${item.time || ''}-${item.doctor_key || index}`}>
+                      <div class="audit-journey-event-time">
+                        <strong>{formatDate(item.date)}</strong>
+                        <span>{formatTime(item.time)}</span>
+                      </div>
+                      <div class="audit-journey-event-body">
+                        <strong>{item.doctor_name || 'Dokter belum diketahui'}</strong>
+                        <span>{item.location || 'Lokasi tidak tersedia'}</span>
+                        <div class="audit-journey-event-meta">
+                          <span>{evidenceLabel(item.evidence_type)}</span>
+                          <span>{confidenceLabel(item.confidence)}</span>
+                        </div>
+                        {item.note && <p>{item.note}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function JourneyDoctor({ label, doctor }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{doctor?.name || '-'}</strong>
+      <small>{doctor?.source ? evidenceLabel(doctor.source) : ''}</small>
     </div>
   );
 }

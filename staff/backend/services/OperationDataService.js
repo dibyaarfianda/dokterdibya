@@ -105,6 +105,14 @@ function firstValue(...values) {
   return null;
 }
 
+function assertCanonicalGambiranOperation(item) {
+  if (item.facility !== 'gambiran' || !item.simrsOperasiId) return;
+  const expectedSource = `gambiran:pendaftaran:${item.simrsOperasiId}`;
+  if (item.sourceKey !== expectedSource) {
+    throw new Error(`Gambiran operation ${item.simrsOperasiId} must use canonical registration source`);
+  }
+}
+
 function classifyDoctor(value, facility) {
   const clean = nullable(value);
   if (!clean) return null;
@@ -260,6 +268,7 @@ class OperationDataService {
     for (const raw of items) {
       try {
         const item = this.normalizeIndexItem(raw || {});
+        assertCanonicalGambiranOperation(item);
         await db.query(
           `INSERT INTO operation_data_index
              (facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
@@ -267,6 +276,7 @@ class OperationDataService {
               doctor_name, doctor_key, doctor_source, r2_key, r2_bucket, surgery_id, fetched_at, last_synced_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
            ON DUPLICATE KEY UPDATE
+              source_key = VALUES(source_key),
               case_id = VALUES(case_id),
               simrs_operasi_id = VALUES(simrs_operasi_id),
               mr_id = VALUES(mr_id),
@@ -733,5 +743,6 @@ class OperationDataService {
 }
 
 OperationDataService.LOCATION_MAP = LOCATION_MAP;
+OperationDataService.assertCanonicalGambiranOperation = assertCanonicalGambiranOperation;
 
 module.exports = new OperationDataService();

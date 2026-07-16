@@ -9,10 +9,12 @@ const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
 const OperationAuditService = require('../services/OperationAuditService');
 const OperationPathologyService = require('../services/OperationPathologyService');
+const OperationDoctorJourneyService = require('../services/OperationDoctorJourneyService');
 const gambiranMonitor = require('../services/DocBoardGambiranMonitorService');
 const logger = require('../utils/logger');
 const operationAudit = new OperationAuditService();
 const operationPathology = new OperationPathologyService();
+const operationDoctorJourney = new OperationDoctorJourneyService();
 
 const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
 const SCHEDULE_COMPLETION_ALLOWED_USER_IDS = ['UDZAQUCQWZ'];
@@ -128,6 +130,30 @@ router.get('/audit/gambiran/export.xlsx', async (req, res) => {
   } catch (error) {
     logger.error('DocBoard Gambiran audit XLSX export error:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get('/audit/gambiran/:id/doctor-journey', async (req, res) => {
+  try {
+    if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+    const result = await operationDoctorJourney.getForAuditRow(req.params.id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('DocBoard Gambiran doctor journey read error:', error);
+    res.status(error.status || 500).json({ success: false, message: error.message });
+  }
+});
+
+router.post('/audit/gambiran/:id/doctor-journey/refresh', async (req, res) => {
+  try {
+    if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+    const result = await operationDoctorJourney.refreshForAuditRow(req.params.id);
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('DocBoard Gambiran doctor journey refresh error:', error);
+    res.status(error.status || 502).json({ success: false, message: error.message });
   }
 });
 

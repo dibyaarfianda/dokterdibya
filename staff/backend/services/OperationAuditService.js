@@ -64,10 +64,42 @@ function daysBetween(firstDate, secondDate) {
 }
 
 function mapRow(row) {
+    const hasJourney = Boolean(row.journey_id);
+    const doctorJourney = hasJourney ? {
+        id: row.journey_id,
+        transfer_status: row.journey_transfer_status || 'unknown',
+        confidence: row.journey_confidence || 'unknown',
+        origin_doctor: row.journey_origin_doctor_name ? {
+            name: row.journey_origin_doctor_name,
+            key: row.journey_origin_doctor_key || null,
+            source: row.journey_origin_doctor_source || null,
+        } : null,
+        last_cppt_doctor: row.journey_last_cppt_doctor_name ? {
+            name: row.journey_last_cppt_doctor_name,
+            key: row.journey_last_cppt_doctor_key || null,
+            source: row.journey_last_cppt_doctor_source || null,
+        } : null,
+        procedure_doctor: row.journey_procedure_doctor_name ? {
+            name: row.journey_procedure_doctor_name,
+            key: row.journey_procedure_doctor_key || null,
+            source: row.journey_procedure_doctor_source || null,
+        } : null,
+        final_doctor: row.journey_final_doctor_name ? {
+            name: row.journey_final_doctor_name,
+            key: row.journey_final_doctor_key || null,
+            source: row.journey_final_doctor_source || null,
+        } : null,
+        transition_count: Number(row.journey_transition_count || 0),
+        checked_at: row.journey_checked_at || null,
+        error_message: row.journey_error_message || null,
+        analysis_status: row.journey_error_message ? 'failed' : 'ready',
+    } : null;
     return {
         ...row,
         operation_date: normalizeDate(row.operation_date),
         operation_time: row.operation_time ? String(row.operation_time).slice(0, 8) : null,
+        doctor_journey: doctorJourney,
+        doctor_journey_status: doctorJourney?.analysis_status || 'not_analyzed',
     };
 }
 
@@ -110,6 +142,7 @@ class OperationAuditService {
         const limit = Math.min(Math.max(parseInt(params.limit, 10) || 50, 1), 100);
         const doctor = TARGET_DOCTOR_KEYS.includes(trim(params.doctor)) ? trim(params.doctor) : 'all';
         const repeat = ['yes', 'no'].includes(trim(params.repeat)) ? trim(params.repeat) : 'all';
+        const transfer = ['yes', 'no', 'unknown'].includes(trim(params.transfer)) ? trim(params.transfer) : 'all';
         const doctorSource = ['operator', 'dpjp', 'doctor'].includes(trim(params.doctorSource || params.doctor_source))
             ? trim(params.doctorSource || params.doctor_source)
             : 'all';
@@ -142,6 +175,11 @@ class OperationAuditService {
             ageMax: parseOptionalInt(params.ageMax || params.age_max),
             sort,
             repeat,
+            transfer,
+            procedureDoctorTerms: parseSearchTerms(params.procedureDoctor || params.procedure_doctor),
+            procedureDoctor: trim(params.procedureDoctor || params.procedure_doctor),
+            finalDoctorTerms: parseSearchTerms(params.finalDoctor || params.final_doctor),
+            finalDoctor: trim(params.finalDoctor || params.final_doctor),
         };
     }
 
@@ -195,6 +233,11 @@ class OperationAuditService {
         return {
             total: rows.length,
             repeat_count: rows.filter(row => row.repeat_within_30d).length,
+            transfer_count: rows.filter(row => row.doctor_journey?.transfer_status === 'yes').length,
+            no_transfer_count: rows.filter(row => row.doctor_journey?.transfer_status === 'no').length,
+            unknown_transfer_count: rows.filter(row => !row.doctor_journey || row.doctor_journey.transfer_status === 'unknown').length,
+            analyzed_count: rows.filter(row => row.doctor_journey_status === 'ready').length,
+            failed_analysis_count: rows.filter(row => row.doctor_journey_status === 'failed').length,
             by_doctor: Array.from(byDoctorMap.values()).sort((left, right) => right.count - left.count),
             by_operation: Array.from(byOperationMap.entries())
                 .map(([operation_name, count]) => ({ operation_name, count }))
@@ -263,6 +306,15 @@ class OperationAuditService {
         } else if (normalized.repeat === 'no') {
             baseRows = baseRows.filter(row => !row.repeat_within_30d);
         }
+        if (normalized.transfer !== 'all') {
+            baseRows = baseRows.filter(row => (row.doctor_journey?.transfer_status || 'unknown') === normalized.transfer);
+        }
+        if (normalized.procedureDoctorTerms.length > 0) {
+            baseRows = baseRows.filter(row => matchesAnyTerm(row.doctor_journey?.procedure_doctor?.name, normalized.procedureDoctorTerms));
+        }
+        if (normalized.finalDoctorTerms.length > 0) {
+            baseRows = baseRows.filter(row => matchesAnyTerm(row.doctor_journey?.final_doctor?.name, normalized.finalDoctorTerms));
+        }
 
         return this.sortRows(baseRows, normalized.sort);
     }
@@ -270,14 +322,39 @@ class OperationAuditService {
     async buildGambiranAuditRows(params = {}) {
         const normalized = this.normalizeParams(params);
         const [rows] = await this.db.query(
-            `SELECT id, facility, source_key, case_id, simrs_operasi_id, mr_id, patient_name,
-                    patient_age, operation_date, operation_time, operation_name, diagnosis, status,
-                    doctor_name, doctor_key, doctor_source, fetched_at, last_synced_at
-               FROM operation_data_index
-              WHERE facility = 'gambiran'
-                AND doctor_key IN ('dibya','tri_aji','latifa')
-                AND operation_date BETWEEN ? AND ?
-              ORDER BY operation_date DESC, operation_time DESC, id DESC`,
+            `SELECT operation.id, operation.facility, operation.source_key, operation.case_id,
+                    operation.simrs_operasi_id, operation.mr_id, operation.patient_name,
+                    operation.patient_age, operation.operation_date, operation.operation_time,
+                    operation.operation_name, operation.diagnosis, operation.status,
+                    operation.doctor_name, operation.doctor_key, operation.doctor_source,
+                    operation.fetched_at, operation.last_synced_at,
+                    journey.id AS journey_id,
+                    journey.transfer_status AS journey_transfer_status,
+                    journey.confidence AS journey_confidence,
+                    journey.origin_doctor_name AS journey_origin_doctor_name,
+                    journey.origin_doctor_key AS journey_origin_doctor_key,
+                    journey.origin_doctor_source AS journey_origin_doctor_source,
+                    journey.last_cppt_doctor_name AS journey_last_cppt_doctor_name,
+                    journey.last_cppt_doctor_key AS journey_last_cppt_doctor_key,
+                    journey.last_cppt_doctor_source AS journey_last_cppt_doctor_source,
+                    journey.procedure_doctor_name AS journey_procedure_doctor_name,
+                    journey.procedure_doctor_key AS journey_procedure_doctor_key,
+                    journey.procedure_doctor_source AS journey_procedure_doctor_source,
+                    journey.final_doctor_name AS journey_final_doctor_name,
+                    journey.final_doctor_key AS journey_final_doctor_key,
+                    journey.final_doctor_source AS journey_final_doctor_source,
+                    journey.transition_count AS journey_transition_count,
+                    journey.checked_at AS journey_checked_at,
+                    journey.error_message AS journey_error_message
+               FROM operation_data_index operation
+               LEFT JOIN operation_doctor_journeys journey
+                 ON journey.facility = operation.facility
+                AND journey.simrs_operasi_id = operation.simrs_operasi_id
+              WHERE operation.facility = 'gambiran'
+                AND operation.doctor_key IN ('dibya','tri_aji','latifa')
+                AND operation.source_key = CONCAT('gambiran:pendaftaran:', operation.simrs_operasi_id)
+                AND operation.operation_date BETWEEN ? AND ?
+              ORDER BY operation.operation_date DESC, operation.operation_time DESC, operation.id DESC`,
             [normalized.start, normalized.repeatEnd]
         );
 
@@ -317,6 +394,9 @@ class OperationAuditService {
                 ageMax: normalized.ageMax,
                 sort: normalized.sort,
                 repeat: normalized.repeat,
+                transfer: normalized.transfer,
+                procedureDoctor: normalized.procedureDoctor,
+                finalDoctor: normalized.finalDoctor,
             },
         };
     }
@@ -345,8 +425,12 @@ class OperationAuditService {
             { item: 'Sumber Dokter', value: normalized.doctorSource === 'all' ? 'Semua' : normalized.doctorSource },
             { item: 'Umur', value: `${normalized.ageMin ?? '-'} s/d ${normalized.ageMax ?? '-'}` },
             { item: 'Operasi Ulang 30 Hari', value: normalized.repeat === 'all' ? 'Semua' : (normalized.repeat === 'yes' ? 'Ya' : 'Tidak') },
+            { item: 'Pindah Dokter', value: normalized.transfer === 'all' ? 'Semua' : normalized.transfer },
+            { item: 'Operator Tindakan', value: normalized.procedureDoctor || 'Semua' },
+            { item: 'Dokter Akhir', value: normalized.finalDoctor || 'Semua' },
             { item: 'Total Data', value: summary.total },
             { item: 'Total Ulang 30 Hari', value: summary.repeat_count },
+            { item: 'Total Pindah Dokter', value: summary.transfer_count },
         ]);
         this.styleWorksheet(summarySheet);
 
@@ -381,6 +465,13 @@ class OperationAuditService {
             { header: 'Umur', key: 'patient_age', width: 12 },
             { header: 'Dokter', key: 'doctor', width: 28 },
             { header: 'Sumber Dokter', key: 'doctor_source', width: 15 },
+            { header: 'Dokter Awal', key: 'origin_doctor', width: 30 },
+            { header: 'Pindah Dokter', key: 'transfer', width: 18 },
+            { header: 'CPPT Terakhir', key: 'last_cppt_doctor', width: 30 },
+            { header: 'Operator Tindakan', key: 'procedure_doctor', width: 30 },
+            { header: 'Dokter Akhir', key: 'final_doctor', width: 30 },
+            { header: 'Keyakinan', key: 'journey_confidence', width: 16 },
+            { header: 'Status Analisis', key: 'journey_status', width: 20 },
             { header: 'Jenis Operasi', key: 'operation_name', width: 38 },
             { header: 'Diagnosis', key: 'diagnosis', width: 38 },
             { header: 'Status', key: 'status', width: 16 },
@@ -397,6 +488,19 @@ class OperationAuditService {
             patient_age: row.patient_age || '',
             doctor: formatDoctorLabel(row.doctor_key, row.doctor_name),
             doctor_source: row.doctor_source || '',
+            origin_doctor: row.doctor_journey?.origin_doctor?.name || '',
+            transfer: row.doctor_journey?.transfer_status === 'yes'
+                ? 'Ya'
+                : (row.doctor_journey?.transfer_status === 'no' ? 'Tidak' : 'Belum pasti'),
+            last_cppt_doctor: row.doctor_journey?.last_cppt_doctor?.name || '',
+            procedure_doctor: row.doctor_journey?.procedure_doctor?.name || '',
+            final_doctor: row.doctor_journey?.final_doctor?.name || '',
+            journey_confidence: row.doctor_journey?.confidence === 'verified'
+                ? 'Terverifikasi'
+                : (row.doctor_journey?.confidence === 'supported' ? 'Didukung' : 'Belum pasti'),
+            journey_status: row.doctor_journey_status === 'ready'
+                ? 'Selesai'
+                : (row.doctor_journey_status === 'failed' ? 'Gagal' : 'Belum dianalisis'),
             operation_name: row.operation_name || '',
             diagnosis: row.diagnosis || '',
             status: row.status || '',

@@ -1,0 +1,51 @@
+CREATE TABLE IF NOT EXISTS operation_data_index_duplicate_archive (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  original_id BIGINT UNSIGNED NOT NULL,
+  canonical_id BIGINT UNSIGNED NOT NULL,
+  facility VARCHAR(64) NOT NULL,
+  simrs_operasi_id VARCHAR(100) NOT NULL,
+  source_key VARCHAR(255) NOT NULL,
+  reason VARCHAR(100) NOT NULL,
+  row_json LONGTEXT NOT NULL,
+  archived_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_operation_duplicate_original (original_id),
+  KEY idx_operation_duplicate_canonical (canonical_id),
+  KEY idx_operation_duplicate_identity (facility, simrs_operasi_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS operation_doctor_journeys (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  operation_data_id BIGINT UNSIGNED NOT NULL,
+  facility VARCHAR(64) NOT NULL,
+  simrs_operasi_id VARCHAR(100) NOT NULL,
+  transfer_status ENUM('yes','no','unknown') NOT NULL DEFAULT 'unknown',
+  confidence ENUM('verified','supported','unknown') NOT NULL DEFAULT 'unknown',
+  origin_doctor_name VARCHAR(255) NULL,
+  origin_doctor_key VARCHAR(191) NULL,
+  origin_doctor_source VARCHAR(64) NULL,
+  last_cppt_doctor_name VARCHAR(255) NULL,
+  last_cppt_doctor_key VARCHAR(191) NULL,
+  last_cppt_doctor_source VARCHAR(64) NULL,
+  procedure_doctor_name VARCHAR(255) NULL,
+  procedure_doctor_key VARCHAR(191) NULL,
+  procedure_doctor_source VARCHAR(64) NULL,
+  final_doctor_name VARCHAR(255) NULL,
+  final_doctor_key VARCHAR(191) NULL,
+  final_doctor_source VARCHAR(64) NULL,
+  transition_count INT UNSIGNED NOT NULL DEFAULT 0,
+  timeline_json LONGTEXT NULL,
+  consultants_json LONGTEXT NULL,
+  source_hash CHAR(64) NULL,
+  checked_at DATETIME NULL,
+  error_message TEXT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_operation_doctor_journey (facility, simrs_operasi_id),
+  KEY idx_operation_doctor_journey_pending (error_message(64), checked_at),
+  KEY idx_operation_doctor_journey_transfer (transfer_status, confidence),
+  CONSTRAINT fk_operation_doctor_journey_operation
+    FOREIGN KEY (operation_data_id) REFERENCES operation_data_index(id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

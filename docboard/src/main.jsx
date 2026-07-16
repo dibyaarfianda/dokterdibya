@@ -2,7 +2,7 @@ import { render } from 'preact';
 import App from './app';
 import './index.css';
 
-const DOCBOARD_PWA_VERSION = '20260712-7';
+const DOCBOARD_PWA_VERSION = '20260716-1';
 let reloadingForWorkerUpdate = false;
 
 function showUpdatePrompt(registration) {

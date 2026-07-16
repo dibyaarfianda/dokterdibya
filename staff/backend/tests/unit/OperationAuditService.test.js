@@ -218,6 +218,54 @@ describe('OperationAuditService', () => {
         }));
     });
 
+    test('filters transfer, procedure doctor, and final doctor from cached journeys', async () => {
+        const db = createDbMock([
+            [[row({
+                id: 1,
+                journey_id: 91,
+                journey_transfer_status: 'yes',
+                journey_confidence: 'verified',
+                journey_origin_doctor_name: 'dr. Dokter Awal',
+                journey_origin_doctor_key: 'dokter awal',
+                journey_procedure_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
+                journey_procedure_doctor_key: 'dibya arfianda',
+                journey_final_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
+                journey_final_doctor_key: 'dibya arfianda',
+                journey_transition_count: 1
+            }), row({
+                id: 2,
+                source_key: 'gambiran:pendaftaran:2',
+                journey_id: 92,
+                journey_transfer_status: 'no',
+                journey_confidence: 'verified',
+                journey_procedure_doctor_name: 'dr. Latifa Maharani, Sp.OG',
+                journey_final_doctor_name: 'dr. Latifa Maharani, Sp.OG'
+            }), row({ id: 3, source_key: 'gambiran:pendaftaran:3' })]]
+        ]);
+        const service = new OperationAuditService(db);
+
+        const result = await service.getGambiranAudit({
+            start: '2026-06-01',
+            end: '2026-06-30',
+            transfer: 'yes',
+            procedureDoctor: 'dibya',
+            finalDoctor: 'dibya'
+        });
+
+        expect(result.data).toHaveLength(1);
+        expect(result.data[0].doctor_journey).toEqual(expect.objectContaining({
+            transfer_status: 'yes',
+            transition_count: 1,
+            procedure_doctor: expect.objectContaining({ name: 'dr. Dibya Arfianda, Sp.OG' })
+        }));
+        expect(result.summary).toEqual(expect.objectContaining({ transfer_count: 1, analyzed_count: 1 }));
+        expect(result.filters).toEqual(expect.objectContaining({
+            transfer: 'yes',
+            procedureDoctor: 'dibya',
+            finalDoctor: 'dibya'
+        }));
+    });
+
     test('builds a formatted Gambiran audit XLSX export with summary and detail sheets', async () => {
         const db = createDbMock([
             [[row({
@@ -229,7 +277,15 @@ describe('OperationAuditService', () => {
                 diagnosis: 'Mioma',
                 doctor_key: 'tri_aji',
                 doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
-                operation_date: '2026-06-27'
+                operation_date: '2026-06-27',
+                journey_id: 99,
+                journey_transfer_status: 'yes',
+                journey_confidence: 'verified',
+                journey_origin_doctor_name: 'dr. Dokter Awal',
+                journey_last_cppt_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
+                journey_procedure_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
+                journey_final_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
+                journey_transition_count: 1
             })]]
         ]);
         const service = new OperationAuditService(db);
@@ -256,14 +312,26 @@ describe('OperationAuditService', () => {
             'No. Rekam Medis',
             'Umur',
             'Jenis Operasi',
-            'Operasi Ulang 30 Hari'
+            'Operasi Ulang 30 Hari',
+            'Dokter Awal',
+            'Pindah Dokter',
+            'CPPT Terakhir',
+            'Operator Tindakan',
+            'Dokter Akhir',
+            'Keyakinan',
+            'Status Analisis'
         ]));
         expect(dataSheet.getRow(2).values).toEqual(expect.arrayContaining([
             '2026-06-27',
             '537912',
             '38 tahun',
             'SVH',
-            'Tidak'
+            'Tidak',
+            'dr. Dokter Awal',
+            'Ya',
+            'dr. Tri Aji Wibowo, Sp.OG',
+            'Terverifikasi',
+            'Selesai'
         ]));
     });
 });
