@@ -81,4 +81,16 @@ describe('Wave 4 Sunday Clinic backend boundaries', () => {
         ));
         expect(collectMissingSchema(rows)).toEqual([]);
     });
+
+    test('orphaned new-patient compatibility loader exits before issuing a request', () => {
+        const source = fs.readFileSync(path.resolve(backendRoot, '../public/index-adminlte.html'), 'utf8');
+        const loaderStart = source.indexOf('async function loadNewPatients(page = 1)');
+        const guard = source.indexOf("if (!tbody) return;", loaderStart);
+        const request = source.indexOf("fetch(`/api/patients?view=basic", loaderStart);
+
+        expect(source).not.toContain("console.warn('new-patients-tbody element not found')");
+        expect(source).not.toContain('loadNewPatients(1);');
+        expect(guard).toBeGreaterThan(loaderStart);
+        expect(request).toBeGreaterThan(guard);
+    });
 });
