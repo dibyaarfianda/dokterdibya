@@ -37,8 +37,28 @@ function createApp(overrides = {}) {
 }
 
 describe('system routes', () => {
-    test('GET /api/metrics combines metrics from injected providers', async () => {
-        const { app } = createApp();
+    test('GET /api/metrics rejects requests stopped by authentication', async () => {
+        const { app } = createApp({
+            verifyToken: (req, res) => res.status(401).json({ success: false })
+        });
+
+        const response = await request(app).get('/api/metrics');
+
+        expect(response.status).toBe(401);
+    });
+
+    test('GET /api/metrics requires auth and combines metrics from injected providers', async () => {
+        const callOrder = [];
+        const { app } = createApp({
+            verifyToken: (req, res, next) => {
+                callOrder.push('verifyToken');
+                next();
+            },
+            requireSuperadmin: (req, res, next) => {
+                callOrder.push('requireSuperadmin');
+                next();
+            }
+        });
 
         const response = await request(app).get('/api/metrics');
 
@@ -57,6 +77,7 @@ describe('system routes', () => {
                 activeSocketConnections: 7
             }
         });
+        expect(callOrder).toEqual(['verifyToken', 'requireSuperadmin']);
     });
 
     test('POST /api/metrics/reset uses auth middleware and resets metrics', async () => {
@@ -91,8 +112,7 @@ describe('system routes', () => {
         expect(response.status).toBe(200);
         expect(response.body).toMatchObject({
             status: 'healthy',
-            database: { status: 'connected' },
-            system: { memoryUsage: 42 }
+            database: { status: 'connected' }
         });
         expect(response.body.database.latencyMs).toEqual(expect.any(Number));
         expect(dependencies.pool.query).toHaveBeenCalledWith('SELECT 1');

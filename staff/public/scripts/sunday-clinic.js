@@ -9,9 +9,9 @@
  */
 
 // Version 2.1.29 - shared prescription templates
-import SundayClinicApp from './sunday-clinic/main.js?v=2.1.29';
-import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.11';
-import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.11';
+import SundayClinicApp from './sunday-clinic/main.js';
+import apiClient from './sunday-clinic/utils/api-client.js';
+import stateManager from './sunday-clinic/utils/state-manager.js';
 import { initRealtimeSync } from './realtime-sync.js';
 
 // ============================================================================
@@ -381,8 +381,8 @@ async function checkAuthentication() {
         }
     } catch (error) {
         console.error('[SundayClinic] Authentication failed:', error);
-        localStorage.removeItem('vps_auth_token');
-        sessionStorage.removeItem('vps_auth_token');
+        localStorage.removeItem(window.TOKEN_KEY);
+        sessionStorage.removeItem(window.TOKEN_KEY);
         redirectToLogin();
         return false;
     }

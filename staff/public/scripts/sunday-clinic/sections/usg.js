@@ -1129,7 +1129,7 @@ async function afterRenderUSG() {
 
         try {
             if (category === 'obstetri') {
-                const USGObstetri = (await import('../components/obstetri/usg-obstetri.js?v=3.0.10')).default;
+                const USGObstetri = (await import('../components/obstetri/usg-obstetri.js')).default;
                 handlePhotoUpload = (e) => USGObstetri.handlePhotoUpload(e);
                 USGObstetri.initPhotoRemoveHandlers();
             } else if (category === 'gyn_repro') {

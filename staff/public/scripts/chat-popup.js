@@ -1,3 +1,5 @@
+import { ROLE_IDS } from './role-constants.js';
+
 // Compact Chat Popup Widget (customized to Dr. Dibya Private Clinic)
 // Implements in-bubble name + timestamp, #737373 incoming bubbles, blue outgoing,
 // balanced padding, line-height 1.2, and fixed max-width.
@@ -325,15 +327,6 @@
   };
 
   // ---------- UTIL: color per role + avatar ----------
-  // Role ID constants (match backend constants/roles.js)
-  const ROLE_IDS = {
-    DOKTER: 1,
-    MANAGERIAL: 7,
-    BIDAN: 22,
-    ADMIN: 24,
-    FRONT_OFFICE: 25
-  };
-
   // Badge colors for chat name (matching auth.js badge colors)
   function colorFromRoleId(roleId) {
     if (roleId === ROLE_IDS.DOKTER) return '#ff6b6b';      // lighter red for dokter (badge-danger)

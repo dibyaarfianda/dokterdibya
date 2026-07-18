@@ -259,8 +259,8 @@ function showToast(message, type) {
 }
 
 function logout() {
-    localStorage.removeItem('vps_auth_token');
-    sessionStorage.removeItem('vps_auth_token');
+    localStorage.removeItem(window.TOKEN_KEY);
+    sessionStorage.removeItem(window.TOKEN_KEY);
     localStorage.removeItem('idToken');
     localStorage.removeItem('userProfile');
     window.location.href = 'login.html';

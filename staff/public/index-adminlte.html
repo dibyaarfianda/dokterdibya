@@ -8,15 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v300';
+        window.STAFF_CACHE_VERSION = 'v301';
+        window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v222">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v222">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v222">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v222">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v301">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v301">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v301">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v301">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v222">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v301">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v222">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v301">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -44,7 +45,7 @@
         }
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v222"></script>
+    <script src="scripts/error-handler.js?v=v301"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -1575,7 +1576,7 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v266">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v301">
     
     <!-- Mobile App Mode Detection -->
     <script>
@@ -1649,8 +1650,8 @@
 
         })();
     </script>
-    <script defer src="scripts/shell/appointment-debug.js?v=v292"></script>
-    <script defer src="scripts/shell/patient-search-detail.js?v=v292"></script>
+    <script defer src="scripts/shell/appointment-debug.js?v=v301"></script>
+    <script defer src="scripts/shell/patient-search-detail.js?v=v301"></script>
     
     <!-- Cache Clear Script -->
     <script>
@@ -1663,7 +1664,7 @@
                 console.log('Cache version mismatch. Clearing cache...');
 
                 // Clear localStorage patient data (keep auth and chat read timestamps)
-                const keysToKeep = ['vps_auth_token', 'user_role', 'user_email'];
+                const keysToKeep = [window.TOKEN_KEY, 'user_role', 'user_email'];
                 // Also keep chat_last_read_* keys
                 Object.keys(localStorage).forEach(key => {
                     if (key.startsWith('chat_last_read_')) keysToKeep.push(key);
@@ -1703,8 +1704,8 @@
         // Global logout function - must be defined before onclick handlers
         window.doLogout = function() {
             console.log('[LOGOUT] Clearing tokens...');
-            localStorage.removeItem('vps_auth_token');
-            sessionStorage.removeItem('vps_auth_token');
+            localStorage.removeItem(window.TOKEN_KEY);
+            sessionStorage.removeItem(window.TOKEN_KEY);
             localStorage.removeItem('must_change_password');
             localStorage.removeItem('cache_version');
             if (window.auth) window.auth.currentUser = null;
@@ -1748,8 +1749,8 @@
                 }
             }
 
-            return readToken(function() { return localStorage.getItem('vps_auth_token'); })
-                || readToken(function() { return sessionStorage.getItem('vps_auth_token'); })
+            return readToken(function() { return localStorage.getItem(window.TOKEN_KEY); })
+                || readToken(function() { return sessionStorage.getItem(window.TOKEN_KEY); })
                 || readToken(function() { return localStorage.getItem('token'); })
                 || readToken(function() { return sessionStorage.getItem('token'); })
                 || readToken(function() { return localStorage.getItem('auth_token'); })
@@ -1757,8 +1758,7 @@
                 || null;
         };
 
-        // Also expose TOKEN_KEY for consistency
-        window.TOKEN_KEY = 'vps_auth_token';
+        // window.TOKEN_KEY is initialized before all inline shell scripts.
     </script>
 
     <!-- Mobile Responsive CSS (using styles/ version with mobile-app-mode) -->
@@ -8127,7 +8127,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v292"></script>
+    <script defer src="scripts/shell/actions.js?v=v301"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 <style>
@@ -8246,8 +8246,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v222" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v222" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v301" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v301" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -8267,12 +8267,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <!-- Sunday Clinic payment/planning dependencies -->
 <script defer src="https://js.xendit.co/v1/xendit.min.js"></script>
-<script type="module" src="scripts/shell/qrcode-loader.js?v=v292"></script>
-<script defer src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260628templates1"></script>
-<script defer src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260619staff1"></script>
+<script defer src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=v301"></script>
+<script defer src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=v301"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v222"></script>
+<script defer src="scripts/rum.js?v=v301"></script>
 
 <!-- Core app modules -->
 <script>
@@ -8496,7 +8495,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v292"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v301"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -8540,7 +8539,8 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
             if (response.status === 401) {
                 console.error('[ERROR] Unauthorized - token expired');
-                localStorage.removeItem('vps_auth_token');
+                localStorage.removeItem(window.TOKEN_KEY);
+                sessionStorage.removeItem(window.TOKEN_KEY);
                 alert('Token Anda telah kadaluarsa. Silakan login kembali.');
                 window.location.replace('login.html');
                 return null;
@@ -11877,10 +11877,10 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Tanya Dokter -->
- <script src="./scripts/tanya-dokter.js?v=20260518a"></script>
+ <script src="./scripts/tanya-dokter.js?v=v301"></script>
 
  <!-- Support Chat Staff -->
-<script src="./scripts/support-chat-staff.js?v=20260518j"></script>
+<script src="./scripts/support-chat-staff.js?v=v301"></script>
  <script>
  function showSupportChatPage() {
      document.documentElement.classList.remove('kantor-saya-active');
@@ -11911,9 +11911,9 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Staff Points + Briefing -->
- <script src="./scripts/staff-points.js?v=20260531a"></script>
- <script src="./scripts/staff-briefing.js?v=20260531a"></script>
- <script src="./scripts/staff-payroll.js?v=v256"></script>
+ <script src="./scripts/staff-points.js?v=v301"></script>
+ <script src="./scripts/staff-briefing.js?v=v301"></script>
+ <script src="./scripts/staff-payroll.js?v=v301"></script>
  <script>
  function _scHideAllStaffPages() {
      document.documentElement.classList.remove('kantor-saya-active');
@@ -13063,7 +13063,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v222"></script>
+ <script src="scripts/mobile-helper.js?v=v301"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -13075,10 +13075,9 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v266"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v222"></script>
-    <!-- Chat Popup: loaded statically to avoid dynamic-loading timing issues -->
-    <script src="/staff/public/scripts/chat-popup.js?v=v293"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v301"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v301"></script>
+    <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->
 <div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
@@ -13318,7 +13317,8 @@ document.getElementById('btn-skip-completion')?.addEventListener('click', async 
     });
 
     if (result.isConfirmed) {
-        localStorage.removeItem('vps_auth_token');
+        localStorage.removeItem(window.TOKEN_KEY);
+        sessionStorage.removeItem(window.TOKEN_KEY);
         localStorage.removeItem('vps_auth_user');
         window.location.href = 'login.html';
     }
@@ -14463,6 +14463,35 @@ function renderNotificationList(items) {
     }).join('');
 }
 
+const NOTIFICATION_ACTIONS = Object.freeze({
+    showKelolaPengumumanPage: () => window.showKelolaPengumumanPage?.(),
+    showNotificationsPage: (id) => window.showNotificationsPage?.(id || null)
+});
+
+function runNotificationNavigation(link) {
+    const target = String(link || '').trim();
+    if (!target) return false;
+
+    if (target.startsWith('#')) {
+        window.location.hash = target;
+        return true;
+    }
+
+    if (target.startsWith('javascript:')) {
+        const actionMatch = target.match(/^javascript:([A-Za-z_$][\w$]*)\((\d*)\);?$/);
+        const action = actionMatch ? NOTIFICATION_ACTIONS[actionMatch[1]] : null;
+        if (!action) {
+            console.warn('[Notifications] Blocked unsupported action:', target);
+            return false;
+        }
+        action(actionMatch[2] ? Number(actionMatch[2]) : null);
+        return true;
+    }
+
+    window.location.assign(target);
+    return true;
+}
+
 async function handleNotificationClick(id, source, link) {
     try {
         const token = await window.getIdToken();
@@ -14489,15 +14518,7 @@ async function handleNotificationClick(id, source, link) {
     // Close dropdown first
     $('#notification-dropdown .dropdown-toggle').dropdown('hide');
 
-    // Navigate to link if provided
-    if (link) {
-        if (link.startsWith('#') || link.startsWith('javascript:')) {
-            // In-page navigation
-            eval(link.replace('javascript:', ''));
-        } else {
-            window.location.href = link;
-        }
-    }
+    runNotificationNavigation(link);
 }
 
 async function markAllNotificationsRead() {
@@ -14739,26 +14760,6 @@ async function deleteStaffAnnouncement(id) {
     } catch (error) {
         Swal.fire('Error', error.message, 'error');
     }
-}
-
-// Helper: format time ago
-function formatTimeAgo(date) {
-    const seconds = Math.floor((new Date() - date) / 1000);
-    if (seconds < 60) return 'Baru saja';
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} menit lalu`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} jam lalu`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days} hari lalu`;
-    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-// Helper: escape HTML
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // Export functions
@@ -15110,12 +15111,7 @@ function escapeHtml(text) {
 }
 
 function handleNotifPageClick(link) {
-    if (!link) return;
-    if (link.startsWith('javascript:')) {
-        eval(link.replace('javascript:', ''));
-    } else {
-        window.location.href = link;
-    }
+    runNotificationNavigation(link);
 }
 window.handleNotifPageClick = handleNotifPageClick;
 </script>

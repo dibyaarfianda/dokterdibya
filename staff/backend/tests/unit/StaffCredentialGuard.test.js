@@ -13,8 +13,9 @@ describe('staff credential guard sources', () => {
         expect(helperMatch).not.toBeNull();
 
         const helperBody = helperMatch[1];
-        expect(helperBody).toContain("localStorage.getItem('vps_auth_token')");
-        expect(helperBody).toContain("sessionStorage.getItem('vps_auth_token')");
+        expect(html).toContain("window.TOKEN_KEY = 'vps_auth_token';");
+        expect(helperBody).toContain('localStorage.getItem(window.TOKEN_KEY)');
+        expect(helperBody).toContain('sessionStorage.getItem(window.TOKEN_KEY)');
         expect(helperBody).toContain("localStorage.getItem('token')");
         expect(helperBody).toContain("sessionStorage.getItem('token')");
         expect(helperBody).toContain("localStorage.getItem('auth_token')");
@@ -24,7 +25,7 @@ describe('staff credential guard sources', () => {
     test('bootstrap verifies staff credentials before app initialization', () => {
         const bootstrap = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
 
-        expect(bootstrap).toContain("import('./credentials.js?v=' + v)");
+        expect(bootstrap).toContain("import('./credentials.js')");
         expect(bootstrap).toContain('verifyStaffCredentials');
         expect(bootstrap).toContain('renderStaffShellError');
         expect(bootstrap).toContain('bootstrapStaffShell().catch');
@@ -46,7 +47,8 @@ describe('staff credential guard sources', () => {
         expect(credentials).toContain('Sesi login tidak valid, silakan login ulang');
         expect(credentials).toContain('Login ulang');
         expect(credentials).toContain('Perbarui aplikasi');
-        expect(credentials).toContain("const TOKEN_STORAGE_KEYS = ['vps_auth_token', 'token', 'auth_token'];");
+        expect(credentials).toContain("import { TOKEN_KEY } from '../vps-auth-v2.js';");
+        expect(credentials).toContain("const TOKEN_STORAGE_KEYS = [TOKEN_KEY, 'token', 'auth_token'];");
         expect(credentials).toContain('safeRemoveStorageItem(window.localStorage, key);');
         expect(credentials).toContain('safeRemoveStorageItem(window.sessionStorage, key);');
         expect(credentials).toMatch(/user(?:_type|Type)\s*===\s*'patient'/);

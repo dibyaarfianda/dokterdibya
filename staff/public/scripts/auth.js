@@ -1,5 +1,9 @@
-// No imports needed - hardcode token key to avoid module instance issues
-const TOKEN_KEY = 'vps_auth_token';
+import { TOKEN_KEY } from './vps-auth-v2.js';
+import {
+    ROLE_IDS,
+    isSuperadminRoleId,
+    isSuperadminUser
+} from './role-constants.js';
 
 function $(id) { return document.getElementById(id); }
 
@@ -27,18 +31,9 @@ function doLogout() {
 // Global logout function for mobile menu
 window.handleLogout = doLogout;
 
-// Role ID constants (match backend constants/roles.js)
-const ROLE_IDS = {
-    DOKTER: 1,
-    MANAGERIAL: 7,
-    BIDAN: 22,
-    ADMIN: 24,
-    FRONT_OFFICE: 25
-};
-
 // Helper functions
 function isSuperadminRole(roleId) {
-    return roleId === ROLE_IDS.DOKTER;
+    return isSuperadminRoleId(roleId);
 }
 
 function isAdminRole(roleId) {
@@ -155,7 +150,7 @@ async function setAuthUI(user) {
         }
 
         // Toggle superadmin items based on role_id
-        const isSuperAdmin = user.is_superadmin || isSuperadminRole(user.role_id);
+        const isSuperAdmin = isSuperadminUser(user);
         const isAdmin = isAdminRole(user.role_id) || isManagementRole(user.role_id);
         console.log('Checking user role:', { id: user.id, role_id: user.role_id, isSuperAdmin, isAdmin });
 

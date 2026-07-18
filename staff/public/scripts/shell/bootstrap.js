@@ -1,17 +1,18 @@
 async function bootstrapStaffShell() {
-    // Use stable version string for cache busting (set above from CACHE_VERSION).
-    const v = window.__assetVersion;
-
     const [
         authClient,
-        credentialGuard
+        credentialGuard,
+        roleConstants
     ] = await Promise.all([
-        import('../vps-auth-v2.js?v=' + v),
-        import('./credentials.js?v=' + v)
+        import('../vps-auth-v2.js'),
+        import('./credentials.js'),
+        import('../role-constants.js'),
+        import('./qrcode-loader.js')
     ]);
 
     const { auth, getIdToken, initAuth: initAuthLib } = authClient;
     const { verifyStaffCredentials, renderStaffShellError } = credentialGuard;
+    const { isSuperadminUser } = roleConstants;
 
     window.auth = auth;
     window.getIdToken = getIdToken;
@@ -24,13 +25,15 @@ async function bootstrapStaffShell() {
         mainModule,
         dashboardModule,
         authModule,
-        sessionModule
+        sessionModule,
+        _chatPopupModule
     ] = await Promise.all([
-        import('../toast.js?v=' + v),
-        import('../main.js?v=' + v),
-        import('../dashboard.js?v=' + v),
-        import('../auth.js?v=' + v),
-        import('../session-manager.js?v=' + v)
+        import('../toast.js'),
+        import('../main.js'),
+        import('../dashboard.js'),
+        import('../auth.js'),
+        import('../session-manager.js'),
+        import('../chat-popup.js')
     ]);
 
     const { initMain } = mainModule;
@@ -68,7 +71,6 @@ async function bootstrapStaffShell() {
     initializeApp(user);
 
     function initializeApp(user) {
-        const v = window.__assetVersion;
         const runIdle = window.requestIdleCallback || function(callback, options) {
             return setTimeout(callback, options?.timeout || 1);
         };
@@ -127,20 +129,20 @@ async function bootstrapStaffShell() {
         // Lazy-load non-critical modules after initial render.
         runIdle(() => {
             // Patients module - needed for search/kelola pasien
-            import('../patients.js?v=' + v).then(m => {
+            import('../patients.js').then(m => {
                 if (m.initPatients) m.initPatients();
             }).catch(e => console.error('[ERROR] patients.js:', e));
 
             // Medical exam - needed when opening exam pages
-            import('../medical-exam.js?v=' + v).catch(e => console.error('[ERROR] medical-exam.js:', e));
+            import('../medical-exam.js').catch(e => console.error('[ERROR] medical-exam.js:', e));
 
             // Finance & Analytics - superadmin only
-            if (user.role === 'superadmin') {
-                import('../finance-dashboard.js?v=' + v).then(m => {
+            if (isSuperadminUser(user)) {
+                import('../finance-dashboard.js').then(m => {
                     if (m.initFinanceDashboard) m.initFinanceDashboard();
                 }).catch(e => console.error('[ERROR] finance-dashboard.js:', e));
 
-                import('../analytics.js?v=' + v).then(m => {
+                import('../analytics.js').then(m => {
                     if (m.initAnalyticsDashboard) m.initAnalyticsDashboard();
                 }).catch(e => console.error('[ERROR] analytics.js:', e));
             }

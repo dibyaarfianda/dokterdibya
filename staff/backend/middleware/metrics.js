@@ -15,7 +15,7 @@ const toClampedRate = (rawValue, fallback) => {
 };
 
 const ENABLE_METRICS = process.env.ENABLE_METRICS !== 'false';
-const ENABLE_DETAILED_METRICS = process.env.ENABLE_DETAILED_METRICS === 'true' || !isProduction;
+const ENABLE_DETAILED_METRICS = process.env.ENABLE_DETAILED_METRICS !== 'false';
 const ENABLE_METRICS_SUMMARY_LOG = process.env.ENABLE_METRICS_SUMMARY_LOG === 'true' || !isProduction;
 const METRICS_SAMPLE_RATE = toClampedRate(
     process.env.METRICS_SAMPLE_RATE || (isProduction ? '0.35' : '1'),

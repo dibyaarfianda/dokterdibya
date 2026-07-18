@@ -51,7 +51,8 @@ describe('DocBoard staff directory', () => {
     expect(server).toContain("'no-store, no-cache, must-revalidate'");
     expect(staffMain).toContain('data-docboard-version');
     expect(staffMain).toContain('/docboard/?embed=${encodeURIComponent(embedVersion)}');
-    expect(staffHtml).toContain("window.STAFF_CACHE_VERSION = 'v300';");
-    expect(staffServiceWorker).toContain("STAFF_PWA_VERSION = 'v300'");
+    const staffVersion = staffHtml.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+    expect(staffVersion).toBeTruthy();
+    expect(staffServiceWorker).toContain(`STAFF_PWA_VERSION = '${staffVersion}'`);
   });
 });

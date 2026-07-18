@@ -12,8 +12,9 @@ describe('staff shell refactor phase 1', () => {
 
         expect(html).toMatch(/<script type="module" src="(?:\/staff\/public\/)?scripts\/shell\/bootstrap\.js\?v=[^"' ]+"><\/script>/);
         expect(html).not.toContain("const { auth, getIdToken, initAuth: initAuthLib } = await import('./scripts/vps-auth-v2.js?v=' + v);");
-        expect(bootstrap).toContain("import('../vps-auth-v2.js?v=' + v)");
-        expect(bootstrap).toContain("import('./credentials.js?v=' + v)");
+        expect(bootstrap).toContain("import('../vps-auth-v2.js')");
+        expect(bootstrap).toContain("import('./credentials.js')");
+        expect(bootstrap).not.toMatch(/import\([^\n]+\?v=/);
         expect(bootstrap).toContain('const { auth, getIdToken, initAuth: initAuthLib } = authClient;');
         expect(bootstrap).toContain('const user = await verifyStaffCredentials({ auth });');
         expect(bootstrap).toContain('initializeApp(user);');
@@ -64,13 +65,14 @@ describe('staff shell refactor phase 1', () => {
         const main = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
         const helpers = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'module-helpers.js');
 
-        expect(main).toMatch(/import \{ getAuthToken, importWithVersion, grab \} from '\.\/shell\/module-helpers\.js\?v=[^']+';/);
-        expect(main).not.toContain("from './shell/module-helpers.js';");
+        expect(main).toContain("import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';");
+        expect(main).not.toMatch(/module-helpers\.js\?v=/);
         expect(main).not.toContain('function getAuthToken()');
         expect(main).not.toContain('function importWithVersion(path)');
         expect(main).not.toContain('function grab(id)');
         expect(helpers).toContain('export function getAuthToken()');
-        expect(helpers).toContain('export function createVersionedImporter');
+        expect(helpers).toContain('export function createCanonicalImporter');
+        expect(helpers).not.toContain('specifier = `${path}${separator}v=${version}`');
         expect(helpers).toContain('export function grab(id)');
     });
 
@@ -79,7 +81,7 @@ describe('staff shell refactor phase 1', () => {
         const helpers = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'module-helpers.js');
 
         expect(helpers).toContain("const importBaseUrl = options.importBaseUrl || new URL('../', import.meta.url);");
-        expect(helpers).toContain('specifier = new URL(specifier, importBaseUrl).href;');
+        expect(helpers).toContain('const specifier = new URL(path, importBaseUrl).href;');
         expect(main).toContain("importWithVersion('./sunday-clinic.js')");
     });
 
@@ -144,13 +146,15 @@ describe('staff shell refactor phase 1', () => {
         expect(patientSearchDetail).toContain('window.installPatientViewButtons = function installPatientViewButtons(options = {})');
     });
 
-    test('QRCode dependency is local and versioned instead of a missing CDN build path', () => {
+    test('QRCode dependency is local and imported canonically by the shell bootstrap', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const bootstrap = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
         const qrCodeLoader = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'qrcode-loader.js');
         const qrCodeBundle = readNormalizedFile('staff', 'public', 'scripts', 'vendor', 'qrcode.esm.js');
 
         expect(html).not.toContain('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js');
-        expect(html).toMatch(/<script type="module" src="scripts\/shell\/qrcode-loader\.js\?v=[^"' ]+"><\/script>/);
+        expect(html).not.toMatch(/<script type="module" src="scripts\/shell\/qrcode-loader\.js/);
+        expect(bootstrap).toContain("import('./qrcode-loader.js')");
         expect(qrCodeLoader).toContain("import QRCode from '../vendor/qrcode.esm.js';");
         expect(qrCodeLoader).toContain('window.QRCode = QRCode;');
         expect(qrCodeBundle).toContain('export');

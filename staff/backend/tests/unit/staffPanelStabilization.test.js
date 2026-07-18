@@ -321,12 +321,14 @@ describe('staff panel stabilization sources', () => {
         expect(systemRoutesIndex).toBeLessThan(notFoundIndex);
     });
 
-    test('healthcheck exposes DB pool checkout pressure signals', () => {
+    test('public healthcheck remains minimal while detailed pool signals stay protected in metrics', () => {
         const systemRoutes = readNormalizedFile('staff', 'backend', 'routes', 'system.js');
 
-        expect(systemRoutes).toContain('const dbStats = getDbStats();');
-        expect(systemRoutes).toContain('activeConnectionCount: dbStats.activeConnectionCount');
-        expect(systemRoutes).toContain('longHeldConnectionCount: dbStats.longHeldConnectionCount');
+        expect(systemRoutes).toContain("router.get('/api/metrics', verifyToken, requireSuperadmin");
+        expect(systemRoutes).toContain('metrics.db = getDbStats();');
+        expect(systemRoutes).not.toContain('activeConnectionCount:');
+        expect(systemRoutes).not.toContain('longHeldConnectionCount:');
+        expect(systemRoutes).not.toContain('system: metrics.system');
     });
 
     test('notifications route is mounted once to avoid duplicate route handling', () => {
@@ -525,7 +527,9 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('showStaffPayrollPage(); return false;');
         expect(html).toContain('<p>Gajian</p>');
         expect(html).toContain('id="content-staff-payroll"');
-        expect(html).toContain('./scripts/staff-payroll.js?v=v256');
+        const staffVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        expect(staffVersion).toBeTruthy();
+        expect(html).toContain(`./scripts/staff-payroll.js?v=${staffVersion}`);
         expect(html).toContain('window.showStaffPayrollPage = showStaffPayrollPage;');
 
         expect(mainJs).toContain("pages.staffPayroll = grab('content-staff-payroll');");
@@ -549,7 +553,9 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('showStaffBriefingPage(); return false;');
         expect(html).toContain('<p>Briefing</p>');
         expect(html).toContain('id="content-staff-briefing"');
-        expect(html).toContain('./scripts/staff-briefing.js?v=20260531a');
+        const staffVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        expect(staffVersion).toBeTruthy();
+        expect(html).toContain(`./scripts/staff-briefing.js?v=${staffVersion}`);
         expect(html).toContain('window.showStaffBriefingPage = showStaffBriefingPage;');
 
         expect(mainJs).toContain("pages.staffBriefing = grab('content-staff-briefing');");
@@ -598,7 +604,9 @@ describe('staff panel stabilization sources', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
 
-        expect(html).toContain('/staff/public/scripts/tap-feedback.js?v=v266');
+        const staffVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        expect(staffVersion).toBeTruthy();
+        expect(html).toContain(`/staff/public/scripts/tap-feedback.js?v=${staffVersion}`);
         expect(tapFeedback).toContain("osc.type = 'sine';");
         expect(tapFeedback).toContain('osc.frequency.setValueAtTime(800, ac.currentTime);');
         expect(tapFeedback).toContain('osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);');

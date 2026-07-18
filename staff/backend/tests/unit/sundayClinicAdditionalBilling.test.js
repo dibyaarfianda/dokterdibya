@@ -90,6 +90,6 @@ describe('Sunday Clinic additional billing implementation', () => {
         expect(pdfGenerator).toContain('const invoiceReference = recordData.invoiceReference || recordData.mrId;');
         expect(pdfGenerator).toContain("item.item_type === 'tindakan' || item.item_type === 'konsultasi' || item.item_type === 'admin'");
         expect(pdfGenerator).toContain('recordData.invoiceReference || recordData.mrId');
-        expect(adminHtml).toContain("window.STAFF_CACHE_VERSION = 'v294';");
+        expect(adminHtml).toMatch(/window\.STAFF_CACHE_VERSION = 'v\d+';/);
     });
 });

@@ -252,7 +252,7 @@ logsRoutes.setSocketIO(io);
 statusRoutes.setSocketIO(io);
 
 // Serve static staff assets with cache headers
-// Versioned assets (?v=xxx) get long cache; HTML gets no-cache
+// Versioned assets get immutable caching. Canonical module URLs must revalidate.
 app.get('/staff/public/sunday-clinic.html', (req, res) => {
     res.redirect(307, buildEmbeddedSundayClinicUrl(req));
 });
@@ -261,13 +261,22 @@ app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
     res.redirect(307, buildEmbeddedSundayClinicUrl(req));
 });
 
+app.use((req, res, next) => {
+    const pathname = String(req.path || '');
+    if (!/\.(?:js|css)$/.test(pathname)) return next();
+
+    if (typeof req.query?.v === 'string' && req.query.v.trim()) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    } else {
+        res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+    next();
+});
+
 app.use(express.static(path.join(__dirname, '../public'), {
     setHeaders: (res, filePath) => {
         if (filePath.endsWith('.html')) {
             res.setHeader('Cache-Control', 'no-cache, must-revalidate');
-        } else if (filePath.match(/\.(js|css)$/)) {
-            // JS/CSS use ?v= versioning, safe to cache for 7 days
-            res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
         } else if (filePath.match(/\.(png|jpg|jpeg|svg|webp|ico|gif|woff2?|ttf|eot)$/)) {
             // Static images/fonts cached for 30 days
             res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');

@@ -94,9 +94,21 @@
 
   // --- API Call Tracking ---
 
+  function normalizeApiPath(endpoint) {
+    try {
+      var parsed = new URL(endpoint, window.location.origin);
+      return parsed.pathname
+        .replace(/\/\d+(?=\/|$)/g, '/:id')
+        .replace(/\/[A-Za-z]{2,}\d+(?=\/|$)/g, '/:id')
+        .replace(/\/[0-9a-fA-F-]{8,}(?=\/|$)/g, '/:id');
+    } catch (e) {
+      return String(endpoint || '/unknown').replace(/\?.*$/, '');
+    }
+  }
+
   function trackApiCall(endpoint, durationMs, status) {
-    // Strip any patient identifiers from endpoint
-    var clean = endpoint.replace(/\/\d+/g, '/:id').replace(/\?.*$/, '');
+    // Store a canonical pathname only; never keep origin, query, or identifiers.
+    var clean = normalizeApiPath(endpoint);
     apiCalls.push({
       endpoint: clean,
       duration: Math.round(durationMs),

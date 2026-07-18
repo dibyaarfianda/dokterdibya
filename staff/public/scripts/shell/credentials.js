@@ -1,4 +1,6 @@
-const TOKEN_STORAGE_KEYS = ['vps_auth_token', 'token', 'auth_token'];
+import { TOKEN_KEY } from '../vps-auth-v2.js';
+
+const TOKEN_STORAGE_KEYS = [TOKEN_KEY, 'token', 'auth_token'];
 const STAFF_SESSION_INVALID_MESSAGE = 'Sesi login tidak valid, silakan login ulang';
 
 export class StaffCredentialError extends Error {

@@ -8,8 +8,8 @@ function callGlobal(fnName) {
 }
 
 function logoutFallback() {
-    localStorage.removeItem('vps_auth_token');
-    sessionStorage.removeItem('vps_auth_token');
+    localStorage.removeItem(window.TOKEN_KEY);
+    sessionStorage.removeItem(window.TOKEN_KEY);
     localStorage.removeItem('cache_version');
     window.location.replace('/staff/public/login.html');
 }
@@ -171,7 +171,8 @@ function clearAppCache() {
             })
         );
     }
-    localStorage.removeItem('vps_auth_token');
+    localStorage.removeItem(window.TOKEN_KEY);
+    sessionStorage.removeItem(window.TOKEN_KEY);
     Promise.all(tasks).then(done).catch(done);
 }
 function mobileNavClick(btn, action) {

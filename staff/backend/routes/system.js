@@ -17,7 +17,8 @@ function createSystemRoutes({
 }) {
     const router = express.Router();
 
-    router.get('/api/metrics', (req, res) => {
+    router.get('/api/metrics', verifyToken, requireSuperadmin, (req, res) => {
+        res.set('Cache-Control', 'no-store');
         const metrics = getMetrics();
         const socketStats = getSocketStats();
         metrics.rum = getRumSummary();
@@ -49,27 +50,20 @@ function createSystemRoutes({
             const startTime = Date.now();
             await pool.query('SELECT 1');
             const dbLatency = Date.now() - startTime;
-            const metrics = getMetrics();
-            const dbStats = getDbStats();
 
             res.json({
                 status: 'healthy',
                 timestamp: new Date().toISOString(),
                 database: {
                     status: 'connected',
-                    latencyMs: dbLatency,
-                    activeConnectionCount: dbStats.activeConnectionCount,
-                    longHeldConnectionCount: dbStats.longHeldConnectionCount,
-                    currentMinuteQueries: dbStats.currentMinuteQueries
+                    latencyMs: dbLatency
                 },
-                system: metrics.system,
                 uptime: Math.floor(process.uptime())
             });
         } catch (error) {
             res.status(500).json({
                 status: 'unhealthy',
-                timestamp: new Date().toISOString(),
-                error: error.message
+                timestamp: new Date().toISOString()
             });
         }
     });

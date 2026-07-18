@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const cache = require('../utils/cache');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 // ---------------------------------------------------------------------------
 // In-memory storage — keyed by metric name (e.g. "LCP", "api_/api/patients")
@@ -33,6 +34,21 @@ function recordMetric(name, value, page) {
     if (page) {
         if (!bucket.byPage[page]) bucket.byPage[page] = [];
         cappedPush(bucket.byPage[page], value, MAX_SAMPLES);
+    }
+}
+
+function normalizeApiPath(endpoint) {
+    if (typeof endpoint !== 'string' || !endpoint.trim()) return '/unknown';
+
+    try {
+        const parsed = new URL(endpoint, 'https://dokterdibya.local');
+        return parsed.pathname
+            .replace(/\/\d+(?=\/|$)/g, '/:id')
+            .replace(/\/[A-Za-z]{2,}\d+(?=\/|$)/g, '/:id')
+            .replace(/\/[0-9a-fA-F-]{8,}(?=\/|$)/g, '/:id')
+            .slice(0, 100);
+    } catch (_) {
+        return endpoint.split('?')[0].slice(0, 100) || '/unknown';
     }
 }
 
@@ -138,7 +154,7 @@ router.post('/', (req, res) => {
     if (Array.isArray(body.apiCalls)) {
         for (const call of body.apiCalls.slice(0, 50)) {
             if (!call || typeof call.duration !== 'number') continue;
-            const ep = typeof call.endpoint === 'string' ? call.endpoint.slice(0, 100) : '/unknown';
+            const ep = normalizeApiPath(call.endpoint);
             recordMetric('api:' + ep, call.duration, page);
             accepted++;
         }
@@ -155,7 +171,8 @@ router.post('/', (req, res) => {
 /**
  * GET /api/rum/summary
  */
-router.get('/summary', (req, res) => {
+router.get('/summary', verifyToken, requireSuperadmin, (req, res) => {
+    res.set('Cache-Control', 'no-store');
     return res.json({ success: true, data: getRumSummary() });
 });
 
@@ -164,3 +181,4 @@ module.exports.getRumSummary = getRumSummary;
 module.exports.getCacheStats = getCacheStats;
 module.exports.getCostSummary = getCostSummary;
 module.exports.trackCost = trackCost;
+module.exports.normalizeApiPath = normalizeApiPath;

@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v300'; // Morbid Case resume spacing
+const STAFF_PWA_VERSION = 'v301'; // Staff panel wave 1 hardening
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
@@ -21,7 +21,7 @@ const STATIC_ASSETS = [
   'https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js',
   'https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js',
   'https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css',
+  'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css',
   'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js',
   'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js',
   'https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css',
@@ -37,14 +37,6 @@ const REALTIME_ROUTES = [
   '/api/medical-records',
   '/api/booking',
   '/socket.io'
-];
-
-// API routes that can use network-first with cache fallback (non-critical)
-const CACHEABLE_API_ROUTES = [
-  '/api/patients',
-  '/api/announcements',
-  '/api/settings',
-  '/api/users'
 ];
 
 // Install event - cache static assets
@@ -126,14 +118,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cacheable API routes - network first with cache fallback
-  const isCacheableAPI = CACHEABLE_API_ROUTES.some(route => url.pathname.startsWith(route));
-  if (isCacheableAPI) {
-    event.respondWith(networkFirst(request));
-    return;
-  }
-
-  // Other API requests - network only (no caching)
+  // Authenticated API responses are network-only and never enter Cache Storage.
   if (url.pathname.startsWith('/api/')) {
     return;
   }

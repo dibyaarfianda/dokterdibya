@@ -4,10 +4,8 @@ export function getAuthToken() {
         : '';
 }
 
-export function createVersionedImporter(options = {}) {
+export function createCanonicalImporter(options = {}) {
     const moduleCache = new Map();
-    const skipVersionModules = options.skipVersionModules || new Set();
-    const getAssetVersion = options.getAssetVersion || (() => window.__assetVersion);
     const importBaseUrl = options.importBaseUrl || new URL('../', import.meta.url);
 
     return function importWithVersion(path) {
@@ -15,23 +13,16 @@ export function createVersionedImporter(options = {}) {
             return moduleCache.get(path);
         }
 
-        let specifier = path;
-        const version = getAssetVersion();
-        if (version && !skipVersionModules.has(path)) {
-            const separator = path.includes('?') ? '&' : '?';
-            specifier = `${path}${separator}v=${version}`;
-        }
-
-        specifier = new URL(specifier, importBaseUrl).href;
+        const specifier = new URL(path, importBaseUrl).href;
         const promise = import(specifier);
         moduleCache.set(path, promise);
         return promise;
     };
 }
 
-export const importWithVersion = createVersionedImporter({
-    skipVersionModules: new Set(['./billing.js', './billing-obat.js', './medical-exam.js'])
-});
+// Compatibility export for existing callers. Imports are canonical and unversioned;
+// only the top-level bootstrap entry carries the deploy cache version.
+export const importWithVersion = createCanonicalImporter();
 
 export function grab(id) {
     return document.getElementById(id);

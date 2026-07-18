@@ -4,13 +4,13 @@
  */
 
 import { MR_CATEGORIES, SECTIONS } from './utils/constants.js';
-import apiClient from './utils/api-client.js?v=2.0.2';
+import apiClient from './utils/api-client.js';
 import stateManager from './utils/state-manager.js';
 import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
-import { applyPendingImportData } from './utils/medical-import.js?v=20260619embed1';
-import patientSidebar from './components/patient-history-sidebar.js?v=2.0.6';
+import { applyPendingImportData } from './utils/medical-import.js';
+import patientSidebar from './components/patient-history-sidebar.js';
 
 const QUEUE_STATUS_TIMEOUT_MS = 12000;
 
@@ -2008,7 +2008,7 @@ class SundayClinicApp {
      */
     async autoGenerateAndPersistDiagnosis(sectionUpdates = {}) {
         try {
-            const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js?v=20260426v1');
+            const { generateObstetricDiagnosis } = await import('./utils/diagnosis-generator.js');
             const freshState = stateManager.getState();
             const mergedRecordData = {
                 ...(freshState.recordData || {}),

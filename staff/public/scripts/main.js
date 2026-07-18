@@ -8,7 +8,8 @@ import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js?v=v292';
+import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';
+import { isSuperadminUser } from './role-constants.js';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -362,7 +363,7 @@ function resolveDisplayName(rawName, userId, fallbackLabel = 'Unknown') {
 }
 
 function resolveDashboardDisplayName(user) {
-    if (user?.is_superadmin || user?.role_id === 1 || user?.email === 'arfianda.diby@gmail.com') {
+    if (isSuperadminUser(user)) {
         return 'dr. Dibya';
     }
 
@@ -4490,7 +4491,7 @@ async function updateWelcomeCard(user) {
 
     // Set name - special greeting for superadmin (dr. Dibya)
     // Check multiple possible superadmin indicators
-    const isSuperadmin = user.is_superadmin || user.role_id === 1 || user.email === 'arfianda.diby@gmail.com';
+    const isSuperadmin = isSuperadminUser(user);
     
     if (isSuperadmin) {
         welcomeName.innerHTML = '<strong>dr. Dibya</strong>';
