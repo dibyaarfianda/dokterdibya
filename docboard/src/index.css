@@ -5297,9 +5297,19 @@ input { font-family: inherit; }
 .morbid-operation-list > section > header { align-items: center; }
 .morbid-operation-list header span { color: #be123c; font-size: 10px; font-weight: 800; text-transform: uppercase; }
 .morbid-operation-list header h2 { margin: 3px 0 0; font-size: 16px; letter-spacing: 0; }
-.morbid-resume { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.morbid-resume > section:first-child { grid-column: span 2; }
-.morbid-resume > section > h2 { padding: 12px 12px 0; }
+.morbid-resume { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.morbid-resume > section { min-width: 0; overflow: hidden; }
+.morbid-resume > section:first-child { grid-column: auto; }
+.morbid-resume > section > h2 {
+  margin: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #edf0f3;
+}
+.morbid-resume .morbid-field-list { border-top: 0; }
+.morbid-resume .morbid-field-list > div {
+  grid-template-columns: minmax(150px, 180px) minmax(0, 1fr);
+  padding: 12px 16px;
+}
 .morbid-prescription-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .morbid-medication { padding: 9px 12px; border-bottom: 1px solid #f0f2f5; }
 .morbid-medication strong,
@@ -5320,7 +5330,7 @@ input { font-family: inherit; }
   .morbid-field-list > div { grid-template-columns: 1fr; gap: 4px; }
   .morbid-resume,
   .morbid-prescription-list { grid-template-columns: 1fr; }
-  .morbid-resume > section:first-child { grid-column: auto; }
+  .morbid-resume .morbid-field-list > div { grid-template-columns: 1fr; gap: 5px; padding: 12px 14px; }
   .morbid-candidate { grid-template-columns: minmax(0, 1fr); }
   .morbid-candidate button { width: 100%; }
   .morbid-document { grid-template-columns: minmax(0, 1fr) 68px; gap: 12px; padding: 13px 14px; }

@@ -40,9 +40,9 @@ describe('DocBoard staff directory', () => {
     const staffHtml = readRepoFile('staff', 'public', 'index-adminlte.html');
     const staffServiceWorker = readRepoFile('staff', 'public', 'sw.js');
 
-    expect(serviceWorker).toContain("docboard-pwa-20260718-3");
-    expect(index).toContain('docboard-20260718-3');
-    expect(main).toContain("DOCBOARD_PWA_VERSION = '20260718-3'");
+    expect(serviceWorker).toContain("docboard-pwa-20260718-4");
+    expect(index).toContain('docboard-20260718-4');
+    expect(main).toContain("DOCBOARD_PWA_VERSION = '20260718-4'");
     expect(main).toContain("updateViaCache: 'none'");
     expect(main).toContain("textContent = 'Update baru tersedia'");
     expect(main).toContain("registration.waiting?.postMessage({ type: 'SKIP_WAITING' })");
@@ -51,7 +51,7 @@ describe('DocBoard staff directory', () => {
     expect(server).toContain("'no-store, no-cache, must-revalidate'");
     expect(staffMain).toContain('data-docboard-version');
     expect(staffMain).toContain('/docboard/?embed=${encodeURIComponent(embedVersion)}');
-    expect(staffHtml).toContain("window.STAFF_CACHE_VERSION = 'v299';");
-    expect(staffServiceWorker).toContain("STAFF_PWA_VERSION = 'v299'");
+    expect(staffHtml).toContain("window.STAFF_CACHE_VERSION = 'v300';");
+    expect(staffServiceWorker).toContain("STAFF_PWA_VERSION = 'v300'");
   });
 });

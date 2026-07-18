@@ -29,4 +29,11 @@ describe('DocBoard Morbid Case access', () => {
     expect(detail).not.toContain('byTransaction');
     expect(detail).not.toContain('`Transaksi ${key}`');
   });
+
+  test('keeps Resume sections readable in a single column', () => {
+    const styles = readRepoFile('docboard', 'src', 'index.css');
+    expect(styles).toContain('.morbid-resume { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }');
+    expect(styles).toContain('.morbid-resume .morbid-field-list > div');
+    expect(styles).toContain('grid-template-columns: minmax(150px, 180px) minmax(0, 1fr);');
+  });
 });
