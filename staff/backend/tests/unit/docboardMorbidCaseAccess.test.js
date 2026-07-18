@@ -37,6 +37,14 @@ describe('DocBoard Morbid Case access', () => {
     expect(styles).toContain('grid-template-columns: minmax(150px, 180px) minmax(0, 1fr);');
   });
 
+  test('searches old Morbid Case candidates while the user types', () => {
+    const list = readRepoFile('docboard', 'src', 'views', 'MorbidCaseList.jsx');
+    expect(list).toContain('const candidateRequestId = useRef(0);');
+    expect(list).toContain('[pickerOpen, candidateSearch]');
+    expect(list).toContain('candidateSearch.trim() ? 300 : 0');
+    expect(list).toContain('requestId !== candidateRequestId.current');
+  });
+
   test('offers on-demand AI analysis and printable PDF layout', () => {
     const api = readRepoFile('docboard', 'src', 'services', 'api.js');
     const detail = readRepoFile('docboard', 'src', 'views', 'MorbidCaseDetail.jsx');

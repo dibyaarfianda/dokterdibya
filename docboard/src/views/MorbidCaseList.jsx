@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 
@@ -26,6 +26,7 @@ export default function MorbidCaseList() {
   const [candidates, setCandidates] = useState([]);
   const [candidateLoading, setCandidateLoading] = useState(false);
   const [addingId, setAddingId] = useState(null);
+  const candidateRequestId = useRef(0);
 
   async function loadCases(query = search) {
     setLoading(true);
@@ -41,19 +42,29 @@ export default function MorbidCaseList() {
   }
 
   async function loadCandidates(query = candidateSearch) {
+    const requestId = ++candidateRequestId.current;
     setCandidateLoading(true);
     try {
       const result = await api.getMorbidCaseCandidates({ search: query, limit: 30 });
+      if (requestId !== candidateRequestId.current) return;
       setCandidates(result.data || []);
     } catch (err) {
+      if (requestId !== candidateRequestId.current) return;
       setError(err.message || 'Gagal mencari kandidat');
     } finally {
-      setCandidateLoading(false);
+      if (requestId === candidateRequestId.current) setCandidateLoading(false);
     }
   }
 
   useEffect(() => { loadCases(''); }, []);
-  useEffect(() => { if (pickerOpen) loadCandidates(candidateSearch); }, [pickerOpen]);
+  useEffect(() => {
+    if (!pickerOpen) {
+      candidateRequestId.current += 1;
+      return undefined;
+    }
+    const timer = setTimeout(() => loadCandidates(candidateSearch), candidateSearch.trim() ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [pickerOpen, candidateSearch]);
 
   async function addCase(candidate) {
     if (candidate.morbid_case_id) {
@@ -138,7 +149,7 @@ export default function MorbidCaseList() {
               <button type="submit">Cari</button>
             </form>
             <div class="morbid-candidate-list">
-              {candidateLoading ? <div class="audit-pa-state">Mencari kasus...</div> : candidates.map(candidate => (
+              {candidateLoading ? <div class="audit-pa-state">Mencari kasus...</div> : candidates.length === 0 ? <div class="audit-pa-state">Kasus tidak ditemukan.</div> : candidates.map(candidate => (
                 <div class="morbid-candidate" key={candidate.id}>
                   <div>
                     <strong>{candidate.patient_name}</strong>
