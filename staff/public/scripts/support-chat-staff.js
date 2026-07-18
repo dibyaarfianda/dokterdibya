@@ -7,18 +7,15 @@
     'use strict';
 
     var API_BASE = '/api/support-chat';
-    var POLL_INTERVAL = 15000; // 15 seconds fallback polling
-
     var state = {
         sessions: [],           // List of pending escalated sessions
         activeSessionId: null,  // Currently open session
         activeSession: null,    // Full active session object (for lock state)
         activeMessages: [],
-        pollTimer: null,
         badgeCount: 0,
         joinedRoom: null,
         socketConnectHandler: null,
-        messagePollTimer: null,
+        jobsRegistered: false,
         lastMessageId: 0,
         sendingReply: false
     };
@@ -100,7 +97,7 @@
             // Update badge and reload list
             state.badgeCount++;
             updateBadge(state.badgeCount);
-            loadPendingSessions();
+            requestSessionListRefresh();
             // Notification toast
             showToast('💬 Pasien ' + (data.patientName || 'baru') + ' membutuhkan bantuan');
         });
@@ -125,7 +122,7 @@
                 renderEmptyPanel();
                 stopActiveSessionPolling();
             }
-            loadPendingSessions();
+            requestSessionListRefresh();
         });
 
         // Session locked by a staff (ownership claimed)
@@ -138,7 +135,7 @@
                     renderActiveSession(state.activeSession);
                 }
             }
-            loadPendingSessions();
+            requestSessionListRefresh();
         });
 
         // Real-time message delivery in open session
@@ -187,26 +184,35 @@
         var badge = document.getElementById('support-chat-badge');
         if (badge) {
             badge.textContent = count > 0 ? count : '';
+            badge.classList.toggle('d-none', count <= 0);
             badge.style.display = count > 0 ? 'inline-flex' : 'none';
         }
     }
 
-    async function refreshBadge() {
+    async function refreshBadge(options) {
         try {
-            var data = await apiFetch('/staff/count');
+            var data = await apiFetch('/staff/count', { signal: options && options.signal });
             updateBadge(data.count || 0);
         } catch (e) { /* ignore */ }
     }
 
     // ==================== LIST ====================
-    async function loadPendingSessions() {
+    async function loadPendingSessions(options) {
         try {
-            var data = await apiFetch('/staff/pending');
+            var data = await apiFetch('/staff/pending', { signal: options && options.signal });
             state.sessions = data.sessions || [];
             renderSessionList();
             updateBadge(state.sessions.length);
         } catch (err) {
             console.error('[support-staff] loadPendingSessions error:', err);
+        }
+    }
+
+    function requestSessionListRefresh() {
+        var coordinator = window.staffPollingCoordinator;
+        if (coordinator && coordinator.trigger('support-session-list')) return;
+        if (window.__currentPage === 'support-chat' && document.visibilityState === 'visible') {
+            loadPendingSessions();
         }
     }
 
@@ -257,10 +263,10 @@
         }
     }
 
-    async function loadSessionMessages(sessionId) {
+    async function loadSessionMessages(sessionId, options) {
         if (!sameSessionId(state.activeSessionId, sessionId)) return;
         try {
-            var data = await apiFetch('/staff/session/' + sessionId);
+            var data = await apiFetch('/staff/session/' + sessionId, { signal: options && options.signal });
             state.activeSession = data.session;
             state.activeMessages = data.session.messages || [];
             renderMessagesInPanel(state.activeMessages);
@@ -273,17 +279,11 @@
     }
 
     function startActiveSessionPolling() {
-        stopActiveSessionPolling();
-        state.messagePollTimer = setInterval(function () {
-            if (!state.activeSessionId) return;
-            loadSessionMessages(state.activeSessionId);
-        }, 3000);
+        window.staffPollingCoordinator?.trigger('support-active-session');
     }
 
     function stopActiveSessionPolling() {
-        if (!state.messagePollTimer) return;
-        clearInterval(state.messagePollTimer);
-        state.messagePollTimer = null;
+        // The coordinator stops this job automatically when its page/condition is inactive.
     }
 
     function renderActiveSession(session) {
@@ -464,7 +464,7 @@
             state.activeSession = null;
             renderEmptyPanel();
             stopActiveSessionPolling();
-            loadPendingSessions();
+            requestSessionListRefresh();
             showToast('Sesi diselesaikan', 'success');
         } catch (err) {
             console.error('[support-staff] resolveSession error:', err);
@@ -574,15 +574,32 @@
     function init() {
         injectStyles();
         bindSocketEvents();
-        loadPendingSessions();
-        refreshBadge();
-
-        // Periodic polling as fallback for Socket.IO
-        if (state.pollTimer) clearInterval(state.pollTimer);
-        state.pollTimer = setInterval(function () {
-            loadPendingSessions();
-            refreshBadge();
-        }, POLL_INTERVAL);
+        var coordinator = window.staffPollingCoordinator;
+        if (coordinator && !state.jobsRegistered) {
+            state.jobsRegistered = true;
+            coordinator.register('support-session-list', {
+                page: 'support-chat',
+                interval: 30000,
+                backoff: 60000,
+                run: function (context) { return loadPendingSessions(context); }
+            });
+            coordinator.register('support-active-session', {
+                page: 'support-chat',
+                interval: 5000,
+                backoff: 15000,
+                when: function () {
+                    var panel = document.getElementById('sc-staff-panel');
+                    return Boolean(state.activeSessionId && panel && panel.offsetParent !== null);
+                },
+                run: function (context) {
+                    return state.activeSessionId
+                        ? loadSessionMessages(state.activeSessionId, context)
+                        : Promise.resolve();
+                }
+            });
+        }
+        requestSessionListRefresh();
+        window.staffPollingCoordinator?.trigger('support-chat-badge');
     }
 
     // ==================== PUBLIC API ====================

@@ -4,6 +4,7 @@ async function bootstrapStaffShell() {
         credentialGuard,
         roleConstants,
         _pageRegistryModule,
+        _pollingCoordinatorModule,
         featureLoader,
         pageDescriptorsModule
     ] = await Promise.all([
@@ -11,6 +12,7 @@ async function bootstrapStaffShell() {
         import('./credentials.js'),
         import('../role-constants.js'),
         import('./page-registry.js'),
+        import('./polling-coordinator.js'),
         import('./feature-loader.js'),
         import('./page-descriptors.js')
     ]);
@@ -21,9 +23,11 @@ async function bootstrapStaffShell() {
     const { createPageDescriptors } = pageDescriptorsModule;
 
     const pageRegistry = new window.PageRegistry();
+    const pollingCoordinator = new window.PollingCoordinator();
     pageRegistry.registerAll(createPageDescriptors());
 
     window.staffPageRegistry = pageRegistry;
+    window.staffPollingCoordinator = pollingCoordinator;
     window.ensureStaffFeature = ensureFeature;
 
     function installLazyFeatureShim(globalName, featureName, pageKey = null) {
@@ -50,21 +54,18 @@ async function bootstrapStaffShell() {
     const [
         _,
         mainModule,
-        dashboardModule,
         authModule,
         sessionModule,
         _chatPopupModule
     ] = await Promise.all([
         import('../toast.js'),
         import('../main.js'),
-        import('../dashboard.js'),
         import('../auth.js'),
         import('../session-manager.js'),
         import('../chat-popup.js')
     ]);
 
     const { initMain } = mainModule;
-    const { initDashboard } = dashboardModule;
     const { initAuth } = authModule;
     const { initSessionManager, restoreSessionOnLoad } = sessionModule;
 
@@ -92,7 +93,7 @@ async function bootstrapStaffShell() {
 
     // Set RUM context
     window.__userRole = user.role || 'unknown';
-    window.__currentPage = 'dashboard';
+    window.__currentPage = null;
 
     // User is verified, initialize app.
     initializeApp(user);
@@ -112,6 +113,7 @@ async function bootstrapStaffShell() {
         // Initialize feature areas
         try {
             initAuth(user);
+            window.dispatchEvent(new CustomEvent('staff:auth-ready', { detail: { user } }));
         } catch (error) {
             console.error('[ERROR] Error initializing auth UI:', error);
         }
@@ -124,11 +126,9 @@ async function bootstrapStaffShell() {
             if (navRole) navRole.textContent = user.role_display_name || user.role || 'Staff';
         }
 
-        try {
-            initDashboard();
-        } catch (error) {
-            console.error('[ERROR] Error initializing dashboard:', error);
-        }
+        import('./support-chat-badge.js')
+            .then(module => module.initSupportChatBadge?.())
+            .catch(error => console.warn('[WARN] Support badge fallback unavailable:', error));
 
         // Non-critical boot tasks run during idle so first paint can happen sooner.
         runIdle(() => {
@@ -139,6 +139,7 @@ async function bootstrapStaffShell() {
             }
 
             try {
+                if (window.__currentPage !== 'dashboard') return;
                 if (typeof window.loadDashboardCurrentCode === 'function') {
                     window.loadDashboardCurrentCode();
                 } else {

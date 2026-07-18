@@ -207,7 +207,6 @@ import { ROLE_IDS } from './role-constants.js';
   ensureFAB();
 
   // Guardian interval — every 2s (200ms was too aggressive, triggered observer loop)
-  setInterval(ensureFAB, 2000);
 
   // Helper: apply full-screen mode for the chat box on mobile
   function applyMobileFullScreen(cont) {
@@ -949,19 +948,19 @@ import { ROLE_IDS } from './role-constants.js';
                     if (candidate && (candidate.id || candidate.uid)) {
                         user = candidate;
                     }
-                    clearInterval(authPoll);
+                    window.removeEventListener('staff:auth-ready', handleAuthReady);
                     clearTimeout(authTimeout);
                     resolve();
                 };
 
-                const authPoll = setInterval(() => {
-                    resolveAuthUser().then((candidate) => {
-                        if (candidate && (candidate.id || candidate.uid)) {
-                            console.log('[ChatPopup] Auth ready:', candidate);
-                            finalize(candidate);
-                        }
-                    }).catch(() => {});
-                }, 250);
+                const handleAuthReady = async event => {
+                    const candidate = event?.detail?.user || await resolveAuthUser().catch(() => null);
+                    if (candidate && (candidate.id || candidate.uid)) {
+                        console.log('[ChatPopup] Auth ready:', candidate);
+                        finalize(candidate);
+                    }
+                };
+                window.addEventListener('staff:auth-ready', handleAuthReady);
 
                 const authTimeout = setTimeout(async () => {
                     const fallbackUser = await resolveAuthUser().catch(() => null);
@@ -1027,9 +1026,8 @@ import { ROLE_IDS } from './role-constants.js';
         let boundSocket = null;
         let socketWaitTimer = null;
         let socketWaitAttempts = 0;
-        let historyPollTimer = null;
+        let historyPollRegistered = false;
         let historyPollInFlight = false;
-        let historyPollBackoffUntil = 0;
 
         function clearSocketWaitTimer() {
           if (socketWaitTimer) {
@@ -1446,34 +1444,29 @@ import { ROLE_IDS } from './role-constants.js';
             }
         }
 
-        async function pollChatHistoryForNewMessages() {
+        async function pollChatHistoryForNewMessages(context) {
           if (historyPollInFlight || isHistoryLoading) return;
-          if (document.visibilityState !== 'visible') return;
           if (boundSocket && boundSocket.connected) return;
-          if (Date.now() < historyPollBackoffUntil) return;
           historyPollInFlight = true;
 
       try {
         const token = await getChatToken();
         if (!token) return;
 
-        const response = await fetch(`${API_ORIGIN}/api/chat/messages?limit=100&_t=${Date.now()}`, {
-          headers: {
+            const response = await fetch(`${API_ORIGIN}/api/chat/messages?limit=100&_t=${Date.now()}`, {
+              signal: context && context.signal,
+              headers: {
             'Authorization': `Bearer ${token}`,
             'Cache-Control': 'no-cache'
           }
         });
 
             if (!response.ok) {
-              if (response.status >= 500 || response.status === 429) {
-                historyPollBackoffUntil = Date.now() + CHAT_HISTORY_ERROR_BACKOFF_MS;
-              }
-              return;
+              throw new Error(`Chat history HTTP ${response.status}`);
             }
 
             const result = await response.json();
             if (!result.success || !Array.isArray(result.data)) return;
-            historyPollBackoffUntil = 0;
 
             result.data.forEach((msg) => {
           if (!msg || !msg.id || renderedMessageIds.has(String(msg.id))) {
@@ -1484,23 +1477,27 @@ import { ROLE_IDS } from './role-constants.js';
           addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id, msg.id);
         });
           } catch (error) {
-            historyPollBackoffUntil = Date.now() + CHAT_HISTORY_ERROR_BACKOFF_MS;
+            if (error?.name === 'AbortError') throw error;
             console.warn('[ChatPopup] Chat history polling failed:', error?.message || error);
+            throw error;
           } finally {
         historyPollInFlight = false;
       }
     }
 
         function startChatHistoryPolling() {
-          if (historyPollTimer) return;
-          historyPollTimer = setInterval(pollChatHistoryForNewMessages, CHAT_HISTORY_POLL_INTERVAL_MS);
-      window.addEventListener('beforeunload', function() {
-        if (historyPollTimer) {
-          clearInterval(historyPollTimer);
-          historyPollTimer = null;
+          if (historyPollRegistered || !window.staffPollingCoordinator) return;
+          historyPollRegistered = true;
+          window.staffPollingCoordinator.register('global-chat-history', {
+            interval: CHAT_HISTORY_POLL_INTERVAL_MS,
+            backoff: CHAT_HISTORY_ERROR_BACKOFF_MS,
+            when: function () { return !(boundSocket && boundSocket.connected); },
+            run: pollChatHistoryForNewMessages
+          });
+          var reconcileChatHistory = function () { window.staffPollingCoordinator?.reconcile(); };
+          window.addEventListener('realtime:socket-connected', reconcileChatHistory);
+          window.addEventListener('realtime:socket-disconnected', reconcileChatHistory);
         }
-      }, { once: true });
-    }
 
     // Add message with avatar support
     function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null, messageId = null) {
@@ -1650,15 +1647,9 @@ import { ROLE_IDS } from './role-constants.js';
         // Check clear button visibility after auth is loaded
         checkClearButtonVisibility();
         
-        // Re-check after a delay to ensure auth is fully loaded
-        setTimeout(() => {
-            checkClearButtonVisibility();
-        }, 1000);
-        
-        // Also check periodically
-        setInterval(() => {
-            checkClearButtonVisibility();
-        }, 5000);
+        // React to lifecycle changes instead of running a guardian interval.
+        window.addEventListener('staff:auth-ready', checkClearButtonVisibility);
+        window.addEventListener('realtime:socket-connected', checkClearButtonVisibility);
 
         // Expose addMessage globally for external use
         window.addChatMessage = addMessage;

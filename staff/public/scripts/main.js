@@ -333,15 +333,23 @@ function setTitleAndActive(title, navId, mobileAction) {
         try { sessionStorage.setItem('lastStaffNavId', navId); } catch(e) {}
     }
     if (mobileAction) {
-        document.dispatchEvent(new CustomEvent('page:changed', {
-            detail: { page: mobileAction }
-        }));
+        dispatchStaffPageChanged(mobileAction);
+    } else {
+        window.__currentPage = title || 'unknown';
     }
-    // Update RUM page context
-    window.__currentPage = mobileAction || title || 'unknown';
     // Log page navigation for audit
     logActivity('Page View', `Viewed ${title}`);
 }
+
+function dispatchStaffPageChanged(page) {
+    if (!page) return;
+    const previousPage = window.__currentPage || null;
+    window.__currentPage = page;
+    document.dispatchEvent(new CustomEvent('page:changed', {
+        detail: { page, previousPage }
+    }));
+}
+window.dispatchStaffPageChanged = dispatchStaffPageChanged;
 
 // Activity logging function for audit trail
 let lastLoggedPage = '';
@@ -423,8 +431,9 @@ async function showDashboardPage() {
     await window.staffPageRegistry?.activate('dashboard');
     hideAllPages();
     pages.dashboard?.classList.remove('d-none');
-    setTitleAndActive('Dashboard', 'nav-dashboard', null);
-    window.__currentPage = 'dashboard';
+    setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard');
+    const dashboardModule = await importWithVersion('./dashboard.js');
+    await dashboardModule.activateDashboard?.();
     loadDashboardNewPatients();
 }
 
@@ -573,6 +582,7 @@ async function loadTroubleshootingReports() {
 // Dashboard New Patients
 let dashboardNewPatientsPage = 1;
 let dashboardNewPatientsTotalPages = 1;
+let dashboardNewPatientsController = null;
 
 async function loadDashboardNewPatients(page = 1) {
     const tbody = document.getElementById('dashboard-new-patients-tbody');
@@ -581,9 +591,14 @@ async function loadDashboardNewPatients(page = 1) {
     dashboardNewPatientsPage = page;
     tbody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
 
+    if (dashboardNewPatientsController) dashboardNewPatientsController.abort();
+    const controller = new AbortController();
+    dashboardNewPatientsController = controller;
+
     try {
         const token = getAuthToken();
         const response = await fetch(`/api/patients?sort=recent&limit=10&page=${page}&_=${Date.now()}`, {
+            signal: controller.signal,
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -625,10 +640,19 @@ async function loadDashboardNewPatients(page = 1) {
         }).join('');
 
     } catch (error) {
+        if (error?.name === 'AbortError') return;
         console.error('Load dashboard new patients error:', error);
         tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
+    } finally {
+        if (dashboardNewPatientsController === controller) dashboardNewPatientsController = null;
     }
 }
+document.addEventListener('page:changed', event => {
+    if (event.detail?.page !== 'dashboard' && dashboardNewPatientsController) {
+        dashboardNewPatientsController.abort();
+        dashboardNewPatientsController = null;
+    }
+});
 window.loadDashboardNewPatients = loadDashboardNewPatients;
 window.dashboardNewPatientsPage = dashboardNewPatientsPage;
 function showKlinikPrivatePage() {

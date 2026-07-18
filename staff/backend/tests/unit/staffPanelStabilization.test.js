@@ -501,20 +501,25 @@ describe('staff panel stabilization sources', () => {
         const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
         const dashboard = readRepoFile('staff', 'public', 'scripts', 'dashboard.js');
         const antrianOnline = readRepoFile('staff', 'public', 'scripts', 'antrian-online.js');
+        const pollingCoordinator = readRepoFile('staff', 'public', 'scripts', 'shell', 'polling-coordinator.js');
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
 
         expect(chatPopup).toContain('const CHAT_HISTORY_POLL_INTERVAL_MS = 15000;');
         expect(chatPopup).toContain('const CHAT_HISTORY_ERROR_BACKOFF_MS = 30000;');
-        expect(chatPopup).toContain("document.visibilityState !== 'visible'");
         expect(chatPopup).toContain('boundSocket && boundSocket.connected');
+        expect(chatPopup).toContain("register('global-chat-history'");
 
         expect(dashboard).toContain('const LIVE_QUEUE_POLL_INTERVAL_MS = 45000;');
         expect(dashboard).toContain('const LIVE_QUEUE_ERROR_BACKOFF_MS = 60000;');
-        expect(dashboard).toContain("document.visibilityState !== 'visible'");
+        expect(dashboard).toContain("page: 'dashboard'");
 
         expect(antrianOnline).toContain('const ONLINE_QUEUE_POLL_INTERVAL_MS = 45000;');
         expect(antrianOnline).toContain('const ONLINE_QUEUE_ERROR_BACKOFF_MS = 60000;');
-        expect(antrianOnline).toContain("document.visibilityState !== 'visible'");
+        expect(antrianOnline).toContain("page: 'antrian-online'");
+
+        expect(pollingCoordinator).toContain("visibilityState !== 'hidden'");
+        expect(pollingCoordinator).toContain('nextDelay = job.backoff');
+        expect(pollingCoordinator).toContain('job.controller.abort()');
 
         expect(html).toContain('let notificationCountInFlight = false;');
         expect(html).toContain('let notificationCountBackoffUntil = 0;');

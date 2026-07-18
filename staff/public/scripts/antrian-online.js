@@ -2,8 +2,8 @@ import { getIdToken } from './vps-auth-v2.js';
 import { renderOnlineQueuePageHtml } from './live-queue-dashboard-utils.js';
 
 let pageBound = false;
-let queuePollTimer = null;
 let socketBound = false;
+let socketBindTimer = null;
 const ONLINE_QUEUE_POLL_INTERVAL_MS = 45000;
 const ONLINE_QUEUE_ERROR_BACKOFF_MS = 60000;
 let queueInFlight = false;
@@ -58,9 +58,10 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-async function loadQueueSettings() {
+async function loadQueueSettings(signal) {
     try {
         const response = await fetch('/api/sunday-clinic/queue/settings?_t=' + Date.now(), {
+            signal,
             headers: { 'Cache-Control': 'no-cache' }
         });
         const result = await response.json();
@@ -71,12 +72,13 @@ async function loadQueueSettings() {
             };
         }
     } catch (error) {
+        if (error?.name === 'AbortError') throw error;
         console.warn('[AntrianOnline] loadQueueSettings failed:', error);
     }
     return lastSettings;
 }
 
-async function loadAntrianOnlineQueue(forceRefresh = false) {
+async function loadAntrianOnlineQueue(forceRefresh = false, signal) {
     const page = document.getElementById('antrian-online-page');
     if (page && page.classList.contains('d-none')) {
         return;
@@ -101,8 +103,9 @@ async function loadAntrianOnlineQueue(forceRefresh = false) {
     queueInFlight = true;
     try {
         const [settings, response] = await Promise.all([
-            loadQueueSettings(),
+            loadQueueSettings(signal),
             fetch(`/api/sunday-clinic/queue/today?refresh=${forceRefresh ? '1' : '0'}&_t=${Date.now()}`, {
+                signal,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Cache-Control': 'no-cache'
@@ -128,6 +131,7 @@ async function loadAntrianOnlineQueue(forceRefresh = false) {
             doctorArrived: settings.doctor_arrived
         });
     } catch (error) {
+        if (error?.name === 'AbortError') throw error;
         console.error('[AntrianOnline] loadAntrianOnlineQueue failed:', error);
         queueBackoffUntil = Date.now() + ONLINE_QUEUE_ERROR_BACKOFF_MS;
         setRootError(error.message || 'Gagal memuat antrian online.');
@@ -173,22 +177,27 @@ function bindPageActions() {
 }
 
 function setupRealtimeQueueUpdates() {
-    if (!queuePollTimer) {
-        queuePollTimer = setInterval(() => loadAntrianOnlineQueue(false), ONLINE_QUEUE_POLL_INTERVAL_MS);
-    }
+    const coordinator = window.staffPollingCoordinator;
+    coordinator?.register('antrian-online-queue', {
+        page: 'antrian-online',
+        interval: ONLINE_QUEUE_POLL_INTERVAL_MS,
+        backoff: ONLINE_QUEUE_ERROR_BACKOFF_MS,
+        run: ({ signal }) => loadAntrianOnlineQueue(false, signal)
+    });
 
     if (socketBound) return;
 
     const bindSocket = () => {
         const socket = window.socket || (window.__realtimeSyncState && window.__realtimeSyncState.socket);
         if (!socket || typeof socket.on !== 'function') {
-            setTimeout(bindSocket, 1500);
+            socketBindTimer = setTimeout(bindSocket, 1500);
             return;
         }
 
+        socketBindTimer = null;
         socketBound = true;
-        socket.on('queue:updated', () => loadAntrianOnlineQueue(true));
-        socket.on('queue:settings_changed', () => loadAntrianOnlineQueue(true));
+        socket.on('queue:updated', () => coordinator?.trigger('antrian-online-queue'));
+        socket.on('queue:settings_changed', () => coordinator?.trigger('antrian-online-queue'));
     };
 
     bindSocket();
@@ -197,8 +206,21 @@ function setupRealtimeQueueUpdates() {
 export function initAntrianOnlinePage() {
     bindPageActions();
     setupRealtimeQueueUpdates();
-    return loadAntrianOnlineQueue(true);
 }
 
+export function deactivateAntrianOnlinePage() {
+    if (socketBindTimer) {
+        clearTimeout(socketBindTimer);
+        socketBindTimer = null;
+    }
+}
+
+document.addEventListener('page:changed', event => {
+    if (event.detail?.page !== 'antrian-online') deactivateAntrianOnlinePage();
+});
+
 window.initAntrianOnlinePage = initAntrianOnlinePage;
-window.refreshAntrianOnlineQueue = () => loadAntrianOnlineQueue(true);
+window.refreshAntrianOnlineQueue = () => {
+    if (window.staffPollingCoordinator?.trigger('antrian-online-queue')) return Promise.resolve();
+    return loadAntrianOnlineQueue(true);
+};

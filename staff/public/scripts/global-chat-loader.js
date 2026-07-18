@@ -34,7 +34,7 @@
         window.__chatPopupScriptRequested = true;
 
         const script = document.createElement('script');
-        const version = window.__chatPopupVersion || window.__sundayClinicChatVersion || window.__assetVersion || 'v229';
+        const version = window.STAFF_CACHE_VERSION || window.__assetVersion || 'v305';
         script.src = `/staff/public/scripts/chat-popup.js?v=${encodeURIComponent(version)}`;
         script.onload = function() {
             console.log('[GlobalChat] chat-popup.js loaded dynamically');
@@ -153,33 +153,28 @@
         }
     }
 
-    // Check if we need to wait for ES6 module initialization
-    function waitForAuth(callback, retries = 0, maxRetries = 20) {
-        // Check if currentStaffIdentity has actual data (not just empty object)
+    function hasAuthContext() {
         const hasIdentity = window.currentStaffIdentity && 
                            window.currentStaffIdentity.id && 
                            window.currentStaffIdentity.name;
         
         const hasToken = typeof window.getToken === 'function' ? window.getToken() : '';
-        
-        if (hasIdentity || hasToken) {
-            console.log('[GlobalChat] Auth context ready');
-            callback();
-        } else if (retries < maxRetries) {
-            setTimeout(() => waitForAuth(callback, retries + 1, maxRetries), 200);
-        } else {
-            console.warn('[GlobalChat] Auth context timeout, loading chat anyway');
-            callback();
-        }
+        return Boolean(hasIdentity || hasToken);
     }
 
-    // Start initialization
+    function startWhenAuthenticated() {
+        if (hasAuthContext()) {
+            console.log('[GlobalChat] Auth context ready');
+            initializeChat();
+            return;
+        }
+        window.addEventListener('staff:auth-ready', initializeChat, { once: true });
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            waitForAuth(initializeChat);
-        });
+        document.addEventListener('DOMContentLoaded', startWhenAuthenticated, { once: true });
     } else {
-        waitForAuth(initializeChat);
+        startWhenAuthenticated();
     }
 
 })();

@@ -11,10 +11,10 @@ const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostnam
 const LIVE_QUEUE_POLL_INTERVAL_MS = 45000;
 const LIVE_QUEUE_ERROR_BACKOFF_MS = 60000;
 
-let liveQueuePollTimer = null;
 let liveQueueSocketBound = false;
-let liveQueueInFlight = false;
-let liveQueueBackoffUntil = 0;
+let liveQueueSocketBindTimer = null;
+let dashboardLoadController = null;
+let dashboardLifecycleBound = false;
 
 function runWhenIdle(task, timeout = 1200) {
     if (typeof window.requestIdleCallback === 'function') {
@@ -129,7 +129,7 @@ function renderVisitsChart(dailyData) {
     `;
 }
 
-async function fetchVisitStats(token) {
+async function fetchVisitStats(token, signal) {
     const today = new Date();
     const { start: prevMonthStart, end: prevMonthEnd } = getPreviousMonthRange(today);
     const thirtyDayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 29);
@@ -142,6 +142,7 @@ async function fetchVisitStats(token) {
     });
 
     const statsResponse = await fetch(`${VPS_API_BASE}/api/visits/stats/daily?${params.toString()}`, {
+        signal,
         headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -159,6 +160,7 @@ async function fetchVisitStats(token) {
     } else {
         // Backward-compatible fallback: use legacy endpoint when stats endpoint is unavailable.
         const fallbackResponse = await fetch(`${VPS_API_BASE}/api/visits?${params.toString()}`, {
+            signal,
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -231,7 +233,7 @@ async function fetchVisitStats(token) {
     return { lastMonthCount, totalLast30Days, daily };
 }
 
-async function loadVisitSection() {
+async function loadVisitSection(signal) {
     const visitsLastMonthEl = document.getElementById('stat-visits-last-month');
     const visits30DaysEl = document.getElementById('stat-visits-30days-total');
     const chartContainer = document.getElementById('visits-30-days-chart');
@@ -247,11 +249,12 @@ async function loadVisitSection() {
             return;
         }
 
-        const stats = await fetchVisitStats(token);
+        const stats = await fetchVisitStats(token, signal);
         if (visitsLastMonthEl) visitsLastMonthEl.textContent = stats.lastMonthCount.toLocaleString('id-ID');
         if (visits30DaysEl) visits30DaysEl.textContent = stats.totalLast30Days.toLocaleString('id-ID');
         renderVisitsChart(stats.daily);
     } catch (error) {
+        if (error?.name === 'AbortError') throw error;
         console.warn('loadVisitSection failed:', error);
         if (visitsLastMonthEl) visitsLastMonthEl.textContent = '0';
         if (visits30DaysEl) visits30DaysEl.textContent = '0';
@@ -266,7 +269,7 @@ async function loadVisitSection() {
     }
 }
 
-async function loadDashboardStats() {
+async function loadDashboardStats(signal) {
     const container = document.getElementById('dashboard-today-appointments');
     const totalPatientsEl = document.getElementById('stat-total-bookings');
     const nextSundayAppointmentsEl = document.getElementById('stat-appointments-today');
@@ -287,6 +290,7 @@ async function loadDashboardStats() {
         }
 
         const response = await fetch(`${VPS_API_BASE}/api/dashboard-stats`, {
+            signal,
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -356,6 +360,7 @@ async function loadDashboardStats() {
             </div>
         `;
     } catch (error) {
+        if (error?.name === 'AbortError') throw error;
         console.warn('loadDashboardStats failed:', error);
         container.innerHTML = '<p class="text-danger mb-0">Gagal memuat data dashboard.</p>';
         if (totalPatientsEl) totalPatientsEl.textContent = '0';
@@ -364,19 +369,16 @@ async function loadDashboardStats() {
     }
 }
 
-async function loadDashboardLiveQueue(forceRefresh = false) {
+async function loadDashboardLiveQueue(forceRefresh = false, signal) {
     const container = document.getElementById('dashboard-live-queue-list');
     const countEl = document.getElementById('dashboard-live-queue-count');
     if (!container) return;
     if (!forceRefresh && document.visibilityState !== 'visible') return;
-    if (!forceRefresh && Date.now() < liveQueueBackoffUntil) return;
-    if (liveQueueInFlight) return;
 
     if (!container.dataset.loaded) {
         container.innerHTML = '<p class="text-muted mb-0">Memuat antrian live...</p>';
     }
 
-    liveQueueInFlight = true;
     try {
         const token = await getIdToken();
         if (!token) {
@@ -387,6 +389,7 @@ async function loadDashboardLiveQueue(forceRefresh = false) {
 
         const url = `${VPS_API_BASE}/api/sunday-clinic/queue/today?refresh=${forceRefresh ? '1' : '0'}&_t=${Date.now()}`;
         const response = await fetch(url, {
+            signal,
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache'
@@ -394,14 +397,11 @@ async function loadDashboardLiveQueue(forceRefresh = false) {
         });
 
         if (!response.ok) {
-            if (response.status >= 500 || response.status === 429) {
-                liveQueueBackoffUntil = Date.now() + LIVE_QUEUE_ERROR_BACKOFF_MS;
-            }
             container.innerHTML = response.status === 403
                 ? '<p class="text-muted mb-0">Akses antrian dibatasi.</p>'
                 : '<p class="text-danger mb-0">Gagal memuat antrian live.</p>';
             if (countEl) countEl.textContent = '0';
-            return;
+            return false;
         }
 
         const result = await response.json();
@@ -410,23 +410,32 @@ async function loadDashboardLiveQueue(forceRefresh = false) {
         }
 
         const queueItems = Array.isArray(result.data) ? result.data : [];
-        liveQueueBackoffUntil = 0;
         container.dataset.loaded = '1';
         container.innerHTML = renderLiveQueueHtml(queueItems, { updatedAt: new Date() });
         if (countEl) countEl.textContent = String(result.count || queueItems.length || 0);
+        return true;
     } catch (error) {
-        liveQueueBackoffUntil = Date.now() + LIVE_QUEUE_ERROR_BACKOFF_MS;
+        if (error?.name === 'AbortError') throw error;
         console.warn('loadDashboardLiveQueue failed:', error);
         container.innerHTML = '<p class="text-danger mb-0">Gagal memuat antrian live.</p>';
         if (countEl) countEl.textContent = '0';
-    } finally {
-        liveQueueInFlight = false;
+        return false;
     }
 }
 
 function setupDashboardLiveQueueUpdates() {
-    if (!liveQueuePollTimer) {
-        liveQueuePollTimer = setInterval(() => loadDashboardLiveQueue(false), LIVE_QUEUE_POLL_INTERVAL_MS);
+    const coordinator = window.staffPollingCoordinator;
+    if (coordinator) {
+        coordinator.register('dashboard-live-queue', {
+            page: 'dashboard',
+            interval: LIVE_QUEUE_POLL_INTERVAL_MS,
+            backoff: LIVE_QUEUE_ERROR_BACKOFF_MS,
+            immediate: false,
+            run: async ({ signal }) => {
+                const ok = await loadDashboardLiveQueue(false, signal);
+                if (ok === false) throw new Error('Dashboard live queue poll failed');
+            }
+        });
     }
 
     if (liveQueueSocketBound) return;
@@ -434,23 +443,26 @@ function setupDashboardLiveQueueUpdates() {
     const bindSocket = () => {
         const socket = window.socket || (window.__realtimeSyncState && window.__realtimeSyncState.socket);
         if (!socket || typeof socket.on !== 'function') {
-            setTimeout(bindSocket, 1500);
+            liveQueueSocketBindTimer = setTimeout(bindSocket, 1500);
             return;
         }
 
+        liveQueueSocketBindTimer = null;
         liveQueueSocketBound = true;
-        socket.on('queue:updated', () => loadDashboardLiveQueue(true));
-        socket.on('queue:settings_changed', () => loadDashboardLiveQueue(true));
+        socket.on('queue:updated', () => coordinator?.trigger('dashboard-live-queue'));
+        socket.on('queue:settings_changed', () => coordinator?.trigger('dashboard-live-queue'));
     };
 
     bindSocket();
 }
 
 window.refreshDashboardLiveQueue = function refreshDashboardLiveQueue() {
+    const coordinator = window.staffPollingCoordinator;
+    if (coordinator?.trigger('dashboard-live-queue')) return Promise.resolve();
     return loadDashboardLiveQueue(true);
 };
 
-async function loadRecentActivity() {
+async function loadRecentActivity(signal) {
     const container = document.getElementById('dashboard-recent-activity');
     if (!container) return;
     container.innerHTML = '<p class="text-muted mb-0">Memuat aktivitas...</p>';
@@ -463,6 +475,7 @@ async function loadRecentActivity() {
         }
         
         const response = await fetch(`${VPS_API_BASE}/api/logs?limit=10`, {
+            signal,
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -491,6 +504,7 @@ async function loadRecentActivity() {
             return;
         }
     } catch (e) {
+        if (e?.name === 'AbortError') throw e;
         console.warn('loadRecentActivity failed:', e);
         container.innerHTML = '<p class="text-danger mb-0">Gagal memuat aktivitas.</p>';
         return;
@@ -499,7 +513,7 @@ async function loadRecentActivity() {
     container.innerHTML = '<p class="text-muted mb-0">Belum ada aktivitas.</p>';
 }
 
-export async function initDashboard() {
+export async function initDashboard({ signal } = {}) {
     const perfStart = (typeof performance !== 'undefined' && performance.now)
         ? performance.now()
         : Date.now();
@@ -519,9 +533,9 @@ export async function initDashboard() {
     if (chartContainer) chartContainer.innerHTML = '<p class="text-muted mb-0">Memuat data kunjungan...</p>';
 
     await Promise.all([
-        loadVisitSection(),
-        loadDashboardStats(),
-        loadDashboardLiveQueue(true)
+        loadVisitSection(signal),
+        loadDashboardStats(signal),
+        loadDashboardLiveQueue(true, signal)
     ]);
 
     const criticalDone = (typeof performance !== 'undefined' && performance.now)
@@ -533,10 +547,11 @@ export async function initDashboard() {
 
     // Recent activity is non-critical for first render, so we load it during idle time.
     runWhenIdle(async () => {
+        if (signal?.aborted || window.__currentPage !== 'dashboard') return;
         const nonCriticalStart = (typeof performance !== 'undefined' && performance.now)
             ? performance.now()
             : Date.now();
-        await loadRecentActivity();
+        await loadRecentActivity(signal);
         const nonCriticalDone = (typeof performance !== 'undefined' && performance.now)
             ? performance.now()
             : Date.now();
@@ -550,6 +565,38 @@ export async function initDashboard() {
     if (window.socketIoInstance && !window.__dashboardActivityListenerAttached) {
         setupActivityLogUpdates();
         window.__dashboardActivityListenerAttached = true;
+    }
+}
+
+export async function activateDashboard() {
+    if (!dashboardLifecycleBound) {
+        dashboardLifecycleBound = true;
+        document.addEventListener('page:changed', event => {
+            if (event.detail?.page !== 'dashboard') deactivateDashboard();
+        });
+    }
+    if (dashboardLoadController) dashboardLoadController.abort();
+    dashboardLoadController = new AbortController();
+    const controller = dashboardLoadController;
+    try {
+        await initDashboard({ signal: controller.signal });
+    } catch (error) {
+        if (error?.name !== 'AbortError') throw error;
+    } finally {
+        if (dashboardLoadController === controller && controller.signal.aborted) {
+            dashboardLoadController = null;
+        }
+    }
+}
+
+export function deactivateDashboard() {
+    if (dashboardLoadController) {
+        dashboardLoadController.abort();
+        dashboardLoadController = null;
+    }
+    if (liveQueueSocketBindTimer) {
+        clearTimeout(liveQueueSocketBindTimer);
+        liveQueueSocketBindTimer = null;
     }
 }
 
@@ -570,9 +617,12 @@ function setupActivityLogUpdates() {
     
     // Listen for new log entries
     window.socketIoInstance.on('newLog', (log) => {
+        if (window.__currentPage !== 'dashboard') return;
         console.log('New activity log received:', log);
         // Reload activity logs to show latest
-        loadRecentActivity();
+        loadRecentActivity(dashboardLoadController?.signal).catch(error => {
+            if (error?.name !== 'AbortError') console.warn('loadRecentActivity failed:', error);
+        });
     });
 }
 
