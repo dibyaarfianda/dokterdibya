@@ -36,4 +36,17 @@ describe('DocBoard Morbid Case access', () => {
     expect(styles).toContain('.morbid-resume .morbid-field-list > div');
     expect(styles).toContain('grid-template-columns: minmax(150px, 180px) minmax(0, 1fr);');
   });
+
+  test('offers on-demand AI analysis and printable PDF layout', () => {
+    const api = readRepoFile('docboard', 'src', 'services', 'api.js');
+    const detail = readRepoFile('docboard', 'src', 'views', 'MorbidCaseDetail.jsx');
+    const styles = readRepoFile('docboard', 'src', 'index.css');
+    expect(api).toContain('analyzeMorbidCase(id)');
+    expect(detail).toContain('Mulai Analisis AI');
+    expect(detail).toContain('Cetak / Simpan sebagai PDF');
+    expect(detail).toContain('<SeverityChart');
+    expect(detail).toContain('<CriticalPointDiagram');
+    expect(styles).toContain('@media print');
+    expect(styles).toContain('body.morbid-ai-print');
+  });
 });

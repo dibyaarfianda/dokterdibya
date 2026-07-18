@@ -105,4 +105,32 @@ describe('MorbidCaseService', () => {
       resume: { fields: { _token: 'secret', ringkasan: 'Pulang' } },
     })).toEqual({ cppt: [{ plan: 'Rawat' }], resume: { fields: { ringkasan: 'Pulang' } } });
   });
+
+  test('runs on-demand AI analysis, stores it separately, and records model metadata', async () => {
+    const readyCatalog = catalog({
+      analysis_status: 'not_analyzed', analysis_r2_key: null, analysis_r2_bucket: null,
+    });
+    const db = { query: jest.fn(async (sql) => {
+      if (sql.includes('SELECT mc.*')) return [[readyCatalog]];
+      return [{ affectedRows: 1 }];
+    }) };
+    const snapshot = { cppt: [{ assessment: 'Risiko tinggi' }], penunjang: { files: [] } };
+    const r2 = {
+      R2_BUCKET_NAME: 'test-bucket',
+      getJson: jest.fn(async () => snapshot),
+      uploadJson: jest.fn(async () => ({ success: true })),
+    };
+    const analysis = { model: 'gpt-5.6-sol', reasoning_effort: 'high', critical_points: [{ title: 'Risiko' }] };
+    const aiService = { analyze: jest.fn(async () => analysis) };
+    const service = new MorbidCaseService({ db, r2, apiKey: 'key', aiService, bucket: 'test-bucket' });
+
+    const result = await service.analyze(9, 'user-1');
+
+    expect(aiService.analyze).toHaveBeenCalledWith(snapshot, expect.objectContaining({ id: 9 }), 'user-1');
+    expect(r2.uploadJson).toHaveBeenCalledWith('morbid-cases/gambiran/med0000711382/analysis-v1.json', analysis, 'test-bucket');
+    expect(db.query.mock.calls.some(([sql]) => sql.includes("analysis_status = 'analyzing'"))).toBe(true);
+    const readyUpdate = db.query.mock.calls.find(([sql]) => sql.includes("analysis_status = 'ready'"));
+    expect(readyUpdate[1]).toEqual(expect.arrayContaining(['gpt-5.6-sol', 'high', 9]));
+    expect(result.morbid_case.id).toBe(9);
+  });
 });

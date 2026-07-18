@@ -582,6 +582,10 @@ export const api = {
     return request(`/morbid-cases/${encodeURIComponent(id)}/refresh`, { method: 'POST' });
   },
 
+  analyzeMorbidCase(id) {
+    return request(`/morbid-cases/${encodeURIComponent(id)}/analyze`, { method: 'POST' });
+  },
+
   getMorbidCaseFileUrl(fileUrl) {
     const token = getToken();
     const path = fileUrl.startsWith(API_BASE) ? fileUrl : `${API_BASE}${fileUrl}`;

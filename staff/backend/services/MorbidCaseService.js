@@ -1,5 +1,6 @@
 const dbPool = require('../db');
 const r2Storage = require('./r2Storage');
+const MorbidCaseAIService = require('./MorbidCaseAIService');
 
 const TARGET_DOCTORS = ['dibya', 'tri_aji', 'latifa'];
 
@@ -58,6 +59,7 @@ class MorbidCaseService {
     commBaseUrl = defaultCommBaseUrl(),
     apiKey = process.env.COMM_INTERNAL_API_KEY || process.env.COMM_API_KEY || '',
     bucket = process.env.MORBID_CASE_R2_BUCKET_NAME || process.env.OPERATION_DATA_R2_BUCKET_NAME || r2Storage.R2_BUCKET_NAME,
+    aiService = new MorbidCaseAIService(),
   } = {}) {
     this.db = db;
     this.r2 = r2;
@@ -65,6 +67,7 @@ class MorbidCaseService {
     this.commBaseUrl = commBaseUrl.replace(/\/+$/, '');
     this.apiKey = apiKey;
     this.bucket = bucket;
+    this.aiService = aiService;
   }
 
   async list(params = {}) {
@@ -225,7 +228,11 @@ class MorbidCaseService {
         `UPDATE docboard_morbid_cases
             SET status = ?, snapshot_r2_key = ?, snapshot_r2_bucket = ?, snapshot_version = 1,
                 cppt_count = ?, penunjang_result_count = ?, penunjang_file_count = ?,
-                operation_count = ?, prescription_count = ?, collected_at = NOW(), last_error = NULL
+                operation_count = ?, prescription_count = ?, collected_at = NOW(), last_error = NULL,
+                analysis_status = CASE
+                  WHEN analysis_status IN ('ready', 'analyzing') THEN 'stale'
+                  ELSE analysis_status
+                END
           WHERE id = ?`,
         [status, snapshotKey, this.bucket, counts.cppt || 0, counts.penunjang_results || 0,
           counts.penunjang_files || 0, counts.operations || 0, counts.prescriptions || 0, catalogId]
@@ -278,6 +285,47 @@ class MorbidCaseService {
     return this.collect(id, record);
   }
 
+  async analyze(id, requestedBy) {
+    const detail = await this.getDetail(id);
+    const catalog = detail.morbid_case;
+    if (!detail.snapshot || !['ready', 'ready_with_warnings'].includes(catalog.status)) {
+      const error = new Error('Snapshot Morbid Case belum siap untuk dianalisis');
+      error.status = 409;
+      throw error;
+    }
+
+    const analysisKey = `morbid-cases/${catalog.facility}/${catalog.case_id}/analysis-v1.json`;
+    await this.db.query(
+      `UPDATE docboard_morbid_cases
+          SET analysis_status = 'analyzing', analysis_last_error = NULL
+        WHERE id = ?`,
+      [id]
+    );
+
+    try {
+      const analysis = await this.aiService.analyze(detail.snapshot, catalog, requestedBy);
+      await this.r2.uploadJson(analysisKey, analysis, catalog.snapshot_r2_bucket || this.bucket);
+      await this.db.query(
+        `UPDATE docboard_morbid_cases
+            SET analysis_status = 'ready', analysis_r2_key = ?, analysis_r2_bucket = ?,
+                analysis_version = 1, analysis_model = ?, analysis_reasoning_effort = ?,
+                analyzed_at = NOW(), analysis_last_error = NULL
+          WHERE id = ?`,
+        [analysisKey, catalog.snapshot_r2_bucket || this.bucket, analysis.model,
+          analysis.reasoning_effort, id]
+      );
+      return this.getDetail(id);
+    } catch (error) {
+      await this.db.query(
+        `UPDATE docboard_morbid_cases
+            SET analysis_status = 'failed', analysis_last_error = ?
+          WHERE id = ?`,
+        [trim(error.message).slice(0, 2000), id]
+      );
+      throw error;
+    }
+  }
+
   async getDetail(id) {
     const catalog = await this.getCatalog(id);
     if (!catalog) {
@@ -297,13 +345,22 @@ class MorbidCaseService {
         }
       }
     }
+    let analysis = null;
+    let analysisLoadError = null;
+    if (catalog.analysis_r2_key) {
+      try {
+        analysis = await this.r2.getJson(catalog.analysis_r2_key, catalog.analysis_r2_bucket || this.bucket);
+      } catch (error) {
+        analysisLoadError = `Analisis AI tidak dapat dibaca: ${error.message}`;
+      }
+    }
     if (snapshot?.penunjang?.files) {
       snapshot.penunjang.files = snapshot.penunjang.files.map(file => ({
         ...file,
         url: file.id ? `/api/docboard/morbid-cases/${catalog.id}/files/${encodeURIComponent(file.id)}` : null,
       }));
     }
-    return { morbid_case: catalog, snapshot };
+    return { morbid_case: catalog, snapshot, analysis, analysis_load_error: analysisLoadError };
   }
 
   async fetchFile(id, fileId) {

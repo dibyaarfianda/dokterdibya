@@ -3,6 +3,7 @@ import { route } from 'preact-router';
 import { api } from '../services/api';
 
 const TABS = [
+  ['analysis', 'Analisis AI'],
   ['timeline', 'Timeline'],
   ['cppt', 'CPPT'],
   ['penunjang', 'Penunjang'],
@@ -10,6 +11,23 @@ const TABS = [
   ['resume', 'Resume'],
   ['resep', 'Resep'],
 ];
+
+const ANALYSIS_STATUS_LABELS = {
+  not_analyzed: 'Belum dianalisis',
+  analyzing: 'Sedang dianalisis',
+  ready: 'Analisis siap',
+  stale: 'Perlu dianalisis ulang',
+  failed: 'Analisis gagal',
+};
+
+const CATEGORY_LABELS = {
+  recognition: 'Pengenalan', diagnosis: 'Diagnosis', treatment: 'Tatalaksana', monitoring: 'Monitoring',
+  handoff: 'Handover', safety: 'Keselamatan', documentation: 'Dokumentasi', outcome: 'Luaran',
+};
+
+const DIRECTION_LABELS = {
+  membantu: 'Membantu luaran', merugikan: 'Meningkatkan risiko', netral: 'Netral', tidak_pasti: 'Belum pasti',
+};
 
 function formatDateTime(value) {
   if (!value) return '-';
@@ -87,6 +105,7 @@ export default function MorbidCaseDetail({ id }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('timeline');
   const [cpptRole, setCpptRole] = useState('all');
@@ -104,6 +123,14 @@ export default function MorbidCaseDetail({ id }) {
 
   useEffect(() => { load(); }, [id]);
 
+  useEffect(() => {
+    if (data?.morbid_case?.analysis_status !== 'analyzing' || analyzing) return undefined;
+    const timer = window.setInterval(async () => {
+      try { setData(await api.getMorbidCase(id)); } catch { /* keep the current report while polling */ }
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [id, data?.morbid_case?.analysis_status, analyzing]);
+
   async function refresh() {
     setRefreshing(true);
     setError('');
@@ -112,8 +139,30 @@ export default function MorbidCaseDetail({ id }) {
     finally { setRefreshing(false); }
   }
 
+  async function analyze() {
+    setAnalyzing(true);
+    setActiveTab('analysis');
+    setError('');
+    try { setData(await api.analyzeMorbidCase(id)); }
+    catch (err) { setError(err.message || 'Gagal membuat analisis AI'); }
+    finally { setAnalyzing(false); }
+  }
+
+  function printAnalysis() {
+    setActiveTab('analysis');
+    window.setTimeout(() => {
+      document.body.classList.add('morbid-ai-print');
+      const cleanup = () => document.body.classList.remove('morbid-ai-print');
+      window.addEventListener('afterprint', cleanup, { once: true });
+      window.print();
+      window.setTimeout(cleanup, 1500);
+    }, 80);
+  }
+
   const snapshot = data?.snapshot;
   const record = data?.morbid_case;
+  const analysis = data?.analysis;
+  const analysisStatus = record?.analysis_status || 'not_analyzed';
   const overview = snapshot?.overview || {};
   const timeline = useMemo(() => buildTimeline(snapshot), [snapshot]);
   const cpptEntries = snapshot?.cppt || [];
@@ -156,6 +205,23 @@ export default function MorbidCaseDetail({ id }) {
         <div><span>Snapshot</span><strong>{formatDateTime(snapshot?.generated_at || record.collected_at)}</strong></div>
       </section>
 
+      {snapshot && (
+        <section class="morbid-ai-action-bar morbid-no-print">
+          <div>
+            <span class={`morbid-ai-status ${analysisStatus}`}>{ANALYSIS_STATUS_LABELS[analysisStatus] || analysisStatus}</span>
+            <strong>Analisis mendetail dengan GPT-5.6 Sol · High</strong>
+            <p>Critical point tetap dinilai berdasarkan perjalanan klinis dan mutu layanan, terlepas dari apakah pasien meninggal atau tidak.</p>
+          </div>
+          <div class="morbid-ai-actions">
+            {analysis && <button type="button" class="secondary" onClick={() => setActiveTab('analysis')}>Buka Analisis</button>}
+            {analysis && <button type="button" class="secondary" onClick={printAnalysis}>Cetak PDF</button>}
+            <button type="button" class="primary" disabled={analyzing || analysisStatus === 'analyzing'} onClick={analyze}>
+              {analyzing || analysisStatus === 'analyzing' ? 'Menganalisis...' : analysis ? 'Analisis Ulang' : 'Mulai Analisis AI'}
+            </button>
+          </div>
+        </section>
+      )}
+
       {!snapshot ? (
         <div class="monitor-state"><strong>{record.status === 'error' ? 'Pengambilan data gagal' : 'Data sedang dikumpulkan'}</strong><p>{record.last_error || 'Silakan perbarui kembali.'}</p></div>
       ) : (
@@ -165,6 +231,7 @@ export default function MorbidCaseDetail({ id }) {
           </nav>
 
           <main class="morbid-tab-content">
+            {activeTab === 'analysis' && <AnalysisTab analysis={analysis} record={record} status={analysisStatus} analyzing={analyzing} error={record.analysis_last_error || data?.analysis_load_error} onAnalyze={analyze} onPrint={printAnalysis} />}
             {activeTab === 'timeline' && <TimelineTab events={timeline} />}
             {activeTab === 'cppt' && <CpptTab entries={filteredCppt} total={cpptEntries.length} latestEntry={latestCppt} authors={cpptAuthors} author={cpptAuthor} setAuthor={setCpptAuthor} role={cpptRole} setRole={setCpptRole} search={cpptSearch} setSearch={setCpptSearch} date={cpptDate} setDate={setCpptDate} />}
             {activeTab === 'penunjang' && <PenunjangTab data={snapshot.penunjang} />}
@@ -211,4 +278,198 @@ function ResumeTab({ snapshot }) {
 function PrescriptionTab({ items }) {
   if (!items.length) return <div class="morbid-empty">Resep belum tersedia.</div>;
   return <div class="morbid-prescription-list">{items.map((item, index) => <section key={item.resepId || item.id || index}><header><strong>Resep {item.resepId || item.id || items.length - index}</strong><span>{formatDateTime(item.date || item.tanggal || item.createdAt || item.created_at)}</span></header>{(item.medications || []).length ? <div>{item.medications.map((med, medIndex) => <div class="morbid-medication" key={`${med.namaObat || med.name}-${medIndex}`}><strong>{med.namaObat || med.nama || med.name || 'Obat'}</strong><span>{[med.jumlah, med.satuan, med.signa, med.keterangan].filter(Boolean).join(' · ')}</span></div>)}</div> : <FieldList fields={item} />}</section>)}</div>;
+}
+
+function AnalysisTab({ analysis, record, status, analyzing, error, onAnalyze, onPrint }) {
+  if (!analysis) {
+    return (
+      <div class="morbid-ai-empty">
+        <div class="morbid-ai-orb">AI</div>
+        <h2>{analyzing || status === 'analyzing' ? 'Analisis klinis sedang dibuat' : 'Analisis AI belum tersedia'}</h2>
+        <p>{analyzing || status === 'analyzing'
+          ? 'GPT-5.6 Sol High sedang menelaah seluruh timeline, CPPT, penunjang, operasi, resume, dan resep. Proses dapat memerlukan beberapa menit.'
+          : 'Jalankan analisis saat dibutuhkan. Data identitas langsung dihapus sebelum data klinis dikirim ke model.'}</p>
+        {error && <div class="morbid-alert error">{error}</div>}
+        {!analyzing && status !== 'analyzing' && <button type="button" class="morbid-ai-start" onClick={onAnalyze}>{status === 'failed' ? 'Coba Analisis Lagi' : 'Mulai Analisis AI'}</button>}
+        {(analyzing || status === 'analyzing') && <div class="morbid-ai-progress"><span /><span /><span /></div>}
+      </div>
+    );
+  }
+
+  const overview = analysis.case_overview || {};
+  const executive = analysis.executive_analysis || {};
+  const conclusion = analysis.conclusion || {};
+  const criticalPoints = analysis.critical_points || [];
+
+  return (
+    <article class="morbid-ai-report">
+      <header class="morbid-ai-print-header">
+        <div><span>Laporan Analisis Morbid Case</span><h1>{record.patient_name}</h1><p>MR {record.mr_id || '-'} · {record.case_id}</p></div>
+        <div><strong>DocBoard</strong><span>{formatDateTime(analysis.generated_at)}</span></div>
+      </header>
+
+      {(status === 'stale' || status === 'failed' || error) && <div class={`morbid-alert ${status === 'failed' ? 'error' : 'warning'} morbid-no-print`}>{status === 'stale' ? 'Snapshot klinis telah diperbarui. Analisis ini masih dapat dibaca, tetapi sebaiknya dianalisis ulang.' : error || 'Analisis ulang terakhir gagal; laporan tersimpan sebelumnya tetap ditampilkan.'}</div>}
+
+      <section class="morbid-ai-hero">
+        <div>
+          <span class={`morbid-ai-severity ${overview.severity_level || 'unknown'}`}>{overview.severity_level ? `Severity ${overview.severity_level}` : 'Severity belum dinilai'}</span>
+          <h2>{overview.headline || 'Analisis Morbid Case'}</h2>
+          <p>{overview.clinical_summary}</p>
+        </div>
+        <dl>
+          <div><dt>Luaran</dt><dd>{humanize(overview.outcome || '-')}</dd></div>
+          <div><dt>Confidence</dt><dd>{humanize(overview.confidence || '-')}</dd></div>
+          <div><dt>Critical Point</dt><dd>{criticalPoints.length}</dd></div>
+          <div><dt>Model</dt><dd>{analysis.model || 'gpt-5.6-sol'} · {humanize(analysis.reasoning_effort || 'high')}</dd></div>
+        </dl>
+      </section>
+
+      <section class="morbid-ai-outcome-note">
+        <strong>Luaran bukan syarat Morbid Case</strong>
+        <p>{overview.outcome_context || conclusion.mortality_independent_note}</p>
+      </section>
+
+      <section class="morbid-ai-section">
+        <header><span>01</span><div><h2>Analisis Eksekutif</h2><p>Representasi masalah, perjalanan penyakit, dan appraisal tatalaksana</p></div></header>
+        <div class="morbid-ai-narrative-grid">
+          <NarrativeCard title="Problem representation" value={executive.problem_representation} />
+          <NarrativeCard title="Perjalanan penyakit" value={executive.disease_course} />
+          <NarrativeCard title="Appraisal tatalaksana" value={executive.management_appraisal} />
+          <NarrativeCard title="Penilaian menyeluruh" value={executive.overall_judgement} />
+        </div>
+      </section>
+
+      <section class="morbid-ai-section">
+        <header><span>02</span><div><h2>Critical Point</h2><p>Keputusan dan kejadian yang mengubah risiko atau arah perawatan</p></div></header>
+        <CriticalPointDiagram points={criticalPoints} />
+        <div class="morbid-critical-list">
+          {criticalPoints.map((point, index) => <CriticalPointCard point={point} index={index} key={`${point.sequence}-${point.title}`} />)}
+        </div>
+      </section>
+
+      <section class="morbid-ai-section morbid-ai-visual-grid">
+        <div>
+          <header><span>03</span><div><h2>Grafik Perjalanan Klinis</h2><p>Severity 0 (stabil) sampai 5 (kritis)</p></div></header>
+          <SeverityChart timeline={analysis.clinical_timeline || []} />
+        </div>
+        <div>
+          <header><span>04</span><div><h2>Profil Mutu Perawatan</h2><p>Skor refleksi internal, bukan penilaian legal</p></div></header>
+          <QualityChart quality={analysis.care_quality || {}} />
+        </div>
+      </section>
+
+      <section class="morbid-ai-section">
+        <header><span>05</span><div><h2>Diagram Faktor Kontribusi</h2><p>Faktor risiko, proses, sistem, dan faktor protektif</p></div></header>
+        <CausalDiagram causal={analysis.causal_analysis || {}} />
+      </section>
+
+      <section class="morbid-ai-section morbid-ai-two-column">
+        <div>
+          <header><span>06</span><div><h2>Yang Berjalan Baik</h2><p>Praktik dan respons yang membantu luaran</p></div></header>
+          <div class="morbid-ai-list-cards positive">{(analysis.what_went_well || []).map((item, index) => <section key={index}><strong>{item.title}</strong><p>{item.evidence}</p><span>{item.impact}</span></section>)}</div>
+        </div>
+        <div>
+          <header><span>07</span><div><h2>Peluang Perbaikan</h2><p>Prioritas yang dapat ditindaklanjuti</p></div></header>
+          <div class="morbid-ai-list-cards opportunity">{(analysis.improvement_opportunities || []).map((item, index) => <section key={index}><span class={`priority ${item.priority}`}>{item.priority}</span><strong>{item.issue}</strong><p>{item.evidence}</p><b>{item.recommendation}</b><small>Ukuran sukses: {item.success_metric}</small></section>)}</div>
+        </div>
+      </section>
+
+      <section class="morbid-ai-section">
+        <header><span>08</span><div><h2>Rencana Tindak Lanjut</h2><p>Dari aksi segera sampai perbaikan sistem</p></div></header>
+        <div class="morbid-action-plan">
+          <ActionColumn title="Segera" items={analysis.action_plan?.immediate} />
+          <ActionColumn title="Jangka pendek" items={analysis.action_plan?.short_term} />
+          <ActionColumn title="Level sistem" items={analysis.action_plan?.system_level} />
+        </div>
+      </section>
+
+      <section class="morbid-ai-conclusion">
+        <span>Kesimpulan</span>
+        <h2>{conclusion.overall_assessment}</h2>
+        <blockquote>{conclusion.key_learning}</blockquote>
+        <div class="morbid-ai-conclusion-grid">
+          <ListBlock title="Keterbatasan data" items={conclusion.limitations} />
+          <ListBlock title="Pertanyaan yang belum terjawab" items={conclusion.unanswered_questions} />
+        </div>
+      </section>
+
+      <footer class="morbid-ai-footer">
+        <p>Analisis AI adalah alat bantu refleksi klinis dan peningkatan mutu. Hasil harus divalidasi oleh dokter yang memahami konteks kasus dan tidak menggantikan keputusan klinis, audit formal, atau penilaian medikolegal.</p>
+        <button type="button" class="morbid-ai-print-button morbid-no-print" onClick={onPrint}>Cetak / Simpan sebagai PDF</button>
+      </footer>
+    </article>
+  );
+}
+
+function NarrativeCard({ title, value }) {
+  return <section><span>{title}</span><p>{value || '-'}</p></section>;
+}
+
+function CriticalPointDiagram({ points }) {
+  return <div class="morbid-critical-flow">{points.map((point, index) => <div class={`morbid-critical-node ${point.direction}`} key={index}><span>{String(index + 1).padStart(2, '0')}</span><div><small>{point.occurred_at || point.phase}</small><strong>{point.title}</strong><em>Severity {point.severity}/5</em></div></div>)}</div>;
+}
+
+function CriticalPointCard({ point, index }) {
+  return (
+    <section class={`morbid-critical-card ${point.direction}`}>
+      <header><div><span>Critical Point {String(index + 1).padStart(2, '0')}</span><h3>{point.title}</h3></div><div><b>{CATEGORY_LABELS[point.category] || humanize(point.category)}</b><em>{DIRECTION_LABELS[point.direction] || humanize(point.direction)}</em></div></header>
+      <div class="morbid-critical-meta"><span>{point.occurred_at || 'Waktu tidak diketahui'}</span><span>{point.phase}</span><span>Severity {point.severity}/5</span><span>Confidence {point.confidence}</span></div>
+      <dl>
+        <div><dt>Bukti klinis</dt><dd>{point.evidence}</dd></div>
+        <div><dt>Makna klinis</dt><dd>{point.clinical_significance}</dd></div>
+        <div><dt>Tindakan yang dilakukan</dt><dd>{point.action_taken}</dd></div>
+        <div><dt>Alternatif / pembelajaran</dt><dd>{point.alternative_or_learning}</dd></div>
+      </dl>
+      <footer>Preventability: <strong>{humanize(point.preventability)}</strong></footer>
+    </section>
+  );
+}
+
+function SeverityChart({ timeline }) {
+  if (!timeline.length) return <div class="morbid-empty">Timeline untuk grafik belum tersedia.</div>;
+  const width = 720;
+  const height = 230;
+  const left = 46;
+  const right = 22;
+  const top = 24;
+  const bottom = 46;
+  const chartWidth = width - left - right;
+  const chartHeight = height - top - bottom;
+  const points = timeline.map((item, index) => ({
+    x: left + (timeline.length === 1 ? chartWidth / 2 : (index / (timeline.length - 1)) * chartWidth),
+    y: top + ((5 - Math.max(0, Math.min(5, Number(item.severity) || 0))) / 5) * chartHeight,
+    item,
+  }));
+  return (
+    <div class="morbid-severity-chart">
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Grafik severity perjalanan klinis">
+        {[0, 1, 2, 3, 4, 5].map(level => { const y = top + ((5 - level) / 5) * chartHeight; return <g key={level}><line x1={left} y1={y} x2={width - right} y2={y} /><text x={left - 13} y={y + 4}>{level}</text></g>; })}
+        <polyline points={points.map(point => `${point.x},${point.y}`).join(' ')} />
+        {points.map((point, index) => <g class="data-point" key={index}><circle cx={point.x} cy={point.y} r="6" /><text class="value" x={point.x} y={point.y - 11}>{point.item.severity}</text></g>)}
+      </svg>
+      <div class="morbid-chart-legend">{timeline.map((item, index) => <div key={index}><span style={{ background: `hsl(${12 + (Number(item.severity) || 0) * 2} 78% ${52 - (Number(item.severity) || 0) * 2}%)` }}>{item.severity}</span><div><strong>{item.label}</strong><small>{item.occurred_at || item.phase}</small><p>{item.clinical_state}</p></div></div>)}</div>
+    </div>
+  );
+}
+
+function QualityChart({ quality }) {
+  const dimensions = quality.dimensions || [];
+  return <div class="morbid-quality-chart"><div class="morbid-quality-score"><strong>{quality.overall_score ?? '-'}</strong><span>/100</span><p>{quality.interpretation}</p></div>{dimensions.map((item, index) => <div class="morbid-quality-row" key={index}><div><strong>{item.dimension}</strong><span>{item.score}</span></div><div class="bar"><i style={{ width: `${Math.max(0, Math.min(100, Number(item.score) || 0))}%` }} /></div><p>{item.rationale}</p></div>)}</div>;
+}
+
+function CausalDiagram({ causal }) {
+  const groups = [
+    ['Faktor pasien', causal.patient_factors], ['Faktor penyakit', causal.disease_factors],
+    ['Tugas & proses', causal.task_process_factors], ['Tim', causal.team_factors],
+    ['Lingkungan & sistem', causal.environment_system_factors], ['Faktor protektif', causal.protective_factors],
+  ];
+  return <div class="morbid-causal"><div class="morbid-causal-core"><span>Sintesis</span><p>{causal.synthesis}</p></div><div class="morbid-causal-grid">{groups.map(([title, items], index) => <section class={index === 5 ? 'protective' : ''} key={title}><strong>{title}</strong><ul>{(items || []).length ? items.map((item, itemIndex) => <li key={itemIndex}>{item}</li>) : <li>Tidak teridentifikasi dari data</li>}</ul></section>)}</div></div>;
+}
+
+function ActionColumn({ title, items = [] }) {
+  return <section><strong>{title}</strong><ol>{items.length ? items.map((item, index) => <li key={index}>{item}</li>) : <li>Belum ada rekomendasi.</li>}</ol></section>;
+}
+
+function ListBlock({ title, items = [] }) {
+  return <section><strong>{title}</strong><ul>{items.length ? items.map((item, index) => <li key={index}>{item}</li>) : <li>Tidak ada.</li>}</ul></section>;
 }
