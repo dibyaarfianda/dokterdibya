@@ -106,6 +106,19 @@ describe('MorbidCaseService', () => {
     })).toEqual({ cppt: [{ plan: 'Rawat' }], resume: { fields: { ringkasan: 'Pulang' } } });
   });
 
+  test('filters Morbid Case candidates for each target doctor', async () => {
+    const db = { query: jest.fn(async () => [[candidate({ doctor_key: 'dibya' })]]) };
+    const service = new MorbidCaseService({ db, r2: { R2_BUCKET_NAME: 'test' } });
+
+    const rows = await service.listCandidates({ doctor: 'dibya', limit: 8 });
+
+    expect(rows).toHaveLength(1);
+    const [sql, values] = db.query.mock.calls[0];
+    expect(sql).toContain('AND odi.doctor_key = ?');
+    expect(values).toEqual(['dibya', 8]);
+    await expect(service.listCandidates({ doctor: 'dokter_lain' })).rejects.toMatchObject({ status: 400 });
+  });
+
   test('runs on-demand AI analysis, stores it separately, and records model metadata', async () => {
     const readyCatalog = catalog({
       analysis_status: 'not_analyzed', analysis_r2_key: null, analysis_r2_bucket: null,

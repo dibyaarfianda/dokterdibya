@@ -16,6 +16,28 @@ function statusLabel(status) {
   return 'Gagal';
 }
 
+const MORBID_DOCTORS = [
+  ['dibya', 'dr. Dibya'],
+  ['tri_aji', 'dr. Tri Aji'],
+  ['latifa', 'dr. Latifa'],
+];
+
+function CandidateCard({ candidate, addingId, onAdd }) {
+  return (
+    <div class="morbid-candidate" key={candidate.id}>
+      <div>
+        <span class="morbid-doctor-badge">{candidate.doctor_name || candidate.doctor_key}</span>
+        <strong>{candidate.patient_name}</strong>
+        <span>MR {candidate.mr_id || '-'} · {formatDate(candidate.operation_date)}</span>
+        <p>{candidate.diagnosis || candidate.operation_name}</p>
+      </div>
+      <button type="button" disabled={addingId === candidate.id} onClick={() => onAdd(candidate)}>
+        {candidate.morbid_case_id ? 'Buka' : addingId === candidate.id ? 'Mengambil...' : 'Tambah'}
+      </button>
+    </div>
+  );
+}
+
 export default function MorbidCaseList() {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +47,7 @@ export default function MorbidCaseList() {
   const [candidateSearch, setCandidateSearch] = useState('');
   const [candidates, setCandidates] = useState([]);
   const [candidateLoading, setCandidateLoading] = useState(false);
+  const [recentByDoctor, setRecentByDoctor] = useState({});
   const [addingId, setAddingId] = useState(null);
   const candidateRequestId = useRef(0);
 
@@ -32,8 +55,12 @@ export default function MorbidCaseList() {
     setLoading(true);
     setError('');
     try {
-      const result = await api.getMorbidCases({ search: query, limit: 50 });
-      setRows(result.data || []);
+      const [savedResult, ...doctorResults] = await Promise.all([
+        api.getMorbidCases({ search: query, limit: 50 }),
+        ...MORBID_DOCTORS.map(([doctor]) => api.getMorbidCaseCandidates({ doctor, limit: 8 })),
+      ]);
+      setRows(savedResult.data || []);
+      setRecentByDoctor(Object.fromEntries(MORBID_DOCTORS.map(([doctor], index) => [doctor, doctorResults[index]?.data || []])));
     } catch (err) {
       setError(err.message || 'Gagal memuat Morbid Case');
     } finally {
@@ -90,7 +117,7 @@ export default function MorbidCaseList() {
         </button>
         <div>
           <h1>Morbid Case</h1>
-          <p>{rows.length} kasus tersimpan</p>
+          <p>{rows.length} kasus tersimpan · kandidat terbaru 3 dokter</p>
         </div>
         <button class="morbid-add-button" type="button" onClick={() => setPickerOpen(true)} title="Tambah kasus" aria-label="Tambah kasus">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14" /></svg>
@@ -106,34 +133,56 @@ export default function MorbidCaseList() {
       {error && <div class="morbid-alert error">{error}</div>}
       {loading ? (
         <div class="monitor-state"><div class="spinner" /><p>Memuat kasus...</p></div>
-      ) : rows.length === 0 ? (
-        <div class="monitor-state"><strong>Belum ada Morbid Case</strong></div>
       ) : (
-        <div class="morbid-case-list">
-          {rows.map(row => (
-            <button class="morbid-case-row" type="button" key={row.id} onClick={() => route(`/docboard/morbid-cases/${row.id}`)}>
-              <div class="morbid-case-row-main">
-                <div class="morbid-case-row-title">
-                  <strong>{row.patient_name}</strong>
-                  <span class={`morbid-status ${row.status}`}>{statusLabel(row.status)}</span>
-                </div>
-                <div class="morbid-case-meta">
-                  <span>MR {row.mr_id || '-'}</span>
-                  <span>{row.case_id}</span>
-                  <span>{formatDate(row.operation_date)}</span>
-                </div>
-                <p>{row.diagnosis || row.operation_name || 'Kasus rawat inap'}</p>
-                <div class="morbid-counts">
-                  <span>{row.cppt_count} CPPT</span>
-                  <span>{row.penunjang_result_count} penunjang</span>
-                  <span>{row.penunjang_file_count} dokumen</span>
-                  <span>{row.prescription_count} resep</span>
-                </div>
+        <>
+          <section class="morbid-saved-section">
+            <header class="morbid-list-section-header"><div><span>Sudah dipilih</span><h2>Kasus tersimpan</h2></div><strong>{rows.length}</strong></header>
+            {rows.length === 0 ? <div class="monitor-state"><strong>Belum ada Morbid Case tersimpan</strong></div> : (
+              <div class="morbid-case-list">
+                {rows.map(row => (
+                  <button class="morbid-case-row" type="button" key={row.id} onClick={() => route(`/docboard/morbid-cases/${row.id}`)}>
+                    <div class="morbid-case-row-main">
+                      <div class="morbid-case-row-title">
+                        <strong>{row.patient_name}</strong>
+                        <span class={`morbid-status ${row.status}`}>{statusLabel(row.status)}</span>
+                      </div>
+                      <div class="morbid-case-meta">
+                        <span>{row.doctor_name || 'Dokter tidak tercatat'}</span>
+                        <span>MR {row.mr_id || '-'}</span>
+                        <span>{row.case_id}</span>
+                        <span>{formatDate(row.operation_date)}</span>
+                      </div>
+                      <p>{row.diagnosis || row.operation_name || 'Kasus rawat inap'}</p>
+                      <div class="morbid-counts">
+                        <span>{row.cppt_count} CPPT</span>
+                        <span>{row.penunjang_result_count} penunjang</span>
+                        <span>{row.penunjang_file_count} dokumen</span>
+                        <span>{row.prescription_count} resep</span>
+                      </div>
+                    </div>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6" /></svg>
+                  </button>
+                ))}
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9,18 15,12 9,6" /></svg>
-            </button>
-          ))}
-        </div>
+            )}
+          </section>
+
+          <section class="morbid-recent-section">
+            <header class="morbid-list-section-header"><div><span>Belum dan sudah tersimpan</span><h2>Kandidat terbaru per dokter</h2></div></header>
+            <div class="morbid-doctor-groups">
+              {MORBID_DOCTORS.map(([doctor, label]) => (
+                <section class="morbid-doctor-group" key={doctor}>
+                  <header><div><span>Dokter operator</span><h3>{label}</h3></div><strong>{(recentByDoctor[doctor] || []).length}</strong></header>
+                  <div>
+                    {(recentByDoctor[doctor] || []).length
+                      ? (recentByDoctor[doctor] || []).map(candidate => <CandidateCard candidate={candidate} addingId={addingId} onAdd={addCase} key={candidate.id} />)
+                      : <div class="audit-pa-state">Kandidat belum tersedia.</div>}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </section>
+        </>
       )}
 
       {pickerOpen && (
@@ -149,18 +198,7 @@ export default function MorbidCaseList() {
               <button type="submit">Cari</button>
             </form>
             <div class="morbid-candidate-list">
-              {candidateLoading ? <div class="audit-pa-state">Mencari kasus...</div> : candidates.length === 0 ? <div class="audit-pa-state">Kasus tidak ditemukan.</div> : candidates.map(candidate => (
-                <div class="morbid-candidate" key={candidate.id}>
-                  <div>
-                    <strong>{candidate.patient_name}</strong>
-                    <span>MR {candidate.mr_id || '-'} · {formatDate(candidate.operation_date)}</span>
-                    <p>{candidate.diagnosis || candidate.operation_name}</p>
-                  </div>
-                  <button type="button" disabled={addingId === candidate.id} onClick={() => addCase(candidate)}>
-                    {candidate.morbid_case_id ? 'Buka' : addingId === candidate.id ? 'Mengambil...' : 'Tambah'}
-                  </button>
-                </div>
-              ))}
+              {candidateLoading ? <div class="audit-pa-state">Mencari kasus...</div> : candidates.length === 0 ? <div class="audit-pa-state">Kasus tidak ditemukan.</div> : candidates.map(candidate => <CandidateCard candidate={candidate} addingId={addingId} onAdd={addCase} key={candidate.id} />)}
             </div>
           </div>
         </div>

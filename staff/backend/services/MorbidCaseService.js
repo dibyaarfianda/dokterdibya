@@ -103,8 +103,15 @@ class MorbidCaseService {
 
   async listCandidates(params = {}) {
     const search = trim(params.search);
+    const doctor = trim(params.doctor);
+    if (doctor && !TARGET_DOCTORS.includes(doctor)) {
+      const error = new Error('Dokter Morbid Case tidak valid');
+      error.status = 400;
+      throw error;
+    }
     const limit = Math.min(Math.max(parseInt(params.limit, 10) || 20, 1), 50);
-    const values = [...TARGET_DOCTORS];
+    const values = doctor ? [doctor] : [...TARGET_DOCTORS];
+    const doctorClause = doctor ? 'odi.doctor_key = ?' : 'odi.doctor_key IN (?, ?, ?)';
     let searchClause = '';
     if (search) {
       const pattern = `%${search.toLowerCase()}%`;
@@ -116,10 +123,10 @@ class MorbidCaseService {
       `SELECT odi.id, odi.case_id, odi.simrs_operasi_id, odi.mr_id, odi.patient_name, odi.patient_age,
               odi.operation_date, odi.operation_time, odi.operation_name, odi.diagnosis,
               odi.doctor_name, odi.doctor_key, mc.id AS morbid_case_id
-         FROM operation_data_index odi
+        FROM operation_data_index odi
          LEFT JOIN docboard_morbid_cases mc ON mc.facility = odi.facility AND mc.case_id = odi.case_id
         WHERE odi.facility = 'gambiran'
-          AND odi.doctor_key IN (?, ?, ?)
+          AND ${doctorClause}
           AND odi.case_id IS NOT NULL
           AND odi.source_key = CONCAT('gambiran:pendaftaran:', odi.simrs_operasi_id)
           ${searchClause}

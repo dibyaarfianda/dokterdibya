@@ -45,6 +45,16 @@ describe('DocBoard Morbid Case access', () => {
     expect(list).toContain('requestId !== candidateRequestId.current');
   });
 
+  test('shows recent Morbid Case candidates for every target doctor on the main page', () => {
+    const list = readRepoFile('docboard', 'src', 'views', 'MorbidCaseList.jsx');
+    expect(list).toContain("['dibya', 'dr. Dibya']");
+    expect(list).toContain("['tri_aji', 'dr. Tri Aji']");
+    expect(list).toContain("['latifa', 'dr. Latifa']");
+    expect(list).toContain('api.getMorbidCaseCandidates({ doctor, limit: 8 })');
+    expect(list).toContain('Kandidat terbaru per dokter');
+    expect(list).toContain('candidate.doctor_name || candidate.doctor_key');
+  });
+
   test('offers on-demand AI analysis and printable PDF layout', () => {
     const api = readRepoFile('docboard', 'src', 'services', 'api.js');
     const detail = readRepoFile('docboard', 'src', 'views', 'MorbidCaseDetail.jsx');
