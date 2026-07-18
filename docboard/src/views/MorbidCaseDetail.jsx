@@ -231,7 +231,7 @@ export default function MorbidCaseDetail({ id }) {
           </nav>
 
           <main class="morbid-tab-content">
-            {activeTab === 'analysis' && <AnalysisTab analysis={analysis} record={record} status={analysisStatus} analyzing={analyzing} error={record.analysis_last_error || data?.analysis_load_error} onAnalyze={analyze} onPrint={printAnalysis} />}
+            {activeTab === 'analysis' && <AnalysisTab analysis={analysis} record={record} status={analysisStatus} analyzing={analyzing} progress={data?.analysis_progress} error={record.analysis_last_error || data?.analysis_load_error} onAnalyze={analyze} onPrint={printAnalysis} />}
             {activeTab === 'timeline' && <TimelineTab events={timeline} />}
             {activeTab === 'cppt' && <CpptTab entries={filteredCppt} total={cpptEntries.length} latestEntry={latestCppt} authors={cpptAuthors} author={cpptAuthor} setAuthor={setCpptAuthor} role={cpptRole} setRole={setCpptRole} search={cpptSearch} setSearch={setCpptSearch} date={cpptDate} setDate={setCpptDate} />}
             {activeTab === 'penunjang' && <PenunjangTab data={snapshot.penunjang} />}
@@ -280,7 +280,49 @@ function PrescriptionTab({ items }) {
   return <div class="morbid-prescription-list">{items.map((item, index) => <section key={item.resepId || item.id || index}><header><strong>Resep {item.resepId || item.id || items.length - index}</strong><span>{formatDateTime(item.date || item.tanggal || item.createdAt || item.created_at)}</span></header>{(item.medications || []).length ? <div>{item.medications.map((med, medIndex) => <div class="morbid-medication" key={`${med.namaObat || med.name}-${medIndex}`}><strong>{med.namaObat || med.nama || med.name || 'Obat'}</strong><span>{[med.jumlah, med.satuan, med.signa, med.keterangan].filter(Boolean).join(' · ')}</span></div>)}</div> : <FieldList fields={item} />}</section>)}</div>;
 }
 
-function AnalysisTab({ analysis, record, status, analyzing, error, onAnalyze, onPrint }) {
+function formatElapsed(seconds) {
+  const value = Math.max(0, Number(seconds) || 0);
+  const minutes = Math.floor(value / 60);
+  const remainder = Math.floor(value % 60);
+  return minutes ? `${minutes} menit ${String(remainder).padStart(2, '0')} detik` : `${remainder} detik`;
+}
+
+function AnalysisProgress({ progress }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [progress?.started_at]);
+
+  const stages = [
+    ['preparing', 'Menyiapkan data'],
+    ['model_reasoning', 'Analisis klinis AI'],
+    ['saving', 'Menyimpan laporan'],
+  ];
+  const currentStage = progress?.stage || 'preparing';
+  const activeIndex = currentStage === 'waiting'
+    ? 1
+    : Math.max(0, stages.findIndex(([key]) => key === currentStage));
+  const startedAt = Date.parse(progress?.started_at || '');
+  const liveElapsed = Number.isFinite(startedAt) ? Math.floor((now - startedAt) / 1000) : 0;
+  const elapsed = Math.max(Number(progress?.elapsed_seconds) || 0, liveElapsed);
+
+  return (
+    <section class="morbid-ai-progress-panel morbid-no-print" aria-live="polite">
+      <div class="morbid-ai-progress-heading">
+        <div><span>Progres aktual proses</span><strong>{progress?.label || 'Menyiapkan analisis klinis'}</strong></div>
+        <time>{formatElapsed(elapsed)}</time>
+      </div>
+      <div class="morbid-ai-progress-track" role="progressbar" aria-label="Analisis AI sedang berjalan" aria-valuetext={progress?.label || 'Menyiapkan analisis'}><i /></div>
+      <ol class="morbid-ai-progress-stages">
+        {stages.map(([key, label], index) => <li class={index < activeIndex ? 'done' : index === activeIndex ? 'active' : ''} key={key}><i>{index < activeIndex ? '✓' : index + 1}</i><span>{label}</span></li>)}
+      </ol>
+      <p>Waktu dan tahap di atas berasal dari proses backend. Model tidak mengirim persentase penyelesaian reasoning, sehingga bar bergerak tanpa menampilkan angka estimasi palsu.</p>
+    </section>
+  );
+}
+
+function AnalysisTab({ analysis, record, status, analyzing, progress, error, onAnalyze, onPrint }) {
   if (!analysis) {
     return (
       <div class="morbid-ai-empty">
@@ -291,7 +333,7 @@ function AnalysisTab({ analysis, record, status, analyzing, error, onAnalyze, on
           : 'Jalankan analisis saat dibutuhkan. Data identitas langsung dihapus sebelum data klinis dikirim ke model.'}</p>
         {error && <div class="morbid-alert error">{error}</div>}
         {!analyzing && status !== 'analyzing' && <button type="button" class="morbid-ai-start" onClick={onAnalyze}>{status === 'failed' ? 'Coba Analisis Lagi' : 'Mulai Analisis AI'}</button>}
-        {(analyzing || status === 'analyzing') && <div class="morbid-ai-progress"><span /><span /><span /></div>}
+        {(analyzing || status === 'analyzing') && <AnalysisProgress progress={progress} />}
       </div>
     );
   }
@@ -307,6 +349,8 @@ function AnalysisTab({ analysis, record, status, analyzing, error, onAnalyze, on
         <div><span>Laporan Analisis Morbid Case</span><h1>{record.patient_name}</h1><p>MR {record.mr_id || '-'} · {record.case_id}</p></div>
         <div><strong>DocBoard</strong><span>{formatDateTime(analysis.generated_at)}</span></div>
       </header>
+
+      {(analyzing || status === 'analyzing') && <AnalysisProgress progress={progress} />}
 
       {(status === 'stale' || status === 'failed' || error) && <div class={`morbid-alert ${status === 'failed' ? 'error' : 'warning'} morbid-no-print`}>{status === 'stale' ? 'Snapshot klinis telah diperbarui. Analisis ini masih dapat dibaca, tetapi sebaiknya dianalisis ulang.' : error || 'Analisis ulang terakhir gagal; laporan tersimpan sebelumnya tetap ditampilkan.'}</div>}
 

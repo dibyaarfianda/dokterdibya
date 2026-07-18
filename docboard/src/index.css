@@ -5355,11 +5355,24 @@ input { font-family: inherit; }
 .morbid-ai-empty h2 { margin: 16px 0 8px; font-size: 22px; }
 .morbid-ai-empty > p { max-width: 580px; margin: 0 auto 20px; color: #657185; font-size: 13px; line-height: 1.65; }
 .morbid-ai-orb { width: 62px; height: 62px; margin: auto; display: grid; place-items: center; border: 1px solid #c4b5fd; border-radius: 50%; background: radial-gradient(circle at 30% 25%, #fff, #ddd6fe 55%, #a78bfa); color: #5b21b6; box-shadow: 0 10px 30px rgba(109, 40, 217, .2); font-size: 16px; font-weight: 900; }
-.morbid-ai-progress { height: 30px; display: flex; justify-content: center; align-items: center; gap: 5px; }
-.morbid-ai-progress span { width: 8px; height: 8px; border-radius: 50%; background: #7c3aed; animation: morbid-ai-pulse 1.1s infinite ease-in-out; }
-.morbid-ai-progress span:nth-child(2) { animation-delay: .16s; }
-.morbid-ai-progress span:nth-child(3) { animation-delay: .32s; }
-@keyframes morbid-ai-pulse { 0%, 70%, 100% { opacity: .25; transform: translateY(0); } 35% { opacity: 1; transform: translateY(-5px); } }
+.morbid-ai-progress-panel { width: min(680px, 100%); margin: 22px auto 0; padding: 15px 16px; border: 1px solid #d8d0ee; border-radius: 8px; background: rgba(255,255,255,.92); text-align: left; box-shadow: 0 8px 24px rgba(76, 29, 149, .08); }
+.morbid-ai-report > .morbid-ai-progress-panel { width: 100%; margin: 0; }
+.morbid-ai-progress-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
+.morbid-ai-progress-heading > div { min-width: 0; }
+.morbid-ai-progress-heading span { display: block; color: #7c3aed; font-size: 9px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.morbid-ai-progress-heading strong { display: block; margin-top: 4px; color: #312e45; font-size: 13px; overflow-wrap: anywhere; }
+.morbid-ai-progress-heading time { flex: 0 0 auto; color: #5b21b6; font-size: 12px; font-variant-numeric: tabular-nums; font-weight: 900; }
+.morbid-ai-progress-track { height: 8px; margin-top: 13px; overflow: hidden; border-radius: 999px; background: #ede9fe; }
+.morbid-ai-progress-track i { width: 38%; height: 100%; display: block; border-radius: inherit; background: linear-gradient(90deg, #7c3aed, #a78bfa, #6d28d9); animation: morbid-ai-progress-motion 1.7s infinite ease-in-out; }
+@keyframes morbid-ai-progress-motion { 0% { transform: translateX(-105%); } 55% { transform: translateX(165%); } 100% { transform: translateX(265%); } }
+.morbid-ai-progress-stages { margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; list-style: none; }
+.morbid-ai-progress-stages li { min-width: 0; display: flex; align-items: center; gap: 7px; color: #9aa1ad; font-size: 10px; font-weight: 700; }
+.morbid-ai-progress-stages li > i { width: 20px; height: 20px; flex: 0 0 20px; display: grid; place-items: center; border: 1px solid #d8dce3; border-radius: 50%; background: #fff; font-size: 9px; font-style: normal; }
+.morbid-ai-progress-stages li.done { color: #047857; }
+.morbid-ai-progress-stages li.done > i { border-color: #a7f3d0; background: #d1fae5; color: #047857; }
+.morbid-ai-progress-stages li.active { color: #5b21b6; }
+.morbid-ai-progress-stages li.active > i { border-color: #8b5cf6; background: #7c3aed; color: #fff; box-shadow: 0 0 0 3px #ede9fe; }
+.morbid-ai-progress-panel > p { margin: 12px 0 0; color: #7a8495; font-size: 10px; line-height: 1.5; }
 
 .morbid-ai-report { display: grid; gap: 16px; }
 .morbid-ai-print-header { display: none; }

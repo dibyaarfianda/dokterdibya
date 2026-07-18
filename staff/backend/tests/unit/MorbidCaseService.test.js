@@ -147,9 +147,18 @@ describe('MorbidCaseService', () => {
 
     expect(result.analysis_started).toBe(true);
     expect(result.morbid_case.analysis_status).toBe('analyzing');
+    expect(result.analysis_progress).toEqual(expect.objectContaining({
+      stage: 'model_reasoning',
+      label: expect.stringContaining('GPT-5.6 Sol High'),
+      percent: null,
+      determinate: false,
+    }));
     expect(service.activeAnalyses.has('9')).toBe(true);
+    const running = service.activeAnalyses.get('9');
+    expect(running.startedAt).toEqual(expect.any(Number));
+    expect(running.promise).toEqual(expect.any(Promise));
     resolveAnalysis({ model: 'gpt-5.6-sol', reasoning_effort: 'high' });
-    await service.activeAnalyses.get('9');
+    await running.promise;
     expect(r2.uploadJson).toHaveBeenCalled();
     expect(service.activeAnalyses.has('9')).toBe(false);
   });

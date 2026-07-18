@@ -299,12 +299,45 @@ class MorbidCaseService {
     return detail;
   }
 
-  async performAnalysis(id, detail, requestedBy) {
+  updateAnalysisProgress(tracker, stage, label) {
+    if (!tracker) return;
+    tracker.stage = stage;
+    tracker.label = label;
+  }
+
+  analysisProgress(id, catalog = null) {
+    const tracker = this.activeAnalyses.get(String(id));
+    if (tracker) {
+      return {
+        stage: tracker.stage,
+        label: tracker.label,
+        started_at: new Date(tracker.startedAt).toISOString(),
+        elapsed_seconds: Math.max(0, Math.floor((Date.now() - tracker.startedAt) / 1000)),
+        percent: null,
+        determinate: false,
+      };
+    }
+    if (catalog?.analysis_status === 'analyzing') {
+      return {
+        stage: 'waiting',
+        label: 'Analisis masih berjalan; menunggu status proses dari server',
+        started_at: null,
+        elapsed_seconds: null,
+        percent: null,
+        determinate: false,
+      };
+    }
+    return null;
+  }
+
+  async performAnalysis(id, detail, requestedBy, tracker = null) {
     const catalog = detail.morbid_case;
 
     const analysisKey = `morbid-cases/${catalog.facility}/${catalog.case_id}/analysis-v1.json`;
     try {
+      this.updateAnalysisProgress(tracker, 'model_reasoning', 'GPT-5.6 Sol High sedang menelaah data klinis');
       const analysis = await this.aiService.analyze(detail.snapshot, catalog, requestedBy);
+      this.updateAnalysisProgress(tracker, 'saving', 'Menyusun dan menyimpan laporan analisis');
       await this.r2.uploadJson(analysisKey, analysis, catalog.snapshot_r2_bucket || this.bucket);
       await this.db.query(
         `UPDATE docboard_morbid_cases
@@ -315,8 +348,10 @@ class MorbidCaseService {
         [analysisKey, catalog.snapshot_r2_bucket || this.bucket, analysis.model,
           analysis.reasoning_effort, id]
       );
+      this.updateAnalysisProgress(tracker, 'completed', 'Laporan analisis selesai');
       return this.getDetail(id);
     } catch (error) {
+      this.updateAnalysisProgress(tracker, 'failed', 'Analisis gagal');
       await this.db.query(
         `UPDATE docboard_morbid_cases
             SET analysis_status = 'failed', analysis_last_error = ?
@@ -353,17 +388,24 @@ class MorbidCaseService {
       [id]
     );
 
-    const job = this.performAnalysis(id, detail, requestedBy)
+    const tracker = {
+      startedAt: Date.now(),
+      stage: 'preparing',
+      label: 'Menyiapkan data klinis untuk dianalisis',
+      promise: null,
+    };
+    this.activeAnalyses.set(key, tracker);
+    tracker.promise = this.performAnalysis(id, detail, requestedBy, tracker)
       .catch(error => {
         logger.error('Morbid Case background analysis failed', { message: error.message, caseId: id });
         return null;
       })
       .finally(() => this.activeAnalyses.delete(key));
-    this.activeAnalyses.set(key, job);
 
     return {
       ...detail,
       morbid_case: { ...detail.morbid_case, analysis_status: 'analyzing', analysis_last_error: null },
+      analysis_progress: this.analysisProgress(id),
       analysis_started: true,
     };
   }
@@ -402,7 +444,13 @@ class MorbidCaseService {
         url: file.id ? `/api/docboard/morbid-cases/${catalog.id}/files/${encodeURIComponent(file.id)}` : null,
       }));
     }
-    return { morbid_case: catalog, snapshot, analysis, analysis_load_error: analysisLoadError };
+    return {
+      morbid_case: catalog,
+      snapshot,
+      analysis,
+      analysis_load_error: analysisLoadError,
+      analysis_progress: this.analysisProgress(id, catalog),
+    };
   }
 
   async fetchFile(id, fileId) {

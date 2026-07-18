@@ -53,6 +53,9 @@ describe('DocBoard Morbid Case access', () => {
     expect(readRepoFile('staff', 'backend', 'routes', 'morbid-cases.js')).toContain('res.status(202)');
     expect(detail).toContain('Mulai Analisis AI');
     expect(detail).toContain('Cetak / Simpan sebagai PDF');
+    expect(detail).toContain('Progres aktual proses');
+    expect(detail).toContain('Model tidak mengirim persentase penyelesaian reasoning');
+    expect(detail).toContain('progress={data?.analysis_progress}');
     expect(detail).toContain('<SeverityChart');
     expect(detail).toContain('<CriticalPointDiagram');
     expect(styles).toContain('@media print');
