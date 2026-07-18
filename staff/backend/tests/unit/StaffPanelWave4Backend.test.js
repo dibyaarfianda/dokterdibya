@@ -57,6 +57,10 @@ describe('Wave 4 Sunday Clinic backend boundaries', () => {
             const source = fs.readFileSync(path.join(backendRoot, relativePath), 'utf8');
             expect(source).not.toMatch(/CREATE\s+TABLE|ALTER\s+TABLE/i);
         }
+        expect(fs.readFileSync(path.join(backendRoot, 'routes/sunday-appointments.js'), 'utf8'))
+            .not.toContain('validateSundayClinicSchema()');
+        expect(fs.readFileSync(path.join(backendRoot, 'routes/booking-settings.js'), 'utf8'))
+            .not.toContain('validateSundayClinicSchema()');
     });
 
     test('schema validation reports the additive migration explicitly', async () => {

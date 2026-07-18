@@ -7,7 +7,6 @@ const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
 const patientActivityLogger = require('../services/patientActivityLogger');
-const { validateSundayClinicSchema } = require('../services/SundayClinicSchemaValidator');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -35,14 +34,6 @@ const verifyToken = (req, res, next) => {
 
 function getDayName(dayOfWeek) {
     return DAY_NAMES[dayOfWeek] || 'Tidak diketahui';
-}
-
-async function ensureBookingSettingsDayColumn() {
-    return validateSundayClinicSchema();
-}
-
-async function ensureConfirmationPopupColumn() {
-    return validateSundayClinicSchema();
 }
 
 // Helper function to get next available practice dates based on configured days
@@ -110,7 +101,6 @@ function invalidateSessionSettingsCache() {
 
 // Helper function to get session settings from database
 async function getSessionSettings() {
-    await ensureBookingSettingsDayColumn();
     const now = Date.now();
     if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
         return sessionSettingsCache;
@@ -648,7 +638,6 @@ router.get('/patient', verifyToken, async (req, res) => {
  */
 router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
     try {
-        await ensureConfirmationPopupColumn();
 
         res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
         res.set('Pragma', 'no-cache');
@@ -701,7 +690,6 @@ router.post('/:id/trigger-confirmation-popup', verifyToken, async (req, res) => 
         }
 
         const { id } = req.params;
-        await ensureConfirmationPopupColumn();
 
         const [rows] = await db.query(
             `SELECT id, patient_id, patient_name, appointment_date, session, slot_number, status, confirmation_popup_enabled_at

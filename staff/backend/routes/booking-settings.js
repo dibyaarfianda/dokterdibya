@@ -5,17 +5,12 @@ const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
 const sundayAppointmentsRoutes = require('./sunday-appointments');
-const { validateSundayClinicSchema } = require('../services/SundayClinicSchemaValidator');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
 function normalizeDayOfWeek(value) {
     const parsed = Number.parseInt(value, 10);
     return Number.isInteger(parsed) && parsed >= 0 && parsed <= 6 ? parsed : 0;
-}
-
-async function ensureBookingSettingsSchema() {
-    return validateSundayClinicSchema();
 }
 
 function clearBookingSettingCaches() {
@@ -31,7 +26,6 @@ function clearBookingSettingCaches() {
  */
 router.get('/', verifyToken, async (req, res) => {
     try {
-        await ensureBookingSettingsSchema();
         const cached = cache.get('booking-settings:staff', 'long');
         if (cached) return res.json(cached);
 
@@ -67,7 +61,6 @@ router.get('/', verifyToken, async (req, res) => {
  */
 router.get('/public', async (req, res) => {
     try {
-        await ensureBookingSettingsSchema();
         const cached = cache.get('booking-settings:public', 'long');
         if (cached) return res.json(cached);
 
@@ -107,7 +100,6 @@ router.get('/public', async (req, res) => {
  */
 router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
-        await ensureBookingSettingsSchema();
         const { id } = req.params;
         const { session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
 
@@ -164,7 +156,6 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
  */
 router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
     try {
-        await ensureBookingSettingsSchema();
         const { session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
 
         // Validate required fields
@@ -215,7 +206,6 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
  */
 router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
-        await ensureBookingSettingsSchema();
         const { id } = req.params;
 
         // Check if there are existing appointments using this session
@@ -253,7 +243,6 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
  */
 router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
     try {
-        await ensureBookingSettingsSchema();
         const { date, session, status } = req.query;
 
         let query = `

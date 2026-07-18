@@ -23,7 +23,7 @@ describe('Sunday Clinic additional billing implementation', () => {
     });
 
     test('only permits a separate bill after the main bill is paid and keeps draft-only editing', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
 
         expect(route).toContain("router.post('/billing/:mrId/additional'");
         expect(route).toContain("router.put('/billing/:mrId/additional/:additionalBillingId'");
@@ -36,7 +36,7 @@ describe('Sunday Clinic additional billing implementation', () => {
     });
 
     test('validates prices from server-side medicine and approved add-on catalogs', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
 
         expect(route).toContain("const ADDITIONAL_BILLING_ADD_ONS = Object.freeze");
         expect(route).toContain("S02: { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 }");
@@ -48,7 +48,7 @@ describe('Sunday Clinic additional billing implementation', () => {
     });
 
     test('records immutable audit history and deducts additional medicine stock with its own reference', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
         const auditService = readRepoFile(
             'staff',
             'backend',
