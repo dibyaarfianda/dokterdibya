@@ -1,7 +1,15 @@
 'use strict';
 
-const controller = require('../sunday-clinic-controller');
-const { createRouteSlice } = require('./route-slice');
-const { GROUP_MATCHERS } = require('./route-groups');
+const express = require('express');
+const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../../middleware/auth');
+const handlers = require('../../services/sunday-clinic/resume-export');
 
-module.exports = createRouteSlice(controller, GROUP_MATCHERS.resumeExport);
+const router = express.Router();
+
+router.get('/statistics/categories', verifyToken, handlers.getStatisticsCategories);
+router.post('/generate-anamnesa/:mrId', verifyToken, handlers.postGenerateAnamnesaByMrId);
+router.post('/resume-medis/pdf', verifyToken, handlers.postResumeMedisPdf);
+router.get('/resume-medis/download/:filename', verifyToken, handlers.getResumeMedisDownloadByFilename);
+router.post('/resume-medis/send-whatsapp', verifyToken, handlers.postResumeMedisSendWhatsapp);
+
+module.exports = router;

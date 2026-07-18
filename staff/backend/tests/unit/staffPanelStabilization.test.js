@@ -259,7 +259,8 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {
-        const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
+        const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic', 'prescription.js');
+        const sundayClinicService = readNormalizedFile('staff', 'backend', 'services', 'sunday-clinic', 'prescription.js');
         const planningHelpers = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'utils', 'planning-helpers.js');
         const planComponent = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'plan.js');
         const staffHtml = readNormalizedFile('staff', 'public', 'index-adminlte.html');
@@ -267,13 +268,13 @@ describe('staff panel stabilization sources', () => {
 
         expect(migration).toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
         expect(migration).toContain('items JSON NOT NULL');
-        expect(sundayClinicRoute).not.toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
+        expect(sundayClinicService).not.toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
         expect(sundayClinicRoute).toContain("router.get('/prescription-templates', verifyToken");
         expect(sundayClinicRoute).toContain("router.post('/prescription-templates', verifyToken");
         expect(sundayClinicRoute).toContain("router.put('/prescription-templates/:id', verifyToken");
         expect(sundayClinicRoute).toContain("router.delete('/prescription-templates/:id', verifyToken");
-        expect(sundayClinicRoute).toContain('normalizePrescriptionTemplateItems');
-        expect(sundayClinicRoute).toContain('is_active = 0');
+        expect(sundayClinicService).toContain('normalizePrescriptionTemplateItems');
+        expect(sundayClinicService).toContain('is_active = 0');
 
         expect(planComponent).toContain('window.openPrescriptionTemplateModal');
         expect(planComponent).toContain('Template Obat');
@@ -349,10 +350,10 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('Sunday Clinic route delegates reusable pure helpers to a service module', () => {
-        const route = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
+        const route = readNormalizedFile('staff', 'backend', 'services', 'sunday-clinic', 'shared.js');
         const helpers = readNormalizedFile('staff', 'backend', 'services', 'SundayClinicRouteHelpers.js');
 
-        expect(route).toContain("require('../services/SundayClinicRouteHelpers')");
+        expect(route).toContain("require('../SundayClinicRouteHelpers')");
         expect(route).not.toContain('function normalizeMrId(value)');
         expect(route).not.toContain('function convertLooseDateToIso(dateStr)');
         expect(route).not.toContain('function buildMedifyIdentityPrefill(identity)');

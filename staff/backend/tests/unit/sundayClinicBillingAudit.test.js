@@ -58,16 +58,18 @@ describe('Sunday Clinic billing audit implementation', () => {
     });
 
     test('Sunday Clinic route writes billing audit logs on key mutations', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
+        const route = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'billing.js');
+        const router = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic', 'billing.js');
+        const shared = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'shared.js');
 
-        expect(route).toContain("require('../services/SundayClinicBillingAuditService')");
+        expect(shared).toContain("require('../SundayClinicBillingAuditService')");
         expect(route).toContain("action: 'billing_confirmed'");
         expect(route).toContain("action: 'billing_marked_paid'");
-        expect(route).toContain("router.get('/billing/:mrId/audit'");
+        expect(router).toContain("router.get('/billing/:mrId/audit'");
     });
 
     test('billing save preserves confirmed status when the UI omits status', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
+        const route = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'billing.js');
 
         expect(route).toContain('const hasRequestedStatus = Object.prototype.hasOwnProperty.call(req.body,');
         expect(route).toContain('statusToPersist = hasRequestedStatus ? requestedStatus : existingBilling.status;');

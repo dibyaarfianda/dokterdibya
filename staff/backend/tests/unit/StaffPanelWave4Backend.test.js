@@ -6,8 +6,6 @@ const path = require('path');
 jest.mock('../../db', () => ({ query: jest.fn() }));
 
 const db = require('../../db');
-const { groupsForPath } = require('../../routes/sunday-clinic/route-groups');
-const { createRouteSlice } = require('../../routes/sunday-clinic/route-slice');
 const {
     collectMissingSchema,
     validateSundayClinicSchema,
@@ -22,32 +20,31 @@ describe('Wave 4 Sunday Clinic backend boundaries', () => {
         resetSundayClinicSchemaValidationForTests();
     });
 
-    test('every controller route belongs to exactly one modular router', () => {
-        const source = fs.readFileSync(path.join(backendRoot, 'routes/sunday-clinic-controller.js'), 'utf8');
-        const routes = [...source.matchAll(/router\.(?:get|post|put|patch|delete)\(\s*['"]([^'"]+)['"]/g)]
-            .map((match) => match[1]);
+    test('Sunday Clinic routes are physically owned by domain routers and services', () => {
+        const domains = ['queue', 'records', 'billing', 'prescription', 'resume-export', 'visit-walk-in'];
+        let routeCount = 0;
 
-        expect(routes.length).toBeGreaterThan(40);
-        for (const routePath of routes) {
-            expect({ routePath, groups: groupsForPath(routePath) }).toEqual({
-                routePath,
-                groups: [expect.any(String)]
-            });
+        for (const domain of domains) {
+            const routeSource = fs.readFileSync(path.join(backendRoot, `routes/sunday-clinic/${domain}.js`), 'utf8');
+            const serviceSource = fs.readFileSync(path.join(backendRoot, `services/sunday-clinic/${domain}.js`), 'utf8');
+            routeCount += [...routeSource.matchAll(/router\.(?:get|post|put|patch|delete)\(/g)].length;
+
+            expect(routeSource).toContain(`services/sunday-clinic/${domain}`);
+            expect(serviceSource).toContain('module.exports = {');
         }
-    });
 
-    test('route slicing preserves layer identity and declaration order', () => {
-        const first = { route: { path: '/queue/today' } };
-        const ignored = { route: { path: '/billing/pending' } };
-        const second = { route: { path: '/queue/public' } };
-        const slice = createRouteSlice({ stack: [first, ignored, second] }, (routePath) => routePath.startsWith('/queue/'));
-
-        expect(slice.stack).toEqual([first, second]);
+        expect(routeCount).toBeGreaterThan(40);
     });
 
     test('active route and queue service contain no runtime schema mutation', () => {
         const files = [
-            'routes/sunday-clinic-controller.js',
+            'services/sunday-clinic/shared.js',
+            'services/sunday-clinic/queue.js',
+            'services/sunday-clinic/records.js',
+            'services/sunday-clinic/billing.js',
+            'services/sunday-clinic/prescription.js',
+            'services/sunday-clinic/resume-export.js',
+            'services/sunday-clinic/visit-walk-in.js',
             'routes/sunday-appointments.js',
             'routes/booking-settings.js',
             'services/sundayClinicMedifySyncQueue.js',

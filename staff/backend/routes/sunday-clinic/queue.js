@@ -1,7 +1,15 @@
 'use strict';
 
-const controller = require('../sunday-clinic-controller');
-const { createRouteSlice } = require('./route-slice');
-const { GROUP_MATCHERS } = require('./route-groups');
+const express = require('express');
+const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../../middleware/auth');
+const handlers = require('../../services/sunday-clinic/queue');
 
-module.exports = createRouteSlice(controller, GROUP_MATCHERS.queue);
+const router = express.Router();
+
+router.get('/queue/today', verifyToken, handlers.getQueueToday);
+router.get('/queue/settings', handlers.getQueueSettings);
+router.put('/queue/settings', verifyToken, handlers.putQueueSettings);
+router.put('/records/:mrId/queue-status', verifyToken, handlers.putRecordsByMrIdQueueStatus);
+router.get('/queue/public', verifyPatientToken, handlers.getQueuePublic);
+
+module.exports = router;

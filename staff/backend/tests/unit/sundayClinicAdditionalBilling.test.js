@@ -23,32 +23,35 @@ describe('Sunday Clinic additional billing implementation', () => {
     });
 
     test('only permits a separate bill after the main bill is paid and keeps draft-only editing', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
+        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic', 'billing.js');
+        const service = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'billing.js');
 
         expect(route).toContain("router.post('/billing/:mrId/additional'");
         expect(route).toContain("router.put('/billing/:mrId/additional/:additionalBillingId'");
         expect(route).toContain("router.post('/billing/:mrId/additional/:additionalBillingId/confirm'");
-        expect(route).toContain("parentBilling.status !== 'paid'");
-        expect(route).toContain("additionalBilling.parent_billing_status !== 'paid'");
-        expect(route).toContain("additionalBilling.status !== 'draft'");
-        expect(route).toContain("additionalBilling.status !== 'confirmed'");
-        expect(route).toContain("additionalBilling.status === 'paid'");
+        expect(service).toContain("parentBilling.status !== 'paid'");
+        expect(service).toContain("additionalBilling.parent_billing_status !== 'paid'");
+        expect(service).toContain("additionalBilling.status !== 'draft'");
+        expect(service).toContain("additionalBilling.status !== 'confirmed'");
+        expect(service).toContain("additionalBilling.status === 'paid'");
     });
 
     test('validates prices from server-side medicine and approved add-on catalogs', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
+        const route = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'billing.js');
+        const shared = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'shared.js');
 
-        expect(route).toContain("const ADDITIONAL_BILLING_ADD_ONS = Object.freeze");
-        expect(route).toContain("S02: { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 }");
-        expect(route).toContain("S03: { code: 'S03', name: 'Buku Ginekologi', price: 25000 }");
-        expect(route).toContain("S04: { code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }");
-        expect(route).toContain('WHERE id = ? AND is_active = 1');
-        expect(route).toContain('const price = Number(obat.price || 0);');
-        expect(route).toContain('const addOn = ADDITIONAL_BILLING_ADD_ONS[code];');
+        expect(shared).toContain("const ADDITIONAL_BILLING_ADD_ONS = Object.freeze");
+        expect(shared).toContain("S02: { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 }");
+        expect(shared).toContain("S03: { code: 'S03', name: 'Buku Ginekologi', price: 25000 }");
+        expect(shared).toContain("S04: { code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }");
+        const implementation = `${shared}\n${route}`;
+        expect(implementation).toContain('WHERE id = ? AND is_active = 1');
+        expect(implementation).toContain('const price = Number(obat.price || 0);');
+        expect(implementation).toContain('const addOn = ADDITIONAL_BILLING_ADD_ONS[code];');
     });
 
     test('records immutable audit history and deducts additional medicine stock with its own reference', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
+        const route = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'billing.js');
         const auditService = readRepoFile(
             'staff',
             'backend',

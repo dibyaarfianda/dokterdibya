@@ -2,7 +2,7 @@
 
 const express = require('express');
 const logger = require('../utils/logger');
-const controller = require('./sunday-clinic-controller');
+const { setupSocketHandlers } = require('../services/sunday-clinic/queue');
 const { validateSundayClinicSchema, sundayClinicSchemaGuard } = require('../services/SundayClinicSchemaValidator');
 
 const router = express.Router();
@@ -24,4 +24,4 @@ router.use(require('./sunday-clinic/resume-export'));
 router.use(require('./sunday-clinic/visit-walk-in'));
 
 module.exports = router;
-module.exports.setupSocketHandlers = controller.setupSocketHandlers;
+module.exports.setupSocketHandlers = setupSocketHandlers;
