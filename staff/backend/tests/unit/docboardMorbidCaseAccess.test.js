@@ -42,6 +42,7 @@ describe('DocBoard Morbid Case access', () => {
     const detail = readRepoFile('docboard', 'src', 'views', 'MorbidCaseDetail.jsx');
     const styles = readRepoFile('docboard', 'src', 'index.css');
     expect(api).toContain('analyzeMorbidCase(id)');
+    expect(readRepoFile('staff', 'backend', 'routes', 'morbid-cases.js')).toContain('res.status(202)');
     expect(detail).toContain('Mulai Analisis AI');
     expect(detail).toContain('Cetak / Simpan sebagai PDF');
     expect(detail).toContain('<SeverityChart');

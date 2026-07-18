@@ -1,6 +1,7 @@
 const dbPool = require('../db');
 const r2Storage = require('./r2Storage');
 const MorbidCaseAIService = require('./MorbidCaseAIService');
+const logger = require('../utils/logger');
 
 const TARGET_DOCTORS = ['dibya', 'tri_aji', 'latifa'];
 
@@ -68,6 +69,7 @@ class MorbidCaseService {
     this.apiKey = apiKey;
     this.bucket = bucket;
     this.aiService = aiService;
+    this.activeAnalyses = new Map();
   }
 
   async list(params = {}) {
@@ -285,7 +287,7 @@ class MorbidCaseService {
     return this.collect(id, record);
   }
 
-  async analyze(id, requestedBy) {
+  async analysisContext(id) {
     const detail = await this.getDetail(id);
     const catalog = detail.morbid_case;
     if (!detail.snapshot || !['ready', 'ready_with_warnings'].includes(catalog.status)) {
@@ -294,14 +296,13 @@ class MorbidCaseService {
       throw error;
     }
 
-    const analysisKey = `morbid-cases/${catalog.facility}/${catalog.case_id}/analysis-v1.json`;
-    await this.db.query(
-      `UPDATE docboard_morbid_cases
-          SET analysis_status = 'analyzing', analysis_last_error = NULL
-        WHERE id = ?`,
-      [id]
-    );
+    return detail;
+  }
 
+  async performAnalysis(id, detail, requestedBy) {
+    const catalog = detail.morbid_case;
+
+    const analysisKey = `morbid-cases/${catalog.facility}/${catalog.case_id}/analysis-v1.json`;
     try {
       const analysis = await this.aiService.analyze(detail.snapshot, catalog, requestedBy);
       await this.r2.uploadJson(analysisKey, analysis, catalog.snapshot_r2_bucket || this.bucket);
@@ -324,6 +325,47 @@ class MorbidCaseService {
       );
       throw error;
     }
+  }
+
+  async analyze(id, requestedBy) {
+    const detail = await this.analysisContext(id);
+    await this.db.query(
+      `UPDATE docboard_morbid_cases
+          SET analysis_status = 'analyzing', analysis_last_error = NULL
+        WHERE id = ?`,
+      [id]
+    );
+    return this.performAnalysis(id, detail, requestedBy);
+  }
+
+  async startAnalysis(id, requestedBy) {
+    const key = String(id);
+    if (this.activeAnalyses.has(key)) {
+      const current = await this.getDetail(id);
+      return { ...current, analysis_started: false };
+    }
+
+    const detail = await this.analysisContext(id);
+    await this.db.query(
+      `UPDATE docboard_morbid_cases
+          SET analysis_status = 'analyzing', analysis_last_error = NULL
+        WHERE id = ?`,
+      [id]
+    );
+
+    const job = this.performAnalysis(id, detail, requestedBy)
+      .catch(error => {
+        logger.error('Morbid Case background analysis failed', { message: error.message, caseId: id });
+        return null;
+      })
+      .finally(() => this.activeAnalyses.delete(key));
+    this.activeAnalyses.set(key, job);
+
+    return {
+      ...detail,
+      morbid_case: { ...detail.morbid_case, analysis_status: 'analyzing', analysis_last_error: null },
+      analysis_started: true,
+    };
   }
 
   async getDetail(id) {

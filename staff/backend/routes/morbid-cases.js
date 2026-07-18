@@ -70,9 +70,9 @@ router.post('/:id/refresh', async (req, res) => {
 
 router.post('/:id/analyze', async (req, res) => {
   try {
-    const result = await service.analyze(req.params.id, req.user?.id);
+    const result = await service.startAnalysis(req.params.id, req.user?.id);
     res.setHeader('Cache-Control', 'no-store');
-    res.json({ success: true, ...result });
+    res.status(202).json({ success: true, ...result });
   } catch (error) {
     logger.error('Morbid Case AI analysis error', { message: error.message, caseId: req.params.id });
     res.status(statusFor(error, 502)).json({ success: false, message: error.message });

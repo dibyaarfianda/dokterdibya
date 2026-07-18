@@ -133,4 +133,24 @@ describe('MorbidCaseService', () => {
     expect(readyUpdate[1]).toEqual(expect.arrayContaining(['gpt-5.6-sol', 'high', 9]));
     expect(result.morbid_case.id).toBe(9);
   });
+
+  test('starts long AI work in the background and returns analyzing immediately', async () => {
+    const readyCatalog = catalog({ analysis_status: 'not_analyzed', analysis_r2_key: null });
+    const db = { query: jest.fn(async (sql) => sql.includes('SELECT mc.*') ? [[readyCatalog]] : [{ affectedRows: 1 }]) };
+    const snapshot = { cppt: [], penunjang: { files: [] } };
+    const r2 = { R2_BUCKET_NAME: 'test-bucket', getJson: jest.fn(async () => snapshot), uploadJson: jest.fn(async () => ({ success: true })) };
+    let resolveAnalysis;
+    const aiService = { analyze: jest.fn(() => new Promise(resolve => { resolveAnalysis = resolve; })) };
+    const service = new MorbidCaseService({ db, r2, aiService, bucket: 'test-bucket' });
+
+    const result = await service.startAnalysis(9, 'user-1');
+
+    expect(result.analysis_started).toBe(true);
+    expect(result.morbid_case.analysis_status).toBe('analyzing');
+    expect(service.activeAnalyses.has('9')).toBe(true);
+    resolveAnalysis({ model: 'gpt-5.6-sol', reasoning_effort: 'high' });
+    await service.activeAnalyses.get('9');
+    expect(r2.uploadJson).toHaveBeenCalled();
+    expect(service.activeAnalyses.has('9')).toBe(false);
+  });
 });
