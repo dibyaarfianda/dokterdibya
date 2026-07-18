@@ -21,4 +21,12 @@ describe('DocBoard Morbid Case access', () => {
     expect(api).toContain('getMorbidCaseFileUrl(fileUrl)');
     expect(api).toContain('token=${encodeURIComponent(token)}');
   });
+
+  test('shows only viewable PDF documents in the Penunjang tab', () => {
+    const detail = readRepoFile('docboard', 'src', 'views', 'MorbidCaseDetail.jsx');
+    expect(detail).toContain('(data.files || []).filter(file => file.url)');
+    expect(detail).toContain('{files.length} dokumen PDF');
+    expect(detail).not.toContain('byTransaction');
+    expect(detail).not.toContain('`Transaksi ${key}`');
+  });
 });

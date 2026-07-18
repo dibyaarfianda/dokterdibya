@@ -5180,7 +5180,6 @@ input { font-family: inherit; }
 
 .morbid-event,
 .morbid-cppt,
-.morbid-penunjang-group,
 .morbid-operation-list > section,
 .morbid-resume > section,
 .morbid-prescription-list > section {
@@ -5258,7 +5257,6 @@ input { font-family: inherit; }
 .morbid-role.farmasi { background: #ede9fe; color: #6d28d9; }
 .morbid-role.gizi { background: #fef3c7; color: #92400e; }
 
-.morbid-penunjang-group > header,
 .morbid-operation-list > section > header,
 .morbid-prescription-list > section > header {
   display: flex;
@@ -5268,13 +5266,9 @@ input { font-family: inherit; }
   border-bottom: 1px solid #edf0f3;
 }
 
-.morbid-penunjang-group > header span,
 .morbid-prescription-list > section > header span { color: #687386; font-size: 12px; }
-.morbid-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 9px 12px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
-.morbid-result strong { color: #92400e; }
-.morbid-result strong.done { color: #166534; }
 
-.morbid-document-section { margin-top: 18px; }
+.morbid-document-section { margin-top: 0; }
 .morbid-document {
   display: flex;
   align-items: center;

@@ -194,11 +194,9 @@ function CpptTab({ entries, total, latestEntry, authors, author, setAuthor, role
 }
 
 function PenunjangTab({ data = {} }) {
-  const results = data.results || [];
-  const files = data.files || [];
-  const byTransaction = new Map();
-  results.forEach(item => { const key = String(item.transaksiId || 'lainnya'); if (!byTransaction.has(key)) byTransaction.set(key, []); byTransaction.get(key).push(item); });
-  return <div class="morbid-penunjang"><div class="morbid-section-count">{results.length} hasil · {files.length} dokumen</div>{[...byTransaction.entries()].map(([key, items]) => <section class="morbid-penunjang-group" key={key}><header><strong>{key === 'lainnya' ? 'Pemeriksaan lainnya' : `Transaksi ${key}`}</strong><span>{formatDateTime(items[0]?.date)}</span></header>{items.map((item, index) => <div class="morbid-result" key={item.detailId || `${key}-${index}`}><span>{item.name}</span><strong class={item.isDone ? 'done' : ''}>{item.value || item.status || '-'}</strong></div>)}</section>)}{files.length > 0 && <section class="morbid-document-section"><h2>Dokumen Penunjang</h2>{files.map(file => file.url ? <a class="morbid-document" href={api.getMorbidCaseFileUrl(file.url)} target="_blank" rel="noopener noreferrer" key={file.id}><div><strong>{file.title || `Dokumen ${file.id}`}</strong><span>{file.type || file.fileType || 'PDF'} · {formatDateTime(file.date)}</span></div><span>Buka PDF</span></a> : <div class="morbid-document disabled" key={file.id}><strong>{file.title || `Dokumen ${file.id}`}</strong><span>Tidak tersedia</span></div>)}</section>}</div>;
+  const files = (data.files || []).filter(file => file.url);
+  if (!files.length) return <div class="morbid-empty">Dokumen penunjang PDF belum tersedia.</div>;
+  return <div class="morbid-penunjang"><div class="morbid-section-count">{files.length} dokumen PDF</div><section class="morbid-document-section">{files.map(file => <a class="morbid-document" href={api.getMorbidCaseFileUrl(file.url)} target="_blank" rel="noopener noreferrer" key={file.id}><div><strong>{file.title || `Dokumen ${file.id}`}</strong><span>{file.type || file.fileType || 'PDF'} · {formatDateTime(file.date)}</span></div><span>Buka PDF</span></a>)}</section></div>;
 }
 
 function OperationTab({ operations }) {
