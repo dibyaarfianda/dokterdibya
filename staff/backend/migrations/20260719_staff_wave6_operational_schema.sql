@@ -232,7 +232,11 @@ CREATE TABLE IF NOT EXISTS medical_records (
             visit_id INT NULL,
             doctor_id INT,
             doctor_name VARCHAR(255),
-            record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL,
+            record_type ENUM(
+                'identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri',
+                'pemeriksaan_ginekologi', 'usg', 'lab', 'penunjang', 'diagnosis',
+                'planning', 'resume_medis', 'complete'
+            ) NOT NULL,
             record_data JSON NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -523,7 +527,8 @@ CALL wave6_add_column_if_missing('birth_congratulations', 'patient_testimonial_s
 ALTER TABLE medical_records
     MODIFY COLUMN record_type ENUM(
         'identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri',
-        'usg', 'lab', 'diagnosis', 'planning', 'resume_medis', 'complete'
+        'pemeriksaan_ginekologi', 'usg', 'lab', 'penunjang', 'diagnosis',
+        'planning', 'resume_medis', 'complete'
     ) NOT NULL$$
 
 DROP PROCEDURE IF EXISTS wave6_add_column_if_missing$$

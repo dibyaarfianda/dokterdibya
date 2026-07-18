@@ -68,6 +68,8 @@ describe('Wave 6 operational schema and startup contracts', () => {
         }
         expect(migration).toContain('medical_records');
         expect(migration).toContain('birth_congratulations');
+        expect(migration).toContain("'pemeriksaan_ginekologi'");
+        expect(migration).toContain("'penunjang'");
         expect(migration).not.toMatch(/DROP\s+(?:TABLE|COLUMN)/i);
     });
 
