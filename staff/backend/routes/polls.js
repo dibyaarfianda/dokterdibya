@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const logger = require('../utils/logger');
 const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 
@@ -8,100 +9,7 @@ let tablesReady = false;
 let tableSetupPromise = null;
 
 async function ensureVotingTables() {
-    if (tablesReady) {
-        return;
-    }
-
-    if (tableSetupPromise) {
-        await tableSetupPromise;
-        return;
-    }
-
-    tableSetupPromise = (async () => {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS polls (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                title VARCHAR(180) NOT NULL,
-                description TEXT NULL,
-                status ENUM('active','closed') NOT NULL DEFAULT 'active',
-                show_on_open TINYINT(1) NOT NULL DEFAULT 1,
-                created_by VARCHAR(120) NULL,
-                created_by_name VARCHAR(190) NULL,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                closed_at DATETIME NULL,
-                INDEX idx_polls_status_created (status, created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS poll_options (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                poll_id INT NOT NULL,
-                option_text VARCHAR(255) NOT NULL,
-                option_order INT NOT NULL DEFAULT 0,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_poll_options_poll (poll_id),
-                CONSTRAINT fk_poll_options_poll
-                    FOREIGN KEY (poll_id) REFERENCES polls(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS poll_votes (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                poll_id INT NOT NULL,
-                option_id INT NOT NULL,
-                patient_id VARCHAR(64) NOT NULL,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_poll_patient (poll_id, patient_id),
-                INDEX idx_poll_votes_poll (poll_id),
-                INDEX idx_poll_votes_option (option_id),
-                CONSTRAINT fk_poll_votes_poll
-                    FOREIGN KEY (poll_id) REFERENCES polls(id)
-                    ON DELETE CASCADE,
-                CONSTRAINT fk_poll_votes_option
-                    FOREIGN KEY (option_id) REFERENCES poll_options(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS poll_comments (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                poll_id INT NOT NULL,
-                patient_id VARCHAR(64) NOT NULL,
-                comment_text TEXT NOT NULL,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_poll_comments_poll (poll_id),
-                CONSTRAINT fk_poll_comments_poll
-                    FOREIGN KEY (poll_id) REFERENCES polls(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS poll_comment_likes (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                comment_id INT NOT NULL,
-                patient_id VARCHAR(64) NOT NULL,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_comment_patient (comment_id, patient_id),
-                INDEX idx_poll_comment_likes_comment (comment_id),
-                CONSTRAINT fk_poll_comment_likes_comment
-                    FOREIGN KEY (comment_id) REFERENCES poll_comments(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        tablesReady = true;
-    })();
-
-    try {
-        await tableSetupPromise;
-    } finally {
-        tableSetupPromise = null;
-    }
+    return validateOperationalSchemaScope('polls');
 }
 
 function normalizeOptions(options) {

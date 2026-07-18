@@ -1,5 +1,6 @@
 const pool = require('../db');
 const logger = require('../utils/logger');
+const { validateOperationalSchemaScope } = require('./OperationalSchemaValidator');
 
 const LOCATIONS = ['klinik_private', 'rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
 
@@ -12,25 +13,6 @@ const LOCATION_NORMALIZE = {
   'rs_bhayangkara': 'rs_bhayangkara'
 };
 
-const SPACE_SCHEDULE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS docboard_space_schedules (
-  id BIGINT AUTO_INCREMENT PRIMARY KEY,
-  user_id VARCHAR(64) NOT NULL,
-  space VARCHAR(20) NOT NULL,
-  agenda VARCHAR(255) NOT NULL,
-  category VARCHAR(80) NOT NULL,
-  schedule_date DATE NOT NULL,
-  start_time TIME NULL,
-  end_time TIME NULL,
-  location VARCHAR(255) NULL,
-  participants VARCHAR(255) NULL,
-  notes TEXT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_space_user_date (user_id, space, schedule_date, start_time),
-  INDEX idx_space_date (schedule_date, space),
-  INDEX idx_space_status (user_id, status)
-)`;
 
 function formatDateLocal(date) {
   if (!date) return null;
@@ -61,9 +43,9 @@ class DocBoardService {
 
   async ensureSpaceScheduleTable() {
     if (this.spaceScheduleTableReady) return;
-    await pool.query(SPACE_SCHEDULE_TABLE_SQL);
+    await validateOperationalSchemaScope('docboard');
     this.spaceScheduleTableReady = true;
-  }
+}
 
   mapSpaceSchedule(row) {
     return {

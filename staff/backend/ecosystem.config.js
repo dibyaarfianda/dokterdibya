@@ -37,9 +37,9 @@ module.exports = {
             cwd: __dirname,
 
             // --- Cluster mode ---
-            // 'fork' = current single-process mode (safe default)
+            // 'fork' = single-process mode without zero-downtime reload
             // 'cluster' = PM2 cluster via Node's cluster module (shared port)
-            exec_mode: process.env.PM2_EXEC_MODE || 'fork',
+            exec_mode: process.env.PM2_EXEC_MODE || 'cluster',
 
             // Number of worker instances
             // 1 = single process (current behavior, safe default)
@@ -53,7 +53,7 @@ module.exports = {
             // --- Restart policy ---
             max_restarts: 20,
             min_uptime: '30s',
-            restart_delay: 5000,
+            restart_delay: 1000,
             exp_backoff_restart_delay: 100,
             autorestart: true,
 

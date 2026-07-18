@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -309,34 +310,7 @@ async function ensureUniqueShareCode() {
 }
 
 async function ensureSchema() {
-    if (schemaReady) return;
-    if (schemaPromise) return schemaPromise;
-
-    schemaPromise = (async () => {
-        await db.query(
-            `CREATE TABLE IF NOT EXISTS patient_workdesk_layouts (
-                patient_id VARCHAR(10) NOT NULL,
-                layout_json JSON NOT NULL,
-                theme_json JSON NULL,
-                public_enabled TINYINT(1) NOT NULL DEFAULT 0,
-                share_code VARCHAR(32) NULL,
-                public_profile_json JSON NULL,
-                public_widgets_json JSON NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (patient_id),
-                UNIQUE KEY uniq_patient_workdesk_share_code (share_code),
-                INDEX idx_patient_workdesk_public (public_enabled, share_code),
-                CONSTRAINT fk_patient_workdesk_patient
-                    FOREIGN KEY (patient_id) REFERENCES patients(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-        );
-
-        schemaReady = true;
-    })();
-
-    return schemaPromise;
+    return validateOperationalSchemaScope('patientWorkdesk');
 }
 
 async function getPatientName(patientId) {

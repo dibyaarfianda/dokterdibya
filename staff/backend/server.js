@@ -22,6 +22,7 @@ const { metricsMiddleware, getMetrics, resetMetrics } = require('./middleware/me
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const activityLogger = require('./services/activityLogger');
+const { validateAllOperationalSchemas } = require('./services/OperationalSchemaValidator');
 const createSystemRoutes = require('./routes/system');
 
 const app = express();
@@ -1083,6 +1084,16 @@ server.listen(PORT, () => {
     if (typeof process.send === 'function') {
         process.send('ready');
     }
+
+    // Validate additive migrations only after HTTP readiness. Missing schema is
+    // reported explicitly without extending the production restart window.
+    setImmediate(() => {
+        validateAllOperationalSchemas()
+            .then(() => logger.info('Operational schema validation succeeded'))
+            .catch(error => logger.error('Operational schema validation failed', {
+                error: error.message
+            }));
+    });
 });
 
 // Graceful shutdown — handles both SIGTERM (PM2 reload) and SIGINT (Ctrl+C)

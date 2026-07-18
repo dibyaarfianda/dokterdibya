@@ -8,6 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken } = require('../middleware/auth');
 const {
     assessContractionPattern,
@@ -78,57 +79,7 @@ function normalizeRedFlags(value) {
 }
 
 async function ensureContractionTimerTables() {
-    if (tablesReady) return;
-    if (tablesPromise) return tablesPromise;
-
-    tablesPromise = (async () => {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS contraction_sessions (
-                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                patient_id VARCHAR(50) NOT NULL,
-                session_date DATE NOT NULL,
-                gestational_age_weeks INT NULL,
-                gestational_age_days INT NULL,
-                source VARCHAR(30) NULL,
-                status ENUM('active','completed') NOT NULL DEFAULT 'active',
-                started_at DATETIME NOT NULL,
-                ended_at DATETIME NULL,
-                contraction_count INT NOT NULL DEFAULT 0,
-                rest_hydration_result VARCHAR(30) NOT NULL DEFAULT 'unknown',
-                red_flags_json JSON NULL,
-                assessment_final VARCHAR(40) NOT NULL DEFAULT 'inconclusive',
-                assessment_reason JSON NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                KEY idx_contraction_sessions_patient_date (patient_id, session_date),
-                KEY idx_contraction_sessions_patient_status (patient_id, status),
-                KEY idx_contraction_sessions_started_at (started_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS contraction_events (
-                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                session_id INT UNSIGNED NOT NULL,
-                started_at_client DATETIME NOT NULL,
-                ended_at_client DATETIME NOT NULL,
-                duration_seconds INT NOT NULL,
-                interval_from_previous_seconds INT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                KEY idx_contraction_events_session (session_id),
-                KEY idx_contraction_events_started_at (started_at_client)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        tablesReady = true;
-    })().catch((error) => {
-        tablesPromise = null;
-        throw error;
-    });
-
-    return tablesPromise;
+    return validateOperationalSchemaScope('contractionTimer');
 }
 
 async function closeStaleActiveSessions(patientId) {

@@ -6,6 +6,7 @@
 
 const express = require('express');
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -32,150 +33,7 @@ let schemaReady = false;
 let schemaPromise = null;
 
 async function ensureSchema() {
-    if (schemaReady) return;
-    if (schemaPromise) return schemaPromise;
-
-    schemaPromise = (async () => {
-        const ensureColumn = async (tableName, columnName, definition) => {
-            const [rows] = await db.query(
-                `SELECT 1 FROM information_schema.columns
-                 WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
-                 LIMIT 1`,
-                [tableName, columnName]
-            );
-            if (rows.length === 0) {
-                await db.query(`ALTER TABLE \`${tableName}\` ADD COLUMN ${definition}`);
-            }
-        };
-        const ensureIndex = async (tableName, indexName, ddl) => {
-            const [rows] = await db.query(
-                `SELECT 1 FROM information_schema.statistics
-                 WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?
-                 LIMIT 1`,
-                [tableName, indexName]
-            );
-            if (rows.length === 0) await db.query(ddl);
-        };
-
-        // support_faq table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS support_faq (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                keywords JSON NOT NULL,
-                answer TEXT NOT NULL,
-                category VARCHAR(60) NOT NULL DEFAULT 'umum',
-                priority INT NOT NULL DEFAULT 0,
-                is_active TINYINT(1) NOT NULL DEFAULT 1,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_active (is_active, priority)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        // support_chat_sessions table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS support_chat_sessions (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                patient_id VARCHAR(64) NOT NULL,
-                patient_name VARCHAR(255) NOT NULL DEFAULT '',
-                status ENUM('bot','escalated','resolved') NOT NULL DEFAULT 'bot',
-                assigned_staff_id VARCHAR(64) NULL,
-                assigned_staff_name VARCHAR(255) NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_patient (patient_id, status),
-                INDEX idx_status (status, updated_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        // support_chat_messages table
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS support_chat_messages (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                session_id INT NOT NULL,
-                sender_type ENUM('patient','bot','staff') NOT NULL,
-                sender_name VARCHAR(255) NOT NULL DEFAULT '',
-                content TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_session (session_id, created_at),
-                CONSTRAINT fk_support_messages_session
-                    FOREIGN KEY (session_id) REFERENCES support_chat_sessions(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        // Phase 1: Ownership lock + audit columns on sessions (idempotent)
-        await ensureColumn('support_chat_sessions', 'owner_staff_id', "owner_staff_id VARCHAR(64) NULL AFTER assigned_staff_name");
-        await ensureColumn('support_chat_sessions', 'owner_staff_name', "owner_staff_name VARCHAR(255) NULL AFTER owner_staff_id");
-        await ensureColumn('support_chat_sessions', 'owner_locked_at', "owner_locked_at DATETIME NULL AFTER owner_staff_name");
-        await ensureColumn('support_chat_sessions', 'resolved_at', "resolved_at DATETIME NULL AFTER owner_locked_at");
-        await ensureColumn('support_chat_sessions', 'resolved_by_staff_id', "resolved_by_staff_id VARCHAR(64) NULL AFTER resolved_at");
-        await ensureColumn('support_chat_sessions', 'resolved_by_staff_name', "resolved_by_staff_name VARCHAR(255) NULL AFTER resolved_by_staff_id");
-        await ensureIndex('support_chat_sessions', 'idx_owner', 'CREATE INDEX idx_owner ON support_chat_sessions (owner_staff_id, status)');
-        await ensureIndex('support_chat_sessions', 'idx_resolved_at', 'CREATE INDEX idx_resolved_at ON support_chat_sessions (resolved_at)');
-
-        // Phase 1: Ratings (1 per session, immutable)
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS support_chat_ratings (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                session_id INT NOT NULL,
-                patient_id VARCHAR(64) NOT NULL,
-                owner_staff_id VARCHAR(64) NULL,
-                rating TINYINT NOT NULL,
-                comment VARCHAR(1000) NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_session (session_id),
-                INDEX idx_patient_created (patient_id, created_at),
-                INDEX idx_owner_created (owner_staff_id, created_at),
-                CONSTRAINT chk_rating_range CHECK (rating BETWEEN 1 AND 5),
-                CONSTRAINT fk_support_rating_session
-                    FOREIGN KEY (session_id) REFERENCES support_chat_sessions(id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        // Phase 1: Daily briefing checklist (per staff per day)
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS staff_daily_briefings (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                staff_id VARCHAR(64) NOT NULL,
-                briefing_date DATE NOT NULL,
-                checklist_json JSON NULL,
-                started_at DATETIME NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_staff_date (staff_id, briefing_date),
-                INDEX idx_date (briefing_date)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        // Phase 1: Duty logs (1 per staff per day, idempotent)
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS staff_duty_logs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                staff_id VARCHAR(64) NOT NULL,
-                duty_date DATE NOT NULL,
-                source ENUM('briefing','manual') NOT NULL DEFAULT 'briefing',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE KEY uniq_staff_duty_date (staff_id, duty_date),
-                INDEX idx_date (duty_date),
-                INDEX idx_staff_date (staff_id, duty_date)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        // Seed FAQ if empty
-        const [faqCount] = await db.query('SELECT COUNT(*) as cnt FROM support_faq');
-        if (faqCount[0].cnt === 0) {
-            await seedFAQ();
-        }
-
-        // Keep critical FAQ responses synchronized even on existing databases.
-        await syncRevisedFaqAnswers();
-
-        schemaReady = true;
-    })();
-
-    return schemaPromise;
+    return validateOperationalSchemaScope('supportChat');
 }
 
 async function seedFAQ() {

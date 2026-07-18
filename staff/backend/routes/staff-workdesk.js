@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const r2Storage = require('../services/r2Storage');
 const { verifyToken, verifyStaffToken } = require('../middleware/auth');
 
@@ -381,30 +382,7 @@ async function columnExists(tableName, columnName) {
 }
 
 async function ensureSchema() {
-    if (schemaReady) return;
-    if (schemaPromise) return schemaPromise;
-
-    schemaPromise = (async () => {
-        await db.query(
-            `CREATE TABLE IF NOT EXISTS staff_workdesk_layouts (
-                user_id VARCHAR(64) NOT NULL,
-                layout_json JSON NOT NULL,
-                theme_json JSON NULL,
-                wallpaper_url VARCHAR(1024) NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (user_id),
-                INDEX idx_staff_workdesk_updated_at (updated_at),
-                CONSTRAINT fk_staff_workdesk_user
-                    FOREIGN KEY (user_id) REFERENCES users(new_id)
-                    ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-        );
-
-        schemaReady = true;
-    })();
-
-    return schemaPromise;
+    return validateOperationalSchemaScope('staffWorkdesk');
 }
 
 async function getStoredLayout(userId) {

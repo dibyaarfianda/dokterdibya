@@ -13,6 +13,9 @@ class NotificationService {
         // Email configuration
         this.emailEnabled = process.env.EMAIL_ENABLED === 'true';
         this.emailTransporter = null;
+        this.emailTransportVerified = false;
+        this.emailVerificationPromise = null;
+        this.emailVerificationRetryAt = 0;
         this.emailHost = process.env.EMAIL_HOST || 'smtp.gmail.com';
         this.emailPort = parseInt(process.env.EMAIL_PORT, 10) || 587;
         this.emailSecure = process.env.EMAIL_SECURE === 'true';
@@ -44,18 +47,6 @@ class NotificationService {
                 from: this.emailFromAddress
             });
 
-            this.emailTransporter.verify().then(() => {
-                logger.info('SMTP transporter verification succeeded', {
-                    host: this.emailHost,
-                    user: process.env.EMAIL_USER
-                });
-            }).catch(error => {
-                logger.error('SMTP transporter verification failed', {
-                    host: this.emailHost,
-                    user: process.env.EMAIL_USER,
-                    error: error.message
-                });
-            });
         }
 
         // WhatsApp/SMS configuration (Twilio)
@@ -262,12 +253,53 @@ class NotificationService {
     }
 
     /**
+     * Verify SMTP lazily on the first delivery attempt. A failed verification is
+     * cached briefly so invalid external credentials cannot create a request
+     * storm or affect application startup.
+     */
+    async verifyEmailTransport() {
+        if (!this.emailEnabled || !this.emailTransporter) return false;
+        if (this.emailTransportVerified) return true;
+        if (Date.now() < this.emailVerificationRetryAt) return false;
+        if (this.emailVerificationPromise) return this.emailVerificationPromise;
+
+        this.emailVerificationPromise = this.emailTransporter.verify()
+            .then(() => {
+                this.emailTransportVerified = true;
+                this.emailVerificationRetryAt = 0;
+                logger.info('SMTP transporter verification succeeded', {
+                    host: this.emailHost,
+                    user: process.env.EMAIL_USER
+                });
+                return true;
+            })
+            .catch(error => {
+                this.emailVerificationRetryAt = Date.now() + this.cacheTtlMs;
+                logger.warn('SMTP delivery unavailable', {
+                    host: this.emailHost,
+                    user: process.env.EMAIL_USER,
+                    error: error.message
+                });
+                return false;
+            })
+            .finally(() => {
+                this.emailVerificationPromise = null;
+            });
+
+        return this.emailVerificationPromise;
+    }
+
+    /**
      * Send email notification
      */
     async sendEmail({ to, subject, text, html, senderName }) {
         if (!this.emailEnabled) {
             logger.warn('Email notifications disabled');
             return { success: false, message: 'Email disabled' };
+        }
+
+        if (!(await this.verifyEmailTransport())) {
+            return { success: false, error: 'SMTP transport unavailable' };
         }
 
         const resolvedSender = senderName || await this.getSenderName();

@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const cache = require('../utils/cache');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const r2Storage = require('../services/r2Storage');
@@ -67,34 +68,7 @@ function getNotificationService() {
 let birthTestimonialColumnsReady = false;
 
 async function ensureBirthTestimonialColumns() {
-    if (birthTestimonialColumnsReady) return;
-
-    const hasColumn = async (columnName) => {
-        const [rows] = await db.query(
-            `SELECT 1
-             FROM information_schema.columns
-             WHERE table_schema = DATABASE()
-               AND table_name = 'birth_congratulations'
-               AND column_name = ?
-             LIMIT 1`,
-            [columnName]
-        );
-        return rows.length > 0;
-    };
-
-    if (!(await hasColumn('patient_testimonial'))) {
-        await db.query(
-            'ALTER TABLE birth_congratulations ADD COLUMN patient_testimonial TEXT NULL AFTER message'
-        );
-    }
-
-    if (!(await hasColumn('patient_testimonial_submitted_at'))) {
-        await db.query(
-            'ALTER TABLE birth_congratulations ADD COLUMN patient_testimonial_submitted_at DATETIME NULL AFTER patient_testimonial'
-        );
-    }
-
-    birthTestimonialColumnsReady = true;
+    return validateOperationalSchemaScope('birthTestimonials');
 }
 
 /**

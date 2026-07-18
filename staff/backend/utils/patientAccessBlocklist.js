@@ -1,7 +1,4 @@
-const SEEDED_PATIENT_NAMES = new Set([
-    'anisa suryaningsari'
-]);
-
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const BLOCKED_PATIENT_IPS = new Set(
     String(process.env.BLOCKED_PATIENT_IPS || '')
         .split(',')
@@ -123,33 +120,7 @@ async function refreshDerivedBlockedIps() {
 
 async function ensureBlocklistTable() {
     if (tableReady) return;
-
-    const db = require('../db');
-    await db.query(
-        `CREATE TABLE IF NOT EXISTS patient_access_blocklist (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            block_type ENUM('name', 'ip') NOT NULL,
-            value VARCHAR(255) NOT NULL,
-            normalized_value VARCHAR(255) NOT NULL,
-            reason VARCHAR(500) NULL,
-            is_active TINYINT(1) NOT NULL DEFAULT 1,
-            created_by VARCHAR(64) NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uniq_patient_access_block (block_type, normalized_value),
-            KEY idx_patient_access_active_type (is_active, block_type)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
-    );
-
-    for (const name of SEEDED_PATIENT_NAMES) {
-        await db.query(
-            `INSERT INTO patient_access_blocklist (block_type, value, normalized_value, reason, created_by)
-             VALUES ('name', ?, ?, 'Seeded patient blocklist entry', 'system')
-             ON DUPLICATE KEY UPDATE value = value`,
-            [name, name]
-        );
-    }
-
+    await validateOperationalSchemaScope('patientAccessBlocklist');
     tableReady = true;
 }
 

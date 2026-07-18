@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
@@ -9,116 +10,9 @@ const PatientDocumentSyncService = require('../services/PatientDocumentSyncServi
 
 // Create medical_records table if not exists
 async function ensureMedicalRecordsTable() {
-    const createTableSQL = `
-        CREATE TABLE IF NOT EXISTS medical_records (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            patient_id VARCHAR(10) NOT NULL,
-            visit_id INT NULL,
-            doctor_id INT,
-            doctor_name VARCHAR(255),
-            record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL,
-            record_data JSON NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_patient_id (patient_id),
-            INDEX idx_visit_id (visit_id),
-            INDEX idx_record_type (record_type),
-            INDEX idx_created_at (created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-    `;
-    
-    try {
-        await db.query(createTableSQL);
-        logger.info('Medical records table ensured');
-        
-        // Check if visit_id column exists, if not add it
-        const [columns] = await db.query(`
-            SELECT COLUMN_NAME
-            FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'medical_records'
-            AND COLUMN_NAME = 'visit_id'
-        `);
-
-        if (columns.length === 0) {
-            await db.query(`
-                ALTER TABLE medical_records
-                ADD COLUMN visit_id INT NULL AFTER patient_id,
-                ADD INDEX idx_visit_id (visit_id)
-            `);
-            logger.info('Added visit_id column to medical_records table');
-        }
-        
-        // Check if mr_id column exists for Sunday Clinic integration
-        const [mrIdColumns] = await db.query(`
-            SELECT COLUMN_NAME
-            FROM INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = 'medical_records'
-            AND COLUMN_NAME = 'mr_id'
-        `);
-
-        if (mrIdColumns.length === 0) {
-            await db.query(`
-                ALTER TABLE medical_records
-                ADD COLUMN mr_id VARCHAR(20) NULL AFTER visit_id,
-                ADD INDEX idx_mr_id (mr_id)
-            `);
-            logger.info('Added mr_id column to medical_records table for Sunday Clinic integration');
-        }
-
-        // Update record_type ENUM to include all types
-        try {
-            await db.query(`
-                ALTER TABLE medical_records
-                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'usg', 'lab', 'diagnosis', 'planning', 'resume_medis', 'complete') NOT NULL
-            `);
-            logger.info('Updated record_type ENUM to include pemeriksaan_obstetri and resume_medis');
-        } catch (enumError) {
-            // Ignore if already updated
-            if (!enumError.message.includes('Duplicate')) {
-                logger.warn('Could not update record_type ENUM:', enumError.message);
-            }
-        }
-        
-        // Try to add foreign key constraint if visits table exists
-        try {
-            const [fkCheck] = await db.query(`
-                SELECT CONSTRAINT_NAME 
-                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
-                WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME = 'medical_records' 
-                AND CONSTRAINT_NAME = 'medical_records_ibfk_1'
-            `);
-            
-            if (fkCheck.length === 0) {
-                // Check if visits table exists first
-                const [visitsTable] = await db.query(`
-                    SELECT TABLE_NAME 
-                    FROM INFORMATION_SCHEMA.TABLES 
-                    WHERE TABLE_SCHEMA = DATABASE() 
-                    AND TABLE_NAME = 'visits'
-                `);
-                
-                if (visitsTable.length > 0) {
-                    await db.query(`
-                        ALTER TABLE medical_records 
-                        ADD CONSTRAINT medical_records_ibfk_1 
-                        FOREIGN KEY (visit_id) REFERENCES visits(id) ON DELETE SET NULL
-                    `);
-                    logger.info('Added foreign key constraint to medical_records.visit_id');
-                }
-            }
-        } catch (fkError) {
-            logger.warn('Could not add foreign key constraint (visits table may not exist yet):', fkError.message);
-        }
-    } catch (error) {
-        logger.error('Error creating medical_records table:', error);
-    }
+    return validateOperationalSchemaScope('medicalRecords');
 }
 
-// Initialize table
-ensureMedicalRecordsTable();
 
 // Save medical record
 router.post('/api/medical-records', verifyToken, requirePermission('medical_records.create'), async (req, res) => {

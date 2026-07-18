@@ -8,6 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken } = require('../middleware/auth');
 
 const MAX_ACTIVE_SESSION_MINUTES = 120;
@@ -16,49 +17,7 @@ let tablesReady = false;
 let tablesPromise = null;
 
 async function ensureKickCounterTables() {
-    if (tablesReady) return;
-    if (tablesPromise) return tablesPromise;
-
-    tablesPromise = (async () => {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS kick_counter_sessions (
-                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                patient_id VARCHAR(50) NOT NULL,
-                session_date DATE NOT NULL,
-                start_time DATETIME NOT NULL,
-                end_time DATETIME NULL,
-                kick_count INT NOT NULL DEFAULT 0,
-                duration_minutes INT NULL,
-                status ENUM('active','completed') NOT NULL DEFAULT 'active',
-                notes TEXT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                KEY idx_kick_sessions_patient_date (patient_id, session_date),
-                KEY idx_kick_sessions_patient_status (patient_id, status),
-                KEY idx_kick_sessions_start_time (start_time)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS kick_counter_kicks (
-                id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-                session_id INT UNSIGNED NOT NULL,
-                kick_time DATETIME NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (id),
-                KEY idx_kicks_session (session_id),
-                KEY idx_kicks_time (kick_time)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        `);
-
-        tablesReady = true;
-    })().catch((error) => {
-        tablesPromise = null;
-        throw error;
-    });
-
-    return tablesPromise;
+    return validateOperationalSchemaScope('kickCounter');
 }
 
 function formatDateLocal(dateValue = new Date()) {

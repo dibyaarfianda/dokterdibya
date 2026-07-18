@@ -8,6 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
@@ -22,25 +23,7 @@ const VALID_EVENTS = new Set([
 let tableReady = false;
 
 async function ensureTable() {
-    if (tableReady) return;
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS guest_activity_log (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-            session_id VARCHAR(64) NOT NULL,
-            event_type VARCHAR(40) NOT NULL,
-            page_path VARCHAR(255) NULL,
-            page_title VARCHAR(120) NULL,
-            details VARCHAR(500) NULL,
-            referrer VARCHAR(255) NULL,
-            ip_address VARCHAR(45) NULL,
-            user_agent VARCHAR(255) NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            INDEX idx_guest_activity_created (created_at),
-            INDEX idx_guest_activity_session (session_id, created_at),
-            INDEX idx_guest_activity_event (event_type, created_at)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-    tableReady = true;
+    return validateOperationalSchemaScope('guestActivity');
 }
 
 function cleanText(value, maxLength) {

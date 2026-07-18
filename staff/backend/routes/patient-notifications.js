@@ -6,6 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken } = require('../middleware/auth');
 
 let queueReminderSchemaReady = false;
@@ -21,25 +22,7 @@ function getDefaultQueueReminderSettings() {
 }
 
 async function ensureQueueReminderSchema() {
-    if (queueReminderSchemaReady) {
-        return;
-    }
-
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS patient_queue_reminder_settings (
-            patient_id VARCHAR(32) NOT NULL PRIMARY KEY,
-            enabled TINYINT(1) NOT NULL DEFAULT 1,
-            threshold_ahead INT NOT NULL DEFAULT 2,
-            background_push_enabled TINYINT(1) NOT NULL DEFAULT 1,
-            last_notified_signature VARCHAR(160) NULL,
-            last_notified_at DATETIME NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX idx_queue_reminder_active (enabled, background_push_enabled)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    `);
-
-    queueReminderSchemaReady = true;
+    return validateOperationalSchemaScope('patientNotifications');
 }
 
 async function getQueueReminderSettings(patientId) {

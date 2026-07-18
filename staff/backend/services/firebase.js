@@ -1,47 +1,84 @@
 /**
- * Firebase Admin SDK service for push notifications
+ * Firebase Admin SDK service for push notifications.
+ *
+ * Initialization is intentionally lazy: a missing credential must not delay or
+ * fail the HTTP server startup. The first push attempt performs initialization
+ * and returns the existing failure contract when Firebase is unavailable.
  */
-const admin = require('firebase-admin');
+const fs = require('fs');
 const path = require('path');
-
-// Initialize Firebase Admin SDK
-const serviceAccountPath = path.join(__dirname, '../config/dokterdibya-8583b-firebase-adminsdk-fbsvc-53a279e55b.json');
+const admin = require('firebase-admin');
+const logger = require('../utils/logger');
 
 let firebaseInitialized = false;
+let firebaseInitializationAttempted = false;
 
-try {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath)
-    });
-    firebaseInitialized = true;
-    console.log('✅ Firebase Admin SDK initialized');
-} catch (error) {
-    console.error('❌ Firebase Admin SDK initialization failed:', error.message);
+function resolveFirebaseCredential() {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+        return admin.credential.cert(serviceAccount);
+    }
+
+    if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH) {
+        return admin.credential.cert(path.resolve(process.env.FIREBASE_SERVICE_ACCOUNT_PATH));
+    }
+
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        return admin.credential.applicationDefault();
+    }
+
+    const legacyCredentialPath = path.join(
+        __dirname,
+        '../config/dokterdibya-8583b-firebase-adminsdk-fbsvc-53a279e55b.json'
+    );
+    if (fs.existsSync(legacyCredentialPath)) {
+        return admin.credential.cert(legacyCredentialPath);
+    }
+
+    return null;
+}
+
+function initializeFirebase() {
+    if (firebaseInitialized) return true;
+    if (firebaseInitializationAttempted) return false;
+
+    firebaseInitializationAttempted = true;
+
+    try {
+        if (Array.isArray(admin.apps) && admin.apps.length > 0) {
+            firebaseInitialized = true;
+            return true;
+        }
+
+        const credential = resolveFirebaseCredential();
+        if (!credential) {
+            logger.warn('Firebase push notifications unavailable: credentials are not configured');
+            return false;
+        }
+
+        admin.initializeApp({ credential });
+        firebaseInitialized = true;
+        logger.info('Firebase Admin SDK initialized');
+        return true;
+    } catch (error) {
+        logger.warn('Firebase push notifications unavailable', { error: error.message });
+        return false;
+    }
 }
 
 /**
- * Send push notification to a single device
- * @param {string} fcmToken - Device FCM token
- * @param {string} title - Notification title
- * @param {string} body - Notification body
- * @param {object} data - Additional data payload
- * @returns {Promise<object>} - Send result
+ * Send push notification to a single device.
  */
 async function sendNotification(fcmToken, title, body, data = {}) {
-    if (!firebaseInitialized) {
-        console.error('Firebase not initialized');
+    if (!initializeFirebase()) {
         return { success: false, error: 'Firebase not initialized' };
     }
 
     const message = {
         token: fcmToken,
-        notification: {
-            title: title,
-            body: body
-        },
+        notification: { title, body },
         data: {
             ...data,
-            // Convert all values to strings (FCM requirement)
             title: String(title),
             body: String(body)
         },
@@ -59,14 +96,13 @@ async function sendNotification(fcmToken, title, body, data = {}) {
 
     try {
         const response = await admin.messaging().send(message);
-        console.log('✅ FCM notification sent:', response);
+        logger.info('FCM notification sent', { messageId: response });
         return { success: true, messageId: response };
     } catch (error) {
-        console.error('❌ FCM send error:', error.message);
+        logger.error('FCM send failed', { error: error.message });
 
-        // Handle invalid token
-        if (error.code === 'messaging/invalid-registration-token' ||
-            error.code === 'messaging/registration-token-not-registered') {
+        if (error.code === 'messaging/invalid-registration-token'
+            || error.code === 'messaging/registration-token-not-registered') {
             return { success: false, error: 'invalid_token', shouldRemove: true };
         }
 
@@ -75,28 +111,19 @@ async function sendNotification(fcmToken, title, body, data = {}) {
 }
 
 /**
- * Send push notification to multiple devices
- * @param {string[]} fcmTokens - Array of FCM tokens
- * @param {string} title - Notification title
- * @param {string} body - Notification body
- * @param {object} data - Additional data payload
- * @returns {Promise<object>} - Send results
+ * Send push notification to multiple devices.
  */
 async function sendNotificationToMultiple(fcmTokens, title, body, data = {}) {
-    if (!firebaseInitialized) {
-        console.error('Firebase not initialized');
-        return { success: false, error: 'Firebase not initialized' };
-    }
-
     if (!fcmTokens || fcmTokens.length === 0) {
         return { success: true, successCount: 0, failureCount: 0 };
     }
 
+    if (!initializeFirebase()) {
+        return { success: false, error: 'Firebase not initialized' };
+    }
+
     const message = {
-        notification: {
-            title: title,
-            body: body
-        },
+        notification: { title, body },
         data: {
             ...data,
             title: String(title),
@@ -117,33 +144,35 @@ async function sendNotificationToMultiple(fcmTokens, title, body, data = {}) {
 
     try {
         const response = await admin.messaging().sendEachForMulticast(message);
-        console.log(`✅ FCM multicast: ${response.successCount} success, ${response.failureCount} failed`);
-
-        // Collect invalid tokens for removal
         const invalidTokens = [];
-        response.responses.forEach((resp, idx) => {
-            if (!resp.success) {
-                const error = resp.error;
-                if (error.code === 'messaging/invalid-registration-token' ||
-                    error.code === 'messaging/registration-token-not-registered') {
-                    invalidTokens.push(fcmTokens[idx]);
-                }
+
+        response.responses.forEach((result, index) => {
+            if (!result.success
+                && (result.error?.code === 'messaging/invalid-registration-token'
+                    || result.error?.code === 'messaging/registration-token-not-registered')) {
+                invalidTokens.push(fcmTokens[index]);
             }
+        });
+
+        logger.info('FCM multicast completed', {
+            successCount: response.successCount,
+            failureCount: response.failureCount
         });
 
         return {
             success: true,
             successCount: response.successCount,
             failureCount: response.failureCount,
-            invalidTokens: invalidTokens
+            invalidTokens
         };
     } catch (error) {
-        console.error('❌ FCM multicast error:', error.message);
+        logger.error('FCM multicast failed', { error: error.message });
         return { success: false, error: error.message };
     }
 }
 
 module.exports = {
+    initializeFirebase,
     sendNotification,
     sendNotificationToMultiple,
     isInitialized: () => firebaseInitialized

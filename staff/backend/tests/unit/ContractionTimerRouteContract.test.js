@@ -14,14 +14,22 @@ describe('Contraction timer route contract', () => {
         expect(server).toContain("fullPath.startsWith('/api/contraction-timer')");
     });
 
-    test('route creates session and event tables and uses no-cache patient auth', () => {
+    test('route validates migrated session/event schema and uses no-cache patient auth', () => {
         const route = readRepoFile('staff', 'backend', 'routes', 'contraction-timer.js');
+        const migration = readRepoFile(
+            'staff',
+            'backend',
+            'migrations',
+            '20260719_staff_wave6_operational_schema.sql'
+        );
 
         expect(route).toContain("require('../services/ContractionAssessmentService')");
-        expect(route).toContain('CREATE TABLE IF NOT EXISTS contraction_sessions');
-        expect(route).toContain('CREATE TABLE IF NOT EXISTS contraction_events');
-        expect(route).toContain('assessment_final');
-        expect(route).toContain('rest_hydration_result');
+        expect(route).toContain("validateOperationalSchemaScope('contractionTimer')");
+        expect(route).not.toMatch(/CREATE\s+TABLE|ALTER\s+TABLE/i);
+        expect(migration).toContain('CREATE TABLE IF NOT EXISTS contraction_sessions');
+        expect(migration).toContain('CREATE TABLE IF NOT EXISTS contraction_events');
+        expect(migration).toContain('assessment_final');
+        expect(migration).toContain('rest_hydration_result');
         expect(route).toContain('router.use(setNoCacheHeaders)');
         expect(route).toContain('router.use(verifyPatientToken)');
     });

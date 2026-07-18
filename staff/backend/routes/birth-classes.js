@@ -1,123 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyToken, optionalAuth, requireMenuAccess } = require('../middleware/auth');
 
 let tablesReady = false;
 const BIRTH_CLASS_QRIS_URL = '/images/payment/kelas-dr-dibya-qris.jpg';
 
 async function ensureColumn(tableName, columnName, alterSql) {
-    const [rows] = await db.query(
-        `SELECT 1
-         FROM information_schema.columns
-         WHERE table_schema = DATABASE()
-           AND table_name = ?
-           AND column_name = ?
-         LIMIT 1`,
-        [tableName, columnName]
-    );
-
-    if (rows.length === 0) {
-        await db.query(alterSql);
-    }
+    return validateOperationalSchemaScope('birthClasses');
 }
 
 async function ensureTables() {
-    if (tablesReady) return;
-
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS birth_class_sessions (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            class_title VARCHAR(150) NOT NULL,
-            session_date DATE NOT NULL,
-            start_time TIME NOT NULL,
-            end_time TIME NULL,
-            location VARCHAR(150) NOT NULL,
-            instructor_name VARCHAR(120) NULL,
-            quota INT NOT NULL DEFAULT 20,
-            is_active TINYINT(1) NOT NULL DEFAULT 1,
-            notes TEXT NULL,
-            created_by VARCHAR(120) NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            KEY idx_birth_class_sessions_date_active (session_date, is_active)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await ensureColumn(
-        'birth_class_sessions',
-        'learning_points',
-        'ALTER TABLE birth_class_sessions ADD COLUMN learning_points TEXT NULL AFTER quota'
-    );
-    await ensureColumn(
-        'birth_class_sessions',
-        'items_to_bring',
-        'ALTER TABLE birth_class_sessions ADD COLUMN items_to_bring TEXT NULL AFTER learning_points'
-    );
-    await ensureColumn(
-        'birth_class_sessions',
-        'price',
-        'ALTER TABLE birth_class_sessions ADD COLUMN price DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER items_to_bring'
-    );
-    await ensureColumn(
-        'birth_class_sessions',
-        'benefits',
-        'ALTER TABLE birth_class_sessions ADD COLUMN benefits TEXT NULL AFTER price'
-    );
-
-    await db.query(`
-        CREATE TABLE IF NOT EXISTS birth_class_registrations (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            session_id BIGINT UNSIGNED NOT NULL,
-            patient_id VARCHAR(50) NULL,
-            patient_name VARCHAR(150) NOT NULL,
-            phone VARCHAR(30) NOT NULL,
-            email VARCHAR(150) NULL,
-            due_date DATE NULL,
-            gestational_weeks INT NULL,
-            notes TEXT NULL,
-            admin_notes TEXT NULL,
-            status ENUM('registered','confirmed','attended','cancelled') NOT NULL DEFAULT 'registered',
-            payment_status ENUM('pending','paid','waived') NOT NULL DEFAULT 'pending',
-            payment_method VARCHAR(50) NULL,
-            payment_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-            paid_at TIMESTAMP NULL,
-            registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            created_by VARCHAR(120) NULL,
-            PRIMARY KEY (id),
-            UNIQUE KEY uniq_birth_class_session_phone (session_id, phone),
-            KEY idx_birth_class_reg_status (status),
-            KEY idx_birth_class_reg_registered_at (registered_at),
-            CONSTRAINT fk_birth_class_session
-                FOREIGN KEY (session_id) REFERENCES birth_class_sessions(id)
-                ON DELETE RESTRICT ON UPDATE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await ensureColumn(
-        'birth_class_registrations',
-        'payment_status',
-        "ALTER TABLE birth_class_registrations ADD COLUMN payment_status ENUM('pending','paid','waived') NOT NULL DEFAULT 'pending' AFTER status"
-    );
-    await ensureColumn(
-        'birth_class_registrations',
-        'payment_method',
-        'ALTER TABLE birth_class_registrations ADD COLUMN payment_method VARCHAR(50) NULL AFTER payment_status'
-    );
-    await ensureColumn(
-        'birth_class_registrations',
-        'payment_amount',
-        'ALTER TABLE birth_class_registrations ADD COLUMN payment_amount DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER payment_method'
-    );
-    await ensureColumn(
-        'birth_class_registrations',
-        'paid_at',
-        'ALTER TABLE birth_class_registrations ADD COLUMN paid_at TIMESTAMP NULL AFTER payment_amount'
-    );
-
-    tablesReady = true;
+    return validateOperationalSchemaScope('birthClasses');
 }
 
 function normalizePhone(value) {
