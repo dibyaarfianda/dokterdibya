@@ -2,9 +2,7 @@
 // This module ports essential UX from index-asli.html: clock, page switching, and basic bindings.
 
 import { auth, onAuthStateChanged } from './vps-auth-v2.js';
-import { validatePatient, validateObatUsage, updatePatientDisplay, getCurrentPatientData, getSelectedServices, getSelectedObat } from './billing.js';
 import { showWarning, showSuccess, showError } from './toast.js';
-import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
@@ -87,7 +85,7 @@ function initPages() {
     pages.cashier = grab('cashier-page');
     pages.admin = grab('admin-page');
     pages.pengaturan = grab('pengaturan-page');
-    pages.kelolaObat = grab('kelola-obat-page'); 
+    pages.kelolaObat = grab('kelola-obat-page');
     pages.logs = grab('log-page');
     pages.appointments = grab('appointments-page');
     pages.analytics = grab('analytics-page');
@@ -140,14 +138,14 @@ function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
     const container = document.getElementById(containerId);
     if (!container) return;
-    
+
     const alreadyLoadedSameFile = container.dataset.loaded === 'true' && container.dataset.loadedHtml === htmlFile;
     if (!forceReload && alreadyLoadedSameFile) return;
-    
+
     container.innerHTML = '<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Memuat...</p></div>';
-    
+
     const fileUrl = new URL(htmlFile, window.location.origin + PUBLIC_ASSET_ROOT).href;
-    
+
     fetch(fileUrl)
         .then(response => {
             if (!response.ok) {
@@ -361,6 +359,12 @@ function resolveDisplayName(rawName, userId, fallbackLabel = 'Unknown') {
     const fallbackId = String(userId || '').trim();
     return fallbackId || fallbackLabel;
 }
+async function ensureRegisteredPage(key) {
+    if (!window.staffPageRegistry?.get(key)) return null;
+    const container = await window.staffPageRegistry.ensureLoaded(key);
+    initPages();
+    return container;
+}
 
 function resolveDashboardDisplayName(user) {
     if (isSuperadminUser(user)) {
@@ -415,10 +419,12 @@ function logActivity(action, details) {
     }).catch(err => console.warn('Activity log failed:', err.message));
 }
 window.logActivity = logActivity;
-function showDashboardPage() {
+async function showDashboardPage() {
+    await window.staffPageRegistry?.activate('dashboard');
     hideAllPages();
     pages.dashboard?.classList.remove('d-none');
-    setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard');
+    setTitleAndActive('Dashboard', 'nav-dashboard', null);
+    window.__currentPage = 'dashboard';
     loadDashboardNewPatients();
 }
 
@@ -693,6 +699,9 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
         return;
     }
 
+    await ensureRegisteredPage('sunday-clinic');
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('sundayClinic');
+
     hideAllPages();
     setSundayClinicStylesActive(true);
     pages.sundayClinic?.classList.remove('d-none');
@@ -747,7 +756,8 @@ function showHospitalAppointmentsPage(location) {
     loadHospitalAppointments(location);
 }
 
-function showHospitalPatientsPage(location) {
+async function showHospitalPatientsPage(location) {
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
     currentHospitalLocation = location;
     hideAllPages();
 
@@ -767,7 +777,8 @@ function showHospitalPatientsPage(location) {
 }
 
 // Show Pasien Baru page - patients without DRD yet
-function showPasienBaruPage() {
+async function showPasienBaruPage() {
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
     hideAllPages();
     pages.hospitalPatients?.classList.remove('d-none');
 
@@ -1663,13 +1674,13 @@ async function updateHospitalAppointmentStatus(id, status) {
     }
 }
 
-function showTindakanPage() { 
-    hideAllPages(); 
-    pages.tindakan?.classList.remove('d-none'); 
+function showTindakanPage() {
+    hideAllPages();
+    pages.tindakan?.classList.remove('d-none');
     setTitleAndActive('Tindakan', 'nav-tindakan', 'tindakan');
-    updatePatientDisplay(); // Update patient display saat buka halaman Tindakan
     // Load billing module
     importWithVersion('./billing.js').then(module => {
+        module.updatePatientDisplay?.();
         if (module.initBilling) {
             module.initBilling();
         }
@@ -1679,7 +1690,7 @@ function showObatPage() {
     hideAllPages();
     pages.obat?.classList.remove('d-none');
     setTitleAndActive('Obat & Alkes', 'nav-obat', 'obat');
-    
+
     // Load billing-obat module
     importWithVersion('./billing-obat.js').then(module => {
         if (module.initObat) {
@@ -1689,7 +1700,7 @@ function showObatPage() {
         console.error('Failed to load billing-obat.js:', error);
     });
 }
-function showCashierPage() { 
+function showCashierPage() {
     // Load all billing modules dynamically with shared cache version
     Promise.all([
         importWithVersion('./billing.js'),
@@ -1701,24 +1712,24 @@ function showCashierPage() {
             showPatientPage();
             return;
         }
-        
+
         if (!await billingObatModule.validateObatUsage()) {
             showObatPage();
             return;
         }
-        
-        hideAllPages(); 
-        pages.cashier?.classList.remove('d-none'); 
+
+        hideAllPages();
+        pages.cashier?.classList.remove('d-none');
         setTitleAndActive('Rincian Tagihan', 'nav-cashier', 'cashier');
-        
+
         // Load cashier summary with current billing data
         const patientData = billingModule.getCurrentPatientData();
         const tindakanData = billingModule.getSelectedServices();
         const obatData = billingObatModule.getSelectedObat();
-        
+
         // Use updateCashierSummary from dynamically loaded cashierModule
         cashierModule.updateCashierSummary(patientData, tindakanData, obatData);
-        
+
         // Initialize cashier buttons if not already done
         if (cashierModule.initCashier) {
             cashierModule.initCashier();
@@ -1737,46 +1748,62 @@ function showPerhatianKhususPage() {
 }
 window.showPerhatianKhususPage = showPerhatianKhususPage;
 
-function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient', 'patients'); }
-function showRecordHistoryPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Rekam / Riwayat', 'nav-record-history', 'patients'); }
+async function showPatientPage() {
+    await window.staffPageRegistry?.activate('patients');
+    initPages();
+    hideAllPages();
+    pages.patient?.classList.remove('d-none');
+    setTitleAndActive('Data Pasien', 'nav-patient', null);
+    window.__currentPage = 'patients';
+}
+async function showRecordHistoryPage() {
+    await window.staffPageRegistry?.activate('patients');
+    initPages();
+    hideAllPages();
+    pages.patient?.classList.remove('d-none');
+    setTitleAndActive('Rekam / Riwayat', 'nav-record-history', null);
+    window.__currentPage = 'patients';
+}
 // Make function globally accessible for onclick handlers
 window.showPatientPage = showPatientPage;
 window.showRecordHistoryPage = showRecordHistoryPage;
 
-async function showAnamnesa() { 
-    hideAllPages(); 
-    pages.anamnesa?.classList.remove('d-none'); 
+async function showAnamnesa() {
+    await ensureRegisteredPage('anamnesa');
+    hideAllPages();
+    pages.anamnesa?.classList.remove('d-none');
     setTitleAndActive('Anamnesa', 'nav-anamnesa', 'anamnesa');
-    
+
     // Load saved anamnesa data for current patient
     const { loadAnamnesaData } = await importWithVersion('./medical-exam.js');
     await loadAnamnesaData();
 }
 
-async function showPhysicalExam() { 
-    hideAllPages(); 
-    pages.physical?.classList.remove('d-none'); 
+async function showPhysicalExam() {
+    hideAllPages();
+    pages.physical?.classList.remove('d-none');
     setTitleAndActive('Pemeriksaan Fisik', 'nav-physical', 'physical');
-    
+
     // Load saved physical exam data for current patient
     const { loadPhysicalExamData } = await importWithVersion('./medical-exam.js');
     await loadPhysicalExamData();
 }
 
-async function showUSGExam() { 
-    hideAllPages(); 
-    pages.usg?.classList.remove('d-none'); 
+async function showUSGExam() {
+    await ensureRegisteredPage('usg');
+    hideAllPages();
+    pages.usg?.classList.remove('d-none');
     setTitleAndActive('Pemeriksaan USG', 'nav-usg', 'usg');
-    
+
     // Re-check pregnancy status when page opens
     const gynSection = document.getElementById('usg-gynecology-section');
     const obstetriSection = document.getElementById('usg-obstetri-section');
     const anamnesaSelect = document.getElementById('anamnesa-pregnant');
-    
+
     if (anamnesaSelect && gynSection && obstetriSection) {
         const pregnantStatus = anamnesaSelect.value;
         console.log('showUSGExam - Pregnancy status:', pregnantStatus);
-        
+
         if (pregnantStatus === 'ya') {
             obstetriSection.classList.remove('d-none');
             gynSection.classList.add('d-none');
@@ -1788,24 +1815,24 @@ async function showUSGExam() {
             obstetriSection.classList.add('d-none');
         }
     }
-    
+
     // Load saved USG data for current patient
     const { loadUSGExamData } = await importWithVersion('./medical-exam.js');
     await loadUSGExamData();
 }
 
-async function showLabExam() { 
-    hideAllPages(); 
-    pages.lab?.classList.remove('d-none'); 
+async function showLabExam() {
+    hideAllPages();
+    pages.lab?.classList.remove('d-none');
     setTitleAndActive('Pemeriksaan Penunjang', 'nav-lab', 'lab');
-    
+
     // Load saved lab exam data for current patient
     const { loadLabExamData } = await importWithVersion('./medical-exam.js');
     await loadLabExamData();
 }
-function showStokOpnamePage() { 
-    hideAllPages(); 
-    pages.admin?.classList.remove('d-none'); 
+function showStokOpnamePage() {
+    hideAllPages();
+    pages.admin?.classList.remove('d-none');
     setTitleAndActive('Stok Opname', 'nav-admin', 'stok');
     // Load stok opname data
     importWithVersion('./stok-opname.js').then(module => {
@@ -1819,7 +1846,7 @@ function showPengaturanPage() {
     hideAllPages();
     pages.pengaturan?.classList.remove('d-none');
     setTitleAndActive('Pengaturan', 'nav-pengaturan', 'pengaturan');
-    
+
     importWithVersion('./kelola-tindakan.js').then(module => {
         if (module.initKelolaTindakan) {
             module.initKelolaTindakan();
@@ -1828,12 +1855,13 @@ function showPengaturanPage() {
         console.error('Failed to load kelola-tindakan.js:', error);
     });
 }
-function showKelolaObatPage() {
+async function showKelolaObatPage() {
+    await ensureRegisteredPage('kelola-obat');
     console.log('🔧 showKelolaObatPage called');
     hideAllPages();
     pages.kelolaObat?.classList.remove('d-none');
     setTitleAndActive('Kelola Obat', 'management-nav-kelola-obat', 'kelolaObat');
-    
+
     // Load kelola-obat module
     importWithVersion('./kelola-obat.js').then(module => {
         if (module.initKelolaObat) {
@@ -1844,9 +1872,9 @@ function showKelolaObatPage() {
     });
 }
 function showLogPage() { hideAllPages(); pages.logs?.classList.remove('d-none'); setTitleAndActive('Log Aktivitas', 'nav-logs', 'logs'); }
-function showAppointmentsPage() { 
-    hideAllPages(); 
-    pages.appointments?.classList.remove('d-none'); 
+function showAppointmentsPage() {
+    hideAllPages();
+    pages.appointments?.classList.remove('d-none');
     setTitleAndActive('Appointment', 'nav-appointments', 'appointments');
     // Load appointments module dynamically
     console.log('🔧 Loading appointments module...');
@@ -1875,11 +1903,12 @@ function showKelolaPasienPage() {
     setTitleAndActive('Kelola Pasien', 'management-nav-kelola-pasien', 'kelola-pasien');
     loadExternalPage('kelola-pasien-page', 'kelola-pasien.html', { forceReload: true });
 }
-function showKelolaAppointmentPage() { 
-    hideAllPages(); 
-    pages.kelolaAppointment?.classList.remove('d-none'); 
+async function showKelolaAppointmentPage() {
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
+    hideAllPages();
+    pages.kelolaAppointment?.classList.remove('d-none');
     setTitleAndActive('Kelola Appointment', 'management-nav-kelola-appointment', 'kelola-appointment');
-    
+
     importWithVersion('./kelola-appointment.js').then(module => {
         if (typeof window.initKelolaAppointment === 'function') {
             window.initKelolaAppointment();
@@ -1890,11 +1919,12 @@ function showKelolaAppointmentPage() {
         console.error('Failed to load kelola-appointment.js:', error);
     });
 }
-function showKelolaJadwalPage() {
+async function showKelolaJadwalPage() {
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
     hideAllPages();
     pages.kelolaJadwal?.classList.remove('d-none');
     setTitleAndActive('Kelola Jadwal', 'nav-jadwal', 'kelola-jadwal');
-    
+
     // Dynamically import and initialize the Kelola Jadwal module
     importWithVersion('./kelola-jadwal.js').then(module => {
         if (typeof window.initKelolaJadwal === 'function') {
@@ -2358,6 +2388,7 @@ async function ensureEstimasiBiayaData(forceReload = false) {
 }
 
 async function showEstimasiBiayaPage() {
+    await ensureRegisteredPage('estimasi-biaya');
     hideAllPages();
     pages.estimasiBiaya?.classList.remove('d-none');
     setTitleAndActive('Estimasi Biaya', 'nav-estimasi-biaya', 'estimasi-biaya');
@@ -2545,11 +2576,12 @@ function formatRupiah(amount) {
     return 'Rp ' + (Number(amount) || 0).toLocaleString('id-ID');
 }
 
-function showKelolaPengumumanPage() {
+async function showKelolaPengumumanPage() {
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('markdown');
     hideAllPages();
     pages.kelolaPengumuman?.classList.remove('d-none');
     setTitleAndActive('Kelola Pengumuman', 'nav-pengumuman', 'kelola-pengumuman');
-    
+
     // Dynamically import and initialize the Kelola Pengumuman module
     importWithVersion('./kelola-announcement.js').then(module => {
         if (typeof window.initKelolaAnnouncement === 'function') {
@@ -2629,7 +2661,8 @@ function showMedifySyncPage() {
     });
 }
 
-function showKelolaRolesPage() {
+async function showKelolaRolesPage() {
+    await ensureRegisteredPage('kelola-roles');
     hideAllPages();
     pages.kelolaRoles?.classList.remove('d-none');
     setTitleAndActive('Roles Manajemen', 'management-nav-kelola-roles', 'kelola-roles');
@@ -2780,7 +2813,9 @@ async function loadStaffActivityFilters() {
     }
 }
 
-function showFinanceAnalysisPage() {
+async function showFinanceAnalysisPage() {
+    await ensureRegisteredPage('finance-analysis');
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('apexCharts');
     hideAllPages();
     pages.financeAnalysis?.classList.remove('d-none');
     setTitleAndActive('Finance Analysis', 'finance-analysis-nav', 'finance-analysis');
@@ -3406,7 +3441,8 @@ function showImportFieldsPage() {
     loadExternalPage('import-fields-page', 'kelola-import-fields.html');
 }
 
-function showArtikelKesehatanPage() {
+async function showArtikelKesehatanPage() {
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('markdown');
     hideAllPages();
     pages.artikelKesehatan?.classList.remove('d-none');
     setTitleAndActive('Ruang Membaca', 'nav-artikel-kesehatan', 'artikel-kesehatan');
@@ -3942,7 +3978,8 @@ setInterval(() => {
 
 // ==================== END NOTIFICATION BADGES ====================
 
-function showProfileSettings() {
+async function showProfileSettings() {
+    await ensureRegisteredPage('profile-settings');
     hideAllPages();
     pages.profile?.classList.remove('d-none');
     setTitleAndActive('Pengaturan Profil', 'nav-profile-settings', 'profile');
@@ -4266,17 +4303,17 @@ function bindSundayClinicLauncher() {
     if (!button) {
         return;
     }
-    
+
     // Prevent multiple event listeners by checking if already bound
     if (button.dataset.sundayClinicBound === 'true') {
         return;
     }
-    
+
     button.addEventListener('click', event => {
         event.preventDefault();
         openSundayClinicViewer();
     });
-    
+
     // Mark as bound
     button.dataset.sundayClinicBound = 'true';
 }
@@ -4492,7 +4529,7 @@ async function updateWelcomeCard(user) {
     // Set name - special greeting for superadmin (dr. Dibya)
     // Check multiple possible superadmin indicators
     const isSuperadmin = isSuperadminUser(user);
-    
+
     if (isSuperadmin) {
         welcomeName.innerHTML = '<strong>dr. Dibya</strong>';
     } else {
@@ -5056,23 +5093,22 @@ function initMain() {
     startClock();
     bindBasics();
     bindSundayClinicLauncher();
-    initMedicalExam(); // Initialize medical examination pages
     initArticleMarkdownPreview(); // Initialize Markdown preview for article editor
 
     // Check for import data from Chrome extension (SIMRS Gambiran/Melinda)
     checkExtensionImportData();
 
     onAuthStateChanged(initializeApp);
-    
+
     // Set up global debug function for appointments
     window.debugAppointments = function() {
         console.log('🔧 [DEBUG] ===== APPOINTMENTS DEBUG (Global) =====');
-        
+
         // Basic checks that don't require the module
         const btn = document.getElementById('btn-add-appointment');
         const modal = document.getElementById('appointment-modal');
         const appointmentsPage = document.getElementById('appointments-page');
-        
+
         console.log('🔧 [DEBUG] Basic DOM checks:');
         console.log('  - Button exists?', !!btn);
         console.log('  - Modal exists?', !!modal);
@@ -5081,7 +5117,7 @@ function initMain() {
         console.log('  - window.openNewAppointment type:', typeof window.openNewAppointment);
         console.log('  - jQuery available?', typeof $ !== 'undefined');
         console.log('  - Bootstrap modal available?', typeof $ !== 'undefined' && $.fn.modal);
-        
+
         if (btn) {
             console.log('🔧 [DEBUG] Button details:');
             console.log('  - ID:', btn.id);
@@ -5092,7 +5128,7 @@ function initMain() {
             console.log('  - style.display:', btn.style.display);
             console.log('  - style.visibility:', btn.style.visibility);
             console.log('  - computed style:', window.getComputedStyle(btn).display);
-            
+
             // Check for event listeners (if possible)
             console.log('🔧 [DEBUG] Trying to check event listeners...');
             try {
@@ -5102,7 +5138,7 @@ function initMain() {
                 console.log('  - Cannot check event listeners (use Chrome DevTools)');
             }
         }
-        
+
         // If the module is loaded, try to call openNewAppointment
         if (typeof window.openNewAppointment === 'function') {
             console.log('🔧 [DEBUG] Module appears to be loaded (window.openNewAppointment exists)');
@@ -5116,9 +5152,9 @@ function initMain() {
             console.warn('⚠️ [DEBUG] Appointments module not loaded yet');
             console.warn('⚠️ [DEBUG] Navigate to the appointments page first, then try again');
         }
-        
+
         console.log('🔧 [DEBUG] ===== END DEBUG (Global) =====');
-        
+
         return {
             buttonExists: !!btn,
             modalExists: !!modal,
@@ -5128,7 +5164,7 @@ function initMain() {
             jqueryExists: typeof $ !== 'undefined'
         };
     };
-    
+
     // Default landing: restore last page or Dashboard
     restoreLastPage();
 }
@@ -5221,13 +5257,6 @@ function restoreLastPage() {
         console.error('[MAIN] restoreLastPage error:', e);
         showDashboardPage();
     }
-}
-
-// Auto-init if DOM is ready, otherwise wait
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMain);
-} else {
-    initMain();
 }
 
 // -------------------- START PATIENT VISIT (Walk-in) --------------------
@@ -5389,7 +5418,7 @@ async function showPatientDetail(patientId) {
                 console.warn('Failed to fetch intake data:', intakeError);
             }
         }
-        
+
         console.log('Final intake data:', intake);
 
         // Fetch patient's medical records (visit history)
@@ -5502,7 +5531,7 @@ async function showPatientDetail(patientId) {
             registration_date: patient.registration_date || patient.created_at,
             updated_at: patient.updated_at
         };
-        
+
         // Create modal for patient details
         const modal = `
             <div class="modal fade" id="patientDetailModal" tabindex="-1" role="dialog">
@@ -5549,8 +5578,8 @@ async function showPatientDetail(patientId) {
                                         <tr>
                                             <th width="40%">Foto Profil</th>
                                             <td>
-                                                ${normalizedPatient.photo_url ? 
-                                                    `<img src="${normalizedPatient.photo_url}" alt="Photo" style="max-width: 100px; border-radius: 50%;">` : 
+                                                ${normalizedPatient.photo_url ?
+                                                    `<img src="${normalizedPatient.photo_url}" alt="Photo" style="max-width: 100px; border-radius: 50%;">` :
                                                     '<span class="text-muted">Tidak ada foto</span>'}
                                             </td>
                                         </tr>
@@ -5568,14 +5597,14 @@ async function showPatientDetail(patientId) {
                                         </tr>
                                         <tr>
                                             <th>Profil Lengkap</th>
-                                            <td>${normalizedPatient.profile_completed ? 
-                                                '<span class="badge badge-success"><i class="fas fa-check"></i> Ya</span>' : 
+                                            <td>${normalizedPatient.profile_completed ?
+                                                '<span class="badge badge-success"><i class="fas fa-check"></i> Ya</span>' :
                                                 '<span class="badge badge-warning"><i class="fas fa-times"></i> Belum</span>'}</td>
                                         </tr>
                                         <tr>
                                             <th>Status</th>
-                                            <td>${normalizedPatient.status === 'active' ? 
-                                                '<span class="badge badge-success">Aktif</span>' : 
+                                            <td>${normalizedPatient.status === 'active' ?
+                                                '<span class="badge badge-success">Aktif</span>' :
                                                 '<span class="badge badge-secondary">Nonaktif</span>'}</td>
                                         </tr>
                                         <tr>
@@ -5595,7 +5624,7 @@ async function showPatientDetail(patientId) {
                                     </table>
                                 </div>
                             </div>
-                            
+
                             ${intake ? `
                             <hr>
                             <h5 class="mb-3">
@@ -5697,7 +5726,7 @@ async function showPatientDetail(patientId) {
                 </div>
             </div>
         `;
-        
+
         // Remove existing modal if any (aggressive cleanup)
         $('#patientDetailModal').modal('hide');
         $('#patientDetailModal').remove();
@@ -6527,7 +6556,7 @@ async function initializeQueueButton() {
         const data = await res.json();
         if (data.success && data.is_queue_visible !== undefined) {
             const isEnabled = data.is_queue_visible;
-            btn.innerHTML = isEnabled 
+            btn.innerHTML = isEnabled
                 ? '<i class="fa fa-check-circle text-success"></i><span class="d-none d-md-inline">Live Queue ON</span>'
                 : '<i class="fa fa-circle-o text-muted"></i><span class="d-none d-md-inline">Live Queue OFF</span>';
             btn.className = isEnabled ? 'btn btn-sm btn-success' : 'btn btn-sm btn-outline-secondary';
@@ -6552,11 +6581,11 @@ async function toggleLiveQueue() {
         if (data.success) {
             const isNowEnabled = data.is_queue_visible;
             showSuccess(isNowEnabled ? 'Antrian live DIAKTIFKAN' : 'Antrian live DINONAKTIFKAN');
-            
+
             // Update button state
             const btn = document.getElementById('toggle-queue-btn');
             if (btn) {
-                btn.innerHTML = isNowEnabled 
+                btn.innerHTML = isNowEnabled
                     ? '<i class="fa fa-check-circle text-success"></i><span class="d-none d-md-inline">Live Queue ON</span>'
                     : '<i class="fa fa-circle-o text-muted"></i><span class="d-none d-md-inline">Live Queue OFF</span>';
                 btn.className = isNowEnabled ? 'btn btn-sm btn-success' : 'btn btn-sm btn-outline-secondary';

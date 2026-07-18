@@ -1,0 +1,170 @@
+                    <div class="container-fluid">
+                        <!-- Stats Cards -->
+                        <div class="row mb-3">
+                            <div class="col-lg-4 col-6">
+                                <div class="small-box bg-info">
+                                    <div class="inner">
+                                        <h3 id="roles-stat-total">0</h3>
+                                        <p>Total Roles</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-user-shield"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-6">
+                                <div class="small-box bg-success">
+                                    <div class="inner">
+                                        <h3 id="roles-stat-permissions">0</h3>
+                                        <p>Total Permissions</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-key"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-6">
+                                <div class="small-box bg-warning">
+                                    <div class="inner">
+                                        <h3 id="roles-stat-users">0</h3>
+                                        <p>Staff Users</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-users"></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Roles Table Card -->
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-user-shield mr-2"></i>Daftar Roles</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-primary btn-sm" id="btn-add-role">
+                                        <i class="fas fa-plus"></i> Tambah Role
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <table id="roles-table" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%">ID</th>
+                                            <th width="15%">Nama Role</th>
+                                            <th width="15%">Display Name</th>
+                                            <th width="30%">Deskripsi</th>
+                                            <th width="10%">Permissions</th>
+                                            <th width="10%">Users</th>
+                                            <th width="15%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="roles-tbody">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4">
+                                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                                <p class="mt-2 mb-0">Memuat data roles...</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Permissions Card -->
+                        <div class="card" id="permissions-card" style="display: none;">
+                            <div class="card-header bg-secondary">
+                                <h3 class="card-title"><i class="fas fa-key mr-2"></i>Kelola Permissions untuk: <span id="selected-role-name"></span></h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-light btn-sm" id="btn-close-permissions">
+                                        <i class="fas fa-times"></i> Tutup
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <div class="btn-group">
+                                            <button class="btn btn-outline-primary btn-sm" id="btn-select-all-perms">
+                                                <i class="fas fa-check-double"></i> Pilih Semua
+                                            </button>
+                                            <button class="btn btn-outline-secondary btn-sm" id="btn-deselect-all-perms">
+                                                <i class="fas fa-times"></i> Hapus Semua
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-right">
+                                        <button class="btn btn-success" id="btn-save-permissions">
+                                            <i class="fas fa-save"></i> Simpan Permissions
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="permissions-container" class="row">
+                                    <!-- Permissions will be loaded here grouped by category -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Management Card -->
+                        <div class="card mt-4">
+                            <div class="card-header bg-info">
+                                <h3 class="card-title"><i class="fas fa-users-cog mr-2"></i>Staff dan Admin</h3>
+                            </div>
+                            <div class="card-body">
+                                <table id="users-roles-table" class="table table-bordered table-striped table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%">#</th>
+                                            <th width="12%">ID</th>
+                                            <th width="18%">Nama</th>
+                                            <th width="20%">Email</th>
+                                            <th width="25%">Roles</th>
+                                            <th width="10%">Status</th>
+                                            <th width="10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-roles-tbody">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4">
+                                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                                <p class="mt-2 mb-0">Memuat data users...</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Menu Visibility Settings Card -->
+                        <div class="card mt-4">
+                            <div class="card-header bg-warning">
+                                <h3 class="card-title"><i class="fas fa-eye mr-2"></i>Pengaturan Visibility Menu</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-light btn-sm" id="btn-refresh-visibility" onclick="loadMenuVisibility()">
+                                        <i class="fas fa-sync"></i> Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body no-padding">
+                                <div class="alert alert-info m-3 mb-0">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Centang menu yang ingin ditampilkan untuk setiap role. Perubahan langsung disimpan.
+                                    <br><small class="text-muted">Note: Dokter/Superadmin selalu bisa akses semua menu.</small>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm mb-0" id="visibility-table">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th width="25%">Menu</th>
+                                                <th class="text-center">Bidan</th>
+                                                <th class="text-center">Administrasi</th>
+                                                <th class="text-center">Managerial</th>
+                                                <th class="text-center">Kasir</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="visibility-tbody">
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4">
+                                                    <i class="fas fa-spinner fa-spin"></i> Memuat...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

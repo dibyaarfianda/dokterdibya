@@ -1,0 +1,91 @@
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #16a34a, #15803d); color: white;">
+                                    <h3 class="card-title mb-0"><i class="fas fa-money-check-alt mr-2"></i>Gajian</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-sm btn-light" data-payroll-action="refresh" onclick="if(window.staffPayroll) window.staffPayroll.refresh()">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-lg-8">
+                                            <div class="card card-outline card-success">
+                                                <div class="card-header compact">
+                                                    <h5 class="card-title mb-0"><i class="fas fa-calendar-week mr-2"></i>Siklus 4 Praktik</h5>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row" id="staff-payroll-cycle-dates">
+                                                        <div class="col-12 text-muted small">Memuat tanggal praktik...</div>
+                                                    </div>
+                                                    <div class="form-row align-items-end mt-2">
+                                                        <div class="col-md-4 col-8">
+                                                            <label class="small text-muted mb-1">Tanggal Gajian</label>
+                                                            <input type="date" id="staff-payroll-date" class="form-control form-control-sm">
+                                                        </div>
+                                                        <div class="col-md-3 col-4">
+                                                            <button type="button" class="btn btn-sm btn-success btn-block" data-payroll-action="create" onclick="if(window.staffPayroll) window.staffPayroll.createDraft()">
+                                                                <i class="fas fa-plus mr-1"></i>Buat Draft
+                                                            </button>
+                                                        </div>
+                                                        <div class="col-md-5 mt-2 mt-md-0">
+                                                            <div class="small text-muted">Draft mengambil data hadir awal dari Briefing, lalu dapat dikoreksi sebelum finalize.</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            <div class="card card-outline card-secondary">
+                                                <div class="card-header compact">
+                                                    <h5 class="card-title mb-0"><i class="fas fa-history mr-2"></i>Batch Gaji</h5>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    <div class="list-group list-group-flush" id="staff-payroll-batches">
+                                                        <div class="p-3 text-muted small">Memuat batch...</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="staff-payroll-summary" class="mb-3"></div>
+
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="small text-muted">
+                                            Rumus: hadir pertama Rp150.000, hadir berikutnya Rp100.000 per hadir, penyesuaian opsional.
+                                        </div>
+                                        <div id="staff-payroll-actions" class="text-right"></div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-striped table-hover" id="staff-payroll-table">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th rowspan="2">Nama</th>
+                                                    <th rowspan="2">Role</th>
+                                                    <th colspan="4" class="text-center">Hadir</th>
+                                                    <th rowspan="2" class="text-right">Jumlah</th>
+                                                    <th rowspan="2" class="text-right">Dasar</th>
+                                                    <th rowspan="2" class="text-right">Tambahan</th>
+                                                    <th rowspan="2" class="text-right">Bonus/Penyesuaian</th>
+                                                    <th rowspan="2" class="text-right">Total</th>
+                                                    <th rowspan="2">Catatan</th>
+                                                </tr>
+                                                <tr id="staff-payroll-date-head"></tr>
+                                            </thead>
+                                            <tbody id="staff-payroll-tbody">
+                                                <tr>
+                                                    <td colspan="12" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin mr-1"></i> Memuat payroll...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

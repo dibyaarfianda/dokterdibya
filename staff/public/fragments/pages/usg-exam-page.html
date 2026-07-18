@@ -1,0 +1,250 @@
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-baby mr-2"></i>Pemeriksaan USG</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Pasien: <strong id="usg-patient-name">-</strong>
+                            </div>
+                            
+                            <form id="usg-exam-form">
+                                <!-- USG Ginekologi (Tidak Hamil) -->
+                                <div id="usg-gynecology-section" class="d-none">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Pemeriksaan Uterus</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-uterus-normal">
+                                                <label class="custom-control-label" for="usg-gyn-uterus-normal">Uterus ukuran normal</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-uterus-anteverted">
+                                                <label class="custom-control-label" for="usg-gyn-uterus-anteverted">Posisi anteverted</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-uterus-retroverted">
+                                                <label class="custom-control-label" for="usg-gyn-uterus-retroverted">Posisi retroverted</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-myoma">
+                                                <label class="custom-control-label" for="usg-gyn-myoma">Myoma uteri</label>
+                                            </div>
+                                            <div id="myoma-detail-section" class="ml-4 d-none">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Jumlah</label>
+                                                    <select id="myoma-count" class="form-control form-control-sm" style="width: 100px;">
+                                                        <option value="">Pilih</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                    </select>
+                                                </div>
+                                                <div id="myoma-sizes"></div>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-adenomyosis">
+                                                <label class="custom-control-label" for="usg-gyn-adenomyosis">Adenomyosis</label>
+                                            </div>
+                                            <div class="form-group mt-3">
+                                                <label class="small text-muted">Ukuran Uterus (cm)</label>
+                                                <input type="text" id="usg-gyn-uterus-size" class="form-control form-control-sm" placeholder="Contoh: 8 x 5 x 4 cm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Pemeriksaan Ovarium</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-ovary-normal">
+                                                <label class="custom-control-label" for="usg-gyn-ovary-normal">Ovarium kanan-kiri normal</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-cyst-right">
+                                                <label class="custom-control-label" for="usg-gyn-cyst-right">Kista ovarium kanan</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-cyst-left">
+                                                <label class="custom-control-label" for="usg-gyn-cyst-left">Kista ovarium kiri</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-pcos">
+                                                <label class="custom-control-label" for="usg-gyn-pcos">PCOS (Polycystic Ovary Syndrome)</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-endometrioma">
+                                                <label class="custom-control-label" for="usg-gyn-endometrioma">Endometrioma</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Endometrium</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-endo-normal">
+                                                <label class="custom-control-label" for="usg-gyn-endo-normal">Endometrium normal</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-endo-thick">
+                                                <label class="custom-control-label" for="usg-gyn-endo-thick">Penebalan endometrium</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-polyp">
+                                                <label class="custom-control-label" for="usg-gyn-polyp">Polip endometrium</label>
+                                            </div>
+                                            <div class="form-group mt-3">
+                                                <label class="small text-muted">Ketebalan Endometrium (mm)</label>
+                                                <input type="number" step="0.1" id="usg-gyn-endo-thickness" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Lain-lain</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-free-fluid">
+                                                <label class="custom-control-label" for="usg-gyn-free-fluid">Free fluid di cavum douglas</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-adhesion">
+                                                <label class="custom-control-label" for="usg-gyn-adhesion">Perlengketan</label>
+                                            </div>
+                                            <div class="form-group mt-3">
+                                                <label>Catatan Tambahan</label>
+                                                <textarea id="usg-gyn-notes" class="form-control" rows="4" placeholder="Catatan hasil USG ginekologi..."></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- USG Obstetri (Hamil) -->
+                                <div id="usg-obstetri-section" class="d-none">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Data Janin</h5>
+                                        <div class="form-group">
+                                            <label>Jumlah Janin</label>
+                                            <select id="usg-fetus-count" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="1">Tunggal</option>
+                                                <option value="2">Gemeli (2)</option>
+                                                <option value="3">Triplet (3)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Presentasi</label>
+                                            <select id="usg-presentation" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Kepala">Kepala</option>
+                                                <option value="Bokong">Bokong</option>
+                                                <option value="Lintang">Lintang</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Denyut Jantung Janin (DJJ)</label>
+                                            <div class="input-group">
+                                                <input type="number" id="usg-fhr" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">x/menit</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Gerakan Janin</label>
+                                            <select id="usg-fetal-movement" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Aktif">Aktif</option>
+                                                <option value="Kurang Aktif">Kurang Aktif</option>
+                                                <option value="Tidak Ada">Tidak Ada</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Cairan Ketuban</label>
+                                            <select id="usg-amniotic-fluid" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Cukup">Cukup</option>
+                                                <option value="Oligohidramnion">Oligohidramnion (Kurang)</option>
+                                                <option value="Polihidramnion">Polihidramnion (Berlebih)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Plasenta</label>
+                                            <select id="usg-placenta" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Fundus">Fundus</option>
+                                                <option value="Korpus">Korpus</option>
+                                                <option value="Previa">Previa</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Biometri Janin</h5>
+                                        <div class="form-group">
+                                            <label>BPD (Biparietal Diameter)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-bpd" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>FL (Femur Length)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-fl" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>AC (Abdominal Circumference)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-ac" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>HC (Head Circumference)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-hc" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Taksiran Berat Janin (TBJ)</label>
+                                            <div class="input-group">
+                                                <input type="number" id="usg-efw" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">gram</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Usia Kehamilan (USG)</label>
+                                            <div class="input-group">
+                                                <input type="number" id="usg-ga-weeks" class="form-control" placeholder="Minggu" style="width: 80px;">
+                                                <input type="number" id="usg-ga-days" class="form-control" placeholder="Hari" style="width: 70px;">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">minggu hari</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Catatan USG</label>
+                                            <textarea id="usg-notes" class="form-control" rows="4" placeholder="Catatan tambahan hasil USG..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+                                <!-- End USG Obstetri Section -->
+                                
+                                <button type="submit" class="btn btn-info">
+                                    <i class="fas fa-save mr-2"></i>Simpan Hasil USG
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>

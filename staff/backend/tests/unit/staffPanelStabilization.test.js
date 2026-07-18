@@ -27,7 +27,7 @@ describe('staff panel stabilization sources', () => {
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
 
         expect(html).toContain('data-shell-action="show-manage-patients"');
-        expect(html).toContain('window.showManagePatientsPage = function()');
+        expect(html).toContain('window.showManagePatientsPage = async function()');
         expect(html).toContain("sessionStorage.setItem('lastStaffNavId', 'nav-kelola-pasien');");
         expect(html).toContain("document.documentElement.classList.remove('kantor-saya-active');");
         expect(html).toContain("document.body.classList.remove('kantor-saya-active');");
@@ -156,6 +156,8 @@ describe('staff panel stabilization sources', () => {
 
     test('staff panel canonicalizes Sunday Clinic to the embedded staff route', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const sundayClinicFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'sunday-clinic-page.html');
+        const featureLoader = readRepoFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
         const sundayClinicEntry = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic.js');
         const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
@@ -166,15 +168,14 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toContain('id="nav-sunday-clinic"');
         expect(html).not.toContain('href="/staff/public/sunday-clinic.html"');
         expect(html).toContain('id="sunday-clinic-page"');
-        expect(html).toContain('id="sunday-clinic-root"');
-        expect(html).toContain('id="sunday-clinic-content"');
-        expect(html).toContain('class="btn btn-outline-secondary btn-sm mobile-back-btn"');
-        expect(html).toContain('window.backToSundayClinicLanding && window.backToSundayClinicLanding()');
-        expect(html).toContain('body.mobile-app-mode .mobile-back-btn');
+        expect(sundayClinicFragment).toContain('id="sunday-clinic-root"');
+        expect(sundayClinicFragment).toContain('id="sunday-clinic-content"');
+        expect(sundayClinicFragment).toContain('class="btn btn-outline-secondary btn-sm mobile-back-btn"');
+        expect(sundayClinicFragment).toContain('window.backToSundayClinicLanding && window.backToSundayClinicLanding()');
         expect(html).toContain('id="import-warning-container"');
         expect(html).toContain('id="btn-import-apply-text"');
-        expect(html).toMatch(/\/staff\/public\/scripts\/sunday-clinic\/utils\/planning-helpers\.js\?v=[^"' ]+/);
-        expect(html).toMatch(/\/staff\/public\/scripts\/sunday-clinic\/components\/shared\/payment-modal\.js\?v=[^"' ]+/);
+        expect(featureLoader).toContain("loadScript('/staff/public/scripts/sunday-clinic/utils/planning-helpers.js')");
+        expect(featureLoader).toContain("loadScript('/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js')");
 
         expect(mainJs).toContain("pages.sundayClinic = grab('sunday-clinic-page');");
         expect(mainJs).toContain("importWithVersion('./sunday-clinic.js')");
@@ -420,22 +421,24 @@ describe('staff panel stabilization sources', () => {
 
     test('Klinik Privat tablet browser top-gap fix stays scoped to active page', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html').replace(/\r\n/g, '\n');
+        const shellCss = readRepoFile('staff', 'public', 'styles', 'staff-shell.css').replace(/\r\n/g, '\n');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js').replace(/\r\n/g, '\n');
 
         expect(mainJs).toContain("document.body.classList.remove('klinik-private-active');");
         expect(mainJs).toContain("document.body.classList.add('klinik-private-active');\n    pages.klinikPrivate?.classList.remove('d-none');");
 
-        expect(html).toContain('@media (min-width: 992px) and (max-width: 1366px) and (hover: none),');
-        expect(html).toContain('(min-width: 992px) and (max-width: 1366px) and (pointer: coarse)');
-        expect(html).toContain('body.klinik-private-active .wrapper,\n            body.klinik-private-active .main-header,\n            body.klinik-private-active .main-sidebar,\n            body.klinik-private-active .content-wrapper,');
-        expect(html).toContain('body.klinik-private-active section.content,\n            body.klinik-private-active .container-fluid,\n            body.klinik-private-active #klinik-private-page');
-        expect(html).toContain('margin-top: 0 !important;\n                padding-top: 0 !important;\n                top: 0 !important;');
+        expect(shellCss).toContain('@media (min-width: 992px) and (max-width: 1366px) and (hover: none),');
+        expect(shellCss).toContain('(min-width: 992px) and (max-width: 1366px) and (pointer: coarse)');
+        expect(shellCss).toContain('body.klinik-private-active .wrapper,\n            body.klinik-private-active .main-header,\n            body.klinik-private-active .main-sidebar,\n            body.klinik-private-active .content-wrapper,');
+        expect(shellCss).toContain('body.klinik-private-active section.content,\n            body.klinik-private-active .container-fluid,\n            body.klinik-private-active #klinik-private-page');
+        expect(shellCss).toContain('margin-top: 0 !important;\n                padding-top: 0 !important;\n                top: 0 !important;');
     });
 
     test('browser zoom 80 applies only to desktop fine-pointer staff shell browsers', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html').replace(/\r\n/g, '\n');
+        const shellCss = readRepoFile('staff', 'public', 'styles', 'staff-shell.css').replace(/\r\n/g, '\n');
 
-        expect(html).toContain('tablet touch browsers must stay true 100%.');
+        expect(shellCss).toContain('tablet touch browsers must stay true 100%.');
         expect(html).toContain("const isDesktopFinePointer = window.matchMedia\n                ? window.matchMedia('(hover: hover) and (pointer: fine)').matches");
         expect(html).toContain("!/(Mobi|Android|iPad|iPhone|iPod)/i.test(navigator.userAgent);");
         expect(html).toContain('} else if (isDesktopFinePointer) {\n                applyBrowserZoomClass();\n            }');
@@ -487,8 +490,9 @@ describe('staff panel stabilization sources', () => {
 
     test('staff navbar notification bell stays hidden', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html').replace(/\r\n/g, '\n');
+        const shellCss = readRepoFile('staff', 'public', 'styles', 'staff-shell.css').replace(/\r\n/g, '\n');
 
-        expect(html).toContain('#notification-dropdown {\n            display: none !important;\n        }');
+        expect(shellCss).toContain('#notification-dropdown {\n            display: none !important;\n        }');
         expect(html).toContain('id="notification-dropdown"');
         expect(html).toContain('class="far fa-bell"');
     });
@@ -519,6 +523,8 @@ describe('staff panel stabilization sources', () => {
 
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const payrollFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-payroll.html');
+        const featureLoader = readRepoFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
         const roleVisibility = readRepoFile('staff', 'backend', 'routes', 'role-visibility.js');
         const server = readRepoFile('staff', 'backend', 'server.js');
@@ -527,9 +533,10 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('showStaffPayrollPage(); return false;');
         expect(html).toContain('<p>Gajian</p>');
         expect(html).toContain('id="content-staff-payroll"');
+        expect(payrollFragment).toContain('id="staff-payroll-tbody"');
         const staffVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
         expect(staffVersion).toBeTruthy();
-        expect(html).toContain(`./scripts/staff-payroll.js?v=${staffVersion}`);
+        expect(featureLoader).toContain("staffPayroll: () => loadScript('/staff/public/scripts/staff-payroll.js')");
         expect(html).toContain('window.showStaffPayrollPage = showStaffPayrollPage;');
 
         expect(mainJs).toContain("pages.staffPayroll = grab('content-staff-payroll');");
@@ -543,6 +550,8 @@ describe('staff panel stabilization sources', () => {
 
     test('staff panel exposes Briefing menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const briefingFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-briefing.html');
+        const featureLoader = readRepoFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
         const staffBriefingJs = readRepoFile('staff', 'public', 'scripts', 'staff-briefing.js');
         const staffBriefingRoute = readRepoFile('staff', 'backend', 'routes', 'staff-briefing.js');
@@ -553,9 +562,10 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('showStaffBriefingPage(); return false;');
         expect(html).toContain('<p>Briefing</p>');
         expect(html).toContain('id="content-staff-briefing"');
+        expect(briefingFragment).toContain('id="staff-briefing-checklist"');
         const staffVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
         expect(staffVersion).toBeTruthy();
-        expect(html).toContain(`./scripts/staff-briefing.js?v=${staffVersion}`);
+        expect(featureLoader).toContain("staffBriefing: () => loadScript('/staff/public/scripts/staff-briefing.js')");
         expect(html).toContain('window.showStaffBriefingPage = showStaffBriefingPage;');
 
         expect(mainJs).toContain("pages.staffBriefing = grab('content-staff-briefing');");
@@ -577,6 +587,7 @@ describe('staff panel stabilization sources', () => {
         const route = readRepoFile('staff', 'backend', 'routes', 'staff-points.js');
         const script = readRepoFile('staff', 'public', 'scripts', 'staff-points.js');
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const pointsFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-points.html');
 
         expect(route).toContain('Formula v2: total_points = SUM(rating) + duty days');
         expect(route).toContain('const ratingPoints = rating ? Number(rating.total_points) : 0;');
@@ -584,17 +595,18 @@ describe('staff panel stabilization sources', () => {
         expect(route).toContain('total_points: ratingPoints + dutyCount');
         expect(route).toContain('duty_points: dutyCount');
 
-        expect(html).toContain('<th class="text-right">Point Bertugas</th>');
+        expect(pointsFragment).toContain('<th class="text-right">Point Bertugas</th>');
         expect(script).toContain("'<td class=\"text-right\">' + fmtNum(r.duty_points || r.duty_count) + '</td>'");
         expect(script).toContain("colspan=\"8\"");
     });
 
     test('Sunday Clinic patient history sidebar is hidden outside Sunday Clinic', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const shellCss = readNormalizedFile('staff', 'public', 'styles', 'staff-shell.css');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
 
-        expect(html).toMatch(/\.patient-history-sidebar\s*\{\s*display:\s*none\s*!important;/);
-        expect(html).toMatch(/body\.sunday-clinic-embedded-active\s+\.patient-history-sidebar\s*\{\s*display:\s*flex\s*!important;/);
+        expect(shellCss).toMatch(/\.patient-history-sidebar\s*\{\s*display:\s*none\s*!important;/);
+        expect(shellCss).toMatch(/body\.sunday-clinic-embedded-active\s+\.patient-history-sidebar\s*\{\s*display:\s*flex\s*!important;/);
         expect(mainJs).toContain("document.body.classList.remove('patient-sidebar-open');");
         expect(mainJs).toContain("patientSidebar.classList.remove('open');");
         expect(mainJs).toContain("patientSidebarToggle.classList.remove('active');");

@@ -1,0 +1,166 @@
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Kelola Obat, Vial & Alkes</h3>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Form Tambah/Edit Obat -->
+                                    <form id="kelola-obat-form" class="mb-4">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Nama Obat/Item</label>
+                                                    <input type="text" id="kelola-obat-name" class="form-control" placeholder="Contoh: Paracetamol 500mg" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Kategori</label>
+                                                    <select id="kelola-obat-category" class="form-control" required>
+                                                        <option value="">Pilih Kategori</option>
+                                                        <option value="Obat-obatan">Obat-obatan</option>
+                                                        <option value="Ampul & Vial">Ampul & Vial</option>
+                                                        <option value="Alkes">Alkes</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Supplier</label>
+                                                    <select id="kelola-obat-supplier" class="form-control">
+                                                        <option value="">Pilih Supplier</option>
+                                                        <!-- Loaded dynamically -->
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Harga (Rp)</label>
+                                                    <input type="number" id="kelola-obat-price" class="form-control" placeholder="0" min="0" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <div class="form-group">
+                                                    <label>Stok Awal</label>
+                                                    <input type="number" id="kelola-obat-stock" class="form-control" placeholder="0" min="0" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>&nbsp;</label>
+                                                    <button type="submit" class="btn btn-success btn-block">
+                                                        <i class="fas fa-plus mr-1"></i>Tambah
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!-- Row 2: Harga Beli & Diskon -->
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Harga Beli (Rp)</label>
+                                                    <input type="number" id="kelola-obat-cost-price" class="form-control" placeholder="0" min="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Diskon Distributor</label>
+                                                    <input type="text" id="kelola-obat-discount" class="form-control" placeholder="Contoh: 10% atau Rp 5.000">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted d-block mt-4">
+                                                    <i class="fas fa-info-circle"></i> Harga beli & diskon untuk referensi, tidak mempengaruhi perhitungan penjualan.
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    <!-- Search & Filter -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <input type="text" id="kelola-obat-search" class="form-control" placeholder="Cari obat...">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select id="kelola-obat-filter-category" class="form-control">
+                                                <option value="">Semua Kategori</option>
+                                                <option value="Obat-obatan">Obat-obatan</option>
+                                                <option value="Ampul & Vial">Ampul & Vial</option>
+                                                <option value="Alkes">Alkes</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="d-flex justify-content-end align-items-center">
+                                                <span class="badge badge-success badge-lg p-2 mr-2">
+                                                    Total: <span id="kelola-obat-total-count">0</span>
+                                                </span>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="downloadObatPriceList()" title="Download PDF Daftar Harga">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Table List Obat Aktif -->
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped table-hover table-sm">
+                                            <thead class="bg-success text-white">
+                                                <tr>
+                                                    <th width="40">#</th>
+                                                    <th>Nama Obat/Item</th>
+                                                    <th width="120">Kategori</th>
+                                                    <th width="120">Supplier</th>
+                                                    <th width="100">Harga Jual</th>
+                                                    <th width="80">Stok</th>
+                                                    <th width="240" class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="kelola-obat-list-body">
+                                                <tr>
+                                                    <td colspan="7" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Obat/Alkes Nonaktif -->
+                    <div class="row mt-3" id="kelola-obat-inactive-section" style="display:none;">
+                        <div class="col-12">
+                            <div class="card card-secondary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-ban mr-2"></i>Obat/Alkes Nonaktif</h3>
+                                    <div class="card-tools">
+                                        <span class="badge badge-light p-2 mr-2">
+                                            <span id="kelola-obat-inactive-count">0</span> item
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover table-sm mb-0">
+                                            <thead class="bg-secondary text-white">
+                                                <tr>
+                                                    <th width="40">#</th>
+                                                    <th>Nama Obat/Item</th>
+                                                    <th width="120">Kategori</th>
+                                                    <th width="120">Supplier</th>
+                                                    <th width="100">Harga Jual</th>
+                                                    <th width="80">Stok</th>
+                                                    <th width="200" class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="kelola-obat-inactive-body"></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

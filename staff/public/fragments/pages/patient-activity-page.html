@@ -1,0 +1,247 @@
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title"><i class="fas fa-user-check mr-2"></i>Aktivitas Pasien</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" onclick="loadPatientActivity()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Summary Stats -->
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-appointments">0</h3>
+                                                    <p>Booking (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-calendar-check"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-intakes">0</h3>
+                                                    <p>Intake Forms (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-file-medical"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-warning">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-registrations">0</h3>
+                                                    <p>Registrasi Baru (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-user-plus"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-primary">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-total-patients">0</h3>
+                                                    <p>Total Pasien Terdaftar</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-users"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-secondary">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-logins">0</h3>
+                                                    <p>Login (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-sign-in-alt"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-dark">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-page-views">0</h3>
+                                                    <p>Page Views (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-eye"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-danger">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-payments">0</h3>
+                                                    <p>Pembayaran (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-credit-card"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-community-chats">0</h3>
+                                                    <p>Chat Komunitas (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-comments"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-danger">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-bug-reports">0</h3>
+                                                    <p>Bug/Error (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-bug"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-support-chats">0</h3>
+                                                    <p>Support Chat (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-headset"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-primary">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-doctor-questions">0</h3>
+                                                    <p>Tanya Dokter (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-user-md"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-12">
+                                            <div class="small-box bg-secondary">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-tool-usage">0</h3>
+                                                    <p>Tool Pasien (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-tools"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-12">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-my-corner">0</h3>
+                                                    <p>Ruang Saya (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-door-open"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="alert alert-light border d-flex flex-wrap align-items-center justify-content-between mb-4 patient-activity-portal-shortcuts">
+                                        <div>
+                                            <div class="font-weight-bold"><i class="fas fa-layer-group mr-1 text-primary"></i>Interaksi Portal</div>
+                                            <div class="small text-muted">Timeline ini menggabungkan booking, login, tool pasien, chat, laporan bug, support, dan Tanya Dokter.</div>
+                                        </div>
+                                        <div class="btn-group btn-group-sm flex-wrap" role="group" aria-label="Shortcut interaksi portal">
+                                            <button type="button" class="btn btn-outline-info" onclick="showCommunityChatPage()"><i class="fas fa-comments mr-1"></i>Chat</button>
+                                            <button type="button" class="btn btn-outline-danger" onclick="showTroubleshootingPage()"><i class="fas fa-bug mr-1"></i>Bug</button>
+                                            <button type="button" class="btn btn-outline-success" onclick="showSupportChatPage()"><i class="fas fa-headset mr-1"></i>Support</button>
+                                            <button type="button" class="btn btn-outline-primary" onclick="showTanyaDokterPage()"><i class="fas fa-user-md mr-1"></i>Tanya</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Statistics Section (collapsible) -->
+                                    <div class="card card-outline card-primary mb-4" id="pa-stats-card">
+                                        <div class="card-header py-2" style="cursor:pointer;" onclick="togglePatientStats()">
+                                            <h3 class="card-title"><i class="fas fa-chart-bar mr-2"></i>Statistik Aktivitas</h3>
+                                            <div class="card-tools">
+                                                <span class="badge badge-light mr-2" id="pa-stats-period">30 hari terakhir</span>
+                                                <button type="button" class="btn btn-tool" onclick="event.stopPropagation(); loadPatientStats();">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                                <i class="fas fa-chevron-down" id="pa-stats-toggle-icon"></i>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0" id="pa-stats-body" style="display:none;">
+                                            <div class="row p-3" id="pa-stats-content">
+                                                <div class="text-center py-4 w-100 text-muted">
+                                                    <i class="fas fa-spinner fa-spin fa-lg"></i>
+                                                    <p class="mb-0 mt-2">Memuat statistik...</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filters -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Tipe Aktivitas</label>
+                                                <select class="form-control" id="pa-filter-type" onchange="loadPatientActivity()">
+                                                    <option value="">Semua</option>
+                                                    <option value="booking">Booking</option>
+                                                    <option value="intake">Intake Form</option>
+                                                    <option value="registration">Registrasi</option>
+                                                    <option value="login">Login</option>
+                                                    <option value="view_halaman">Page View</option>
+                                                    <option value="tool_pasien">Tool Pasien</option>
+                                                    <option value="ruang_saya">Ruang Saya</option>
+                                                    <option value="pembayaran">Pembayaran</option>
+                                                    <option value="community_chat">Chat Komunitas</option>
+                                                    <option value="bug_report">Bug/Error</option>
+                                                    <option value="support_chat">Support Chat</option>
+                                                    <option value="tanya_dokter">Tanya Dokter</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Dari Tanggal</label>
+                                                <input type="date" class="form-control" id="pa-filter-from" onchange="loadPatientActivity()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Sampai Tanggal</label>
+                                                <input type="date" class="form-control" id="pa-filter-to" onchange="loadPatientActivity()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Cari Nama/Email</label>
+                                                <input type="text" class="form-control" id="pa-filter-search" placeholder="Ketik untuk mencari..." onkeyup="debouncePatientActivitySearch()">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:160px">Waktu</th>
+                                                    <th style="width:180px">Pasien</th>
+                                                    <th style="width:120px">Tipe</th>
+                                                    <th>Detail</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="patient-activity-body">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted small" id="patient-activity-pagination-info">Menampilkan 0 dari 0</div>
+                                        <nav>
+                                            <ul class="pagination pagination-sm mb-0" id="patient-activity-pagination"></ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

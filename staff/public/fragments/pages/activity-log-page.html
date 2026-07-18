@@ -1,0 +1,138 @@
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-history mr-2"></i>Log Aktivitas Obat</h3>
+                                    <div class="card-tools">
+                                        <span class="badge badge-light" id="activity-log-count">0 records</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Filters -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Dari Tanggal</label>
+                                                <input type="date" id="activity-log-start-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Sampai Tanggal</label>
+                                                <input type="date" id="activity-log-end-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Tipe</label>
+                                                <select id="activity-log-type" class="form-control form-control-sm">
+                                                    <option value="">Semua</option>
+                                                    <option value="purchase">Masuk (Purchase)</option>
+                                                    <option value="sale">Keluar (Sale)</option>
+                                                    <option value="adjustment">Penyesuaian</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">User</label>
+                                                <select id="activity-log-user" class="form-control form-control-sm">
+                                                    <option value="">Semua User</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Cari Obat</label>
+                                                <input type="text" id="activity-log-search" class="form-control form-control-sm" placeholder="Nama obat...">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">&nbsp;</label>
+                                                <button type="button" class="btn btn-info btn-sm btn-block" onclick="loadActivityLog()">
+                                                    <i class="fas fa-search mr-1"></i>Filter
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Summary Cards -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-in">0</h4>
+                                                    <p>Total Masuk</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-arrow-down"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-danger">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-out">0</h4>
+                                                    <p>Total Keluar</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-arrow-up"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-warning">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-adjust">0</h4>
+                                                    <p>Penyesuaian</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-balance-scale"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-value">Rp 0</h4>
+                                                    <p>Total Nilai</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-money-bill"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Table -->
+                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                        <table class="table table-bordered table-striped table-hover table-sm">
+                                            <thead class="bg-light sticky-top">
+                                                <tr>
+                                                    <th width="140">Waktu</th>
+                                                    <th>Obat</th>
+                                                    <th width="100" class="text-center">Tipe</th>
+                                                    <th width="80" class="text-center">Qty</th>
+                                                    <th width="100" class="text-right">Harga</th>
+                                                    <th width="100" class="text-right">Total</th>
+                                                    <th>Batch</th>
+                                                    <th>Supplier</th>
+                                                    <th>Oleh</th>
+                                                    <th>Catatan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="activity-log-body">
+                                                <tr>
+                                                    <td colspan="10" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted small" id="activity-log-pagination-info">Showing 0 of 0</div>
+                                        <nav>
+                                            <ul class="pagination pagination-sm mb-0" id="activity-log-pagination"></ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

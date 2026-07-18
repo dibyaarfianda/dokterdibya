@@ -1,0 +1,90 @@
+                    <div class="card card-outline card-primary mb-3">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                            <div class="mb-2 mb-md-0">
+                                <h3 class="card-title mb-1">
+                                    <i class="fas fa-clinic-medical mr-2"></i>Sunday Clinic
+                                </h3>
+                                <div class="text-muted small">
+                                    <span id="staff-name-display">Pilih pasien untuk membuka rekam medis</span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 6px;">
+                                <button type="button" class="btn btn-outline-secondary btn-sm mobile-back-btn" onclick="window.backToSundayClinicLanding && window.backToSundayClinicLanding()" title="Kembali ke Klinik Privat">
+                                    <i class="fas fa-arrow-left mr-1"></i>Back
+                                </button>
+                                <div class="dropdown">
+                                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" id="btn-header-queue" title="Antrian Hari Ini">
+                                        <i class="fas fa-users mr-1"></i>Antrian
+                                        <span class="badge badge-light ml-1" id="header-queue-count">0</span>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg p-0" id="header-queue-dropdown" style="width: 350px; max-height: 450px;">
+                                        <div class="dropdown-header bg-primary text-white py-2">
+                                            <i class="fas fa-list-ol mr-2"></i>Antrian Hari Ini
+                                        </div>
+                                        <div id="queue-stats-bar" style="display:none; background:#f8f9fa; border-bottom:1px solid #dee2e6; padding:6px 12px; font-size:12px;">
+                                            <span class="mr-3"><i class="fas fa-hourglass-half text-warning mr-1"></i>Belum diperiksa: <strong id="queue-stat-belum">0</strong></span>
+                                            <span><i class="fas fa-check-circle text-success mr-1"></i>Selesai (ada resume): <strong id="queue-stat-selesai">0</strong></span>
+                                        </div>
+                                        <div class="header-queue-list" id="header-queue-list" style="max-height: 360px; overflow-y: auto;">
+                                            <div class="text-center text-muted p-3">
+                                                <i class="fas fa-spinner fa-spin"></i> Memuat...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary btn-sm" id="sc-open-directory">
+                                    <i class="fas fa-users mr-1"></i>Pilih Pasien
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-header-search" title="Cari Pasien">
+                                    <i class="fas fa-search mr-1"></i>Cari
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-patient-sidebar" title="Riwayat Pasien Aktif">
+                                    <i class="fas fa-history mr-1"></i>Riwayat
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm" onclick="window.openImportModal && window.openImportModal()" title="Import satu file">
+                                    <i class="fas fa-file-import mr-1"></i>Import
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="window.openBulkImportModal && window.openBulkImportModal()" title="Bulk import multiple file">
+                                    <i class="fas fa-file-upload mr-1"></i>Bulk
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-2">
+                            <ul class="nav nav-pills flex-wrap sc-staff-section-nav" role="tablist">
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link active" data-section="identitas"><i class="nav-icon fas fa-id-card"></i><p class="mb-0">Identitas</p></a></li>
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link" data-section="anamnesa"><i class="nav-icon fas fa-clipboard-list"></i><p class="mb-0">Anamnesa</p></a></li>
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link" data-section="pemeriksaan"><i class="nav-icon fas fa-stethoscope"></i><p class="mb-0">Pemeriksaan Fisik</p></a></li>
+                                <li class="nav-item" id="menu-pemeriksaan-obstetri" style="display: none;"><a href="#" class="nav-link sc-nav-link" data-section="pemeriksaan-obstetri"><i class="nav-icon fas fa-heartbeat"></i><p class="mb-0">Pemeriksaan Obstetri</p></a></li>
+                                <li class="nav-item" id="menu-pemeriksaan-ginekologi" style="display: none;"><a href="#" class="nav-link sc-nav-link" data-section="pemeriksaan-ginekologi"><i class="nav-icon fas fa-venus"></i><p class="mb-0">Pemeriksaan Ginekologi</p></a></li>
+                                <li class="nav-item" id="menu-usg"><a href="#" class="nav-link sc-nav-link" data-section="usg"><i class="nav-icon fas fa-baby"></i><p class="mb-0">USG</p></a></li>
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link" data-section="penunjang"><i class="nav-icon fas fa-flask"></i><p class="mb-0">Penunjang</p></a></li>
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link" data-section="diagnosis"><i class="nav-icon fas fa-diagnoses"></i><p class="mb-0">Diagnosis</p></a></li>
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link" data-section="planning"><i class="nav-icon fas fa-clipboard-check"></i><p class="mb-0">Planning</p></a></li>
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link" data-section="resume-medis"><i class="nav-icon fas fa-file-medical-alt"></i><p class="mb-0">Resume Medis</p></a></li>
+                                <li class="nav-item"><a href="#" class="nav-link sc-nav-link" data-section="tagihan"><i class="nav-icon fas fa-file-invoice-dollar"></i><p class="mb-0">Tagihan</p></a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="sunday-clinic-root" class="card card-outline card-primary">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2" id="sunday-clinic-header">
+                            <div id="summary-cards-container" class="d-flex flex-wrap flex-grow-1"></div>
+                            <div id="exam-action-bar" style="display:none; align-items:center; gap:8px;">
+                                <button id="btn-periksa-pasien"
+                                        class="btn btn-danger btn-sm"
+                                        onclick="window.startExamination()"
+                                        title="Mulai periksa pasien ini (ubah status antrian jadi Merah)">
+                                    <i class="fas fa-stethoscope mr-1"></i>Periksa Pasien
+                                </button>
+                                <span id="exam-stopwatch"
+                                      style="display:none; font-weight:700; color:#dc3545; font-size:15px; letter-spacing:1px; min-width:46px; text-align:center;"
+                                      title="Durasi pemeriksaan berjalan">00:00</span>
+                            </div>
+                        </div>
+                        <div class="card-body" id="sunday-clinic-content">
+                            <div class="loading-state" id="sunday-clinic-loading">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                <p class="mb-0">Memuat data rekam medis...</p>
+                            </div>
+                        </div>
+                    </div>

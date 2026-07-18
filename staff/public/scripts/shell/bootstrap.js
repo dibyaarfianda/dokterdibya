@@ -2,17 +2,44 @@ async function bootstrapStaffShell() {
     const [
         authClient,
         credentialGuard,
-        roleConstants
+        roleConstants,
+        _pageRegistryModule,
+        featureLoader,
+        pageDescriptorsModule
     ] = await Promise.all([
         import('../vps-auth-v2.js'),
         import('./credentials.js'),
         import('../role-constants.js'),
-        import('./qrcode-loader.js')
+        import('./page-registry.js'),
+        import('./feature-loader.js'),
+        import('./page-descriptors.js')
     ]);
 
     const { auth, getIdToken, initAuth: initAuthLib } = authClient;
     const { verifyStaffCredentials, renderStaffShellError } = credentialGuard;
-    const { isSuperadminUser } = roleConstants;
+    const { ensureFeature } = featureLoader;
+    const { createPageDescriptors } = pageDescriptorsModule;
+
+    const pageRegistry = new window.PageRegistry();
+    pageRegistry.registerAll(createPageDescriptors());
+
+    window.staffPageRegistry = pageRegistry;
+    window.ensureStaffFeature = ensureFeature;
+
+    function installLazyFeatureShim(globalName, featureName, pageKey = null) {
+        const originalHandler = typeof window[globalName] === 'function' ? window[globalName] : null;
+        const shim = async (...args) => {
+            if (pageKey) await pageRegistry.ensureLoaded(pageKey);
+            await ensureFeature(featureName);
+            const loadedHandler = window[globalName];
+            if (typeof loadedHandler === 'function' && loadedHandler !== shim) return loadedHandler(...args);
+            if (originalHandler) return originalHandler(...args);
+        };
+        window[globalName] = shim;
+    }
+
+    installLazyFeatureShim('showTanyaDokterPage', 'tanyaDokter', 'tanya-dokter');
+    installLazyFeatureShim('viewPatientDetail', 'patientSearchDetail');
 
     window.auth = auth;
     window.getIdToken = getIdToken;
@@ -126,29 +153,7 @@ async function bootstrapStaffShell() {
             }
         }, { timeout: 1500 });
 
-        // Lazy-load non-critical modules after initial render.
-        runIdle(() => {
-            // Patients module - needed for search/kelola pasien
-            import('../patients.js').then(m => {
-                if (m.initPatients) m.initPatients();
-            }).catch(e => console.error('[ERROR] patients.js:', e));
-
-            // Medical exam - needed when opening exam pages
-            import('../medical-exam.js').catch(e => console.error('[ERROR] medical-exam.js:', e));
-
-            // Finance & Analytics - superadmin only
-            if (isSuperadminUser(user)) {
-                import('../finance-dashboard.js').then(m => {
-                    if (m.initFinanceDashboard) m.initFinanceDashboard();
-                }).catch(e => console.error('[ERROR] finance-dashboard.js:', e));
-
-                import('../analytics.js').then(m => {
-                    if (m.initAnalyticsDashboard) m.initAnalyticsDashboard();
-                }).catch(e => console.error('[ERROR] analytics.js:', e));
-            }
-        }, { timeout: 3000 });
-
-        // Real-time sync initialized in main.js via onAuthStateChanged.
+            // Real-time sync initialized in main.js via onAuthStateChanged.
 
         // Restore session if exists.
         runIdle(() => {

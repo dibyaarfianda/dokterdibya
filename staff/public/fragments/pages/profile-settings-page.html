@@ -1,0 +1,143 @@
+                    <div class="row">
+                        <!-- Profile Info Card -->
+                        <div class="col-md-4">
+                            <div class="card card-primary card-outline">
+                                <div class="card-body box-profile">
+                                    <div class="text-center">
+                                        <div class="profile-avatar mb-3 position-relative" style="display: inline-block;">
+                                            <img id="profile-avatar-img" src="" alt="Profile Picture" class="img-circle elevation-2" style="width: 120px; height: 120px; object-fit: cover; display: none;">
+                                            <i id="profile-avatar-icon" class="fas fa-user-circle fa-5x text-primary"></i>
+                                            <div class="profile-avatar-overlay" style="position: absolute; bottom: 0; right: 0;">
+                                                <label for="profile-picture-input" class="btn btn-primary btn-sm rounded-circle" style="width: 35px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                                    <i class="fas fa-camera"></i>
+                                                </label>
+                                                <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+                                            </div>
+                                        </div>
+                                        <h3 class="profile-username text-center" id="profile-display-name">-</h3>
+                                        <p class="text-muted text-center" id="profile-display-email">-</p>
+                                    </div>
+                                    <hr>
+                                    <strong><i class="fas fa-id-badge mr-1"></i> User ID</strong>
+                                    <p class="text-muted" id="profile-display-uid">-</p>
+                                    
+                                    <strong><i class="fas fa-calendar-alt mr-1"></i> Member Since</strong>
+                                    <p class="text-muted" id="profile-display-created">-</p>
+                                    
+                                    <strong><i class="fas fa-clock mr-1"></i> Last Login</strong>
+                                    <p class="text-muted" id="profile-display-lastlogin">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Profile Card -->
+                        <div class="col-md-8">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-user-edit mr-2"></i>Edit Profile</h3>
+                                </div>
+                                <form id="profile-form">
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="profile-displayname">Display Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="profile-displayname" placeholder="Nama yang ditampilkan" required>
+                                            <small class="form-text text-muted">Nama ini akan muncul di navbar dan laporan</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-email">Email</label>
+                                            <input type="email" class="form-control" id="profile-email" readonly disabled>
+                                            <small class="form-text text-muted">Email tidak dapat diubah</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label>Profile Picture</label>
+                                            <div class="d-flex align-items-center">
+                                                <div id="profile-picture-preview" class="mr-3">
+                                                    <img id="profile-picture-preview-img" src="" alt="Preview" class="img-circle elevation-2" style="width: 80px; height: 80px; object-fit: cover; display: none;">
+                                                    <i id="profile-picture-preview-icon" class="fas fa-user-circle fa-4x text-muted"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('profile-picture-input').click()">
+                                                        <i class="fas fa-upload mr-1"></i>Upload Photo
+                                                    </button>
+                                                    <button type="button" class="btn btn-danger btn-sm ml-2" id="remove-profile-picture-btn" style="display: none;">
+                                                        <i class="fas fa-trash mr-1"></i>Remove
+                                                    </button>
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">Max 2MB. Format: JPG, PNG, GIF</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <hr>
+                                        <h5 class="mb-3"><i class="fas fa-key mr-2"></i>Change Password</h5>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-current-password">Current Password</label>
+                                            <input type="password" class="form-control" id="profile-current-password" placeholder="Masukkan password saat ini" autocomplete="current-password">
+                                            <small class="form-text text-muted">Diperlukan untuk mengubah password</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-new-password">New Password</label>
+                                            <input type="password" class="form-control" id="profile-new-password" placeholder="Password baru (min. 6 karakter)" autocomplete="new-password">
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-confirm-password">Confirm New Password</label>
+                                            <input type="password" class="form-control" id="profile-confirm-password" placeholder="Konfirmasi password baru" autocomplete="new-password">
+                                        </div>
+                                        
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle mr-2"></i>
+                                            <strong>Tips Keamanan:</strong>
+                                            <ul class="mb-0 mt-2">
+                                                <li>Gunakan minimal 6 karakter</li>
+                                                <li>Kombinasi huruf besar, kecil, dan angka</li>
+                                                <li>Jangan gunakan password yang mudah ditebak</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save mr-2"></i>Save Changes
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="showDashboardPage(); return false;">
+                                            <i class="fas fa-times mr-2"></i>Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Account Security Card -->
+                            <div class="card card-warning">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-shield-alt mr-2"></i>Account Security</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <div class="info-box bg-light">
+                                                <span class="info-box-icon"><i class="fas fa-lock"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Password Strength</span>
+                                                    <span class="info-box-number" id="profile-password-strength">Strong</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="info-box bg-light">
+                                                <span class="info-box-icon"><i class="fas fa-sign-in-alt"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Login Method</span>
+                                                    <span class="info-box-number">Email/Password</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

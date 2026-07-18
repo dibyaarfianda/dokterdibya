@@ -1,0 +1,280 @@
+                    <div class="container-fluid">
+                        <!-- Obat Profit Analysis Section -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card card-dark">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Analisis Profit Obat (Bulan Ini)</h3>
+                                        <div class="card-tools">
+                                            <button class="btn btn-tool" onclick="loadObatProfitAnalysis()">
+                                                <i class="fas fa-sync"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Profit KPI Cards -->
+                                        <div class="row mb-4">
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-info">
+                                                    <span class="info-box-icon"><i class="fas fa-coins"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Revenue Obat</span>
+                                                        <span class="info-box-number" id="profit-revenue">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-danger">
+                                                    <span class="info-box-icon"><i class="fas fa-shopping-cart"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Modal/Cost</span>
+                                                        <span class="info-box-number" id="profit-cost">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-success">
+                                                    <span class="info-box-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Gross Profit</span>
+                                                        <span class="info-box-number" id="profit-gross">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-warning">
+                                                    <span class="info-box-icon"><i class="fas fa-percentage"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Margin</span>
+                                                        <span class="info-box-number" id="profit-margin">0%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Alerts Row -->
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <div class="alert alert-warning mb-0" id="expiring-alert" style="display:none;">
+                                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                                    <strong id="expiring-count">0</strong> item akan kadaluarsa dalam 60 hari
+                                                    <button class="btn btn-xs btn-outline-warning float-right" onclick="showExpiringItems()">Lihat</button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="alert alert-danger mb-0" id="lowstock-alert" style="display:none;">
+                                                    <i class="fas fa-boxes mr-2"></i>
+                                                    <strong id="lowstock-count">0</strong> item stok menipis
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Profit by Item Table -->
+                                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                            <table class="table table-sm table-striped table-hover">
+                                                <thead class="bg-light sticky-top">
+                                                    <tr>
+                                                        <th>Nama Obat</th>
+                                                        <th class="text-right">Qty Terjual</th>
+                                                        <th class="text-right">Revenue</th>
+                                                        <th class="text-right">Cost</th>
+                                                        <th class="text-right">Profit</th>
+                                                        <th class="text-right">Margin</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="profit-items-body">
+                                                    <tr>
+                                                        <td colspan="6" class="text-center text-muted py-4">
+                                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                            <p class="mb-0">Memuat data...</p>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Private Clinic (Klinik Privat) Analysis Section -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card card-purple">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-clinic-medical mr-2"></i>Analisis Keuangan Klinik Privat</h3>
+                                        <div class="card-tools">
+                                            <select id="private-clinic-month" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                                            </select>
+                                            <button class="btn btn-tool" onclick="loadPrivateClinicAnalysis()">
+                                                <i class="fas fa-sync"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Net Profit KPI Cards -->
+                                        <div class="row mb-4">
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-purple">
+                                                    <span class="info-box-icon"><i class="fas fa-coins"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Pendapatan Kotor</span>
+                                                        <span class="info-box-number" id="pc-pendapatan-kotor">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-info">
+                                                    <span class="info-box-icon"><i class="fas fa-hand-holding-usd"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Laba Kotor</span>
+                                                        <span class="info-box-number" id="pc-laba-kotor">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-success">
+                                                    <span class="info-box-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Laba Bersih</span>
+                                                        <span class="info-box-number" id="pc-laba-bersih">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-warning">
+                                                    <span class="info-box-icon"><i class="fas fa-percentage"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Margin Bersih</span>
+                                                        <span class="info-box-number" id="pc-margin-bersih">0%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Summary Stats Row -->
+                                        <div class="row mb-4">
+                                            <div class="col-md-8">
+                                                <div class="card card-outline card-primary mb-0">
+                                                    <div class="card-header compact">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-chart-bar mr-2"></i>Laporan Laba Rugi</h5>
+                                                    </div>
+                                                    <div class="card-body no-padding">
+                                                        <table class="table table-sm mb-0">
+                                                            <tbody id="pc-profit-loss-table">
+                                                                <tr><td colspan="2" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card card-outline card-success mb-0 h-100">
+                                                    <div class="card-header compact">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-tachometer-alt mr-2"></i>KPI</h5>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Kunjungan:</span>
+                                                            <strong id="pc-kunjungan">0</strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Hari Kerja:</span>
+                                                            <strong id="pc-hari-kerja">0</strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Laba/Hari:</span>
+                                                            <strong id="pc-laba-per-hari" class="text-success">Rp 0</strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between">
+                                                            <span>Laba/Kunjungan:</span>
+                                                            <strong id="pc-laba-per-kunjungan" class="text-success">Rp 0</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Breakdown Tables Row -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card card-outline card-info">
+                                                    <div class="card-header compact">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-procedures mr-2"></i>Pendapatan Tindakan per Kategori</h5>
+                                                    </div>
+                                                    <div class="card-body no-padding" style="max-height: 250px; overflow-y: auto;">
+                                                        <table class="table table-sm table-striped mb-0">
+                                                            <thead class="bg-light sticky-top">
+                                                                <tr>
+                                                                    <th>Kategori</th>
+                                                                    <th class="text-right">Transaksi</th>
+                                                                    <th class="text-right">Pendapatan</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="pc-tindakan-category-body">
+                                                                <tr><td colspan="3" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card card-outline card-warning">
+                                                    <div class="card-header compact">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-pills mr-2"></i>Analisis Profit Obat</h5>
+                                                    </div>
+                                                    <div class="card-body no-padding" style="max-height: 250px; overflow-y: auto;">
+                                                        <table class="table table-sm table-striped mb-0">
+                                                            <thead class="bg-light sticky-top">
+                                                                <tr>
+                                                                    <th>Obat</th>
+                                                                    <th class="text-right">Qty</th>
+                                                                    <th class="text-right">Profit</th>
+                                                                    <th class="text-right">Margin</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="pc-obat-profit-body">
+                                                                <tr><td colspan="4" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Top Tindakan Table -->
+                                        <div class="row mt-3">
+                                            <div class="col-12">
+                                                <div class="card card-outline card-secondary collapsed-card">
+                                                    <div class="card-header compact">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-list-ol mr-2"></i>Top 10 Tindakan</h5>
+                                                        <div class="card-tools">
+                                                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                                <i class="fas fa-plus"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-body no-padding" style="display: none;">
+                                                        <table class="table table-sm table-hover mb-0">
+                                                            <thead class="bg-light">
+                                                                <tr>
+                                                                    <th>Tindakan</th>
+                                                                    <th>Kategori</th>
+                                                                    <th class="text-right">Qty</th>
+                                                                    <th class="text-right">Harga</th>
+                                                                    <th class="text-right">Pendapatan</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="pc-top-tindakan-body">
+                                                                <tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

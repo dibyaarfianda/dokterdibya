@@ -52,8 +52,10 @@ describe('staff shell refactor phase 1', () => {
     test('appointment debug wiring is extracted from the staff shell html', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const appointmentDebug = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'appointment-debug.js');
+        const featureLoader = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
 
-        expect(html).toMatch(/<script defer src="scripts\/shell\/appointment-debug\.js\?v=[^"' ]+"><\/script>/);
+        expect(html).not.toMatch(/<script[^>]+src="scripts\/shell\/appointment-debug\.js/);
+        expect(featureLoader).toContain("appointmentDebug: () => loadScript('/staff/public/scripts/shell/appointment-debug.js')");
         expect(html).not.toContain('window.debugAppointments_DISABLED = function()');
         expect(html).not.toContain('window.debugAppointments is now available globally');
         expect(appointmentDebug).toContain('function installAppointmentDebug()');
@@ -91,7 +93,7 @@ describe('staff shell refactor phase 1', () => {
 
         expect(html).toMatch(/id="nav-patient-activity"[\s\S]*?onclick="showPatientActivityPage\(\); return false;"/);
         expect(html).toMatch(/id="nav-guest-activity"[\s\S]*?onclick="showGuestActivityPage\(\); return false;"/);
-        expect(html).toContain('window.showPatientActivityPage = function()');
+        expect(html).toContain('window.showPatientActivityPage = async function()');
         expect(html).toContain('window.showGuestActivityPage = function()');
         expect(html).toContain('window.loadPatientActivity = async function(page = 0)');
         expect(html).toContain('window.loadGuestActivity = async function(page = 0)');
@@ -101,7 +103,7 @@ describe('staff shell refactor phase 1', () => {
         expect(html).toContain("window.updateStaffPageRoute('patient-activity', 'nav-patient-activity');");
         expect(html).toContain("window.updateStaffPageRoute('guest-activity', 'nav-guest-activity');");
         expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
-            .toBeLessThan(html.indexOf('window.showPatientActivityPage = function()'));
+            .toBeLessThan(html.indexOf('window.showPatientActivityPage = async function()'));
         expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
             .toBeLessThan(html.indexOf('window.showGuestActivityPage = function()'));
         expect(kantorSaya).toContain("actionName: 'showPatientActivityPage'");
@@ -133,8 +135,10 @@ describe('staff shell refactor phase 1', () => {
     test('patient search and detail diagnostics are gated away from production console logs', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const patientSearchDetail = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'patient-search-detail.js');
+        const featureLoader = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
 
-        expect(html).toMatch(/<script defer src="scripts\/shell\/patient-search-detail\.js\?v=[^"' ]+"><\/script>/);
+        expect(html).not.toMatch(/<script[^>]+src="scripts\/shell\/patient-search-detail\.js/);
+        expect(featureLoader).toContain("patientSearchDetail: () => loadScript('/staff/public/scripts/shell/patient-search-detail.js')");
         expect(html).toContain('window.installPatientViewButtons({');
         expect(html).not.toContain("console.log('[SEARCH DEBUG] Search params:', { name, id, mr_id, email, phone, whatsapp, husband });");
         expect(html).not.toContain("console.log('[SEARCH DEBUG] API Response:', data);");
@@ -148,13 +152,13 @@ describe('staff shell refactor phase 1', () => {
 
     test('QRCode dependency is local and imported canonically by the shell bootstrap', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
-        const bootstrap = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        const featureLoader = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
         const qrCodeLoader = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'qrcode-loader.js');
         const qrCodeBundle = readNormalizedFile('staff', 'public', 'scripts', 'vendor', 'qrcode.esm.js');
 
         expect(html).not.toContain('https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js');
         expect(html).not.toMatch(/<script type="module" src="scripts\/shell\/qrcode-loader\.js/);
-        expect(bootstrap).toContain("import('./qrcode-loader.js')");
+        expect(featureLoader).toContain("await import('./qrcode-loader.js')");
         expect(qrCodeLoader).toContain("import QRCode from '../vendor/qrcode.esm.js';");
         expect(qrCodeLoader).toContain('window.QRCode = QRCode;');
         expect(qrCodeBundle).toContain('export');

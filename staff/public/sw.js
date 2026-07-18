@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v301'; // Staff panel wave 1 hardening
+const STAFF_PWA_VERSION = 'v302'; // Staff panel wave 2 lazy shell
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
@@ -13,7 +13,7 @@ const versionedStaffAsset = (path) => `${path}?v=${STAFF_PWA_VERSION}`;
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
   versionedStaffAsset('/staff/public/styles/mobile-responsive.css'),
-  versionedStaffAsset('/staff/public/styles/sunday-clinic.css'),
+  versionedStaffAsset('/staff/public/styles/staff-shell.css'),
   versionedStaffAsset('/staff/public/sounds/send.mp3'),
   versionedStaffAsset('/staff/public/sounds/incoming.mp3'),
   // External CDN assets
@@ -22,9 +22,6 @@ const STATIC_ASSETS = [
   'https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js',
   'https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css',
   'https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css',
-  'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js',
-  'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js',
-  'https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css',
   'https://cdn.jsdelivr.net/npm/sweetalert2@11'
 ];
 
