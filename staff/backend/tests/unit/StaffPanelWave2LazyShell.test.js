@@ -72,6 +72,13 @@ describe('staff panel wave 2 lazy shell contracts', () => {
         }
     });
 
+    test('finance initialization skips removed legacy analytics containers', () => {
+        const html = read('staff', 'public', 'index-adminlte.html');
+
+        expect(html).toContain('const hasLegacyAnalyticsContainers = [');
+        expect(html).toMatch(/if \(hasLegacyAnalyticsContainers\) \{\s*await loadAnalytics\(\);\s*\}/);
+    });
+
     test('PageRegistry loads once and emits activate/deactivate lifecycle in order', async () => {
         const registryPath = path.join(repoRoot, 'staff', 'public', 'scripts', 'shell', 'page-registry.js');
         delete require.cache[require.resolve(registryPath)];
