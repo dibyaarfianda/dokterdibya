@@ -557,6 +557,38 @@ export const api = {
     return `${path}${separator}token=${encodeURIComponent(token)}`;
   },
 
+  getMorbidCases(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/morbid-cases${qs ? '?' + qs : ''}`);
+  },
+
+  getMorbidCaseCandidates(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/morbid-cases/candidates${qs ? '?' + qs : ''}`);
+  },
+
+  createMorbidCase(operationDataId) {
+    return request('/morbid-cases', {
+      method: 'POST',
+      body: JSON.stringify({ operation_data_id: operationDataId })
+    });
+  },
+
+  getMorbidCase(id) {
+    return request(`/morbid-cases/${encodeURIComponent(id)}`);
+  },
+
+  refreshMorbidCase(id) {
+    return request(`/morbid-cases/${encodeURIComponent(id)}/refresh`, { method: 'POST' });
+  },
+
+  getMorbidCaseFileUrl(fileUrl) {
+    const token = getToken();
+    const path = fileUrl.startsWith(API_BASE) ? fileUrl : `${API_BASE}${fileUrl}`;
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}token=${encodeURIComponent(token)}`;
+  },
+
   // PDF Export - returns URL string (not a fetch, used with window.open)
   getExportPDFUrl(startDate, endDate) {
     const token = getToken();

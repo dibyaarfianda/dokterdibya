@@ -7,6 +7,7 @@ const docboardService = require('../services/DocBoardService');
 const docboardPush = require('../services/DocBoardPushService');
 const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
+const morbidCaseRoutes = require('./morbid-cases');
 const OperationAuditService = require('../services/OperationAuditService');
 const OperationPathologyService = require('../services/OperationPathologyService');
 const OperationDoctorJourneyService = require('../services/OperationDoctorJourneyService');
@@ -73,6 +74,11 @@ router.use('/operation-data', (req, res, next) => {
   next();
 });
 router.use('/operation-data', operationDataRoutes);
+router.use('/morbid-cases', (req, res, next) => {
+  if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+  next();
+});
+router.use('/morbid-cases', morbidCaseRoutes);
 
 router.get('/users', async (req, res) => {
   try {

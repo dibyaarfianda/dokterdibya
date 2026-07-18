@@ -76,6 +76,13 @@ const icons = {
       <path d="M7 10h3l2-3 2 6 2-3h1" />
     </svg>
   ),
+  morbid: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 4h16v16H4z" />
+      <path d="M8 9h8M8 13h5M8 17h7" />
+      <path d="M16 2v4M8 2v4" />
+    </svg>
+  ),
   users: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -228,6 +235,7 @@ export default function Settings({ mode = 'menu' }) {
           <MoreMenuItem title="Data" desc={isNanda ? 'Data operasi rumah sakit' : 'Confidential'} icon={icons.data} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/data')} />
           <MoreMenuItem title="Monitor Pasien" desc={isNanda ? 'Admission & operasi Gambiran' : 'Confidential'} icon={icons.monitor} color="#047857" bg="#ECFDF5" onClick={() => route('/docboard/monitor')} />
           <MoreMenuItem title="Audit" desc={isNanda ? 'Audit operasi Gambiran' : 'Confidential'} icon={icons.audit} color="#0891B2" bg="#ECFEFF" onClick={() => route('/docboard/audit')} />
+          <MoreMenuItem title="Morbid Case" desc={isNanda ? 'Rekam kasus rawat lengkap' : 'Confidential'} icon={icons.morbid} color="#BE123C" bg="#FFF1F2" onClick={() => route('/docboard/morbid-cases')} />
           <MoreMenuItem title="Ilmiah" desc={canAccessScientific ? 'Agenda ilmiah dan diskusi kasus' : 'Confidential'} icon={icons.calendar} color="#2563EB" bg="#EEF2FF" onClick={() => route('/docboard/scientific')} />
           <MoreMenuItem title="Pribadi" desc={isNanda ? 'Agenda pribadi' : 'Confidential'} icon={icons.private} color="#EA580C" bg="#FFF7ED" onClick={() => route('/docboard/personal')} />
           <MoreMenuItem title="Statistik Operasi" desc="Lihat data dan tren operasi" icon={icons.chart} color="#3B82F6" bg="#EEF2FF" onClick={() => route('/docboard/analytics')} />

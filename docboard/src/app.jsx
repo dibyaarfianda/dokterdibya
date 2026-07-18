@@ -10,6 +10,8 @@ import OperationDataList from './views/OperationDataList';
 import OperationDataDetail from './views/OperationDataDetail';
 import GambiranMonitor from './views/GambiranMonitor';
 import GambiranAudit from './views/GambiranAudit';
+import MorbidCaseList from './views/MorbidCaseList';
+import MorbidCaseDetail from './views/MorbidCaseDetail';
 import Notifications from './views/Notifications';
 import Settings from './views/Settings';
 import Users from './views/Users';
@@ -86,6 +88,8 @@ export default function App() {
           <NandaOnlyRoute path="/docboard/data/:id" component={OperationDataDetail} />
           <NandaOnlyRoute path="/docboard/monitor" component={GambiranMonitor} />
           <NandaOnlyRoute path="/docboard/audit" component={GambiranAudit} />
+          <NandaOnlyRoute path="/docboard/morbid-cases" component={MorbidCaseList} />
+          <NandaOnlyRoute path="/docboard/morbid-cases/:id" component={MorbidCaseDetail} />
           <Notifications path="/docboard/notifications" />
           <CommandDashboard path="/docboard/command" />
           <ScientificScheduleRoute path="/docboard/scientific" space="ilmiah" />

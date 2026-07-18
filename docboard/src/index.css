@@ -4870,6 +4870,462 @@ input { font-family: inherit; }
   margin: 0 auto;
 }
 
+/* Morbid Case */
+.view-morbid-list,
+.view-morbid-detail {
+  min-height: 100%;
+  padding: 16px 16px 96px;
+  background: #f7f8fa;
+  color: #18212f;
+}
+
+.morbid-page-header,
+.morbid-detail-header {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+  max-width: 1180px;
+  margin: 0 auto 18px;
+}
+
+.morbid-page-header h1,
+.morbid-detail-header h1 {
+  margin: 0;
+  font-size: 23px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.morbid-page-header p,
+.morbid-detail-header p {
+  margin: 3px 0 0;
+  color: #687386;
+  font-size: 13px;
+}
+
+.morbid-add-button,
+.morbid-refresh {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d7dce4;
+  border-radius: 7px;
+  color: #be123c;
+  background: #fff;
+}
+
+.morbid-search {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  max-width: 1180px;
+  margin: 0 auto 16px;
+  padding: 7px 7px 7px 12px;
+  border: 1px solid #d7dce4;
+  border-radius: 7px;
+  background: #fff;
+  color: #7a8495;
+}
+
+.morbid-search input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 14px;
+  color: #18212f;
+}
+
+.morbid-search button,
+.morbid-candidate button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 14px;
+  background: #9f1239;
+  color: #fff;
+  font-weight: 700;
+}
+
+.morbid-alert {
+  max-width: 1180px;
+  margin: 0 auto 14px;
+  padding: 11px 13px;
+  border-left: 4px solid #d97706;
+  background: #fffbeb;
+  color: #854d0e;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.morbid-alert.error {
+  border-left-color: #be123c;
+  background: #fff1f2;
+  color: #9f1239;
+}
+
+.morbid-case-list {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  gap: 10px;
+}
+
+.morbid-case-row {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid #dde2e9;
+  border-left: 4px solid #be123c;
+  border-radius: 7px;
+  background: #fff;
+  color: inherit;
+  text-align: left;
+}
+
+.morbid-case-row-title,
+.morbid-case-meta,
+.morbid-counts {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.morbid-case-row-title strong {
+  font-size: 16px;
+}
+
+.morbid-case-meta {
+  margin-top: 5px;
+  color: #657185;
+  font-size: 12px;
+}
+
+.morbid-case-meta span:not(:last-child)::after {
+  content: "·";
+  margin-left: 7px;
+}
+
+.morbid-case-row p {
+  margin: 9px 0;
+  color: #3e4959;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.morbid-counts span,
+.morbid-role,
+.morbid-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 23px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: #eef1f5;
+  color: #4b5565;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.morbid-status.ready { background: #dcfce7; color: #166534; }
+.morbid-status.ready_with_warnings { background: #fef3c7; color: #92400e; }
+.morbid-status.collecting { background: #dbeafe; color: #1d4ed8; }
+.morbid-status.error { background: #ffe4e6; color: #be123c; }
+
+.morbid-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 30px 16px;
+  background: rgba(17, 24, 39, .58);
+}
+
+.morbid-picker {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 60px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background: #f7f8fa;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, .28);
+}
+
+.morbid-picker > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e1e5eb;
+}
+
+.morbid-picker h2,
+.morbid-picker p { margin: 0; }
+.morbid-picker p { margin-top: 3px; font-size: 12px; color: #6b7280; }
+.morbid-picker > header button { border: 0; background: transparent; font-size: 28px; line-height: 1; color: #657185; }
+.morbid-picker .morbid-search { width: calc(100% - 32px); margin: 14px 16px 8px; }
+
+.morbid-candidate-list {
+  overflow-y: auto;
+  padding: 8px 16px 16px;
+}
+
+.morbid-candidate {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid #e1e5eb;
+}
+
+.morbid-candidate strong,
+.morbid-candidate span { display: block; }
+.morbid-candidate span { margin-top: 3px; color: #687386; font-size: 12px; }
+.morbid-candidate p { margin: 5px 0 0; color: #3e4959; font-size: 13px; }
+
+.audit-morbid-button {
+  border: 1px solid #fecdd3;
+  border-radius: 5px;
+  padding: 6px 9px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.morbid-detail-title > span {
+  color: #be123c;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.morbid-overview {
+  max-width: 1180px;
+  margin: 0 auto 14px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 3px solid #be123c;
+  border-bottom: 1px solid #dce1e8;
+  background: #fff;
+}
+
+.morbid-overview > div {
+  min-width: 0;
+  padding: 13px 14px;
+  border-right: 1px solid #edf0f3;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.morbid-overview-primary { grid-column: span 2; }
+.morbid-overview span,
+.morbid-overview strong { display: block; }
+.morbid-overview span { color: #778194; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.morbid-overview strong { margin-top: 4px; overflow-wrap: anywhere; font-size: 13px; line-height: 1.4; }
+
+.morbid-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(90px, 1fr));
+  overflow-x: auto;
+  border-bottom: 1px solid #d7dce4;
+  background: #f7f8fa;
+}
+
+.morbid-tabs button {
+  min-height: 42px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #657185;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.morbid-tabs button.active { border-bottom-color: #be123c; color: #9f1239; }
+
+.morbid-tab-content {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-top: 14px;
+}
+
+.morbid-timeline > section { margin-bottom: 18px; }
+.morbid-timeline > section > h2,
+.morbid-document-section > h2,
+.morbid-resume > section > h2 {
+  margin: 0 0 9px;
+  color: #4b5565;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.morbid-event,
+.morbid-cppt,
+.morbid-penunjang-group,
+.morbid-operation-list > section,
+.morbid-resume > section,
+.morbid-prescription-list > section {
+  margin-bottom: 8px;
+  border: 1px solid #dfe3e9;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.morbid-event { border-left: 4px solid #94a3b8; }
+.morbid-event.operation { border-left-color: #be123c; }
+.morbid-event.admission { border-left-color: #047857; }
+.morbid-event.discharge { border-left-color: #2563eb; }
+.morbid-event.penunjang { border-left-color: #ca8a04; }
+
+.morbid-event summary,
+.morbid-cppt summary {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.morbid-event summary > span { color: #6b7280; font-size: 12px; }
+.morbid-event summary strong,
+.morbid-event summary p { display: block; margin: 0; }
+.morbid-event summary p { margin-top: 3px; color: #5d6879; font-size: 12px; line-height: 1.4; }
+
+.morbid-clinical-fields,
+.morbid-field-list { border-top: 1px solid #edf0f3; }
+.morbid-clinical-fields > div,
+.morbid-field-list > div {
+  display: grid;
+  grid-template-columns: 155px minmax(0, 1fr);
+  gap: 14px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.morbid-clinical-fields span,
+.morbid-field-list span { color: #758094; font-size: 11px; font-weight: 700; }
+.morbid-clinical-fields p,
+.morbid-field-list p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: #263142; font-size: 13px; line-height: 1.55; }
+
+.morbid-tab-toolbar {
+  display: grid;
+  grid-template-columns: 150px 220px 150px minmax(220px, 1fr);
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.morbid-tab-toolbar input,
+.morbid-tab-toolbar select {
+  min-width: 0;
+  height: 38px;
+  border: 1px solid #d7dce4;
+  border-radius: 6px;
+  padding: 0 10px;
+  background: #fff;
+  color: #263142;
+}
+
+.morbid-section-count { margin-bottom: 9px; color: #687386; font-size: 12px; font-weight: 700; }
+.morbid-cppt.latest { border-color: #fda4af; box-shadow: inset 4px 0 #be123c; }
+.morbid-cppt summary { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.morbid-cppt summary > div { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
+.morbid-cppt summary > span { color: #687386; font-size: 12px; }
+.morbid-latest-label { color: #9f1239; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.morbid-role.dokter { background: #dbeafe; color: #1d4ed8; }
+.morbid-role.perawat { background: #dcfce7; color: #166534; }
+.morbid-role.bidan { background: #fce7f3; color: #9d174d; }
+.morbid-role.farmasi { background: #ede9fe; color: #6d28d9; }
+.morbid-role.gizi { background: #fef3c7; color: #92400e; }
+
+.morbid-penunjang-group > header,
+.morbid-operation-list > section > header,
+.morbid-prescription-list > section > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.morbid-penunjang-group > header span,
+.morbid-prescription-list > section > header span { color: #687386; font-size: 12px; }
+.morbid-result { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 9px 12px; border-bottom: 1px solid #f0f2f5; font-size: 13px; }
+.morbid-result strong { color: #92400e; }
+.morbid-result strong.done { color: #166534; }
+
+.morbid-document-section { margin-top: 18px; }
+.morbid-document {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+  padding: 12px;
+  border: 1px solid #d9dee6;
+  border-radius: 6px;
+  background: #fff;
+  color: #18212f;
+  text-decoration: none;
+}
+.morbid-document div strong,
+.morbid-document div span { display: block; }
+.morbid-document div span { margin-top: 3px; color: #687386; font-size: 11px; }
+.morbid-document > span { color: #9f1239; font-size: 12px; font-weight: 800; }
+.morbid-document.disabled { opacity: .58; }
+
+.morbid-operation-list > section > header { align-items: center; }
+.morbid-operation-list header span { color: #be123c; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.morbid-operation-list header h2 { margin: 3px 0 0; font-size: 16px; letter-spacing: 0; }
+.morbid-resume { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.morbid-resume > section:first-child { grid-column: span 2; }
+.morbid-resume > section > h2 { padding: 12px 12px 0; }
+.morbid-prescription-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.morbid-medication { padding: 9px 12px; border-bottom: 1px solid #f0f2f5; }
+.morbid-medication strong,
+.morbid-medication span { display: block; }
+.morbid-medication span { margin-top: 3px; color: #687386; font-size: 12px; }
+.morbid-empty { padding: 32px 16px; color: #7a8495; text-align: center; }
+
+@media (max-width: 760px) {
+  .view-morbid-list,
+  .view-morbid-detail { padding: 12px 10px 88px; }
+  .morbid-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .morbid-overview-primary { grid-column: span 2; }
+  .morbid-tabs { grid-template-columns: repeat(6, 104px); }
+  .morbid-tab-toolbar { grid-template-columns: 1fr 1fr; }
+  .morbid-tab-toolbar input:last-child { grid-column: span 2; }
+  .morbid-event summary { grid-template-columns: 72px minmax(0, 1fr); }
+  .morbid-clinical-fields > div,
+  .morbid-field-list > div { grid-template-columns: 1fr; gap: 4px; }
+  .morbid-resume,
+  .morbid-prescription-list { grid-template-columns: 1fr; }
+  .morbid-resume > section:first-child { grid-column: auto; }
+  .morbid-candidate { grid-template-columns: minmax(0, 1fr); }
+  .morbid-candidate button { width: 100%; }
+  .audit-row-actions { flex-wrap: wrap; }
+}
+
 .monitor-header {
   display: grid;
   grid-template-columns: 40px 1fr 40px;

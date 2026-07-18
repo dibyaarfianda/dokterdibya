@@ -66,6 +66,7 @@ export default function GambiranAudit() {
   const [error, setError] = useState(null);
   const [pathologyPanel, setPathologyPanel] = useState({ open: false, row: null, loading: false, error: null, data: null });
   const [journeyPanel, setJourneyPanel] = useState({ open: false, row: null, loading: false, refreshing: false, error: null, data: null });
+  const [morbidAddingId, setMorbidAddingId] = useState(null);
   const [filters, setFilters] = useState({
     start: defaultStartDate(),
     end: today(),
@@ -204,6 +205,18 @@ export default function GambiranAudit() {
     setJourneyPanel({ open: false, row: null, loading: false, refreshing: false, error: null, data: null });
   }
 
+  async function addMorbidCase(row) {
+    setMorbidAddingId(row.id);
+    try {
+      const result = await api.createMorbidCase(row.id);
+      route(`/docboard/morbid-cases/${result.morbid_case.id}`);
+    } catch (err) {
+      alert(err.message || 'Gagal menambahkan Morbid Case');
+    } finally {
+      setMorbidAddingId(null);
+    }
+  }
+
   const topOperation = summary.by_operation?.[0]?.operation_name || '-';
 
   return (
@@ -332,7 +345,7 @@ export default function GambiranAudit() {
         </div>
       ) : (
         <div class="operation-data-list">
-          {rows.map(row => <AuditRow key={row.id} row={row} onOpenPathology={openPathology} onOpenJourney={openJourney} />)}
+          {rows.map(row => <AuditRow key={row.id} row={row} onOpenPathology={openPathology} onOpenJourney={openJourney} onAddMorbid={addMorbidCase} morbidAdding={morbidAddingId === row.id} />)}
         </div>
       )}
 
@@ -376,7 +389,7 @@ function SummaryCard({ label, value, tone, small }) {
   );
 }
 
-function AuditRow({ row, onOpenPathology, onOpenJourney }) {
+function AuditRow({ row, onOpenPathology, onOpenJourney, onAddMorbid, morbidAdding }) {
   const repeat = row.repeat_after;
   const journey = row.doctor_journey;
   const origin = journey?.origin_doctor?.name;
@@ -415,6 +428,7 @@ function AuditRow({ row, onOpenPathology, onOpenJourney }) {
         )}
       </div>
       <div class="audit-row-actions">
+        <button type="button" class="audit-morbid-button" disabled={morbidAdding} onClick={() => onAddMorbid(row)}>{morbidAdding ? 'Mengambil...' : 'Morbid'}</button>
         <button type="button" class="audit-journey-button" onClick={() => onOpenJourney(row)}>Riwayat</button>
         <button type="button" class="audit-pa-button" onClick={() => onOpenPathology(row)}>PA</button>
       </div>
