@@ -77,6 +77,8 @@ describe('staff panel wave 2 lazy shell contracts', () => {
 
         expect(html).toContain('const hasLegacyAnalyticsContainers = [');
         expect(html).toMatch(/if \(hasLegacyAnalyticsContainers\) \{\s*await loadAnalytics\(\);\s*\}/);
+        expect(html).toMatch(/if \(document\.getElementById\('monthly-revenue-chart'\)\) \{\s*renderMonthlyRevenueChart/);
+        expect(html).toMatch(/if \(document\.getElementById\('top-drugs-table'\)\) \{\s*renderTopDrugsTable/);
     });
 
     test('PageRegistry loads once and emits activate/deactivate lifecycle in order', async () => {
