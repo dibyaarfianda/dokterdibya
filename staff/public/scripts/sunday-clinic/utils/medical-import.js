@@ -158,7 +158,7 @@ async function loadPatientsForImport() {
 
     try {
         const token = window.getToken ? window.getToken() : '';
-        const response = await fetch('/api/patients?limit=500', {
+        const response = await fetch('/api/patients?view=basic&limit=500', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }

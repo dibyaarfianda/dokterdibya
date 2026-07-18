@@ -7,10 +7,9 @@ const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
 const patientActivityLogger = require('../services/patientActivityLogger');
+const { validateSundayClinicSchema } = require('../services/SundayClinicSchemaValidator');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-let bookingSettingsDaySchemaReady = false;
-let confirmationPopupSchemaReady = false;
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -39,51 +38,11 @@ function getDayName(dayOfWeek) {
 }
 
 async function ensureBookingSettingsDayColumn() {
-    if (bookingSettingsDaySchemaReady) {
-        return;
-    }
-
-    const [rows] = await db.query(
-        `SELECT 1
-         FROM information_schema.columns
-         WHERE table_schema = DATABASE()
-           AND table_name = 'booking_settings'
-           AND column_name = 'day_of_week'
-         LIMIT 1`
-    );
-
-    if (rows.length === 0) {
-        await db.query(
-            `ALTER TABLE booking_settings
-             ADD COLUMN day_of_week TINYINT NOT NULL DEFAULT 0 AFTER session_name`
-        );
-    }
-
-    bookingSettingsDaySchemaReady = true;
+    return validateSundayClinicSchema();
 }
 
 async function ensureConfirmationPopupColumn() {
-    if (confirmationPopupSchemaReady) {
-        return;
-    }
-
-    const [rows] = await db.query(
-        `SELECT 1
-         FROM information_schema.columns
-         WHERE table_schema = DATABASE()
-           AND table_name = 'sunday_appointments'
-           AND column_name = 'confirmation_popup_enabled_at'
-         LIMIT 1`
-    );
-
-    if (rows.length === 0) {
-        await db.query(
-            `ALTER TABLE sunday_appointments
-             ADD COLUMN confirmation_popup_enabled_at DATETIME NULL AFTER confirmation_token`
-        );
-    }
-
-    confirmationPopupSchemaReady = true;
+    return validateSundayClinicSchema();
 }
 
 // Helper function to get next available practice dates based on configured days

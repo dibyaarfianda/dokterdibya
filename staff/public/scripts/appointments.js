@@ -59,7 +59,7 @@ async function loadPatients() {
         }
         
         console.log('🔧 [DEBUG] Loading patients from:', `${VPS_API_BASE}/api/patients`);
-        const response = await fetch(`${VPS_API_BASE}/api/patients?_=${Date.now()}`, {
+        const response = await fetch(`${VPS_API_BASE}/api/patients?view=basic&limit=500&fresh=1`, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache, no-store, must-revalidate',

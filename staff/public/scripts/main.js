@@ -597,7 +597,7 @@ async function loadDashboardNewPatients(page = 1) {
 
     try {
         const token = getAuthToken();
-        const response = await fetch(`/api/patients?sort=recent&limit=10&page=${page}&_=${Date.now()}`, {
+        const response = await fetch(`/api/patients?view=basic&last_visit_location=no_visit&sort=recent&limit=10&page=${page}&fresh=1`, {
             signal: controller.signal,
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -3072,7 +3072,7 @@ async function loadPatientsForBirthCongrats() {
 
     try {
         const token = getAuthToken();
-        const response = await fetch('/api/patients?limit=1000', {
+        const response = await fetch('/api/patients?view=basic&limit=1000', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const result = await response.json();
@@ -5022,7 +5022,7 @@ async function checkExtensionImportData() {
 
         // Search patient by name
         if (patientName) {
-            const res = await fetch(`/api/patients?search=${encodeURIComponent(patientName)}&limit=10`, {
+            const res = await fetch(`/api/patients?view=basic&search=${encodeURIComponent(patientName)}&limit=10`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const result = await res.json();
@@ -5083,7 +5083,7 @@ async function showQuickPatientSelector(searchName, hospitalName) {
     const token = getAuthToken();
     let options = '';
     try {
-        const res = await fetch('/api/patients?limit=500', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch('/api/patients?view=basic&limit=500', { headers: { 'Authorization': `Bearer ${token}` } });
         const result = await res.json();
         if (result.success && result.data) {
             (result.data.patients || result.data).forEach(p => {
@@ -6231,7 +6231,7 @@ async function searchPatientForImport() {
 
     try {
         const token = getAuthToken();
-        const response = await fetch(`/api/patients?search=${encodeURIComponent(query)}&limit=10`, {
+        const response = await fetch(`/api/patients?view=basic&search=${encodeURIComponent(query)}&limit=10`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

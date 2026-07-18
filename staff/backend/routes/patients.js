@@ -13,10 +13,12 @@ const { validatePatient } = require('../middleware/validation');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
+const PatientListService = require('../services/PatientListService');
 const {
     normalizePatientName,
     refreshConfiguredBlocklist
 } = require('../utils/patientAccessBlocklist');
+const patientListService = new PatientListService(db);
 
 // Enrichment failure counters — exposed via getEnrichmentStats() for /api/metrics
 const _enrichFailures = {
@@ -189,10 +191,10 @@ router.get('/api/patients/vapid-key', (req, res) => {
 // GET ALL PATIENTS (Protected - requires authentication and permission)
 router.get('/api/patients', verifyToken, async (req, res) => {
     try {
-        const { search, limit, hospital, sort, page, _, last_visit_location, cursor } = req.query;
+        const { search, limit, hospital, sort, page, _, last_visit_location, cursor, view, fresh } = req.query;
         const clientCacheControl = (req.headers['cache-control'] || '').toLowerCase();
         const clientRequestsFresh = clientCacheControl.includes('no-cache') || clientCacheControl.includes('no-store');
-        const bypassCache = typeof _ !== 'undefined' || clientRequestsFresh;
+        const bypassCache = fresh === '1' || typeof _ !== 'undefined' || clientRequestsFresh;
 
         // Decode cursor for keyset pagination (optional — falls back to offset)
         let cursorData = null;
@@ -203,7 +205,8 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         }
 
         // Generate cache key and honor bypass flag (frontend sends _=timestamp)
-        const cacheKey = `patients:list:${search || 'all'}:${limit || 'all'}:${hospital || 'all'}:${sort || 'default'}:${cursor || page || '1'}:${last_visit_location || 'all'}`;
+        const effectiveView = view === 'basic' ? 'basic' : 'legacy';
+        const cacheKey = `patients:list:${effectiveView}:${search || 'all'}:${limit || 'all'}:${hospital || 'all'}:${sort || 'default'}:${cursor || page || '1'}:${last_visit_location || 'all'}`;
 
         if (!bypassCache) {
             const cached = cache.get(cacheKey, 'short');
@@ -211,6 +214,25 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 applyCacheHeaders(res, { bypassCache, cacheKey, hit: true });
                 return res.json(cached);
             }
+        }
+
+        if (effectiveView === 'basic') {
+            const response = await patientListService.listBasic({
+                search,
+                limit,
+                sort,
+                page,
+                cursor,
+                hospital,
+                last_visit_location
+            });
+            if (!bypassCache) {
+                cache.set(cacheKey, response, 'short');
+            } else {
+                cache.del(cacheKey, 'short');
+            }
+            applyCacheHeaders(res, { bypassCache, cacheKey, hit: false });
+            return res.json(response);
         }
 
         let query;

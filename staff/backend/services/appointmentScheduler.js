@@ -6,6 +6,7 @@
 const cron = require('node-cron');
 const db = require('../db');
 const logger = require('../utils/logger');
+const { validateSundayClinicSchema } = require('./SundayClinicSchemaValidator');
 
 // Hospital locations that require auto-confirm after 2 hours
 const AUTO_CONFIRM_LOCATIONS = [
@@ -343,54 +344,9 @@ function startDailyMetricsScheduler() {
  * Ensure sunday_appointments schema has confirmation columns
  */
 async function ensureSundayConfirmationSchema() {
-    try {
-        const [cols] = await db.query(
-            `SELECT COLUMN_NAME FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME = 'sunday_appointments'
-               AND COLUMN_NAME IN ('confirmation_token', 'confirmed_at', 'confirmation_popup_enabled_at')`
-        );
-        const existing = cols.map(c => c.COLUMN_NAME);
-
-        if (!existing.includes('confirmation_token')) {
-            await db.query(
-                `ALTER TABLE sunday_appointments
-                 ADD COLUMN confirmation_token VARCHAR(64) NULL UNIQUE AFTER status`
-            );
-            logger.info('[Scheduler] Added confirmation_token column to sunday_appointments');
-        }
-
-        if (!existing.includes('confirmed_at')) {
-            await db.query(
-                `ALTER TABLE sunday_appointments
-                 ADD COLUMN confirmed_at DATETIME NULL AFTER confirmation_token`
-            );
-            logger.info('[Scheduler] Added confirmed_at column to sunday_appointments');
-        }
-
-        if (!existing.includes('confirmation_popup_enabled_at')) {
-            await db.query(
-                `ALTER TABLE sunday_appointments
-                 ADD COLUMN confirmation_popup_enabled_at DATETIME NULL AFTER confirmed_at`
-            );
-            logger.info('[Scheduler] Added confirmation_popup_enabled_at column to sunday_appointments');
-        }
-
-        // Ensure pending_confirmation is a valid status value
+    return validateSundayClinicSchema();
         // MariaDB/MySQL ENUM cannot be easily checked — safe to run ALTER even if value exists
-        try {
-            await db.query(
-                `ALTER TABLE sunday_appointments
-                 MODIFY COLUMN status ENUM('pending','pending_confirmation','confirmed','completed','cancelled','no_show') NOT NULL DEFAULT 'pending'`
-            );
-            logger.info('[Scheduler] sunday_appointments status enum updated');
-        } catch (enumErr) {
             // Already has the value or different schema — non-fatal
-            logger.warn('[Scheduler] Could not modify status enum (may already be correct):', enumErr.message);
-        }
-    } catch (err) {
-        logger.error('[Scheduler] Error in ensureSundayConfirmationSchema:', err);
-    }
 }
 
 /**

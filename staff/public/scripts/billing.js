@@ -296,7 +296,7 @@ async function loadPatientsToSelect() {
             return;
         }
         
-        const response = await fetch(`${VPS_API_BASE}/api/patients`, {
+        const response = await fetch(`${VPS_API_BASE}/api/patients?view=basic&limit=500`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -306,12 +306,12 @@ async function loadPatientsToSelect() {
             const result = await response.json();
             if (result.success && result.data) {
                 const patients = result.data;
-                patients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+                patients.sort((a, b) => (a.full_name || a.name || '').localeCompare(b.full_name || b.name || ''));
                 patients.forEach(p => {
                     const opt = document.createElement('option');
                     opt.value = p.id;
                     // Hanya tampilkan nama, tanpa kode unik
-                    opt.textContent = p.name || 'Tanpa Nama';
+                    opt.textContent = p.full_name || p.name || 'Tanpa Nama';
                     patientSelect.appendChild(opt);
                 });
             }

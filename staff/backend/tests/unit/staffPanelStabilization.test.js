@@ -259,15 +259,15 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {
-        const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+        const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
         const planningHelpers = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'utils', 'planning-helpers.js');
         const planComponent = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'plan.js');
         const staffHtml = readNormalizedFile('staff', 'public', 'index-adminlte.html');
-        const migration = readNormalizedFile('staff', 'backend', 'migrations', '20260628_create_sunday_clinic_prescription_templates.sql');
+        const migration = readNormalizedFile('staff', 'backend', 'migrations', '20260719_staff_wave4_sunday_clinic_schema.sql');
 
         expect(migration).toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
         expect(migration).toContain('items JSON NOT NULL');
-        expect(sundayClinicRoute).toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
+        expect(sundayClinicRoute).not.toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
         expect(sundayClinicRoute).toContain("router.get('/prescription-templates', verifyToken");
         expect(sundayClinicRoute).toContain("router.post('/prescription-templates', verifyToken");
         expect(sundayClinicRoute).toContain("router.put('/prescription-templates/:id', verifyToken");
@@ -349,7 +349,7 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('Sunday Clinic route delegates reusable pure helpers to a service module', () => {
-        const route = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic.js');
+        const route = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic-controller.js');
         const helpers = readNormalizedFile('staff', 'backend', 'services', 'SundayClinicRouteHelpers.js');
 
         expect(route).toContain("require('../services/SundayClinicRouteHelpers')");

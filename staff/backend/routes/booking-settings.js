@@ -5,9 +5,9 @@ const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
 const sundayAppointmentsRoutes = require('./sunday-appointments');
+const { validateSundayClinicSchema } = require('../services/SundayClinicSchemaValidator');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-let bookingSettingsSchemaReady = false;
 
 function normalizeDayOfWeek(value) {
     const parsed = Number.parseInt(value, 10);
@@ -15,27 +15,7 @@ function normalizeDayOfWeek(value) {
 }
 
 async function ensureBookingSettingsSchema() {
-    if (bookingSettingsSchemaReady) {
-        return;
-    }
-
-    const [rows] = await db.query(
-        `SELECT 1
-         FROM information_schema.columns
-         WHERE table_schema = DATABASE()
-           AND table_name = 'booking_settings'
-           AND column_name = 'day_of_week'
-         LIMIT 1`
-    );
-
-    if (rows.length === 0) {
-        await db.query(
-            `ALTER TABLE booking_settings
-             ADD COLUMN day_of_week TINYINT NOT NULL DEFAULT 0 AFTER session_name`
-        );
-    }
-
-    bookingSettingsSchemaReady = true;
+    return validateSundayClinicSchema();
 }
 
 function clearBookingSettingCaches() {

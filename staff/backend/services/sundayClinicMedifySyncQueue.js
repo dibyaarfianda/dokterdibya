@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const db = require('../db');
 const logger = require('../utils/logger');
+const { validateSundayClinicSchema } = require('./SundayClinicSchemaValidator');
 
 const TABLE_NAME = 'sunday_clinic_medify_sync_jobs';
 const WORKER_INTERVAL_MS = parseInt(process.env.SUNDAY_CLINIC_MEDIFY_SYNC_POLL_MS || '4000', 10);
@@ -24,7 +25,6 @@ const COMM_OUTBOUND_API_KEY = process.env.COMM_OUTBOUND_API_KEY || '';
 const COMM_SIMRS_EMAIL = process.env.COMM_SIMRS_EMAIL || '';
 const COMM_SIMRS_PASSWORD = process.env.COMM_SIMRS_PASSWORD || '';
 
-let tableReady = false;
 let ensureTablePromise = null;
 let workerStarted = false;
 let isProcessing = false;
@@ -276,50 +276,15 @@ function buildObjective(physicalExam, pemeriksaanObstetri, usg) {
 }
 
 async function ensureTable() {
-    if (tableReady) {
-        return;
-    }
-
     if (ensureTablePromise) {
         return ensureTablePromise;
     }
 
-    ensureTablePromise = (async () => {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS ${TABLE_NAME} (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                job_id VARCHAR(32) NOT NULL UNIQUE,
-                mr_id VARCHAR(50) NOT NULL,
-                patient_id VARCHAR(20) NOT NULL,
-                visit_location VARCHAR(50) NOT NULL,
-                job_type ENUM('diagnosis','terapi') NOT NULL,
-                status ENUM('queued','processing','retrying','completed','failed','skipped') NOT NULL DEFAULT 'queued',
-                attempt_count INT NOT NULL DEFAULT 0,
-                next_retry_at DATETIME NULL,
-                payload_json JSON NOT NULL,
-                result_json JSON NULL,
-                error_message TEXT NULL,
-                last_error_at DATETIME NULL,
-                created_by VARCHAR(255) NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                completed_at DATETIME NULL,
-                INDEX idx_status_retry (status, next_retry_at),
-                INDEX idx_mr (mr_id),
-                INDEX idx_patient (patient_id),
-                INDEX idx_created_at (created_at)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-        `);
-
-        tableReady = true;
-        logger.info('[SundayClinicMedifySyncQueue] Table ensured');
-    })().catch((error) => {
-        logger.error('[SundayClinicMedifySyncQueue] Failed ensuring table', {
+    ensureTablePromise = validateSundayClinicSchema().catch((error) => {
+        logger.error('[SundayClinicMedifySyncQueue] Required schema is unavailable', {
             error: error.message
         });
         throw error;
-    }).finally(() => {
-        ensureTablePromise = null;
     });
 
     return ensureTablePromise;
@@ -796,10 +761,6 @@ async function getJobsByMr(mrId, limit = 20) {
     }));
 }
 
-// Bootstrap
-ensureTable().catch(() => {
-    // Errors already logged in ensureTable.
-});
 startWorkerIfNeeded();
 
 module.exports = {
