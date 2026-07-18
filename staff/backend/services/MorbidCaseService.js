@@ -417,6 +417,17 @@ class MorbidCaseService {
       error.status = 404;
       throw error;
     }
+    if (catalog.analysis_status === 'analyzing' && !this.activeAnalyses.has(String(id))) {
+      const interruptedMessage = 'Proses analisis terputus karena backend dimulai ulang. Silakan jalankan analisis kembali.';
+      await this.db.query(
+        `UPDATE docboard_morbid_cases
+            SET analysis_status = 'failed', analysis_last_error = ?
+          WHERE id = ? AND analysis_status = 'analyzing'`,
+        [interruptedMessage, id]
+      );
+      catalog.analysis_status = 'failed';
+      catalog.analysis_last_error = interruptedMessage;
+    }
     let snapshot = null;
     if (catalog.status !== 'collecting') {
       try {

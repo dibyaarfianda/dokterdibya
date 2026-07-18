@@ -162,4 +162,19 @@ describe('MorbidCaseService', () => {
     expect(r2.uploadJson).toHaveBeenCalled();
     expect(service.activeAnalyses.has('9')).toBe(false);
   });
+
+  test('marks an orphaned analyzing state as failed after a backend restart', async () => {
+    const interruptedCatalog = catalog({ analysis_status: 'analyzing', analysis_r2_key: null });
+    const db = { query: jest.fn(async (sql) => sql.includes('SELECT mc.*') ? [[interruptedCatalog]] : [{ affectedRows: 1 }]) };
+    const snapshot = { cppt: [], penunjang: { files: [] } };
+    const r2 = { R2_BUCKET_NAME: 'test-bucket', getJson: jest.fn(async () => snapshot) };
+    const service = new MorbidCaseService({ db, r2, bucket: 'test-bucket' });
+
+    const result = await service.getDetail(9);
+
+    expect(result.morbid_case.analysis_status).toBe('failed');
+    expect(result.morbid_case.analysis_last_error).toContain('backend dimulai ulang');
+    expect(result.analysis_progress).toBeNull();
+    expect(db.query.mock.calls.some(([sql]) => sql.includes("analysis_status = 'failed'"))).toBe(true);
+  });
 });
