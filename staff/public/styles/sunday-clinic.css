@@ -3548,4 +3548,96 @@ body.mobile-app-mode #sunday-clinic-content .table-action i {
         overflow: hidden !important;
         text-overflow: ellipsis !important;
     }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel > .d-flex {
+        align-items: flex-start !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel h5 {
+        padding-top: 6px !important;
+        font-size: 16px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .table-responsive {
+        overflow: visible !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table,
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table tbody {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table thead {
+        display: none !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table tr {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: 10px !important;
+        padding: 5px 10px !important;
+        border: 1px solid #dfe4ea !important;
+        border-radius: 10px !important;
+        background: #fff !important;
+        box-shadow: 0 2px 7px rgba(15, 23, 42, 0.06) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td {
+        display: grid !important;
+        grid-template-columns: 88px minmax(0, 1fr) !important;
+        gap: 10px !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        padding: 8px 0 !important;
+        border: 0 !important;
+        border-bottom: 1px solid #edf0f3 !important;
+        text-align: left !important;
+        white-space: normal !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td:last-child {
+        border-bottom: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td::before {
+        content: attr(data-label) !important;
+        color: #6c757d !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.02em !important;
+        text-transform: uppercase !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-value {
+        min-width: 0 !important;
+        overflow-wrap: anywhere !important;
+        text-align: left !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-actions {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-empty {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 8px !important;
+        min-height: 72px !important;
+        padding: 16px !important;
+        border: 1px dashed #cfd6de !important;
+        border-radius: 10px !important;
+        background: #f8fafc !important;
+        color: #6c757d !important;
+        text-align: center !important;
+    }
 }

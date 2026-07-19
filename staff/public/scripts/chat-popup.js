@@ -22,7 +22,19 @@ import { ROLE_IDS } from './role-constants.js';
   // Measure actual nav height (dynamic, avoids hardcoded 78px mismatch)
   function getNavBottomPx() {
     var nav = document.getElementById('mobile-action-bar');
-    if (nav && nav.offsetHeight > 0) return nav.offsetHeight + 'px';
+    if (nav) {
+      var navRect = nav.getBoundingClientRect();
+      var viewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+      var viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      var viewportBottom = viewportTop + viewportHeight;
+      var visibleNavHeight = Math.round(viewportBottom - navRect.top);
+      if (visibleNavHeight > 0) {
+        return Math.min(140, Math.max(56, visibleNavHeight)) + 'px';
+      }
+      if (nav.offsetHeight > 0) {
+        return Math.min(140, Math.max(56, nav.offsetHeight)) + 'px';
+      }
+    }
     return '65px';
   }
 
@@ -178,7 +190,7 @@ import { ROLE_IDS } from './role-constants.js';
       var navH2 = getNavBottomPx();
       var navPx2 = parseInt(navH2, 10);
       if (isNaN(navPx2)) navPx2 = 65;
-      var fabBottom = (navPx2 + 12) + 'px';
+      var fabBottom = (navPx2 + 8) + 'px';
       cont.style.cssText = '';
       cont.style.setProperty('position', 'fixed', 'important');
       cont.style.setProperty('display', 'block', 'important');

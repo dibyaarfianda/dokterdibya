@@ -573,6 +573,26 @@ describe('staff panel stabilization sources', () => {
         expect(chatPopup).toContain('if (!isChatOpen) return;');
     });
 
+    test('mobile additional billing uses readable cards and a dedicated empty state', () => {
+        const billing = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'billing.js');
+        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
+
+        expect(billing).toContain('class="table table-sm table-bordered mb-0 additional-billing-table"');
+        expect(billing).toContain('data-label="Referensi"');
+        expect(billing).toContain('class="additional-billing-empty"');
+        expect(sundayClinicCss).toContain('#additional-billing-panel .additional-billing-table thead');
+        expect(sundayClinicCss).toContain('grid-template-columns: 88px minmax(0, 1fr) !important;');
+        expect(sundayClinicCss).toContain('#additional-billing-panel .additional-billing-empty');
+    });
+
+    test('mobile chat FAB uses visible navigation height with a compact gap', () => {
+        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+
+        expect(chatPopup).toContain('var visibleNavHeight = Math.round(viewportBottom - navRect.top);');
+        expect(chatPopup).toContain('Math.min(140, Math.max(56, visibleNavHeight))');
+        expect(chatPopup).toContain("var fabBottom = (navPx2 + 8) + 'px';");
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const payrollFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-payroll.html');

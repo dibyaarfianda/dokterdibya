@@ -602,14 +602,36 @@ function renderAdditionalBillingPanel(additionalBillings) {
 
         return `
             <tr>
-                <td><strong>${escapeHtml(billing.reference_number || '-')}</strong><small class="d-block text-muted">${escapeHtml(formatDateTime(billing.created_at))}</small></td>
-                <td><span title="${escapeHtml(itemSummary)}">${escapeHtml(itemSummary || '-')}</span></td>
-                <td class="text-right font-weight-bold">${formatRupiah(billing.total)}</td>
-                <td class="text-center">${getAdditionalBillingStatusBadge(billing.status)}</td>
-                <td style="text-align: center !important; vertical-align: middle !important; white-space: nowrap;">${actionButtons.join(' ')}</td>
+                <td data-label="Referensi"><div class="additional-billing-value"><strong>${escapeHtml(billing.reference_number || '-')}</strong><small class="d-block text-muted">${escapeHtml(formatDateTime(billing.created_at))}</small></div></td>
+                <td data-label="Item"><div class="additional-billing-value" title="${escapeHtml(itemSummary)}">${escapeHtml(itemSummary || '-')}</div></td>
+                <td data-label="Total" class="text-right font-weight-bold"><div class="additional-billing-value">${formatRupiah(billing.total)}</div></td>
+                <td data-label="Status" class="text-center"><div class="additional-billing-value">${getAdditionalBillingStatusBadge(billing.status)}</div></td>
+                <td data-label="Aksi" style="text-align: center !important; vertical-align: middle !important; white-space: nowrap;"><div class="additional-billing-value additional-billing-actions">${actionButtons.join(' ')}</div></td>
             </tr>
         `;
     }).join('');
+
+    const billingContent = rows ? `
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0 additional-billing-table">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Referensi</th>
+                        <th>Item</th>
+                        <th class="text-right">Total</th>
+                        <th style="text-align: center !important; vertical-align: middle !important; width: 116px; min-width: 116px;">Status</th>
+                        <th style="text-align: center !important; vertical-align: middle !important; width: 150px; min-width: 150px;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    ` : `
+        <div class="additional-billing-empty">
+            <i class="fas fa-receipt" aria-hidden="true"></i>
+            <span>Belum ada tagihan tambahan.</span>
+        </div>
+    `;
 
     return `
         <section class="pt-4 mt-4 border-top" id="additional-billing-panel">
@@ -619,22 +641,7 @@ function renderAdditionalBillingPanel(additionalBillings) {
                     <i class="fas fa-plus mr-1"></i>Buat Tagihan Tambahan
                 </button>
             </div>
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered mb-0">
-                    <thead class="thead-light">
-                        <tr>
-                            <th>Referensi</th>
-                            <th>Item</th>
-                            <th class="text-right">Total</th>
-                            <th style="text-align: center !important; vertical-align: middle !important; width: 116px; min-width: 116px;">Status</th>
-                            <th style="text-align: center !important; vertical-align: middle !important; width: 150px; min-width: 150px;">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows || '<tr><td colspan="5" class="text-center text-muted">Belum ada tagihan tambahan.</td></tr>'}
-                    </tbody>
-                </table>
-            </div>
+            ${billingContent}
         </section>
     `;
 }
