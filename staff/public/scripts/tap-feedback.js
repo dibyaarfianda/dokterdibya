@@ -7,7 +7,7 @@
 
     function isMobileContext() {
         return window.matchMedia('(pointer: coarse)').matches ||
-            window.location.search.includes('mobile=1') ||
+            window.isMobileAppMode?.() ||
             window.isNativePlatform?.();
     }
 

@@ -450,7 +450,10 @@ describe('staff panel stabilization sources', () => {
         expect(shellCss).toContain('tablet touch browsers must stay true 100%.');
         expect(html).toContain("const isDesktopFinePointer = window.matchMedia\n                ? window.matchMedia('(hover: hover) and (pointer: fine)').matches");
         expect(html).toContain("!/(Mobi|Android|iPad|iPhone|iPod)/i.test(navigator.userAgent);");
-        expect(html).toContain('} else if (isDesktopFinePointer) {\n                applyBrowserZoomClass();\n            }');
+        expect(html).toContain('} else if (isDesktopFinePointer) {');
+        expect(html).toContain("sessionStorage.removeItem('mobileAppMode');");
+        expect(html).toContain("localStorage.removeItem('mobileAppMode');");
+        expect(html).toContain('applyBrowserZoomClass();');
     });
 
     test('staff queue and doctor arrival toggles use concise clinic labels', () => {

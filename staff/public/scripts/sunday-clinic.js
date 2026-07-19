@@ -44,9 +44,15 @@ function getAuthToken() {
 
 function redirectToLogin() {
     const currentUrl = window.location.href;
-    const isMobileMode = new URLSearchParams(window.location.search).get('mobile') === '1'
-        || sessionStorage.getItem('mobileAppMode') === '1'
-        || sessionStorage.getItem('sunday_clinic_mobile') === '1';
+    const isDesktopFinePointer = window.matchMedia &&
+        window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const isMobileMode = typeof window.isMobileAppMode === 'function'
+        ? window.isMobileAppMode()
+        : !isDesktopFinePointer && (
+            new URLSearchParams(window.location.search).get('mobile') === '1' ||
+            sessionStorage.getItem('mobileAppMode') === '1' ||
+            sessionStorage.getItem('sunday_clinic_mobile') === '1'
+        );
     const loginUrl = new URL('/staff/public/login.html', window.location.origin);
 
     if (isMobileMode) {

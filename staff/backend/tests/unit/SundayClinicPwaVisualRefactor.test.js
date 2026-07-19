@@ -56,6 +56,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
 
     test('desktop web never receives the embedded Sunday Clinic PWA scope', () => {
         const main = readRepoFile('staff', 'public', 'scripts', 'main.js');
+        const shell = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
 
         expect(main).toContain("window.matchMedia('(max-width: 991.98px)')");
         expect(main).toContain('function reconcileSundayClinicPwaMode()');
@@ -63,6 +65,11 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(main).toContain("sundayClinicPwaMediaQuery.addEventListener('change', reconcileSundayClinicPwaMode);");
         expect(main).toContain("sundayClinicPwaMediaQuery.removeEventListener('change', reconcileSundayClinicPwaMode);");
         expect(main).toContain("document.body.classList.add('sunday-clinic-embedded-active');");
+        expect(shell).toContain("const mobileRequestedFromUrl = urlParams.get('mobile') === '1';");
+        expect(shell).toContain('const mobileFromUrl = mobileRequestedFromUrl && !isDesktopFinePointer;');
+        expect(shell).toContain("sessionStorage.removeItem('mobileAppMode');");
+        expect(shell).toContain("localStorage.removeItem('mobileAppMode');");
+        expect(tapFeedback).not.toContain("window.location.search.includes('mobile=1')");
     });
 
     test('wave 2 normalizes clinical typography, controls, cards, and responsive grids', () => {

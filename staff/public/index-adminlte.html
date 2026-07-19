@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v335';
+        window.STAFF_CACHE_VERSION = 'v336';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v335">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v335">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v335">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v335">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v336">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v336">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v336">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v336">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v335">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v336">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v335">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v336">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -45,7 +45,7 @@
         }
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v335"></script>
+    <script src="scripts/error-handler.js?v=v336"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -60,17 +60,17 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v335">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v336">
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v335">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=v336">
 
     <!-- Mobile App Mode Detection -->
     <script>
         // Detect mobile app context and add mobile-app-mode class
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
-            const mobileFromUrl = urlParams.get('mobile') === '1';
+            const mobileRequestedFromUrl = urlParams.get('mobile') === '1';
             const standaloneDisplayMode = !!(window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
             const iosStandaloneMode = window.navigator.standalone === true;
             const isStandalonePWA = standaloneDisplayMode || iosStandaloneMode;
@@ -81,8 +81,12 @@
             const isDesktopFinePointer = window.matchMedia
                 ? window.matchMedia('(hover: hover) and (pointer: fine)').matches
                 : !/(Mobi|Android|iPad|iPhone|iPod)/i.test(navigator.userAgent);
+            const mobileFromUrl = mobileRequestedFromUrl && !isDesktopFinePointer;
 
-            const isMobileApp = mobileFromUrl || persistedMobileMode || isStandalonePWA || isAndroidWebView;
+            const isMobileApp = mobileFromUrl ||
+                (persistedMobileMode && !isDesktopFinePointer) ||
+                (isStandalonePWA && !isDesktopFinePointer) ||
+                isAndroidWebView;
 
             function applyMobileModeClass() {
                 // Add class immediately to prevent flash
@@ -116,14 +120,15 @@
                 sessionStorage.setItem('mobileAppMode', '1');
                 localStorage.setItem('mobileAppMode', '1');
             } else if (isDesktopFinePointer) {
+                // A mobile URL opened once must not permanently contaminate desktop web.
+                sessionStorage.removeItem('mobileAppMode');
+                localStorage.removeItem('mobileAppMode');
                 applyBrowserZoomClass();
             }
 
             // Global helper to check mobile mode and build URLs
             window.isMobileAppMode = function() {
-                return sessionStorage.getItem('mobileAppMode') === '1' ||
-                       localStorage.getItem('mobileAppMode') === '1' ||
-                       document.documentElement.classList.contains('mobile-app-mode') ||
+                return document.documentElement.classList.contains('mobile-app-mode') ||
                        !!(document.body && document.body.classList.contains('mobile-app-mode'));
             };
 
@@ -4281,7 +4286,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v335"></script>
+    <script defer src="scripts/shell/actions.js?v=v336"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -4361,8 +4366,8 @@ Contoh Markdown:
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v335" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v335" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v336" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v336" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -4374,7 +4379,7 @@ Contoh Markdown:
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v335"></script>
+<script defer src="scripts/rum.js?v=v336"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4599,7 +4604,7 @@ Contoh Markdown:
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v335"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v336"></script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
@@ -9186,7 +9191,7 @@ Apakah Anda yakin ingin melanjutkan?`;
  </script>
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v335"></script>
+ <script src="scripts/mobile-helper.js?v=v336"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -9198,8 +9203,8 @@ Apakah Anda yakin ingin melanjutkan?`;
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v335"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v335"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v336"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v336"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->
@@ -11247,8 +11252,10 @@ window.isNativePlatform = function() {
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         return true;
     }
-    // Check for mobile=1 URL param (staff native app uses this)
-    if (new URLSearchParams(window.location.search).get('mobile') === '1') {
+    // The native app uses mobile=1, but desktop links carrying that parameter stay web.
+    const desktopFinePointer = window.matchMedia &&
+        window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    if (new URLSearchParams(window.location.search).get('mobile') === '1' && !desktopFinePointer) {
         return true;
     }
     // Check for Android WebView user agent
