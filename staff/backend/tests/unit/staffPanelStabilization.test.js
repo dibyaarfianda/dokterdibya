@@ -553,6 +553,14 @@ describe('staff panel stabilization sources', () => {
         expect(chatPopup).not.toContain('window.setTimeout(scrollChatToLatest, 4200);');
     });
 
+    test('mobile chat close action does not rely on WebView inline handlers', () => {
+        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+
+        expect(chatPopup).toContain("closeBtn.removeAttribute('onclick');");
+        expect(chatPopup).toContain("closeBtn.addEventListener('click', handleCloseButtonClick);");
+        expect(chatPopup).toContain('window.closeChatPopup();');
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const payrollFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-payroll.html');

@@ -915,6 +915,17 @@ import { ROLE_IDS } from './role-constants.js';
         window._realToggleChatPopup = basicToggle;
         window._realCloseChatPopup = basicClose;
         chatInitialized = true;
+
+        function handleCloseButtonClick(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            window.closeChatPopup();
+        }
+
+        if (closeBtn) {
+            closeBtn.removeAttribute('onclick');
+            closeBtn.addEventListener('click', handleCloseButtonClick);
+        }
         console.log('[ChatPopup] Basic handlers ready, chatInitialized=true');
 
         // Handle any pending actions from before init
