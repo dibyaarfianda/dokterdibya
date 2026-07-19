@@ -924,6 +924,7 @@ import { ROLE_IDS } from './role-constants.js';
 
         if (closeBtn) {
             closeBtn.removeAttribute('onclick');
+            closeBtn.addEventListener('pointerdown', handleCloseButtonClick);
             closeBtn.addEventListener('click', handleCloseButtonClick);
         }
         console.log('[ChatPopup] Basic handlers ready, chatInitialized=true');

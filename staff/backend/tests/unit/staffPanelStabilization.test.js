@@ -557,6 +557,7 @@ describe('staff panel stabilization sources', () => {
         const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
 
         expect(chatPopup).toContain("closeBtn.removeAttribute('onclick');");
+        expect(chatPopup).toContain("closeBtn.addEventListener('pointerdown', handleCloseButtonClick);");
         expect(chatPopup).toContain("closeBtn.addEventListener('click', handleCloseButtonClick);");
         expect(chatPopup).toContain('window.closeChatPopup();');
         expect(chatPopup).not.toContain('.chat-close-btn:hover { background: rgba(255,255,255,.3); transform: rotate(90deg); }');
