@@ -2148,6 +2148,8 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav {
+        width: 100% !important; /* Fixed navigation must not widen the document. */
+        max-width: 100% !important;
         min-height: var(--sc-pwa-bottom-nav-height) !important;
         gap: var(--sc-pwa-space-1) !important;
         padding: 5px var(--sc-pwa-space-2) calc(5px + env(safe-area-inset-bottom, 0px)) !important;

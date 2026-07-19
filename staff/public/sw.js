@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v324'; // Sunday Clinic PWA visual foundation and viewport lifecycle
+const STAFF_PWA_VERSION = 'v325'; // Sunday Clinic PWA visual foundation and viewport lifecycle
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;

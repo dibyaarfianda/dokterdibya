@@ -36,6 +36,7 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('#btn-queue-vis-toggle,');
         expect(pwaCss).toContain('#btn-doctor-toggle {');
         expect(pwaCss).toContain('width: 100% !important; /* Avoid 100vw scrollbar overflow. */');
+        expect(pwaCss).toContain('width: 100% !important; /* Fixed navigation must not widen the document. */');
     });
 
     test('wave 1 viewport synchronization is idempotent and cleaned up with page lifecycle', () => {
