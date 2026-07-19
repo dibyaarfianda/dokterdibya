@@ -19,20 +19,25 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).not.toMatch(/body\.mobile-app-mode\s+\.(?:btn|table|form-control)/);
     });
 
-    test('wave 1 exposes one balanced clinical token set and safe shell targets', () => {
+    test('wave 1 exposes one very compact clinical token set and safe shell targets', () => {
         const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect((pwaCss.match(/--sc-pwa-font-body:/g) || []).length).toBe(1);
-        expect(pwaCss).toContain('--sc-pwa-font-body: 13px;');
-        expect(pwaCss).toContain('--sc-pwa-font-control: 16px;');
-        expect(pwaCss).toContain('--sc-pwa-font-button: 13px;');
-        expect(pwaCss).toContain('--sc-pwa-touch-target: 44px;');
-        expect(pwaCss).toContain('--sc-pwa-gutter: 12px;');
+        expect(pwaCss).toContain('--sc-pwa-font-meta: 10px;');
+        expect(pwaCss).toContain('--sc-pwa-font-body: 11px;');
+        expect(pwaCss).toContain('--sc-pwa-font-label: 11px;');
+        expect(pwaCss).toContain('--sc-pwa-font-control: 14px;');
+        expect(pwaCss).toContain('--sc-pwa-font-button: 11px;');
+        expect(pwaCss).toContain('--sc-pwa-font-heading: 13px;');
+        expect(pwaCss).toContain('--sc-pwa-font-title: 15px;');
+        expect(pwaCss).toContain('--sc-pwa-touch-target: 40px;');
+        expect(pwaCss).toContain('--sc-pwa-gutter: 8px;');
         expect(pwaCss).toContain('--sc-pwa-viewport-height: 100%;');
-        expect(pwaCss).toContain('--sc-pwa-bottom-nav-height: 68px;');
+        expect(pwaCss).toContain('--sc-pwa-bottom-nav-height: 60px;');
         expect(pwaCss).toContain('min-height: var(--sc-pwa-touch-target) !important;');
         expect(pwaCss).toContain('font-size: var(--sc-pwa-font-button) !important;');
-        expect(pwaCss).toContain('font-size: 11px !important;');
+        expect(pwaCss).not.toMatch(/font-size:\s*(?:8|9|12)px/);
+        expect(pwaCss).not.toMatch(/Compact\s*(?:10|override|mode|rules?)/i);
         expect(pwaCss).toContain('#btn-queue-vis-toggle,');
         expect(pwaCss).toContain('#btn-doctor-toggle {');
         expect(pwaCss).toContain('width: 100% !important; /* Fixed navigation must not widen the document. */');
@@ -80,8 +85,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('/* Wave 2: canonical clinical content rules. */');
         expect(pwaCss).toContain('font-size: var(--sc-pwa-font-control) !important;');
         expect(pwaCss).toContain('min-height: var(--sc-pwa-touch-target) !important;');
-        expect(pwaCss).toContain('min-height: 88px !important;');
-        expect(pwaCss).toContain('padding: var(--sc-pwa-space-3) !important;');
+        expect(pwaCss).toContain('min-height: 72px !important;');
+        expect(pwaCss).toContain('padding: var(--sc-pwa-space-2) !important;');
         expect(pwaCss).toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important;');
         expect(pwaCss).toContain('flex: 0 0 100% !important;');
         expect(pwaCss).toContain('#sunday-clinic-content textarea.form-control,');
@@ -94,8 +99,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
         const billing = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'billing.js');
 
-        expect(pwaCss).toContain('#additional-billing-panel .additional-billing-table td {');
-        expect(pwaCss).toContain('grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr) !important;');
+        expect(pwaCss).toContain(':is(.sc-billing-table, #billing-items-table, .additional-billing-table) td {');
+        expect(pwaCss).toContain('grid-template-columns: minmax(80px, 0.4fr) minmax(0, 1fr) !important;');
         expect(pwaCss).toContain('#additional-billing-panel .additional-billing-actions .btn {');
         expect(billing).toContain('aria-label="Ubah draft"');
         expect(billing).toContain('aria-label="Konfirmasi tagihan"');
@@ -107,7 +112,7 @@ describe('Sunday Clinic PWA visual refactor', () => {
         const wave3 = pwaCss.slice(pwaCss.indexOf('/* Wave 3: canonical modal, overlay, sidebar, and chat rules. */'));
 
         expect(wave3).not.toBe('');
-        expect(wave3).toContain('max-height: calc(var(--sc-pwa-viewport-height) - 16px) !important;');
+        expect(wave3).toContain('max-height: calc(var(--sc-pwa-viewport-height) - 12px) !important;');
         expect(wave3).toContain('position: sticky !important;');
         expect(wave3).toContain('overflow-y: auto !important;');
         expect(wave3).toContain('font-size: var(--sc-pwa-font-control) !important;');
@@ -121,8 +126,7 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(wave3).toContain('overflow-x: hidden !important;');
         expect(wave3).toContain('#terapi-modal tbody td::before {');
         expect(wave3).toContain('content: attr(data-label) !important;');
-        expect(wave3).toContain('.modal .custom-control,');
-        expect(wave3).toContain('.modal .custom-control-label,');
+        expect(wave3).toContain('.modal :is(.custom-control, .form-check, .custom-control-label, .form-check-label) {');
         expect(wave3).toContain('@media (max-width: 390px)');
         expect(wave3).not.toMatch(/\d+(?:\.\d+)?vh/);
     });
@@ -137,9 +141,9 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(wave3).toContain('#chat-close-btn,');
         expect(wave3).toContain('#chat-send-btn {');
         expect(wave3).toContain('font-size: var(--sc-pwa-font-body) !important;');
-        expect(wave3).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 8px) !important;');
-        expect(chatPopup).toContain("var clinicInsetPx = document.body.classList.contains('sunday-clinic-embedded-active') ? 8 : 0;");
-        expect(chatPopup).toContain("var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '12px' : '0';");
+        expect(wave3).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 6px) !important;');
+        expect(chatPopup).toContain("var clinicInsetPx = document.body.classList.contains('sunday-clinic-embedded-active') ? 6 : 0;");
+        expect(chatPopup).toContain("var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '8px' : '0';");
     });
 
     test('wave 3 replaces fixed inline form sizing with shared semantic hooks', () => {
@@ -156,8 +160,19 @@ describe('Sunday Clinic PWA visual refactor', () => {
 
         expect(sharedCss).toContain('.sc-form-limit-md {');
         expect(sharedCss).toContain('.sc-medication-instruction {');
-        expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .sc-form-limit-md,');
+        expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-form-limit-md,');
         expect(sources).not.toMatch(/style="(?:max-width:\s*(?:120|150|300)px|width:\s*(?:60|80|150\.923076|180)px|height:\s*71px)/);
         expect(sources).toContain('<td data-label="Nama Obat">');
+    });
+
+    test('all rendered clinical modules receive idempotent compact semantic primitives', () => {
+        const app = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
+
+        expect(app).toContain('applySundayClinicPwaPrimitives(container)');
+        expect(app).toContain("element.classList.add('sc-pwa-card')");
+        expect(app).toContain("element.classList.add('sc-pwa-form-grid')");
+        expect(app).toContain("element.classList.add('sc-pwa-action-row')");
+        expect(app).toContain("button.classList.add('sc-pwa-icon-button')");
+        expect(app).toContain("const COMPONENT_VERSION = '3.0.15';");
     });
 });

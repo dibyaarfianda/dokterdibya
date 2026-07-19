@@ -1422,13 +1422,13 @@ export default {
 
             return `
                 <tr data-item-id="${item.id}">
-                    <td>
+                    <td data-label="Item">
                         ${escapeHtml(item.item_name)}
                         ${deleteBtn}
                     </td>
-                    <td class="text-center">${item.quantity || 1}</td>
-                    <td class="text-right">${formatRupiahLocal(item.price)}</td>
-                    <td class="text-right font-weight-bold">${formatRupiahLocal(itemTotal)}</td>
+                    <td data-label="Qty" class="text-center">${item.quantity || 1}</td>
+                    <td data-label="Harga" class="text-right">${formatRupiahLocal(item.price)}</td>
+                    <td data-label="Total" class="text-right font-weight-bold">${formatRupiahLocal(itemTotal)}</td>
                 </tr>
             `;
         }).join('');
@@ -1588,9 +1588,9 @@ export default {
                         <tbody>
                             ${itemsHtml || '<tr><td colspan="4" class="text-center text-muted">Belum ada item tagihan. Item akan muncul setelah Planning disimpan.</td></tr>'}
                             ${itemsHtml ? `
-                            <tr class="table-active font-weight-bold">
+                            <tr class="table-active font-weight-bold sc-billing-total-row">
                                 <td colspan="3" class="text-right">GRAND TOTAL</td>
-                                <td class="text-right">${formatRupiahLocal(subtotal)}</td>
+                                <td data-label="Total" class="text-right">${formatRupiahLocal(subtotal)}</td>
                             </tr>
                             ` : ''}
                         </tbody>

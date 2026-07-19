@@ -69,7 +69,7 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toContain('�');
     });
 
-    test('Sunday Clinic PWA overrides the compact staff shell with balanced clinical typography', () => {
+    test('Sunday Clinic PWA overrides the staff shell with its scoped compact clinical tokens', () => {
         const mobileCss = readNormalizedFile('staff', 'public', 'styles', 'mobile-responsive.css');
         const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
@@ -84,10 +84,10 @@ describe('staff panel stabilization sources', () => {
         expect(mobileCss).toContain('body.mobile-app-mode .table-action,\n    body.mobile-app-mode .table-action i {\n        font-size: 8px !important;');
 
         expect(sundayClinicCss).not.toContain('Compact 10 final pass for Sunday Clinic PWA/mobile.');
-        expect(sundayClinicCss).toContain('--sc-pwa-font-body: 13px;');
-        expect(sundayClinicCss).toContain('--sc-pwa-font-control: 16px;');
-        expect(sundayClinicCss).toContain('--sc-pwa-font-button: 13px;');
-        expect(sundayClinicCss).toContain('--sc-pwa-touch-target: 44px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-body: 11px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-control: 14px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-button: 11px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-touch-target: 40px;');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active');
     });
 
@@ -409,12 +409,12 @@ describe('staff panel stabilization sources', () => {
 
         expect(htmlVersionMatch).not.toBeNull();
 
-        expect(sundayClinicCss).toContain('Klinik Privat mobile embedded polish.');
+        expect(sundayClinicCss).toContain('Wave 1: canonical embedded shell and navigation rules.');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #staff-name-display');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #save-pemeriksaan-obstetri');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .btn[class*="btn-"],');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openBulkImportModal"]');
         expect(sw).toContain(`const STAFF_PWA_VERSION = '${htmlVersionMatch[1]}';`);
     });
@@ -575,8 +575,8 @@ describe('staff panel stabilization sources', () => {
         expect(billing).toContain('class="table table-sm table-bordered mb-0 additional-billing-table"');
         expect(billing).toContain('data-label="Referensi"');
         expect(billing).toContain('class="additional-billing-empty"');
-        expect(sundayClinicCss).toContain('#additional-billing-panel .additional-billing-table thead');
-        expect(sundayClinicCss).toContain('grid-template-columns: 88px minmax(0, 1fr) !important;');
+        expect(sundayClinicCss).toContain(':is(.sc-billing-table, #billing-items-table, .additional-billing-table) thead');
+        expect(sundayClinicCss).toContain('grid-template-columns: minmax(80px, 0.4fr) minmax(0, 1fr) !important;');
         expect(sundayClinicCss).toContain('#additional-billing-panel .additional-billing-empty');
     });
 
@@ -588,9 +588,9 @@ describe('staff panel stabilization sources', () => {
         expect(chatPopup).toContain('function isVisibleBottomNav(nav)');
         expect(chatPopup).toContain('var visibleNavHeight = Math.round(viewportBottom - navRect.top);');
         expect(chatPopup).toContain('Math.min(140, Math.max(56, visibleNavHeight))');
-        expect(chatPopup).toContain("var fabBottom = (navPx2 + 8) + 'px';");
-        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn');
-        expect(sundayClinicCss).toContain('bottom: auto !important;');
+        expect(chatPopup).toContain("var fabBottom = (navPx2 + 6) + 'px';");
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active :is(#chat-toggle-btn, .chat-toggle-btn)');
+        expect(sundayClinicCss).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 6px) !important;');
         expect(sundayClinicCss).not.toMatch(/#chat-toggle-btn,[\s\S]{0,160}bottom:\s*calc\(84px/);
     });
 

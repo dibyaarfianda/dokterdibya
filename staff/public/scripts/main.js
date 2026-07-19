@@ -68,11 +68,11 @@ function syncSundayClinicPwaViewport() {
     ));
     const viewportBottom = viewportTop + viewportHeight;
     const nav = getVisibleSundayClinicBottomNav();
-    let navHeight = 68;
+    let navHeight = 60;
     if (nav) {
         const rect = nav.getBoundingClientRect();
         const visibleHeight = Math.round(Math.min(viewportBottom, rect.bottom) - Math.max(viewportTop, rect.top));
-        if (visibleHeight > 0) navHeight = Math.min(140, Math.max(58, visibleHeight));
+        if (visibleHeight > 0) navHeight = Math.min(140, Math.max(52, visibleHeight));
     }
     const style = document.body.style;
     style.setProperty('--sc-pwa-viewport-height', viewportHeight + 'px');

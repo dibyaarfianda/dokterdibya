@@ -6,6 +6,29 @@
 import { MR_CATEGORIES, SECTIONS } from './utils/constants.js';
 import apiClient from './utils/api-client.js';
 import stateManager from './utils/state-manager.js';
+
+function applySundayClinicPwaPrimitives(container) {
+    if (!container) return;
+
+    container.querySelectorAll('.sc-card, .form-section, .clinical-section').forEach((element) => {
+        element.classList.add('sc-pwa-card');
+    });
+    container.querySelectorAll('.form-row, .sc-grid.two, .row.form-grid').forEach((element) => {
+        element.classList.add('sc-pwa-form-grid');
+    });
+    container.querySelectorAll('.button-group, .form-actions, .action-row, .sc-billing-actions, #resume-button-group').forEach((element) => {
+        element.classList.add('sc-pwa-action-row');
+    });
+    container.querySelectorAll('.sc-billing-table tbody tr, #billing-items-table tbody tr, .additional-billing-table tbody tr').forEach((element) => {
+        element.classList.add('sc-pwa-mobile-data-card');
+    });
+    container.querySelectorAll('button').forEach((button) => {
+        const text = (button.textContent || '').trim();
+        if (!text && (button.getAttribute('aria-label') || button.getAttribute('title'))) {
+            button.classList.add('sc-pwa-icon-button');
+        }
+    });
+}
 import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
@@ -262,7 +285,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.14';
+        const COMPONENT_VERSION = '3.0.15';
         const cacheBuster = `?v=${COMPONENT_VERSION}`;
 
         const loaders = componentPaths.map(async ({ section, path }) => {
@@ -350,6 +373,7 @@ class SundayClinicApp {
         console.log('[SundayClinic] Setting container HTML, length:', html.length);
         console.log('[SundayClinic] Container element:', container);
         container.innerHTML = html;
+        applySundayClinicPwaPrimitives(container);
         console.log('[SundayClinic] Container innerHTML after set:', container.innerHTML.length);
 
         // Call afterRender if available (after DOM is updated)

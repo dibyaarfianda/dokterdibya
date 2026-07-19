@@ -152,7 +152,7 @@ import { ROLE_IDS } from './role-constants.js';
     var viewportTop = getMobileViewportTop();
     var viewportLeft = getMobileViewportLeft();
     var viewportWidth = getMobileViewportWidth();
-    var clinicInsetPx = document.body.classList.contains('sunday-clinic-embedded-active') ? 8 : 0;
+    var clinicInsetPx = document.body.classList.contains('sunday-clinic-embedded-active') ? 6 : 0;
     var chatHeight = getMobileChatHeightPx(reservedBottomPx, clinicInsetPx);
     cont.style.setProperty('position', 'fixed', 'important');
     cont.style.setProperty('top', (viewportTop + clinicInsetPx) + 'px', 'important');
@@ -203,7 +203,7 @@ import { ROLE_IDS } from './role-constants.js';
       cont.style.setProperty('transform', 'none', 'important');
       var box = document.getElementById('chat-box');
       if (box && box.style.getPropertyValue('display') !== 'none') {
-        var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '12px' : '0';
+        var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '8px' : '0';
         box.style.setProperty('width', '100%', 'important');
         box.style.setProperty('height', '100%', 'important');
         box.style.setProperty('border-radius', clinicRadius, 'important');
@@ -216,7 +216,7 @@ import { ROLE_IDS } from './role-constants.js';
       var navH2 = getNavBottomPx();
       var navPx2 = parseInt(navH2, 10);
       if (isNaN(navPx2)) navPx2 = 65;
-      var fabBottom = (navPx2 + 8) + 'px';
+      var fabBottom = (navPx2 + 6) + 'px';
       cont.style.cssText = '';
       cont.style.setProperty('position', 'fixed', 'important');
       cont.style.setProperty('display', 'block', 'important');
@@ -259,7 +259,7 @@ import { ROLE_IDS } from './role-constants.js';
     // Style chat-box to fill container
     var box = document.getElementById('chat-box');
     if (box) {
-      var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '12px' : '0';
+      var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '8px' : '0';
       box.style.setProperty('width', '100%', 'important');
       box.style.setProperty('height', '100%', 'important');
       box.style.setProperty('border-radius', clinicRadius, 'important');

@@ -1,2117 +1,180 @@
 /* Sunday Clinic PWA visual system.
-   Loaded after sunday-clinic.css and scoped to the embedded mobile page. */
-body.mobile-app-mode.sunday-clinic-embedded-active {
-    --sc-pwa-space-1: 4px;
-    --sc-pwa-space-2: 8px;
-    --sc-pwa-space-3: 12px;
-    --sc-pwa-space-4: 16px;
-    --sc-pwa-space-6: 24px;
-    --sc-pwa-gutter: 12px;
-    --sc-pwa-font-meta: 11px;
-    --sc-pwa-font-body: 13px;
-    --sc-pwa-font-label: 13px;
-    --sc-pwa-font-control: 16px;
-    --sc-pwa-font-button: 13px;
-    --sc-pwa-font-heading: 15px;
-    --sc-pwa-font-title: 17px;
-    --sc-pwa-touch-target: 44px;
-    --sc-pwa-control-radius: 8px;
-    --sc-pwa-card-radius: 12px;
-    --sc-pwa-viewport-height: 100%;
-    --sc-pwa-bottom-nav-height: 68px;
-}
+   Loaded after sunday-clinic.css and enabled only for the embedded mobile app. */
 
-@media (min-width: 600px) and (max-width: 991.98px) {
-    body.mobile-app-mode.sunday-clinic-embedded-active {
-        --sc-pwa-gutter: 16px;
-    }
-}
-
-/* =============================================
-   MOBILE APP MODE - WebView from Capacitor App
-   Activated when ?mobile=1 parameter is present
-   ============================================= */
-
-/* Prevent horizontal scroll - lock to single page view */
-html.mobile-app-mode:has(body.sunday-clinic-embedded-active),
-body.mobile-app-mode.sunday-clinic-embedded-active {
-    overflow-x: hidden !important;
-    max-width: 100vw !important;
-    width: 100vw !important;
-    position: relative !important;
-    /* Android WebView handles safe area via native padding */
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active,
-body.mobile-app-mode.sunday-clinic-embedded-active .wrapper,
-body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper,
-body.mobile-app-mode.sunday-clinic-embedded-active .content,
-body.mobile-app-mode.sunday-clinic-embedded-active .container-fluid,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page .card,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section {
-    width: 100% !important;
-    overflow-x: hidden !important;
-    max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* Hide sidebars in mobile mode */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-sidebar {
-    display: none !important;
-}
-
-/* Patient history sidebar - mobile overlay mode */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-history-sidebar {
-    width: 100% !important;
-    max-width: 100vw !important;
-    z-index: 9999 !important; /* Above everything else */
-    transform: translateX(100%) !important; /* Hidden by default */
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-history-sidebar.open {
-    transform: translateX(0) !important; /* Slide in when open */
-}
-
-/* Content area full width - no margins */
-body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper,
-body.mobile-app-mode.sunday-clinic-embedded-active.sidebar-collapse .content-wrapper,
-body.mobile-app-mode.sunday-clinic-embedded-active:not(.sidebar-collapse) .content-wrapper {
-    margin-left: 0 !important;
-    padding-bottom: 85px; /* Space for footer nav */
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header,
-body.mobile-app-mode.sunday-clinic-embedded-active.sidebar-collapse .main-header,
-body.mobile-app-mode.sunday-clinic-embedded-active:not(.sidebar-collapse) .main-header {
-    margin-left: 0 !important;
-}
-
-/* Full-width content: no outer padding/gap */
-body.mobile-app-mode.sunday-clinic-embedded-active .content {
-    padding: 0 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .container-fluid {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    padding-top: 0 !important;
-}
-
-/* Cards edge-to-edge with small vertical gap */
-body.mobile-app-mode.sunday-clinic-embedded-active .card {
-    border-radius: 0 !important;
-    margin-bottom: 6px !important;
-}
-
-/* Uniform content font on mobile - cascade from root container */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content {
-    font-size: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content p,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content label,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-text,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-note,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .alert {
-    font-size: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h2,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h3,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section-inline-title {
-    font-size: 14px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h4,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h5,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h6,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card-title,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .section-header {
-    font-size: 13px !important;
-}
-
-/* Explicit override for form elements (Bootstrap resets these) */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content select,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-control,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input::placeholder,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content select::placeholder,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-control::placeholder,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea::placeholder {
-    font-size: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .card {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-}
-
-/* Hide search, import, date/time - keep only queue + history */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .btn-group,
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .datetime-display,
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header #btn-header-search {
-    display: none !important;
-}
-
-/* History button - icon only, round */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header #btn-toggle-patient-sidebar {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 28px !important;
-    height: 28px !important;
-    padding: 0 !important;
-    font-size: 12px !important;
-    border-radius: 50% !important;
-    min-width: auto !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header #btn-toggle-patient-sidebar span {
-    display: none !important;
-}
-
-/* Queue button - icon only, round */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header #btn-header-queue {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 28px !important;
-    height: 28px !important;
-    padding: 0 !important;
-    font-size: 12px !important;
-    border-radius: 50% !important;
-    position: relative !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header #btn-header-queue span:not(.badge) {
-    display: none !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header #btn-header-queue .badge {
-    position: absolute !important;
-    top: -3px !important;
-    right: -3px !important;
-    font-size: 10px !important;
-    padding: 1px 3px !important;
-    min-width: 14px !important;
-    border-radius: 7px !important;
-}
-
-/* Queue dropdown */
-body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown {
-    width: 300px !important;
-    max-width: 92vw !important;
-    font-size: 13px !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .header-queue-list {
-    font-size: 13px !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .header-queue-list .dropdown-item {
-    padding: 8px 12px !important;
-    font-size: 13px !important;
-}
-
-/* Compact single-row header (48px) */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-    padding: 0 6px !important;
-    height: 42px !important;
-    min-height: 42px !important;
-    max-height: 42px !important;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1050;
-    background: #fff;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
-}
-
-/* Back button (hamburger → arrow) */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav:first-child .nav-link {
-    font-size: 16px !important;
-    color: #333 !important;
-    padding: 0 8px 0 2px !important;
-    flex-shrink: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    height: 42px !important;
-}
-
-/* Left nav: back + patient name */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav:first-child {
-    flex: 1 !important;
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    overflow: hidden !important;
-    min-width: 0 !important;
-}
-
-/* Patient name - prominent, truncated */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .clinic-header-title {
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: calc(100vw - 110px) !important;
-    color: #212529 !important;
-}
-
-/* Right nav: actions - no wrapping */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {
-    flex-wrap: nowrap !important;
-    align-items: center !important;
-    flex-shrink: 0 !important;
-    gap: 2px !important;
-}
-
-/* Content: 42px top padding (matches header height) */
-body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper {
-    padding-top: 42px !important;
-}
-
-/* Mobile back button */
-.mobile-back-btn {
-    display: none;
-    border: none;
-    background: transparent;
-    color: #6c757d;
-    font-size: 12px;
-    padding: 6px 10px;
-    margin-right: 6px;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .mobile-back-btn {
-    display: inline-flex;
-    align-items: center;
-}
-
-.mobile-back-btn:hover {
-    color: #0d6efd;
-}
-
-/* Mobile Footer Navigation */
-.mobile-section-nav {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #ffffff;
-    border-top: 1px solid #dee2e6;
-    z-index: 1030;
-    padding: 8px 0 calc(20px + env(safe-area-inset-bottom, 0)); /* Extra 20px for Android nav */
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .mobile-section-nav {
-    display: block;
-}
-
-/* Chat popup container - above footer section nav */
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container {
-    position: fixed !important;
-    bottom: 70px !important;
-    right: 12px !important;
-    z-index: 99998 !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    /* Don't create containing block for fixed children */
-    transform: none !important;
-    will-change: auto !important;
-}
-
-/* Chat toggle button - ensure visible and clickable */
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn,
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-toggle-btn {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    width: 50px !important;
-    height: 50px !important;
-    background: linear-gradient(135deg, #007BFF 0%, #007BFF 100%) !important;
-    border-radius: 50% !important;
-    align-items: center !important;
-    justify-content: center !important;
-    color: white !important;
-    font-size: 20px !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
-    pointer-events: auto !important;
-    cursor: pointer !important;
-    -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
-}
-
-/* Chat box in Sunday Clinic mobile mode - full screen (top to above nav) */
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-box,
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-box {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 60px !important; /* above .mobile-section-nav (approx 60px) */
-    width: 100% !important;
-    height: auto !important;
-    max-width: none !important;
-    max-height: none !important;
-    z-index: 100000 !important;
-    pointer-events: auto !important;
-    background: #ffffff !important;
-    border-radius: 0 !important;
-    box-shadow: 0 2px 16px rgba(0,0,0,0.2) !important;
-    flex-direction: column !important;
-    overflow: hidden !important;
-    border: none !important;
-    padding-bottom: 0 !important;
-}
-
-/* Chat input container spacing */
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-input-container {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 8px !important;
-    padding: 12px !important;
-    flex-shrink: 0 !important;
-    background: #fff !important;
-}
-
-/* Chat box OPEN state - using class instead of attribute selector */
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-box.chat-open,
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-box.chat-open {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    max-width: none !important;
-    max-height: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding-bottom: 0 !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Also keep attribute selector as fallback */
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-box[style*="display: flex"],
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-box[style*="display:flex"],
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-box[style*="flex"] {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    max-width: none !important;
-    max-height: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    padding-bottom: 0 !important;
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Embedded staff-panel PWA mobile section navigation
-   Replaces the global staff bottom nav only while Sunday Clinic is active in mobile app mode. */
 @media (max-width: 991.98px) {
+    body.mobile-app-mode.sunday-clinic-embedded-active {
+        --sc-pwa-space-0: 2px;
+        --sc-pwa-space-1: 4px;
+        --sc-pwa-space-2: 8px;
+        --sc-pwa-space-3: 12px;
+        --sc-pwa-space-4: 16px;
+        --sc-pwa-gutter: 8px;
+        --sc-pwa-font-meta: 10px;
+        --sc-pwa-font-body: 11px;
+        --sc-pwa-font-label: 11px;
+        --sc-pwa-font-control: 14px;
+        --sc-pwa-font-button: 11px;
+        --sc-pwa-font-heading: 13px;
+        --sc-pwa-font-title: 15px;
+        --sc-pwa-icon-sm: 14px;
+        --sc-pwa-icon-md: 16px;
+        --sc-pwa-icon-lg: 20px;
+        --sc-pwa-touch-target: 40px;
+        --sc-pwa-control-radius: 6px;
+        --sc-pwa-card-radius: 8px;
+        --sc-pwa-viewport-height: 100%;
+        --sc-pwa-bottom-nav-height: 60px;
+        width: auto !important; /* Exclude the vertical scrollbar from shell sizing. */
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        background: #f5f7fb !important;
+        font-size: var(--sc-pwa-font-body) !important;
+    }
+
+    /* Wave 1: canonical embedded shell and navigation rules. */
+    body.mobile-app-mode.sunday-clinic-embedded-active .wrapper,
+    body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper,
+    body.mobile-app-mode.sunday-clinic-embedded-active .content,
+    body.mobile-app-mode.sunday-clinic-embedded-active .container-fluid,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content {
+        width: auto !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        margin-right: 0 !important;
+        margin-left: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page .card,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-sidebar,
     body.mobile-app-mode.sunday-clinic-embedded-active #mobile-action-bar,
     body.mobile-app-mode.sunday-clinic-embedded-active #mobile-action-bar.mobile-action-bar-force {
         display: none !important;
         visibility: hidden !important;
-        opacity: 0 !important;
         pointer-events: none !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper {
-        padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child {
-        margin-bottom: 6px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-body {
-        height: 0 !important;
-        min-height: 0 !important;
-        padding: 0 !important;
-        border: 0 !important;
-        overflow: visible !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav {
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header {
         position: fixed !important;
-        left: 0 !important;
+        top: 0 !important;
         right: 0 !important;
-        bottom: 0 !important;
-        z-index: 999999 !important;
+        left: 0 !important;
+        z-index: 1050 !important;
         display: flex !important;
+        align-items: center !important;
+        width: 100% !important;
+        min-height: 52px !important;
+        height: 52px !important;
+        max-height: 52px !important;
+        margin-left: 0 !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-gutter) !important;
+        background: #fff !important;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav {
+        min-width: 0 !important;
+        height: var(--sc-pwa-touch-target) !important;
+        align-items: center !important;
         flex-wrap: nowrap !important;
-        align-items: stretch !important;
-        justify-content: flex-start !important;
-        gap: 4px !important;
-        width: 100vw !important;
-        max-width: 100vw !important;
-        min-height: 74px !important;
-        margin: 0 !important;
-        padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-        scroll-snap-type: x proximity !important;
-        touch-action: pan-x !important;
-        background: #ffffff !important;
-        border-top: 1px solid rgba(15, 23, 42, 0.1) !important;
-        box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.14) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav::-webkit-scrollbar {
-        display: none !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav:first-child {
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav {
-        scrollbar-width: none !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {
+        flex: 0 0 auto !important;
+        gap: var(--sc-pwa-space-1) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item {
-        flex: 0 0 86px !important;
-        width: 86px !important;
-        max-width: 86px !important;
-        min-width: 86px !important;
-        margin: 0 !important;
-        scroll-snap-align: start !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item[style*="display: none"] {
-        display: none !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link {
-        width: 100% !important;
-        height: 58px !important;
-        min-height: 58px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 4px !important;
-        margin: 0 !important;
-        padding: 6px 4px !important;
-        border-radius: 12px !important;
-        color: #5f6673 !important;
-        background: transparent !important;
-        text-align: center !important;
-        letter-spacing: 0 !important;
-        line-height: 1.1 !important;
-        white-space: normal !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link.active {
-        color: #ffffff !important;
-        background: #0d6efd !important;
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.28) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link .nav-icon {
-        width: auto !important;
-        margin: 0 !important;
-        font-size: 16px !important;
-        line-height: 1 !important;
-        color: inherit !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link p {
-        max-width: 78px !important;
-        margin: 0 !important;
-        color: inherit !important;
-        font-size: 10px !important;
-        line-height: 1.12 !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header .clinic-header-title {
+        min-width: 0 !important;
+        max-width: calc(100vw - 190px) !important;
+        overflow: hidden !important;
+        color: #212529 !important;
+        font-size: var(--sc-pwa-font-heading) !important;
         font-weight: 600 !important;
-        letter-spacing: 0 !important;
-        overflow: hidden !important;
-        display: -webkit-box !important;
-        -webkit-box-orient: vertical !important;
-        -webkit-line-clamp: 2 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container {
-        bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active .chat-toggle-btn {
-        /* The container already clears the embedded nav; do not apply it twice. */
-        bottom: auto !important;
-    }
-}
-
-/* Chat box elements must be interactive */
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-box *,
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-box * {
-    pointer-events: auto !important;
-}
-
-/* CRITICAL: Override wildcard font-size for chat elements */
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container,
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container * {
-    font-size: inherit !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn i,
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-toggle-btn i {
-    font-size: 24px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-box,
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-box {
-    font-size: 14px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-header {
-    font-size: 14px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-messages {
-    font-size: 13px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-input {
-    font-size: 15px !important;
-    flex: 1 1 0 !important;
-    min-width: 0 !important; /* Allow flex item to shrink below content size */
-    max-width: none !important;
-}
-
-/* Send button fix - prevent wildcard from shrinking it */
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-send-btn,
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-send-btn {
-    width: 40px !important;
-    height: 40px !important;
-    min-width: 40px !important;
-    min-height: 40px !important;
-    border-radius: 50% !important;
-    flex-shrink: 0 !important;
-    flex-grow: 0 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    overflow: visible !important;
-    padding: 0 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-send-btn i,
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-send-btn i {
-    font-size: 16px !important;
-    line-height: 1 !important;
-}
-
-/* ==================== PATIENT SIDEBAR MOBILE STYLES ==================== */
-
-/* Sidebar container - full width, no overflow */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-header,
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-body,
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-footer {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    overflow-x: hidden !important;
-}
-
-/* Sidebar header mobile */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-header {
-    padding: 8px 10px !important;
-    font-size: 11px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-header h5 {
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    margin: 0 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-header .btn {
-    padding: 2px 6px !important;
-    font-size: 11px !important;
-}
-
-/* Sidebar body mobile - ensure proper scrolling */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-body {
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-}
-
-/* Current patient info mobile */
-body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info {
-    font-size: 12px !important;
-    padding: 8px 10px !important;
-    overflow: hidden !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info * {
-    max-width: 100% !important;
-    overflow-wrap: break-word !important;
-    word-wrap: break-word !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info strong {
-    font-size: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info .patient-name {
-    font-size: 14px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info .patient-meta {
-    font-size: 12px !important;
-}
-
-/* Visit cards mobile */
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-card {
-    font-size: 14px !important;
-    margin-bottom: 20px !important;
-    overflow: visible !important;
-    display: block !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    border-radius: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-card * {
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-card-header {
-    padding: 20px 18px !important;
-    min-height: 90px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-card-header > div:first-child {
-    flex: 1 !important;
-    min-width: 0 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-mr {
-    font-size: 16px !important;
-    font-weight: 600 !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    margin-bottom: 10px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-date {
-    font-size: 14px !important;
-    margin-top: 6px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .location-badge {
-    font-size: 12px !important;
-    padding: 6px 12px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    border-radius: 8px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-history-list {
-    padding: 12px 14px !important;
-    max-height: none !important;
-    min-height: 300px !important;
-    height: auto !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    flex: 1 1 auto !important;
-}
-
-/* Ensure collapse is visible in mobile */
-body.mobile-app-mode.sunday-clinic-embedded-active .collapse.show,
-body.mobile-app-mode.sunday-clinic-embedded-active #history-content.show {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    height: auto !important;
-    max-height: none !important;
-}
-
-/* Flex-grow for collapse content */
-body.mobile-app-mode.sunday-clinic-embedded-active #history-content.flex-grow-1,
-body.mobile-app-mode.sunday-clinic-embedded-active #history-content {
-    flex: 1 1 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-y: visible !important;
-    overflow-x: hidden !important;
-    min-height: 400px !important;
-    height: auto !important;
-    max-height: none !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-card-body {
-    font-size: 14px !important;
-    padding: 20px 18px !important;
-    line-height: 1.6 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .visit-card-body .btn {
-    font-size: 14px !important;
-    padding: 12px 18px !important;
-    margin-top: 12px !important;
-}
-
-/* Section headers mobile */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-section .section-header {
-    font-size: 14px !important;
-    padding: 12px 14px !important;
-    overflow: hidden !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    font-weight: 600 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-section .section-header > span:first-of-type {
-    flex: 1 !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-section .section-header .badge {
-    font-size: 10px !important;
-    padding: 2px 5px !important;
-    flex-shrink: 0 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-section .section-header .toggle-icon {
-    flex-shrink: 0 !important;
-    margin-left: 0 !important;
-}
-
-/* Sidebar footer mobile */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-footer {
-    padding: 8px 10px !important;
-    border-top: 1px solid #dee2e6 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-footer .btn {
-    font-size: 11px !important;
-    padding: 5px 8px !important;
-    white-space: normal !important;
-    line-height: 1.2 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-footer small {
-    font-size: 10px !important;
-    display: block !important;
-    overflow-wrap: break-word !important;
-}
-
-/* Identity table mobile styles */
-body.mobile-app-mode.sunday-clinic-embedded-active .identity-table .identity-label {
-    font-size: 12px !important;
-    padding: 4px 6px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .identity-table .identity-value {
-    font-size: 12px !important;
-    padding: 4px 6px !important;
-    word-break: break-word !important;
-}
-
-/* Patient sidebar section mobile - allow content to show */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-section {
-    overflow: visible !important;
-    height: auto !important;
-}
-
-/* Ensure flex-grow for visit history section */
-body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-section.flex-grow-1 {
-    flex: 1 1 auto !important;
-    display: flex !important;
-    flex-direction: column !important;
-    min-height: 400px !important;
-    height: auto !important;
-    max-height: none !important;
-}
-
-.section-nav-scroll {
-    display: flex;
-    overflow-x: auto;
-    gap: 4px;
-    padding: 0 70px 0 8px; /* Extra right padding for chat bubble */
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-}
-
-.section-nav-scroll::-webkit-scrollbar {
-    display: none;
-}
-
-.section-btn {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 6px 10px;
-    border: none;
-    background: transparent;
-    color: #6c757d;
-    font-size: 10px;
-    border-radius: 8px;
-    min-width: 56px;
-    transition: all 0.2s;
-    cursor: pointer;
-}
-
-.section-btn i {
-    font-size: 12px;
-    margin-bottom: 2px;
-}
-
-.section-btn.active {
-    background: #0d6efd;
-    color: white;
-}
-
-.section-btn:active {
-    transform: scale(0.95);
-}
-
-/* Hide category-specific buttons based on record type */
-body.mobile-app-mode.sunday-clinic-embedded-active.category-obstetri .gyn-only {
-    display: none !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active.category-gyn_repro .obs-only,
-body.mobile-app-mode.sunday-clinic-embedded-active.category-gyn_special .obs-only {
-    display: none !important;
-}
-
-/* Hide billing for non-private locations */
-body.mobile-app-mode.sunday-clinic-embedded-active:not(.location-klinik_private) .billing-only {
-    display: none !important;
-}
-
-/* Mobile-specific form adjustments - compact & clean */
-body.mobile-app-mode.sunday-clinic-embedded-active .card-body {
-    padding: 6px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .card-header {
-    padding: 4px 6px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .form-group {
-    margin-bottom: 4px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active label {
-    font-size: 12px;
-    margin-bottom: 2px;
-    font-weight: 500;
-}
-
-/* Tighter vertical spacing */
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card {
-    padding: 6px !important;
-    margin-bottom: 6px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section {
-    margin-bottom: 6px !important;
-    gap: 0.5rem !important;
-}
-
-/* Hide ALL section h3 titles on mobile (shown inline in DRD badge row) */
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section-header {
-    display: none !important;
-}
-
-/* Hide redundant section title if it's already shown inline in DRD row */
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section-header-hide-mobile {
-    display: none !important;
-}
-
-/* Category/action row: hidden by default, shown in staff embed and mobile mode. */
-.sc-mobile-badge-row {
-    display: none;
-}
-body.sunday-clinic-embedded-active .sc-mobile-badge-row,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-mobile-badge-row {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    padding: 6px 0 8px 0 !important;
-    margin-bottom: 8px !important;
-    gap: 8px !important;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
-}
-body.sunday-clinic-embedded-active .sc-mobile-badge-left,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-mobile-badge-left {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-    min-width: 0 !important;
-}
-body.sunday-clinic-embedded-active .sc-mobile-badge-right,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-mobile-badge-right {
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-    flex-shrink: 0 !important;
-}
-.sc-section-inline-title {
-    display: none;
-}
-body.sunday-clinic-embedded-active .sc-section-inline-title,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section-inline-title {
-    display: block !important;
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    color: #212529 !important;
-    line-height: 1.2 !important;
-}
-.sc-category-action-btn {
-    display: inline-flex !important;
-    align-items: center !important;
-    gap: 5px !important;
-    line-height: 1.2 !important;
-    white-space: nowrap !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-mobile-badge-row {
-    padding: 4px 0 4px 0 !important;
-    margin-bottom: 4px !important;
-    gap: 4px !important;
-    border-bottom: none !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-mobile-badge-left {
-    gap: 3px !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-mobile-badge-right {
-    gap: 4px !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section-inline-title {
-    font-size: 14px !important;
-}
-/* Category badge - smaller (higher specificity to beat wildcard inherit rule) */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-badge-category,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-badge-category {
-    font-size: 10px !important;
-    padding: 1px 5px !important;
-    font-weight: 600 !important;
-    line-height: 1.4 !important;
-}
-/* Edit/delete actions in category row */
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-category-action-btn {
-    width: 26px !important;
-    height: 26px !important;
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    font-size: 11px !important;
-    padding: 0 !important;
-    border-radius: 50% !important;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-category-action-label {
-    display: none !important;
-}
-/* "Dicatat oleh..." meta info - 12px */
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-note {
-    font-size: 12px !important;
-}
-/* Mobile: action buttons in sections - 11px */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section .btn {
-    font-size: 11px !important;
-}
-/* Mobile: "Sudah Lunas" status badge */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section .badge-lg {
-    font-size: 11px !important;
-    padding: 3px 8px !important;
-}
-/* Mobile: billing/table dense areas stay compact */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table td,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table th {
-    font-size: 11px !important;
-    padding: 3px 5px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .billing-dense-table td,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .billing-dense-table th,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table .badge,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table .btn {
-    font-size: 10px !important;
-}
-/* Mobile: Identitas table - tetap 12px (ikut font konten, bukan 9px billing) */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table td,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table th {
-    font-size: 12px !important;
-    padding: 4px 6px !important;
-}
-/* Mobile: Cetak Etiket / Cetak Invoice - same compact padding as Sudah Lunas badge */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content #btn-print-etiket,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content #btn-print-invoice {
-    padding: 3px 8px !important;
-}
-/* Mobile-only elements (hidden on desktop, shown on mobile) */
-.sc-mobile-only {
-    display: none;
-}
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-mobile-only {
-    display: block !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .mb-3 {
-    margin-bottom: 4px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .mb-2 {
-    margin-bottom: 4px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .mt-2 {
-    margin-top: 4px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .mt-3 {
-    margin-top: 6px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .py-2 {
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active p {
-    margin-bottom: 4px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active input,
-body.mobile-app-mode.sunday-clinic-embedded-active textarea,
-body.mobile-app-mode.sunday-clinic-embedded-active select {
-    font-size: 12px !important;
-    padding: 4px 6px !important;
-    line-height: 1.3 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .form-control {
-    font-size: 12px !important;
-    padding: 4px 6px !important;
-    height: auto;
-    min-height: 24px;
-    line-height: 1.3 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active textarea.form-control {
-    min-height: 32px;
-    font-size: 12px !important;
-    line-height: 1.3 !important;
-}
-
-/* Force textarea text size with high specificity */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-root textarea,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card textarea,
-body.mobile-app-mode.sunday-clinic-embedded-active .card-body textarea,
-body.mobile-app-mode.sunday-clinic-embedded-active textarea#planning-tindakan,
-body.mobile-app-mode.sunday-clinic-embedded-active textarea#planning-terapi,
-body.mobile-app-mode.sunday-clinic-embedded-active textarea#planning-rencana {
-    font-size: 12px !important;
-    line-height: 1.3 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .btn {
-    min-height: 28px;
-    font-size: 12px;
-    padding: 4px 8px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .btn-sm {
-    min-height: 24px;
-    font-size: 11px;
-    padding: 3px 6px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active h2,
-body.mobile-app-mode.sunday-clinic-embedded-active h3 {
-    font-size: 14px !important;
-    margin-bottom: 5px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active h4,
-body.mobile-app-mode.sunday-clinic-embedded-active h5 {
-    font-size: 13px !important;
-    margin-bottom: 5px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active h6 {
-    font-size: 13px !important;
-    margin-bottom: 4px;
-}
-
-/* Placeholder text */
-body.mobile-app-mode.sunday-clinic-embedded-active ::placeholder {
-    font-size: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active ::-webkit-input-placeholder {
-    font-size: 12px !important;
-}
-
-/* Form values follow Compact 12 */
-body.mobile-app-mode.sunday-clinic-embedded-active input,
-body.mobile-app-mode.sunday-clinic-embedded-active textarea,
-body.mobile-app-mode.sunday-clinic-embedded-active select,
-body.mobile-app-mode.sunday-clinic-embedded-active .form-control,
-body.mobile-app-mode.sunday-clinic-embedded-active [contenteditable] {
-    font-size: 12px !important;
-    line-height: 1.3 !important;
-}
-
-/* Icon allowlist: preserve icon font and let component-specific rules size icons */
-body.mobile-app-mode.sunday-clinic-embedded-active .section-btn i,
-body.mobile-app-mode.sunday-clinic-embedded-active .fas,
-body.mobile-app-mode.sunday-clinic-embedded-active .far,
-body.mobile-app-mode.sunday-clinic-embedded-active .fab,
-body.mobile-app-mode.sunday-clinic-embedded-active i.fa,
-body.mobile-app-mode.sunday-clinic-embedded-active i[class*="fa-"] {
-    font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands" !important;
-    line-height: 1 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .small,
-body.mobile-app-mode.sunday-clinic-embedded-active small {
-    font-size: 10px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .table {
-    table-layout: fixed;
-    width: 100%;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .table td,
-body.mobile-app-mode.sunday-clinic-embedded-active .table th {
-    padding: 4px 6px;
-    font-size: 11px;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
-    word-break: break-word !important;
-    hyphens: auto;
-    white-space: normal !important;
-    vertical-align: top;
-    text-overflow: clip !important;
-    overflow: visible !important;
-    max-width: 100% !important;
-}
-
-/* Patient identity table - ensure text wraps */
-body.mobile-app-mode.sunday-clinic-embedded-active .table-borderless td,
-body.mobile-app-mode.sunday-clinic-embedded-active .table-sm td,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-patient-info td {
-    word-wrap: break-word !important;
-    overflow-wrap: anywhere !important;
-    word-break: normal !important;
-    white-space: normal !important;
-    text-overflow: clip !important;
-    overflow: visible !important;
-}
-
-/* Allow long text to wrap in table cells */
-body.mobile-app-mode.sunday-clinic-embedded-active table,
-body.mobile-app-mode.sunday-clinic-embedded-active .table-responsive {
-    max-width: 100%;
-    overflow-x: hidden;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .table-responsive {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Summary cards compact */
-body.mobile-app-mode.sunday-clinic-embedded-active .summary-card,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-summary-card {
-    padding: 6px 10px;
-    font-size: 12px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .summary-card h6,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-summary-card h6 {
-    font-size: 13px;
-}
-
-/* Section headers compact */
-body.mobile-app-mode.sunday-clinic-embedded-active .section-header {
-    padding: 6px 8px;
-    font-size: 13px;
-}
-
-/* Hide pushmenu toggle (hamburger) in mobile mode */
-body.mobile-app-mode.sunday-clinic-embedded-active [data-widget="pushmenu"],
-body.mobile-app-mode.sunday-clinic-embedded-active .nav-link[data-widget="pushmenu"],
-body.mobile-app-mode.sunday-clinic-embedded-active .navbar-nav .nav-item:first-child:has([data-widget="pushmenu"]) {
-    display: none !important;
-}
-
-/* Also hide by icon class as fallback */
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .fa-bars {
-    display: none !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .main-header .nav-link:has(.fa-bars) {
-    display: none !important;
-}
-
-/* Tighter row spacing */
-body.mobile-app-mode.sunday-clinic-embedded-active .row {
-    margin-left: -4px;
-    margin-right: -4px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .row > [class*="col-"] {
-    padding-left: 4px;
-    padding-right: 4px;
-}
-
-/* Form row even tighter */
-body.mobile-app-mode.sunday-clinic-embedded-active .form-row {
-    margin-left: -3px;
-    margin-right: -3px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .form-row > [class*="col"] {
-    padding-left: 3px;
-    padding-right: 3px;
-}
-
-/* USG Trimester selector - 2x2 grid on mobile */
-body.mobile-app-mode.sunday-clinic-embedded-active .trimester-selector .btn-group {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    width: 100%;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .trimester-selector .btn-group .btn {
-    border-radius: 6px !important;
-    font-size: 11px !important;
-    padding: 6px 4px !important;
-    white-space: normal;
-    line-height: 1.2;
-    margin: 0 !important;
-    border: 1px solid #007bff !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .trimester-selector .btn-group .btn.active {
-    background: #007bff !important;
-    color: white !important;
-}
-
-/* Input groups compact */
-body.mobile-app-mode.sunday-clinic-embedded-active .input-group-text {
-    font-size: 12px;
-    padding: 4px 6px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .input-group-prepend,
-body.mobile-app-mode.sunday-clinic-embedded-active .input-group-append {
-    font-size: 12px;
-}
-
-/* Resume medis button group - grid layout */
-body.mobile-app-mode.sunday-clinic-embedded-active .button-group,
-body.mobile-app-mode.sunday-clinic-embedded-active #resume-button-group {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 4px !important;
-    width: 100% !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .button-group .btn,
-body.mobile-app-mode.sunday-clinic-embedded-active #resume-button-group .btn {
-    margin: 0 !important;
-    padding: 6px 4px !important;
-    font-size: 10px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .button-group .btn i,
-body.mobile-app-mode.sunday-clinic-embedded-active #resume-button-group .btn i {
-    font-size: 10px !important;
-    margin-right: 2px !important;
-}
-
-/* Badges and alerts */
-body.mobile-app-mode.sunday-clinic-embedded-active .badge {
-    font-size: 10px;
-    padding: 2px 5px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .alert {
-    font-size: 12px;
-    padding: 6px 8px;
-}
-
-/* Radio and checkbox - vertical alignment fix */
-body.mobile-app-mode.sunday-clinic-embedded-active .custom-control {
-    display: flex !important;
-    align-items: center !important;
-    min-height: 20px !important;
-    padding-left: 20px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .custom-control-label {
-    font-size: 12px;
-    line-height: 1.3 !important;
-    padding-top: 0 !important;
-    margin-bottom: 0 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .custom-control-label::before,
-body.mobile-app-mode.sunday-clinic-embedded-active .custom-control-label::after {
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    width: 14px !important;
-    height: 14px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .custom-control-input {
-    width: 14px !important;
-    height: 14px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .form-check {
-    display: flex !important;
-    align-items: center !important;
-    min-height: 20px !important;
-    padding-left: 20px !important;
-    margin-bottom: 2px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .form-check-input {
-    margin-top: 0 !important;
-    width: 14px !important;
-    height: 14px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .form-check-label {
-    font-size: 12px;
-    line-height: 1.3 !important;
-    margin-left: 4px !important;
-    margin-bottom: 0 !important;
-}
-
-/* Inline radio/checkbox groups */
-body.mobile-app-mode.sunday-clinic-embedded-active .custom-control-inline,
-body.mobile-app-mode.sunday-clinic-embedded-active .form-check-inline {
-    display: inline-flex !important;
-    align-items: center !important;
-    margin-right: 8px !important;
-}
-
-/* List groups */
-body.mobile-app-mode.sunday-clinic-embedded-active .list-group-item {
-    padding: 5px 8px;
-    font-size: 12px;
-}
-
-/* SC card specific */
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card {
-    padding: 6px;
-    margin-bottom: 6px;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card-header {
-    font-size: 13px;
-    padding: 5px 6px;
-}
-
-/* Content wrapper padding - don't override padding-top! */
-body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    /* padding-top is set to 110px above for header space */
-}
-
-/* Prevent any overflow */
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page .card,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-form-section,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section {
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* Force table to stay within bounds */
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card table,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section table {
-    max-width: 100% !important;
-    width: 100% !important;
-    table-layout: fixed !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card td,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-card th,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section td,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-section th {
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
-    word-break: break-word !important;
-    white-space: normal !important;
-}
-
-/* Resume medis - prevent overflow */
-body.mobile-app-mode.sunday-clinic-embedded-active pre,
-body.mobile-app-mode.sunday-clinic-embedded-active .resume-content,
-body.mobile-app-mode.sunday-clinic-embedded-active .resume-medis-content,
-body.mobile-app-mode.sunday-clinic-embedded-active [class*="resume"] {
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
-    word-break: normal !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-}
-
-/* Mobile typography allowlist: placed after compact rules so icons and intentional exceptions survive. */
-body.mobile-app-mode.sunday-clinic-embedded-active .fa,
-body.mobile-app-mode.sunday-clinic-embedded-active .fas,
-body.mobile-app-mode.sunday-clinic-embedded-active .far,
-body.mobile-app-mode.sunday-clinic-embedded-active .fab,
-body.mobile-app-mode.sunday-clinic-embedded-active [class*="fa-"] {
-    font-family: "Font Awesome 5 Free", "Font Awesome 5 Brands" !important;
-    line-height: 1 !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .section-btn,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link p {
-    font-size: 8px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .section-btn i,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link .nav-icon,
-body.mobile-app-mode.sunday-clinic-embedded-active #mobile-action-bar button .icon-wrapper i {
-    font-size: 16px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .info-box-icon,
-body.mobile-app-mode.sunday-clinic-embedded-active .info-box-icon i {
-    font-size: 20px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn i,
-body.mobile-app-mode.sunday-clinic-embedded-active .chat-toggle-btn i {
-    font-size: 24px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table .badge,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table .btn,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .billing-dense-table,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .billing-dense-table td,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .billing-dense-table th,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table-action,
-body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table-action i {
-    font-size: 8px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active #patientSearchModal .form-control-lg {
-    font-size: 12px !important;
-}
-
-body.mobile-app-mode.sunday-clinic-embedded-active .clinic-header-title,
-body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info .patient-name,
-body.mobile-app-mode.sunday-clinic-embedded-active .search-result-item .patient-name,
-body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
-    font-size: 12px !important;
-}
-
-/* Klinik Privat mobile embedded polish.
-   Scoped to Staff PWA embedded Sunday Clinic so standalone and desktop layouts stay unchanged. */
-@media (max-width: 991.98px) {
-    body.mobile-app-mode.sunday-clinic-embedded-active {
-        overflow-x: hidden !important;
-        background: #f5f7fb !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper,
-    body.mobile-app-mode.sunday-clinic-embedded-active .content,
-    body.mobile-app-mode.sunday-clinic-embedded-active section.content,
-    body.mobile-app-mode.sunday-clinic-embedded-active .container-fluid {
-        width: 100% !important;
-        max-width: 100vw !important;
-        padding-left: 0 !important;
-        padding-right: 0 !important;
-        overflow-x: hidden !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page {
-        width: 100% !important;
-        max-width: 100vw !important;
-        padding: 0 8px 0 !important;
-        box-sizing: border-box !important;
-        overflow-x: hidden !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-root {
-        border: 0 !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        background: transparent !important;
-        margin: 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child {
-        padding: 6px 0 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 6px !important;
-        min-height: 0 !important;
-        padding: 8px 0 6px !important;
-        border: 0 !important;
-        background: transparent !important;
-        box-shadow: none !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header > div:first-child {
-        min-width: 0 !important;
-        margin: 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child .card-title {
-        float: none !important;
-        display: flex !important;
-        align-items: center !important;
-        min-width: 0 !important;
-        max-width: 100% !important;
-        margin: 0 !important;
-        color: #172033 !important;
-        font-size: 13px !important;
-        font-weight: 700 !important;
         line-height: 1.2 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
         text-overflow: ellipsis !important;
+        white-space: nowrap !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #staff-name-display {
         display: block !important;
         max-width: 100% !important;
+        overflow: hidden !important;
         color: #5d6677 !important;
-        font-size: 10px !important;
-        line-height: 1.25 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header > .d-flex {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        gap: 5px !important;
-        margin: 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header .btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-header-queue,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sc-open-directory,
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-header-search,
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-toggle-patient-sidebar {
-        min-height: 30px !important;
-        height: 30px !important;
-        padding: 4px 8px !important;
-        border-radius: 7px !important;
-        font-size: 10px !important;
-        font-weight: 600 !important;
-        line-height: 1 !important;
-        white-space: nowrap !important;
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 3px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-header-queue,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sc-open-directory {
-        flex: 1 1 112px !important;
-        max-width: calc(50% - 3px) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-header-search,
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-toggle-patient-sidebar,
-    body.mobile-app-mode.sunday-clinic-embedded-active .mobile-back-btn {
-        flex: 0 0 auto !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openImportModal"],
-    body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openBulkImportModal"] {
-        width: 30px !important;
-        min-width: 30px !important;
-        max-width: 30px !important;
-        padding: 0 !important;
-        font-size: 0 !important;
-        flex: 0 0 30px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openImportModal"] i,
-    body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openBulkImportModal"] i,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header .btn i {
-        margin: 0 !important;
-        font-size: 11px !important;
-        line-height: 1 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-header-queue .badge {
-        margin-left: 2px !important;
-        padding: 2px 5px !important;
-        font-size: 9px !important;
-        line-height: 1 !important;
-        border-radius: 999px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown {
-        width: calc(100vw - 16px) !important;
-        max-width: calc(100vw - 16px) !important;
-        max-width: 342px !important;
-        height: 360px !important;
-        max-height: 360px !important;
-        border-radius: 10px !important;
-        overflow: hidden !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown.show {
-        display: flex !important;
-        flex-direction: column !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown > .dropdown-header,
-    body.mobile-app-mode.sunday-clinic-embedded-active #queue-stats-bar {
-        flex: 0 0 auto !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-list {
-        flex: 1 1 auto !important;
-        min-height: 0 !important;
-        height: auto !important;
-        max-height: none !important;
-        overflow-x: hidden !important;
-        overflow-y: scroll !important;
-        -webkit-overflow-scrolling: touch !important;
-        overscroll-behavior-y: contain !important;
-        touch-action: pan-y !important;
-        pointer-events: auto !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-body {
-        height: 0 !important;
-        min-height: 0 !important;
-        max-height: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        border: 0 !important;
-        overflow: visible !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav {
-        min-height: 68px !important;
-        gap: 5px !important;
-        padding: 7px 8px calc(7px + env(safe-area-inset-bottom, 0px)) !important;
-        background: rgba(255, 255, 255, 0.98) !important;
-        border-top: 1px solid rgba(15, 23, 42, 0.12) !important;
-        box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.13) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item {
-        flex: 0 0 78px !important;
-        width: 78px !important;
-        min-width: 78px !important;
-        max-width: 78px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link {
-        height: 54px !important;
-        min-height: 54px !important;
-        padding: 5px 4px !important;
-        border-radius: 9px !important;
-        color: #687286 !important;
-        border: 1px solid transparent !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link.active {
-        color: #0b5ed7 !important;
-        background: #eaf3ff !important;
-        border-color: rgba(13, 110, 253, 0.18) !important;
-        box-shadow: none !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link .nav-icon {
-        font-size: 15px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link p {
-        max-width: 70px !important;
-        font-size: 8px !important;
-        font-weight: 700 !important;
-        line-height: 1.15 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-root {
-        padding: 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-header {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 6px !important;
-        min-height: 0 !important;
-        padding: 4px 0 5px !important;
-        border: 0 !important;
-        background: transparent !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #summary-cards-container {
-        min-width: 0 !important;
-        gap: 5px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #summary-cards-container:empty {
-        display: none !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #exam-action-bar {
-        margin-left: auto !important;
-        gap: 5px !important;
-        flex-wrap: nowrap !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #btn-periksa-pasien {
-        min-height: 30px !important;
-        height: 30px !important;
-        padding: 4px 9px !important;
-        border-radius: 7px !important;
-        font-size: 10px !important;
-        line-height: 1 !important;
-        white-space: nowrap !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #exam-stopwatch {
-        min-width: 42px !important;
-        font-size: 11px !important;
-        letter-spacing: 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content {
-        width: 100% !important;
-        max-width: 100% !important;
-        padding: 0 0 8px !important;
-        overflow-x: hidden !important;
-        background: transparent !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-loading {
-        margin-top: 8px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-card,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 0 0 8px !important;
-        padding: 8px !important;
-        border-radius: 8px !important;
-        border: 1px solid rgba(15, 23, 42, 0.08) !important;
-        box-shadow: none !important;
-        background: #ffffff !important;
-        overflow-x: hidden !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card-body {
-        padding: 8px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-mobile-badge-row {
-        margin-bottom: 6px !important;
-        padding: 0 0 5px !important;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.06) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section-inline-title {
-        max-width: 100% !important;
-        font-size: 12px !important;
+        font-size: var(--sc-pwa-font-meta) !important;
         line-height: 1.2 !important;
-        white-space: nowrap !important;
-        overflow: hidden !important;
         text-overflow: ellipsis !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-group {
-        margin-bottom: 7px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content label {
-        margin-bottom: 3px !important;
-        line-height: 1.25 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content select,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-control {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        min-height: 30px !important;
-        padding: 6px 8px !important;
-        border-radius: 7px !important;
-        box-sizing: border-box !important;
-        line-height: 1.35 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input[type="date"],
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input[type="datetime-local"],
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input[type="time"] {
-        min-width: 0 !important;
-        -webkit-appearance: none !important;
-        appearance: none !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control {
-        min-height: 72px !important;
-        resize: vertical !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row {
-        margin-left: -4px !important;
-        margin-right: -4px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content [class*="col-"],
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content [class*="col-md-"],
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content [class*="col-lg-"] {
-        padding-left: 4px !important;
-        padding-right: 4px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active #save-pemeriksaan-obstetri {
-        min-height: 30px !important;
-        padding: 5px 9px !important;
-        border-radius: 7px !important;
-        white-space: normal !important;
-        line-height: 1.2 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #save-pemeriksaan-obstetri {
-        width: 100% !important;
-        margin-top: 4px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .button-group,
-    body.mobile-app-mode.sunday-clinic-embedded-active #resume-button-group,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .d-flex {
-        min-width: 0 !important;
-        gap: 5px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info,
-    body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info .patient-name,
-    body.mobile-app-mode.sunday-clinic-embedded-active .current-patient-info .patient-meta {
-        min-width: 0 !important;
-        max-width: 100% !important;
         white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel > .d-flex {
-        align-items: flex-start !important;
-        flex-wrap: wrap !important;
-        gap: 10px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel h5 {
-        padding-top: 6px !important;
-        font-size: 16px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .table-responsive {
-        overflow: visible !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table,
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table tbody {
-        display: block !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        border: 0 !important;
-        background: transparent !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table thead {
-        display: none !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table tr {
-        display: block !important;
-        width: 100% !important;
-        margin-bottom: 10px !important;
-        padding: 5px 10px !important;
-        border: 1px solid #dfe4ea !important;
-        border-radius: 10px !important;
-        background: #fff !important;
-        box-shadow: 0 2px 7px rgba(15, 23, 42, 0.06) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td {
-        display: grid !important;
-        grid-template-columns: 88px minmax(0, 1fr) !important;
-        gap: 10px !important;
-        align-items: center !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        padding: 8px 0 !important;
-        border: 0 !important;
-        border-bottom: 1px solid #edf0f3 !important;
-        text-align: left !important;
-        white-space: normal !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td:last-child {
-        border-bottom: 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td::before {
-        content: attr(data-label) !important;
-        color: #6c757d !important;
-        font-size: 11px !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.02em !important;
-        text-transform: uppercase !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-value {
-        min-width: 0 !important;
-        overflow-wrap: anywhere !important;
-        text-align: left !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-actions {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 6px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-empty {
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        gap: 8px !important;
-        min-height: 72px !important;
-        padding: 16px !important;
-        border: 1px dashed #cfd6de !important;
-        border-radius: 10px !important;
-        background: #f8fafc !important;
-        color: #6c757d !important;
-        text-align: center !important;
-    }
-}
-
-/* Wave 1: canonical embedded shell and navigation rules. */
-@media (max-width: 991.98px) {
-    body.mobile-app-mode.sunday-clinic-embedded-active {
-        width: auto !important; /* Exclude the vertical scrollbar from shell sizing. */
-        max-width: 100% !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .wrapper,
-    body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper,
-    body.mobile-app-mode.sunday-clinic-embedded-active .content,
-    body.mobile-app-mode.sunday-clinic-embedded-active .container-fluid,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page {
-        width: auto !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .main-header {
-        min-height: 60px !important;
-        height: 60px !important;
-        max-height: 60px !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-gutter) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {
-        gap: var(--sc-pwa-space-2) !important;
-        height: 44px !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #btn-queue-vis-toggle,
     body.mobile-app-mode.sunday-clinic-embedded-active #btn-doctor-toggle {
         min-height: var(--sc-pwa-touch-target) !important;
         height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-button) !important;
-        line-height: 1.2 !important;
+        line-height: 1.15 !important;
         white-space: nowrap !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper {
-        padding-top: 60px !important;
+        min-height: var(--sc-pwa-viewport-height) !important;
+        margin-left: 0 !important;
+        padding-top: 52px !important;
+        padding-bottom: calc(var(--sc-pwa-bottom-nav-height) + var(--sc-pwa-space-2) + env(safe-area-inset-bottom, 0px)) !important;
+        overflow-x: hidden !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .content,
+    body.mobile-app-mode.sunday-clinic-embedded-active .container-fluid {
+        padding: 0 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page {
-        padding-right: var(--sc-pwa-gutter) !important;
-        padding-left: var(--sc-pwa-gutter) !important;
-        padding-bottom: calc(var(--sc-pwa-bottom-nav-height) + var(--sc-pwa-space-3) + env(safe-area-inset-bottom, 0px)) !important;
+        padding: 0 var(--sc-pwa-gutter) calc(var(--sc-pwa-bottom-nav-height) + var(--sc-pwa-space-2) + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child {
+        margin: 0 0 var(--sc-pwa-space-2) !important;
+        overflow: visible !important;
+        border-radius: 0 0 var(--sc-pwa-card-radius) var(--sc-pwa-card-radius) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header {
-        gap: var(--sc-pwa-space-2) !important;
-        padding: var(--sc-pwa-space-3) 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: var(--sc-pwa-space-1) !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-1) 0 !important;
+        flex-wrap: wrap !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header > .d-flex {
-        gap: var(--sc-pwa-space-2) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        min-width: 0 !important;
+        flex-wrap: wrap !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-body {
+        height: 0 !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        border: 0 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-header .btn,
@@ -2120,13 +183,17 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     body.mobile-app-mode.sunday-clinic-embedded-active #btn-header-search,
     body.mobile-app-mode.sunday-clinic-embedded-active #btn-toggle-patient-sidebar,
     body.mobile-app-mode.sunday-clinic-embedded-active .mobile-back-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         min-width: var(--sc-pwa-touch-target) !important;
         min-height: var(--sc-pwa-touch-target) !important;
-        height: auto !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+        height: var(--sc-pwa-touch-target) !important;
+        margin: 0 !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-button) !important;
-        line-height: 1.2 !important;
+        line-height: 1.15 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active button[onclick*="openImportModal"],
@@ -2134,139 +201,212 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         width: var(--sc-pwa-touch-target) !important;
         min-width: var(--sc-pwa-touch-target) !important;
         max-width: var(--sc-pwa-touch-target) !important;
-        flex-basis: var(--sc-pwa-touch-target) !important;
+        padding: 0 !important;
+        flex: 0 0 var(--sc-pwa-touch-target) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #btn-header-queue .badge {
+        min-width: 13px !important;
+        padding: var(--sc-pwa-space-0) var(--sc-pwa-space-1) !important;
+        border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-meta) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown {
         width: calc(100vw - (2 * var(--sc-pwa-gutter))) !important;
-        max-width: 360px !important;
-        font-size: var(--sc-pwa-font-body) !important;
+        max-width: 340px !important;
+        max-height: calc(var(--sc-pwa-viewport-height) - 64px) !important;
+        overflow: hidden !important;
         border-radius: var(--sc-pwa-card-radius) !important;
+        font-size: var(--sc-pwa-font-body) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown .dropdown-header,
-    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown .dropdown-item {
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown.show {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown .dropdown-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 2 !important;
         min-height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-2) !important;
+        background: #fff !important;
+        font-size: var(--sc-pwa-font-heading) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-list,
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown .header-queue-list {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: calc(var(--sc-pwa-viewport-height) - 112px) !important;
+        overflow-x: hidden !important;
+        overflow-y: scroll !important;
+        overscroll-behavior-y: contain !important;
+        -webkit-overflow-scrolling: touch !important;
+        touch-action: pan-y !important;
+        pointer-events: auto !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown .dropdown-item,
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown .header-queue-item {
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-2) !important;
         font-size: var(--sc-pwa-font-body) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav {
+        position: fixed !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        z-index: 99999 !important;
+        display: flex !important;
         width: 100% !important; /* Fixed navigation must not widen the document. */
         max-width: 100% !important;
         min-height: var(--sc-pwa-bottom-nav-height) !important;
-        gap: var(--sc-pwa-space-1) !important;
-        padding: 5px var(--sc-pwa-space-2) calc(5px + env(safe-area-inset-bottom, 0px)) !important;
+        gap: var(--sc-pwa-space-0) !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) calc(var(--sc-pwa-space-1) + env(safe-area-inset-bottom, 0px)) !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        background: #fff !important;
+        border-top: 1px solid #dfe4ea !important;
+        box-shadow: 0 -2px 8px rgba(15, 23, 42, 0.08) !important;
+        scrollbar-width: none !important;
+        overscroll-behavior-x: contain !important;
+        scroll-snap-type: x proximity !important;
+        touch-action: pan-x !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav::-webkit-scrollbar {
+        display: none !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .nav-item {
-        flex: 0 0 82px !important;
-        width: 82px !important;
-        min-width: 82px !important;
-        max-width: 82px !important;
+        flex: 0 0 72px !important;
+        width: 72px !important;
+        min-width: 72px !important;
+        max-width: 72px !important;
+        margin: 0 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link {
-        min-height: 58px !important;
-        height: 58px !important;
-        padding: 6px var(--sc-pwa-space-1) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        min-height: 52px !important;
+        height: 52px !important;
+        gap: var(--sc-pwa-space-0) !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-0) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link p {
-        max-width: 74px !important;
-        font-size: 11px !important;
-        line-height: 1.15 !important;
+        display: -webkit-box !important;
+        max-width: 68px !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        font-size: var(--sc-pwa-font-meta) !important;
+        line-height: 1.1 !important;
+        text-align: center !important;
+        white-space: normal !important;
+        -webkit-box-orient: vertical !important;
         -webkit-line-clamp: 2 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-staff-section-nav .sc-nav-link .nav-icon {
-        font-size: 16px !important;
+        margin: 0 !important;
+        font-size: var(--sc-pwa-icon-md) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container:not(.chat-is-open) {
-        bottom: calc(var(--sc-pwa-bottom-nav-height) + var(--sc-pwa-space-2)) !important;
-    }
-}
-
-/* Wave 2: canonical clinical content rules. */
-@media (max-width: 991.98px) {
+    /* Wave 2: canonical clinical content rules. */
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content {
         font-size: var(--sc-pwa-font-body) !important;
-        line-height: 1.45 !important;
+        line-height: 1.35 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content p,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content label,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-text,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-note,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .alert,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .table {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-mobile-badge-row {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: var(--sc-pwa-space-1) !important;
+        min-height: 24px !important;
+        margin: 0 0 var(--sc-pwa-space-1) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(p, label, .form-text, .sc-note, .alert, .table, .list-group-item) {
         font-size: var(--sc-pwa-font-body) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content label {
-        margin-bottom: var(--sc-pwa-space-1) !important;
+        margin-bottom: var(--sc-pwa-space-0) !important;
         font-size: var(--sc-pwa-font-label) !important;
-        line-height: 1.35 !important;
+        line-height: 1.25 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content small,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .small,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .text-muted,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-text {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(small, .small, .text-muted, .form-text, .badge, .sc-note) {
         font-size: var(--sc-pwa-font-meta) !important;
-        line-height: 1.35 !important;
+        line-height: 1.25 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h2,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h3,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-page-title {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(h2, h3, .sc-page-title) {
+        margin-top: 0 !important;
+        margin-bottom: var(--sc-pwa-space-1) !important;
         font-size: var(--sc-pwa-font-title) !important;
-        line-height: 1.3 !important;
+        line-height: 1.2 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h4,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h5,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content h6,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card-title,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .section-header,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section-inline-title {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(h4, h5, h6, .card-title, .section-header, .sc-section-inline-title) {
+        margin-top: 0 !important;
+        margin-bottom: var(--sc-pwa-space-1) !important;
         font-size: var(--sc-pwa-font-heading) !important;
-        line-height: 1.35 !important;
+        line-height: 1.25 !important;
         white-space: normal !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-card,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-card,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-mobile-data-card,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-section {
-        margin: 0 0 var(--sc-pwa-space-3) !important;
-        padding: var(--sc-pwa-space-3) !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .section-container {
+        min-width: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.sc-section, .sc-card, .sc-pwa-card, .sc-pwa-mobile-data-card, .form-section) {
+        min-width: 0 !important;
+        margin: 0 0 var(--sc-pwa-space-2) !important;
+        padding: var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-card-radius) !important;
+        box-sizing: border-box !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section {
+        gap: var(--sc-pwa-space-2) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-section-header {
+        min-height: var(--sc-pwa-touch-target) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        margin: 0 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card {
-        margin: 0 0 var(--sc-pwa-space-3) !important;
+        min-width: 0 !important;
+        margin: 0 0 var(--sc-pwa-space-2) !important;
         padding: 0 !important;
+        overflow: hidden !important;
         border-radius: var(--sc-pwa-card-radius) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card > .card-header,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card > .card-body,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card > .card-footer {
-        padding: var(--sc-pwa-space-3) !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .card > :is(.card-header, .card-body, .card-footer) {
+        padding: var(--sc-pwa-space-2) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-group {
         width: 100% !important;
         max-width: 100% !important;
-        margin-bottom: var(--sc-pwa-space-3) !important;
+        min-width: 0 !important;
+        margin-bottom: var(--sc-pwa-space-2) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
@@ -2278,82 +418,84 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         max-width: 100% !important;
         min-width: 0 !important;
         min-height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-2) 10px !important;
+        height: auto !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-control) !important;
-        line-height: 1.35 !important;
+        line-height: 1.25 !important;
         box-sizing: border-box !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control {
-        min-height: 88px !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(textarea, textarea.form-control) {
+        min-height: 72px !important;
         resize: vertical !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .input-group,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .input-group-prepend,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .input-group-append,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .input-group > * {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.input-group, .input-group-prepend, .input-group-append, .input-group > *) {
         min-width: 0 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .input-group-text {
         min-height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-2) 10px !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         font-size: var(--sc-pwa-font-body) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-row {
-        margin-right: -4px !important;
-        margin-left: -4px !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.row, .form-row) {
+        margin-right: -3px !important;
+        margin-left: -3px !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row > .col,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row > [class*="col-"],
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-row > .col,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-row > [class*="col-"] {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.row, .form-row) > :is(.col, [class*="col-"]) {
         flex: 0 0 100% !important;
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
-        padding-right: var(--sc-pwa-space-1) !important;
-        padding-left: var(--sc-pwa-space-1) !important;
+        padding-right: 3px !important;
+        padding-left: 3px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-form-grid {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: var(--sc-pwa-space-2) 6px !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .btn,
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .btn[class*="btn-"],
     body.mobile-app-mode.sunday-clinic-embedded-active #btn-periksa-pasien {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         min-width: var(--sc-pwa-touch-target) !important;
         min-height: var(--sc-pwa-touch-target) !important;
         height: auto !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-button) !important;
-        line-height: 1.25 !important;
+        line-height: 1.2 !important;
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: clip !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .button-group,
-    body.mobile-app-mode.sunday-clinic-embedded-active #resume-button-group,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-action-row,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .action-row,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-actions {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.button-group, #resume-button-group, .sc-pwa-action-row, .action-row, .form-actions) {
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: var(--sc-pwa-space-2) !important;
-        width: 100% !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .button-group .btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active #resume-button-group .btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .action-row .btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-actions .btn {
+        gap: var(--sc-pwa-space-1) !important;
         width: 100% !important;
         margin: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.button-group, #resume-button-group, .sc-pwa-action-row, .action-row, .form-actions) > .btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-action-row > .btn:only-child,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-actions > .btn:only-child {
+        grid-column: 1 / -1 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-icon-button {
@@ -2362,21 +504,29 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         justify-content: center !important;
         width: var(--sc-pwa-touch-target) !important;
         min-width: var(--sc-pwa-touch-target) !important;
+        max-width: var(--sc-pwa-touch-target) !important;
         height: var(--sc-pwa-touch-target) !important;
         min-height: var(--sc-pwa-touch-target) !important;
         padding: 0 !important;
+        flex: 0 0 var(--sc-pwa-touch-target) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-form-grid {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: var(--sc-pwa-space-3) var(--sc-pwa-space-2) !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.custom-control, .form-check) {
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding-top: var(--sc-pwa-space-1) !important;
+        padding-bottom: var(--sc-pwa-space-1) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.custom-control-label, .form-check-label) {
+        min-height: calc(var(--sc-pwa-touch-target) - var(--sc-pwa-space-2)) !important;
+        display: flex !important;
+        align-items: center !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .trimester-selector .btn-group {
         display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: var(--sc-pwa-space-2) !important;
+        gap: var(--sc-pwa-space-1) !important;
         width: 100% !important;
         min-width: 0 !important;
     }
@@ -2386,159 +536,183 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         min-width: 0 !important;
         min-height: var(--sc-pwa-touch-target) !important;
         margin: 0 !important;
-        padding: var(--sc-pwa-space-2) !important;
+        padding: var(--sc-pwa-space-1) !important;
         font-size: var(--sc-pwa-font-button) !important;
-        white-space: normal !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .trimester-content .d-flex.gap-3 {
         display: flex !important;
         flex-wrap: wrap !important;
-        gap: var(--sc-pwa-space-2) !important;
+        gap: var(--sc-pwa-space-1) !important;
         min-width: 0 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .trimester-content .d-flex.gap-3 .custom-control {
-        flex: 0 1 auto !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-form-limit-md,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-form-limit-sm,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-input-limit-150,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-date-field-compact,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-date-field,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-medication-name,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-medication-quantity,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-medication-unit,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-medication-instruction {
+        width: 100% !important;
+        max-width: 100% !important;
         min-width: 0 !important;
-        margin-right: 0 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table th,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table td {
-        padding: var(--sc-pwa-space-2) !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.identity-table, .sc-billing-table) {
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table :is(th, td) {
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         font-size: var(--sc-pwa-font-body) !important;
         word-break: normal !important;
         overflow-wrap: normal !important;
-        hyphens: none !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table th {
+        width: 40% !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table td:last-child {
         overflow-wrap: anywhere !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table,
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table tbody,
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table tr,
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.sc-billing-table, #billing-items-table, .additional-billing-table),
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.sc-billing-table, #billing-items-table, .additional-billing-table) tbody {
         display: block !important;
         width: 100% !important;
         min-width: 0 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table thead {
-        display: none !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.sc-billing-table, #billing-items-table, .additional-billing-table) thead {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        clip-path: inset(50%) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table tr {
-        margin-bottom: var(--sc-pwa-space-3) !important;
-        padding: var(--sc-pwa-space-3) !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.sc-billing-table, #billing-items-table, .additional-billing-table) tr {
+        display: block !important;
+        width: 100% !important;
+        margin-bottom: var(--sc-pwa-space-2) !important;
+        padding: var(--sc-pwa-space-2) !important;
         border: 1px solid #dfe4ea !important;
         border-radius: var(--sc-pwa-card-radius) !important;
         background: #fff !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.sc-billing-table, #billing-items-table, .additional-billing-table) td {
         display: grid !important;
-        grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr) !important;
-        gap: var(--sc-pwa-space-2) !important;
+        grid-template-columns: minmax(80px, 0.4fr) minmax(0, 1fr) !important;
+        gap: var(--sc-pwa-space-1) !important;
         align-items: center !important;
-        padding: var(--sc-pwa-space-1) 0 !important;
-        border: 0 !important;
-        text-align: left !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td:nth-child(1)::before { content: "Kategori"; }
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td:nth-child(2)::before { content: "Deskripsi"; }
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td:nth-child(3)::before { content: "Qty"; }
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td:nth-child(4)::before { content: "Harga Satuan"; }
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td:nth-child(5)::before { content: "Subtotal"; }
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td:nth-child(6)::before { content: "Aksi"; }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #billing-items-table td::before,
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td::before {
-        font-size: var(--sc-pwa-font-label) !important;
-        font-weight: 700 !important;
-        line-height: 1.3 !important;
-        text-transform: none !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel {
-        margin-top: var(--sc-pwa-space-4) !important;
-        padding-top: var(--sc-pwa-space-4) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel > .d-flex {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        gap: var(--sc-pwa-space-2) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel #btn-create-additional-billing {
         width: 100% !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table tr {
-        margin-bottom: var(--sc-pwa-space-3) !important;
-        padding: var(--sc-pwa-space-3) !important;
-        border-radius: var(--sc-pwa-card-radius) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-table td {
-        grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr) !important;
-        gap: var(--sc-pwa-space-2) !important;
-        padding: var(--sc-pwa-space-2) 0 !important;
+        min-width: 0 !important;
+        padding: var(--sc-pwa-space-0) 0 !important;
+        border: 0 !important;
         font-size: var(--sc-pwa-font-body) !important;
+        text-align: left !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.sc-billing-table, #billing-items-table, .additional-billing-table) td::before {
+        content: attr(data-label) !important;
+        color: #6c757d !important;
+        font-size: var(--sc-pwa-font-meta) !important;
+        font-weight: 700 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-table .sc-billing-total-row td {
+        display: flex !important;
+        justify-content: space-between !important;
+        gap: var(--sc-pwa-space-2) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-table .sc-billing-total-row td::before {
+        content: "Grand Total" !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-actions .btn {
         width: var(--sc-pwa-touch-target) !important;
         min-width: var(--sc-pwa-touch-target) !important;
         height: var(--sc-pwa-touch-target) !important;
-        min-height: var(--sc-pwa-touch-target) !important;
         padding: 0 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #additional-billing-panel .additional-billing-empty {
-        min-height: 88px !important;
-        padding: var(--sc-pwa-space-4) !important;
+        min-height: 56px !important;
+        padding: var(--sc-pwa-space-2) !important;
+        border: 1px dashed #cfd6de !important;
         border-radius: var(--sc-pwa-card-radius) !important;
-        font-size: var(--sc-pwa-font-body) !important;
+        text-align: center !important;
     }
-}
 
-@media (min-width: 600px) and (max-width: 991.98px) {
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-form-grid {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-admin-grid {
+        display: grid !important;
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        margin: 0 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row > .col-6,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row > .col-sm-6,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row > .col-md-6,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .row > .col-lg-6,
-    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-row > [class*="col-"] {
-        flex: 0 0 50% !important;
-        width: 50% !important;
-        max-width: 50% !important;
-    }
-}
-
-/* Wave 3: canonical modal, overlay, sidebar, and chat rules. */
-@media (max-width: 991.98px) {
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-form-limit-md,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-form-limit-sm,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-input-limit-150,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-date-field-compact,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-date-field,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-medication-name,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-medication-quantity,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-medication-unit,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-medication-instruction {
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-admin-column {
         width: 100% !important;
         max-width: 100% !important;
-        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-admin-option {
+        width: 100% !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-1) var(--sc-pwa-space-1) 26px !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: var(--sc-pwa-control-radius) !important;
+        background: #f8fafc !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-meta-stack {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        margin-top: var(--sc-pwa-space-2) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-meta {
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
+        border-radius: var(--sc-pwa-control-radius) !important;
+        font-size: var(--sc-pwa-font-body) !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        padding-top: var(--sc-pwa-space-2) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-actions > :is(.btn, .badge, .sc-billing-printed-state) {
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+        margin: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-billing-actions > :is(.badge, .sc-billing-printed-state) {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: var(--sc-pwa-space-1) !important;
+    }
+
+    /* Wave 3: canonical modal, overlay, sidebar, and chat rules. */
     body.mobile-app-mode.sunday-clinic-embedded-active .modal {
         padding: 0 !important;
         font-size: var(--sc-pwa-font-body) !important;
@@ -2547,11 +721,11 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-dialog {
         display: flex !important;
         align-items: stretch !important;
-        width: calc(100% - 16px) !important;
-        max-width: calc(100% - 16px) !important;
+        width: calc(100% - 12px) !important;
+        max-width: calc(100% - 12px) !important;
         min-height: 0 !important;
-        max-height: calc(var(--sc-pwa-viewport-height) - 16px) !important;
-        margin: 8px auto !important;
+        max-height: calc(var(--sc-pwa-viewport-height) - 12px) !important;
+        margin: 6px auto !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-content {
@@ -2561,26 +735,32 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         width: 100% !important;
         min-width: 0 !important;
         min-height: 0 !important;
-        max-height: calc(var(--sc-pwa-viewport-height) - 16px) !important;
+        max-height: calc(var(--sc-pwa-viewport-height) - 12px) !important;
         overflow: hidden !important;
         border-radius: var(--sc-pwa-card-radius) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer {
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal :is(.modal-header, .modal-footer) {
         position: sticky !important;
         z-index: 2 !important;
         flex: 0 0 auto !important;
-        gap: var(--sc-pwa-space-2) !important;
-        padding: var(--sc-pwa-space-3) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-2) !important;
+        background: #fff !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header {
         top: 0 !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer {
+        bottom: 0 !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header:not([class*="bg-"]) {
-        background: #fff !important;
         color: #212529 !important;
     }
 
@@ -2589,25 +769,18 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         color: #212529 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer {
-        bottom: 0 !important;
-        display: flex !important;
-        flex-wrap: wrap !important;
-        background: #fff !important;
-    }
-
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-title {
         min-width: 0 !important;
         margin: 0 !important;
         font-size: var(--sc-pwa-font-title) !important;
-        line-height: 1.3 !important;
+        line-height: 1.2 !important;
         overflow-wrap: anywhere !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-body {
         flex: 1 1 auto !important;
         min-height: 0 !important;
-        padding: var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-2) !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
         overscroll-behavior: contain !important;
@@ -2622,16 +795,15 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         max-width: 100% !important;
         min-width: 0 !important;
         min-height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-2) 10px !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-control) !important;
-        line-height: 1.35 !important;
+        line-height: 1.25 !important;
         box-sizing: border-box !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal textarea,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal textarea.form-control {
-        min-height: 88px !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal :is(textarea, textarea.form-control) {
+        min-height: 72px !important;
         resize: vertical !important;
     }
 
@@ -2647,76 +819,27 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         width: 1% !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .input-group-append,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .input-group-prepend {
-        display: flex !important;
-        flex: 0 0 auto !important;
-    }
-
     body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body {
         width: 100% !important;
         max-width: 100% !important;
         min-width: 0 !important;
-        padding: var(--sc-pwa-space-2) !important;
+        padding: var(--sc-pwa-space-1) !important;
         overflow-x: hidden !important;
         box-sizing: border-box !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body > .row {
-        width: auto !important;
-        min-width: 0 !important;
-        margin-right: -4px !important;
-        margin-left: -4px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body > .row > [class*="col-"] {
-        min-width: 0 !important;
-        padding-right: 4px !important;
-        padding-left: 4px !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body .tindakan-item,
-    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body .custom-control-label {
-        min-width: 0 !important;
-        overflow-wrap: anywhere !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table th,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table td {
-        font-size: var(--sc-pwa-font-body) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal button,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .close,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal [data-dismiss="modal"] {
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal :is(.btn, button, .close, [data-dismiss="modal"]) {
         min-width: var(--sc-pwa-touch-target) !important;
         min-height: var(--sc-pwa-touch-target) !important;
         height: auto !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-button) !important;
-        line-height: 1.25 !important;
+        line-height: 1.2 !important;
         white-space: normal !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .custom-control,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .form-check {
-        display: flex !important;
-        align-items: center !important;
-        min-height: var(--sc-pwa-touch-target) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .custom-control-label,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .form-check-label {
-        display: flex !important;
-        align-items: center !important;
-        min-height: var(--sc-pwa-touch-target) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .close,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .btn-tool {
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal :is(.close, .btn-tool) {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -2727,24 +850,81 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         padding: 0 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .search-result-item,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .list-group-item,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal [role="option"] {
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal :is(.custom-control, .form-check, .custom-control-label, .form-check-label) {
+        display: flex !important;
+        align-items: center !important;
         min-height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal :is(.search-result-item, .list-group-item, [role="option"]) {
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-2) !important;
         font-size: var(--sc-pwa-font-body) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table th,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table td {
+        padding: var(--sc-pwa-space-1) !important;
+        font-size: var(--sc-pwa-font-body) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal .table-responsive {
+        overflow-x: hidden !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal :is(table, tbody) {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal thead {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        clip-path: inset(50%) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody tr {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        width: 100% !important;
+        margin-bottom: var(--sc-pwa-space-1) !important;
+        padding: var(--sc-pwa-space-2) !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: var(--sc-pwa-control-radius) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td {
+        display: grid !important;
+        grid-template-columns: minmax(72px, 0.4fr) minmax(0, 1fr) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        padding: var(--sc-pwa-space-0) 0 !important;
+        border: 0 !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td::before {
+        content: attr(data-label) !important;
+        color: #6c757d !important;
+        font-size: var(--sc-pwa-font-meta) !important;
+        font-weight: 700 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-overlay {
         align-items: flex-start !important;
-        padding: var(--sc-pwa-space-2) !important;
+        padding: var(--sc-pwa-space-1) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory {
+        display: flex !important;
+        flex-direction: column !important;
         width: 100% !important;
         max-width: 100% !important;
         min-height: 0 !important;
-        max-height: calc(var(--sc-pwa-viewport-height) - 16px) !important;
+        max-height: calc(var(--sc-pwa-viewport-height) - 12px) !important;
+        overflow: hidden !important;
         border-radius: var(--sc-pwa-card-radius) !important;
     }
 
@@ -2752,19 +932,17 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         position: sticky !important;
         top: 0 !important;
         z-index: 2 !important;
-        gap: var(--sc-pwa-space-2) !important;
-        padding: var(--sc-pwa-space-3) !important;
+        gap: var(--sc-pwa-space-1) !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-2) !important;
         background: #fff !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-title {
         font-size: var(--sc-pwa-font-title) !important;
-        line-height: 1.3 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-subtitle,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-meta,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-visit-meta {
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(.sc-directory-subtitle, .sc-directory-patient-meta, .sc-directory-visit-meta) {
         font-size: var(--sc-pwa-font-meta) !important;
     }
 
@@ -2778,23 +956,17 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         overscroll-behavior: contain !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-column--patients,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-column--visits {
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(.sc-directory-column--patients, .sc-directory-column--visits) {
         flex: 0 0 auto !important;
         width: 100% !important;
         min-width: 0 !important;
-        padding: var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-2) !important;
         border-right: 0 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-visit,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-placeholder,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-empty,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-error,
-    body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-loader {
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(.sc-directory-patient, .sc-directory-visit, .sc-directory-placeholder, .sc-directory-empty, .sc-directory-error, .sc-directory-loader) {
         min-height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-body) !important;
     }
@@ -2812,59 +984,92 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .patient-history-sidebar {
+        position: fixed !important;
         top: 0 !important;
+        right: 0 !important;
         bottom: auto !important;
+        z-index: 100001 !important;
+        display: flex !important;
+        flex-direction: column !important;
         width: 100% !important;
-        max-width: 420px !important;
+        max-width: 400px !important;
         height: var(--sc-pwa-viewport-height) !important;
         max-height: var(--sc-pwa-viewport-height) !important;
-        font-size: var(--sc-pwa-font-body) !important;
         overflow: hidden !important;
+        font-size: var(--sc-pwa-font-body) !important;
+        transform: translateX(100%) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-header,
-    body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-footer {
+    body.mobile-app-mode.sunday-clinic-embedded-active .patient-history-sidebar.open {
+        transform: translateX(0) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(.patient-sidebar-header, .patient-sidebar-footer) {
         flex: 0 0 auto !important;
-        padding: var(--sc-pwa-space-3) !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-2) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-body {
         flex: 1 1 auto !important;
         min-height: 0 !important;
-        padding: var(--sc-pwa-space-3) !important;
+        padding: var(--sc-pwa-space-2) !important;
         overflow-x: hidden !important;
         overflow-y: auto !important;
         overscroll-behavior: contain !important;
+        -webkit-overflow-scrolling: touch !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .patient-sidebar-close {
-        width: var(--sc-pwa-touch-target) !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(.patient-sidebar-close, .patient-sidebar-header .btn, .patient-sidebar-footer .btn) {
         min-width: var(--sc-pwa-touch-target) !important;
-        height: var(--sc-pwa-touch-target) !important;
         min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
+        font-size: var(--sc-pwa-font-button) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container:not(.chat-is-open) {
-        bottom: calc(var(--sc-pwa-bottom-nav-height) + 8px) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #chat-box,
-    body.mobile-app-mode.sunday-clinic-embedded-active .chat-box,
-    body.mobile-app-mode.sunday-clinic-embedded-active .chat-header,
-    body.mobile-app-mode.sunday-clinic-embedded-active .chat-messages {
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(.visit-card, .search-result-item, .patient-list-item, .header-queue-item) {
+        margin-bottom: var(--sc-pwa-space-1) !important;
+        padding: var(--sc-pwa-space-2) !important;
+        border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-body) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .chat-header {
-        min-height: 52px !important;
-        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+    body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container:not(.chat-is-open) {
+        right: 6px !important;
+        bottom: calc(var(--sc-pwa-bottom-nav-height) + 6px) !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active #chat-input,
-    body.mobile-app-mode.sunday-clinic-embedded-active .chat-input {
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(#chat-toggle-btn, .chat-toggle-btn) {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: var(--sc-pwa-icon-lg) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(#chat-box, .chat-box) {
+        font-size: var(--sc-pwa-font-body) !important;
+        border-radius: var(--sc-pwa-card-radius) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .chat-header {
+        min-height: 44px !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
+        font-size: var(--sc-pwa-font-heading) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .chat-messages {
+        padding: var(--sc-pwa-space-2) !important;
+        font-size: var(--sc-pwa-font-body) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .chat-input-container {
+        gap: var(--sc-pwa-space-1) !important;
+        padding: var(--sc-pwa-space-2) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active :is(#chat-input, .chat-input) {
         min-width: 0 !important;
         min-height: var(--sc-pwa-touch-target) !important;
-        padding: var(--sc-pwa-space-2) 10px !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
         border-radius: var(--sc-pwa-control-radius) !important;
         font-size: var(--sc-pwa-font-control) !important;
     }
@@ -2882,24 +1087,30 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         padding: 0 !important;
         border-radius: 50% !important;
     }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .chat-input-container {
-        gap: var(--sc-pwa-space-2) !important;
-        padding: var(--sc-pwa-space-3) !important;
-    }
 }
 
 @media (min-width: 600px) and (max-width: 991.98px) {
+    body.mobile-app-mode.sunday-clinic-embedded-active {
+        --sc-pwa-gutter: 12px;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-pwa-form-grid,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-grid.two {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content :is(.row, .form-row) > :is(.col-6, .col-sm-6, .col-md-6, .col-lg-6) {
+        flex: 0 0 50% !important;
+        width: 50% !important;
+        max-width: 50% !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-dialog,
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory {
         width: calc(100% - 24px) !important;
         max-width: 720px !important;
         max-height: calc(var(--sc-pwa-viewport-height) - 24px) !important;
         margin: 12px auto !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-content {
-        max-height: calc(var(--sc-pwa-viewport-height) - 24px) !important;
     }
 }
 
@@ -2909,74 +1120,12 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         align-items: stretch !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer .btn,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer button {
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer :is(.btn, button) {
         width: 100% !important;
         margin: 0 !important;
     }
 
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer .btn-primary,
-    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer .btn-success {
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer :is(.btn-primary, .btn-success) {
         order: 2 !important;
-    }
-}
-
-@media (max-width: 599px) {
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal .table-responsive {
-        overflow-x: hidden !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal table,
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody {
-        display: block !important;
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal thead {
-        position: absolute !important;
-        width: 1px !important;
-        height: 1px !important;
-        overflow: hidden !important;
-        clip: rect(0 0 0 0) !important;
-        clip-path: inset(50%) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody tr {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        margin-bottom: var(--sc-pwa-space-2) !important;
-        padding: var(--sc-pwa-space-2) !important;
-        border: 1px solid #dee2e6 !important;
-        border-radius: var(--sc-pwa-control-radius) !important;
-        background: #fff !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td {
-        display: grid !important;
-        grid-template-columns: minmax(72px, 0.4fr) minmax(0, 1fr) !important;
-        gap: var(--sc-pwa-space-2) !important;
-        min-width: 0 !important;
-        padding: 4px 0 !important;
-        border: 0 !important;
-        overflow-wrap: anywhere !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td::before {
-        content: attr(data-label) !important;
-        color: #6c757d !important;
-        font-size: var(--sc-pwa-font-meta) !important;
-        font-weight: 700 !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td[colspan] {
-        display: block !important;
-        text-align: center !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td[colspan]::before {
-        content: none !important;
     }
 }
