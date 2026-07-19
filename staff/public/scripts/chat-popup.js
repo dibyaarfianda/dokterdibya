@@ -71,42 +71,34 @@ import { ROLE_IDS } from './role-constants.js';
     document.body.classList.toggle('chat-keyboard-active', !!active);
   }
 
+  var chatScrollFrameId = null;
+  var chatScrollSettleTimerId = null;
+
   function scrollChatToLatest() {
     var messagesEl = document.getElementById('chat-messages');
     if (!messagesEl) return;
-
-    var applyScroll = function() {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-      if (messagesEl.lastElementChild && typeof messagesEl.lastElementChild.scrollIntoView === 'function') {
-        try {
-          messagesEl.lastElementChild.scrollIntoView({ block: 'end', inline: 'nearest' });
-        } catch (error) {
-          messagesEl.lastElementChild.scrollIntoView(false);
-        }
-      }
-      messagesEl.scrollTop = messagesEl.scrollHeight;
-    };
-
-    applyScroll();
-    if (typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(function() {
-        applyScroll();
-        window.requestAnimationFrame(applyScroll);
-      });
-    }
-    window.setTimeout(applyScroll, 80);
-    window.setTimeout(applyScroll, 220);
-    window.setTimeout(applyScroll, 520);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
   function scheduleChatScrollToLatest() {
-    scrollChatToLatest();
-    window.setTimeout(scrollChatToLatest, 120);
-    window.setTimeout(scrollChatToLatest, 320);
-    window.setTimeout(scrollChatToLatest, 700);
-    window.setTimeout(scrollChatToLatest, 1200);
-    window.setTimeout(scrollChatToLatest, 2200);
-    window.setTimeout(scrollChatToLatest, 4200);
+    if (chatScrollFrameId === null) {
+      if (typeof window.requestAnimationFrame === 'function') {
+        chatScrollFrameId = window.requestAnimationFrame(function () {
+          chatScrollFrameId = null;
+          scrollChatToLatest();
+        });
+      } else {
+        scrollChatToLatest();
+      }
+    }
+
+    if (chatScrollSettleTimerId !== null) {
+      window.clearTimeout(chatScrollSettleTimerId);
+    }
+    chatScrollSettleTimerId = window.setTimeout(function () {
+      chatScrollSettleTimerId = null;
+      scrollChatToLatest();
+    }, 180);
   }
 
   function getReservedBottomPx() {
@@ -1565,15 +1557,12 @@ import { ROLE_IDS } from './role-constants.js';
       </div>`;
 
       messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
-      if (!isHistoryLoading || isChatOpen) {
-        scheduleChatScrollToLatest();
-      } else {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }
+      if (isHistoryLoading) return;
+      scheduleChatScrollToLatest();
 
       // Badge ONLY for new real-time messages, NOT history
       // Skip ALL badge updates during history loading
-      if (!isHistoryLoading && !isChatOpen && type === 'received') {
+      if (!isChatOpen && type === 'received') {
         const msgTime = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
         const isUnread = msgTime > lastReadTimestamp;
 
@@ -1584,7 +1573,7 @@ import { ROLE_IDS } from './role-constants.js';
         }
       }
 
-      if (!isHistoryLoading && type === 'received' && incomingAudio && typeof incomingAudio.play === 'function') {
+      if (type === 'received' && incomingAudio && typeof incomingAudio.play === 'function') {
         try {
           incomingAudio.currentTime = 0;
           incomingAudio.play().catch(() => {});

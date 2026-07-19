@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v314'; // iOS Sunday Clinic queue touch scrolling
+const STAFF_PWA_VERSION = 'v315'; // iOS chat reply layout-loop fix
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;

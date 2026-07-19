@@ -543,6 +543,16 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;');
     });
 
+    test('mobile chat reply coalesces scrolling without moving the iOS visual viewport', () => {
+        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+
+        expect(chatPopup).not.toContain('scrollIntoView(');
+        expect(chatPopup).toContain('var chatScrollFrameId = null;');
+        expect(chatPopup).toContain('var chatScrollSettleTimerId = null;');
+        expect(chatPopup).toContain('if (isHistoryLoading) return;');
+        expect(chatPopup).not.toContain('window.setTimeout(scrollChatToLatest, 4200);');
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const payrollFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-payroll.html');
