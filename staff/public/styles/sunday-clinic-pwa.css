@@ -2059,6 +2059,38 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
 
 /* Wave 1: canonical embedded shell and navigation rules. */
 @media (max-width: 991.98px) {
+    body.mobile-app-mode.sunday-clinic-embedded-active {
+        width: 100% !important; /* Avoid 100vw scrollbar overflow. */
+        max-width: 100% !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header {
+        min-height: 60px !important;
+        height: 60px !important;
+        max-height: 60px !important;
+        padding: var(--sc-pwa-space-2) var(--sc-pwa-gutter) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {
+        gap: var(--sc-pwa-space-2) !important;
+        height: 44px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #btn-queue-vis-toggle,
+    body.mobile-app-mode.sunday-clinic-embedded-active #btn-doctor-toggle {
+        min-height: var(--sc-pwa-touch-target) !important;
+        height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-2) var(--sc-pwa-space-3) !important;
+        border-radius: var(--sc-pwa-control-radius) !important;
+        font-size: var(--sc-pwa-font-button) !important;
+        line-height: 1.2 !important;
+        white-space: nowrap !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper {
+        padding-top: 60px !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page {
         padding-right: var(--sc-pwa-gutter) !important;
         padding-left: var(--sc-pwa-gutter) !important;
