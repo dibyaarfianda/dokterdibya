@@ -417,7 +417,8 @@
         startY: 0,
         originX: 0,
         originY: 0,
-        pointerId: null
+        pointerId: null,
+        sourceObjectUrl: null
     };
 
     async function getToken() {
@@ -464,6 +465,9 @@
     }
 
     function resetAvatarEditorState() {
+        if (avatarEditorState.sourceObjectUrl) {
+            URL.revokeObjectURL(avatarEditorState.sourceObjectUrl);
+        }
         avatarEditorState.image = null;
         avatarEditorState.scale = 1;
         avatarEditorState.minScale = 1;
@@ -476,6 +480,7 @@
         avatarEditorState.originX = 0;
         avatarEditorState.originY = 0;
         avatarEditorState.pointerId = null;
+        avatarEditorState.sourceObjectUrl = null;
     }
 
     function showAvatarEditorPanel() {
@@ -600,6 +605,8 @@
         canvas.height = outputSize;
         context.imageSmoothingEnabled = true;
         context.imageSmoothingQuality = 'high';
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, outputSize, outputSize);
 
         const sourceX = Math.max(0, (-avatarEditorState.offsetX) / avatarEditorState.scale);
         const sourceY = Math.max(0, (-avatarEditorState.offsetY) / avatarEditorState.scale);
@@ -617,7 +624,7 @@
             outputSize
         );
 
-        return canvas.toDataURL('image/png');
+        return canvas.toDataURL('image/jpeg', 0.82);
     }
 
     async function openAvatarEditor(sourceUrl) {
@@ -631,6 +638,7 @@
 
         resetAvatarEditorState();
         avatarEditorState.image = image;
+        avatarEditorState.sourceObjectUrl = sourceUrl.startsWith('blob:') ? sourceUrl : null;
 
         const stageSize = getAvatarEditorStageSize();
         avatarEditorState.minScale = Math.max(stageSize / image.naturalWidth, stageSize / image.naturalHeight);
@@ -835,36 +843,36 @@
     }
 
     // Handle profile picture selection
-    $('#profile-picture-input').on('change', function(e) {
+    $('#profile-picture-input').on('change', async function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
         // Validate file type
-        if (!file.type.startsWith('image/')) {
-            showToast('File harus berupa gambar (JPG, PNG, GIF)', 'error');
+        const isImage = file.type.startsWith('image/') || /\.(?:jpe?g|png|gif|webp|heic|heif)$/i.test(file.name || '');
+        if (!isImage) {
+            showToast('File harus berupa gambar (JPG, PNG, GIF, WebP, atau HEIC)', 'error');
+            e.target.value = '';
             return;
         }
 
-        // Validate file size (max 2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            showToast('Ukuran file maksimal 2MB', 'error');
+        // iPhone camera photos commonly exceed 2 MB. The editor compresses
+        // them to a 512px JPEG before upload, so only guard extreme sources.
+        if (file.size > 20 * 1024 * 1024) {
+            showToast('Ukuran foto maksimal 20MB', 'error');
+            e.target.value = '';
             return;
         }
 
-        // Read file as base64
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            try {
-                await openAvatarEditor(event.target.result);
-            } catch (error) {
-                console.error('Failed to open avatar editor:', error);
-                showToast('Gagal memproses foto profil', 'error');
-            }
-        };
-        reader.onerror = () => {
-            showToast('Gagal membaca file', 'error');
-        };
-        reader.readAsDataURL(file);
+        const sourceUrl = URL.createObjectURL(file);
+        try {
+            await openAvatarEditor(sourceUrl);
+        } catch (error) {
+            URL.revokeObjectURL(sourceUrl);
+            console.error('Failed to open avatar editor:', error);
+            showToast('Format foto tidak dapat dibaca. Pilih JPG atau PNG jika foto HEIC gagal.', 'error');
+        } finally {
+            e.target.value = '';
+        }
     });
 
     // Handle form submission

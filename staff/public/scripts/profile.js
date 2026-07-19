@@ -8,6 +8,9 @@ const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostnam
 
 let currentUser = null;
 let selectedProfilePicture = null; // Store selected image as base64
+const PROFILE_PHOTO_SOURCE_LIMIT = 20 * 1024 * 1024;
+const PROFILE_PHOTO_OUTPUT_SIZE = 512;
+const PROFILE_PHOTO_JPEG_QUALITY = 0.82;
 
 function isEmailLike(value) {
     return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -93,6 +96,49 @@ function loadOptimizedAvatar(imageEl, photoURL, targetSize) {
     };
 
     sourceImage.src = photoURL;
+}
+
+function isSupportedImageFile(file) {
+    if (file?.type?.startsWith('image/')) return true;
+    return /\.(?:jpe?g|png|gif|webp|heic|heif)$/i.test(file?.name || '');
+}
+
+function compressProfilePicture(file) {
+    return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file);
+        const sourceImage = new Image();
+        sourceImage.decoding = 'async';
+
+        const cleanup = () => URL.revokeObjectURL(objectUrl);
+        sourceImage.onload = () => {
+            try {
+                const squareCanvas = buildProgressiveSquareAvatar(sourceImage, PROFILE_PHOTO_OUTPUT_SIZE);
+                if (!squareCanvas) throw new Error('Canvas foto tidak tersedia');
+
+                const outputCanvas = document.createElement('canvas');
+                const outputContext = outputCanvas.getContext('2d');
+                if (!outputContext) throw new Error('Canvas foto tidak didukung');
+
+                outputCanvas.width = PROFILE_PHOTO_OUTPUT_SIZE;
+                outputCanvas.height = PROFILE_PHOTO_OUTPUT_SIZE;
+                outputContext.fillStyle = '#ffffff';
+                outputContext.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+                outputContext.drawImage(squareCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
+
+                const encoded = outputCanvas.toDataURL('image/jpeg', PROFILE_PHOTO_JPEG_QUALITY);
+                cleanup();
+                resolve(encoded);
+            } catch (error) {
+                cleanup();
+                reject(error);
+            }
+        };
+        sourceImage.onerror = () => {
+            cleanup();
+            reject(new Error('Format foto tidak dapat dibaca di perangkat ini'));
+        };
+        sourceImage.src = objectUrl;
+    });
 }
 
 // Load profile data
@@ -235,34 +281,36 @@ export function initProfile() {
 }
 
 // Handle profile picture file selection
-function handleProfilePictureSelect(e) {
+async function handleProfilePictureSelect(e) {
     const file = e.target.files[0];
     
     if (!file) return;
     
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-        showError('File harus berupa gambar (JPG, PNG, GIF)');
+    if (!isSupportedImageFile(file)) {
+        showError('File harus berupa gambar (JPG, PNG, GIF, WebP, atau HEIC)');
+        e.target.value = '';
         return;
     }
-    
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-        showError('Ukuran file maksimal 2MB');
+
+    // Camera photos on iPhone are commonly larger than 2 MB. Decode and
+    // compress locally so the API always receives a small, compatible JPEG.
+    if (file.size > PROFILE_PHOTO_SOURCE_LIMIT) {
+        showError('Ukuran foto maksimal 20MB');
+        e.target.value = '';
         return;
     }
-    
-    // Read file as base64
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        selectedProfilePicture = event.target.result;
+
+    try {
+        selectedProfilePicture = await compressProfilePicture(file);
         displayProfilePicture(selectedProfilePicture);
         showSuccess('Foto dipilih. Klik Save untuk menyimpan.');
-    };
-    reader.onerror = () => {
-        showError('Gagal membaca file');
-    };
-    reader.readAsDataURL(file);
+    } catch (error) {
+        console.error('Failed to process profile picture:', error);
+        showError(error.message || 'Gagal memproses foto');
+    } finally {
+        e.target.value = '';
+    }
 }
 
 // Handle remove profile picture
