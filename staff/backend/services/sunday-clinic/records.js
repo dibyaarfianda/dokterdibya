@@ -337,6 +337,15 @@ async function postRecordsByMrIdBySection(req, res, next) {
             [normalizedMrId]
         );
 
+        // Keep other staff screens in sync with saved clinical sections.
+        const realtimeSync = require('../../realtime-sync');
+        realtimeSync.broadcast({
+            type: 'medical_record:updated',
+            mr_id: normalizedMrId,
+            section,
+            user_id: req.user?.id || req.user?.new_id || null
+        });
+
         // Update queue status when anamnesa is saved (klinik_private only)
         if (section === 'anamnesa' && recordRow.visit_location === 'klinik_private') {
             await updateQueueStatus(normalizedMrId, 'anamnesa');

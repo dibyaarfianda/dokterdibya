@@ -88,6 +88,10 @@ class SundayClinicApp {
         this.beforeUnloadBound = false;
         this.softRefreshTimer = null;
         this.softRefreshInFlight = false;
+        this.recordSocket = null;
+        this.recordSocketHandler = null;
+        this.queueSocketHandler = null;
+        this.recordSocketReadyHandler = null;
     }
 
     isMedifyLocation(location = this.currentLocation) {
@@ -187,6 +191,7 @@ class SundayClinicApp {
 
             // Initialize patient history sidebar
             await patientSidebar.init();
+            this.setupRealtimeRecordUpdates();
 
             this.initialized = true;
 
@@ -2563,6 +2568,57 @@ class SundayClinicApp {
             resetStartExaminationButton(btn);
         } finally {
             if (timeoutId) clearTimeout(timeoutId);
+        }
+    }
+
+    setupRealtimeRecordUpdates() {
+        if (!this.recordSocketReadyHandler) {
+            this.recordSocketReadyHandler = () => this.bindRealtimeRecordSocket();
+            window.addEventListener('realtime:socket-ready', this.recordSocketReadyHandler);
+            window.addEventListener('realtime:socket-connected', this.recordSocketReadyHandler);
+        }
+        this.bindRealtimeRecordSocket();
+    }
+
+    bindRealtimeRecordSocket() {
+        const socket = window.__realtimeSyncState?.socket || window.socket;
+        if (!socket || this.recordSocket === socket) return;
+        if (this.recordSocket && this.recordSocketHandler) {
+            this.recordSocket.off('medical_record:updated', this.recordSocketHandler);
+            this.recordSocket.off('queue:updated', this.queueSocketHandler);
+        }
+        this.recordSocket = socket;
+        this.recordSocketHandler = (event = {}) => {
+            if (!this.currentMrId || String(event.mr_id) !== String(this.currentMrId)) return;
+            const currentUserId = window.currentStaffIdentity?.id || window.currentStaffIdentity?.user_id;
+            if (event.user_id && currentUserId && String(event.user_id) === String(currentUserId)) return;
+            this.refreshCurrentRecordFromRealtime(event.section);
+        };
+        socket.on('medical_record:updated', this.recordSocketHandler);
+        this.queueSocketHandler = (event = {}) => {
+            const eventMrId = event.mrId || event.mr_id;
+            if (!this.currentMrId || String(eventMrId) !== String(this.currentMrId)) return;
+            this._restoreQueueState(this.currentMrId);
+        };
+        socket.on('queue:updated', this.queueSocketHandler);
+    }
+
+    async refreshCurrentRecordFromRealtime(section) {
+        if (this.softRefreshInFlight || document.visibilityState === 'hidden' || !this.currentMrId) return;
+        this.softRefreshInFlight = true;
+        try {
+            const activeSection = stateManager.getState().activeSection || section || SECTIONS.IDENTITY;
+            const response = await apiClient.getRecord(this.currentMrId);
+            if (!response.success) return;
+            await stateManager.loadRecord(response.data);
+            this.currentLocation = response.data.record?.visit_location || this.currentLocation;
+            await this.render(activeSection);
+            await this._restoreQueueState(this.currentMrId);
+            if (window.showToast) window.showToast('info', 'Data rekam medis diperbarui dari perangkat lain');
+        } catch (error) {
+            console.warn('[SundayClinic] Realtime record refresh failed:', error.message);
+        } finally {
+            this.softRefreshInFlight = false;
         }
     }
 
