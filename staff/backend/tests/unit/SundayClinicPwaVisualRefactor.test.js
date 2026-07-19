@@ -53,4 +53,29 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(main).toContain('activateSundayClinicPwaLayout();');
         expect(main).toContain('deactivateSundayClinicPwaLayout();');
     });
+
+    test('wave 2 normalizes clinical typography, controls, cards, and responsive grids', () => {
+        const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
+
+        expect(pwaCss).toContain('/* Wave 2: canonical clinical content rules. */');
+        expect(pwaCss).toContain('font-size: var(--sc-pwa-font-control) !important;');
+        expect(pwaCss).toContain('min-height: var(--sc-pwa-touch-target) !important;');
+        expect(pwaCss).toContain('min-height: 88px !important;');
+        expect(pwaCss).toContain('padding: var(--sc-pwa-space-3) !important;');
+        expect(pwaCss).toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important;');
+        expect(pwaCss).toContain('flex: 0 0 100% !important;');
+        expect(pwaCss).not.toContain('word-break: break-all');
+    });
+
+    test('wave 2 keeps billing and icon actions readable on narrow screens', () => {
+        const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
+        const billing = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'billing.js');
+
+        expect(pwaCss).toContain('#additional-billing-panel .additional-billing-table td {');
+        expect(pwaCss).toContain('grid-template-columns: minmax(96px, 0.42fr) minmax(0, 1fr) !important;');
+        expect(pwaCss).toContain('#additional-billing-panel .additional-billing-actions .btn {');
+        expect(billing).toContain('aria-label="Ubah draft"');
+        expect(billing).toContain('aria-label="Konfirmasi tagihan"');
+        expect(billing).toContain('aria-label="Cetak invoice"');
+    });
 });
