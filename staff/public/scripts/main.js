@@ -42,22 +42,123 @@ function startClock() {
 const pages = {};
 const PUBLIC_ASSET_ROOT = new URL('../', import.meta.url).pathname;
 const SUNDAY_CLINIC_STYLESHEET_ID = 'sunday-clinic-stylesheet';
+const SUNDAY_CLINIC_PWA_STYLESHEET_ID = 'sunday-clinic-pwa-stylesheet';
+let sundayClinicPwaLayoutActive = false;
+let sundayClinicPwaViewportFrameId = null;
+let sundayClinicPwaNavObserver = null;
+
+function getVisibleSundayClinicBottomNav() {
+    const nav = document.querySelector('.sc-staff-section-nav');
+    if (!nav || typeof window.getComputedStyle !== 'function') return null;
+    const style = window.getComputedStyle(nav);
+    const rect = nav.getBoundingClientRect();
+    if (style.display === 'none' || style.visibility === 'hidden' || rect.height <= 0) return null;
+    return nav;
+}
+
+function syncSundayClinicPwaViewport() {
+    if (!sundayClinicPwaLayoutActive || !document.body) return;
+    const viewport = window.visualViewport;
+    const viewportTop = Math.max(0, Math.round(viewport?.offsetTop || 0));
+    const viewportHeight = Math.max(320, Math.round(
+        viewport?.height || window.innerHeight || document.documentElement.clientHeight || 0
+    ));
+    const viewportBottom = viewportTop + viewportHeight;
+    const nav = getVisibleSundayClinicBottomNav();
+    let navHeight = 68;
+    if (nav) {
+        const rect = nav.getBoundingClientRect();
+        const visibleHeight = Math.round(Math.min(viewportBottom, rect.bottom) - Math.max(viewportTop, rect.top));
+        if (visibleHeight > 0) navHeight = Math.min(140, Math.max(58, visibleHeight));
+    }
+    const style = document.body.style;
+    style.setProperty('--sc-pwa-viewport-height', viewportHeight + 'px');
+    style.setProperty('--sc-pwa-bottom-nav-height', navHeight + 'px');
+}
+
+function queueSundayClinicPwaViewportSync() {
+    if (!sundayClinicPwaLayoutActive || sundayClinicPwaViewportFrameId !== null) return;
+    sundayClinicPwaViewportFrameId = window.requestAnimationFrame(() => {
+        sundayClinicPwaViewportFrameId = null;
+        syncSundayClinicPwaViewport();
+    });
+}
+
+function activateSundayClinicPwaLayout() {
+    if (sundayClinicPwaLayoutActive) return;
+    if (!document.body?.classList.contains('mobile-app-mode')) return;
+    sundayClinicPwaLayoutActive = true;
+    window.addEventListener('resize', queueSundayClinicPwaViewportSync, { passive: true });
+    window.addEventListener('orientationchange', queueSundayClinicPwaViewportSync, { passive: true });
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', queueSundayClinicPwaViewportSync, { passive: true });
+        window.visualViewport.addEventListener('scroll', queueSundayClinicPwaViewportSync, { passive: true });
+    }
+    if (typeof window.ResizeObserver === 'function') {
+        const nav = document.querySelector('.sc-staff-section-nav');
+        if (nav) {
+            sundayClinicPwaNavObserver = new window.ResizeObserver(queueSundayClinicPwaViewportSync);
+            sundayClinicPwaNavObserver.observe(nav);
+        }
+    }
+    syncSundayClinicPwaViewport();
+}
+
+function deactivateSundayClinicPwaLayout() {
+    if (!sundayClinicPwaLayoutActive) return;
+    sundayClinicPwaLayoutActive = false;
+    window.removeEventListener('resize', queueSundayClinicPwaViewportSync);
+    window.removeEventListener('orientationchange', queueSundayClinicPwaViewportSync);
+    if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', queueSundayClinicPwaViewportSync);
+        window.visualViewport.removeEventListener('scroll', queueSundayClinicPwaViewportSync);
+    }
+    sundayClinicPwaNavObserver?.disconnect();
+    sundayClinicPwaNavObserver = null;
+    if (sundayClinicPwaViewportFrameId !== null) {
+        window.cancelAnimationFrame(sundayClinicPwaViewportFrameId);
+        sundayClinicPwaViewportFrameId = null;
+    }
+    document.body?.style.removeProperty('--sc-pwa-viewport-height');
+    document.body?.style.removeProperty('--sc-pwa-bottom-nav-height');
+}
+
+function ensureSundayClinicStylesheet(id, href) {
+    let link = document.getElementById(id);
+    if (!link) {
+        link = document.createElement('link');
+        link.id = id;
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+    }
+    link.disabled = false;
+    return link;
+}
+
 function setSundayClinicStylesActive(active) {
     let link = document.getElementById(SUNDAY_CLINIC_STYLESHEET_ID);
+    let pwaLink = document.getElementById(SUNDAY_CLINIC_PWA_STYLESHEET_ID);
     if (active) {
-        if (!link) {
-            link = document.createElement('link');
-            link.id = SUNDAY_CLINIC_STYLESHEET_ID;
-            link.rel = 'stylesheet';
-            link.href = `/staff/public/styles/sunday-clinic.css?v=${encodeURIComponent(window.__assetVersion || '20260619staff1')}`;
-            document.head.appendChild(link);
-        }
-        link.disabled = false;
+        const assetVersion = encodeURIComponent(window.__assetVersion || '20260619staff1');
+        link = ensureSundayClinicStylesheet(
+            SUNDAY_CLINIC_STYLESHEET_ID,
+            `/staff/public/styles/sunday-clinic.css?v=${assetVersion}`
+        );
+        pwaLink = ensureSundayClinicStylesheet(
+            SUNDAY_CLINIC_PWA_STYLESHEET_ID,
+            `/staff/public/styles/sunday-clinic-pwa.css?v=${assetVersion}`
+        );
         document.body.classList.add('sunday-clinic-embedded-active');
+        activateSundayClinicPwaLayout();
     } else {
         if (link) {
             link.disabled = true;
         }
+        if (pwaLink) {
+            pwaLink.disabled = true;
+        }
+        deactivateSundayClinicPwaLayout();
         document.body.classList.remove('sunday-clinic-embedded-active');
         document.body.classList.remove('patient-sidebar-open');
         const patientSidebar = document.getElementById('patient-history-sidebar');

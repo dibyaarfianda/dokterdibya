@@ -69,9 +69,9 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toContain('�');
     });
 
-    test('staff PWA mobile typography uses Compact 10 with explicit allowlisted exceptions', () => {
+    test('Sunday Clinic PWA overrides the compact staff shell with balanced clinical typography', () => {
         const mobileCss = readNormalizedFile('staff', 'public', 'styles', 'mobile-responsive.css');
-        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect(mobileCss).toContain('Compact 10 text scale with component-specific icon exceptions.');
         expect(mobileCss).toContain('body.mobile-app-mode {\n        font-size: 10px !important;');
@@ -83,25 +83,17 @@ describe('staff panel stabilization sources', () => {
         expect(mobileCss).toContain('body.mobile-app-mode #chat-toggle-btn i,\n    body.mobile-app-mode .chat-toggle-btn i {\n        font-size: 24px !important;');
         expect(mobileCss).toContain('body.mobile-app-mode .table-action,\n    body.mobile-app-mode .table-action i {\n        font-size: 8px !important;');
 
-        expect(sundayClinicCss).not.toMatch(/body\.mobile-app-mode\s+\*\s*\{\s*font-size:\s*9px\s*!important;/);
-        expect(sundayClinicCss).not.toMatch(/#sunday-clinic-content\s+\*,\s*body\.mobile-app-mode\s+#sunday-clinic-content\s+\*::placeholder\s*\{\s*font-size:\s*inherit\s*!important;/);
-        expect(sundayClinicCss).toContain('Compact 10 final pass for Sunday Clinic PWA/mobile.');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-content,');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode .list-group-item {\n    font-size: 10px !important;');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode textarea#planning-rencana,');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode ::-webkit-input-placeholder {\n    font-size: 10px !important;');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-content .table td,\nbody.mobile-app-mode #sunday-clinic-content .table th,');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode .identity-table .identity-value {\n    font-size: 9px !important;');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-content .billing-dense-table td,');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-content .table-action i {\n    font-size: 8px !important;');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode .fa,\nbody.mobile-app-mode .fas,\nbody.mobile-app-mode .far,\nbody.mobile-app-mode .fab,');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode #patientSearchModal .form-control-lg {\n    font-size: 12px !important;');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode .clinic-header-title,\nbody.mobile-app-mode .current-patient-info .patient-name,');
+        expect(sundayClinicCss).not.toContain('Compact 10 final pass for Sunday Clinic PWA/mobile.');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-body: 13px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-control: 16px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-button: 13px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-touch-target: 44px;');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active');
     });
 
     test('staff PWA mobile width normalization keeps outer pages full-width', () => {
         const mobileCss = readNormalizedFile('staff', 'public', 'styles', 'mobile-responsive.css');
-        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect(mobileCss).toContain('STAFF PWA WIDTH NORMALIZATION');
         expect(mobileCss).toContain('body.mobile-app-mode .wrapper,\n    body.mobile-app-mode #main-app,\n    body.mobile-app-mode .content-wrapper,\n    body.mobile-app-mode .content,\n    body.mobile-app-mode section.content,\n    body.mobile-app-mode .container-fluid {');
@@ -110,9 +102,9 @@ describe('staff panel stabilization sources', () => {
 
         expect(sundayClinicCss).not.toMatch(/body\.mobile-app-mode\s+\*\s*\{\s*max-width:\s*100vw\s*!important;/);
         expect(sundayClinicCss).not.toContain('body.mobile-app-mode .content-wrapper {\n    padding-left: 8px !important;\n    padding-right: 8px !important;');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page,\nbody.mobile-app-mode #sunday-clinic-content,');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode #sunday-clinic-page .card,\nbody.mobile-app-mode #sunday-clinic-content .card,');
-        expect(sundayClinicCss).toContain('body.mobile-app-mode .content-wrapper {\n    padding-left: 0 !important;\n    padding-right: 0 !important;');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page,');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page .card,');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper {');
     });
 
     test('patient photo_url schema accepts long Google avatar URLs', () => {
@@ -160,7 +152,7 @@ describe('staff panel stabilization sources', () => {
         const featureLoader = readRepoFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
         const sundayClinicEntry = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic.js');
-        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
         const medicalImport = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'utils', 'medical-import.js');
         const patientSidebar = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'patient-history-sidebar.js');
         const klinikPrivate = readRepoFile('staff', 'public', 'scripts', 'klinik-private.js');
@@ -410,7 +402,7 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('Klinik Privat embedded mobile polish stays scoped to Staff PWA mode', () => {
-        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const sw = readNormalizedFile('staff', 'public', 'sw.js');
         const htmlVersionMatch = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/);
@@ -575,7 +567,7 @@ describe('staff panel stabilization sources', () => {
 
     test('mobile additional billing uses readable cards and a dedicated empty state', () => {
         const billing = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'billing.js');
-        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect(billing).toContain('class="table table-sm table-bordered mb-0 additional-billing-table"');
         expect(billing).toContain('data-label="Referensi"');
@@ -587,7 +579,7 @@ describe('staff panel stabilization sources', () => {
 
     test('mobile chat FAB follows the active embedded navigation without a double offset', () => {
         const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
-        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect(chatPopup).toContain("document.querySelector('body.sunday-clinic-embedded-active .sc-staff-section-nav')");
         expect(chatPopup).toContain('function isVisibleBottomNav(nav)');
@@ -718,7 +710,7 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('Sunday Clinic PWA queue dropdown keeps the full patient list touch-scrollable', () => {
-        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown.show');
         expect(sundayClinicCss).toContain('display: flex !important;');
