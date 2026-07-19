@@ -46,6 +46,9 @@ const SUNDAY_CLINIC_PWA_STYLESHEET_ID = 'sunday-clinic-pwa-stylesheet';
 let sundayClinicPwaLayoutActive = false;
 let sundayClinicPwaViewportFrameId = null;
 let sundayClinicPwaNavObserver = null;
+let sundayClinicStylesActive = false;
+let sundayClinicPwaMediaListenerActive = false;
+const sundayClinicPwaMediaQuery = window.matchMedia('(max-width: 991.98px)');
 
 function getVisibleSundayClinicBottomNav() {
     const nav = document.querySelector('.sc-staff-section-nav');
@@ -87,6 +90,7 @@ function queueSundayClinicPwaViewportSync() {
 function activateSundayClinicPwaLayout() {
     if (sundayClinicPwaLayoutActive) return;
     if (!document.body?.classList.contains('mobile-app-mode')) return;
+    if (!sundayClinicPwaMediaQuery.matches) return;
     sundayClinicPwaLayoutActive = true;
     window.addEventListener('resize', queueSundayClinicPwaViewportSync, { passive: true });
     window.addEventListener('orientationchange', queueSundayClinicPwaViewportSync, { passive: true });
@@ -136,10 +140,48 @@ function ensureSundayClinicStylesheet(id, href) {
     return link;
 }
 
+function reconcileSundayClinicPwaMode() {
+    const pwaLink = document.getElementById(SUNDAY_CLINIC_PWA_STYLESHEET_ID);
+    const shouldEnablePwa = sundayClinicStylesActive
+        && document.body?.classList.contains('mobile-app-mode')
+        && sundayClinicPwaMediaQuery.matches;
+
+    if (pwaLink) {
+        pwaLink.disabled = !shouldEnablePwa;
+    }
+
+    if (shouldEnablePwa) {
+        activateSundayClinicPwaLayout();
+    } else {
+        deactivateSundayClinicPwaLayout();
+    }
+}
+
+function bindSundayClinicPwaMediaListener() {
+    if (sundayClinicPwaMediaListenerActive) return;
+    sundayClinicPwaMediaListenerActive = true;
+    if (typeof sundayClinicPwaMediaQuery.addEventListener === 'function') {
+        sundayClinicPwaMediaQuery.addEventListener('change', reconcileSundayClinicPwaMode);
+    } else {
+        sundayClinicPwaMediaQuery.addListener(reconcileSundayClinicPwaMode);
+    }
+}
+
+function unbindSundayClinicPwaMediaListener() {
+    if (!sundayClinicPwaMediaListenerActive) return;
+    sundayClinicPwaMediaListenerActive = false;
+    if (typeof sundayClinicPwaMediaQuery.removeEventListener === 'function') {
+        sundayClinicPwaMediaQuery.removeEventListener('change', reconcileSundayClinicPwaMode);
+    } else {
+        sundayClinicPwaMediaQuery.removeListener(reconcileSundayClinicPwaMode);
+    }
+}
+
 function setSundayClinicStylesActive(active) {
     let link = document.getElementById(SUNDAY_CLINIC_STYLESHEET_ID);
     let pwaLink = document.getElementById(SUNDAY_CLINIC_PWA_STYLESHEET_ID);
     if (active) {
+        sundayClinicStylesActive = true;
         const assetVersion = encodeURIComponent(window.__assetVersion || '20260619staff1');
         link = ensureSundayClinicStylesheet(
             SUNDAY_CLINIC_STYLESHEET_ID,
@@ -150,8 +192,11 @@ function setSundayClinicStylesActive(active) {
             `/staff/public/styles/sunday-clinic-pwa.css?v=${assetVersion}`
         );
         document.body.classList.add('sunday-clinic-embedded-active');
-        activateSundayClinicPwaLayout();
+        bindSundayClinicPwaMediaListener();
+        reconcileSundayClinicPwaMode();
     } else {
+        sundayClinicStylesActive = false;
+        unbindSundayClinicPwaMediaListener();
         if (link) {
             link.disabled = true;
         }

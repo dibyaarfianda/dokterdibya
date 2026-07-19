@@ -54,6 +54,17 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(main).toContain('deactivateSundayClinicPwaLayout();');
     });
 
+    test('desktop web never receives the embedded Sunday Clinic PWA scope', () => {
+        const main = readRepoFile('staff', 'public', 'scripts', 'main.js');
+
+        expect(main).toContain("window.matchMedia('(max-width: 991.98px)')");
+        expect(main).toContain('function reconcileSundayClinicPwaMode()');
+        expect(main).toContain('pwaLink.disabled = !shouldEnablePwa;');
+        expect(main).toContain("sundayClinicPwaMediaQuery.addEventListener('change', reconcileSundayClinicPwaMode);");
+        expect(main).toContain("sundayClinicPwaMediaQuery.removeEventListener('change', reconcileSundayClinicPwaMode);");
+        expect(main).toContain("document.body.classList.add('sunday-clinic-embedded-active');");
+    });
+
     test('wave 2 normalizes clinical typography, controls, cards, and responsive grids', () => {
         const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
