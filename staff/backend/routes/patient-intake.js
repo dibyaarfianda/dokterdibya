@@ -304,6 +304,46 @@ async function syncAuthenticatedPatientProfileFromIntake(patientId, payload) {
     );
 }
 
+async function findAndLinkAuthenticatedPatientIntake(patientId, patientEmail) {
+    if (!patientId) return null;
+
+    const [rows] = await db.query(
+        `SELECT pis.submission_id, pis.quick_id, pis.payload,
+                pis.created_at AS receivedAt, pis.status, pis.patient_id
+         FROM patient_intake_submissions pis
+         JOIN patients p ON p.id = ?
+         WHERE pis.status = 'verified'
+           AND (
+                pis.patient_id = ?
+                OR JSON_UNQUOTE(JSON_EXTRACT(pis.payload, '$.email')) = ?
+                OR (
+                    pis.patient_id IS NULL
+                    AND RIGHT(REGEXP_REPLACE(pis.phone, '[^0-9]', ''), 10)
+                        = RIGHT(REGEXP_REPLACE(COALESCE(p.phone, p.whatsapp), '[^0-9]', ''), 10)
+                    AND LOWER(TRIM(pis.full_name)) = LOWER(TRIM(p.full_name))
+                )
+           )
+         ORDER BY (pis.patient_id = ?) DESC, pis.created_at DESC
+         LIMIT 1`,
+        [patientId, patientId, patientEmail || null, patientId]
+    );
+
+    if (!rows.length) return null;
+    const row = rows[0];
+    if (!row.patient_id) {
+        await db.query(
+            'UPDATE patient_intake_submissions SET patient_id = ? WHERE submission_id = ?',
+            [patientId, row.submission_id]
+        );
+        row.patient_id = patientId;
+        logger.info('Linked existing intake to newly authenticated patient', {
+            patientId,
+            submissionId: row.submission_id
+        });
+    }
+    return row;
+}
+
 function deriveEncryptionKey() {
     if (!ENCRYPTION_KEY) {
         if (!encryptionWarningLogged) {
@@ -869,6 +909,22 @@ router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
         
         // Try to load from database - query by patient_id or email
         try {
+            const linkedRow = await findAndLinkAuthenticatedPatientIntake(patientId, patientEmail);
+            if (linkedRow) {
+                const payload = typeof linkedRow.payload === 'string' ? JSON.parse(linkedRow.payload) : linkedRow.payload;
+                logger.info('Found existing intake', { submissionId: linkedRow.submission_id, quickId: linkedRow.quick_id });
+                return res.json({
+                    success: true,
+                    data: {
+                        submissionId: linkedRow.submission_id,
+                        quickId: linkedRow.quick_id,
+                        payload,
+                        receivedAt: linkedRow.receivedAt,
+                        status: linkedRow.status
+                    }
+                });
+            }
+
             // Build query to match by patient_id (primary) or email (fallback)
             let query = `SELECT submission_id, quick_id, payload, created_at as receivedAt, status 
                 FROM patient_intake_submissions 
@@ -950,6 +1006,19 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
         
         // Load from database - query by patient_id or email
         try {
+            const linkedRow = await findAndLinkAuthenticatedPatientIntake(patientId, patientEmail);
+            if (linkedRow) {
+                const storedPayload = typeof linkedRow.payload === 'string' ? JSON.parse(linkedRow.payload) : linkedRow.payload;
+                existingRecord = {
+                    submissionId: linkedRow.submission_id,
+                    payload: storedPayload,
+                    receivedAt: linkedRow.receivedAt,
+                    status: linkedRow.status,
+                    integration: { patientId },
+                    review: { history: [] }
+                };
+            }
+
             // Build query to match by patient_id (primary) or email (fallback)
             let query = `SELECT submission_id, payload, created_at as receivedAt, status, patient_id
                 FROM patient_intake_submissions 
@@ -971,7 +1040,7 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
             
             const [rows] = await db.query(query, params);
             
-            if (rows.length > 0) {
+            if (!existingRecord && rows.length > 0) {
                 const row = rows[0];
                 const storedPayload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
                 existingRecord = {

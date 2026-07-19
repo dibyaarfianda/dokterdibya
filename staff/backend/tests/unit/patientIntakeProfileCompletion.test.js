@@ -19,4 +19,14 @@ describe('patient intake profile completion contract', () => {
         expect(route).toContain('await syncAuthenticatedPatientProfileFromIntake(patientId, payload);');
         expect(route).not.toContain('UPDATE patients SET intake_completed = 1 WHERE id = ?');
     });
+
+    test('new patient account adopts an existing intake with matching phone and name', () => {
+        const route = readRepoFile('staff', 'backend', 'routes', 'patient-intake.js');
+
+        expect(route).toContain('async function findAndLinkAuthenticatedPatientIntake(patientId, patientEmail)');
+        expect(route).toContain("RIGHT(REGEXP_REPLACE(pis.phone, '[^0-9]', ''), 10)");
+        expect(route).toContain('LOWER(TRIM(pis.full_name)) = LOWER(TRIM(p.full_name))');
+        expect(route).toContain('UPDATE patient_intake_submissions SET patient_id = ? WHERE submission_id = ?');
+        expect(route).toContain('await findAndLinkAuthenticatedPatientIntake(patientId, patientEmail);');
+    });
 });
