@@ -3296,9 +3296,33 @@ body.mobile-app-mode #sunday-clinic-content .table-action i {
         width: calc(100vw - 16px) !important;
         max-width: calc(100vw - 16px) !important;
         max-width: 342px !important;
-        max-height: 420px !important;
+        height: 360px !important;
+        max-height: 360px !important;
         border-radius: 10px !important;
         overflow: hidden !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown.show {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown > .dropdown-header,
+    body.mobile-app-mode.sunday-clinic-embedded-active #queue-stats-bar {
+        flex: 0 0 auto !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-list {
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow-x: hidden !important;
+        overflow-y: scroll !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-y: contain !important;
+        touch-action: pan-y !important;
+        pointer-events: auto !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page > .card:first-child > .card-body {

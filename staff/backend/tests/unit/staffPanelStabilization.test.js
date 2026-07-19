@@ -661,6 +661,18 @@ describe('staff panel stabilization sources', () => {
         expect(billingRoutes).toContain("router.delete('/billing/:mrId/items/:itemType', verifyToken, broadcastSuccessfulBillingMutation");
     });
 
+    test('Sunday Clinic PWA queue dropdown keeps the full patient list touch-scrollable', () => {
+        const sundayClinicCss = readNormalizedFile('staff', 'public', 'styles', 'sunday-clinic.css');
+
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-dropdown.show');
+        expect(sundayClinicCss).toContain('display: flex !important;');
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #header-queue-list');
+        expect(sundayClinicCss).toContain('min-height: 0 !important;');
+        expect(sundayClinicCss).toContain('overflow-y: scroll !important;');
+        expect(sundayClinicCss).toContain('-webkit-overflow-scrolling: touch !important;');
+        expect(sundayClinicCss).toContain('touch-action: pan-y !important;');
+    });
+
     test('staff mobile tap feedback uses COMM tap sound parameters', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
