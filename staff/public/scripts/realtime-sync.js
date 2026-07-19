@@ -102,7 +102,9 @@ export function initRealtimeSync(user) {
         reconnection: true,
         reconnectionDelay: 2000,
         reconnectionDelayMax: 10000,
-        reconnectionAttempts: 10,
+        // Mobile Safari can suspend polling temporarily; keep retrying after
+        // the network resumes instead of permanently giving up.
+        reconnectionAttempts: Infinity,
         timeout: 30000,
         forceNew: false
     });
@@ -167,6 +169,21 @@ export function initRealtimeSync(user) {
             photo: state.currentUser.photo_url || state.currentUser.photoURL || null
         });
     });
+
+    // Safari may suspend long-polling while the page is backgrounded. Resume
+    // the socket as soon as the page/network becomes active again.
+    if (!state.lifecycleBound) {
+        state.lifecycleBound = true;
+        const reconnectIfNeeded = () => {
+            const socket = state.socket;
+            if (socket && socket.disconnected) socket.connect();
+        };
+        window.addEventListener('online', reconnectIfNeeded);
+        window.addEventListener('pageshow', reconnectIfNeeded);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') reconnectIfNeeded();
+        });
+    }
 
     // Listen for online users list updates
     state.socket.on('users:list', (users) => {

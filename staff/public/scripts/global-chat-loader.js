@@ -33,20 +33,18 @@
 
         window.__chatPopupScriptRequested = true;
 
-        const script = document.createElement('script');
         const version = window.STAFF_CACHE_VERSION || window.__assetVersion || 'v307';
-        script.src = `/staff/public/scripts/chat-popup.js?v=${encodeURIComponent(version)}`;
-        script.onload = function() {
-            console.log('[GlobalChat] chat-popup.js loaded dynamically');
-            markChatPopupReady();
-        };
-        script.onerror = function(error) {
-            window.__chatPopupScriptRequested = false;
-            console.error('[GlobalChat] Failed to load chat-popup.js dynamically:', error);
-        };
-
-        (document.body || document.head || document.documentElement).appendChild(script);
-        console.log('[GlobalChat] Loading chat-popup.js dynamically');
+        const moduleUrl = `/staff/public/scripts/chat-popup.js?v=${encodeURIComponent(version)}`;
+        import(moduleUrl)
+            .then(() => {
+                console.log('[GlobalChat] chat-popup.js loaded dynamically as ESM');
+                markChatPopupReady();
+            })
+            .catch(error => {
+                window.__chatPopupScriptRequested = false;
+                console.error('[GlobalChat] Failed to load chat-popup.js dynamically:', error);
+            });
+        console.log('[GlobalChat] Loading chat-popup.js dynamically as ESM');
     }
 
     // Function to initialize chat

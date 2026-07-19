@@ -16,6 +16,8 @@ import { ROLE_IDS } from './role-constants.js';
 
   const CHAT_HISTORY_POLL_INTERVAL_MS = 15000;
   const CHAT_HISTORY_ERROR_BACKOFF_MS = 30000;
+  const IS_IOS_DEVICE = /iPad|iPhone|iPod/.test(navigator.userAgent || '')
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
   // Measure actual nav height (dynamic, avoids hardcoded 78px mismatch)
   function getNavBottomPx() {
@@ -1491,7 +1493,9 @@ import { ROLE_IDS } from './role-constants.js';
           window.staffPollingCoordinator.register('global-chat-history', {
             interval: CHAT_HISTORY_POLL_INTERVAL_MS,
             backoff: CHAT_HISTORY_ERROR_BACKOFF_MS,
-            when: function () { return !(boundSocket && boundSocket.connected); },
+            // Safari may report a polling socket as connected while its long
+            // poll is suspended. Keep a lightweight reconciliation poll on iOS.
+            when: function () { return IS_IOS_DEVICE || !(boundSocket && boundSocket.connected); },
             run: pollChatHistoryForNewMessages
           });
           var reconcileChatHistory = function () { window.staffPollingCoordinator?.reconcile(); };
