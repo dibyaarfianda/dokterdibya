@@ -294,6 +294,16 @@ import { ROLE_IDS } from './role-constants.js';
   // Backwards-compat alias
   var forceFABVisible = ensureFAB;
 
+  function restoreChatFabAfterClose(cont, btn) {
+    if (cont && document.activeElement && cont.contains(document.activeElement)
+        && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    if (cont) cont.classList.remove('chat-is-open');
+    ensureFAB();
+    if (btn) btn.style.setProperty('display', 'flex', 'important');
+  }
+
   // ---------- EARLY STUB FUNCTIONS for WebView onclick compatibility ----------
   // These will be replaced with real implementations after init
   // This ensures onclick handlers work even before async init completes
@@ -890,8 +900,7 @@ import { ROLE_IDS } from './role-constants.js';
                 chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
                 chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
                 chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-                if (cont) cont.classList.remove('chat-is-open');
-                if (btn) btn.style.setProperty('display', 'flex', 'important');
+                restoreChatFabAfterClose(cont, btn);
             }
             console.log('[ChatPopup] Basic toggle - isChatOpen:', isChatOpenBasic);
         }
@@ -906,8 +915,7 @@ import { ROLE_IDS } from './role-constants.js';
             chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
             chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
             chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-            if (cont) cont.classList.remove('chat-is-open');
-            if (btn) btn.style.setProperty('display', 'flex', 'important');
+            restoreChatFabAfterClose(cont, btn);
             console.log('[ChatPopup] Basic close');
         }
 
@@ -1299,6 +1307,7 @@ import { ROLE_IDS } from './role-constants.js';
         markMessagesAsRead();
         scheduleChatScrollToLatest();
         setTimeout(() => {
+          if (!isChatOpen) return;
           scheduleChatScrollToLatest();
           if (chatInput) {
             setChatKeyboardMode(true);
@@ -1315,8 +1324,7 @@ import { ROLE_IDS } from './role-constants.js';
         chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
         chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
         chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-        if (cont) cont.classList.remove('chat-is-open');
-        toggleBtn.style.setProperty('display', 'flex', 'important');
+        restoreChatFabAfterClose(cont, toggleBtn);
       }
     }
 
@@ -1337,8 +1345,7 @@ import { ROLE_IDS } from './role-constants.js';
       chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
       chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
       chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-      if (cont) cont.classList.remove('chat-is-open');
-      toggleBtn.style.setProperty('display', 'flex', 'important');
+      restoreChatFabAfterClose(cont, toggleBtn);
     }
 
     // Upgrade the close function

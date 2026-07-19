@@ -563,6 +563,16 @@ describe('staff panel stabilization sources', () => {
         expect(chatPopup).not.toContain('.chat-close-btn:hover { background: rgba(255,255,255,.3); transform: rotate(90deg); }');
     });
 
+    test('closing mobile chat restores the FAB frame and releases the page overlay', () => {
+        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+
+        expect(chatPopup).toContain('function restoreChatFabAfterClose(cont, btn)');
+        expect(chatPopup).toContain('document.activeElement.blur();');
+        expect(chatPopup).toContain('ensureFAB();');
+        expect((chatPopup.match(/restoreChatFabAfterClose\(cont, /g) || []).length).toBeGreaterThanOrEqual(4);
+        expect(chatPopup).toContain('if (!isChatOpen) return;');
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const payrollFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-payroll.html');
