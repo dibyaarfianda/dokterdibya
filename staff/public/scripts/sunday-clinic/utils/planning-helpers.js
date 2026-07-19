@@ -842,16 +842,16 @@ function showTerapiModal(obatList) {
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>
+                <td data-label="Pilih">
                     <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input obat-checkbox" id="obat-${index}" data-obat-name="${escapeHtml(item.name || '')}" data-obat-id="${item.id || ''}" ${isChecked ? 'checked' : ''}>
                         <label class="custom-control-label" for="obat-${index}"></label>
                     </div>
                 </td>
-                <td>${escapeHtml(item.code || '')}</td>
-                <td>${escapeHtml(item.name || '')}</td>
-                <td>${escapeHtml(item.category || '')}</td>
-                <td>${item.stock !== undefined ? item.stock : '-'}</td>
+                <td data-label="Kode">${escapeHtml(item.code || '')}</td>
+                <td data-label="Nama Obat">${escapeHtml(item.name || '')}</td>
+                <td data-label="Kategori">${escapeHtml(item.category || '')}</td>
+                <td data-label="Stok">${item.stock !== undefined ? item.stock : '-'}</td>
             `;
             tbody.appendChild(row);
         });

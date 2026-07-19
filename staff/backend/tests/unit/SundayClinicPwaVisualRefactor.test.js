@@ -99,6 +99,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(wave3).toContain('width: 1% !important;');
         expect(wave3).toContain('#tindakan-modal-body {');
         expect(wave3).toContain('overflow-x: hidden !important;');
+        expect(wave3).toContain('#terapi-modal tbody td::before {');
+        expect(wave3).toContain('content: attr(data-label) !important;');
         expect(wave3).toContain('@media (max-width: 390px)');
         expect(wave3).not.toMatch(/\d+(?:\.\d+)?vh/);
     });
@@ -134,5 +136,6 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(sharedCss).toContain('.sc-medication-instruction {');
         expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .sc-form-limit-md,');
         expect(sources).not.toMatch(/style="(?:max-width:\s*(?:120|150|300)px|width:\s*(?:60|80|150\.923076|180)px|height:\s*71px)/);
+        expect(sources).toContain('<td data-label="Nama Obat">');
     });
 });

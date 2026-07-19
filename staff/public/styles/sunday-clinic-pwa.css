@@ -2681,6 +2681,12 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         overflow-wrap: anywhere !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table th,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .table td {
+        font-size: var(--sc-pwa-font-body) !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .btn,
     body.mobile-app-mode.sunday-clinic-embedded-active .modal button,
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .close,
@@ -2898,5 +2904,65 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer .btn-primary,
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer .btn-success {
         order: 2 !important;
+    }
+}
+
+@media (max-width: 599px) {
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal .table-responsive {
+        overflow-x: hidden !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal table,
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal thead {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        clip: rect(0 0 0 0) !important;
+        clip-path: inset(50%) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody tr {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin-bottom: var(--sc-pwa-space-2) !important;
+        padding: var(--sc-pwa-space-2) !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: var(--sc-pwa-control-radius) !important;
+        background: #fff !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td {
+        display: grid !important;
+        grid-template-columns: minmax(72px, 0.4fr) minmax(0, 1fr) !important;
+        gap: var(--sc-pwa-space-2) !important;
+        min-width: 0 !important;
+        padding: 4px 0 !important;
+        border: 0 !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td::before {
+        content: attr(data-label) !important;
+        color: #6c757d !important;
+        font-size: var(--sc-pwa-font-meta) !important;
+        font-weight: 700 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td[colspan] {
+        display: block !important;
+        text-align: center !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #terapi-modal tbody td[colspan]::before {
+        content: none !important;
     }
 }
