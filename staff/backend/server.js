@@ -810,6 +810,18 @@ const userSocketIds = new Map();
 const userProfiles = new Map();
 const userDisconnectTimers = new Map();
 
+// Never put base64 profile photos into Socket.IO presence payloads. A single
+// photo can be hundreds of KB and is broadcast to every polling client, which
+// causes Safari/iOS long-poll requests to stall. Keep small URLs/data only and
+// let the existing photo endpoint serve large stored images on demand.
+function normalizeRealtimePhoto(userId, photo) {
+    if (typeof photo !== 'string' || !photo) return null;
+    if (photo.startsWith('data:') || photo.length > 1000) {
+        return `/api/users/${encodeURIComponent(String(userId || ''))}/photo`;
+    }
+    return photo;
+}
+
 function getOnlineUsersList() {
     const list = [];
     for (const [userId, profile] of userProfiles) {
@@ -865,7 +877,7 @@ io.on('connection', (socket) => {
         socket.userName = data.name;
         socket.userRole = data.role;
         socket.userActivity = 'Baru bergabung';
-        socket.userPhoto = data.photo || null;
+        socket.userPhoto = normalizeRealtimePhoto(data.userId, data.photo);
         socket.activityTimestamp = new Date().toISOString();
 
         const userProfile = {
