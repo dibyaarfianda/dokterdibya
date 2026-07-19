@@ -2581,6 +2581,12 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header:not([class*="bg-"]) {
         background: #fff !important;
+        color: #212529 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header:not([class*="bg-"]) .modal-title,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header:not([class*="bg-"]) .close {
+        color: #212529 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer {

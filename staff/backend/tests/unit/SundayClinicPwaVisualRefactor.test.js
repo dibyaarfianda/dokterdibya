@@ -93,6 +93,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(wave3).toContain('font-size: var(--sc-pwa-font-control) !important;');
         expect(wave3).toContain('min-height: var(--sc-pwa-touch-target) !important;');
         expect(wave3).toContain('.modal .modal-header:not([class*="bg-"]) {');
+        expect(wave3).toContain('.modal .modal-header:not([class*="bg-"]) .modal-title,');
+        expect(wave3).toContain('color: #212529 !important;');
         expect(wave3).toContain('.modal .input-group > .form-control {');
         expect(wave3).toContain('width: 1% !important;');
         expect(wave3).toContain('@media (max-width: 390px)');
