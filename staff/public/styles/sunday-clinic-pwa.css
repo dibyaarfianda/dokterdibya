@@ -2573,17 +2573,21 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         flex: 0 0 auto !important;
         gap: var(--sc-pwa-space-2) !important;
         padding: var(--sc-pwa-space-3) !important;
-        background: #fff !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header {
         top: 0 !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-header:not([class*="bg-"]) {
+        background: #fff !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-footer {
         bottom: 0 !important;
         display: flex !important;
         flex-wrap: wrap !important;
+        background: #fff !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .modal-title {
@@ -2623,6 +2627,24 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     body.mobile-app-mode.sunday-clinic-embedded-active .modal textarea.form-control {
         min-height: 88px !important;
         resize: vertical !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .input-group {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .input-group > .form-control {
+        flex: 1 1 auto !important;
+        width: 1% !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .input-group-append,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .input-group-prepend {
+        display: flex !important;
+        flex: 0 0 auto !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .btn,
