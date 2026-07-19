@@ -559,6 +559,7 @@ describe('staff panel stabilization sources', () => {
         expect(chatPopup).toContain("closeBtn.removeAttribute('onclick');");
         expect(chatPopup).toContain("closeBtn.addEventListener('click', handleCloseButtonClick);");
         expect(chatPopup).toContain('window.closeChatPopup();');
+        expect(chatPopup).not.toContain('.chat-close-btn:hover { background: rgba(255,255,255,.3); transform: rotate(90deg); }');
     });
 
     test('staff panel exposes Gajian payroll menu and script', () => {

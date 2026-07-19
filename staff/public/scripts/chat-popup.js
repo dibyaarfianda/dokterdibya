@@ -672,7 +672,7 @@ import { ROLE_IDS } from './role-constants.js';
         width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
         display:flex; align-items:center; justify-content:center; transition: all .2s ease;
       }
-      .chat-close-btn:hover { background: rgba(255,255,255,.3); transform: rotate(90deg); }
+      .chat-close-btn:hover { background: rgba(255,255,255,.3); }
 
       .chat-clear-btn {
         background: rgba(220,38,38,.85); border: none; color: #fff;
