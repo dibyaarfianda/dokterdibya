@@ -585,12 +585,18 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('#additional-billing-panel .additional-billing-empty');
     });
 
-    test('mobile chat FAB uses visible navigation height with a compact gap', () => {
+    test('mobile chat FAB follows the active embedded navigation without a double offset', () => {
         const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
 
+        expect(chatPopup).toContain("document.querySelector('body.sunday-clinic-embedded-active .sc-staff-section-nav')");
+        expect(chatPopup).toContain('function isVisibleBottomNav(nav)');
         expect(chatPopup).toContain('var visibleNavHeight = Math.round(viewportBottom - navRect.top);');
         expect(chatPopup).toContain('Math.min(140, Math.max(56, visibleNavHeight))');
         expect(chatPopup).toContain("var fabBottom = (navPx2 + 8) + 'px';");
+        expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn');
+        expect(sundayClinicCss).toContain('bottom: auto !important;');
+        expect(sundayClinicCss).not.toMatch(/#chat-toggle-btn,[\s\S]{0,160}bottom:\s*calc\(84px/);
     });
 
     test('staff panel exposes Gajian payroll menu and script', () => {

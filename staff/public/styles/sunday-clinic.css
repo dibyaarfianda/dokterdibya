@@ -1820,7 +1820,8 @@ body.mobile-app-mode #chat-box[style*="flex"] {
 
     body.mobile-app-mode.sunday-clinic-embedded-active #chat-toggle-btn,
     body.mobile-app-mode.sunday-clinic-embedded-active .chat-toggle-btn {
-        bottom: calc(84px + env(safe-area-inset-bottom, 0px)) !important;
+        /* The container already clears the embedded nav; do not apply it twice. */
+        bottom: auto !important;
     }
 }
 

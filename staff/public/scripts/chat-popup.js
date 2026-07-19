@@ -19,9 +19,31 @@ import { ROLE_IDS } from './role-constants.js';
   const IS_IOS_DEVICE = /iPad|iPhone|iPod/.test(navigator.userAgent || '')
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  // Measure actual nav height (dynamic, avoids hardcoded 78px mismatch)
+  function isVisibleBottomNav(nav) {
+    if (!nav) return false;
+    var navStyle = typeof window.getComputedStyle === 'function'
+      ? window.getComputedStyle(nav)
+      : null;
+    if (navStyle && (navStyle.display === 'none'
+        || navStyle.visibility === 'hidden'
+        || navStyle.opacity === '0')) {
+      return false;
+    }
+    var navRect = nav.getBoundingClientRect();
+    var viewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
+    var viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    var viewportBottom = viewportTop + viewportHeight;
+    return navRect.height > 0 && navRect.bottom > viewportTop && navRect.top < viewportBottom;
+  }
+
+  // Sunday Clinic replaces the shell action bar with its embedded section nav.
+  // Measure whichever bottom navigation is actually visible, never a hidden one.
   function getNavBottomPx() {
-    var nav = document.getElementById('mobile-action-bar');
+    var embeddedNav = document.querySelector('body.sunday-clinic-embedded-active .sc-staff-section-nav');
+    var shellNav = document.getElementById('mobile-action-bar');
+    var nav = isVisibleBottomNav(embeddedNav)
+      ? embeddedNav
+      : (isVisibleBottomNav(shellNav) ? shellNav : null);
     if (nav) {
       var navRect = nav.getBoundingClientRect();
       var viewportTop = window.visualViewport ? window.visualViewport.offsetTop : 0;
