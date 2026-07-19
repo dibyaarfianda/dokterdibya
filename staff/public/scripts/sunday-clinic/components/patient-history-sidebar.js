@@ -18,6 +18,10 @@ class PatientHistorySidebar {
         this.visitHistory = [];
         this.selectedVisitForCopy = null;
         this.initialized = false;
+        this.queueLoadInFlight = null;
+        this.queuePollingUnregister = null;
+        this.queueSocket = null;
+        this.queueSocketHandlers = null;
     }
 
     setCurrentLocation(location) {
@@ -78,6 +82,7 @@ class PatientHistorySidebar {
         console.log('[PatientSidebar] Initializing...');
         this.bindEvents();
         await this.loadTodayQueue();
+        this.setupLiveQueueUpdates();
 
         // Subscribe to state changes
         stateManager.subscribe('patientData', (patientData) => {
@@ -272,6 +277,16 @@ class PatientHistorySidebar {
      * Load today's appointment queue
      */
     async loadTodayQueue() {
+        if (this.queueLoadInFlight) return this.queueLoadInFlight;
+        this.queueLoadInFlight = this._loadTodayQueue();
+        try {
+            return await this.queueLoadInFlight;
+        } finally {
+            this.queueLoadInFlight = null;
+        }
+    }
+
+    async _loadTodayQueue() {
         const headerQueueList = document.getElementById('header-queue-list');
         const headerQueueCount = document.getElementById('header-queue-count');
 
@@ -346,6 +361,45 @@ class PatientHistorySidebar {
                 `;
             }
         }
+    }
+
+    setupLiveQueueUpdates() {
+        if (this.queuePollingUnregister || !window.staffPollingCoordinator) return;
+
+        this.queuePollingUnregister = window.staffPollingCoordinator.register('sunday-clinic-header-queue', {
+            page: 'sunday-clinic',
+            interval: 30000,
+            backoff: 60000,
+            run: () => this.loadTodayQueue()
+        });
+
+        this.bindQueueSocket();
+        this.handleQueueSocketReady = () => this.bindQueueSocket();
+        window.addEventListener('realtime:socket-ready', this.handleQueueSocketReady);
+        window.addEventListener('realtime:socket-connected', this.handleQueueSocketReady);
+    }
+
+    bindQueueSocket() {
+        const socket = window.__realtimeSyncState?.socket || window.socket;
+        if (!socket || this.queueSocket === socket) return;
+
+        if (this.queueSocket && this.queueSocketHandlers) {
+            this.queueSocket.off('queue:updated', this.queueSocketHandlers.updated);
+            this.queueSocket.off('queue:settings_changed', this.queueSocketHandlers.settingsChanged);
+        }
+
+        const refresh = () => {
+            if (document.visibilityState !== 'hidden') {
+                window.staffPollingCoordinator?.trigger('sunday-clinic-header-queue');
+            }
+        };
+        this.queueSocket = socket;
+        this.queueSocketHandlers = {
+            updated: refresh,
+            settingsChanged: refresh
+        };
+        socket.on('queue:updated', refresh);
+        socket.on('queue:settings_changed', refresh);
     }
 
     /**
@@ -1188,6 +1242,6 @@ const patientSidebar = new PatientHistorySidebar();
 window.patientSidebar = patientSidebar;
 
 // Version marker for cache detection
-window.PATIENT_SIDEBAR_VERSION = '20260111193043';
+window.PATIENT_SIDEBAR_VERSION = '20260719114500';
 
 export default patientSidebar;
