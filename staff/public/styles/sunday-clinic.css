@@ -1528,3 +1528,134 @@ body.patient-sidebar-open .main-header {
     margin-bottom: 8px;
     font-size: 14px;
 }
+
+/* Billing metadata keeps the same meaning across desktop and PWA. */
+.sc-billing-meta {
+    margin-top: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.sc-billing-meta-confirmed {
+    background: #e8f5e9;
+    border-color: #a5d6a7;
+}
+
+.sc-billing-meta-modified {
+    background: #f8f9fa;
+}
+
+/* Desktop-only billing polish. PWA layout remains owned by sunday-clinic-pwa.css. */
+@media (min-width: 992px) {
+    body.sunday-clinic-embedded-active .sc-billing-card {
+        padding: 24px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-admin-section {
+        margin-bottom: 22px !important;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-admin-grid {
+        margin-right: -6px;
+        margin-left: -6px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-admin-column {
+        display: flex;
+        margin-bottom: 0 !important;
+        padding-right: 6px;
+        padding-left: 6px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-admin-option {
+        width: 100%;
+        min-height: 68px;
+        padding: 12px 12px 10px 38px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-admin-option .custom-control-label {
+        width: 100%;
+        font-weight: 500;
+        line-height: 1.35;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-admin-option .custom-control-label small {
+        margin-top: 3px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-table-wrap {
+        overflow: hidden;
+        border: 1px solid #d9e0e7;
+        border-radius: 10px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-table {
+        margin-bottom: 0;
+        border: 0;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-table th:first-child,
+    body.sunday-clinic-embedded-active .sc-billing-table td:first-child {
+        border-left: 0;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-table th:last-child,
+    body.sunday-clinic-embedded-active .sc-billing-table td:last-child {
+        border-right: 0;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-table thead th {
+        border-top: 0;
+        padding-top: 11px;
+        padding-bottom: 11px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-meta-stack {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 14px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-meta-stack .sc-billing-meta {
+        min-width: 0;
+        margin-top: 0;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-actions {
+        gap: 8px !important;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-actions .btn {
+        flex: 0 0 auto !important;
+        min-width: 150px;
+        min-height: 36px;
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-actions .sc-billing-history-action {
+        min-width: 180px;
+        margin-left: auto;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-paid-state {
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+
+    body.sunday-clinic-embedded-active .sc-billing-printed-state {
+        min-width: 82px;
+        text-align: right;
+        white-space: nowrap;
+    }
+}

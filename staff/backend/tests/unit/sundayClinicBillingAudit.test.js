@@ -54,7 +54,30 @@ describe('Sunday Clinic billing audit implementation', () => {
         expect(billingJs).toContain("{ code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }");
         expect(billingJs).not.toContain('Buku Kontrol');
         expect(billingJs).not.toContain('Buku Panduan Lengkap & ANC');
-        expect(sundayClinicMain).toContain("const COMPONENT_VERSION = '3.0.13';");
+        expect(sundayClinicMain).toContain("const COMPONENT_VERSION = '3.0.14';");
+    });
+
+    test('desktop billing layout uses scoped semantic cards, metadata, and actions', () => {
+        const billingJs = readRepoFile(
+            'staff',
+            'public',
+            'scripts',
+            'sunday-clinic',
+            'components',
+            'shared',
+            'billing.js'
+        );
+        const billingCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic.css');
+
+        expect(billingJs).toContain('sc-billing-admin-grid');
+        expect(billingJs).toContain('sc-billing-admin-option');
+        expect(billingJs).toContain('sc-billing-table-wrap');
+        expect(billingJs).toContain('sc-billing-meta sc-billing-meta-confirmed');
+        expect(billingJs).toContain('sc-billing-actions');
+        expect(billingJs).toContain('sc-billing-printed-state');
+        expect(billingCss).toContain('@media (min-width: 992px)');
+        expect(billingCss).toContain('body.sunday-clinic-embedded-active .sc-billing-actions');
+        expect(billingCss).toContain('body.sunday-clinic-embedded-active .sc-billing-admin-option');
     });
 
     test('Sunday Clinic route writes billing audit logs on key mutations', () => {

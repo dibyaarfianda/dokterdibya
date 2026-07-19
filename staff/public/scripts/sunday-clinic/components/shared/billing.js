@@ -1445,21 +1445,21 @@ export default {
             statusBadge = `<span class="badge badge-primary">Lunas</span>`;
         }
         const confirmedByHtml = (status === 'confirmed' || status === 'paid') && confirmedBy
-            ? `<div class="mt-2 p-2 rounded" style="background:#e8f5e9;border:1px solid #a5d6a7;font-size:13px;">
+            ? `<div class="sc-billing-meta sc-billing-meta-confirmed">
                    <i class="fas fa-user-check text-success mr-1"></i>
                    <strong>Dikonfirmasi oleh: ${escapeHtml(confirmedBy)}</strong>
                    ${confirmedAt ? `<span class="text-muted ml-2">${confirmedAt}</span>` : ''}
                </div>`
             : '';
         const lastModifiedHtml = (lastModifiedBy || lastModifiedAt)
-            ? `<div class="mt-2 p-2 rounded" style="background:#f8f9fa;border:1px solid #dee2e6;font-size:13px;">
+            ? `<div class="sc-billing-meta sc-billing-meta-modified">
                    <i class="fas fa-history text-muted mr-1"></i>
                    <strong>Terakhir diubah: ${escapeHtml(lastModifiedBy || 'Staff')}</strong>
                    ${lastModifiedAt ? `<span class="text-muted ml-2">${lastModifiedAt}</span>` : ''}
                </div>`
             : '';
         const historyButtonHtml = billing.id
-            ? `<button type="button" class="btn btn-outline-secondary btn-sm flex-fill" id="btn-billing-audit-history">
+            ? `<button type="button" class="btn btn-outline-secondary btn-sm flex-fill sc-billing-history-action" id="btn-billing-audit-history">
                    <i class="fas fa-history mr-1"></i>Riwayat Perubahan
                </button>`
             : '';
@@ -1468,7 +1468,7 @@ export default {
         let actionsHtml = '';
         if (status === 'draft') {
             actionsHtml = `
-                <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
                     <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-confirm-billing">
                         <i class="fas fa-check mr-1"></i>Konfirmasi Tagihan
                     </button>
@@ -1482,7 +1482,7 @@ export default {
                 </div>`;
         } else if (status === 'confirmed') {
             actionsHtml = `
-                <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
+                <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
                     <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid">
                         <i class="fas fa-money-bill-wave mr-1"></i>Tandai Lunas
                     </button>
@@ -1496,12 +1496,12 @@ export default {
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
                     </button>
                     ${historyButtonHtml}
-                    ${billing.printed_at ? '<span class="small text-muted align-self-center">Telah dicetak</span>' : ''}
+                    ${billing.printed_at ? '<span class="small text-muted align-self-center sc-billing-printed-state">Telah dicetak</span>' : ''}
                 </div>`;
         } else if (status === 'paid') {
             actionsHtml = `
-                <div class="d-flex flex-wrap align-items-center" style="gap:6px;">
-                    <span class="badge badge-lg badge-primary align-self-center">
+                <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
+                    <span class="badge badge-lg badge-primary align-self-center sc-billing-paid-state">
                         <i class="fas fa-check-circle mr-1"></i>Sudah Lunas
                     </span>
                     <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
@@ -1511,7 +1511,7 @@ export default {
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
                     </button>
                     ${historyButtonHtml}
-                    ${billing.printed_at ? '<span class="small text-muted align-self-center">Telah dicetak</span>' : ''}
+                    ${billing.printed_at ? '<span class="small text-muted align-self-center sc-billing-printed-state">Telah dicetak</span>' : ''}
                 </div>`;
         }
 
@@ -1531,8 +1531,8 @@ export default {
         const adminCheckboxesHtml = adminItems.map(item => {
             const isChecked = existingAdminCodes.includes(item.code);
             return `
-                <div class="col-md-6 col-lg-3 mb-2">
-                    <div class="custom-control custom-checkbox">
+                <div class="col-md-6 col-lg-3 mb-2 sc-billing-admin-column">
+                    <div class="custom-control custom-checkbox sc-billing-admin-option">
                         <input type="checkbox" class="custom-control-input admin-item-checkbox"
                                id="admin-${item.code}"
                                data-code="${item.code}"
@@ -1550,17 +1550,17 @@ export default {
         }).join('');
 
         return `
-            <div class="sc-section">
+            <div class="sc-section sc-billing-section">
                 <div class="sc-section-header">
                     <h3>Tagihan & Pembayaran</h3>
                 </div>
-                <div class="sc-card">
+                <div class="sc-card sc-billing-card">
                     <!-- Admin Items Section -->
-                    <div class="mb-4">
+                    <div class="mb-4 sc-billing-admin-section">
                         <h6 class="text-primary mb-3">
                             <i class="fas fa-clipboard-list mr-2"></i>Biaya Administratif
                         </h6>
-                        <div class="row">
+                        <div class="row sc-billing-admin-grid">
                             ${adminCheckboxesHtml}
                         </div>
                         ${status === 'confirmed' && hasPendingPayment ? '<small class="text-warning"><i class="fas fa-lock mr-1"></i>Ada pembayaran online pending. Batalkan link pembayaran terlebih dahulu sebelum mengubah tagihan.</small>' : ''}
@@ -1575,7 +1575,8 @@ export default {
                         ${statusBadge}
                     </div>
 
-                    <table class="table table-bordered">
+                    <div class="sc-billing-table-wrap">
+                    <table class="table table-bordered sc-billing-table">
                         <thead class="thead-light">
                             <tr>
                                 <th>Item</th>
@@ -1594,9 +1595,12 @@ export default {
                             ` : ''}
                         </tbody>
                     </table>
+                    </div>
 
-                    ${confirmedByHtml}
-                    ${lastModifiedHtml}
+                    <div class="sc-billing-meta-stack">
+                        ${confirmedByHtml}
+                        ${lastModifiedHtml}
+                    </div>
 
                     <div class="mt-3">
                         ${actionsHtml}
