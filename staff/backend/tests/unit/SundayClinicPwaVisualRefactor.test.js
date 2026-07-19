@@ -101,6 +101,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(wave3).toContain('overflow-x: hidden !important;');
         expect(wave3).toContain('#terapi-modal tbody td::before {');
         expect(wave3).toContain('content: attr(data-label) !important;');
+        expect(wave3).toContain('.modal .custom-control,');
+        expect(wave3).toContain('.modal .custom-control-label,');
         expect(wave3).toContain('@media (max-width: 390px)');
         expect(wave3).not.toMatch(/\d+(?:\.\d+)?vh/);
     });

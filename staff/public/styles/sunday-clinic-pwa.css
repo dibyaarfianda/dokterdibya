@@ -2701,6 +2701,20 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         white-space: normal !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .custom-control,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .form-check {
+        display: flex !important;
+        align-items: center !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .custom-control-label,
+    body.mobile-app-mode.sunday-clinic-embedded-active .modal .form-check-label {
+        display: flex !important;
+        align-items: center !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .close,
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .btn-tool {
         display: inline-flex !important;
