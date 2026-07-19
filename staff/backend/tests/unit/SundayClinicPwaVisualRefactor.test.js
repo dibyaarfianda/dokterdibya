@@ -64,6 +64,9 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('padding: var(--sc-pwa-space-3) !important;');
         expect(pwaCss).toContain('grid-template-columns: repeat(2, minmax(0, 1fr)) !important;');
         expect(pwaCss).toContain('flex: 0 0 100% !important;');
+        expect(pwaCss).toContain('#sunday-clinic-content textarea.form-control,');
+        expect(pwaCss).toContain('#sunday-clinic-content .btn[class*="btn-"],');
+        expect(pwaCss).toContain('#sunday-clinic-content .trimester-content .d-flex.gap-3 {');
         expect(pwaCss).not.toContain('word-break: break-all');
     });
 

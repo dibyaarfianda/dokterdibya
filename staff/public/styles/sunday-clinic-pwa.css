@@ -2272,6 +2272,7 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content select,
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content textarea.form-control,
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .form-control {
         width: 100% !important;
         max-width: 100% !important;
@@ -2322,6 +2323,7 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .btn,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .btn[class*="btn-"],
     body.mobile-app-mode.sunday-clinic-embedded-active #btn-periksa-pasien {
         min-width: var(--sc-pwa-touch-target) !important;
         min-height: var(--sc-pwa-touch-target) !important;
@@ -2387,6 +2389,19 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         padding: var(--sc-pwa-space-2) !important;
         font-size: var(--sc-pwa-font-button) !important;
         white-space: normal !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .trimester-content .d-flex.gap-3 {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: var(--sc-pwa-space-2) !important;
+        min-width: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .trimester-content .d-flex.gap-3 .custom-control {
+        flex: 0 1 auto !important;
+        min-width: 0 !important;
+        margin-right: 0 !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .identity-table th,
