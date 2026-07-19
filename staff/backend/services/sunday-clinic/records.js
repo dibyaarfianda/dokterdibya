@@ -28,6 +28,7 @@ const {
     loadMedicalRecordsBundle,
     buildAggregateSummary
 } = require('./shared');
+const { updateQueueStatus } = require('./queue');
 
 async function getCheckExisting(req, res, next) {
     try {

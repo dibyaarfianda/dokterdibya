@@ -563,6 +563,7 @@ function setupSocketHandlers() {
 }
 
 module.exports = {
+    updateQueueStatus,
     getQueueToday,
     getQueueSettings,
     putQueueSettings,

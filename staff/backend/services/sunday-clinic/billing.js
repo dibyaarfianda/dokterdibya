@@ -27,6 +27,7 @@ const {
     loadAdditionalBillingDocument,
     parseAuditSnapshot
 } = require('./shared');
+const { updateQueueStatus } = require('./queue');
 
 async function getBillingPending(req, res, next) {
     try {
