@@ -265,6 +265,15 @@ describe('staff panel stabilization sources', () => {
         expect(sharedService).toContain('exam_started_at: row.exam_started_at');
     });
 
+    test('Sunday Clinic billing confirmation refreshes the active billing view for every role', () => {
+        const sundayClinicMain = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
+
+        expect(sundayClinicMain).toContain('const isSameRecord = data.mrId && this.currentMrId');
+        expect(sundayClinicMain).toContain("const activeSection = stateManager.getState().activeSection;");
+        expect(sundayClinicMain).toContain("if (activeSection === SECTIONS.BILLING) {");
+        expect(sundayClinicMain).toContain('this.render(SECTIONS.BILLING)');
+    });
+
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {
         const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic', 'prescription.js');
         const sundayClinicService = readNormalizedFile('staff', 'backend', 'services', 'sunday-clinic', 'prescription.js');

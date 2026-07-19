@@ -33,7 +33,7 @@
 
         window.__chatPopupScriptRequested = true;
 
-        const version = window.STAFF_CACHE_VERSION || window.__assetVersion || 'v307';
+        const version = window.STAFF_CACHE_VERSION || window.__assetVersion || 'v312';
         const moduleUrl = `/staff/public/scripts/chat-popup.js?v=${encodeURIComponent(version)}`;
         import(moduleUrl)
             .then(() => {
