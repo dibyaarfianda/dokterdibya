@@ -258,6 +258,13 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicMain).toContain("btn.style.display = 'none';");
     });
 
+    test('Sunday Clinic record API includes live examination state', () => {
+        const sharedService = readNormalizedFile('staff', 'backend', 'services', 'sunday-clinic', 'shared.js');
+
+        expect(sharedService).toContain('queue_status: row.queue_status');
+        expect(sharedService).toContain('exam_started_at: row.exam_started_at');
+    });
+
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {
         const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic', 'prescription.js');
         const sundayClinicService = readNormalizedFile('staff', 'backend', 'services', 'sunday-clinic', 'prescription.js');

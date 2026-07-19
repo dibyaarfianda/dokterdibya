@@ -696,6 +696,8 @@ function formatRecord(row) {
         appointmentId: row.appointment_id,
         folderPath: row.folder_path,
         status: row.status,
+        queue_status: row.queue_status || 'menunggu',
+        exam_started_at: row.exam_started_at || null,
         createdBy: row.created_by,
         finalizedBy: row.finalized_by,
         createdAt: row.created_at,
