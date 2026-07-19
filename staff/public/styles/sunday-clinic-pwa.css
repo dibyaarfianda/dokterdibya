@@ -2653,6 +2653,34 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
         flex: 0 0 auto !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        padding: var(--sc-pwa-space-2) !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body > .row {
+        width: auto !important;
+        min-width: 0 !important;
+        margin-right: -4px !important;
+        margin-left: -4px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body > .row > [class*="col-"] {
+        min-width: 0 !important;
+        padding-right: 4px !important;
+        padding-left: 4px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body .tindakan-item,
+    body.mobile-app-mode.sunday-clinic-embedded-active #tindakan-modal-body .custom-control-label {
+        min-width: 0 !important;
+        overflow-wrap: anywhere !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .btn,
     body.mobile-app-mode.sunday-clinic-embedded-active .modal button,
     body.mobile-app-mode.sunday-clinic-embedded-active .modal .close,
