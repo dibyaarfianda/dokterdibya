@@ -317,10 +317,10 @@ async function findAndLinkAuthenticatedPatientIntake(patientId, patientEmail) {
                 pis.patient_id = ?
                 OR JSON_UNQUOTE(JSON_EXTRACT(pis.payload, '$.email')) = ?
                 OR (
-                    pis.patient_id IS NULL
-                    AND RIGHT(REGEXP_REPLACE(pis.phone, '[^0-9]', ''), 10)
+                    RIGHT(REGEXP_REPLACE(pis.phone, '[^0-9]', ''), 10)
                         = RIGHT(REGEXP_REPLACE(COALESCE(p.phone, p.whatsapp), '[^0-9]', ''), 10)
                     AND LOWER(TRIM(pis.full_name)) = LOWER(TRIM(p.full_name))
+                    AND pis.birth_date = p.birth_date
                 )
            )
          ORDER BY (pis.patient_id = ?) DESC, pis.created_at DESC
@@ -1014,7 +1014,7 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
                     payload: storedPayload,
                     receivedAt: linkedRow.receivedAt,
                     status: linkedRow.status,
-                    integration: { patientId },
+                    integration: { patientId: linkedRow.patient_id || patientId },
                     review: { history: [] }
                 };
             }
