@@ -310,7 +310,7 @@ export function renderUSG() {
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label class="font-weight-bold">Tanggal</label>
-                        <input type="date" class="form-control usg-field" id="usg-first-date" style="width: 150.923076px;" value="${escapeHtml(usgDate)}">
+                        <input type="date" class="form-control usg-field sc-date-field-compact" id="usg-first-date" value="${escapeHtml(usgDate)}">
                     </div>
                     <div class="form-group col-md-6">
                         <label class="font-weight-bold">Jumlah Embrio/Janin</label>
@@ -557,7 +557,7 @@ export function renderUSG() {
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label class="font-weight-bold">Tanggal</label>
-                        <input type="date" class="form-control usg-field" id="usg-screening-date" style="width: 150.923076px;" value="${escapeHtml(usgDate)}">
+                        <input type="date" class="form-control usg-field sc-date-field-compact" id="usg-screening-date" value="${escapeHtml(usgDate)}">
                     </div>
                 </div>
                 <h5 class="mt-3 mb-2">Biometri</h5>
@@ -645,7 +645,7 @@ export function renderUSG() {
                 <div class="form-group">
                     <div class="custom-control custom-checkbox mb-3"><input type="checkbox" class="custom-control-input usg-field" id="scr-tidak-kelainan" ${savedData.tidak_kelainan ? 'checked' : ''}><label class="custom-control-label" for="scr-tidak-kelainan">Tidak ditemukan kelainan</label></div>
                     <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-kecurigaan" ${savedData.kecurigaan ? 'checked' : ''}><label class="custom-control-label" for="scr-kecurigaan">Kecurigaan</label></div>
-                    <div class="mt-2"><textarea class="form-control usg-field" id="usg-screening-kecurigaan-text" style="width: 100%; height: 71px;">${escapeHtml(savedData.kecurigaan_text || '')}</textarea></div>
+                    <div class="mt-2"><textarea class="form-control usg-field" id="usg-screening-kecurigaan-text">${escapeHtml(savedData.kecurigaan_text || '')}</textarea></div>
                 </div>
                 <div class="mt-3 text-right">
                     <button class="btn btn-primary" id="btn-save-usg">

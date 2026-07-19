@@ -117,7 +117,7 @@ export default {
                         <i class="fas fa-magic mr-1"></i>Baca dari Foto
                     </button>
                 </div>
-                <div class="form-group mb-3" style="max-width: 300px;">
+                <div class="form-group mb-3 sc-form-limit-md">
                     <label class="font-weight-bold text-primary">
                         <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
                     </label>

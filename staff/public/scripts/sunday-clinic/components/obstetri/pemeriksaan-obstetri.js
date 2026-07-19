@@ -42,7 +42,7 @@ export default {
                     <h3>Pemeriksaan Obstetri</h3>
                 </div>
                 ${metaHtml}
-                <div class="form-group mb-3" style="max-width: 300px;">
+                <div class="form-group mb-3 sc-form-limit-md">
                     <label class="font-weight-bold text-primary">
                         <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
                     </label>

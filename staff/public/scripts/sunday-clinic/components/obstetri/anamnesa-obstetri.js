@@ -114,7 +114,7 @@ export default {
                     </button>
                 </div>
                 ${metaHtml}
-                <div class="form-group mb-3" style="max-width: 300px;">
+                <div class="form-group mb-3 sc-form-limit-md">
                     <label class="font-weight-bold text-primary">
                         <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
                     </label>
@@ -229,21 +229,21 @@ export default {
                         </div>
 
                         <div class="rp-ektopik-box mt-3">
-                            <label class="font-weight-bold" style="display:block; margin-bottom:8px;">Riwayat Hamil Ektopik</label>
+                            <label class="font-weight-bold sc-form-label">Riwayat Hamil Ektopik</label>
                             <div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="anamnesa-riwayat-ektopik" id="ektopik-tidak" value="Tidak pernah" ${riwayatEktopik !== 'Pernah' ? 'checked' : ''}>
-                                    <label class="form-check-label" for="ektopik-tidak" style="font-size:14px;">Tidak pernah</label>
+                                    <label class="form-check-label sc-form-label" for="ektopik-tidak">Tidak pernah</label>
                                 </div>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="anamnesa-riwayat-ektopik" id="ektopik-pernah" value="Pernah" ${riwayatEktopik === 'Pernah' ? 'checked' : ''}>
-                                    <label class="form-check-label" for="ektopik-pernah" style="font-size:14px;">Pernah</label>
+                                    <label class="form-check-label sc-form-label" for="ektopik-pernah">Pernah</label>
                                 </div>
                             </div>
-                            <div id="ektopik-detail" style="display:${riwayatEktopik === 'Pernah' ? 'block' : 'none'}; margin-top:10px;">
+                            <div id="ektopik-detail" class="mt-2" style="display:${riwayatEktopik === 'Pernah' ? 'block' : 'none'};">
                                 <label class="rp-field-label">Pada kehamilan ke berapa?</label>
-                                <input type="number" class="form-control form-control-sm" id="ektopik-kehamilan-ke"
-                                    min="1" max="20" placeholder="Contoh: 2" style="max-width:120px;" value="${escapeHtml(String(ektopikKehamilanKe))}">
+                                <input type="number" class="form-control form-control-sm sc-form-limit-sm" id="ektopik-kehamilan-ke"
+                                    min="1" max="20" placeholder="Contoh: 2" value="${escapeHtml(String(ektopikKehamilanKe))}">
                             </div>
                         </div>
 

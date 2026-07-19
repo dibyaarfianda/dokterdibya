@@ -36,7 +36,7 @@ export default {
                     <h3>Pemeriksaan USG Ginekologi</h3>
                 </div>
 
-                <div class="form-group mb-3" style="max-width: 300px;">
+                <div class="form-group mb-3 sc-form-limit-md">
                     <label class="font-weight-bold text-primary">
                         <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
                     </label>
@@ -242,7 +242,7 @@ export default {
                         <h4>Endometrium</h4>
                         <div class="form-group mb-3">
                             <label class="font-weight-bold">Ketebalan</label>
-                            <div class="input-group" style="max-width: 150px;">
+                            <div class="input-group sc-input-limit-150">
                                 <input type="number" step="0.1" class="form-control" id="endometrium-thickness"
                                     placeholder="0.0" value="${usg.endometrium_thickness || ''}">
                                 <div class="input-group-append"><span class="input-group-text">mm</span></div>

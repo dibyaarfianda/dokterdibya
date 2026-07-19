@@ -139,24 +139,27 @@ import { ROLE_IDS } from './role-constants.js';
     return isChatKeyboardModeActive() ? '0px' : getNavBottomPx();
   }
 
-  function getMobileChatHeightPx(navPx) {
+  function getMobileChatHeightPx(navPx, insetPx) {
     var viewportHeight = getMobileViewportHeight();
     var safeNavPx = Number(navPx);
     if (isNaN(safeNavPx)) safeNavPx = 65;
-    return Math.max(320, viewportHeight - safeNavPx) + 'px';
+    var safeInsetPx = Number(insetPx);
+    if (isNaN(safeInsetPx)) safeInsetPx = 0;
+    return Math.max(304, viewportHeight - safeNavPx - (safeInsetPx * 2)) + 'px';
   }
 
   function applyMobileViewportFrame(cont, reservedBottomPx) {
     var viewportTop = getMobileViewportTop();
     var viewportLeft = getMobileViewportLeft();
     var viewportWidth = getMobileViewportWidth();
-    var chatHeight = getMobileChatHeightPx(reservedBottomPx);
+    var clinicInsetPx = document.body.classList.contains('sunday-clinic-embedded-active') ? 8 : 0;
+    var chatHeight = getMobileChatHeightPx(reservedBottomPx, clinicInsetPx);
     cont.style.setProperty('position', 'fixed', 'important');
-    cont.style.setProperty('top', viewportTop + 'px', 'important');
-    cont.style.setProperty('left', viewportLeft + 'px', 'important');
+    cont.style.setProperty('top', (viewportTop + clinicInsetPx) + 'px', 'important');
+    cont.style.setProperty('left', (viewportLeft + clinicInsetPx) + 'px', 'important');
     cont.style.setProperty('right', 'auto', 'important');
     cont.style.setProperty('bottom', 'auto', 'important');
-    cont.style.setProperty('width', viewportWidth + 'px', 'important');
+    cont.style.setProperty('width', Math.max(0, viewportWidth - (clinicInsetPx * 2)) + 'px', 'important');
     cont.style.setProperty('height', chatHeight, 'important');
   }
 
@@ -200,9 +203,10 @@ import { ROLE_IDS } from './role-constants.js';
       cont.style.setProperty('transform', 'none', 'important');
       var box = document.getElementById('chat-box');
       if (box && box.style.getPropertyValue('display') !== 'none') {
+        var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '12px' : '0';
         box.style.setProperty('width', '100%', 'important');
         box.style.setProperty('height', '100%', 'important');
-        box.style.setProperty('border-radius', '0', 'important');
+        box.style.setProperty('border-radius', clinicRadius, 'important');
         box.style.setProperty('box-shadow', 'none', 'important');
         box.style.setProperty('max-height', 'none', 'important');
         box.style.setProperty('max-width', 'none', 'important');
@@ -255,9 +259,10 @@ import { ROLE_IDS } from './role-constants.js';
     // Style chat-box to fill container
     var box = document.getElementById('chat-box');
     if (box) {
+      var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '12px' : '0';
       box.style.setProperty('width', '100%', 'important');
       box.style.setProperty('height', '100%', 'important');
-      box.style.setProperty('border-radius', '0', 'important');
+      box.style.setProperty('border-radius', clinicRadius, 'important');
       box.style.setProperty('box-shadow', 'none', 'important');
       box.style.setProperty('max-height', 'none', 'important');
       box.style.setProperty('max-width', 'none', 'important');

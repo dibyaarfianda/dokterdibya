@@ -78,7 +78,7 @@ export function render() {
                 <!-- Technical Info -->
                 <div class="form-group">
                     <label class="font-weight-bold">Tanggal Pemeriksaan</label>
-                    <input type="date" class="form-control" id="usg-date" style="width: 180px;" value="${escapeHtml(usgDate)}">
+                    <input type="date" class="form-control sc-date-field" id="usg-date" value="${escapeHtml(usgDate)}">
                 </div>
 
                 <div class="form-group">

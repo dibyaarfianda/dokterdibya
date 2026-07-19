@@ -1898,13 +1898,13 @@ function displayBulkImportResults(data, files) {
                 <td class="small">${escapeHtml(filename)}</td>
                 <td>${escapeHtml(result.patient_name || '-')}</td>
                 <td>
-                    <input type="date" class="form-control form-control-sm bulk-visit-date"
+                    <input type="date" class="form-control form-control-sm bulk-visit-date sc-input-limit-150"
                            data-index="${idx}" value="${result.visit_date || ''}"
-                           style="max-width: 150px;">
+                           >
                     <small class="${dateClass}">${result.visit_date_detected ? '(terdeteksi)' : '(manual)'}</small>
                 </td>
                 <td>
-                    <select class="form-control form-control-sm bulk-visit-location" data-index="${idx}" style="max-width: 150px;">
+                    <select class="form-control form-control-sm bulk-visit-location sc-input-limit-150" data-index="${idx}">
                         <option value="">-- Pilih --</option>
                         ${Object.entries(locationLabels).map(([v, l]) =>
                             `<option value="${v}" ${result.visit_location === v ? 'selected' : ''}>${l}</option>`

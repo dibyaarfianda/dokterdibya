@@ -1484,3 +1484,47 @@ body.patient-sidebar-open .main-header {
     color: #3c8dbc;
     font-weight: 400;
 }
+
+/* Shared semantic sizing hooks. PWA overrides live in sunday-clinic-pwa.css. */
+.sc-form-limit-md {
+    max-width: 300px;
+}
+
+.sc-form-limit-sm {
+    max-width: 120px;
+}
+
+.sc-input-limit-150 {
+    max-width: 150px;
+}
+
+.sc-date-field-compact {
+    width: 150.923076px;
+}
+
+.sc-date-field {
+    width: 180px;
+}
+
+.sc-medication-name {
+    min-width: 120px;
+    font-size: 0.9rem;
+}
+
+.sc-medication-quantity {
+    width: 60px;
+}
+
+.sc-medication-unit {
+    width: 80px;
+}
+
+.sc-medication-instruction {
+    min-width: 140px;
+}
+
+.sc-form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}

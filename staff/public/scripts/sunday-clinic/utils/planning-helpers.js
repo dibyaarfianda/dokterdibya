@@ -939,14 +939,14 @@ function showBatchCaraPakaiModal(selectedObat, options = {}) {
         formHtml += `
             <div class="resep-row mb-2 p-2 border rounded" data-index="${index}">
                 <div class="d-flex align-items-center flex-wrap">
-                    <span class="font-weight-bold mr-2" style="min-width:120px;font-size:0.9rem;">
+                    <span class="font-weight-bold mr-2 sc-medication-name">
                         <i class="fas fa-pills text-success mr-1"></i>${escapeHtml(obat.name)}
                     </span>
-                    <input type="number" class="form-control form-control-sm draft-terapi-field mr-1"
-                           id="jumlah-${index}" min="1" value="${escapeHtml(String(quantityValue))}" style="width:60px;"
+                    <input type="number" class="form-control form-control-sm draft-terapi-field mr-1 sc-medication-quantity"
+                           id="jumlah-${index}" min="1" value="${escapeHtml(String(quantityValue))}"
                            data-next="satuan-${index}">
-                    <select class="form-control form-control-sm draft-terapi-field mr-2"
-                            id="satuan-${index}" style="width:80px;"
+                    <select class="form-control form-control-sm draft-terapi-field mr-2 sc-medication-unit"
+                            id="satuan-${index}"
                             data-next="carapakai-${index}">
                         <option value="tablet" ${selectedUnit === 'tablet' ? 'selected' : ''}>tab</option>
                         <option value="kapsul" ${selectedUnit === 'kapsul' ? 'selected' : ''}>kap</option>
@@ -960,8 +960,8 @@ function showBatchCaraPakaiModal(selectedObat, options = {}) {
                         <button type="button" class="btn btn-outline-secondary quick-dose" data-target="carapakai-${index}" data-value="2x1">2x1</button>
                         <button type="button" class="btn btn-outline-secondary quick-dose" data-target="carapakai-${index}" data-value="1x1">1x1</button>
                     </div>
-                    <input type="text" class="form-control form-control-sm draft-terapi-field flex-grow-1"
-                           id="carapakai-${index}" value="${escapeHtml(caraPakaiValue)}" placeholder="atau ketik manual..." style="min-width:140px;"
+                    <input type="text" class="form-control form-control-sm draft-terapi-field flex-grow-1 sc-medication-instruction"
+                           id="carapakai-${index}" value="${escapeHtml(caraPakaiValue)}" placeholder="atau ketik manual..."
                            data-next="${isLast ? '' : 'jumlah-' + (index + 1)}"
                            data-is-last="${isLast}">
                 </div>
