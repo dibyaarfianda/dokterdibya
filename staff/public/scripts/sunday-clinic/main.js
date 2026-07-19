@@ -92,6 +92,12 @@ class SundayClinicApp {
         this.recordSocketHandler = null;
         this.queueSocketHandler = null;
         this.recordSocketReadyHandler = null;
+        this.recordPollingUnregister = null;
+        this.recordDirtyUnsubscribe = null;
+        this.currentRecordSignature = null;
+        this.currentBillingSignature = null;
+        this.pendingRealtimeRefresh = false;
+        this.billingRefreshTimer = null;
     }
 
     isMedifyLocation(location = this.currentLocation) {
@@ -141,6 +147,7 @@ class SundayClinicApp {
 
             // Load into state manager
             await stateManager.loadRecord(response.data);
+            this.currentRecordSignature = this.getRecordSignature(response.data);
 
             // Update header with patient name
             this.updateHeaderTitle();
@@ -192,6 +199,7 @@ class SundayClinicApp {
             // Initialize patient history sidebar
             await patientSidebar.init();
             this.setupRealtimeRecordUpdates();
+            this.setupLiveRecordPolling();
 
             this.initialized = true;
 
@@ -2590,8 +2598,6 @@ class SundayClinicApp {
         this.recordSocket = socket;
         this.recordSocketHandler = (event = {}) => {
             if (!this.currentMrId || String(event.mr_id) !== String(this.currentMrId)) return;
-            const currentUserId = window.currentStaffIdentity?.id || window.currentStaffIdentity?.user_id;
-            if (event.user_id && currentUserId && String(event.user_id) === String(currentUserId)) return;
             this.refreshCurrentRecordFromRealtime(event.section);
         };
         socket.on('medical_record:updated', this.recordSocketHandler);
@@ -2603,14 +2609,23 @@ class SundayClinicApp {
         socket.on('queue:updated', this.queueSocketHandler);
     }
 
-    async refreshCurrentRecordFromRealtime(section) {
+    async refreshCurrentRecordFromRealtime(section, prefetchedResponse = null) {
         if (this.softRefreshInFlight || document.visibilityState === 'hidden' || !this.currentMrId) return;
+        if (stateManager.hasUnsavedChanges()) {
+            if (!this.pendingRealtimeRefresh && window.showToast) {
+                window.showToast('warning', 'Ada pembaruan dari perangkat lain. Simpan form untuk memuat data terbaru.');
+            }
+            this.pendingRealtimeRefresh = true;
+            return;
+        }
         this.softRefreshInFlight = true;
         try {
             const activeSection = stateManager.getState().activeSection || section || SECTIONS.IDENTITY;
-            const response = await apiClient.getRecord(this.currentMrId);
+            const response = prefetchedResponse || await apiClient.getRecord(this.currentMrId);
             if (!response.success) return;
             await stateManager.loadRecord(response.data);
+            this.currentRecordSignature = this.getRecordSignature(response.data);
+            this.pendingRealtimeRefresh = false;
             this.currentLocation = response.data.record?.visit_location || this.currentLocation;
             await this.render(activeSection);
             await this._restoreQueueState(this.currentMrId);
@@ -2619,6 +2634,65 @@ class SundayClinicApp {
             console.warn('[SundayClinic] Realtime record refresh failed:', error.message);
         } finally {
             this.softRefreshInFlight = false;
+        }
+    }
+
+    getRecordSignature(data) {
+        const byType = data?.medicalRecords?.byType || {};
+        const sectionVersions = Object.keys(byType)
+            .sort()
+            .map(key => [key, byType[key]?.updatedAt || byType[key]?.createdAt || null]);
+        return JSON.stringify([
+            data?.record?.updatedAt || null,
+            data?.record?.lastActivityAt || null,
+            data?.record?.queue_status || null,
+            data?.record?.exam_started_at || null,
+            data?.medicalRecords?.lastUpdatedAt || null,
+            sectionVersions
+        ]);
+    }
+
+    setupLiveRecordPolling() {
+        if (!this.recordPollingUnregister && window.staffPollingCoordinator) {
+            this.recordPollingUnregister = window.staffPollingCoordinator.register('sunday-clinic-active-record', {
+                page: 'sunday-clinic',
+                interval: 20000,
+                backoff: 45000,
+                immediate: false,
+                when: () => Boolean(this.currentMrId),
+                run: () => this.reconcileActiveSundayClinicData()
+            });
+        }
+
+        if (!this.recordDirtyUnsubscribe) {
+            this.recordDirtyUnsubscribe = stateManager.subscribe('isDirty', isDirty => {
+                if (!isDirty && this.pendingRealtimeRefresh) {
+                    window.staffPollingCoordinator?.trigger('sunday-clinic-active-record');
+                }
+            });
+        }
+    }
+
+    async reconcileActiveSundayClinicData() {
+        if (!this.currentMrId || stateManager.hasUnsavedChanges()) return;
+
+        const response = await apiClient.getRecord(this.currentMrId);
+        if (response?.success) {
+            const nextSignature = this.getRecordSignature(response.data);
+            if (this.currentRecordSignature && nextSignature !== this.currentRecordSignature) {
+                await this.refreshCurrentRecordFromRealtime(stateManager.getState().activeSection, response);
+            } else {
+                this.currentRecordSignature = nextSignature;
+            }
+        }
+
+        if (stateManager.getState().activeSection === SECTIONS.BILLING) {
+            const billingResponse = await apiClient.getBilling(this.currentMrId);
+            const nextBillingSignature = JSON.stringify(billingResponse?.data || billingResponse || null);
+            if (this.currentBillingSignature && nextBillingSignature !== this.currentBillingSignature) {
+                await this.render(SECTIONS.BILLING);
+            }
+            this.currentBillingSignature = nextBillingSignature;
         }
     }
 
@@ -2756,33 +2830,32 @@ class SundayClinicApp {
                 );
             }
 
-            // Refresh the visible billing section for every role. Previously
-            // dokter received the socket event but deliberately skipped refresh.
-            const isSameRecord = data.mrId && this.currentMrId
-                && data.mrId.toUpperCase() === this.currentMrId.toUpperCase();
-            if (!isSameRecord) {
-                console.log('[SundayClinic] Skipping billing refresh - different MR (confirmed:', data.mrId, 'current:', this.currentMrId, ')');
-                return;
-            }
+            handleBillingUpdated(data);
+        });
+
+        const handleBillingUpdated = (data) => {
+            const eventMrId = data.mrId || data.mr_id;
+            const isSameRecord = eventMrId && this.currentMrId
+                && String(eventMrId).toUpperCase() === String(this.currentMrId).toUpperCase();
+            if (!isSameRecord || stateManager.getState().activeSection !== SECTIONS.BILLING) return;
 
             if (stateManager.hasUnsavedChanges()) {
-                console.log('[SundayClinic] Skipping billing refresh - unsaved changes detected');
-                if (window.showSuccess) {
-                    window.showSuccess('Billing terkonfirmasi. Simpan perubahan Anda untuk memuat status terbaru.');
-                }
+                this.pendingRealtimeRefresh = true;
+                if (window.showToast) window.showToast('warning', 'Tagihan berubah di perangkat lain. Simpan perubahan untuk memuat data terbaru.');
                 return;
             }
 
-            const activeSection = stateManager.getState().activeSection;
-            if (activeSection === SECTIONS.BILLING) {
-                setTimeout(() => {
-                    console.log('[SundayClinic] Refreshing active billing section after confirmation');
-                    this.render(SECTIONS.BILLING).catch(error => {
-                        console.warn('[SundayClinic] Billing realtime refresh failed:', error.message);
-                    });
-                }, 250);
-            }
-        });
+            if (this.billingRefreshTimer) clearTimeout(this.billingRefreshTimer);
+            this.billingRefreshTimer = setTimeout(() => {
+                this.currentBillingSignature = null;
+                this.render(SECTIONS.BILLING).catch(error => {
+                    console.warn('[SundayClinic] Billing live refresh failed:', error.message);
+                });
+            }, 250);
+        };
+        this.billingNotifications.on('billing_updated', handleBillingUpdated);
+        this.billingNotifications.on('billing_paid', handleBillingUpdated);
+        this.billingNotifications.on('payment_received', handleBillingUpdated);
 
         // Listen for revision requested event (with deduplication guard)
         let lastRevisionId = null;

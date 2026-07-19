@@ -268,9 +268,9 @@ describe('staff panel stabilization sources', () => {
     test('Sunday Clinic billing confirmation refreshes the active billing view for every role', () => {
         const sundayClinicMain = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
 
-        expect(sundayClinicMain).toContain('const isSameRecord = data.mrId && this.currentMrId');
-        expect(sundayClinicMain).toContain("const activeSection = stateManager.getState().activeSection;");
-        expect(sundayClinicMain).toContain("if (activeSection === SECTIONS.BILLING) {");
+        expect(sundayClinicMain).toContain('const handleBillingUpdated = (data) => {');
+        expect(sundayClinicMain).toContain('handleBillingUpdated(data);');
+        expect(sundayClinicMain).toContain('stateManager.getState().activeSection !== SECTIONS.BILLING');
         expect(sundayClinicMain).toContain('this.render(SECTIONS.BILLING)');
     });
 
@@ -632,6 +632,33 @@ describe('staff panel stabilization sources', () => {
         expect(mainJs).toContain("document.body.classList.remove('patient-sidebar-open');");
         expect(mainJs).toContain("patientSidebar.classList.remove('open');");
         expect(mainJs).toContain("patientSidebarToggle.classList.remove('active');");
+    });
+
+    test('Sunday Clinic live updates cover same-account devices, reconnects, and fallback polling', () => {
+        const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
+        const billingNotifications = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'utils', 'billing-notifications.js');
+        const paymentModal = readNormalizedFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'payment-modal.js');
+        const billingRoutes = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic', 'billing.js');
+
+        expect(mainJs).not.toContain("String(event.user_id) === String(currentUserId)");
+        expect(mainJs).toContain("register('sunday-clinic-active-record'");
+        expect(mainJs).toContain('stateManager.hasUnsavedChanges()');
+        expect(mainJs).toContain('pendingRealtimeRefresh = true');
+        expect(mainJs).toContain("this.billingNotifications.on('billing_updated'");
+
+        expect(billingNotifications).toContain("window.addEventListener('realtime:socket-ready'");
+        expect(billingNotifications).toContain("window.addEventListener('realtime:socket-connected'");
+        expect(billingNotifications).toContain("this.socket.off('billing_updated'");
+        expect(billingNotifications).toContain("this.socket.on('billing_updated'");
+        expect(billingNotifications).toContain("this.socket.on('billing_paid'");
+
+        expect(paymentModal).not.toContain("window.socket.off('payment_received')");
+        expect(paymentModal).toContain("this.paymentSocket.off('payment_received', this.paymentSocketHandlers.paymentReceived)");
+
+        expect(billingRoutes).toContain('broadcastSuccessfulBillingMutation');
+        expect(billingRoutes).toContain("type: 'billing_updated'");
+        expect(billingRoutes).toContain("router.post('/billing/:mrId', verifyToken, broadcastSuccessfulBillingMutation");
+        expect(billingRoutes).toContain("router.delete('/billing/:mrId/items/:itemType', verifyToken, broadcastSuccessfulBillingMutation");
     });
 
     test('staff mobile tap feedback uses COMM tap sound parameters', () => {

@@ -7,6 +7,10 @@ class BillingNotifications {
     constructor() {
         this.listeners = new Set();
         this.socket = null;
+        this.socketHandlers = null;
+        this.handleSocketReady = () => this.bindSocket();
+        window.addEventListener('realtime:socket-ready', this.handleSocketReady);
+        window.addEventListener('realtime:socket-connected', this.handleSocketReady);
         this.initializeSocket();
     }
 
@@ -17,47 +21,38 @@ class BillingNotifications {
     initializeSocket() {
         console.log('[BillingNotifications] Initializing Socket.IO...');
 
-        // Use existing socket from realtime-sync.js
-        // DO NOT create our own socket - wait for realtime-sync to initialize it
-        if (window.socket) {
-            this.socket = window.socket;
-            console.log('[BillingNotifications] ✅ Using existing socket from realtime-sync');
-            this.setupEventListeners();
-        } else {
-            console.log('[BillingNotifications] Socket not ready yet - waiting for realtime-sync');
-            // Poll for socket availability
-            const checkSocket = setInterval(() => {
-                if (window.socket) {
-                    clearInterval(checkSocket);
-                    this.socket = window.socket;
-                    console.log('[BillingNotifications] ✅ Socket now available from realtime-sync');
-                    this.setupEventListeners();
-                }
-            }, 500);
-            // Stop checking after 10 seconds
-            setTimeout(() => clearInterval(checkSocket), 10000);
-        }
+        this.bindSocket();
     }
 
     /**
      * Setup event listeners for billing events
      */
-    setupEventListeners() {
-        if (!this.socket) return;
+    bindSocket() {
+        const socket = window.__realtimeSyncState?.socket || window.socket;
+        if (!socket || this.socket === socket) return;
 
-        // Listen for billing_confirmed events from server
-        this.socket.on('billing_confirmed', (data) => {
-            console.log('[BillingNotifications] 📨 Socket.IO received billing_confirmed:', data);
-            this.broadcast(data);
-        });
+        if (this.socket && this.socketHandlers) {
+            this.socket.off('billing_confirmed', this.socketHandlers.billingConfirmed);
+            this.socket.off('revision_requested', this.socketHandlers.revisionRequested);
+            this.socket.off('billing_updated', this.socketHandlers.billingUpdated);
+            this.socket.off('billing_paid', this.socketHandlers.billingPaid);
+            this.socket.off('payment_received', this.socketHandlers.paymentReceived);
+        }
 
-        // Listen for revision_requested events from server
-        this.socket.on('revision_requested', (data) => {
-            console.log('[BillingNotifications] 📨 Socket.IO received revision_requested:', data);
-            this.broadcast(data);
-        });
-
-        console.log('[BillingNotifications] Event listeners registered');
+        this.socket = socket;
+        this.socketHandlers = {
+            billingConfirmed: data => this.broadcast(data),
+            revisionRequested: data => this.broadcast(data),
+            billingUpdated: data => this.broadcast(data),
+            billingPaid: data => this.broadcast(data),
+            paymentReceived: data => this.broadcast(data)
+        };
+        this.socket.on('billing_confirmed', this.socketHandlers.billingConfirmed);
+        this.socket.on('revision_requested', this.socketHandlers.revisionRequested);
+        this.socket.on('billing_updated', this.socketHandlers.billingUpdated);
+        this.socket.on('billing_paid', this.socketHandlers.billingPaid);
+        this.socket.on('payment_received', this.socketHandlers.paymentReceived);
+        console.log('[BillingNotifications] Event listeners registered on current realtime socket');
     }
 
     /**
@@ -235,7 +230,7 @@ class BillingNotifications {
      * Simple event emitter functionality
      */
     on(eventType, callback) {
-        if (eventType === 'billing_confirmed' || eventType === 'revision_requested') {
+        if (['billing_confirmed', 'revision_requested', 'billing_updated', 'billing_paid', 'payment_received'].includes(eventType)) {
             this.addListener((event) => {
                 if (event.type === eventType) {
                     callback(event);

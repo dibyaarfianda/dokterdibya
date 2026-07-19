@@ -10,6 +10,9 @@ const PaymentModal = {
     currentPayment: null,
     pollingInterval: null,
     countdownInterval: null,
+    paymentSocket: null,
+    paymentSocketHandlers: null,
+    paymentSocketReadyHandler: null,
 
     /**
      * Show payment modal (called from billing.js)
@@ -844,26 +847,36 @@ const PaymentModal = {
      * Setup Socket.IO listener for instant payment notification
      */
     setupSocketListener() {
-        if (window.socket) {
-            // Remove existing listener first
-            window.socket.off('payment_received');
-            window.socket.off('billing_paid');
+        if (!this.paymentSocketReadyHandler) {
+            this.paymentSocketReadyHandler = () => this.setupSocketListener();
+            window.addEventListener('realtime:socket-ready', this.paymentSocketReadyHandler);
+            window.addEventListener('realtime:socket-connected', this.paymentSocketReadyHandler);
+        }
 
-            // Listen for payment received
-            window.socket.on('payment_received', (data) => {
+        const socket = window.__realtimeSyncState?.socket || window.socket;
+        if (!socket || this.paymentSocket === socket) return;
+        if (this.paymentSocket && this.paymentSocketHandlers) {
+            this.paymentSocket.off('payment_received', this.paymentSocketHandlers.paymentReceived);
+            this.paymentSocket.off('billing_paid', this.paymentSocketHandlers.billingPaid);
+        }
+
+        this.paymentSocket = socket;
+        this.paymentSocketHandlers = {
+            paymentReceived: data => {
                 if (data.mrId === this.mrId) {
                     console.log('[PaymentModal] Payment received via Socket.IO:', data);
                     this.handleSuccess();
                 }
-            });
-
-            window.socket.on('billing_paid', (data) => {
+            },
+            billingPaid: data => {
                 if (data.mrId === this.mrId) {
                     console.log('[PaymentModal] Billing paid via Socket.IO:', data);
                     this.handleSuccess();
                 }
-            });
-        }
+            }
+        };
+        socket.on('payment_received', this.paymentSocketHandlers.paymentReceived);
+        socket.on('billing_paid', this.paymentSocketHandlers.billingPaid);
     },
 
     /**
