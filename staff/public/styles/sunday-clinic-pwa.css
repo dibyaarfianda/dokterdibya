@@ -2060,8 +2060,16 @@ body.mobile-app-mode.sunday-clinic-embedded-active .sc-directory-patient-name {
 /* Wave 1: canonical embedded shell and navigation rules. */
 @media (max-width: 991.98px) {
     body.mobile-app-mode.sunday-clinic-embedded-active {
-        width: 100% !important; /* Avoid 100vw scrollbar overflow. */
+        width: auto !important; /* Exclude the vertical scrollbar from shell sizing. */
         max-width: 100% !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .wrapper,
+    body.mobile-app-mode.sunday-clinic-embedded-active .content-wrapper,
+    body.mobile-app-mode.sunday-clinic-embedded-active .content,
+    body.mobile-app-mode.sunday-clinic-embedded-active .container-fluid,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-page {
+        width: auto !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .main-header {
