@@ -48,6 +48,7 @@ let sundayClinicPwaViewportFrameId = null;
 let sundayClinicPwaNavObserver = null;
 let sundayClinicStylesActive = false;
 let sundayClinicPwaMediaListenerActive = false;
+let sundayClinicPreviousContentPaddingTop = null;
 const sundayClinicPwaMediaQuery = window.matchMedia('(max-width: 991.98px)');
 
 function getVisibleSundayClinicBottomNav() {
@@ -68,11 +69,12 @@ function syncSundayClinicPwaViewport() {
     ));
     const viewportBottom = viewportTop + viewportHeight;
     const nav = getVisibleSundayClinicBottomNav();
-    let navHeight = 60;
+    const minimumNavHeight = document.body.classList.contains('android-pwa-compact') ? 92 : 52;
+    let navHeight = document.body.classList.contains('android-pwa-compact') ? 92 : 60;
     if (nav) {
         const rect = nav.getBoundingClientRect();
         const visibleHeight = Math.round(Math.min(viewportBottom, rect.bottom) - Math.max(viewportTop, rect.top));
-        if (visibleHeight > 0) navHeight = Math.min(140, Math.max(52, visibleHeight));
+        if (visibleHeight > 0) navHeight = Math.min(140, Math.max(minimumNavHeight, visibleHeight));
     }
     const style = document.body.style;
     style.setProperty('--sc-pwa-viewport-height', viewportHeight + 'px');
@@ -91,6 +93,14 @@ function activateSundayClinicPwaLayout() {
     if (sundayClinicPwaLayoutActive) return;
     if (!document.body?.classList.contains('mobile-app-mode')) return;
     if (!sundayClinicPwaMediaQuery.matches) return;
+    const contentWrapper = document.querySelector('.content-wrapper');
+    if (contentWrapper) {
+        sundayClinicPreviousContentPaddingTop = {
+            value: contentWrapper.style.getPropertyValue('padding-top'),
+            priority: contentWrapper.style.getPropertyPriority('padding-top')
+        };
+        contentWrapper.style.removeProperty('padding-top');
+    }
     sundayClinicPwaLayoutActive = true;
     window.addEventListener('resize', queueSundayClinicPwaViewportSync, { passive: true });
     window.addEventListener('orientationchange', queueSundayClinicPwaViewportSync, { passive: true });
@@ -125,6 +135,16 @@ function deactivateSundayClinicPwaLayout() {
     }
     document.body?.style.removeProperty('--sc-pwa-viewport-height');
     document.body?.style.removeProperty('--sc-pwa-bottom-nav-height');
+    const contentWrapper = document.querySelector('.content-wrapper');
+    const previousPadding = sundayClinicPreviousContentPaddingTop;
+    if (contentWrapper && previousPadding) {
+        if (previousPadding.value) {
+            contentWrapper.style.setProperty('padding-top', previousPadding.value, previousPadding.priority);
+        } else {
+            contentWrapper.style.removeProperty('padding-top');
+        }
+    }
+    sundayClinicPreviousContentPaddingTop = null;
 }
 
 function ensureSundayClinicStylesheet(id, href) {

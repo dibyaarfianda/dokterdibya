@@ -53,6 +53,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(main).toContain('function activateSundayClinicPwaLayout()');
         expect(main).toContain('function deactivateSundayClinicPwaLayout()');
         expect(main).toContain('if (sundayClinicPwaLayoutActive) return;');
+        expect(main).toContain("contentWrapper.style.removeProperty('padding-top');");
+        expect(main).toContain("contentWrapper.style.setProperty('padding-top', previousPadding.value, previousPadding.priority);");
         expect(main).toContain("window.visualViewport.addEventListener('resize', queueSundayClinicPwaViewportSync");
         expect(main).toContain("window.visualViewport.removeEventListener('resize', queueSundayClinicPwaViewportSync");
         expect(main).toContain('activateSundayClinicPwaLayout();');
@@ -176,8 +178,9 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(app).toContain("const COMPONENT_VERSION = '3.0.15';");
     });
 
-    test('Android phone PWA uses a denser platform profile without changing iOS defaults', () => {
+    test('Android phone PWA uses a compact two-row navigation without changing iOS defaults', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const main = readRepoFile('staff', 'public', 'scripts', 'main.js');
         const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
         const sw = readRepoFile('staff', 'public', 'sw.js');
 
@@ -189,13 +192,25 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('--sc-pwa-platform-font-body: 10px;');
         expect(pwaCss).toContain('--sc-pwa-platform-font-control: 12px;');
         expect(pwaCss).toContain('--sc-pwa-platform-touch-target: 36px;');
-        expect(pwaCss).toContain('--sc-pwa-platform-bottom-nav-height: 56px;');
-        expect(pwaCss).toContain('flex: 0 0 60px !important;');
+        expect(pwaCss).toContain('--sc-pwa-platform-bottom-nav-height: 92px;');
+        expect(pwaCss).toContain('flex-wrap: wrap !important;');
+        expect(pwaCss).toContain('flex: 0 0 20% !important;');
+        expect(pwaCss).toContain('max-width: 20% !important;');
+        expect(pwaCss).toContain('height: 44px !important;');
+        expect(pwaCss).toContain('min-height: 92px !important;');
+        expect(pwaCss).toContain('max-height: none !important;');
+        expect(pwaCss).toContain('font-size: var(--sc-pwa-font-meta) !important;');
+        expect(pwaCss).toContain('overflow-wrap: normal !important;');
+        expect(pwaCss).not.toContain('flex: 0 0 60px !important;');
+        expect(pwaCss).not.toContain('flex-wrap: nowrap !important;\n        gap: 0 !important;');
+        expect(pwaCss).toContain('height: 40px !important;');
+        expect(pwaCss).toContain('padding-top: 42px !important;');
+        expect(main).toContain("const minimumNavHeight = document.body.classList.contains('android-pwa-compact') ? 92 : 52;");
         expect(pwaCss).toContain('-webkit-text-size-adjust: 100% !important;');
         expect(pwaCss).toContain('--sc-pwa-font-body: var(--sc-pwa-platform-font-body, 11px);');
         expect(pwaCss).not.toMatch(/(?:iPhone|iPad|ios).*android-pwa-compact/i);
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v341';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v341';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v342';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v342';");
     });
 
     test('Sunday Clinic PWA removes the profile slot so header controls cannot be clipped', () => {
@@ -208,7 +223,7 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {');
         expect(pwaCss).toContain('max-width: 100% !important;');
         expect(pwaCss).not.toMatch(/body\.mobile-app-mode(?!\.sunday-clinic-embedded-active)[^{]*\.user-menu\s*\{/);
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v341';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v341';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v342';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v342';");
     });
 });

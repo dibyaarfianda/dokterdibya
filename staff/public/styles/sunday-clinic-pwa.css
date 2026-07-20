@@ -1096,7 +1096,7 @@
 }
 
 /* Android phones expose a narrower CSS viewport at common 1080px device widths.
-   Keep iOS unchanged and use one horizontally scrollable navigation row. */
+   Keep iOS unchanged while matching its compact two-row clinical navigation. */
 @media (max-width: 480px) {
     html.mobile-app-mode.android-pwa-compact,
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact {
@@ -1117,18 +1117,18 @@
         --sc-pwa-platform-icon-md: 14px;
         --sc-pwa-platform-icon-lg: 18px;
         --sc-pwa-platform-touch-target: 36px;
-        --sc-pwa-platform-bottom-nav-height: 56px;
+        --sc-pwa-platform-bottom-nav-height: 92px;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .main-header {
-        min-height: 48px !important;
-        height: 48px !important;
-        max-height: 48px !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        max-height: 40px !important;
         padding: var(--sc-pwa-space-0) var(--sc-pwa-gutter) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .content-wrapper {
-        padding-top: 48px !important;
+        padding-top: 42px !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #sunday-clinic-page > .card:first-child > .card-header {
@@ -1141,28 +1141,39 @@
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav {
-        min-height: var(--sc-pwa-bottom-nav-height) !important;
-        max-height: calc(var(--sc-pwa-bottom-nav-height) + env(safe-area-inset-bottom, 0px)) !important;
-        flex-wrap: nowrap !important;
+        height: auto !important;
+        min-height: 92px !important;
+        max-height: none !important;
+        flex-wrap: wrap !important;
+        align-content: center !important;
         gap: 0 !important;
         padding: var(--sc-pwa-space-0) var(--sc-pwa-space-1) calc(var(--sc-pwa-space-0) + env(safe-area-inset-bottom, 0px)) !important;
+        overflow-x: hidden !important;
+        overscroll-behavior-x: auto !important;
+        scroll-snap-type: none !important;
+        touch-action: pan-y !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav .nav-item {
-        flex: 0 0 60px !important;
-        width: 60px !important;
-        min-width: 60px !important;
-        max-width: 60px !important;
+        flex: 0 0 20% !important;
+        width: 20% !important;
+        min-width: 0 !important;
+        max-width: 20% !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav .sc-nav-link {
-        min-height: 48px !important;
-        height: 48px !important;
+        min-height: 44px !important;
+        height: 44px !important;
         padding: var(--sc-pwa-space-0) 1px !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav .sc-nav-link p {
-        max-width: 58px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        font-size: var(--sc-pwa-font-meta) !important;
+        line-height: 1.05 !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #sunday-clinic-content :is(.sc-pwa-card, .sc-card, .form-section, .clinical-section) {
