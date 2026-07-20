@@ -1062,6 +1062,20 @@
         font-size: var(--sc-pwa-font-heading) !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container.chat-is-open .chat-header-content {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #chat-popup-container.chat-is-open :is(.chat-header-online, #online-names) {
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active .chat-messages {
         padding: var(--sc-pwa-space-2) !important;
         font-size: var(--sc-pwa-font-body) !important;

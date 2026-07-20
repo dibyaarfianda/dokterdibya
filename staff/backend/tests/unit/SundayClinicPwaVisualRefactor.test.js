@@ -144,7 +144,9 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(wave3).toContain('#chat-send-btn {');
         expect(wave3).toContain('font-size: var(--sc-pwa-font-body) !important;');
         expect(wave3).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 6px) !important;');
-        expect(chatPopup).toContain("var clinicInsetPx = document.body.classList.contains('sunday-clinic-embedded-active') ? 6 : 0;");
+        expect(chatPopup).toContain("var isSundayClinic = document.body.classList.contains('sunday-clinic-embedded-active');");
+        expect(chatPopup).toContain('var clinicInsetPx = isSundayClinic ? 6 : 0;');
+        expect(chatPopup).toContain('var clinicFrame = getSundayClinicChatFrame(');
         expect(chatPopup).toContain("var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '8px' : '0';");
     });
 
@@ -209,8 +211,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('-webkit-text-size-adjust: 100% !important;');
         expect(pwaCss).toContain('--sc-pwa-font-body: var(--sc-pwa-platform-font-body, 11px);');
         expect(pwaCss).not.toMatch(/(?:iPhone|iPad|ios).*android-pwa-compact/i);
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v343';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v343';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v344';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v344';");
     });
 
     test('Sunday Clinic PWA removes the profile slot so header controls cannot be clipped', () => {
@@ -223,7 +225,7 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {');
         expect(pwaCss).toContain('max-width: 100% !important;');
         expect(pwaCss).not.toMatch(/body\.mobile-app-mode(?!\.sunday-clinic-embedded-active)[^{]*\.user-menu\s*\{/);
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v343';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v343';");
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v344';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v344';");
     });
 });

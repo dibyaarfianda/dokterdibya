@@ -147,7 +147,11 @@ import { ROLE_IDS } from './role-constants.js';
   }
 
   function getReservedBottomPx() {
-    return isChatKeyboardModeActive() ? '0px' : getNavBottomPx();
+    if (isChatKeyboardModeActive()) {
+      var embeddedNav = document.querySelector('body.sunday-clinic-embedded-active .sc-staff-section-nav');
+      if (!isVisibleBottomNav(embeddedNav)) return '0px';
+    }
+    return getNavBottomPx();
   }
 
   function getMobileChatHeightPx(navPx, insetPx) {
@@ -159,11 +163,53 @@ import { ROLE_IDS } from './role-constants.js';
     return Math.max(304, viewportHeight - safeNavPx - (safeInsetPx * 2)) + 'px';
   }
 
+  function getSundayClinicChatFrame(viewportTop, viewportLeft, viewportWidth, viewportHeight, navPx, insetPx) {
+    var safeNavPx = Math.max(0, Number(navPx) || 0);
+    var safeInsetPx = Math.max(0, Number(insetPx) || 0);
+    var frameWidth = Math.round(viewportWidth * 0.5);
+    var targetHeight = Math.round(viewportHeight * (2 / 3));
+    var availableHeight = Math.max(0, viewportHeight - safeNavPx - (safeInsetPx * 2));
+    var frameHeight = Math.min(targetHeight, availableHeight);
+    var frameLeft = Math.max(
+      viewportLeft + safeInsetPx,
+      viewportLeft + viewportWidth - safeInsetPx - frameWidth
+    );
+    var frameTop = Math.max(
+      viewportTop + safeInsetPx,
+      viewportTop + viewportHeight - safeNavPx - safeInsetPx - frameHeight
+    );
+    return {
+      top: Math.round(frameTop),
+      left: Math.round(frameLeft),
+      width: Math.max(0, frameWidth),
+      height: Math.max(0, frameHeight)
+    };
+  }
+
   function applyMobileViewportFrame(cont, reservedBottomPx) {
     var viewportTop = getMobileViewportTop();
     var viewportLeft = getMobileViewportLeft();
     var viewportWidth = getMobileViewportWidth();
-    var clinicInsetPx = document.body.classList.contains('sunday-clinic-embedded-active') ? 6 : 0;
+    var isSundayClinic = document.body.classList.contains('sunday-clinic-embedded-active');
+    var clinicInsetPx = isSundayClinic ? 6 : 0;
+    if (isSundayClinic) {
+      var clinicFrame = getSundayClinicChatFrame(
+        viewportTop,
+        viewportLeft,
+        viewportWidth,
+        getMobileViewportHeight(),
+        reservedBottomPx,
+        clinicInsetPx
+      );
+      cont.style.setProperty('position', 'fixed', 'important');
+      cont.style.setProperty('top', clinicFrame.top + 'px', 'important');
+      cont.style.setProperty('left', clinicFrame.left + 'px', 'important');
+      cont.style.setProperty('right', 'auto', 'important');
+      cont.style.setProperty('bottom', 'auto', 'important');
+      cont.style.setProperty('width', clinicFrame.width + 'px', 'important');
+      cont.style.setProperty('height', clinicFrame.height + 'px', 'important');
+      return;
+    }
     var chatHeight = getMobileChatHeightPx(reservedBottomPx, clinicInsetPx);
     cont.style.setProperty('position', 'fixed', 'important');
     cont.style.setProperty('top', (viewportTop + clinicInsetPx) + 'px', 'important');
@@ -196,7 +242,7 @@ import { ROLE_IDS } from './role-constants.js';
     var isMobile = window.innerWidth <= 991;
 
     if (chatOpen && isMobile) {
-      // Full-screen mode: move to body to avoid transform-ancestor offset issues
+      // Mobile frame: move to body to avoid transform-ancestor offset issues.
       if (cont.parentNode !== document.body) document.body.appendChild(cont);
       var navH = getReservedBottomPx();
       var navPx = parseInt(navH, 10);
@@ -251,7 +297,7 @@ import { ROLE_IDS } from './role-constants.js';
 
   // Guardian interval — every 2s (200ms was too aggressive, triggered observer loop)
 
-  // Helper: apply full-screen mode for the chat box on mobile
+  // Helper: apply the mobile chat frame (compact in Sunday Clinic, full elsewhere).
   function applyMobileFullScreen(cont) {
     if (cont.parentNode !== document.body) document.body.appendChild(cont);
     var navH = getReservedBottomPx();

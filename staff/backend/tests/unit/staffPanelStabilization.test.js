@@ -605,6 +605,25 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).not.toMatch(/#chat-toggle-btn,[\s\S]{0,160}bottom:\s*calc\(84px/);
     });
 
+    test('Sunday Clinic mobile chat uses half viewport width and two-thirds height without scaling text', () => {
+        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
+
+        expect(chatPopup).toContain('function getSundayClinicChatFrame(');
+        expect(chatPopup).toContain('var frameWidth = Math.round(viewportWidth * 0.5);');
+        expect(chatPopup).toContain('var targetHeight = Math.round(viewportHeight * (2 / 3));');
+        expect(chatPopup).toContain("document.body.classList.contains('sunday-clinic-embedded-active')");
+        expect(chatPopup).toContain("cont.style.setProperty('width', clinicFrame.width + 'px', 'important');");
+        expect(chatPopup).toContain("cont.style.setProperty('height', clinicFrame.height + 'px', 'important');");
+        expect(chatPopup).toContain("if (!isVisibleBottomNav(embeddedNav)) return '0px';");
+        expect(chatPopup).not.toContain("cont.style.setProperty('transform', 'scale(");
+        expect(sundayClinicCss).toContain('font-size: var(--sc-pwa-font-body) !important;');
+        expect(sundayClinicCss).toContain('font-size: var(--sc-pwa-font-control) !important;');
+        expect(sundayClinicCss).toContain('#chat-popup-container.chat-is-open .chat-header-content');
+        expect(sundayClinicCss).toContain('#chat-popup-container.chat-is-open :is(.chat-header-online, #online-names)');
+        expect(sundayClinicCss).toContain('text-overflow: ellipsis !important;');
+    });
+
     test('staff panel exposes Gajian payroll menu and script', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const payrollFragment = readRepoFile('staff', 'public', 'fragments', 'pages', 'content-staff-payroll.html');
