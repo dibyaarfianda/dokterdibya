@@ -1662,8 +1662,14 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
             `SELECT abi.item_code, abi.item_name, abi.quantity,
                     COALESCE(
                         NULLIF(CAST(JSON_UNQUOTE(JSON_EXTRACT(abi.item_data, '$.obatId')) AS UNSIGNED), 0),
-                        (SELECT o.id FROM obat o WHERE abi.item_code IS NOT NULL AND o.code = abi.item_code LIMIT 1),
-                        (SELECT o.id FROM obat o WHERE LOWER(TRIM(o.name)) = LOWER(TRIM(abi.item_name)) ORDER BY o.is_active DESC, o.id ASC LIMIT 1)
+                        (SELECT o.id FROM obat o
+                         WHERE abi.item_code IS NOT NULL
+                           AND o.code COLLATE utf8mb4_unicode_ci = abi.item_code COLLATE utf8mb4_unicode_ci
+                         LIMIT 1),
+                        (SELECT o.id FROM obat o
+                         WHERE LOWER(TRIM(o.name)) COLLATE utf8mb4_unicode_ci = LOWER(TRIM(abi.item_name)) COLLATE utf8mb4_unicode_ci
+                         ORDER BY o.is_active DESC, o.id ASC
+                         LIMIT 1)
                     ) AS obat_id
              FROM sunday_clinic_additional_billing_items abi
              WHERE abi.additional_billing_id = ? AND abi.item_type = 'obat'`,

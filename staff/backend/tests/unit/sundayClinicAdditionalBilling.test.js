@@ -71,6 +71,17 @@ describe('Sunday Clinic additional billing implementation', () => {
         expect(auditService).toContain('async function logAdditionalBillingAudit');
     });
 
+    test('normalizes legacy medicine collations before resolving additional billing items', () => {
+        const service = readRepoFile('staff', 'backend', 'services', 'sunday-clinic', 'billing.js');
+
+        expect(service).toContain(
+            'o.code COLLATE utf8mb4_unicode_ci = abi.item_code COLLATE utf8mb4_unicode_ci'
+        );
+        expect(service).toContain(
+            'LOWER(TRIM(o.name)) COLLATE utf8mb4_unicode_ci = LOWER(TRIM(abi.item_name)) COLLATE utf8mb4_unicode_ci'
+        );
+    });
+
     test('renders the staff panel, manual payment flow, and unique document references', () => {
         const billingJs = readRepoFile(
             'staff',
