@@ -94,7 +94,13 @@
 
     body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {
         flex: 0 0 auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
         gap: var(--sc-pwa-space-1) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .main-header .user-menu {
+        display: none !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active .main-header .clinic-header-title {
@@ -1119,11 +1125,6 @@
         height: 48px !important;
         max-height: 48px !important;
         padding: var(--sc-pwa-space-0) var(--sc-pwa-gutter) !important;
-    }
-
-    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .main-header :is(#navbar-user-avatar, #navbar-user-avatar-placeholder) {
-        width: 36px !important;
-        height: 36px !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .content-wrapper {
