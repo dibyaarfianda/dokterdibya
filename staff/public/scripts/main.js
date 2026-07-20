@@ -7,7 +7,7 @@ import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
 import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';
-import { isSuperadminUser } from './role-constants.js';
+import { ROLE_IDS, isSuperadminUser } from './role-constants.js';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -887,7 +887,8 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
         ? mrIdOrOptions
         : { mrId: mrIdOrOptions, section };
     const normalizedMrId = normalizeMrSlug(options.mrId);
-    if (!normalizedMrId) {
+    const closingOnly = options.closingOnly === true;
+    if (!normalizedMrId && !closingOnly) {
         backToSundayClinicLanding();
         return;
     }
@@ -898,12 +899,16 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
     hideAllPages();
     setSundayClinicStylesActive(true);
     pages.sundayClinic?.classList.remove('d-none');
-    setTitleAndActive('Sunday Clinic', null, 'sunday-clinic');
+    setTitleAndActive(
+        closingOnly ? 'Closing Sunday Clinic' : 'Sunday Clinic',
+        closingOnly ? 'nav-sunday-clinic-closing' : null,
+        'sunday-clinic'
+    );
 
     try {
         await ensureSundayClinicModule();
         if (typeof window.initSundayClinicPage === 'function') {
-            await window.initSundayClinicPage({
+            const initialized = await window.initSundayClinicPage({
                 mrId: normalizedMrId || null,
                 section: options.section || 'identitas',
                 patientId: options.patientId || null,
@@ -911,6 +916,11 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
                 location: options.location || null,
                 embedded: true
             });
+            if (closingOnly && initialized !== false) {
+                const opened = typeof window.openSundayClinicClosingModal === 'function'
+                    && window.openSundayClinicClosingModal();
+                if (!opened) showWarning('Closing Sunday Clinic hanya dapat diakses oleh dokter.');
+            }
         } else {
             throw new Error('Sunday Clinic module belum siap');
         }
@@ -918,6 +928,10 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
         console.error('Failed to load Sunday Clinic page:', error);
         showError('Gagal memuat Sunday Clinic: ' + error.message);
     }
+}
+
+function showSundayClinicClosingPage() {
+    return showSundayClinicPage({ closingOnly: true });
 }
 
 // Hospital Appointments Page
@@ -2141,7 +2155,7 @@ function showDocboardPage() {
     if (pages.docboard) {
         pages.docboard.classList.remove('d-none');
         const iframe = document.getElementById('docboard-iframe');
-        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v346';
+        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v347';
         const docboardUrl = `/docboard/?embed=${encodeURIComponent(embedVersion)}`;
         if (iframe && iframe.getAttribute('data-docboard-version') !== embedVersion) {
             localStorage.setItem('docboard_token', token);
@@ -4933,6 +4947,15 @@ async function applyMenuVisibility(user) {
         'staff_payroll': ['nav-staff-payroll']
     };
 
+    // Closing finance is deliberately stricter than generic doctor/superadmin UI.
+    // Only the canonical doctor role id may see its launchers; backend repeats this guard.
+    const isSundayClinicClosingDoctor = Number(user?.role_id) === ROLE_IDS.DOKTER;
+    document.querySelectorAll('.sunday-clinic-closing-doctor-only').forEach(element => {
+        element.classList.toggle('d-none', !isSundayClinicClosingDoctor);
+        if (isSundayClinicClosingDoctor) element.removeAttribute('hidden');
+        else element.setAttribute('hidden', 'hidden');
+    });
+
     // Superadmin/dokter sees everything - show all hidden menus
     const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
     if (isDokter) {
@@ -5391,6 +5414,7 @@ function restoreLastPage() {
             'nav-dashboard':                        () => showDashboardPage(),
             'nav-kantor-saya':                      () => showKantorSayaPage(),
             'nav-klinik-private':                   () => showKlinikPrivatePage(),
+            'nav-sunday-clinic-closing':            () => showSundayClinicClosingPage(),
             'nav-antrian-online':                   () => showAntrianOnlinePage(),
             'nav-sunday-clinic':                    () => showKlinikPrivatePage(),
             'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
@@ -6657,6 +6681,7 @@ window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.showAntrianOnlinePage = showAntrianOnlinePage;
 window.backToSundayClinicLanding = backToSundayClinicLanding;
 window.showSundayClinicPage = showSundayClinicPage;
+window.showSundayClinicClosingPage = showSundayClinicClosingPage;
 window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;
 window.showTindakanPage = showTindakanPage;
 window.showObatPage = showObatPage;

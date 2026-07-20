@@ -499,16 +499,7 @@ function bindDomEvents() {
         openButton.addEventListener('click', event => {
             event.preventDefault();
             event.stopPropagation();
-            const modal = byId(DOM_IDS.modal);
-            if (!modal || !window.jQuery) return;
-            const queueButton = window.jQuery('#btn-header-queue');
-            if (typeof queueButton.dropdown === 'function') {
-                queueButton.dropdown('hide');
-            } else {
-                window.jQuery('#header-queue-dropdown').removeClass('show');
-                queueButton.attr('aria-expanded', 'false').parent().removeClass('show');
-            }
-            window.jQuery(modal).modal('show');
+            openSundayClinicClosing();
         });
     }
 
@@ -562,6 +553,22 @@ function bindDomEvents() {
     }
 }
 
+export function openSundayClinicClosing() {
+    if (!state.authorized) return false;
+    const modal = byId(DOM_IDS.modal);
+    if (!modal || !window.jQuery) return false;
+
+    const queueButton = window.jQuery('#btn-header-queue');
+    if (typeof queueButton.dropdown === 'function') {
+        queueButton.dropdown('hide');
+    } else {
+        window.jQuery('#header-queue-dropdown').removeClass('show');
+        queueButton.attr('aria-expanded', 'false').parent().removeClass('show');
+    }
+    window.jQuery(modal).modal('show');
+    return true;
+}
+
 function handlePageChanged(event) {
     if (event.detail?.page !== 'sunday-clinic') {
         deactivate();
@@ -605,5 +612,6 @@ export function deactivateSundayClinicClosing() {
 
 export default {
     init: initSundayClinicClosing,
+    open: openSundayClinicClosing,
     deactivate: deactivateSundayClinicClosing
 };

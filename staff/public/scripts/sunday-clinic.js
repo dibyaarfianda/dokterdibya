@@ -13,7 +13,10 @@ import SundayClinicApp from './sunday-clinic/main.js';
 import apiClient from './sunday-clinic/utils/api-client.js';
 import stateManager from './sunday-clinic/utils/state-manager.js';
 import { initRealtimeSync } from './realtime-sync.js';
-import { initSundayClinicClosing } from './sunday-clinic/components/shared/closing.js';
+import {
+    initSundayClinicClosing,
+    openSundayClinicClosing
+} from './sunday-clinic/components/shared/closing.js';
 
 // ============================================================================
 // CONSTANTS
@@ -358,6 +361,7 @@ async function initSundayClinicPage(options = {}) {
 }
 
 window.initSundayClinicPage = initSundayClinicPage;
+window.openSundayClinicClosingModal = openSundayClinicClosing;
 
 // ============================================================================
 // AUTHENTICATION

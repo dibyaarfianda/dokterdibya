@@ -199,6 +199,9 @@ const shellActionHandlers = {
         callGlobal('showKlinikPrivatePage');
         markBadge('klinik_private');
     },
+    'show-sunday-clinic-closing': function() {
+        callGlobal('showSundayClinicClosingPage');
+    },
     'show-antrian-online': function() {
         callGlobal('showAntrianOnlinePage');
     },

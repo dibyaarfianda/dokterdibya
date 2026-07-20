@@ -174,7 +174,8 @@ describe('staff panel stabilization sources', () => {
         expect(mainJs).toContain("window.showSundayClinicPage = showSundayClinicPage;");
         expect(mainJs).toContain("window.backToSundayClinicLanding = backToSundayClinicLanding;");
         expect(mainJs).toContain("window.buildSundayClinicAppUrl = buildSundayClinicAppUrl;");
-        expect(mainJs).toContain("if (!normalizedMrId) {\n        backToSundayClinicLanding();");
+        expect(mainJs).toContain("if (!normalizedMrId && !closingOnly) {\n        backToSundayClinicLanding();");
+        expect(mainJs).toContain("return showSundayClinicPage({ closingOnly: true });");
         expect(mainJs).toContain("'nav-sunday-clinic':                    () => showKlinikPrivatePage()");
         expect(mainJs).toContain("ensureSundayClinicModule().catch(error => {");
         expect(mainJs).toContain('/staff/public/index-adminlte.html?page=sunday-clinic&mr=');
