@@ -901,7 +901,7 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
     pages.sundayClinic?.classList.remove('d-none');
     setTitleAndActive(
         closingOnly ? 'Closing Sunday Clinic' : 'Sunday Clinic',
-        closingOnly ? 'nav-sunday-clinic-closing' : null,
+        null,
         'sunday-clinic'
     );
 
@@ -2155,7 +2155,7 @@ function showDocboardPage() {
     if (pages.docboard) {
         pages.docboard.classList.remove('d-none');
         const iframe = document.getElementById('docboard-iframe');
-        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v347';
+        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v348';
         const docboardUrl = `/docboard/?embed=${encodeURIComponent(embedVersion)}`;
         if (iframe && iframe.getAttribute('data-docboard-version') !== embedVersion) {
             localStorage.setItem('docboard_token', token);
@@ -5414,7 +5414,6 @@ function restoreLastPage() {
             'nav-dashboard':                        () => showDashboardPage(),
             'nav-kantor-saya':                      () => showKantorSayaPage(),
             'nav-klinik-private':                   () => showKlinikPrivatePage(),
-            'nav-sunday-clinic-closing':            () => showSundayClinicClosingPage(),
             'nav-antrian-online':                   () => showAntrianOnlinePage(),
             'nav-sunday-clinic':                    () => showKlinikPrivatePage(),
             'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),

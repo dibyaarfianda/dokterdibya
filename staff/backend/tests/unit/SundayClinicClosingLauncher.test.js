@@ -50,12 +50,10 @@ describe('Sunday Clinic closing launcher from Klinik Privat', () => {
         expect(main).toContain("document.querySelectorAll('.sunday-clinic-closing-doctor-only')");
 
         const pageLauncher = extractElementById(clinicPage, 'klinik-private-closing-btn');
-        const navLauncher = extractElementById(html, 'nav-sunday-clinic-closing');
-        [pageLauncher, navLauncher].forEach(launcher => {
-            expect(launcher).toMatch(/\bsunday-clinic-closing-doctor-only\b/);
-            expect(launcher).toMatch(/\bd-none\b/);
-            expect(launcher).not.toMatch(/\bdokter-only\b/);
-        });
+        expect(pageLauncher).toMatch(/\bsunday-clinic-closing-doctor-only\b/);
+        expect(pageLauncher).toMatch(/\bd-none\b/);
+        expect(pageLauncher).not.toMatch(/\bdokter-only\b/);
+        expect(html).not.toContain('id="nav-sunday-clinic-closing"');
     });
 
     test('opens the closing flow without requiring a patient MR', () => {
@@ -71,12 +69,12 @@ describe('Sunday Clinic closing launcher from Klinik Privat', () => {
         expect(closing).toContain('export function openSundayClinicClosing()');
     });
 
-    test('keeps the existing Klinik Privat sidebar/PWA path and does not resurrect a Sunday Clinic nav item', () => {
+    test('keeps closing only on Klinik Privat and omits dedicated Sunday Clinic sidebar items', () => {
         expect(html).toContain('id="nav-klinik-private"');
         expect(html).toContain('data-shell-action="show-klinik-private"');
-        expect(html).toContain('id="nav-sunday-clinic-closing"');
-        expect(extractElementById(html, 'nav-sunday-clinic-closing')).toMatch(/\bd-none\b/);
+        expect(html).not.toContain('id="nav-sunday-clinic-closing"');
         expect(html).not.toContain('id="nav-sunday-clinic"');
         expect(html).not.toContain('href="/staff/public/sunday-clinic.html"');
+        expect(main).not.toContain("'nav-sunday-clinic-closing'");
     });
 });
