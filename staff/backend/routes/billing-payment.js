@@ -10,6 +10,9 @@ const logger = require('../utils/logger');
 const { sendSuccess, sendError } = require('../utils/response');
 const { verifyToken } = require('../middleware/auth');
 const xenditPayment = require('../utils/xendit-payment');
+const {
+    acquireSundayClinicAccountingDateGuard
+} = require('../services/SundayClinicClosingService');
 
 // Import realtime-sync for broadcasting payment events
 let realtimeSync;
@@ -26,11 +29,41 @@ function normalizeMrId(mrId) {
     return mrId ? mrId.toUpperCase().trim() : null;
 }
 
+function broadcastAccountingRefresh(mrId, reason, paymentId = null) {
+    if (!realtimeSync || typeof realtimeSync.broadcast !== 'function') return;
+    realtimeSync.broadcast({
+        type: 'billing_updated',
+        mrId,
+        reason,
+        paymentId,
+        timestamp: new Date().toISOString()
+    });
+}
+
+async function requireOpenAccountingDate(req, res, next) {
+    try {
+        const guard = await acquireSundayClinicAccountingDateGuard(db, {
+            mrId: normalizeMrId(req.params.mrId)
+        });
+        let released = false;
+        const releaseOnce = () => {
+            if (released) return;
+            released = true;
+            Promise.resolve(guard.release()).catch(() => {});
+        };
+        res.once('finish', releaseOnce);
+        res.once('close', releaseOnce);
+        next();
+    } catch (error) {
+        next(error);
+    }
+}
+
 /**
  * POST /:mrId/create-payment
  * Create a new payment request (QRIS or VA)
  */
-router.post('/:mrId/create-payment', verifyToken, async (req, res) => {
+router.post('/:mrId/create-payment', verifyToken, requireOpenAccountingDate, async (req, res) => {
     const mrId = normalizeMrId(req.params.mrId);
     const { payment_method } = req.body;
 
@@ -149,6 +182,7 @@ router.post('/:mrId/create-payment', verifyToken, async (req, res) => {
             method: payment_method,
             amount
         });
+        broadcastAccountingRefresh(mrId, 'payment_created', insertResult.insertId);
 
         // Build response based on payment type
         const responseData = {
@@ -358,7 +392,7 @@ router.get('/:mrId/payment-methods', verifyToken, async (req, res) => {
  * POST /:mrId/cancel-payment/:paymentId
  * Cancel a pending payment
  */
-router.post('/:mrId/cancel-payment/:paymentId', verifyToken, async (req, res) => {
+router.post('/:mrId/cancel-payment/:paymentId', verifyToken, requireOpenAccountingDate, async (req, res) => {
     const mrId = normalizeMrId(req.params.mrId);
     const paymentId = parseInt(req.params.paymentId);
 
@@ -387,6 +421,7 @@ router.post('/:mrId/cancel-payment/:paymentId', verifyToken, async (req, res) =>
         `, [paymentId, mrId, req.ip]);
 
         logger.info('[BillingPayment] Payment cancelled', { mrId, paymentId });
+        broadcastAccountingRefresh(mrId, 'payment_cancelled', paymentId);
 
         return sendSuccess(res, { payment_id: paymentId, status: 'cancelled' }, 'Pembayaran dibatalkan');
 
@@ -404,7 +439,7 @@ router.post('/:mrId/cancel-payment/:paymentId', verifyToken, async (req, res) =>
  * POST /:mrId/create-insurance-payment
  * Create insurance (asuransi) payment - status pending, no Xendit
  */
-router.post('/:mrId/create-insurance-payment', verifyToken, async (req, res) => {
+router.post('/:mrId/create-insurance-payment', verifyToken, requireOpenAccountingDate, async (req, res) => {
     const mrId = normalizeMrId(req.params.mrId);
     const { insurance_provider, insurance_number, notes } = req.body;
 
@@ -476,6 +511,7 @@ router.post('/:mrId/create-insurance-payment', verifyToken, async (req, res) => 
             provider: insuranceInfo.provider,
             amount
         });
+        broadcastAccountingRefresh(mrId, 'insurance_payment_created', insertResult.insertId);
 
         return sendSuccess(res, {
             payment_id: insertResult.insertId,
@@ -498,7 +534,7 @@ router.post('/:mrId/create-insurance-payment', verifyToken, async (req, res) => 
  * POST /:mrId/confirm-insurance/:paymentId
  * Confirm insurance payment (mark as paid)
  */
-router.post('/:mrId/confirm-insurance/:paymentId', verifyToken, async (req, res) => {
+router.post('/:mrId/confirm-insurance/:paymentId', verifyToken, requireOpenAccountingDate, async (req, res) => {
     const mrId = normalizeMrId(req.params.mrId);
     const paymentId = parseInt(req.params.paymentId);
 
@@ -559,7 +595,7 @@ router.get('/:mrId/xendit-public-key', verifyToken, async (req, res) => {
  * POST /:mrId/create-card-charge
  * Create credit card charge with token from Xendit.js
  */
-router.post('/:mrId/create-card-charge', verifyToken, async (req, res) => {
+router.post('/:mrId/create-card-charge', verifyToken, requireOpenAccountingDate, async (req, res) => {
     const mrId = normalizeMrId(req.params.mrId);
     const { token_id, authentication_id } = req.body;
 
@@ -662,6 +698,7 @@ router.post('/:mrId/create-card-charge', verifyToken, async (req, res) => {
             paymentId: insertResult.insertId,
             status: chargeResult.status
         });
+        broadcastAccountingRefresh(mrId, 'card_payment_created', insertResult.insertId);
 
         return sendSuccess(res, {
             payment_id: insertResult.insertId,
@@ -685,7 +722,7 @@ router.post('/:mrId/create-card-charge', verifyToken, async (req, res) => {
  * POST /:mrId/create-3ds-auth
  * Create 3DS authentication for credit card
  */
-router.post('/:mrId/create-3ds-auth', verifyToken, async (req, res) => {
+router.post('/:mrId/create-3ds-auth', verifyToken, requireOpenAccountingDate, async (req, res) => {
     const mrId = normalizeMrId(req.params.mrId);
     const { token_id } = req.body;
 
@@ -748,26 +785,24 @@ async function handlePaymentSuccess(payment, webhookData) {
         if (typeof paidAt === 'string') {
             paidAt = new Date(paidAt);
         }
+        if (!(paidAt instanceof Date) || Number.isNaN(paidAt.valueOf())) {
+            paidAt = new Date();
+        }
+        const paidBy = webhookData.confirmed_by || 'Xendit';
 
-        // Serialize payment success handling. If another request/webhook has already
-        // completed this payment, skip deduction and return safely.
-        const [paymentUpdateResult] = await connection.query(`
+        // Persist the provider truth even when another callback already marked the
+        // payment paid. The billing row lock below keeps stock deduction idempotent.
+        await connection.query(`
             UPDATE tagihan_payments
             SET status = 'paid',
-                paid_at = ?,
+                paid_at = COALESCE(paid_at, ?),
                 webhook_data = ?
             WHERE id = ?
-              AND status <> 'paid'
         `, [
             paidAt,
             JSON.stringify(webhookData),
             payment.id
         ]);
-
-        if (!paymentUpdateResult?.affectedRows) {
-            await connection.rollback();
-            return;
-        }
 
         const [[billingRow]] = await connection.query(`
             SELECT id, status
@@ -781,6 +816,14 @@ async function handlePaymentSuccess(payment, webhookData) {
         }
 
         if (billingRow.status === 'paid') {
+            // Repair legacy/incomplete online-payment metadata without changing an
+            // already recorded timestamp or staff actor.
+            await connection.query(`
+                UPDATE sunday_clinic_billings
+                SET paid_at = COALESCE(paid_at, ?),
+                    paid_by = COALESCE(NULLIF(TRIM(paid_by), ''), ?)
+                WHERE id = ?
+            `, [paidAt, paidBy, payment.billing_id]);
             await connection.commit();
             return;
         }
@@ -853,9 +896,14 @@ async function handlePaymentSuccess(payment, webhookData) {
         // Update billing status to paid only after stock deduction succeeds.
         await connection.query(`
             UPDATE sunday_clinic_billings
-            SET status = 'paid'
+            SET status = 'paid',
+                paid_at = ?,
+                paid_by = ?,
+                last_modified_by = ?,
+                last_modified_at = NOW(),
+                updated_at = NOW()
             WHERE id = ? AND status = 'confirmed'
-        `, [payment.billing_id]);
+        `, [paidAt, paidBy, paidBy, payment.billing_id]);
 
         // Auto-finalize medical record
         await connection.query(`

@@ -11,6 +11,7 @@ const db = require('../../db');
 const {
     verifyToken,
     requireRole,
+    requireDoctorRole,
     optionalAuth,
     recordFailedAttempt,
     isAccountLocked,
@@ -163,6 +164,54 @@ describe('Auth Middleware', () => {
 
             middleware(req, res, next);
 
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(next).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('requireDoctorRole', () => {
+        const createResponse = () => ({
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn()
+        });
+
+        it('allows only the canonical doctor role id', () => {
+            const next = jest.fn();
+            requireDoctorRole({
+                user: { id: 1, role_id: ROLE_IDS.DOKTER, role: ROLE_NAMES.DOKTER }
+            }, createResponse(), next);
+            expect(next).toHaveBeenCalledTimes(1);
+        });
+
+        it('rejects an unauthenticated request', () => {
+            const res = createResponse();
+            const next = jest.fn();
+            requireDoctorRole({}, res, next);
+            expect(res.status).toHaveBeenCalledWith(401);
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        it('rejects non-doctors even when is_superadmin is true', () => {
+            for (const role of [ROLE_NAMES.MANAGERIAL, ROLE_NAMES.ADMIN, ROLE_NAMES.FRONT_OFFICE, ROLE_NAMES.BIDAN]) {
+                const res = createResponse();
+                const next = jest.fn();
+                requireDoctorRole({ user: { id: 9, role, role_id: ROLE_IDS.ADMIN, is_superadmin: true } }, res, next);
+                expect(res.status).toHaveBeenCalledWith(403);
+                expect(next).not.toHaveBeenCalled();
+            }
+        });
+
+        it('rejects a rewritten dokter claim when the canonical role id is non-doctor', () => {
+            const res = createResponse();
+            const next = jest.fn();
+            requireDoctorRole({
+                user: {
+                    id: 9,
+                    role: ROLE_NAMES.DOKTER,
+                    role_id: ROLE_IDS.MANAGERIAL,
+                    is_superadmin: true
+                }
+            }, res, next);
             expect(res.status).toHaveBeenCalledWith(403);
             expect(next).not.toHaveBeenCalled();
         });

@@ -3,6 +3,9 @@ const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const { createSundayClinicRecord } = require('../services/sundayClinicService');
+const {
+    acquireSundayClinicAccountingDateGuard
+} = require('../services/SundayClinicClosingService');
 const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
@@ -31,6 +34,25 @@ const verifyToken = (req, res, next) => {
         return res.status(401).json({ message: 'Token tidak valid' });
     }
 };
+
+async function requireOpenSundayClinicAccountingDate(req, res, next) {
+    try {
+        const guard = await acquireSundayClinicAccountingDateGuard(db, {
+            appointmentId: req.params.id
+        });
+        let released = false;
+        const releaseOnce = () => {
+            if (released) return;
+            released = true;
+            Promise.resolve(guard.release()).catch(() => {});
+        };
+        res.once('finish', releaseOnce);
+        res.once('close', releaseOnce);
+        return next();
+    } catch (error) {
+        return next(error);
+    }
+}
 
 function getDayName(dayOfWeek) {
     return DAY_NAMES[dayOfWeek] || 'Tidak diketahui';
@@ -1129,7 +1151,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
  * POST /api/sunday-appointments/:id/start-clinic-record
  * Ensure Sunday Clinic medical record exists for the appointment and return MR info
  */
-router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
+router.post('/:id/start-clinic-record', verifyToken, requireOpenSundayClinicAccountingDate, async (req, res) => {
     try {
         const { id } = req.params;
         const { category: requestCategory } = req.body || {};

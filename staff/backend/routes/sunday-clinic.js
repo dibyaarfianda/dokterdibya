@@ -4,6 +4,7 @@ const express = require('express');
 const logger = require('../utils/logger');
 const { setupSocketHandlers } = require('../services/sunday-clinic/queue');
 const { validateSundayClinicSchema, sundayClinicSchemaGuard } = require('../services/SundayClinicSchemaValidator');
+const { validateSundayClinicClosingSchema } = require('../services/SundayClinicClosingSchemaValidator');
 
 const router = express.Router();
 
@@ -14,8 +15,15 @@ validateSundayClinicSchema().catch((error) => {
         error: error.message
     });
 });
+validateSundayClinicClosingSchema().catch((error) => {
+    logger.error('Sunday Clinic closing schema validation failed', {
+        code: error.code,
+        error: error.message
+    });
+});
 
 router.use(sundayClinicSchemaGuard);
+router.use(require('./sunday-clinic/closing'));
 router.use(require('./sunday-clinic/queue'));
 router.use(require('./sunday-clinic/records'));
 router.use(require('./sunday-clinic/billing'));

@@ -13,6 +13,7 @@ import SundayClinicApp from './sunday-clinic/main.js';
 import apiClient from './sunday-clinic/utils/api-client.js';
 import stateManager from './sunday-clinic/utils/state-manager.js';
 import { initRealtimeSync } from './realtime-sync.js';
+import { initSundayClinicClosing } from './sunday-clinic/components/shared/closing.js';
 
 // ============================================================================
 // CONSTANTS
@@ -104,7 +105,9 @@ const appState = {
     staffIdentity: {
         id: null,
         name: null,
-        role: null
+        role: null,
+        role_id: null,
+        is_superadmin: false
     },
     isInitialized: false,
     isInitializing: false,
@@ -151,6 +154,8 @@ function applyStaffIdentityToUI() {
     window.currentStaffIdentity.id = identity.id;
     window.currentStaffIdentity.name = identity.name;
     window.currentStaffIdentity.role = identity.role;
+    window.currentStaffIdentity.role_id = identity.role_id;
+    window.currentStaffIdentity.is_superadmin = Boolean(identity.is_superadmin);
 
     if (DOM.staffNameDisplay) {
         const roleLabel = getRoleLabel(identity.role);
@@ -183,7 +188,9 @@ window.routeMrSlug = null;
 window.currentStaffIdentity = {
     id: null,
     name: null,
-    role: null
+    role: null,
+    role_id: null,
+    is_superadmin: false
 };
 
 function resolveStaffIdentity(raw) {
@@ -293,6 +300,7 @@ async function initSundayClinicPage(options = {}) {
         }
 
         applyStaffIdentityToUI();
+        initSundayClinicClosing(appState.staffIdentity);
 
         // Initialize real-time sync for chat and online status once identity is known.
         if (!appState.realtimeInitialized) {
@@ -375,7 +383,9 @@ async function checkAuthentication() {
             appState.staffIdentity = {
                 id: response.data.user.id,
                 name: response.data.user.name || response.data.user.email,
-                role: response.data.user.role || ''
+                role: response.data.user.role || '',
+                role_id: response.data.user.role_id,
+                is_superadmin: Boolean(response.data.user.is_superadmin)
             };
 
             applyStaffIdentityToUI();

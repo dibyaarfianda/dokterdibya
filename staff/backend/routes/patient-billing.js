@@ -13,9 +13,44 @@ const { verifyPatientToken } = require('../middleware/auth');
 const xenditPayment = require('../utils/xendit-payment');
 const { handlePaymentSuccess } = require('./billing-payment');
 const patientActivityLogger = require('../services/patientActivityLogger');
+const realtimeSync = require('../realtime-sync');
+const {
+    acquireSundayClinicAccountingDateGuard
+} = require('../services/SundayClinicClosingService');
 
 // All routes require patient authentication
 router.use(verifyPatientToken);
+
+function broadcastAccountingRefresh(mrId, reason, paymentId) {
+    if (!realtimeSync || typeof realtimeSync.broadcast !== 'function') return;
+    realtimeSync.broadcast({
+        type: 'billing_updated',
+        mrId,
+        reason,
+        paymentId,
+        timestamp: new Date().toISOString()
+    });
+}
+
+async function requireOpenAccountingDate(req, res, next) {
+    try {
+        const guard = await acquireSundayClinicAccountingDateGuard(db, {
+            billingId: Number.parseInt(req.params.billingId, 10),
+            patientId: req.user.id
+        });
+        let released = false;
+        const releaseOnce = () => {
+            if (released) return;
+            released = true;
+            Promise.resolve(guard.release()).catch(() => {});
+        };
+        res.once('finish', releaseOnce);
+        res.once('close', releaseOnce);
+        next();
+    } catch (error) {
+        next(error);
+    }
+}
 
 /**
  * GET /my-bills
@@ -108,7 +143,7 @@ router.get('/:billingId/details', async (req, res) => {
  * POST /:billingId/create-payment
  * Create a new QRIS or VA payment
  */
-router.post('/:billingId/create-payment', async (req, res) => {
+router.post('/:billingId/create-payment', requireOpenAccountingDate, async (req, res) => {
     const patientId = req.user.id;
     const billingId = parseInt(req.params.billingId);
     const { payment_method } = req.body;
@@ -223,6 +258,7 @@ router.post('/:billingId/create-payment', async (req, res) => {
             method: payment_method,
             amount
         });
+        broadcastAccountingRefresh(mrId, 'patient_payment_created', insertResult.insertId);
 
         // Track payment activity (fire-and-forget)
         patientActivityLogger.logActivity(patientId, patientActivityLogger.EVENTS.PEMBAYARAN, { detail: payment_method + ' Rp' + amount }, req);
@@ -430,7 +466,7 @@ router.get('/:billingId/payment-details', async (req, res) => {
  * POST /:billingId/create-insurance-payment
  * Create an insurance payment claim (status: pending)
  */
-router.post('/:billingId/create-insurance-payment', async (req, res) => {
+router.post('/:billingId/create-insurance-payment', requireOpenAccountingDate, async (req, res) => {
     const patientId = req.user.id;
     const billingId = parseInt(req.params.billingId);
     const { insurance_provider, insurance_number, notes } = req.body;
@@ -512,6 +548,7 @@ router.post('/:billingId/create-insurance-payment', async (req, res) => {
             insuranceProvider: insuranceInfo.provider,
             amount
         });
+        broadcastAccountingRefresh(billing.mr_id, 'patient_insurance_payment_created', insertResult.insertId);
 
         return sendSuccess(res, {
             payment_id: insertResult.insertId,

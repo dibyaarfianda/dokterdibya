@@ -418,6 +418,57 @@ function requireSuperadmin(req, res, next) {
 }
 
 /**
+ * Require the literal dokter role.
+ *
+ * Unlike requireSuperadmin/requireRole, this middleware intentionally does not
+ * honour the is_superadmin flag. It is used for clinical accounting actions
+ * whose actor must be a doctor and must not be delegated through configurable
+ * permissions or menu visibility.
+ */
+function requireDoctorRole(req, res, next) {
+    const requestId = req.context?.requestId || 'unknown';
+
+    if (!req.user) {
+        logger.warn('Missing user in requireDoctorRole middleware', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
+    // Login may rewrite the role claim to "dokter" for legacy superadmin
+    // compatibility. The immutable DB role_id is the only accepted source for
+    // this fixed doctor-only action.
+    const isDoctor = Number(req.user.role_id) === ROLE_IDS.DOKTER;
+    if (isDoctor) {
+        logger.debug('Doctor-only access granted', {
+            requestId,
+            userId: req.user.id,
+            role_id: req.user.role_id,
+            role: req.user.role
+        });
+        return next();
+    }
+
+    logger.warn('Doctor-only access denied', {
+        requestId,
+        userId: req.user.id,
+        role_id: req.user.role_id,
+        role: req.user.role,
+        path: req.path
+    });
+    return res.status(403).json({
+        success: false,
+        code: 'DOCTOR_ROLE_REQUIRED',
+        message: 'Aksi ini hanya dapat dilakukan oleh dokter.'
+    });
+}
+
+/**
  * Simple role-based access control middleware
  * Replaces the complex permission system with simple role checking
  * @param {...string} allowedRoles - Role names that are allowed (e.g., 'dokter', 'bidan', 'administrasi')
@@ -678,6 +729,7 @@ module.exports = {
     requireRole,
     requireRoles,
     requireSuperadmin,
+    requireDoctorRole,
     requireMenuAccess,  // New: check menu visibility from database
     requirePermission,  // Deprecated
     optionalAuth,

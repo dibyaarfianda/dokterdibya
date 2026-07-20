@@ -6,6 +6,29 @@ const {
     logger
 } = require('./shared');
 
+const VALID_VISIT_LOCATIONS = Object.freeze([
+    'klinik_private',
+    'rsia_melinda',
+    'rsud_gambiran',
+    'rs_bhayangkara'
+]);
+
+function resolveWalkInVisitContext(body = {}, now = new Date()) {
+    const finalLocation = VALID_VISIT_LOCATIONS.includes(body.location)
+        ? body.location
+        : 'klinik_private';
+    let visitDateTime = now instanceof Date ? new Date(now.getTime()) : new Date(now);
+    if (body.visit_date && body.is_retrospective) {
+        const requestedDate = new Date(body.visit_date);
+        if (!Number.isNaN(requestedDate.getTime())) visitDateTime = requestedDate;
+    }
+    return {
+        finalLocation,
+        visitDateTime,
+        visitDateStr: formatDateLocal(visitDateTime)
+    };
+}
+
 async function postStartWalkIn(req, res, next) {
     try {
         const { patient_id, category, location, visit_date, is_retrospective, import_source } = req.body;
@@ -21,19 +44,11 @@ async function postStartWalkIn(req, res, next) {
         const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
         const finalCategory = validCategories.includes(category) ? category : 'obstetri';
 
-        // Validate location
-        const validLocations = ['klinik_private', 'rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
-        const finalLocation = validLocations.includes(location) ? location : 'klinik_private';
-
-        // Parse visit date for retrospective imports
-        let visitDateTime = new Date();
-        if (visit_date && is_retrospective) {
-            visitDateTime = new Date(visit_date);
-            if (isNaN(visitDateTime.getTime())) {
-                visitDateTime = new Date(); // Fallback to now if invalid
-            }
-        }
-        const visitDateStr = formatDateLocal(visitDateTime); // YYYY-MM-DD
+        const { finalLocation, visitDateTime, visitDateStr } = resolveWalkInVisitContext({
+            location,
+            visit_date,
+            is_retrospective
+        });
 
         // Check if patient exists
         const [patients] = await db.query(
@@ -309,6 +324,7 @@ async function getLastAnthropometryByPatientId(req, res, next) {
     }
 }
 module.exports = {
+    resolveWalkInVisitContext,
     postStartWalkIn,
     getPatientVisitsByPatientId,
     getLastAnthropometryByPatientId

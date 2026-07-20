@@ -23,6 +23,9 @@ const fs = require('fs').promises;
 const path = require('path');
 const db = require('../db');
 const r2Storage = require('../services/r2Storage');
+const {
+    acquireSundayClinicAccountingDateGuard
+} = require('../services/SundayClinicClosingService');
 const logger = require('../utils/logger');
 
 // Paths
@@ -148,9 +151,15 @@ async function getOrCreateMedicalRecord(patientId, hospital, recordDate) {
         return { mrId: existing[0].mr_id, recordId: existing[0].id, isNew: false };
     }
 
+    // A private-clinic source must not be inserted after its date is closed.
+    const accountingGuard = hospital === 'klinik_private'
+        ? await acquireSundayClinicAccountingDateGuard(db, { clinicDate: recordDate })
+        : null;
+
     // Create new kunjungan with atomic transaction
-    const connection = await db.getConnection();
+    let connection = null;
     try {
+        connection = await db.getConnection();
         await connection.beginTransaction();
 
         const [maxSeq] = await connection.query(`
@@ -186,9 +195,13 @@ async function getOrCreateMedicalRecord(patientId, hospital, recordDate) {
 
         return { mrId, recordId: insertResult.insertId, isNew: true };
     } catch (err) {
-        await connection.rollback();
-        connection.release();
+        if (connection) {
+            await connection.rollback();
+            connection.release();
+        }
         throw err;
+    } finally {
+        if (accountingGuard) await accountingGuard.release();
     }
 }
 

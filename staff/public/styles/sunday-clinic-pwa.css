@@ -1109,6 +1109,141 @@
     }
 }
 
+@media (max-width: 991.98px) {
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-closing-dropdown-footer {
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 3 !important;
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        padding: var(--sc-pwa-space-2) !important;
+        border-top: 1px solid #dee2e6 !important;
+        background: #fff !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-closing-dropdown-footer .btn {
+        width: 100% !important;
+        min-height: var(--sc-pwa-touch-target) !important;
+        margin: 0 !important;
+        font-size: var(--sc-pwa-font-button) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .modal-body {
+        padding: var(--sc-pwa-space-2) !important;
+        background: #f8fafc !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-toolbar {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        gap: var(--sc-pwa-space-2) !important;
+        align-items: end !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-summary-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: var(--sc-pwa-space-2) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-summary-card {
+        min-height: 0 !important;
+        padding: var(--sc-pwa-space-2) !important;
+        border-radius: var(--sc-pwa-card-radius) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-summary-card > strong {
+        margin: var(--sc-pwa-space-1) 0 !important;
+        font-size: var(--sc-pwa-font-heading) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-summary-total {
+        grid-column: 1 / -1 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-breakdown-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: var(--sc-pwa-space-1) !important;
+        margin-top: var(--sc-pwa-space-2) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-table-wrap {
+        overflow: visible !important;
+        border: 0 !important;
+        background: transparent !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-table,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-table tbody {
+        display: block !important;
+        width: 100% !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-table thead {
+        display: none !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-transaction-row,
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-items-row {
+        display: grid !important;
+        width: 100% !important;
+        grid-template-columns: 1fr !important;
+        margin: 0 !important;
+        border: 1px solid #dbe4ee !important;
+        background: #fff !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-transaction-row {
+        border-radius: var(--sc-pwa-card-radius) var(--sc-pwa-card-radius) 0 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-items-row {
+        margin-bottom: var(--sc-pwa-space-2) !important;
+        border-top: 0 !important;
+        border-radius: 0 0 var(--sc-pwa-card-radius) var(--sc-pwa-card-radius) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-transaction-row td {
+        display: grid !important;
+        grid-template-columns: minmax(82px, 0.42fr) minmax(0, 1fr) !important;
+        gap: var(--sc-pwa-space-2) !important;
+        width: 100% !important;
+        padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) !important;
+        border: 0 !important;
+        text-align: left !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-transaction-row td::before {
+        content: attr(data-label) !important;
+        color: #64748b !important;
+        font-weight: 600 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-items-row td {
+        display: block !important;
+        width: 100% !important;
+        padding: var(--sc-pwa-space-2) !important;
+        border: 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-item-row {
+        grid-template-columns: minmax(0, 1fr) auto !important;
+        gap: var(--sc-pwa-space-1) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-item-row strong {
+        grid-column: 1 / -1 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active #sundayClinicClosingModal .sc-closing-history-row {
+        min-height: var(--sc-pwa-touch-target) !important;
+        padding: var(--sc-pwa-space-2) !important;
+        font-size: var(--sc-pwa-font-body) !important;
+    }
+}
+
 /* Android phones expose a narrower CSS viewport at common 1080px device widths.
    Keep iOS unchanged while matching its compact two-row clinical navigation. */
 @media (max-width: 480px) {

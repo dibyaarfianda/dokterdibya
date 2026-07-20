@@ -738,8 +738,8 @@ describe('staff panel stabilization sources', () => {
 
         expect(billingRoutes).toContain('broadcastSuccessfulBillingMutation');
         expect(billingRoutes).toContain("type: 'billing_updated'");
-        expect(billingRoutes).toContain("router.post('/billing/:mrId', verifyToken, broadcastSuccessfulBillingMutation");
-        expect(billingRoutes).toContain("router.delete('/billing/:mrId/items/:itemType', verifyToken, broadcastSuccessfulBillingMutation");
+        expect(billingRoutes).toContain("router.post('/billing/:mrId', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation");
+        expect(billingRoutes).toContain("router.delete('/billing/:mrId/items/:itemType', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation");
     });
 
     test('Sunday Clinic PWA queue dropdown keeps the full patient list touch-scrollable', () => {

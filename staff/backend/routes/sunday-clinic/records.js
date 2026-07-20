@@ -2,9 +2,33 @@
 
 const express = require('express');
 const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../../middleware/auth');
+const db = require('../../db');
 const handlers = require('../../services/sunday-clinic/records');
+const { normalizeMrId } = require('../../services/sunday-clinic/shared');
+const {
+    acquireSundayClinicAccountingDateGuard
+} = require('../../services/SundayClinicClosingService');
 
 const router = express.Router();
+
+async function requireOpenAccountingDate(req, res, next) {
+    try {
+        const guard = await acquireSundayClinicAccountingDateGuard(db, {
+            mrId: normalizeMrId(req.params.mrId)
+        });
+        let released = false;
+        const releaseOnce = () => {
+            if (released) return;
+            released = true;
+            Promise.resolve(guard.release()).catch(() => {});
+        };
+        res.once('finish', releaseOnce);
+        res.once('close', releaseOnce);
+        next();
+    } catch (error) {
+        next(error);
+    }
+}
 
 router.get('/check-existing', verifyToken, handlers.getCheckExisting);
 router.get('/directory', verifyToken, handlers.getDirectory);
@@ -13,7 +37,7 @@ router.post('/records/:mrId/:section', verifyToken, handlers.postRecordsByMrIdBy
 router.get('/records/:mrId/prefill/medify', verifyToken, handlers.getRecordsByMrIdPrefillMedify);
 router.get('/medify-sync/jobs/:mrId', verifyToken, handlers.getMedifySyncJobsByMrId);
 router.get('/medify-sync/stats', verifyToken, handlers.getMedifySyncStats);
-router.delete('/records/:mrId', verifyToken, requireSuperadmin, handlers.deleteRecordsByMrId);
+router.delete('/records/:mrId', verifyToken, requireSuperadmin, requireOpenAccountingDate, handlers.deleteRecordsByMrId);
 router.patch('/records/:id/category', verifyToken, handlers.patchRecordsByIdCategory);
 
 module.exports = router;

@@ -30,6 +30,14 @@
                                                 <i class="fas fa-spinner fa-spin"></i> Memuat...
                                             </div>
                                         </div>
+                                        <div id="sunday-clinic-closing-footer" class="sc-closing-dropdown-footer d-none">
+                                            <button type="button"
+                                                    class="btn btn-warning btn-sm btn-block"
+                                                    id="btn-open-sunday-clinic-closing"
+                                                    aria-label="Buka closing pendapatan Sunday Clinic">
+                                                <i class="fas fa-cash-register mr-1"></i>Closing Hari Minggu
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <button type="button" class="btn btn-outline-primary btn-sm" id="sc-open-directory">
@@ -85,6 +93,57 @@
                             <div class="loading-state" id="sunday-clinic-loading">
                                 <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
                                 <p class="mb-0">Memuat data rekam medis...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="sundayClinicClosingModal" tabindex="-1" role="dialog" aria-labelledby="sunday-clinic-closing-title" aria-hidden="true">
+                        <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <div>
+                                        <h5 class="modal-title" id="sunday-clinic-closing-title">
+                                            <i class="fas fa-cash-register text-warning mr-2"></i>Closing Sunday Clinic
+                                        </h5>
+                                        <div class="text-muted small" id="sunday-clinic-closing-subtitle">Rekap pendapatan tanggal praktik</div>
+                                    </div>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="sc-closing-toolbar">
+                                        <div class="form-group mb-0">
+                                            <label for="sunday-clinic-closing-date" class="mb-1">Tanggal praktik Minggu</label>
+                                            <input type="date" class="form-control" id="sunday-clinic-closing-date">
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary" id="btn-refresh-sunday-clinic-closing">
+                                            <i class="fas fa-sync-alt mr-1"></i>Muat Ulang
+                                        </button>
+                                    </div>
+                                    <div id="sunday-clinic-closing-alert" class="mt-3" aria-live="polite"></div>
+                                    <div id="sunday-clinic-closing-content" class="mt-3">
+                                        <div class="text-center text-muted py-4">
+                                            <i class="fas fa-spinner fa-spin mr-1"></i>Memuat rekap closing...
+                                        </div>
+                                    </div>
+                                    <div class="sc-closing-history mt-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0"><i class="fas fa-history mr-1"></i>Riwayat Closing</h6>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-load-sunday-clinic-closing-history">
+                                                Muat Riwayat
+                                            </button>
+                                        </div>
+                                        <div id="sunday-clinic-closing-history" class="text-muted small">Riwayat dimuat saat dibutuhkan.</div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <div class="mr-auto text-muted small" id="sunday-clinic-closing-footer-status"></div>
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                                    <button type="button" class="btn btn-warning" id="btn-submit-sunday-clinic-closing" disabled>
+                                        <i class="fas fa-lock mr-1"></i>Closing Sekarang
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

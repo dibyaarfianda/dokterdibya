@@ -8,8 +8,63 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { verifyToken } = require('../middleware/auth');
+const { formatDateLocal } = require('../utils/date');
+const {
+    acquireSundayClinicAccountingDateGuard
+} = require('../services/SundayClinicClosingService');
 const { OPENAI_API_KEY, OPENAI_API_URL } = require('../services/openaiService');
 const logger = require('../utils/logger');
+
+function resolveImportedVisitDate(body = {}) {
+    if (!body.visit_date) return formatDateLocal();
+    const time = /^\d{2}:\d{2}$/.test(String(body.visit_time || ''))
+        ? body.visit_time
+        : '12:00';
+    const parsed = new Date(`${body.visit_date}T${time}:00`);
+    return formatDateLocal(parsed) || formatDateLocal();
+}
+
+async function requireOpenAccountingDateForImport(req, res, next) {
+    try {
+        const { mr_id: mrId, visit_location: requestedLocation } = req.body || {};
+        if (!mrId) return next();
+
+        const validLocations = ['klinik_private', 'rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
+        if (requestedLocation && !validLocations.includes(requestedLocation)) return next();
+
+        const [rows] = await db.query(`
+            SELECT scr.visit_location,
+                   DATE_FORMAT(COALESCE(sa.appointment_date, DATE(scr.created_at)), '%Y-%m-%d') AS clinic_date
+            FROM sunday_clinic_records scr
+            LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
+            WHERE scr.mr_id = ?
+            ORDER BY scr.id DESC
+            LIMIT 1
+        `, [mrId]);
+        const existing = rows[0] || null;
+        const existingLocation = existing?.visit_location || null;
+        const effectiveLocation = requestedLocation || existingLocation || 'klinik_private';
+        const changesPrivateMembership = existing
+            ? existingLocation !== effectiveLocation
+                && (existingLocation === 'klinik_private' || effectiveLocation === 'klinik_private')
+            : effectiveLocation === 'klinik_private';
+
+        if (!changesPrivateMembership) return next();
+        const clinicDate = existing?.clinic_date || resolveImportedVisitDate(req.body);
+        const guard = await acquireSundayClinicAccountingDateGuard(db, { clinicDate });
+        let released = false;
+        const releaseOnce = () => {
+            if (released) return;
+            released = true;
+            Promise.resolve(guard.release()).catch(() => {});
+        };
+        res.once('finish', releaseOnce);
+        res.once('close', releaseOnce);
+        return next();
+    } catch (error) {
+        return next(error);
+    }
+}
 
 /**
  * Fixed AI prompt for medical record parsing (GPT-4o optimized)
@@ -1475,7 +1530,7 @@ router.post('/api/medical-import/bulk', verifyToken, async (req, res) => {
  * Save imported medical record to database
  * Uses visit_date and visit_time from exported data (Chrome extension)
  */
-router.post('/api/medical-import/save', verifyToken, async (req, res) => {
+router.post('/api/medical-import/save', verifyToken, requireOpenAccountingDateForImport, async (req, res) => {
     try {
         const {
             patient_id,
