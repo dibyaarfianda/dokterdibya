@@ -8,22 +8,22 @@
         --sc-pwa-space-2: 8px;
         --sc-pwa-space-3: 12px;
         --sc-pwa-space-4: 16px;
-        --sc-pwa-gutter: 8px;
-        --sc-pwa-font-meta: 10px;
-        --sc-pwa-font-body: 11px;
-        --sc-pwa-font-label: 11px;
-        --sc-pwa-font-control: 14px;
-        --sc-pwa-font-button: 11px;
-        --sc-pwa-font-heading: 13px;
-        --sc-pwa-font-title: 15px;
-        --sc-pwa-icon-sm: 14px;
-        --sc-pwa-icon-md: 16px;
-        --sc-pwa-icon-lg: 20px;
-        --sc-pwa-touch-target: 40px;
+        --sc-pwa-gutter: var(--sc-pwa-platform-gutter, 8px);
+        --sc-pwa-font-meta: var(--sc-pwa-platform-font-meta, 10px);
+        --sc-pwa-font-body: var(--sc-pwa-platform-font-body, 11px);
+        --sc-pwa-font-label: var(--sc-pwa-platform-font-label, 11px);
+        --sc-pwa-font-control: var(--sc-pwa-platform-font-control, 14px);
+        --sc-pwa-font-button: var(--sc-pwa-platform-font-button, 11px);
+        --sc-pwa-font-heading: var(--sc-pwa-platform-font-heading, 13px);
+        --sc-pwa-font-title: var(--sc-pwa-platform-font-title, 15px);
+        --sc-pwa-icon-sm: var(--sc-pwa-platform-icon-sm, 14px);
+        --sc-pwa-icon-md: var(--sc-pwa-platform-icon-md, 16px);
+        --sc-pwa-icon-lg: var(--sc-pwa-platform-icon-lg, 20px);
+        --sc-pwa-touch-target: var(--sc-pwa-platform-touch-target, 40px);
         --sc-pwa-control-radius: 6px;
         --sc-pwa-card-radius: 8px;
         --sc-pwa-viewport-height: 100%;
-        --sc-pwa-bottom-nav-height: 60px;
+        --sc-pwa-bottom-nav-height: var(--sc-pwa-platform-bottom-nav-height, 60px);
         width: auto !important; /* Exclude the vertical scrollbar from shell sizing. */
         max-width: 100% !important;
         overflow-x: hidden !important;
@@ -1086,6 +1086,100 @@
         min-height: var(--sc-pwa-touch-target) !important;
         padding: 0 !important;
         border-radius: 50% !important;
+    }
+}
+
+/* Android phones expose a narrower CSS viewport at common 1080px device widths.
+   Keep iOS unchanged and use one horizontally scrollable navigation row. */
+@media (max-width: 480px) {
+    html.mobile-app-mode.android-pwa-compact,
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact {
+        -webkit-text-size-adjust: 100% !important;
+        text-size-adjust: 100% !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact {
+        --sc-pwa-platform-gutter: 6px;
+        --sc-pwa-platform-font-meta: 9px;
+        --sc-pwa-platform-font-body: 10px;
+        --sc-pwa-platform-font-label: 10px;
+        --sc-pwa-platform-font-control: 12px;
+        --sc-pwa-platform-font-button: 10px;
+        --sc-pwa-platform-font-heading: 12px;
+        --sc-pwa-platform-font-title: 14px;
+        --sc-pwa-platform-icon-sm: 12px;
+        --sc-pwa-platform-icon-md: 14px;
+        --sc-pwa-platform-icon-lg: 18px;
+        --sc-pwa-platform-touch-target: 36px;
+        --sc-pwa-platform-bottom-nav-height: 56px;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .main-header {
+        min-height: 48px !important;
+        height: 48px !important;
+        max-height: 48px !important;
+        padding: var(--sc-pwa-space-0) var(--sc-pwa-gutter) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .main-header :is(#navbar-user-avatar, #navbar-user-avatar-placeholder) {
+        width: 36px !important;
+        height: 36px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .content-wrapper {
+        padding-top: 48px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #sunday-clinic-page > .card:first-child > .card-header {
+        gap: var(--sc-pwa-space-0) !important;
+        padding: var(--sc-pwa-space-0) 0 !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #sunday-clinic-page > .card:first-child > .card-header > .d-flex {
+        gap: var(--sc-pwa-space-0) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav {
+        min-height: var(--sc-pwa-bottom-nav-height) !important;
+        max-height: calc(var(--sc-pwa-bottom-nav-height) + env(safe-area-inset-bottom, 0px)) !important;
+        flex-wrap: nowrap !important;
+        gap: 0 !important;
+        padding: var(--sc-pwa-space-0) var(--sc-pwa-space-1) calc(var(--sc-pwa-space-0) + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav .nav-item {
+        flex: 0 0 60px !important;
+        width: 60px !important;
+        min-width: 60px !important;
+        max-width: 60px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav .sc-nav-link {
+        min-height: 48px !important;
+        height: 48px !important;
+        padding: var(--sc-pwa-space-0) 1px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact .sc-staff-section-nav .sc-nav-link p {
+        max-width: 58px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #sunday-clinic-content :is(.sc-pwa-card, .sc-card, .form-section, .clinical-section) {
+        padding: 6px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #sunday-clinic-content .identity-table :is(th, td) {
+        padding: 3px 6px !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #chat-popup-container:not(.chat-is-open) {
+        right: 4px !important;
+        bottom: calc(var(--sc-pwa-bottom-nav-height) + 4px) !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact :is(#chat-toggle-btn, .chat-toggle-btn) {
+        width: 42px !important;
+        height: 42px !important;
     }
 }
 

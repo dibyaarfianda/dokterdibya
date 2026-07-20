@@ -23,17 +23,17 @@ describe('Sunday Clinic PWA visual refactor', () => {
         const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect((pwaCss.match(/--sc-pwa-font-body:/g) || []).length).toBe(1);
-        expect(pwaCss).toContain('--sc-pwa-font-meta: 10px;');
-        expect(pwaCss).toContain('--sc-pwa-font-body: 11px;');
-        expect(pwaCss).toContain('--sc-pwa-font-label: 11px;');
-        expect(pwaCss).toContain('--sc-pwa-font-control: 14px;');
-        expect(pwaCss).toContain('--sc-pwa-font-button: 11px;');
-        expect(pwaCss).toContain('--sc-pwa-font-heading: 13px;');
-        expect(pwaCss).toContain('--sc-pwa-font-title: 15px;');
-        expect(pwaCss).toContain('--sc-pwa-touch-target: 40px;');
-        expect(pwaCss).toContain('--sc-pwa-gutter: 8px;');
+        expect(pwaCss).toContain('--sc-pwa-font-meta: var(--sc-pwa-platform-font-meta, 10px);');
+        expect(pwaCss).toContain('--sc-pwa-font-body: var(--sc-pwa-platform-font-body, 11px);');
+        expect(pwaCss).toContain('--sc-pwa-font-label: var(--sc-pwa-platform-font-label, 11px);');
+        expect(pwaCss).toContain('--sc-pwa-font-control: var(--sc-pwa-platform-font-control, 14px);');
+        expect(pwaCss).toContain('--sc-pwa-font-button: var(--sc-pwa-platform-font-button, 11px);');
+        expect(pwaCss).toContain('--sc-pwa-font-heading: var(--sc-pwa-platform-font-heading, 13px);');
+        expect(pwaCss).toContain('--sc-pwa-font-title: var(--sc-pwa-platform-font-title, 15px);');
+        expect(pwaCss).toContain('--sc-pwa-touch-target: var(--sc-pwa-platform-touch-target, 40px);');
+        expect(pwaCss).toContain('--sc-pwa-gutter: var(--sc-pwa-platform-gutter, 8px);');
         expect(pwaCss).toContain('--sc-pwa-viewport-height: 100%;');
-        expect(pwaCss).toContain('--sc-pwa-bottom-nav-height: 60px;');
+        expect(pwaCss).toContain('--sc-pwa-bottom-nav-height: var(--sc-pwa-platform-bottom-nav-height, 60px);');
         expect(pwaCss).toContain('min-height: var(--sc-pwa-touch-target) !important;');
         expect(pwaCss).toContain('font-size: var(--sc-pwa-font-button) !important;');
         expect(pwaCss).not.toMatch(/font-size:\s*(?:8|9|12)px/);
@@ -174,5 +174,27 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(app).toContain("element.classList.add('sc-pwa-action-row')");
         expect(app).toContain("button.classList.add('sc-pwa-icon-button')");
         expect(app).toContain("const COMPONENT_VERSION = '3.0.15';");
+    });
+
+    test('Android phone PWA uses a denser platform profile without changing iOS defaults', () => {
+        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
+        const sw = readRepoFile('staff', 'public', 'sw.js');
+
+        expect(html).toContain("const isAndroidPlatform = /Android/i.test(navigator.userAgent);");
+        expect(html).toContain("document.documentElement.classList.add('android-pwa-compact');");
+        expect(html).toContain("document.body.classList.add('android-pwa-compact');");
+        expect(pwaCss).toContain('@media (max-width: 480px) {');
+        expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact {');
+        expect(pwaCss).toContain('--sc-pwa-platform-font-body: 10px;');
+        expect(pwaCss).toContain('--sc-pwa-platform-font-control: 12px;');
+        expect(pwaCss).toContain('--sc-pwa-platform-touch-target: 36px;');
+        expect(pwaCss).toContain('--sc-pwa-platform-bottom-nav-height: 56px;');
+        expect(pwaCss).toContain('flex: 0 0 60px !important;');
+        expect(pwaCss).toContain('-webkit-text-size-adjust: 100% !important;');
+        expect(pwaCss).toContain('--sc-pwa-font-body: var(--sc-pwa-platform-font-body, 11px);');
+        expect(pwaCss).not.toMatch(/(?:iPhone|iPad|ios).*android-pwa-compact/i);
+        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v340';");
+        expect(sw).toContain("const STAFF_PWA_VERSION = 'v340';");
     });
 });

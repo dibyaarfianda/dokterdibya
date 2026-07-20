@@ -84,10 +84,10 @@ describe('staff panel stabilization sources', () => {
         expect(mobileCss).toContain('body.mobile-app-mode .table-action,\n    body.mobile-app-mode .table-action i {\n        font-size: 8px !important;');
 
         expect(sundayClinicCss).not.toContain('Compact 10 final pass for Sunday Clinic PWA/mobile.');
-        expect(sundayClinicCss).toContain('--sc-pwa-font-body: 11px;');
-        expect(sundayClinicCss).toContain('--sc-pwa-font-control: 14px;');
-        expect(sundayClinicCss).toContain('--sc-pwa-font-button: 11px;');
-        expect(sundayClinicCss).toContain('--sc-pwa-touch-target: 40px;');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-body: var(--sc-pwa-platform-font-body, 11px);');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-control: var(--sc-pwa-platform-font-control, 14px);');
+        expect(sundayClinicCss).toContain('--sc-pwa-font-button: var(--sc-pwa-platform-font-button, 11px);');
+        expect(sundayClinicCss).toContain('--sc-pwa-touch-target: var(--sc-pwa-platform-touch-target, 40px);');
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active');
     });
 
