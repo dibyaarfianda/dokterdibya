@@ -50,14 +50,25 @@ import { ROLE_IDS } from './role-constants.js';
       var viewportHeight = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       var viewportBottom = viewportTop + viewportHeight;
       var visibleNavHeight = Math.round(viewportBottom - navRect.top);
-      if (visibleNavHeight > 0) {
-        return Math.min(140, Math.max(56, visibleNavHeight)) + 'px';
+      if (visibleNavHeight < 0) visibleNavHeight = 0;
+      var fullNavHeight = Math.round(navRect.height || nav.offsetHeight || 0);
+      var cssNavHeight = 0;
+      if (document.body && typeof window.getComputedStyle === 'function') {
+        cssNavHeight = parseFloat(
+          window.getComputedStyle(document.body).getPropertyValue('--sc-pwa-bottom-nav-height')
+        ) || 0;
       }
-      if (nav.offsetHeight > 0) {
-        return Math.min(140, Math.max(56, nav.offsetHeight)) + 'px';
+      var requiredNavHeight = Math.max(visibleNavHeight, fullNavHeight, cssNavHeight);
+      if (requiredNavHeight > 0) {
+        return Math.min(140, Math.max(56, requiredNavHeight)) + 'px';
       }
     }
     return '65px';
+  }
+
+  function getChatFabInsetPx() {
+    if (!document.body) return 6;
+    return document.body.classList.contains('sunday-clinic-embedded-active') ? 10 : 6;
   }
 
   function getMobileViewportHeight() {
@@ -216,7 +227,7 @@ import { ROLE_IDS } from './role-constants.js';
       var navH2 = getNavBottomPx();
       var navPx2 = parseInt(navH2, 10);
       if (isNaN(navPx2)) navPx2 = 65;
-      var fabBottom = (navPx2 + 6) + 'px';
+      var fabBottom = (navPx2 + getChatFabInsetPx()) + 'px';
       cont.style.cssText = '';
       cont.style.setProperty('position', 'fixed', 'important');
       cont.style.setProperty('display', 'block', 'important');
@@ -273,9 +284,14 @@ import { ROLE_IDS } from './role-constants.js';
   window._applyChatMobileFullScreen = applyMobileFullScreen;
 
   var _chatLayoutSyncQueued = false;
-  function syncOpenChatLayout() {
+  function syncChatLayout() {
     var cont = document.getElementById('chat-popup-container');
-    if (!cont || !cont.classList.contains('chat-is-open') || window.innerWidth > 991) return;
+    if (!cont) return;
+    if (!cont.classList.contains('chat-is-open')) {
+      ensureFAB();
+      return;
+    }
+    if (window.innerWidth > 991) return;
     applyMobileFullScreen(cont);
     scheduleChatScrollToLatest();
   }
@@ -285,7 +301,7 @@ import { ROLE_IDS } from './role-constants.js';
     _chatLayoutSyncQueued = true;
     requestAnimationFrame(function () {
       _chatLayoutSyncQueued = false;
-      syncOpenChatLayout();
+      syncChatLayout();
     });
   }
 
@@ -294,6 +310,8 @@ import { ROLE_IDS } from './role-constants.js';
     window.visualViewport.addEventListener('resize', queueChatLayoutSync, { passive: true });
     window.visualViewport.addEventListener('scroll', queueChatLayoutSync, { passive: true });
   }
+  document.addEventListener('page:changed', queueChatLayoutSync);
+  document.addEventListener('sunday-clinic:viewport-synced', queueChatLayoutSync);
 
   // MutationObserver — instant detection if FAB is removed or attribute changed
   function startObserver() {

@@ -79,6 +79,9 @@ function syncSundayClinicPwaViewport() {
     const style = document.body.style;
     style.setProperty('--sc-pwa-viewport-height', viewportHeight + 'px');
     style.setProperty('--sc-pwa-bottom-nav-height', navHeight + 'px');
+    document.dispatchEvent(new CustomEvent('sunday-clinic:viewport-synced', {
+        detail: { viewportHeight, navHeight }
+    }));
 }
 
 function queueSundayClinicPwaViewportSync() {

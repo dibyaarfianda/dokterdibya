@@ -1186,7 +1186,7 @@
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact #chat-popup-container:not(.chat-is-open) {
         right: 4px !important;
-        bottom: calc(var(--sc-pwa-bottom-nav-height) + 4px) !important;
+        bottom: calc(var(--sc-pwa-bottom-nav-height) + 10px) !important;
     }
 
     body.mobile-app-mode.sunday-clinic-embedded-active.android-pwa-compact :is(#chat-toggle-btn, .chat-toggle-btn) {

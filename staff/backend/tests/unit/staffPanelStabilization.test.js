@@ -580,17 +580,28 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('#additional-billing-panel .additional-billing-empty');
     });
 
-    test('mobile chat FAB follows the active embedded navigation without a double offset', () => {
+    test('mobile chat FAB clears the full embedded navigation height with a visible gap', () => {
         const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
+        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
         const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
 
         expect(chatPopup).toContain("document.querySelector('body.sunday-clinic-embedded-active .sc-staff-section-nav')");
         expect(chatPopup).toContain('function isVisibleBottomNav(nav)');
         expect(chatPopup).toContain('var visibleNavHeight = Math.round(viewportBottom - navRect.top);');
-        expect(chatPopup).toContain('Math.min(140, Math.max(56, visibleNavHeight))');
-        expect(chatPopup).toContain("var fabBottom = (navPx2 + 6) + 'px';");
+        expect(chatPopup).toContain('var fullNavHeight = Math.round(navRect.height || nav.offsetHeight || 0);');
+        expect(chatPopup).toContain("getPropertyValue('--sc-pwa-bottom-nav-height')");
+        expect(chatPopup).toContain('Math.max(visibleNavHeight, fullNavHeight, cssNavHeight)');
+        expect(chatPopup).toContain('function getChatFabInsetPx()');
+        expect(chatPopup).toContain("document.body.classList.contains('sunday-clinic-embedded-active') ? 10 : 6");
+        expect(chatPopup).toContain("var fabBottom = (navPx2 + getChatFabInsetPx()) + 'px';");
+        expect(chatPopup).toContain("document.addEventListener('page:changed', queueChatLayoutSync);");
+        expect(chatPopup).toContain("document.addEventListener('sunday-clinic:viewport-synced', queueChatLayoutSync);");
+        expect(chatPopup).toContain("if (!cont.classList.contains('chat-is-open')) {");
+        expect(chatPopup).toContain('ensureFAB();');
+        expect(mainJs).toContain("new CustomEvent('sunday-clinic:viewport-synced'");
         expect(sundayClinicCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active :is(#chat-toggle-btn, .chat-toggle-btn)');
         expect(sundayClinicCss).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 6px) !important;');
+        expect(sundayClinicCss).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 10px) !important;');
         expect(sundayClinicCss).not.toMatch(/#chat-toggle-btn,[\s\S]{0,160}bottom:\s*calc\(84px/);
     });
 
