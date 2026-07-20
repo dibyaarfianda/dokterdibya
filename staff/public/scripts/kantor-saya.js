@@ -582,7 +582,7 @@
     function ensureDocboardModalFrameLoaded(iframe) {
         if (!iframe) return;
 
-        var embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v296';
+        var embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v346';
         var targetSrc = '/docboard/?embed=' + encodeURIComponent(embedVersion);
         var currentSrc = String(iframe.getAttribute('src') || '').trim();
         var propSrc = String(iframe.src || '').trim();

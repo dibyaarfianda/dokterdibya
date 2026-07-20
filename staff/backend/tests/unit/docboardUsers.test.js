@@ -31,6 +31,12 @@ describe('DocBoard staff directory', () => {
     expect(users).toContain('Pengguna');
   });
 
+  test('offers Induksi Foley Balon in the procedure schedule categories', () => {
+    const schedule = readRepoFile('docboard', 'src', 'views', 'SpaceSchedule.jsx');
+
+    expect(schedule).toContain("'Induksi Foley Balon'");
+  });
+
   test('bumps the service worker and manifest cache version', () => {
     const serviceWorker = readRepoFile('docboard', 'public', 'sw.js');
     const index = readRepoFile('docboard', 'index.html');
@@ -40,9 +46,9 @@ describe('DocBoard staff directory', () => {
     const staffHtml = readRepoFile('staff', 'public', 'index-adminlte.html');
     const staffServiceWorker = readRepoFile('staff', 'public', 'sw.js');
 
-    expect(serviceWorker).toContain("docboard-pwa-20260718-4");
-    expect(index).toContain('docboard-20260718-4');
-    expect(main).toContain("DOCBOARD_PWA_VERSION = '20260718-4'");
+    expect(serviceWorker).toContain("docboard-pwa-20260720-1");
+    expect(index).toContain('docboard-20260720-1');
+    expect(main).toContain("DOCBOARD_PWA_VERSION = '20260720-1'");
     expect(main).toContain("updateViaCache: 'none'");
     expect(main).toContain("textContent = 'Update baru tersedia'");
     expect(main).toContain("registration.waiting?.postMessage({ type: 'SKIP_WAITING' })");

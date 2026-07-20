@@ -49,6 +49,7 @@ const spaces = {
       'Cuci Vagina',
       'Pap Smear/IVA',
       'Stripping Membrane',
+      'Induksi Foley Balon',
       'USG VK',
       'USG Poli',
     ],
