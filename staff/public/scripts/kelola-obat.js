@@ -557,10 +557,23 @@ function resetForm() {
     }
 }
 
+function prepareNewObat() {
+    const form = document.getElementById('kelola-obat-form');
+    const nameInput = document.getElementById('kelola-obat-name');
+
+    if (!form) return;
+
+    form.reset();
+    resetForm();
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    nameInput?.focus();
+}
+
 // Expose functions to window
 window.editObat = editObat;
 window.deleteObat = deleteObat;
 window.toggleObatStatus = toggleObatStatus;
 window.deleteObatPermanen = deleteObatPermanen;
 window.loadKelolaObatList = loadObat;
+window.prepareNewObat = prepareNewObat;
 
