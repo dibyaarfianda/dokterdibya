@@ -367,6 +367,29 @@ window.openSundayClinicClosingModal = openSundayClinicClosing;
 // AUTHENTICATION
 // ============================================================================
 
+function applyAuthenticatedStaff(user) {
+    if (
+        !user?.id
+        || user.user_type === 'patient'
+        || user.userType === 'patient'
+        || user.role === 'patient'
+    ) {
+        return false;
+    }
+
+    appState.staffIdentity = {
+        id: user.id,
+        name: user.name || user.email,
+        role: user.role || '',
+        role_id: user.role_id,
+        is_superadmin: Boolean(user.is_superadmin)
+    };
+
+    applyStaffIdentityToUI();
+    console.log('[SundayClinic] Authenticated as:', appState.staffIdentity.name, '(', appState.staffIdentity.role, ')');
+    return true;
+}
+
 async function checkAuthentication() {
     const token = getAuthToken();
 
@@ -380,21 +403,22 @@ async function checkAuthentication() {
         // Set token in API client
         apiClient.setToken(token);
 
-        // Verify token and get staff info
+        // The staff shell already verified this exact user against /api/auth/me.
+        // Standalone Sunday Clinic keeps the direct API request as its fallback.
+        const shellVerifiedUser = typeof window.getShellVerifiedStaffUser === 'function'
+            ? await window.getShellVerifiedStaffUser().catch(() => null)
+            : null;
+        if (applyAuthenticatedStaff(shellVerifiedUser)) {
+            return true;
+        }
+
         const response = await apiClient.get('/api/auth/me');
 
-        if (response.success && response.data && response.data.user) {
-            appState.staffIdentity = {
-                id: response.data.user.id,
-                name: response.data.user.name || response.data.user.email,
-                role: response.data.user.role || '',
-                role_id: response.data.user.role_id,
-                is_superadmin: Boolean(response.data.user.is_superadmin)
-            };
-
-            applyStaffIdentityToUI();
-
-            console.log('[SundayClinic] Authenticated as:', appState.staffIdentity.name, '(', appState.staffIdentity.role, ')');
+        if (
+            response.success
+            && response.data
+            && applyAuthenticatedStaff(response.data.user)
+        ) {
             return true;
         } else {
             throw new Error('Invalid token response');

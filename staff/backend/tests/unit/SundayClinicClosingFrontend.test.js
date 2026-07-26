@@ -43,7 +43,7 @@ describe('Sunday Clinic doctor-only closing frontend', () => {
         expect(closing).toContain('Number(identity?.role_id) === ROLE_IDS.DOKTER');
         expect(closing).not.toContain('role_visibility');
         expect(closing).not.toMatch(/role\s*===\s*['\"]dokter['\"]/);
-        expect(entry).toContain('role_id: response.data.user.role_id');
+        expect(entry).toContain('role_id: user.role_id');
         expect(entry).toContain('initSundayClinicClosing(appState.staffIdentity)');
     });
 

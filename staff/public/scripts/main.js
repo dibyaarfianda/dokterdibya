@@ -838,9 +838,11 @@ function showKlinikPrivatePage() {
         console.error('Failed to load klinik-private.js:', error);
     });
 
-    ensureSundayClinicModule().catch(error => {
-        console.warn('Failed to preload Sunday Clinic module:', error);
-    });
+    ensureRegisteredPage('sunday-clinic')
+        .then(() => ensureSundayClinicModule())
+        .catch(error => {
+            console.warn('Failed to preload Sunday Clinic module:', error);
+        });
 }
 
 function showAntrianOnlinePage() {
@@ -893,20 +895,25 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
         return;
     }
 
-    await ensureRegisteredPage('sunday-clinic');
-    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('sundayClinic');
-
-    hideAllPages();
-    setSundayClinicStylesActive(true);
-    pages.sundayClinic?.classList.remove('d-none');
-    setTitleAndActive(
-        closingOnly ? 'Closing Sunday Clinic' : 'Sunday Clinic',
-        null,
-        'sunday-clinic'
-    );
-
     try {
-        await ensureSundayClinicModule();
+        // The fragment must exist before the Sunday Clinic module evaluates,
+        // but its independent feature assets can load alongside the fragment.
+        const sundayClinicFeaturePromise = typeof window.ensureStaffFeature === 'function'
+            ? window.ensureStaffFeature('sundayClinic')
+            : Promise.resolve();
+        await ensureRegisteredPage('sunday-clinic');
+        const sundayClinicModulePromise = ensureSundayClinicModule();
+
+        hideAllPages();
+        setSundayClinicStylesActive(true);
+        pages.sundayClinic?.classList.remove('d-none');
+        setTitleAndActive(
+            closingOnly ? 'Closing Sunday Clinic' : 'Sunday Clinic',
+            null,
+            'sunday-clinic'
+        );
+
+        await Promise.all([sundayClinicFeaturePromise, sundayClinicModulePromise]);
         if (typeof window.initSundayClinicPage === 'function') {
             const initialized = await window.initSundayClinicPage({
                 mrId: normalizedMrId || null,

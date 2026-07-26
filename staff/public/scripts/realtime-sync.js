@@ -18,6 +18,40 @@ if (!window.__realtimeSyncState) {
 
 const state = window.__realtimeSyncState;
 
+function normalizePresenceUserId(userId) {
+    if (userId === null || typeof userId === 'undefined') return '';
+    return String(userId);
+}
+
+function escapePresenceHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function requestOnlineUsersList() {
+    if (!state.socket) return;
+    state.socket.emit('users:get-list');
+}
+
+function registerCurrentUser() {
+    if (!state.socket || !state.currentUser?.id || !state.currentUser?.name) return false;
+
+    state.socket.emit('user:register', {
+        userId: state.currentUser.id,
+        name: state.currentUser.name,
+        role: state.currentUser.role,
+        photo: state.currentUser.photo_url || state.currentUser.photoURL || null
+    });
+    // Socket.IO preserves event order, so registration is processed before
+    // the server returns the authoritative list (including this staff member).
+    requestOnlineUsersList();
+    return true;
+}
+
 function notifyRealtimeSocketReady(eventName) {
     try {
         window.dispatchEvent(new CustomEvent(eventName, {
@@ -54,6 +88,7 @@ export function initRealtimeSync(user) {
 
     // If already initialized with the same user, skip
     if (state.initialized && state.socket && state.socket.connected && state.currentUser?.id === user.id) {
+        requestOnlineUsersList();
         console.log('🔄 [REALTIME] Already initialized and connected as same user, skipping');
         return;
     }
@@ -63,18 +98,14 @@ export function initRealtimeSync(user) {
         // Socket exists - check state
         if (state.socket.connected) {
             if (state.currentUser && state.currentUser.id === user.id) {
+                requestOnlineUsersList();
                 console.log('🔄 [REALTIME] Already connected as same user, skipping');
                 return;
             }
             // Different user - re-register
             console.log('🔄 [REALTIME] User changed, re-registering:', user.id, user.name);
             state.currentUser = user;
-            state.socket.emit('user:register', {
-                userId: user.id,
-                name: user.name,
-                role: user.role,
-                photo: user.photo_url || user.photoURL || null
-            });
+            registerCurrentUser();
             return;
         } else if (state.socket.connecting) {
             // Socket is still connecting - wait for it
@@ -128,12 +159,7 @@ export function initRealtimeSync(user) {
         // Register immediately - no delay (mobile networks drop connections quickly)
         console.log('🔄 [REALTIME] Registering user:', state.currentUser.id, state.currentUser.name);
 
-        state.socket.emit('user:register', {
-            userId: state.currentUser.id,
-            name: state.currentUser.name,
-            role: state.currentUser.role,
-            photo: state.currentUser.photo_url || state.currentUser.photoURL || null
-        });
+        registerCurrentUser();
 
         console.log('🔄 [REALTIME] User registration sent');
     });
@@ -162,12 +188,7 @@ export function initRealtimeSync(user) {
         }
 
         // Re-register user on reconnect
-        state.socket.emit('user:register', {
-            userId: state.currentUser.id,
-            name: state.currentUser.name,
-            role: state.currentUser.role,
-            photo: state.currentUser.photo_url || state.currentUser.photoURL || null
-        });
+        registerCurrentUser();
     });
 
     // Safari may suspend long-polling while the page is backgrounded. Resume
@@ -190,23 +211,24 @@ export function initRealtimeSync(user) {
         console.log('👥 [REALTIME] Received online users list:', users);
         state.onlineUsers.clear();
         users.forEach(user => {
-            if (user.userId !== state.currentUser.id) {
-                state.onlineUsers.set(user.userId, {
-                    name: user.name,
-                    role: user.role,
-                    activity: user.activity || 'Idle',
-                    timestamp: user.timestamp || new Date().toISOString()
-                });
-            }
+            const userId = normalizePresenceUserId(user.userId);
+            if (!userId) return;
+            state.onlineUsers.set(userId, {
+                name: user.name,
+                role: user.role,
+                activity: user.activity || 'Idle',
+                timestamp: user.timestamp || new Date().toISOString()
+            });
         });
         renderOnlineUsers();
     });
 
     // Listen for user connected
     state.socket.on('user:connected', (data) => {
-        if (data.userId !== state.currentUser.id) {
+        const userId = normalizePresenceUserId(data.userId);
+        if (userId && userId !== normalizePresenceUserId(state.currentUser.id)) {
             console.log(`✅ [REALTIME] ${data.name} joined`);
-            state.onlineUsers.set(data.userId, {
+            state.onlineUsers.set(userId, {
                 name: data.name,
                 role: data.role,
                 activity: 'Baru bergabung',
@@ -218,17 +240,19 @@ export function initRealtimeSync(user) {
 
     // Listen for user disconnected
     state.socket.on('user:disconnected', (data) => {
-        if (data.userId !== state.currentUser.id) {
+        const userId = normalizePresenceUserId(data.userId);
+        if (userId && userId !== normalizePresenceUserId(state.currentUser.id)) {
             console.log(`❌ [REALTIME] ${data.name} left`);
-            state.onlineUsers.delete(data.userId);
+            state.onlineUsers.delete(userId);
             renderOnlineUsers();
         }
     });
 
     // Listen for user activity updates
     state.socket.on('user:activity', (data) => {
-        if (data.userId !== state.currentUser.id) {
-            const user = state.onlineUsers.get(data.userId);
+        const userId = normalizePresenceUserId(data.userId);
+        if (userId && userId !== normalizePresenceUserId(state.currentUser.id)) {
+            const user = state.onlineUsers.get(userId);
             if (user) {
                 user.activity = data.activity;
                 user.timestamp = data.timestamp;
@@ -781,19 +805,26 @@ function renderOnlineUsers() {
     }
 
     // Convert map to array and sort by timestamp (most recent first)
+    const currentUserId = normalizePresenceUserId(state.currentUser?.id);
     const usersArray = Array.from(state.onlineUsers.entries()).sort((a, b) => {
+        const aIsCurrentUser = normalizePresenceUserId(a[0]) === currentUserId;
+        const bIsCurrentUser = normalizePresenceUserId(b[0]) === currentUserId;
+        if (aIsCurrentUser !== bIsCurrentUser) return aIsCurrentUser ? -1 : 1;
         return new Date(b[1].timestamp) - new Date(a[1].timestamp);
     });
     
     onlineUsersList.innerHTML = usersArray.map(([userId, user]) => {
         const roleColor = getRoleColor(user.role);
+        const isCurrentUser = normalizePresenceUserId(userId) === currentUserId;
+        const safeName = escapePresenceHtml(user.name);
+        const safeRole = escapePresenceHtml(user.role);
 
         return `
             <li class="list-group-item py-1">
                 <div class="d-flex align-items-center">
                     <span class="user-status-indicator user-status-online"></span>
-                    <strong class="text-truncate" style="font-size: 12px;">${user.name}</strong>
-                    <span class="badge badge-${roleColor} ml-auto" style="font-size: 10px;">${user.role}</span>
+                    <strong class="text-truncate" style="font-size: 12px;">${safeName}${isCurrentUser ? ' (Saya)' : ''}</strong>
+                    <span class="badge badge-${roleColor} ml-auto" style="font-size: 10px;">${safeRole}</span>
                 </div>
             </li>
         `;

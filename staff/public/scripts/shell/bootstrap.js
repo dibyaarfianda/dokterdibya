@@ -49,15 +49,11 @@ async function bootstrapStaffShell() {
     window.getIdToken = getIdToken;
     window.renderStaffShellError = renderStaffShellError;
 
-    // Run auth bootstrap in parallel with module loading to reduce startup wait.
+    // Run auth verification in parallel with core module loading. Paint the
+    // verified identity as soon as the server responds instead of waiting for
+    // the large application modules to finish downloading and evaluating.
     const authInitPromise = initAuthLib();
-    const [
-        _,
-        mainModule,
-        authModule,
-        sessionModule,
-        _chatPopupModule
-    ] = await Promise.all([
+    const coreModulesPromise = Promise.all([
         import('../toast.js'),
         import('../main.js'),
         import('../auth.js'),
@@ -65,13 +61,13 @@ async function bootstrapStaffShell() {
         import('../chat-popup.js')
     ]);
 
-    const { initMain } = mainModule;
-    const { initAuth } = authModule;
-    const { initSessionManager, restoreSessionOnLoad } = sessionModule;
-
-    // Ensure auth state is available, then verify the token against the backend.
-    await authInitPromise;
-    const user = await verifyStaffCredentials({ auth });
+    const serverVerifiedUser = await authInitPromise;
+    const user = await verifyStaffCredentials({ auth, serverVerifiedUser });
+    const serverVerifiedToken = await getIdToken();
+    window.getShellVerifiedStaffUser = async () => {
+        const currentToken = await getIdToken();
+        return currentToken === serverVerifiedToken ? user : null;
+    };
 
     function resolveSafeDisplayName(staffUser) {
         const candidate = String(staffUser?.name || '').trim();
@@ -90,6 +86,18 @@ async function bootstrapStaffShell() {
     const newRole = user.role_display_name || user.role || 'Staff';
     if (navName) navName.textContent = newName;
     if (navRole) navRole.textContent = newRole;
+
+    const [
+        _,
+        mainModule,
+        authModule,
+        sessionModule,
+        _chatPopupModule
+    ] = await coreModulesPromise;
+
+    const { initMain } = mainModule;
+    const { initAuth } = authModule;
+    const { initSessionManager, restoreSessionOnLoad } = sessionModule;
 
     // Set RUM context
     window.__userRole = user.role || 'unknown';

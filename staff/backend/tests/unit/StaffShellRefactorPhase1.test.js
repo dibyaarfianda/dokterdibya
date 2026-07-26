@@ -16,10 +16,10 @@ describe('staff shell refactor phase 1', () => {
         expect(bootstrap).toContain("import('./credentials.js')");
         expect(bootstrap).not.toMatch(/import\([^\n]+\?v=/);
         expect(bootstrap).toContain('const { auth, getIdToken, initAuth: initAuthLib } = authClient;');
-        expect(bootstrap).toContain('const user = await verifyStaffCredentials({ auth });');
+        expect(bootstrap).toContain('const user = await verifyStaffCredentials({ auth, serverVerifiedUser });');
         expect(bootstrap).toContain('initializeApp(user);');
 
-        const verifyIndex = bootstrap.indexOf('const user = await verifyStaffCredentials({ auth });');
+        const verifyIndex = bootstrap.indexOf('const user = await verifyStaffCredentials({ auth, serverVerifiedUser });');
         const initializeIndex = bootstrap.indexOf('initializeApp(user);');
         expect(verifyIndex).toBeGreaterThan(-1);
         expect(initializeIndex).toBeGreaterThan(-1);

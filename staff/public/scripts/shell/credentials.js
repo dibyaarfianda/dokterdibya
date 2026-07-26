@@ -187,7 +187,7 @@ function createRenderedError(message, details = {}) {
     });
 }
 
-export async function verifyStaffCredentials({ auth } = {}) {
+export async function verifyStaffCredentials({ auth, serverVerifiedUser } = {}) {
     updateCredentialDebug('checking');
 
     const token = resolveStaffToken();
@@ -202,67 +202,76 @@ export async function verifyStaffCredentials({ auth } = {}) {
         throw createRenderedError(STAFF_SESSION_INVALID_MESSAGE, { code: 'missing_token' });
     }
 
-    let response;
-    try {
-        response = await fetch(`/api/auth/me?_t=${Date.now()}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Cache-Control': 'no-cache'
-            },
-            cache: 'no-store'
-        });
-    } catch (error) {
-        const message = 'Tidak bisa memverifikasi sesi staff. Periksa koneksi lalu perbarui aplikasi.';
-        updateCredentialDebug('error', { message });
-        renderStaffShellError({
-            title: 'Verifikasi sesi gagal',
-            message,
-            details: error?.message || ''
-        });
-        throw createRenderedError(message, { code: 'network_error' });
+    let response = null;
+    let user = normalizeUser(serverVerifiedUser);
+
+    // initAuth() has already validated this exact user against /api/auth/me.
+    // Keep the direct request as the fallback when that initial check returned
+    // no usable user, so invalid/network sessions still get the detailed guard UI.
+    if (!user) {
+        try {
+            response = await fetch(`/api/auth/me?_t=${Date.now()}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                },
+                cache: 'no-store'
+            });
+        } catch (error) {
+            const message = 'Tidak bisa memverifikasi sesi staff. Periksa koneksi lalu perbarui aplikasi.';
+            updateCredentialDebug('error', { message });
+            renderStaffShellError({
+                title: 'Verifikasi sesi gagal',
+                message,
+                details: error?.message || ''
+            });
+            throw createRenderedError(message, { code: 'network_error' });
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            clearStaffCredentialState();
+            updateCredentialDebug('invalid', {
+                httpStatus: response.status,
+                message: STAFF_SESSION_INVALID_MESSAGE
+            });
+            renderStaffShellError({
+                title: 'Sesi staff tidak valid',
+                message: STAFF_SESSION_INVALID_MESSAGE,
+                details: `Server menolak kredensial staff (HTTP ${response.status}).`
+            });
+            throw createRenderedError(STAFF_SESSION_INVALID_MESSAGE, {
+                httpStatus: response.status,
+                code: 'invalid_token'
+            });
+        }
+
+        if (!response.ok) {
+            const message = `Gagal memverifikasi sesi staff (HTTP ${response.status}).`;
+            updateCredentialDebug('error', {
+                httpStatus: response.status,
+                message
+            });
+            renderStaffShellError({
+                title: 'Verifikasi sesi gagal',
+                message,
+                details: 'Coba perbarui aplikasi. Jika tetap gagal, cek status backend.'
+            });
+            throw createRenderedError(message, {
+                httpStatus: response.status,
+                code: 'verification_failed'
+            });
+        }
+
+        const payload = await response.json().catch(() => null);
+        user = normalizeUser(extractVerifiedUser(payload));
     }
 
-    if (response.status === 401 || response.status === 403) {
+    const httpStatus = response?.status || 200;
+
+    if (!user?.id || isPatientUser(user)) {
         clearStaffCredentialState();
         updateCredentialDebug('invalid', {
-            httpStatus: response.status,
-            message: STAFF_SESSION_INVALID_MESSAGE
-        });
-        renderStaffShellError({
-            title: 'Sesi staff tidak valid',
-            message: STAFF_SESSION_INVALID_MESSAGE,
-            details: `Server menolak kredensial staff (HTTP ${response.status}).`
-        });
-        throw createRenderedError(STAFF_SESSION_INVALID_MESSAGE, {
-            httpStatus: response.status,
-            code: 'invalid_token'
-        });
-    }
-
-    if (!response.ok) {
-        const message = `Gagal memverifikasi sesi staff (HTTP ${response.status}).`;
-        updateCredentialDebug('error', {
-            httpStatus: response.status,
-            message
-        });
-        renderStaffShellError({
-            title: 'Verifikasi sesi gagal',
-            message,
-            details: 'Coba perbarui aplikasi. Jika tetap gagal, cek status backend.'
-        });
-        throw createRenderedError(message, {
-            httpStatus: response.status,
-            code: 'verification_failed'
-        });
-    }
-
-    const payload = await response.json().catch(() => null);
-    const user = normalizeUser(extractVerifiedUser(payload));
-
-    if (!user || isPatientUser(user)) {
-        clearStaffCredentialState();
-        updateCredentialDebug('invalid', {
-            httpStatus: response.status,
+            httpStatus,
             message: STAFF_SESSION_INVALID_MESSAGE
         });
         renderStaffShellError({
@@ -271,7 +280,7 @@ export async function verifyStaffCredentials({ auth } = {}) {
             details: 'Payload sesi bukan akun staff yang valid.'
         });
         throw createRenderedError(STAFF_SESSION_INVALID_MESSAGE, {
-            httpStatus: response.status,
+            httpStatus,
             code: 'invalid_staff_payload'
         });
     }
@@ -281,7 +290,7 @@ export async function verifyStaffCredentials({ auth } = {}) {
     }
 
     updateCredentialDebug('valid', {
-        httpStatus: response.status,
+        httpStatus,
         userId: user.id || user.uid,
         userRole: user.role || user.role_display_name || null
     });
