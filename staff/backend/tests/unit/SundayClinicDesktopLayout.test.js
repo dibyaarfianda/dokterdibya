@@ -29,7 +29,7 @@ describe('Sunday Clinic desktop layout', () => {
         expect(page).toContain('class="d-flex align-items-center flex-wrap sc-page-actions"');
         expect(page).toContain('class="card-body sc-page-section-bar"');
         expect(sharedCss).toContain('body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions');
-        expect(sharedCss).toContain('gap: 6px 10px !important;');
+        expect(sharedCss).toContain('gap: 6px 8px !important;');
         expect(sharedCss).toContain('flex: 0 0 auto !important;');
         expect(sharedCss).toContain('width: auto !important;');
         expect(sharedCss).not.toContain('flex: 1 1 150px !important;');

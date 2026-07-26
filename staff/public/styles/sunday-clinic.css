@@ -230,7 +230,7 @@ body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav {
     align-items: stretch !important;
     justify-content: flex-start !important;
     flex-wrap: wrap !important;
-    gap: 6px 10px !important;
+    gap: 6px 8px !important;
     width: 100% !important;
 }
 
@@ -245,7 +245,7 @@ body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav .
     justify-content: center !important;
     width: auto !important;
     min-height: 38px !important;
-    padding: 8px 12px !important;
+    padding: 8px 10px !important;
     border-radius: 6px !important;
     white-space: nowrap !important;
 }
