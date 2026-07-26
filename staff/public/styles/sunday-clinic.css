@@ -230,22 +230,22 @@ body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav {
     align-items: stretch !important;
     justify-content: flex-start !important;
     flex-wrap: wrap !important;
-    gap: 4px !important;
+    gap: 6px 10px !important;
     width: 100% !important;
 }
 
 body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav .nav-item {
-    flex: 1 1 150px !important;
-    min-width: 140px !important;
-    max-width: 220px !important;
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
     margin: 0 !important;
 }
 
 body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav .sc-nav-link {
     justify-content: center !important;
-    width: 100% !important;
+    width: auto !important;
     min-height: 38px !important;
-    padding: 8px 10px !important;
+    padding: 8px 12px !important;
     border-radius: 6px !important;
     white-space: nowrap !important;
 }

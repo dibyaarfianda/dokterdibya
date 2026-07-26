@@ -29,8 +29,11 @@ describe('Sunday Clinic desktop layout', () => {
         expect(page).toContain('class="d-flex align-items-center flex-wrap sc-page-actions"');
         expect(page).toContain('class="card-body sc-page-section-bar"');
         expect(sharedCss).toContain('body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions');
-        expect(sharedCss).toContain('flex: 1 1 150px !important;');
-        expect(sharedCss).toContain('max-width: 220px !important;');
+        expect(sharedCss).toContain('gap: 6px 10px !important;');
+        expect(sharedCss).toContain('flex: 0 0 auto !important;');
+        expect(sharedCss).toContain('width: auto !important;');
+        expect(sharedCss).not.toContain('flex: 1 1 150px !important;');
+        expect(sharedCss).not.toContain('min-width: 140px !important;');
     });
 
     test('removes duplicate desktop section labels and hides an empty context header', () => {
