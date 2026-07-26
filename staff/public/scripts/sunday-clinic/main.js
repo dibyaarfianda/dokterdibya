@@ -171,7 +171,11 @@ class SundayClinicApp {
             bar.style.display = hasExamAction ? 'flex' : 'none';
         }
         if (header) {
-            header.classList.toggle('d-none', !hasContext && !hasExamAction);
+            header.style.setProperty(
+                'display',
+                hasContext || hasExamAction ? 'flex' : 'none',
+                'important'
+            );
         }
     }
 

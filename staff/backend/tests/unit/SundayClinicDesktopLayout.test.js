@@ -37,7 +37,9 @@ describe('Sunday Clinic desktop layout', () => {
         expect(sharedCss).toContain('body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-section-inline-title');
         expect(sharedCss).toContain('display: none !important;');
         expect(app).toContain('syncExaminationActionBar()');
-        expect(app).toContain("header.classList.toggle('d-none', !hasContext && !hasExamAction);");
+        expect(app).toContain("header.style.setProperty(");
+        expect(app).toContain("hasContext || hasExamAction ? 'flex' : 'none'");
+        expect(app).toContain("'important'");
         expect(app).not.toContain("bar.style.display = isPrivat ? 'flex' : 'none';");
     });
 
