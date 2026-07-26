@@ -1248,53 +1248,13 @@ export default {
      * Show toast notification (non-blocking)
      */
     showToast(message, type = 'info') {
-        // Create toast container if not exists
-        let container = document.getElementById('usg-toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'usg-toast-container';
-            container.style.cssText = 'position: fixed; top: 70px; right: 20px; z-index: 9999; max-width: 350px;';
-            document.body.appendChild(container);
+        if (typeof window.showSundayClinicNotice === 'function') {
+            return window.showSundayClinicNotice(type, message, 3000);
         }
-
-        // Color mapping
-        const colors = {
-            success: { bg: '#28a745', icon: 'fa-check-circle' },
-            error: { bg: '#dc3545', icon: 'fa-times-circle' },
-            warning: { bg: '#ffc107', icon: 'fa-exclamation-triangle', text: '#000' },
-            info: { bg: '#17a2b8', icon: 'fa-info-circle' }
-        };
-        const color = colors[type] || colors.info;
-
-        // Create toast element
-        const toast = document.createElement('div');
-        toast.className = 'toast-notification';
-        toast.style.cssText = `
-            background: ${color.bg}; color: ${color.text || '#fff'}; padding: 12px 16px;
-            border-radius: 6px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease;
-            font-size: 14px;
-        `;
-        toast.innerHTML = `<i class="fas ${color.icon}"></i><span>${message}</span>`;
-
-        // Add animation style if not exists
-        if (!document.getElementById('toast-animation-style')) {
-            const style = document.createElement('style');
-            style.id = 'toast-animation-style';
-            style.textContent = `
-                @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-                @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
-            `;
-            document.head.appendChild(style);
+        if (typeof window.showToast === 'function') {
+            return window.showToast(type, message);
         }
-
-        container.appendChild(toast);
-
-        // Auto-remove after 3 seconds
-        setTimeout(() => {
-            toast.style.animation = 'fadeOut 0.3s ease';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+        console.log(`[USG ${type}] ${message}`);
     },
 
     async handlePhotoUpload(event) {

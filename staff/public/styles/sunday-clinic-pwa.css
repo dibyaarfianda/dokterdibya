@@ -329,6 +329,14 @@
         font-size: var(--sc-pwa-icon-md) !important;
     }
 
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-toast-stack {
+        right: var(--sc-pwa-gutter, 8px) !important;
+        bottom: calc(var(--sc-pwa-bottom-nav-height, 60px) + 12px) !important;
+        left: var(--sc-pwa-gutter, 8px) !important;
+        width: auto !important;
+        max-width: none !important;
+    }
+
     /* Wave 2: canonical clinical content rules. */
     body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content {
         font-size: var(--sc-pwa-font-body) !important;

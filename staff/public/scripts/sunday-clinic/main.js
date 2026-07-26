@@ -44,54 +44,55 @@ window.stateManager = stateManager;
  * Global Toast Notification System
  * Used by showSuccess/showError and all components
  */
-window.showToast = function(type, message) {
-    // Create toast container if not exists
+window.showSundayClinicNotice = function(type, message, duration = 3000) {
     let container = document.getElementById('sc-toast-container');
     if (!container) {
         container = document.createElement('div');
         container.id = 'sc-toast-container';
-        container.style.cssText = 'position: fixed; top: 70px; right: 20px; z-index: 9999; max-width: 350px;';
+        container.className = 'sc-toast-stack';
+        container.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+        container.setAttribute('aria-atomic', 'false');
         document.body.appendChild(container);
     }
 
-    // Color mapping
-    const colors = {
-        success: { bg: '#28a745', icon: 'fa-check-circle' },
-        error: { bg: '#dc3545', icon: 'fa-times-circle' },
-        warning: { bg: '#ffc107', icon: 'fa-exclamation-triangle', text: '#000' },
-        info: { bg: '#17a2b8', icon: 'fa-info-circle' }
+    const normalizedType = ['success', 'error', 'warning', 'info'].includes(type)
+        ? type
+        : 'info';
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-times-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
     };
-    const color = colors[type] || colors.info;
 
-    // Create toast element
     const toast = document.createElement('div');
-    toast.className = 'sc-toast-notification';
-    toast.style.cssText = `
-        background: ${color.bg}; color: ${color.text || '#fff'}; padding: 12px 16px;
-        border-radius: 6px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        display: flex; align-items: center; gap: 10px; animation: scToastSlideIn 0.3s ease;
-        font-size: 14px;
-    `;
-    toast.innerHTML = `<i class="fas ${color.icon}"></i><span>${message}</span>`;
+    toast.className = `sc-toast-notification sc-toast-${normalizedType}`;
+    toast.setAttribute('role', normalizedType === 'error' ? 'alert' : 'status');
 
-    // Add animation style if not exists
-    if (!document.getElementById('sc-toast-animation-style')) {
-        const style = document.createElement('style');
-        style.id = 'sc-toast-animation-style';
-        style.textContent = `
-            @keyframes scToastSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            @keyframes scToastFadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
-        `;
-        document.head.appendChild(style);
+    const icon = document.createElement('i');
+    icon.className = `fas ${icons[normalizedType]}`;
+    icon.setAttribute('aria-hidden', 'true');
+
+    const text = document.createElement('span');
+    text.textContent = String(message || '');
+
+    toast.append(icon, text);
+
+    while (container.childElementCount >= 3) {
+        container.firstElementChild?.remove();
     }
-
     container.appendChild(toast);
 
-    // Auto-remove after 3 seconds
     setTimeout(() => {
-        toast.style.animation = 'scToastFadeOut 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+        toast.classList.add('is-leaving');
+        setTimeout(() => toast.remove(), 250);
+    }, duration);
+
+    return toast;
+};
+
+window.showToast = function(type, message) {
+    return window.showSundayClinicNotice(type, message, 3000);
 };
 
 function resetStartExaminationButton(btn) {
@@ -148,6 +149,29 @@ class SundayClinicApp {
         if (btn) {
             resetStartExaminationButton(btn);
             btn.style.display = 'none';
+        }
+        this.syncExaminationActionBar();
+    }
+
+    syncExaminationActionBar() {
+        const header = document.getElementById('sunday-clinic-header');
+        const context = document.getElementById('summary-cards-container');
+        const bar = document.getElementById('exam-action-bar');
+        const btn = document.getElementById('btn-periksa-pasien');
+        const stopwatch = document.getElementById('exam-stopwatch');
+        const hasContext = Array.from(context?.children || []).some((element) => (
+            !element.hidden && window.getComputedStyle(element).display !== 'none'
+        ));
+        const hasExamAction = [btn, stopwatch].some((element) => (
+            element && element.style.display !== 'none' && !element.hidden
+        ));
+
+        if (bar) {
+            bar.classList.toggle('show-bar', hasExamAction);
+            bar.style.display = hasExamAction ? 'flex' : 'none';
+        }
+        if (header) {
+            header.classList.toggle('d-none', !hasContext && !hasExamAction);
         }
     }
 
@@ -287,7 +311,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.17';
+        const COMPONENT_VERSION = '3.0.18';
         const cacheBuster = `?v=${COMPONENT_VERSION}`;
 
         const loaders = componentPaths.map(async ({ section, path }) => {
@@ -1077,6 +1101,7 @@ class SundayClinicApp {
             if (existingBadge) {
                 existingBadge.remove();
             }
+            this.syncExaminationActionBar();
             return;
         }
 
@@ -1105,6 +1130,7 @@ class SundayClinicApp {
         } else {
             headerContainer.insertAdjacentHTML('afterbegin', badgeHtml);
         }
+        this.syncExaminationActionBar();
     }
 
     /**
@@ -2626,6 +2652,7 @@ class SundayClinicApp {
         const sw = document.getElementById('exam-stopwatch');
         if (!sw) return;
         sw.style.display = 'inline';
+        this.syncExaminationActionBar();
         if (this._stopwatchInterval) clearInterval(this._stopwatchInterval);
         const tick = () => {
             const elapsed = Math.floor((Date.now() - (this._examStartTime || Date.now())) / 1000);
@@ -2647,6 +2674,7 @@ class SundayClinicApp {
         // Also hide the Periksa button (examination is over)
         const btn = document.getElementById('btn-periksa-pasien');
         if (btn) btn.style.display = 'none';
+        this.syncExaminationActionBar();
     }
 
     /**
@@ -2666,12 +2694,7 @@ class SundayClinicApp {
             const examStarted = rec.exam_started_at;
             // Show or hide "Periksa Pasien" button
             const btn = document.getElementById('btn-periksa-pasien');
-            const bar = document.getElementById('exam-action-bar');
             const isPrivat = rec.visit_location === 'klinik_private';
-            if (bar) {
-                bar.classList.toggle('show-bar', isPrivat);
-                bar.style.display = isPrivat ? 'flex' : 'none';
-            }
             if (btn) {
                 const userRole = window.currentStaffIdentity?.role || '';
                 const isDokter = userRole === 'dokter' || userRole === 'superadmin';
@@ -2687,6 +2710,8 @@ class SundayClinicApp {
             if (qs === 'diperiksa' && examStarted) {
                 this._examStartTime = new Date(examStarted).getTime();
                 this._startStopwatchUI();
+            } else {
+                this.syncExaminationActionBar();
             }
         } catch (e) {
             console.warn('[Queue] _restoreQueueState failed:', e.message);

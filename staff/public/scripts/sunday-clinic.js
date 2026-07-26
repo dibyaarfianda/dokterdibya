@@ -237,39 +237,17 @@ function resolveStaffIdentity(raw) {
 
 // Expose showSuccess and showError globally for planning-helpers.js
 window.showSuccess = function(message) {
-    // Create a temporary toast notification
-    const toast = document.createElement('div');
-    toast.className = 'alert alert-success position-fixed';
-    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    toast.innerHTML = `
-        <i class="fas fa-check-circle mr-2"></i>${escapeHtml(message)}
-    `;
-    document.body.appendChild(toast);
-
-    // Remove after 3 seconds
-    setTimeout(() => {
-        toast.style.transition = 'opacity 0.3s';
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    if (typeof window.showSundayClinicNotice === 'function') {
+        return window.showSundayClinicNotice('success', message, 3000);
+    }
+    alert(String(message || 'Berhasil'));
 };
 
 window.showError = function(message) {
-    // Create a temporary toast notification
-    const toast = document.createElement('div');
-    toast.className = 'alert alert-danger position-fixed';
-    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    toast.innerHTML = `
-        <i class="fas fa-exclamation-circle mr-2"></i>${escapeHtml(message)}
-    `;
-    document.body.appendChild(toast);
-
-    // Remove after 5 seconds
-    setTimeout(() => {
-        toast.style.transition = 'opacity 0.3s';
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
+    if (typeof window.showSundayClinicNotice === 'function') {
+        return window.showSundayClinicNotice('error', message, 5000);
+    }
+    alert('Error: ' + String(message || 'Terjadi kesalahan'));
 };
 
 // Helper function for escaping HTML

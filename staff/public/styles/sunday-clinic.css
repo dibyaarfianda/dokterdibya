@@ -181,6 +181,168 @@ body.sidebar-collapse .main-header {
     min-height: 320px;
 }
 
+/* Desktop Sunday Clinic shell: keep actions and section navigation tidy at
+   medium widths without changing the dedicated embedded PWA layout. */
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-toolbar-card {
+    overflow: visible !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-toolbar {
+    gap: 12px !important;
+    padding: 12px 16px !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-identity {
+    flex: 1 1 220px !important;
+    min-width: 180px !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-identity .card-title {
+    float: none !important;
+    margin: 0 0 2px !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions {
+    flex: 1 1 620px !important;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 34px !important;
+    margin: 0 !important;
+    white-space: nowrap !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-section-bar {
+    padding: 8px 12px !important;
+    border-top: 1px solid #edf0f3 !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav {
+    display: flex !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    width: 100% !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav .nav-item {
+    flex: 1 1 150px !important;
+    min-width: 140px !important;
+    max-width: 220px !important;
+    margin: 0 !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav .sc-nav-link {
+    justify-content: center !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    border-radius: 6px !important;
+    white-space: nowrap !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-staff-section-nav .sc-nav-link p {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) #sunday-clinic-content .sc-mobile-badge-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    min-height: 34px !important;
+    margin: 0 0 12px !important;
+    padding: 0 0 10px !important;
+    border-bottom: 1px solid #edf0f3 !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-section-inline-title {
+    display: none !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-mobile-badge-left,
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-mobile-badge-right {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+/* Sunday Clinic notices must stay clear of both the desktop top navigation and
+   the embedded PWA bottom navigation. They remain visible but never intercept
+   clicks on the clinical UI underneath. */
+body.sunday-clinic-embedded-active .sc-toast-stack {
+    position: fixed !important;
+    top: auto !important;
+    right: 20px !important;
+    bottom: 20px !important;
+    z-index: 10050 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: min(360px, calc(100vw - 40px)) !important;
+    max-width: 360px !important;
+    pointer-events: none !important;
+}
+
+body.sunday-clinic-embedded-active .sc-toast-notification {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 11px 14px !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2) !important;
+    pointer-events: none !important;
+    animation: scToastSlideIn 0.25s ease-out !important;
+}
+
+body.sunday-clinic-embedded-active .sc-toast-notification.sc-toast-success {
+    background: #218838 !important;
+}
+
+body.sunday-clinic-embedded-active .sc-toast-notification.sc-toast-error {
+    background: #c82333 !important;
+}
+
+body.sunday-clinic-embedded-active .sc-toast-notification.sc-toast-warning {
+    color: #212529 !important;
+    background: #ffc107 !important;
+}
+
+body.sunday-clinic-embedded-active .sc-toast-notification.sc-toast-info {
+    background: #138496 !important;
+}
+
+body.sunday-clinic-embedded-active .sc-toast-notification.is-leaving {
+    animation: scToastFadeOut 0.25s ease-in forwards !important;
+}
+
+@keyframes scToastSlideIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes scToastFadeOut {
+    from { transform: translateY(0); opacity: 1; }
+    to { transform: translateY(8px); opacity: 0; }
+}
+
 .loading-state {
     display: flex;
     flex-direction: column;
