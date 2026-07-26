@@ -30,6 +30,88 @@ const {
 } = require('./shared');
 const { updateQueueStatus } = require('./queue');
 
+function isPlainObject(value) {
+    return Boolean(value) &&
+        typeof value === 'object' &&
+        !Array.isArray(value);
+}
+
+function valuesEqual(left, right) {
+    if (left === right) {
+        return true;
+    }
+
+    if ((Array.isArray(left) && Array.isArray(right)) ||
+        (isPlainObject(left) && isPlainObject(right))) {
+        try {
+            return JSON.stringify(left) === JSON.stringify(right);
+        } catch (error) {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Three-way merge for concurrent staff edits.
+ *
+ * - latest: current value stored in MySQL
+ * - base: value the saving browser originally loaded
+ * - incoming: value currently submitted by that browser
+ *
+ * Fields unchanged from base keep the latest server value. Fields changed by
+ * this browser overwrite the latest value, so the last save wins only when
+ * both staff edited the same field. Missing fields are treated as a partial
+ * payload and never delete existing server data.
+ */
+function mergeConcurrentRecordData(latest, base, incoming) {
+    const latestObject = isPlainObject(latest) ? latest : {};
+    const baseObject = isPlainObject(base) ? base : {};
+    const incomingObject = isPlainObject(incoming) ? incoming : {};
+    const merged = { ...latestObject };
+
+    Object.keys(incomingObject).forEach((key) => {
+        const incomingValue = incomingObject[key];
+        const baseValue = baseObject[key];
+        const latestValue = latestObject[key];
+
+        if (isPlainObject(incomingValue)) {
+            merged[key] = mergeConcurrentRecordData(
+                isPlainObject(latestValue) ? latestValue : {},
+                isPlainObject(baseValue) ? baseValue : {},
+                incomingValue
+            );
+            return;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(baseObject, key) &&
+            valuesEqual(incomingValue, baseValue)) {
+            merged[key] = latestValue;
+            return;
+        }
+
+        merged[key] = incomingValue;
+    });
+
+    return merged;
+}
+
+function parseRecordData(value) {
+    if (isPlainObject(value)) {
+        return value;
+    }
+    if (typeof value !== 'string' || !value.trim()) {
+        return {};
+    }
+    try {
+        const parsed = JSON.parse(value);
+        return isPlainObject(parsed) ? parsed : {};
+    } catch (error) {
+        return {};
+    }
+}
+
 async function getCheckExisting(req, res, next) {
     try {
         const { patient_id, location } = req.query;
@@ -274,7 +356,14 @@ async function getRecordsByMrId(req, res, next) {
 async function postRecordsByMrIdBySection(req, res, next) {
     const normalizedMrId = normalizeMrId(req.params.mrId);
     const section = req.params.section;
-    const data = req.body;
+    const requestBody = isPlainObject(req.body) ? req.body : {};
+    const usesConcurrentMerge = requestBody.__concurrent_merge_v1 === true &&
+        isPlainObject(requestBody.data);
+    const incomingData = usesConcurrentMerge ? requestBody.data : requestBody;
+    const baseData = usesConcurrentMerge && isPlainObject(requestBody.base_data)
+        ? requestBody.base_data
+        : {};
+    let data = incomingData;
     const skipMedifySync = req.get('X-Skip-Medify-Sync') === '1';
 
     if (!normalizedMrId) {
@@ -302,40 +391,69 @@ async function postRecordsByMrIdBySection(req, res, next) {
         }
 
         let medifySyncResult = null;
+        let connection = null;
 
-        // Check if record exists for this section and mr_id
-        const [existingRows] = await db.query(
-            `SELECT id FROM medical_records WHERE patient_id = ? AND mr_id = ? AND record_type = ?`,
-            [recordRow.patient_id, normalizedMrId, section]
-        );
+        try {
+            connection = await db.getConnection();
+            await connection.beginTransaction();
 
-        if (existingRows.length > 0) {
-            // Update existing record - also update doctor_id and doctor_name to current user
-            await db.query(
-                `UPDATE medical_records SET record_data = ?, doctor_id = ?, doctor_name = ?, updated_at = NOW() WHERE id = ?`,
-                [JSON.stringify(data), req.user.id || null, req.user.name || null, existingRows[0].id]
+            // Lock the visit row first so concurrent first-time saves for the
+            // same section cannot both observe "no medical record yet".
+            await connection.query(
+                `SELECT id FROM sunday_clinic_records WHERE mr_id = ? FOR UPDATE`,
+                [normalizedMrId]
             );
-        } else {
-            // Insert new record with mr_id
-            await db.query(
-                `INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, doctor_id, doctor_name, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-                [
-                    recordRow.patient_id,
-                    normalizedMrId,
-                    section,
-                    JSON.stringify(data),
-                    req.user.id || null,
-                    req.user.name || null
-                ]
+
+            const [existingRows] = await connection.query(
+                `SELECT id, record_data
+                 FROM medical_records
+                 WHERE patient_id = ? AND mr_id = ? AND record_type = ?
+                 FOR UPDATE`,
+                [recordRow.patient_id, normalizedMrId, section]
             );
+
+            const latestData = existingRows.length > 0
+                ? parseRecordData(existingRows[0].record_data)
+                : {};
+            data = mergeConcurrentRecordData(latestData, baseData, incomingData);
+
+            if (existingRows.length > 0) {
+                await connection.query(
+                    `UPDATE medical_records
+                     SET record_data = ?, doctor_id = ?, doctor_name = ?, updated_at = NOW()
+                     WHERE id = ?`,
+                    [JSON.stringify(data), req.user.id || null, req.user.name || null, existingRows[0].id]
+                );
+            } else {
+                await connection.query(
+                    `INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, doctor_id, doctor_name, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                    [
+                        recordRow.patient_id,
+                        normalizedMrId,
+                        section,
+                        JSON.stringify(data),
+                        req.user.id || null,
+                        req.user.name || null
+                    ]
+                );
+            }
+
+            await connection.query(
+                `UPDATE sunday_clinic_records SET last_activity_at = NOW() WHERE mr_id = ?`,
+                [normalizedMrId]
+            );
+            await connection.commit();
+        } catch (saveError) {
+            if (connection) {
+                await connection.rollback().catch(() => {});
+            }
+            throw saveError;
+        } finally {
+            if (connection) {
+                connection.release();
+            }
         }
-
-        // Update last_activity_at on the Sunday Clinic record
-        await db.query(
-            `UPDATE sunday_clinic_records SET last_activity_at = NOW() WHERE mr_id = ?`,
-            [normalizedMrId]
-        );
 
         // Keep other staff screens in sync with saved clinical sections.
         const realtimeSync = require('../../realtime-sync');
@@ -690,7 +808,11 @@ async function postRecordsByMrIdBySection(req, res, next) {
 
         const responsePayload = {
             success: true,
-            message: `Data ${section} berhasil disimpan`
+            message: `Data ${section} berhasil disimpan`,
+            data: {
+                section,
+                record_data: data
+            }
         };
 
         if (medifySyncResult) {
@@ -1201,5 +1323,6 @@ module.exports = {
     getMedifySyncJobsByMrId,
     getMedifySyncStats,
     deleteRecordsByMrId,
-    patchRecordsByIdCategory
+    patchRecordsByIdCategory,
+    mergeConcurrentRecordData
 };

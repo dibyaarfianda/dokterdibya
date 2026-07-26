@@ -121,6 +121,7 @@ class SundayClinicApp {
         this.currentBillingSignature = null;
         this.pendingRealtimeRefresh = false;
         this.billingRefreshTimer = null;
+        this.formDirtyTrackingBound = false;
     }
 
     isMedifyLocation(location = this.currentLocation) {
@@ -212,6 +213,7 @@ class SundayClinicApp {
 
             // Render the application with active section
             await this.render(activeSection);
+            this.setupFormDirtyTracking();
 
             // Initialize real-time billing notifications
             this.initializeBillingNotifications();
@@ -285,7 +287,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.16';
+        const COMPONENT_VERSION = '3.0.17';
         const cacheBuster = `?v=${COMPONENT_VERSION}`;
 
         const loaders = componentPaths.map(async ({ section, path }) => {
@@ -396,6 +398,24 @@ class SundayClinicApp {
 
         // Hide loading
         this.hideLoading();
+    }
+
+    setupFormDirtyTracking() {
+        if (this.formDirtyTrackingBound) return;
+
+        const container = document.getElementById('sunday-clinic-content');
+        if (!container) return;
+
+        const markFormDirty = (event) => {
+            const field = event.target;
+            if (!field?.matches?.('input, textarea, select')) return;
+            if (field.dataset.realtimeIgnore === 'true' || field.disabled) return;
+            stateManager.markDirty();
+        };
+
+        container.addEventListener('input', markFormDirty, true);
+        container.addEventListener('change', markFormDirty, true);
+        this.formDirtyTrackingBound = true;
     }
 
     /**
@@ -1197,7 +1217,7 @@ class SundayClinicApp {
         }
 
         this.softRefreshTimer = setTimeout(async () => {
-            if (this.softRefreshInFlight) {
+            if (this.softRefreshInFlight || stateManager.hasUnsavedChanges()) {
                 return;
             }
 
@@ -1305,25 +1325,8 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/planning`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await apiClient.saveSection(mrId, 'planning', data);
             console.log('[SundayClinic] Planning saved successfully:', result);
-
-            // Update state
-            stateManager.updateSectionData('planning', data);
 
             this.showSuccess('Planning berhasil disimpan!');
 
@@ -1386,25 +1389,8 @@ class SundayClinicApp {
             }
 
             // Send to API using sunday-clinic endpoint with mrId
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/pemeriksaan_obstetri`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await apiClient.saveSection(mrId, 'pemeriksaan_obstetri', data);
             console.log('[SundayClinic] Pemeriksaan Obstetri saved successfully:', result);
-
-            // Update state
-            stateManager.updateSectionData('pemeriksaan_obstetri', data);
 
             this.showSuccess('Pemeriksaan Obstetri berhasil disimpan!');
 
@@ -1570,25 +1556,8 @@ class SundayClinicApp {
             }
 
             // Send to API using sunday-clinic endpoint with mrId
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/usg`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await apiClient.saveSection(mrId, 'usg', data);
             console.log('[SundayClinic] USG saved successfully:', result);
-
-            // Update state
-            stateManager.updateSectionData('usg', data);
 
             this.showSuccess('Data USG berhasil disimpan!');
 
@@ -1677,21 +1646,7 @@ class SundayClinicApp {
             }
 
             // Use the new section save endpoint with mr_id
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/physical_exam`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await apiClient.saveSection(mrId, 'physical_exam', data);
             console.log('[SundayClinic] Physical Exam saved successfully:', result);
 
             // Refresh metadata in background to keep save flow snappy.
@@ -1840,25 +1795,8 @@ class SundayClinicApp {
             data.saved_at = new Date().toISOString();
 
             // Send to API using sunday-clinic endpoint with mrId
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/anamnesa`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await apiClient.saveSection(mrId, 'anamnesa', data);
             console.log('[SundayClinic] Anamnesa saved successfully:', result);
-
-            // Update state
-            stateManager.updateSectionData('anamnesa', data);
 
             // Show success message
             this.showSuccess('Anamnesa berhasil disimpan!');
@@ -1893,6 +1831,7 @@ class SundayClinicApp {
      */
     async fetchRecord(mrId, options = {}) {
         const { silent = false, rerender = true } = options;
+        const refreshRevision = stateManager.get('dirtyRevision') || 0;
         const token = window.getToken();
         if (!token) {
             return;
@@ -1920,6 +1859,12 @@ class SundayClinicApp {
 
             if (!response.data) {
                 throw new Error('Data rekam medis Sunday Clinic kosong.');
+            }
+
+            if (silent && (stateManager.hasUnsavedChanges() ||
+                (stateManager.get('dirtyRevision') || 0) !== refreshRevision)) {
+                this.pendingRealtimeRefresh = true;
+                return;
             }
 
             const activeSectionBeforeRefresh = stateManager.getState().activeSection || SECTIONS.IDENTITY;
@@ -1996,27 +1941,10 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/diagnosis`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'X-Skip-Medify-Sync': '1'
-                },
-                body: JSON.stringify(data)
+            const result = await apiClient.saveSection(mrId, 'diagnosis', data, {
+                headers: { 'X-Skip-Medify-Sync': '1' }
             });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                console.error('Server error response:', errorData);
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
             console.log('[SundayClinic] Diagnosis saved successfully:', result);
-
-            // Update state
-            stateManager.updateSectionData('diagnosis', data);
 
             this.showSuccess('Diagnosis berhasil disimpan!');
 
@@ -2074,11 +2002,6 @@ class SundayClinicApp {
                 saved_at: new Date().toISOString()
             };
 
-            // Update local state/UI immediately.
-            stateManager.updateSectionData('diagnosis', diagnosisData);
-            const textarea = document.getElementById('diagnosis-utama');
-            if (textarea) textarea.value = diagText;
-
             const mrId = freshState.currentMrId ||
                         mergedRecordData?.mrId ||
                         mergedRecordData?.mr_id ||
@@ -2093,20 +2016,10 @@ class SundayClinicApp {
                 return { success: false, reason: 'missing_token' };
             }
 
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/diagnosis`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(diagnosisData)
-            });
+            await apiClient.saveSection(mrId, 'diagnosis', diagnosisData);
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
+            const textarea = document.getElementById('diagnosis-utama');
+            if (textarea) textarea.value = diagText;
             console.log('[AutoDiag] Diagnosis generated and persisted:', diagText);
             return { success: true, diagnosis: diagText };
         } catch (error) {
@@ -2304,25 +2217,8 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/resume_medis`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await apiClient.saveSection(mrId, 'resume_medis', data);
             console.log('[SundayClinic] Resume saved:', result);
-
-            // Update state
-            stateManager.updateSectionData('resume_medis', data);
 
             if (!silent) {
                 this.showSuccess('Resume medis berhasil disimpan!');
@@ -2642,11 +2538,17 @@ class SundayClinicApp {
             this.pendingRealtimeRefresh = true;
             return;
         }
+        const refreshRevision = stateManager.get('dirtyRevision') || 0;
         this.softRefreshInFlight = true;
         try {
             const activeSection = stateManager.getState().activeSection || section || SECTIONS.IDENTITY;
             const response = prefetchedResponse || await apiClient.getRecord(this.currentMrId);
             if (!response.success) return;
+            if (stateManager.hasUnsavedChanges() ||
+                (stateManager.get('dirtyRevision') || 0) !== refreshRevision) {
+                this.pendingRealtimeRefresh = true;
+                return;
+            }
             await stateManager.loadRecord(response.data);
             this.currentRecordSignature = this.getRecordSignature(response.data);
             this.pendingRealtimeRefresh = false;

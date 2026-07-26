@@ -430,9 +430,6 @@ export default {
             const response = await apiClient.saveSection(mrId, 'anamnesa', data);
 
             if (response.success) {
-                // Update state
-                stateManager.updateSectionData('anamnesa', data);
-
                 // Update UI
                 const statusEl = document.getElementById('anamnesa-status');
                 if (statusEl) {

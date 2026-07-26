@@ -18,6 +18,7 @@ class StateManager {
             medicalRecords: null,
             derived: null,  // Computed derived state from all data
             isDirty: false,  // Track unsaved changes
+            dirtyRevision: 0,
             activeSection: 'identity',
             loading: false,
             error: null
@@ -38,6 +39,13 @@ class StateManager {
      */
     get(key) {
         return this.state[key];
+    }
+
+    /**
+     * Update one state value.
+     */
+    set(key, value) {
+        this.setState({ [key]: value });
     }
 
     /**
@@ -171,7 +179,8 @@ class StateManager {
                 medicalRecords: recordData.medicalRecords,
                 derived: derived,  // ADD DERIVED STATE
                 loading: false,
-                isDirty: false
+                isDirty: false,
+                dirtyRevision: 0
             });
 
             console.log('[StateManager] Record loaded successfully. MR ID:', mrId);
@@ -192,14 +201,21 @@ class StateManager {
      * Mark state as dirty (unsaved changes)
      */
     markDirty() {
-        this.setState({ isDirty: true });
+        this.setState({
+            isDirty: true,
+            dirtyRevision: (this.state.dirtyRevision || 0) + 1
+        });
     }
 
     /**
      * Mark state as clean (all saved)
      */
-    markClean() {
+    markClean(expectedRevision = null) {
+        if (expectedRevision !== null && expectedRevision !== this.state.dirtyRevision) {
+            return false;
+        }
         this.setState({ isDirty: false });
+        return true;
     }
 
     /**
@@ -223,6 +239,7 @@ class StateManager {
             billingData: null,
             medicalRecords: null,
             isDirty: false,
+            dirtyRevision: 0,
             activeSection: 'identity',
             loading: false,
             error: null
@@ -282,6 +299,38 @@ class StateManager {
         });
 
         console.log(`[StateManager] Section data updated: ${sectionName}`, data);
+    }
+
+    /**
+     * Replace a section with the authoritative merged snapshot returned by
+     * the server after a concurrent-safe save.
+     */
+    replaceSectionData(sectionName, data) {
+        if (!this.state.recordData) {
+            console.warn('[StateManager] Cannot replace section data: recordData is null');
+            return;
+        }
+
+        const nextData = data && typeof data === 'object' ? data : {};
+        const byType = this.state.medicalRecords?.byType || {};
+        const existingTypeRecord = byType[sectionName] || {};
+
+        this.setState({
+            recordData: {
+                ...this.state.recordData,
+                [sectionName]: nextData
+            },
+            medicalRecords: this.state.medicalRecords ? {
+                ...this.state.medicalRecords,
+                byType: {
+                    ...byType,
+                    [sectionName]: {
+                        ...existingTypeRecord,
+                        data: nextData
+                    }
+                }
+            } : this.state.medicalRecords
+        });
     }
 }
 

@@ -138,12 +138,6 @@ Contoh:
             });
 
             if (response.success) {
-                // Update state
-                stateManager.updateSectionData('pemeriksaan_ginekologi', {
-                    content: content,
-                    saved_at: new Date().toISOString()
-                });
-
                 // Update UI
                 const statusEl = document.getElementById('gyn-exam-status');
                 if (statusEl) {

@@ -730,9 +730,6 @@ export default {
             const response = await apiClient.saveSection(mrId, 'usg', data);
 
             if (response.success) {
-                // Update state
-                stateManager.updateSectionData('usg', data);
-
                 // Update UI
                 const statusEl = document.getElementById('usg-status');
                 if (statusEl) {

@@ -5,6 +5,7 @@
 
 import { API_ENDPOINTS } from './constants.js';
 import { TOKEN_KEY } from '../../vps-auth-v2.js';
+import stateManager from './state-manager.js';
 
 class APIClient {
     constructor() {
@@ -158,8 +159,25 @@ class APIClient {
     /**
      * Save a specific section of the medical record
      */
-    async saveSection(mrId, section, data) {
-        return this.post(`${API_ENDPOINTS.RECORDS}/${mrId}/${section}`, data);
+    async saveSection(mrId, section, data, options = {}) {
+        const baseData = stateManager.get('medicalRecords')?.byType?.[section]?.data || {};
+        const saveRevision = stateManager.get('dirtyRevision') || 0;
+        const response = await this.request(`${API_ENDPOINTS.RECORDS}/${mrId}/${section}`, {
+            method: 'POST',
+            headers: options.headers || {},
+            body: JSON.stringify({
+                __concurrent_merge_v1: true,
+                base_data: baseData,
+                data
+            })
+        });
+
+        if (response?.success && response.data?.record_data) {
+            stateManager.replaceSectionData(section, response.data.record_data);
+            stateManager.markClean(saveRevision);
+        }
+
+        return response;
     }
 
     /**
