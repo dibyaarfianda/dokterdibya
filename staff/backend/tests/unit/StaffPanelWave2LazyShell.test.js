@@ -120,7 +120,8 @@ describe('staff panel wave 2 lazy shell contracts', () => {
         expect(notifications).toContain('window.initStaffNotificationSystem = initNotificationSystem;');
         expect(bootstrap).toContain("installLazyFeatureShim(globalName, 'patientTools')");
         expect(bootstrap).toContain("installLazyFeatureShim(globalName, 'registrationCodes')");
-        expect(bootstrap).toContain("ensureFeature('notifications')");
+        expect(bootstrap).toContain("installLazyFeatureShim(globalName, 'notifications')");
+        expect(bootstrap).not.toContain("ensureFeature('notifications')");
     });
 
     test('PageRegistry loads once and emits activate/deactivate lifecycle in order', async () => {

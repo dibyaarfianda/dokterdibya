@@ -149,9 +149,6 @@ async function bootstrapStaffShell() {
         try {
             initAuth(user);
             window.dispatchEvent(new CustomEvent('staff:auth-ready', { detail: { user } }));
-            ensureFeature('notifications')
-                .then(() => window.initStaffNotificationSystem?.())
-                .catch(error => console.warn('[WARN] Notification system unavailable:', error));
         } catch (error) {
             console.error('[ERROR] Error initializing auth UI:', error);
         }

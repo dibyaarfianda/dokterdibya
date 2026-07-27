@@ -168,4 +168,13 @@ describe('staff panel wave 1 hardening contracts', () => {
         expect(route).toContain("STAFF_ANNOUNCEMENT_COLUMNS.join(', ')");
         expect(route).not.toMatch(/SELECT\s+\*\s+FROM\s+staff_announcements/i);
     });
+
+    test('hidden notification UI does not download and poll during shell startup', () => {
+        const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        const shellCss = read('staff', 'public', 'styles', 'staff-shell.css');
+
+        expect(shellCss).toMatch(/#notification-dropdown\s*\{\s*display:\s*none\s*!important;/);
+        expect(bootstrap).toContain("installLazyFeatureShim(globalName, 'notifications')");
+        expect(bootstrap).not.toContain("ensureFeature('notifications')");
+    });
 });
