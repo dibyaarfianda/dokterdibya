@@ -1,3 +1,6 @@
+import { staffApiRequest } from '../staff-api.js';
+import { escapeHtml, escapeAttribute, sanitizeUrl } from '../safe-render.js';
+
 // Notification system variables
 let notificationPollInterval = null;
 let lastNotificationCount = 0;
@@ -5,6 +8,27 @@ let notificationCountInFlight = false;
 let notificationCountBackoffUntil = 0;
 let notificationSystemInitialized = false;
 const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;
+const NOTIFICATION_ICON_PATTERN = /^(?:fas|far|fab)\s+fa-[a-z0-9-]+$/;
+const NOTIFICATION_COLOR_PATTERN = /^text-(?:primary|secondary|success|danger|warning|info|muted|dark)$/;
+
+function normalizeNotificationId(value) {
+    const id = Number.parseInt(value, 10);
+    return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+function normalizeNotificationSource(value) {
+    return value === 'announcement' ? 'announcement' : 'notification';
+}
+
+function normalizeNotificationIcon(value) {
+    const icon = String(value || '').trim();
+    return NOTIFICATION_ICON_PATTERN.test(icon) ? icon : 'fas fa-bell';
+}
+
+function normalizeNotificationColor(value) {
+    const color = String(value || '').trim();
+    return NOTIFICATION_COLOR_PATTERN.test(color) ? color : 'text-primary';
+}
 
 function initNotificationSystem() {
     if (notificationSystemInitialized || !window.auth?.currentUser) return;
@@ -42,27 +66,18 @@ async function loadNotificationCount() {
 
     notificationCountInFlight = true;
     try {
-        const token = await window.getIdToken();
-        if (!token) return;
-
-        const response = await fetch('/api/notifications/count', {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const data = await staffApiRequest('/api/notifications/count', {
+            retries: 1,
+            coalesce: true
         });
-
-        if (!response.ok) {
-            if (response.status >= 500 || response.status === 429) {
-                notificationCountBackoffUntil = Date.now() + NOTIFICATION_COUNT_ERROR_BACKOFF_MS;
-            }
-            return;
-        }
-
-        const data = await response.json();
         if (data.success) {
             notificationCountBackoffUntil = 0;
             updateNotificationBadge(data.count);
         }
     } catch (error) {
-        notificationCountBackoffUntil = Date.now() + NOTIFICATION_COUNT_ERROR_BACKOFF_MS;
+        if (error?.status >= 500 || error?.status === 429 || !error?.status) {
+            notificationCountBackoffUntil = Date.now() + NOTIFICATION_COUNT_ERROR_BACKOFF_MS;
+        }
         console.error('[Notifications] Error loading count:', error);
     } finally {
         notificationCountInFlight = false;
@@ -97,16 +112,10 @@ function updateNotificationBadge(count) {
 
 async function loadNotifications() {
     try {
-        const token = await window.getIdToken();
-        if (!token) return;
-
-        const response = await fetch('/api/notifications/with-announcements?limit=10', {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const data = await staffApiRequest('/api/notifications/with-announcements?limit=10', {
+            retries: 1,
+            coalesce: true
         });
-
-        if (!response.ok) return;
-
-        const data = await response.json();
         if (data.success) {
             renderNotificationList(data.items || []);
             updateNotificationBadge(data.unread_count);
@@ -138,12 +147,20 @@ function renderNotificationList(items) {
         const isRead = item.is_read;
         const timeAgo = formatTimeAgo(item.created_at);
         const bgClass = isRead ? '' : 'bg-light';
+        const id = normalizeNotificationId(item.id);
+        const source = normalizeNotificationSource(item.source);
+        const link = normalizeNotificationLink(item.link);
+        const icon = normalizeNotificationIcon(item.icon);
+        const iconColor = normalizeNotificationColor(item.icon_color);
 
         return `
-            <a href="#" class="dropdown-item ${bgClass}" onclick="handleNotificationClick(${item.id}, '${item.source}', '${item.link || ''}'); return false;">
+            <a href="#" class="dropdown-item notification-dropdown-item ${bgClass}"
+               data-notification-id="${id || ''}"
+               data-notification-source="${source}"
+               data-notification-link="${escapeAttribute(link)}">
                 <div class="d-flex align-items-start">
                     <div class="mr-2">
-                        <i class="${item.icon || 'fas fa-bell'} ${item.icon_color || 'text-primary'}"></i>
+                        <i class="${icon} ${iconColor}"></i>
                     </div>
                     <div class="flex-grow-1" style="min-width: 0;">
                         <div class="d-flex justify-content-between align-items-center">
@@ -159,6 +176,19 @@ function renderNotificationList(items) {
             </a>
         `;
     }).join('');
+
+    container.querySelectorAll('.notification-dropdown-item').forEach(link => {
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            const id = normalizeNotificationId(link.dataset.notificationId);
+            if (!id) return;
+            handleNotificationClick(
+                id,
+                normalizeNotificationSource(link.dataset.notificationSource),
+                link.dataset.notificationLink || ''
+            );
+        });
+    });
 }
 
 const NOTIFICATION_ACTIONS = Object.freeze({
@@ -166,9 +196,28 @@ const NOTIFICATION_ACTIONS = Object.freeze({
     showNotificationsPage: (id) => window.showNotificationsPage?.(id || null)
 });
 
-function runNotificationNavigation(link) {
+function normalizeNotificationLink(link) {
     const target = String(link || '').trim();
-    if (!target) return false;
+    if (!target) return '';
+
+    if (target.startsWith('#')) {
+        return target;
+    }
+
+    if (target.startsWith('javascript:')) {
+        const actionMatch = target.match(/^javascript:([A-Za-z_$][\w$]*)\((\d*)\);?$/);
+        return actionMatch && NOTIFICATION_ACTIONS[actionMatch[1]] ? target : '';
+    }
+
+    return sanitizeUrl(target);
+}
+
+function runNotificationNavigation(link) {
+    const target = normalizeNotificationLink(link);
+    if (!target) {
+        if (link) console.warn('[Notifications] Blocked unsupported link:', link);
+        return false;
+    }
 
     if (target.startsWith('#')) {
         window.location.hash = target;
@@ -178,11 +227,7 @@ function runNotificationNavigation(link) {
     if (target.startsWith('javascript:')) {
         const actionMatch = target.match(/^javascript:([A-Za-z_$][\w$]*)\((\d*)\);?$/);
         const action = actionMatch ? NOTIFICATION_ACTIONS[actionMatch[1]] : null;
-        if (!action) {
-            console.warn('[Notifications] Blocked unsupported action:', target);
-            return false;
-        }
-        action(actionMatch[2] ? Number(actionMatch[2]) : null);
+        action(actionMatch?.[2] ? Number(actionMatch[2]) : null);
         return true;
     }
 
@@ -192,19 +237,11 @@ function runNotificationNavigation(link) {
 
 async function handleNotificationClick(id, source, link) {
     try {
-        const token = await window.getIdToken();
-
         // Mark as read based on source type
         if (source === 'notification') {
-            await fetch(`/api/notifications/${id}/read`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            await staffApiRequest(`/api/notifications/${id}/read`, { method: 'POST' });
         } else if (source === 'announcement') {
-            await fetch(`/api/staff-announcements/${id}/read`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            await staffApiRequest(`/api/staff-announcements/${id}/read`, { method: 'POST' });
         }
 
         // Update badge count
@@ -221,15 +258,8 @@ async function handleNotificationClick(id, source, link) {
 
 async function markAllNotificationsRead() {
     try {
-        const token = await window.getIdToken();
-        if (!token) return;
-
-        const response = await fetch('/api/notifications/read-all', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (response.ok) {
+        const data = await staffApiRequest('/api/notifications/read-all', { method: 'POST' });
+        if (data?.success !== false) {
             loadNotifications();
             updateNotificationBadge(0);
             if (typeof showToast === 'function') {
@@ -255,7 +285,10 @@ let notificationPageFilter = 'all';
 let notificationPagePage = 1;
 const notificationPageLimit = 20;
 
-function showNotificationsPage(highlightAnnouncementId = null) {
+async function showNotificationsPage(highlightAnnouncementId = null) {
+    const markdownReady = Promise.resolve(window.ensureStaffFeature?.('markdown'))
+        .catch(error => console.warn('[Notifications] Markdown renderer unavailable, using plain text:', error));
+
     // Hide all pages
     document.querySelectorAll('[id$="-page"]').forEach(page => {
         page.classList.add('d-none');
@@ -284,13 +317,25 @@ function showNotificationsPage(highlightAnnouncementId = null) {
         navNotifications.classList.add('active');
     }
 
-    // Load notifications and staff announcements
+    const notificationsContainer = document.getElementById('notifications-page-list');
+    if (notificationsContainer) {
+        notificationsContainer.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                <p class="mt-2 text-muted">Memuat notifikasi...</p>
+            </div>
+        `;
+    }
+
+    const announcementsReady = loadStaffAnnouncements();
+    await markdownReady;
     loadNotificationsPage();
-    loadStaffAnnouncements().then(() => {
+    announcementsReady.then(() => {
         // Scroll to and highlight specific announcement if provided
-        if (highlightAnnouncementId) {
+        const safeAnnouncementId = normalizeNotificationId(highlightAnnouncementId);
+        if (safeAnnouncementId) {
             setTimeout(() => {
-                const announcementEl = document.querySelector(`[data-announcement-id="${highlightAnnouncementId}"]`);
+                const announcementEl = document.querySelector(`[data-announcement-id="${safeAnnouncementId}"]`);
                 if (announcementEl) {
                     announcementEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     announcementEl.classList.add('highlight-flash');
@@ -310,16 +355,7 @@ async function loadStaffAnnouncements() {
     if (!container) return;
 
     try {
-        const token = (window.getAuthToken ? window.getAuthToken() : '');
-        if (!token) return;
-
-        const response = await fetch('/api/staff-announcements', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) throw new Error('Failed to load');
-
-        const data = await response.json();
+        const data = await staffApiRequest('/api/staff-announcements');
         const announcements = data.data || [];
 
         if (announcements.length === 0) {
@@ -330,28 +366,30 @@ async function loadStaffAnnouncements() {
         const isDokter = window.staffRoleConstants?.isSuperadminUser?.(window.auth?.currentUser) === true;
 
         container.innerHTML = announcements.map(a => {
+            const announcementId = normalizeNotificationId(a.id);
+            if (!announcementId) return '';
             const priorityClass = a.priority === 'urgent' ? 'border-danger' : (a.priority === 'important' ? 'border-warning' : 'border-info');
             const priorityIcon = a.priority === 'urgent' ? 'fa-exclamation-triangle text-danger' : (a.priority === 'important' ? 'fa-exclamation-circle text-warning' : 'fa-bullhorn text-info');
             const priorityBadge = a.priority === 'urgent' ? '<span class="badge badge-danger ml-2">URGENT</span>' : (a.priority === 'important' ? '<span class="badge badge-warning ml-2">Penting</span>' : '');
             const timeAgo = formatTimeAgo(new Date(a.created_at));
 
             return `
-                <div class="callout ${priorityClass} mb-2" data-announcement-id="${a.id}">
+                <div class="callout ${priorityClass} mb-2" data-announcement-id="${announcementId}">
                     <div class="d-flex justify-content-between">
                         <h6 class="mb-1"><i class="fas ${priorityIcon} mr-2"></i>${escapeHtml(a.title)}${priorityBadge}</h6>
                         ${isDokter ? `
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-secondary btn-xs" onclick="editStaffAnnouncement(${a.id})" title="Edit">
+                                <button class="btn btn-outline-secondary btn-xs" onclick="editStaffAnnouncement(${announcementId})" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-outline-danger btn-xs" onclick="deleteStaffAnnouncement(${a.id})" title="Hapus">
+                                <button class="btn btn-outline-danger btn-xs" onclick="deleteStaffAnnouncement(${announcementId})" title="Hapus">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         ` : ''}
                     </div>
                     <p class="mb-1" style="white-space: pre-wrap;">${escapeHtml(a.message)}</p>
-                    <small class="text-muted">${a.created_by_name || 'Admin'} - ${timeAgo}</small>
+                    <small class="text-muted">${escapeHtml(a.created_by_name || 'Admin')} - ${timeAgo}</small>
                 </div>
             `;
         }).join('');
@@ -374,11 +412,9 @@ function showCreateStaffAnnouncement() {
 
 async function editStaffAnnouncement(id) {
     try {
-        const token = (window.getAuthToken ? window.getAuthToken() : '');
-        const response = await fetch(`/api/staff-announcements/${id}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await response.json();
+        const announcementId = normalizeNotificationId(id);
+        if (!announcementId) throw new Error('ID pengumuman tidak valid');
+        const data = await staffApiRequest(`/api/staff-announcements/${announcementId}`);
         if (!data.success) throw new Error(data.message);
 
         const a = data.data;
@@ -407,20 +443,16 @@ async function saveStaffAnnouncement() {
     }
 
     try {
-        const token = (window.getAuthToken ? window.getAuthToken() : '');
-        const url = id ? `/api/staff-announcements/${id}` : '/api/staff-announcements';
+        const announcementId = id ? normalizeNotificationId(id) : null;
+        if (id && !announcementId) throw new Error('ID pengumuman tidak valid');
+        const url = announcementId ? `/api/staff-announcements/${announcementId}` : '/api/staff-announcements';
         const method = id ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
+        const data = await staffApiRequest(url, {
             method,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({ title, message, priority, status })
         });
 
-        const data = await response.json();
         if (!data.success) throw new Error(data.message);
 
         $('#modal-staff-announcement').modal('hide');
@@ -444,13 +476,11 @@ async function deleteStaffAnnouncement(id) {
     if (!result.isConfirmed) return;
 
     try {
-        const token = (window.getAuthToken ? window.getAuthToken() : '');
-        const response = await fetch(`/api/staff-announcements/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
+        const announcementId = normalizeNotificationId(id);
+        if (!announcementId) throw new Error('ID pengumuman tidak valid');
+        const data = await staffApiRequest(`/api/staff-announcements/${announcementId}`, {
+            method: 'DELETE'
         });
-
-        const data = await response.json();
         if (!data.success) throw new Error(data.message);
 
         Swal.fire('Sukses', 'Pengumuman berhasil dihapus', 'success');
@@ -482,34 +512,23 @@ async function loadNotificationsPage() {
     `;
 
     try {
-        const token = await window.getIdToken();
-        if (!token) {
-            container.innerHTML = '<div class="alert alert-warning">Silakan login untuk melihat notifikasi.</div>';
-            return;
-        }
-
-        // Fetch notifications
-        const notifResponse = await fetch('/api/notifications?limit=50', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        // Fetch announcements
-        const annResponse = await fetch('/api/announcements?status=active&limit=20', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const [notifResult, annResult] = await Promise.allSettled([
+            staffApiRequest('/api/notifications?limit=50'),
+            staffApiRequest('/api/announcements?status=active&limit=20')
+        ]);
 
         let notifications = [];
         let announcements = [];
 
-        if (notifResponse.ok) {
-            const notifData = await notifResponse.json();
+        if (notifResult.status === 'fulfilled') {
+            const notifData = notifResult.value;
             if (notifData.success) {
                 notifications = notifData.notifications.map(n => ({ ...n, source: 'notification' }));
             }
         }
 
-        if (annResponse.ok) {
-            const annData = await annResponse.json();
+        if (annResult.status === 'fulfilled') {
+            const annData = annResult.value;
             if (annData.success) {
                 announcements = (annData.data || annData.announcements || []).map(a => ({
                     id: a.id,
@@ -524,6 +543,10 @@ async function loadNotificationsPage() {
                     is_read: 0
                 }));
             }
+        }
+
+        if (notifResult.status === 'rejected' && annResult.status === 'rejected') {
+            throw notifResult.reason;
         }
 
         // Combine and sort
@@ -578,18 +601,17 @@ function filterNotifications(filter) {
 function renderNotificationMarkdown(text) {
     if (!text) return '';
     try {
-        // Use marked.js to parse markdown
-        if (typeof marked !== 'undefined') {
-            // Configure marked for safe output
-            marked.setOptions({
+        if (window.marked && window.DOMPurify) {
+            window.marked.setOptions({
                 breaks: true,
                 gfm: true
             });
-            // Parse and return
-            let html = marked.parse(text);
-            // Remove wrapping <p> tags to keep it inline-ish
+            let html = window.marked.parse(text);
             html = html.replace(/^<p>/, '').replace(/<\/p>\n?$/, '');
-            return html;
+            return window.DOMPurify.sanitize(html, {
+                ALLOWED_TAGS: ['a', 'b', 'br', 'code', 'em', 'i', 'li', 'ol', 'p', 'strong', 'ul'],
+                ALLOWED_ATTR: ['href', 'rel', 'target']
+            });
         }
     } catch (e) {
         console.error('[Notifications] Markdown parse error:', e);
@@ -633,17 +655,23 @@ function renderNotificationsPageList() {
     container.innerHTML = pageData.map(item => {
         const isRead = item.is_read;
         const timeAgo = formatTimeAgo(item.created_at);
-        const sourceLabel = item.source === 'announcement' ?
+        const source = normalizeNotificationSource(item.source);
+        const itemId = normalizeNotificationId(item.id);
+        const link = normalizeNotificationLink(item.link);
+        const icon = normalizeNotificationIcon(item.icon);
+        const sourceLabel = source === 'announcement' ?
             '<span class="badge badge-info badge-sm ml-2">Pengumuman</span>' :
             '<span class="badge badge-secondary badge-sm ml-2">Notifikasi</span>';
 
         return `
-            <div class="card mb-2 notification-card ${!isRead ? 'border-left-primary' : ''}" style="border-left-width: ${!isRead ? '4px' : '1px'}; cursor: ${item.link ? 'pointer' : 'default'};" onclick="${item.link ? `handleNotifPageClick('${item.link}')` : ''}">
+            <div class="card mb-2 notification-card ${!isRead ? 'border-left-primary' : ''}"
+                 data-notification-link="${escapeAttribute(link)}"
+                 style="border-left-width: ${!isRead ? '4px' : '1px'}; cursor: ${link ? 'pointer' : 'default'};">
                 <div class="card-body py-3">
                     <div class="d-flex align-items-start">
                         <div class="mr-3">
                             <span class="btn btn-${!isRead ? 'primary' : 'secondary'} btn-sm rounded-circle" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
-                                <i class="${item.icon || 'fas fa-bell'}"></i>
+                                <i class="${icon}"></i>
                             </span>
                         </div>
                         <div class="flex-grow-1">
@@ -660,13 +688,13 @@ function renderNotificationsPageList() {
                                     </small>
                                 </div>
                                 <div class="ml-3">
-                                    ${item.source === 'notification' && !isRead ? `
-                                        <button class="btn btn-sm btn-outline-primary" onclick="markNotificationReadPage(${item.id})" title="Tandai dibaca">
+                                    ${source === 'notification' && !isRead && itemId ? `
+                                        <button class="btn btn-sm btn-outline-primary" data-notification-action="mark-read" data-notification-id="${itemId}" title="Tandai dibaca">
                                             <i class="fas fa-check"></i>
                                         </button>
                                     ` : ''}
-                                    ${item.link ? `
-                                        <a href="${item.link}" class="btn btn-sm btn-outline-secondary ml-1" title="Lihat detail">
+                                    ${link ? `
+                                        <a href="#" data-notification-action="open-link" class="btn btn-sm btn-outline-secondary ml-1" title="Lihat detail">
                                             <i class="fas fa-external-link-alt"></i>
                                         </a>
                                     ` : ''}
@@ -678,6 +706,29 @@ function renderNotificationsPageList() {
             </div>
         `;
     }).join('');
+
+    container.querySelectorAll('.notification-card[data-notification-link]').forEach(card => {
+        card.addEventListener('click', event => {
+            if (event.target.closest('button, a')) return;
+            runNotificationNavigation(card.dataset.notificationLink || '');
+        });
+    });
+    container.querySelectorAll('[data-notification-action="mark-read"]').forEach(button => {
+        button.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            const id = normalizeNotificationId(button.dataset.notificationId);
+            if (id) markNotificationReadPage(id);
+        });
+    });
+    container.querySelectorAll('[data-notification-action="open-link"]').forEach(linkButton => {
+        linkButton.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            const card = linkButton.closest('.notification-card');
+            runNotificationNavigation(card?.dataset.notificationLink || '');
+        });
+    });
 
     // Update pagination
     document.getElementById('notif-showing-start').textContent = start + 1;
@@ -732,17 +783,14 @@ function goToNotificationPage(page) {
 
 async function markNotificationReadPage(id) {
     try {
-        const token = await window.getIdToken();
-        if (!token) return;
-
-        const response = await fetch(`/api/notifications/${id}/read`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
+        const notificationId = normalizeNotificationId(id);
+        if (!notificationId) return;
+        const data = await staffApiRequest(`/api/notifications/${notificationId}/read`, {
+            method: 'POST'
         });
-
-        if (response.ok) {
+        if (data?.success !== false) {
             // Update local data
-            const item = notificationPageData.find(n => n.id === id && n.source === 'notification');
+            const item = notificationPageData.find(n => normalizeNotificationId(n.id) === notificationId && n.source === 'notification');
             if (item) {
                 item.is_read = 1;
             }
@@ -757,15 +805,8 @@ async function markNotificationReadPage(id) {
 
 async function markAllNotificationsReadPage() {
     try {
-        const token = await window.getIdToken();
-        if (!token) return;
-
-        const response = await fetch('/api/notifications/read-all', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (response.ok) {
+        const data = await staffApiRequest('/api/notifications/read-all', { method: 'POST' });
+        if (data?.success !== false) {
             // Update local data
             notificationPageData.forEach(n => {
                 if (n.source === 'notification') {
@@ -801,15 +842,16 @@ function formatTimeAgo(dateString) {
     return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
 function handleNotifPageClick(link) {
     runNotificationNavigation(link);
 }
 window.handleNotifPageClick = handleNotifPageClick;
 window.initStaffNotificationSystem = initNotificationSystem;
+window.handleNotificationClick = handleNotificationClick;
+window.markAllNotificationsRead = markAllNotificationsRead;
+window.showAllNotifications = showAllNotifications;
+window.loadNotificationsPage = loadNotificationsPage;
+window.filterNotifications = filterNotifications;
+window.goToNotificationPage = goToNotificationPage;
+window.markNotificationReadPage = markNotificationReadPage;
+window.markAllNotificationsReadPage = markAllNotificationsReadPage;

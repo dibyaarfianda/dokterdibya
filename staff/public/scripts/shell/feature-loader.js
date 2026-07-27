@@ -79,7 +79,10 @@ const featureLoaders = {
         await import(`../pages/finance-analysis-page.js?v=${version}`);
     },
     registrationCodes: () => loadScript('/staff/public/scripts/shell/registration-codes.js'),
-    notifications: () => loadScript('/staff/public/scripts/shell/notifications.js')
+    notifications: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`./notifications.js?v=${version}`);
+    }
 };
 
 export function ensureFeature(name) {

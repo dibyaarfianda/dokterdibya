@@ -125,7 +125,8 @@ describe('staff panel wave 1 hardening contracts', () => {
         const notifications = read('staff', 'public', 'scripts', 'shell', 'notifications.js');
 
         expect((notifications.match(/function formatTimeAgo\(/g) || [])).toHaveLength(1);
-        expect((notifications.match(/function escapeHtml\(/g) || [])).toHaveLength(1);
+        expect((notifications.match(/function escapeHtml\(/g) || [])).toHaveLength(0);
+        expect(notifications).toContain("import { escapeHtml, escapeAttribute, sanitizeUrl } from '../safe-render.js';");
     });
 
     test('lazy monitoring pages update the shell title and finance uses the real nav id', () => {
@@ -141,5 +142,30 @@ describe('staff panel wave 1 hardening contracts', () => {
         expect(main).toContain("'nav-finance-analysis':                 () => showFinanceAnalysisPage(),");
         expect(descriptors).toContain("['finance-analysis', 'finance-analysis-page', 'nav-finance-analysis', 'Finance Analysis']");
         expect(main).not.toContain("'finance-analysis-nav':");
+    });
+
+    test('notification module uses the shared API and treats server content as untrusted', () => {
+        const notifications = read('staff', 'public', 'scripts', 'shell', 'notifications.js');
+        const featureLoader = read('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
+
+        expect(notifications).toContain("import { staffApiRequest } from '../staff-api.js';");
+        expect(notifications).toContain("import { escapeHtml, escapeAttribute, sanitizeUrl } from '../safe-render.js';");
+        expect(notifications).not.toMatch(/\bfetch\s*\(/);
+        expect(notifications).toContain('DOMPurify.sanitize');
+        expect(notifications).toContain('normalizeNotificationIcon');
+        expect(notifications).toContain('normalizeNotificationLink');
+        expect(notifications).not.toContain('onclick="handleNotificationClick(${item.id}');
+        expect(notifications).not.toContain('href="${item.link}"');
+        expect(featureLoader).toContain("await import(`./notifications.js?v=${version}`);");
+        expect(notifications).toContain('window.markAllNotificationsRead = markAllNotificationsRead;');
+        expect(notifications).toContain('window.filterNotifications = filterNotifications;');
+    });
+
+    test('staff announcement queries keep an explicit stable response contract', () => {
+        const route = read('staff', 'backend', 'routes', 'staff-announcements.js');
+
+        expect(route).toContain('const STAFF_ANNOUNCEMENT_COLUMNS = [');
+        expect(route).toContain("STAFF_ANNOUNCEMENT_COLUMNS.join(', ')");
+        expect(route).not.toMatch(/SELECT\s+\*\s+FROM\s+staff_announcements/i);
     });
 });

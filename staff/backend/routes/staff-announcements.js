@@ -10,6 +10,19 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
+const STAFF_ANNOUNCEMENT_COLUMNS = [
+    'id',
+    'title',
+    'message',
+    'priority',
+    'status',
+    'created_by',
+    'created_by_name',
+    'created_at',
+    'updated_at'
+];
+const STAFF_ANNOUNCEMENT_SELECT = STAFF_ANNOUNCEMENT_COLUMNS.join(', ');
+
 /**
  * GET /api/staff-announcements
  * Get all active staff announcements (for all staff)
@@ -17,7 +30,7 @@ const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 router.get('/', verifyToken, async (req, res, next) => {
     try {
         const [announcements] = await db.query(
-            `SELECT * FROM staff_announcements
+            `SELECT ${STAFF_ANNOUNCEMENT_SELECT} FROM staff_announcements
              WHERE status = 'active'
              ORDER BY
                 CASE priority
@@ -43,7 +56,7 @@ router.get('/', verifyToken, async (req, res, next) => {
 router.get('/all', verifyToken, requireSuperadmin, async (req, res, next) => {
     try {
         const [announcements] = await db.query(
-            `SELECT * FROM staff_announcements
+            `SELECT ${STAFF_ANNOUNCEMENT_SELECT} FROM staff_announcements
              ORDER BY created_at DESC`
         );
 
@@ -61,7 +74,7 @@ router.get('/all', verifyToken, requireSuperadmin, async (req, res, next) => {
 router.get('/:id', verifyToken, async (req, res, next) => {
     try {
         const [[announcement]] = await db.query(
-            'SELECT * FROM staff_announcements WHERE id = ?',
+            `SELECT ${STAFF_ANNOUNCEMENT_SELECT} FROM staff_announcements WHERE id = ?`,
             [req.params.id]
         );
 
@@ -101,7 +114,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res, next) => {
         );
 
         const [[newAnnouncement]] = await db.query(
-            'SELECT * FROM staff_announcements WHERE id = ?',
+            `SELECT ${STAFF_ANNOUNCEMENT_SELECT} FROM staff_announcements WHERE id = ?`,
             [result.insertId]
         );
 
@@ -145,7 +158,7 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res, next) => {
         }
 
         const [[updated]] = await db.query(
-            'SELECT * FROM staff_announcements WHERE id = ?',
+            `SELECT ${STAFF_ANNOUNCEMENT_SELECT} FROM staff_announcements WHERE id = ?`,
             [id]
         );
 
