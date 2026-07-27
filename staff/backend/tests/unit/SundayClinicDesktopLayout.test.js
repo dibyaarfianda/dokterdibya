@@ -36,6 +36,17 @@ describe('Sunday Clinic desktop layout', () => {
         expect(sharedCss).not.toContain('min-width: 140px !important;');
     });
 
+    test('uses Klinik Privat branding and keeps only the required header actions', () => {
+        expect(page).toContain('<i class="fas fa-clinic-medical mr-2"></i>Klinik Privat');
+        expect(page).toContain('class="btn btn-outline-secondary btn-sm mobile-back-btn"');
+        expect(page).toContain('id="btn-header-queue"');
+        expect(page).toContain('id="btn-toggle-patient-sidebar"');
+        expect(page).not.toContain('id="sc-open-directory"');
+        expect(page).not.toContain('id="btn-header-search"');
+        expect(page).not.toContain('window.openImportModal');
+        expect(page).not.toContain('window.openBulkImportModal');
+    });
+
     test('removes duplicate desktop section labels and hides an empty context header', () => {
         expect(sharedCss).toContain('body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-section-inline-title');
         expect(sharedCss).toContain('display: none !important;');

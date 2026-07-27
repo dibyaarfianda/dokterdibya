@@ -205,7 +205,7 @@ body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-identity .card
 }
 
 body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions {
-    flex: 1 1 620px !important;
+    flex: 0 1 auto !important;
     justify-content: flex-end !important;
     gap: 6px !important;
     min-width: 0 !important;
