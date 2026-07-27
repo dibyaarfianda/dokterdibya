@@ -27,10 +27,19 @@ describe('observability authorization integration', () => {
     test('RUM ingestion remains available without staff authentication', async () => {
         const response = await request(app)
             .post('/api/rum')
-            .send({ page: 'dashboard', metrics: { LCP: 120 } });
+            .send({
+                page: 'dashboard',
+                metrics: { LCP: 120 },
+                errors: [{
+                    type: 'window_error',
+                    fingerprint: 'test-fingerprint',
+                    message: 'Gagal untuk patient@example.com DRD1048 di https://example.com/private?id=123456'
+                }]
+            });
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
+        expect(response.body.accepted).toBe(2);
     });
 
     test('RUM summary rejects anonymous and non-superadmin requests', async () => {
@@ -51,5 +60,11 @@ describe('observability authorization integration', () => {
 
         expect(response.status).toBe(200);
         expect(response.body).toMatchObject({ success: true });
+        const recorded = response.body.data.clientErrors.find(item => item.fingerprint === 'test-fingerprint');
+        expect(recorded).toMatchObject({ type: 'window_error', count: 1 });
+        expect(recorded.message).toContain('[email]');
+        expect(recorded.message).toContain('[record]');
+        expect(recorded.message).toContain('[url]');
+        expect(recorded.message).not.toContain('patient@example.com');
     });
 });

@@ -25,14 +25,15 @@ describe('staff panel stabilization sources', () => {
     test('Kelola Pasien inline route preserves reload state and releases Kantor Saya scroll lock', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
+        const patientTools = readNormalizedFile('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
 
         expect(html).toContain('data-shell-action="show-manage-patients"');
-        expect(html).toContain('window.showManagePatientsPage = async function()');
-        expect(html).toContain("sessionStorage.setItem('lastStaffNavId', 'nav-kelola-pasien');");
-        expect(html).toContain("document.documentElement.classList.remove('kantor-saya-active');");
-        expect(html).toContain("document.body.classList.remove('kantor-saya-active');");
-        expect(html).toContain("document.documentElement.style.overflowY = 'auto';");
-        expect(html).toContain("document.body.style.overflowY = 'auto';");
+        expect(patientTools).toContain('window.showManagePatientsPage = async function()');
+        expect(patientTools).toContain("sessionStorage.setItem('lastStaffNavId', 'nav-kelola-pasien');");
+        expect(patientTools).toContain("document.documentElement.classList.remove('kantor-saya-active');");
+        expect(patientTools).toContain("document.body.classList.remove('kantor-saya-active');");
+        expect(patientTools).toContain("document.documentElement.style.overflowY = 'auto';");
+        expect(patientTools).toContain("document.body.style.overflowY = 'auto';");
         expect(mainJs).toContain("'nav-kelola-pasien':");
         expect(mainJs).toContain("() => showKelolaPasienPage()");
     });
@@ -60,13 +61,13 @@ describe('staff panel stabilization sources', () => {
     });
 
     test('patient table metadata uses an ASCII-safe separator before DRD links', () => {
-        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const patientTools = readNormalizedFile('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
 
-        expect(html).toContain('const nameMeta = patient.mr_id');
-        expect(html).toContain('${patient.id} - <a href="${mrIdUrl}"');
-        expect(html).toContain("visitHistoryBadge ? ` - ${visitHistoryBadge}`");
-        expect(html).not.toContain('ï¿½');
-        expect(html).not.toContain('�');
+        expect(patientTools).toContain('const nameMeta = patient.mr_id');
+        expect(patientTools).toContain('${patient.id} - <a href="${mrIdUrl}"');
+        expect(patientTools).toContain("visitHistoryBadge ? ` - ${visitHistoryBadge}`");
+        expect(patientTools).not.toContain('ï¿½');
+        expect(patientTools).not.toContain('�');
     });
 
     test('Sunday Clinic PWA overrides the staff shell with its scoped compact clinical tokens', () => {
@@ -516,7 +517,7 @@ describe('staff panel stabilization sources', () => {
         const dashboard = readRepoFile('staff', 'public', 'scripts', 'dashboard.js');
         const antrianOnline = readRepoFile('staff', 'public', 'scripts', 'antrian-online.js');
         const pollingCoordinator = readRepoFile('staff', 'public', 'scripts', 'shell', 'polling-coordinator.js');
-        const html = readRepoFile('staff', 'public', 'index-adminlte.html');
+        const notifications = readRepoFile('staff', 'public', 'scripts', 'shell', 'notifications.js');
 
         expect(chatPopup).toContain('const CHAT_HISTORY_POLL_INTERVAL_MS = 15000;');
         expect(chatPopup).toContain('const CHAT_HISTORY_ERROR_BACKOFF_MS = 30000;');
@@ -535,9 +536,9 @@ describe('staff panel stabilization sources', () => {
         expect(pollingCoordinator).toContain('nextDelay = job.backoff');
         expect(pollingCoordinator).toContain('job.controller.abort()');
 
-        expect(html).toContain('let notificationCountInFlight = false;');
-        expect(html).toContain('let notificationCountBackoffUntil = 0;');
-        expect(html).toContain('const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;');
+        expect(notifications).toContain('let notificationCountInFlight = false;');
+        expect(notifications).toContain('let notificationCountBackoffUntil = 0;');
+        expect(notifications).toContain('const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;');
     });
 
     test('mobile chat reply coalesces scrolling without moving the iOS visual viewport', () => {

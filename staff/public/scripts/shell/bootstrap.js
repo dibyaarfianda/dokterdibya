@@ -45,6 +45,32 @@ async function bootstrapStaffShell() {
 
     installLazyFeatureShim('showTanyaDokterPage', 'tanyaDokter', 'tanya-dokter');
     installLazyFeatureShim('viewPatientDetail', 'patientSearchDetail');
+    [
+        'showManagePatientsPage',
+        'showPatientActivityPage',
+        'showGuestActivityPage',
+        'showActivityLogPage',
+        'showKelolaSupplierPage',
+        'showKelolaObatPage',
+        'showPengaturanPage',
+        'showRegistrasiPasienPage',
+        'openImportModal',
+        'openBulkImportModal',
+        'showPatientMRList',
+        'syncWebPatients'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'patientTools'));
+    [
+        'showProfileCompletionModal',
+        'toggleCompletionPassword',
+        'openGenerateCodeModal',
+        'loadDashboardCurrentCode'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'registrationCodes'));
+    [
+        'showNotificationsPage',
+        'showAllNotifications',
+        'markAllNotificationsRead',
+        'markAllNotificationsReadPage'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'notifications'));
 
     window.auth = auth;
     window.getIdToken = getIdToken;
@@ -123,6 +149,9 @@ async function bootstrapStaffShell() {
         try {
             initAuth(user);
             window.dispatchEvent(new CustomEvent('staff:auth-ready', { detail: { user } }));
+            ensureFeature('notifications')
+                .then(() => window.initStaffNotificationSystem?.())
+                .catch(error => console.warn('[WARN] Notification system unavailable:', error));
         } catch (error) {
             console.error('[ERROR] Error initializing auth UI:', error);
         }
@@ -149,15 +178,9 @@ async function bootstrapStaffShell() {
 
             try {
                 if (window.__currentPage !== 'dashboard') return;
-                if (typeof window.loadDashboardCurrentCode === 'function') {
-                    window.loadDashboardCurrentCode();
-                } else {
-                    setTimeout(() => {
-                        if (typeof window.loadDashboardCurrentCode === 'function') {
-                            window.loadDashboardCurrentCode();
-                        }
-                    }, 500);
-                }
+                ensureFeature('registrationCodes')
+                    .then(() => window.loadDashboardCurrentCode?.())
+                    .catch(error => console.warn('[WARN] Dashboard registration code unavailable:', error));
             } catch (error) {
                 console.error('[ERROR] Error loading dashboard code:', error);
             }

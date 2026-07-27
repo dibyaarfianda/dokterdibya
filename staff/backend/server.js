@@ -82,6 +82,36 @@ app.use(helmet({
     contentSecurityPolicy: false, // Disable if using inline scripts
     crossOriginEmbedderPolicy: false
 }));
+app.use(helmet.contentSecurityPolicy({
+    reportOnly: true,
+    useDefaults: false,
+    directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://cdn.jsdelivr.net',
+            'https://cdn.socket.io',
+            'https://cdn.datatables.net',
+            'https://js.xendit.co'
+        ],
+        styleSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            'https://fonts.googleapis.com',
+            'https://cdn.jsdelivr.net',
+            'https://cdn.datatables.net'
+        ],
+        fontSrc: ["'self'", 'data:', 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+        connectSrc: ["'self'", 'https:', 'wss:'],
+        frameSrc: ["'self'", 'https:'],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        reportUri: ['/api/csp-report']
+    }
+}));
 
 // Response compression
 app.use(compression());
@@ -97,7 +127,10 @@ app.use(cors({
     origin: corsOriginDelegate,
     credentials: true
 }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({
+    limit: '10mb',
+    type: ['application/json', 'application/csp-report', 'application/reports+json']
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const LEGACY_PATIENT_NATIVE_APP_MESSAGE = 'Aplikasi mobile dokterDIBYA versi lama sudah dinonaktifkan. Silakan akses Portal Pasien melalui PWA SISIwanita di https://sisiwanita.id';
@@ -193,6 +226,27 @@ app.use('/api/medical-import/', expensiveLimiter);
 app.use('/api/usg-bulk-upload/', expensiveLimiter);
 app.use('/api/pdf/', expensiveLimiter);
 app.use('/api/', standardLimiter);
+
+function normalizeCspReportValue(value) {
+    if (typeof value !== 'string' || !value.trim()) return '';
+    try {
+        const parsed = new URL(value, 'https://dokterdibya.com');
+        return `${parsed.origin}${parsed.pathname}`.slice(0, 240);
+    } catch (_error) {
+        return value.split('?')[0].slice(0, 240);
+    }
+}
+
+app.post('/api/csp-report', (req, res) => {
+    const report = req.body?.['csp-report'] || req.body || {};
+    logger.warn('CSP report-only violation', {
+        effectiveDirective: String(report['effective-directive'] || report.effectiveDirective || 'unknown').slice(0, 80),
+        blockedUri: normalizeCspReportValue(report['blocked-uri'] || report.blockedURL),
+        documentUri: normalizeCspReportValue(report['document-uri'] || report.documentURL),
+        disposition: 'report'
+    });
+    return res.status(204).end();
+});
 
 // Request coalescing for high-traffic GET endpoints
 app.use('/api/notifications/count', coalesce);

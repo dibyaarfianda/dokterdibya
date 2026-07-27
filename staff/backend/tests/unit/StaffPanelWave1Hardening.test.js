@@ -59,12 +59,39 @@ describe('staff panel wave 1 hardening contracts', () => {
         expect(serverRum).toContain("recordMetric('api:' + ep");
     });
 
-    test('notification navigation has no eval and only dispatches allowlisted actions', () => {
-        const html = read('staff', 'public', 'index-adminlte.html');
+    test('client errors are scrubbed, fingerprinted, bounded, and aggregated without raw stacks', () => {
+        const clientRum = read('staff', 'public', 'scripts', 'rum.js');
+        const serverRum = read('staff', 'backend', 'routes', 'rum.js');
+        const errorHandler = read('staff', 'public', 'scripts', 'error-handler.js');
 
-        expect(html).not.toMatch(/\beval\s*\(/);
-        expect(html).toContain('const NOTIFICATION_ACTIONS = Object.freeze({');
-        expect(html).toContain('runNotificationNavigation(link)');
+        expect(clientRum).toContain('var ERROR_BUFFER_SIZE = 20;');
+        expect(clientRum).toContain('function scrubErrorText(value)');
+        expect(clientRum).toContain('function stableHash(value)');
+        expect(clientRum).toContain("trackError(event.reason, 'unhandled_rejection')");
+        expect(serverRum).toContain('function sanitizeClientErrorText(value)');
+        expect(serverRum).toContain('const clientErrorStore = {};');
+        expect(serverRum).toContain('body.errors.slice(0, 20)');
+        expect(errorHandler).toContain("window.__rum?.trackError?.({");
+        expect(errorHandler).not.toContain("stack: error.stack,\n                url: window.location.href");
+    });
+
+    test('server publishes a report-only CSP and accepts sanitized violation reports', () => {
+        const server = read('staff', 'backend', 'server.js');
+
+        expect(server).toContain('helmet.contentSecurityPolicy({');
+        expect(server).toContain('reportOnly: true');
+        expect(server).toContain("reportUri: ['/api/csp-report']");
+        expect(server).toContain("app.post('/api/csp-report'");
+        expect(server).toContain("type: ['application/json', 'application/csp-report', 'application/reports+json']");
+        expect(server).not.toContain("blockedUri: report['blocked-uri']");
+    });
+
+    test('notification navigation has no eval and only dispatches allowlisted actions', () => {
+        const notifications = read('staff', 'public', 'scripts', 'shell', 'notifications.js');
+
+        expect(notifications).not.toMatch(/\beval\s*\(/);
+        expect(notifications).toContain('const NOTIFICATION_ACTIONS = Object.freeze({');
+        expect(notifications).toContain('runNotificationNavigation(link)');
     });
 
     test('frontend auth and chat use shared token and role constants', () => {
@@ -95,9 +122,9 @@ describe('staff panel wave 1 hardening contracts', () => {
     });
 
     test('duplicate notification helpers are removed', () => {
-        const html = read('staff', 'public', 'index-adminlte.html');
+        const notifications = read('staff', 'public', 'scripts', 'shell', 'notifications.js');
 
-        expect((html.match(/function formatTimeAgo\(/g) || [])).toHaveLength(1);
-        expect((html.match(/function escapeHtml\(/g) || [])).toHaveLength(1);
+        expect((notifications.match(/function formatTimeAgo\(/g) || [])).toHaveLength(1);
+        expect((notifications.match(/function escapeHtml\(/g) || [])).toHaveLength(1);
     });
 });

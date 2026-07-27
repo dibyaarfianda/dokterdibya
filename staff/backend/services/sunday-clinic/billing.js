@@ -29,6 +29,23 @@ const {
 } = require('./shared');
 const { updateQueueStatus } = require('./queue');
 
+const BILLING_COLUMNS = [
+    'id', 'mr_id', 'patient_id', 'subtotal', 'total', 'status', 'pending_changes',
+    'change_requests', 'last_modified_by', 'last_modified_at', 'billing_data',
+    'confirmed_at', 'confirmed_by', 'printed_at', 'printed_by', 'invoice_url',
+    'etiket_url', 'created_at', 'updated_at', 'paid_at', 'paid_by'
+].join(', ');
+
+const BILLING_ITEM_COLUMNS = [
+    'id', 'billing_id', 'item_type', 'item_code', 'item_name',
+    'quantity', 'price', 'total', 'item_data'
+].join(', ');
+
+const BILLING_REVISION_COLUMNS = [
+    'id', 'mr_id', 'message', 'requested_by', 'status',
+    'approved_at', 'approved_by', 'created_at', 'updated_at'
+].join(', ');
+
 async function getBillingPending(req, res, next) {
     try {
         // Get recent billings that are either:
@@ -98,7 +115,7 @@ async function getBillingByMrId(req, res, next) {
 
         // Get billing record
         const [billingRows] = await db.query(
-            `SELECT * FROM sunday_clinic_billings WHERE mr_id = ? ORDER BY created_at DESC LIMIT 1`,
+            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ? ORDER BY created_at DESC LIMIT 1`,
             [normalizedMrId]
         );
 
@@ -106,7 +123,7 @@ async function getBillingByMrId(req, res, next) {
         if (billingRows.length > 0) {
             const billingRow = billingRows[0];
             const [itemRows] = await db.query(
-                `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ? ORDER BY id`,
+                `SELECT ${BILLING_ITEM_COLUMNS} FROM sunday_clinic_billing_items WHERE billing_id = ? ORDER BY id`,
                 [billingRow.id]
             );
             const [[pendingPayment]] = await db.query(
@@ -725,7 +742,7 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
     try {
         // Get current billing
         const [[billing]] = await db.query(
-            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ?`,
             [normalizedMrId]
         );
 
@@ -749,7 +766,7 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
 
         // Re-check billing after lock to avoid stale state race.
         const [[billingLocked]] = await db.query(
-            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ?`,
             [normalizedMrId]
         );
 
@@ -1094,7 +1111,7 @@ async function postBillingRevisionsByIdApprove(req, res, next) {
 
         // Get revision details
         const [[revision]] = await db.query(
-            'SELECT * FROM sunday_clinic_billing_revisions WHERE id = ?',
+            `SELECT ${BILLING_REVISION_COLUMNS} FROM sunday_clinic_billing_revisions WHERE id = ?`,
             [revisionId]
         );
 
@@ -1137,7 +1154,7 @@ async function postBillingByMrIdPrintEtiket(req, res, next) {
 
         // Get billing data
         const [[billing]] = await db.query(
-            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ?`,
             [normalizedMrId]
         );
 
@@ -1150,7 +1167,7 @@ async function postBillingByMrIdPrintEtiket(req, res, next) {
 
         // Get billing items from sunday_clinic_billing_items
         const [items] = await db.query(
-            `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            `SELECT ${BILLING_ITEM_COLUMNS} FROM sunday_clinic_billing_items WHERE billing_id = ?`,
             [billing.id]
         );
 
@@ -1207,7 +1224,7 @@ async function postBillingByMrIdPrintInvoice(req, res, next) {
 
         // Get billing data
         const [[billing]] = await db.query(
-            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ?`,
             [normalizedMrId]
         );
 
@@ -1220,7 +1237,7 @@ async function postBillingByMrIdPrintInvoice(req, res, next) {
 
         // Get billing items from sunday_clinic_billing_items
         const [items] = await db.query(
-            `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            `SELECT ${BILLING_ITEM_COLUMNS} FROM sunday_clinic_billing_items WHERE billing_id = ?`,
             [billing.id]
         );
 
@@ -2251,7 +2268,7 @@ async function deleteBillingByMrIdItemsIdByItemId(req, res, next) {
 
         // Get item details before deletion (for response)
         const [itemRows] = await connection.query(
-            `SELECT * FROM sunday_clinic_billing_items WHERE id = ? AND billing_id = ?`,
+            `SELECT ${BILLING_ITEM_COLUMNS} FROM sunday_clinic_billing_items WHERE id = ? AND billing_id = ?`,
             [itemId, billing.id]
         );
 

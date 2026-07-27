@@ -3,20 +3,24 @@
  * Handles batch import of medical records from SIMRS
  */
 
-import { getIdToken } from './vps-auth-v2.js';
-
-const API_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:3000/api'
-    : '/api';
+import { createPageRequestScope } from './staff-api.js';
+import { escapeAttribute, escapeHtml, sanitizeUrl } from './safe-render.js';
 
 let currentBatchId = null;
 let refreshInterval = null;
+let socketRetryTimer = null;
+let medifyProgressHandler = null;
+let medifyCompleteHandler = null;
+let requestScope = createPageRequestScope();
+let medifySyncActive = false;
 
 /**
  * Initialize MEDIFY Sync page
  */
 export async function initMedifySync() {
     console.log('[MedifySync] Initializing...');
+    if (requestScope.signal.aborted) requestScope = createPageRequestScope();
+    medifySyncActive = true;
 
     // Check credentials status
     await loadCredentialsStatus();
@@ -35,21 +39,7 @@ export async function initMedifySync() {
  * API request helper
  */
 async function apiRequest(endpoint, options = {}) {
-    const token = await getIdToken();
-    const response = await fetch(`${API_URL}${endpoint}`, {
-        ...options,
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            ...options.headers
-        }
-    });
-
-    const data = await response.json();
-    if (!response.ok) {
-        throw new Error(data.message || 'Request failed');
-    }
-    return data;
+    return requestScope.request(`/api${endpoint}`, options);
 }
 
 /**
@@ -123,7 +113,7 @@ function updateStatusUI(data) {
             <div class="alert alert-info">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
                 <strong>Sync sedang berjalan</strong>
-                <p class="mb-0 mt-2">Sedang memproses: ${data.currentJob.patient_name}</p>
+                <p class="mb-0 mt-2">Sedang memproses: ${escapeHtml(data.currentJob.patient_name)}</p>
             </div>
         `;
 
@@ -238,13 +228,13 @@ function renderHistoryTable(history) {
 
     tbody.innerHTML = history.map(h => `
         <tr>
-            <td>${formatDateTime(h.started_at)}</td>
-            <td>${getSourceName(h.simrs_source)}</td>
-            <td>${h.total}</td>
+            <td>${escapeHtml(formatDateTime(h.started_at))}</td>
+            <td>${escapeHtml(getSourceName(h.simrs_source))}</td>
+            <td>${Number(h.total) || 0}</td>
             <td><span class="badge badge-success">${h.success || 0}</span></td>
             <td><span class="badge badge-danger">${h.failed || 0}</span></td>
             <td>
-                <button class="btn btn-xs btn-info" onclick="window.viewBatchDetails('${h.batch_id}')">
+                <button class="btn btn-xs btn-info" onclick="window.viewBatchDetails('${escapeAttribute(h.batch_id)}')">
                     <i class="fas fa-eye"></i> Detail
                 </button>
             </td>
@@ -357,16 +347,18 @@ async function startSync(source) {
  * Setup Socket.IO listeners
  */
 function setupSocketListeners() {
+    if (!medifySyncActive || medifyProgressHandler || medifyCompleteHandler) return;
+
     // Use window.socket which is set by realtime-sync.js
     if (!window.socket) {
         console.log('[MedifySync] Socket not ready, will retry...');
-        setTimeout(setupSocketListeners, 1000);
+        socketRetryTimer = setTimeout(setupSocketListeners, 1000);
         return;
     }
 
     console.log('[MedifySync] Setting up socket listeners');
 
-    window.socket.on('medify_progress', (data) => {
+    medifyProgressHandler = (data) => {
         console.log('[MedifySync] Progress:', data);
 
         const progressBar = document.getElementById('sync-progress-bar');
@@ -383,7 +375,7 @@ function setupSocketListeners() {
 
         // Update current status message
         if (currentPatient && data.message) {
-            currentPatient.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${data.message}`;
+            currentPatient.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${escapeHtml(data.message)}`;
         }
 
         // Update status container
@@ -404,9 +396,9 @@ function setupSocketListeners() {
                 </div>
             `;
         }
-    });
+    };
 
-    window.socket.on('medify_sync_complete', (data) => {
+    medifyCompleteHandler = (data) => {
         console.log('[MedifySync] Sync complete:', data);
         showToast('Sync selesai!', 'success');
 
@@ -458,7 +450,31 @@ function setupSocketListeners() {
         if (data.batchId) {
             loadReviewSection(data.batchId);
         }
-    });
+    };
+
+    window.socket.on('medify_progress', medifyProgressHandler);
+    window.socket.on('medify_sync_complete', medifyCompleteHandler);
+}
+
+export function destroyMedifySync() {
+    medifySyncActive = false;
+    requestScope.abort('MEDIFY Sync page deactivated');
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+    if (socketRetryTimer) {
+        clearTimeout(socketRetryTimer);
+        socketRetryTimer = null;
+    }
+    if (window.socket && medifyProgressHandler) {
+        window.socket.off('medify_progress', medifyProgressHandler);
+    }
+    if (window.socket && medifyCompleteHandler) {
+        window.socket.off('medify_sync_complete', medifyCompleteHandler);
+    }
+    medifyProgressHandler = null;
+    medifyCompleteHandler = null;
 }
 
 /**
@@ -487,15 +503,15 @@ function showBatchDetailsModal(jobs) {
 
     tbody.innerHTML = jobs.map(j => `
         <tr>
-            <td>${j.patient_name}</td>
+            <td>${escapeHtml(j.patient_name)}</td>
             <td>
                 <span class="badge badge-${getStatusBadge(j.status)}">
-                    ${j.status}
+                    ${escapeHtml(j.status)}
                 </span>
             </td>
-            <td>${j.simrs_patient_id || '-'}</td>
+            <td>${escapeHtml(j.simrs_patient_id || '-')}</td>
             <td>${j.records_imported || 0}</td>
-            <td>${j.error_message || '-'}</td>
+            <td>${escapeHtml(j.error_message || '-')}</td>
         </tr>
     `).join('');
 
@@ -854,8 +870,8 @@ function renderPatientPreview(preview) {
                 <div class="d-flex flex-wrap">
                     ${preview.usgPhotos.map(p => `
                         <div class="m-1" style="cursor: pointer;"
-                             onclick="window.previewImage('${p.thumbnailUrl}', '${escapeHtml(p.title || p.fileName)}')">
-                            <img src="${p.thumbnailUrl}"
+                             onclick="window.previewImage('${escapeAttribute(sanitizeUrl(p.thumbnailUrl))}', '${escapeAttribute(p.title || p.fileName)}')">
+                            <img src="${escapeAttribute(sanitizeUrl(p.thumbnailUrl))}"
                                  alt="${escapeHtml(p.title || p.fileName)}"
                                  class="usg-thumbnail">
                         </div>
@@ -873,7 +889,7 @@ function renderPatientPreview(preview) {
                 <ul class="list-unstyled mb-0">
                     ${preview.labFiles.map(f => `
                         <li>
-                            <a href="${f.url}" target="_blank">
+                            <a href="${escapeAttribute(sanitizeUrl(f.url))}" target="_blank" rel="noopener noreferrer">
                                 <i class="fas fa-file-pdf text-danger"></i> ${escapeHtml(f.name)}
                             </a>
                         </li>
@@ -1058,16 +1074,6 @@ function previewImage(url, title) {
 }
 
 /**
- * Escape HTML for safe display
- */
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-/**
  * Load last review from the most recent successful batch
  */
 async function loadLastReview() {
@@ -1102,3 +1108,10 @@ window.sendSelectedToPortal = sendSelectedToPortal;
 window.toggleSelectAllPatients = toggleSelectAllPatients;
 window.updateSelectedCount = updateSelectedCount;
 window.previewImage = previewImage;
+window.destroyMedifySync = destroyMedifySync;
+
+document.addEventListener('page:changed', event => {
+    if (event.detail?.page !== 'medify-sync' && medifySyncActive) {
+        destroyMedifySync();
+    }
+});

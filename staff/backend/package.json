@@ -11,7 +11,11 @@
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPatterns=unit",
-    "test:integration": "jest --testPathPatterns=integration"
+    "test:integration": "jest --testPathPatterns=integration",
+    "test:ci": "jest --runInBand --coverage=false --testPathPatterns=unit",
+    "test:staff-smoke": "jest --runInBand --coverage=false tests/unit/StaffPanelWave1Hardening.test.js tests/unit/StaffPanelWave2LazyShell.test.js tests/unit/StaffApiClient.test.js tests/integration/observabilityAuth.test.js",
+    "check:staff-static": "node scripts/staff-static-check.js",
+    "perf:budget": "node scripts/perf-budget-check.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.939.0",

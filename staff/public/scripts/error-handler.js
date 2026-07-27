@@ -112,29 +112,15 @@ class ErrorHandler {
     }
 
     /**
-     * Report error to tracking service (implement in production)
+     * Report a sanitized error through the shared RUM buffer.
      */
     reportError(message, error) {
-        // TODO: Implement error tracking service integration
-        // Example: Send to Sentry, Rollbar, or custom logging service
         try {
-            const errorData = {
-                message,
-                error: error.message,
-                stack: error.stack,
-                url: window.location.href,
-                userAgent: navigator.userAgent,
-                timestamp: new Date().toISOString()
-            };
-            
-            // Send to your error tracking endpoint
-            // fetch('/api/error-log', {
-            //     method: 'POST',
-            //     headers: { 'Content-Type': 'application/json' },
-            //     body: JSON.stringify(errorData)
-            // });
-            
-            this.log('Error reported:', errorData);
+            window.__rum?.trackError?.({
+                name: error?.name || 'HandledError',
+                message: `${message}: ${error?.message || 'Unknown error'}`,
+                stack: error?.stack || ''
+            }, 'handled_error');
         } catch (e) {
             // Silent fail
         }

@@ -3029,7 +3029,7 @@ async function loadStaffActivityFilters() {
 
 async function showFinanceAnalysisPage() {
     await ensureRegisteredPage('finance-analysis');
-    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('apexCharts');
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('financeAnalysis');
     hideAllPages();
     pages.financeAnalysis?.classList.remove('d-none');
     setTitleAndActive('Finance Analysis', 'finance-analysis-nav', 'finance-analysis');

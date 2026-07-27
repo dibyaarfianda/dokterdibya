@@ -15,6 +15,7 @@ const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 const MAX_SAMPLES = 500;
 const metricStore = {};
+const clientErrorStore = {};
 
 function ensureBucket(name) {
     if (!metricStore[name]) {
@@ -50,6 +51,43 @@ function normalizeApiPath(endpoint) {
     } catch (_) {
         return endpoint.split('?')[0].slice(0, 100) || '/unknown';
     }
+}
+
+function sanitizeClientErrorText(value) {
+    return String(value || 'Unknown client error')
+        .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]')
+        .replace(/https?:\/\/[^\s)]+/g, '[url]')
+        .replace(/\b(?:DRD|P)\d{4,}\b/gi, '[record]')
+        .replace(/\b\d{6,}\b/g, '[number]')
+        .slice(0, 180);
+}
+
+function recordClientError(raw, page) {
+    if (!raw || typeof raw !== 'object') return false;
+    const fingerprint = /^[a-z0-9_-]{1,64}$/i.test(String(raw.fingerprint || ''))
+        ? String(raw.fingerprint)
+        : 'unknown';
+    const type = String(raw.type || 'error').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'error';
+    const key = `${type}:${fingerprint}`;
+    const existing = clientErrorStore[key] || {
+        type,
+        fingerprint,
+        message: sanitizeClientErrorText(raw.message),
+        count: 0,
+        pages: {},
+        lastSeen: null
+    };
+    existing.count += 1;
+    existing.lastSeen = new Date().toISOString();
+    if (page) existing.pages[page] = (existing.pages[page] || 0) + 1;
+    clientErrorStore[key] = existing;
+
+    const keys = Object.keys(clientErrorStore);
+    if (keys.length > 200) {
+        keys.sort((a, b) => String(clientErrorStore[a].lastSeen).localeCompare(String(clientErrorStore[b].lastSeen)));
+        keys.slice(0, keys.length - 200).forEach(oldKey => delete clientErrorStore[oldKey]);
+    }
+    return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +157,11 @@ function getRumSummary() {
     let cacheStats = null;
     try { cacheStats = cache.stats(); } catch (_) {}
 
-    return { timestamp: new Date().toISOString(), webVitals, apiTimings, cacheStats };
+    const clientErrors = Object.values(clientErrorStore)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 30);
+
+    return { timestamp: new Date().toISOString(), webVitals, apiTimings, clientErrors, cacheStats };
 }
 
 function getCacheStats() {
@@ -157,6 +199,12 @@ router.post('/', (req, res) => {
             const ep = normalizeApiPath(call.endpoint);
             recordMetric('api:' + ep, call.duration, page);
             accepted++;
+        }
+    }
+
+    if (Array.isArray(body.errors)) {
+        for (const clientError of body.errors.slice(0, 20)) {
+            if (recordClientError(clientError, page)) accepted++;
         }
     }
 

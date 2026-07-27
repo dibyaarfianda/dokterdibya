@@ -3,7 +3,11 @@ const stylePromises = new Map();
 const featurePromises = new Map();
 
 function absoluteUrl(url) {
-    return new URL(url, window.location.href).href;
+    const resolved = new URL(url, window.location.href);
+    if (resolved.origin === window.location.origin && !resolved.searchParams.has('v')) {
+        resolved.searchParams.set('v', window.STAFF_CACHE_VERSION || 'dev');
+    }
+    return resolved.href;
 }
 
 function loadScript(url) {
@@ -47,7 +51,7 @@ const featureLoaders = {
         await loadScript('https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js');
         window.installGlobalDataTableDateSorting?.();
     },
-    apexCharts: () => loadScript('https://cdn.jsdelivr.net/npm/apexcharts'),
+    apexCharts: () => loadScript('https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js'),
     markdown: () => Promise.all([
         loadScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js'),
         loadScript('https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js')
@@ -67,7 +71,15 @@ const featureLoaders = {
     staffBriefing: () => loadScript('/staff/public/scripts/staff-briefing.js'),
     staffPayroll: () => loadScript('/staff/public/scripts/staff-payroll.js'),
     appointmentDebug: () => loadScript('/staff/public/scripts/shell/appointment-debug.js'),
-    patientSearchDetail: () => loadScript('/staff/public/scripts/shell/patient-search-detail.js')
+    patientSearchDetail: () => loadScript('/staff/public/scripts/shell/patient-search-detail.js'),
+    patientTools: () => loadScript('/staff/public/scripts/legacy/patient-tools.js'),
+    financeAnalysis: async () => {
+        await ensureFeature('apexCharts');
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/finance-analysis-page.js?v=${version}`);
+    },
+    registrationCodes: () => loadScript('/staff/public/scripts/shell/registration-codes.js'),
+    notifications: () => loadScript('/staff/public/scripts/shell/notifications.js')
 };
 
 export function ensureFeature(name) {

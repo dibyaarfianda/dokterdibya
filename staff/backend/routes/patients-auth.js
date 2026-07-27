@@ -26,6 +26,24 @@ const {
 } = require('../utils/patientAccessBlocklist');
 const PATIENT_AUTH_BLOCKLIST_ENABLED = process.env.PATIENT_AUTH_BLOCKLIST_ENABLED === 'true';
 
+const PATIENT_AUTH_COLUMNS = [
+    'id',
+    'full_name',
+    'email',
+    'phone',
+    'birth_date',
+    'age',
+    'password',
+    'google_id',
+    'photo_url',
+    'home_photo_url',
+    'registration_date',
+    'status',
+    'profile_completed',
+    'intake_completed',
+    'email_verified'
+].join(', ');
+
 // Configure multer for profile photo upload (memory storage for R2)
 const photoUpload = multer({
     storage: multer.memoryStorage(),
@@ -384,7 +402,7 @@ router.post('/login', async (req, res) => {
         
         // Find patient by email
         const [patients] = await db.query(
-            'SELECT * FROM patients WHERE email = ? AND status = "active"',
+            `SELECT ${PATIENT_AUTH_COLUMNS} FROM patients WHERE email = ? AND status = "active"`,
             [email]
         );
         
@@ -531,7 +549,7 @@ router.post('/auth/google', async (req, res) => {
 
         // Check if patient exists
         const [existingPatients] = await db.query(
-            'SELECT * FROM patients WHERE email = ?',
+            `SELECT ${PATIENT_AUTH_COLUMNS} FROM patients WHERE email = ?`,
             [email]
         );
 
@@ -851,7 +869,7 @@ router.post('/google-auth-code', async (req, res) => {
 
         // Check if patient exists
         const [existingPatients] = await db.query(
-            'SELECT * FROM patients WHERE email = ?',
+            `SELECT ${PATIENT_AUTH_COLUMNS} FROM patients WHERE email = ?`,
             [email]
         );
 

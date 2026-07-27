@@ -89,23 +89,20 @@ describe('staff shell refactor phase 1', () => {
 
     test('patient and guest activity launchers are globally callable from sidebar and Kantor Saya widgets', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const patientTools = readNormalizedFile('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
         const kantorSaya = readNormalizedFile('staff', 'public', 'scripts', 'kantor-saya.js');
 
         expect(html).toMatch(/id="nav-patient-activity"[\s\S]*?onclick="showPatientActivityPage\(\); return false;"/);
         expect(html).toMatch(/id="nav-guest-activity"[\s\S]*?onclick="showGuestActivityPage\(\); return false;"/);
-        expect(html).toContain('window.showPatientActivityPage = async function()');
-        expect(html).toContain('window.showGuestActivityPage = function()');
-        expect(html).toContain('window.loadPatientActivity = async function(page = 0)');
-        expect(html).toContain('window.loadGuestActivity = async function(page = 0)');
+        expect(patientTools).toContain('window.showPatientActivityPage = async function()');
+        expect(patientTools).toContain('window.showGuestActivityPage = function()');
+        expect(patientTools).toContain('window.loadPatientActivity = async function(page = 0)');
+        expect(patientTools).toContain('window.loadGuestActivity = async function(page = 0)');
         expect(html).toContain('window.formatDateLocal = window.formatDateLocal || function(date)');
         expect(html).toContain('window.updateStaffPageRoute = function(page, navId)');
         expect(html).toContain("['mr', 'section', 'patient', 'appointment', 'location'].forEach(param => url.searchParams.delete(param));");
-        expect(html).toContain("window.updateStaffPageRoute('patient-activity', 'nav-patient-activity');");
-        expect(html).toContain("window.updateStaffPageRoute('guest-activity', 'nav-guest-activity');");
-        expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
-            .toBeLessThan(html.indexOf('window.showPatientActivityPage = async function()'));
-        expect(html.indexOf('window.formatDateLocal = window.formatDateLocal || function(date)'))
-            .toBeLessThan(html.indexOf('window.showGuestActivityPage = function()'));
+        expect(patientTools).toContain("window.updateStaffPageRoute('patient-activity', 'nav-patient-activity');");
+        expect(patientTools).toContain("window.updateStaffPageRoute('guest-activity', 'nav-guest-activity');");
         expect(kantorSaya).toContain("actionName: 'showPatientActivityPage'");
         expect(kantorSaya).toContain("actionName: 'showGuestActivityPage'");
     });
@@ -134,17 +131,18 @@ describe('staff shell refactor phase 1', () => {
 
     test('patient search and detail diagnostics are gated away from production console logs', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const patientTools = readNormalizedFile('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
         const patientSearchDetail = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'patient-search-detail.js');
         const featureLoader = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
 
         expect(html).not.toMatch(/<script[^>]+src="scripts\/shell\/patient-search-detail\.js/);
         expect(featureLoader).toContain("patientSearchDetail: () => loadScript('/staff/public/scripts/shell/patient-search-detail.js')");
-        expect(html).toContain('window.installPatientViewButtons({');
-        expect(html).not.toContain("console.log('[SEARCH DEBUG] Search params:', { name, id, mr_id, email, phone, whatsapp, husband });");
-        expect(html).not.toContain("console.log('[SEARCH DEBUG] API Response:', data);");
-        expect(html).not.toContain("console.log('[SEARCH DEBUG] Results:', data.data.map(p => ({ id: p.id, name: p.full_name })));");
-        expect(html).not.toContain("console.log('Patient data received:', data);");
-        expect(html).not.toContain("console.log('Intake data:', intake);");
+        expect(patientTools).toContain('window.installPatientViewButtons({');
+        expect(patientTools).not.toContain("console.log('[SEARCH DEBUG] Search params:', { name, id, mr_id, email, phone, whatsapp, husband });");
+        expect(patientTools).not.toContain("console.log('[SEARCH DEBUG] API Response:', data);");
+        expect(patientTools).not.toContain("console.log('[SEARCH DEBUG] Results:', data.data.map(p => ({ id: p.id, name: p.full_name })));");
+        expect(patientTools).not.toContain("console.log('Patient data received:', data);");
+        expect(patientTools).not.toContain("console.log('Intake data:', intake);");
         expect(patientSearchDetail).toContain('window.staffDebugLog = window.staffDebugLog || function staffDebugLog(scope, ...args)');
         expect(patientSearchDetail).toContain("new URLSearchParams(window.location.search).get('debugStaff') === '1'");
         expect(patientSearchDetail).toContain('window.installPatientViewButtons = function installPatientViewButtons(options = {})');

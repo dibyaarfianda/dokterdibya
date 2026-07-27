@@ -19,6 +19,47 @@ const HOSPITAL_NAMES = {
     'rs_bhayangkara': 'RS BHAYANGKARA'
 };
 
+const OBAT_SALE_COLUMNS = [
+    'id',
+    'sale_number',
+    'patient_id',
+    'patient_name',
+    'patient_age',
+    'hospital_source',
+    'subtotal',
+    'total',
+    'cost_total',
+    'profit',
+    'status',
+    'is_test',
+    'payment_method',
+    'confirmed_at',
+    'confirmed_by',
+    'paid_at',
+    'paid_by',
+    'invoice_url',
+    'created_at',
+    'created_by',
+    'updated_at'
+].join(', ');
+
+const OBAT_SALE_LIST_COLUMNS = OBAT_SALE_COLUMNS
+    .split(', ')
+    .map(column => `os.${column}`)
+    .join(', ');
+
+const OBAT_SALE_ITEM_COLUMNS = [
+    'id',
+    'sale_id',
+    'obat_id',
+    'obat_code',
+    'obat_name',
+    'quantity',
+    'price',
+    'total',
+    'created_at'
+].join(', ');
+
 /**
  * Generate sale number: OS-YYYYMMDD-XXX
  */
@@ -52,7 +93,7 @@ router.get('/', verifyToken, async (req, res, next) => {
         const { status, hospital, date_from, date_to, search, limit = 50, offset = 0 } = req.query;
 
         let query = `
-            SELECT os.*
+            SELECT ${OBAT_SALE_LIST_COLUMNS}
             FROM obat_sales os
             WHERE 1=1
         `;
@@ -88,13 +129,24 @@ router.get('/', verifyToken, async (req, res, next) => {
 
         const [sales] = await db.query(query, params);
 
-        // Get items for each sale
+        const saleIds = sales.map(sale => sale.id);
+        const [saleItems] = saleIds.length
+            ? await db.query(
+                `SELECT ${OBAT_SALE_ITEM_COLUMNS}
+                 FROM obat_sale_items
+                 WHERE sale_id IN (?)
+                 ORDER BY id`,
+                [saleIds]
+            )
+            : [[]];
+        const itemsBySaleId = new Map();
+        saleItems.forEach(item => {
+            if (!itemsBySaleId.has(item.sale_id)) itemsBySaleId.set(item.sale_id, []);
+            itemsBySaleId.get(item.sale_id).push(item);
+        });
+
         for (const sale of sales) {
-            const [items] = await db.query(
-                'SELECT * FROM obat_sale_items WHERE sale_id = ?',
-                [sale.id]
-            );
-            sale.items = items;
+            sale.items = itemsBySaleId.get(sale.id) || [];
             sale.hospital_name = HOSPITAL_NAMES[sale.hospital_source] || sale.hospital_source;
         }
 
@@ -137,7 +189,7 @@ router.get('/obat-list', verifyToken, async (req, res, next) => {
 router.get('/:id', verifyToken, async (req, res, next) => {
     try {
         const [[sale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -146,7 +198,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
         }
 
         const [items] = await db.query(
-            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            `SELECT ${OBAT_SALE_ITEM_COLUMNS} FROM obat_sale_items WHERE sale_id = ?`,
             [sale.id]
         );
         sale.items = items;
@@ -249,12 +301,12 @@ router.post('/', verifyToken, async (req, res, next) => {
 
         // Fetch created sale
         const [[newSale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [saleId]
         );
 
         const [newItems] = await db.query(
-            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            `SELECT ${OBAT_SALE_ITEM_COLUMNS} FROM obat_sale_items WHERE sale_id = ?`,
             [saleId]
         );
         newSale.items = newItems;
@@ -287,7 +339,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
 
         // Check sale exists and is draft
         const [[sale]] = await connection.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -364,7 +416,7 @@ router.put('/:id', verifyToken, async (req, res, next) => {
 router.delete('/:id', verifyToken, async (req, res, next) => {
     try {
         const [[sale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -414,7 +466,7 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
         }
 
         const [[sale]] = await connection.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -433,7 +485,7 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
 
         // Get sale items
         const [items] = await connection.query(
-            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            `SELECT ${OBAT_SALE_ITEM_COLUMNS} FROM obat_sale_items WHERE sale_id = ?`,
             [sale.id]
         );
 
@@ -582,7 +634,7 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
 router.post('/:id/mark-paid', verifyToken, async (req, res, next) => {
     try {
         const [[sale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -644,7 +696,7 @@ router.post('/:id/set-payment-method', verifyToken, async (req, res, next) => {
         }
 
         const [[sale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -692,7 +744,7 @@ router.post('/:id/set-payment-method', verifyToken, async (req, res, next) => {
 router.post('/:id/invoice-base64', verifyToken, async (req, res, next) => {
     try {
         const [[sale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -709,7 +761,7 @@ router.post('/:id/invoice-base64', verifyToken, async (req, res, next) => {
 
         // Get items
         const [items] = await db.query(
-            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            `SELECT ${OBAT_SALE_ITEM_COLUMNS} FROM obat_sale_items WHERE sale_id = ?`,
             [sale.id]
         );
         sale.items = items;
@@ -756,7 +808,7 @@ router.post('/:id/invoice-base64', verifyToken, async (req, res, next) => {
 router.post('/:id/etiket-base64', verifyToken, async (req, res, next) => {
     try {
         const [[sale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -773,7 +825,7 @@ router.post('/:id/etiket-base64', verifyToken, async (req, res, next) => {
 
         // Get items
         const [items] = await db.query(
-            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            `SELECT ${OBAT_SALE_ITEM_COLUMNS} FROM obat_sale_items WHERE sale_id = ?`,
             [sale.id]
         );
         sale.items = items;
@@ -820,7 +872,7 @@ router.post('/:id/etiket-base64', verifyToken, async (req, res, next) => {
 router.post('/:id/print-invoice', verifyToken, async (req, res, next) => {
     try {
         const [[sale]] = await db.query(
-            'SELECT * FROM obat_sales WHERE id = ?',
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
             [req.params.id]
         );
 
@@ -837,7 +889,7 @@ router.post('/:id/print-invoice', verifyToken, async (req, res, next) => {
 
         // Get items
         const [items] = await db.query(
-            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            `SELECT ${OBAT_SALE_ITEM_COLUMNS} FROM obat_sale_items WHERE sale_id = ?`,
             [sale.id]
         );
         sale.items = items;

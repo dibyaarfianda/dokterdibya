@@ -80,7 +80,7 @@ describe('Wave 4 Sunday Clinic backend boundaries', () => {
     });
 
     test('orphaned new-patient compatibility loader exits before issuing a request', () => {
-        const source = fs.readFileSync(path.resolve(backendRoot, '../public/index-adminlte.html'), 'utf8');
+        const source = fs.readFileSync(path.resolve(backendRoot, '../public/scripts/legacy/patient-tools.js'), 'utf8');
         const loaderStart = source.indexOf('async function loadNewPatients(page = 1)');
         const guard = source.indexOf("if (!tbody) return;", loaderStart);
         const request = source.indexOf("fetch(`/api/patients?view=basic", loaderStart);

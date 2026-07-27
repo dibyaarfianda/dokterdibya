@@ -1,0 +1,26 @@
+name: Staff Performance Budget
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 23 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  production-budget:
+    runs-on: ubuntu-latest
+    env:
+      STAFF_PERF_TOKEN: ${{ secrets.STAFF_PERF_TOKEN }}
+    defaults:
+      run:
+        working-directory: staff/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check production performance budgets
+        if: ${{ env.STAFF_PERF_TOKEN != '' }}
+        run: node scripts/perf-budget-check.js --base-url https://dokterdibya.com --token "$STAFF_PERF_TOKEN"

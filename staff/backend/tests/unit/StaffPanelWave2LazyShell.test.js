@@ -67,18 +67,60 @@ describe('staff panel wave 2 lazy shell contracts', () => {
     test('feature loader owns lazy third-party and staff feature dependencies', () => {
         const loader = read('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
 
-        for (const asset of ['dataTables', 'apexCharts', 'markdown', 'qrcode', 'xendit', 'sundayClinic', 'supportChat', 'tanyaDokter', 'staffPoints', 'staffBriefing', 'staffPayroll']) {
+        for (const asset of [
+            'dataTables',
+            'apexCharts',
+            'markdown',
+            'qrcode',
+            'xendit',
+            'sundayClinic',
+            'supportChat',
+            'tanyaDokter',
+            'staffPoints',
+            'staffBriefing',
+            'staffPayroll',
+            'patientTools',
+            'financeAnalysis',
+            'registrationCodes',
+            'notifications'
+        ]) {
             expect(loader).toContain(asset);
         }
     });
 
     test('finance initialization skips removed legacy analytics containers', () => {
-        const html = read('staff', 'public', 'index-adminlte.html');
+        const financeModule = read('staff', 'public', 'scripts', 'pages', 'finance-analysis-page.js');
 
-        expect(html).toContain('const hasLegacyAnalyticsContainers = [');
-        expect(html).toMatch(/if \(hasLegacyAnalyticsContainers\) \{\s*await loadAnalytics\(\);\s*\}/);
-        expect(html).toMatch(/if \(document\.getElementById\('monthly-revenue-chart'\)\) \{\s*renderMonthlyRevenueChart/);
-        expect(html).toMatch(/if \(document\.getElementById\('top-drugs-table'\)\) \{\s*renderTopDrugsTable/);
+        expect(financeModule).toContain('const hasLegacyAnalyticsContainers = [');
+        expect(financeModule).toMatch(/if \(hasLegacyAnalyticsContainers\) \{\s*await loadAnalytics\(\);\s*\}/);
+        expect(financeModule).toMatch(/if \(document\.getElementById\('monthly-revenue-chart'\)\) \{\s*renderMonthlyRevenueChart/);
+        expect(financeModule).toMatch(/if \(document\.getElementById\('top-drugs-table'\)\) \{\s*renderTopDrugsTable/);
+    });
+
+    test('large staff features are extracted from the shell and loaded on demand', () => {
+        const html = read('staff', 'public', 'index-adminlte.html');
+        const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        const patientTools = read('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
+        const finance = read('staff', 'public', 'scripts', 'pages', 'finance-analysis-page.js');
+        const registration = read('staff', 'public', 'scripts', 'shell', 'registration-codes.js');
+        const notifications = read('staff', 'public', 'scripts', 'shell', 'notifications.js');
+
+        expect(Buffer.byteLength(html, 'utf8')).toBeLessThan(400000);
+        for (const marker of [
+            'window.showManagePatientsPage = async function()',
+            "import { getIdToken } from './scripts/vps-auth-v2.js';",
+            'window.profileCompletionData = {',
+            'let notificationPollInterval = null;'
+        ]) {
+            expect(html).not.toContain(marker);
+        }
+        expect(patientTools).toContain('window.showManagePatientsPage = async function()');
+        expect(finance).toContain('window.initFinanceAnalysisPage = initFinanceAnalysisPage;');
+        expect(registration).toContain('window.openGenerateCodeModal = openGenerateCodeModal;');
+        expect(notifications).toContain('window.initStaffNotificationSystem = initNotificationSystem;');
+        expect(bootstrap).toContain("installLazyFeatureShim(globalName, 'patientTools')");
+        expect(bootstrap).toContain("installLazyFeatureShim(globalName, 'registrationCodes')");
+        expect(bootstrap).toContain("ensureFeature('notifications')");
     });
 
     test('PageRegistry loads once and emits activate/deactivate lifecycle in order', async () => {

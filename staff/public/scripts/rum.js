@@ -9,9 +9,11 @@
 
   var metrics = {};
   var apiCalls = [];
+  var clientErrors = [];
   var hasPendingData = false;
   var BEACON_INTERVAL = 30000;
   var API_BUFFER_SIZE = 50;
+  var ERROR_BUFFER_SIZE = 20;
 
   // --- Web Vitals via PerformanceObserver ---
 
@@ -121,6 +123,54 @@
     hasPendingData = true;
   }
 
+  // --- Sanitized client error tracking ---
+
+  function scrubErrorText(value) {
+    return String(value || 'Unknown client error')
+      .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]')
+      .replace(/https?:\/\/[^\s)]+/g, '[url]')
+      .replace(/\b(?:DRD|P)\d{4,}\b/gi, '[record]')
+      .replace(/\b\d{6,}\b/g, '[number]')
+      .slice(0, 180);
+  }
+
+  function stableHash(value) {
+    var hash = 2166136261;
+    var input = String(value || '');
+    for (var i = 0; i < input.length; i++) {
+      hash ^= input.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
+
+  function trackError(error, type) {
+    var source = error && typeof error === 'object' ? error : { message: error };
+    var message = scrubErrorText(source.message || source.reason || source);
+    var stackShape = String(source.stack || '')
+      .split('\n')
+      .slice(0, 4)
+      .join('\n')
+      .replace(/:\d+:\d+/g, ':#:#')
+      .replace(/https?:\/\/[^\s)]+/g, '[url]');
+    clientErrors.push({
+      type: String(type || source.name || 'error').slice(0, 40),
+      message: message,
+      fingerprint: stableHash((source.name || type || 'error') + '|' + message + '|' + stackShape),
+      ts: Date.now()
+    });
+    if (clientErrors.length > ERROR_BUFFER_SIZE) clientErrors.shift();
+    hasPendingData = true;
+  }
+
+  window.addEventListener('error', function (event) {
+    trackError(event.error || event.message, 'window_error');
+  });
+
+  window.addEventListener('unhandledrejection', function (event) {
+    trackError(event.reason, 'unhandled_rejection');
+  });
+
   // --- Beacon / Send ---
 
   function buildPayload() {
@@ -129,7 +179,8 @@
       role: window.__userRole || 'unknown',
       ts: Date.now(),
       metrics: Object.assign({}, metrics),
-      apiCalls: apiCalls.splice(0)
+      apiCalls: apiCalls.splice(0),
+      errors: clientErrors.splice(0)
     };
   }
 
@@ -183,7 +234,8 @@
   // --- Public API ---
 
   window.__rum = {
-    trackApiCall: trackApiCall
+    trackApiCall: trackApiCall,
+    trackError: trackError
   };
 
 })();

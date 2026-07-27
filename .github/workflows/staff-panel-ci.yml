@@ -1,0 +1,33 @@
+name: Staff Panel CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "staff/**"
+      - ".github/workflows/staff-panel-ci.yml"
+  pull_request:
+    paths:
+      - "staff/**"
+      - ".github/workflows/staff-panel-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  staff-contracts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: staff/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: staff/backend/package-lock.json
+      - run: npm ci
+      - run: npm run check:staff-static
+      - run: npm run test:staff-smoke
+      - run: npm run test:ci
