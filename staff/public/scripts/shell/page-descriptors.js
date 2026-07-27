@@ -4,7 +4,7 @@ const fragmentPages = [
     ['usg', 'usg-exam-page', 'nav-usg', 'Pemeriksaan USG'],
     ['kelola-roles', 'kelola-roles-page', 'management-nav-kelola-roles', 'Roles Manajemen'],
     ['estimasi-biaya', 'estimasi-biaya-page', 'nav-estimasi-biaya', 'Estimasi Biaya Kehamilan'],
-    ['finance-analysis', 'finance-analysis-page', 'finance-analysis-nav', 'Finance Analysis'],
+    ['finance-analysis', 'finance-analysis-page', 'nav-finance-analysis', 'Finance Analysis'],
     ['profile-settings', 'profile-settings-page', 'nav-profile-settings', 'Profile Settings'],
     ['kelola-obat', 'kelola-obat-page', 'management-nav-kelola-obat', 'Kelola Obat'],
     ['activity-log', 'activity-log-page', 'nav-activity-log', 'Activity Log'],

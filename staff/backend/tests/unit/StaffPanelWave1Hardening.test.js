@@ -127,4 +127,19 @@ describe('staff panel wave 1 hardening contracts', () => {
         expect((notifications.match(/function formatTimeAgo\(/g) || [])).toHaveLength(1);
         expect((notifications.match(/function escapeHtml\(/g) || [])).toHaveLength(1);
     });
+
+    test('lazy monitoring pages update the shell title and finance uses the real nav id', () => {
+        const patientTools = read('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
+        const main = read('staff', 'public', 'scripts', 'main.js');
+        const descriptors = read('staff', 'public', 'scripts', 'shell', 'page-descriptors.js');
+
+        expect(patientTools).toContain("titleEl.textContent = 'Aktivitas Pasien';");
+        expect(patientTools).toContain("titleEl.textContent = 'Aktivitas Demo';");
+        expect(patientTools).toContain("window.dispatchStaffPageChanged?.('patient-activity');");
+        expect(patientTools).toContain("window.dispatchStaffPageChanged?.('guest-activity');");
+        expect(main).toContain("setTitleAndActive('Finance Analysis', 'nav-finance-analysis', 'finance-analysis');");
+        expect(main).toContain("'nav-finance-analysis':                 () => showFinanceAnalysisPage(),");
+        expect(descriptors).toContain("['finance-analysis', 'finance-analysis-page', 'nav-finance-analysis', 'Finance Analysis']");
+        expect(main).not.toContain("'finance-analysis-nav':");
+    });
 });

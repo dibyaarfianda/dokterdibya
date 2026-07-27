@@ -3032,7 +3032,7 @@ async function showFinanceAnalysisPage() {
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('financeAnalysis');
     hideAllPages();
     pages.financeAnalysis?.classList.remove('d-none');
-    setTitleAndActive('Finance Analysis', 'finance-analysis-nav', 'finance-analysis');
+    setTitleAndActive('Finance Analysis', 'nav-finance-analysis', 'finance-analysis');
     // Call embedded initialization function after page is visible
     setTimeout(() => {
         if (typeof window.initFinanceAnalysisPage === 'function') {
@@ -5463,7 +5463,7 @@ function restoreLastPage() {
             'nav-staff-points':                     () => showStaffPointsPage(),
             'nav-staff-briefing':                   () => showStaffBriefingPage(),
             'nav-staff-payroll':                    () => showStaffPayrollPage(),
-            'finance-analysis-nav':                 () => showFinanceAnalysisPage(),
+            'nav-finance-analysis':                 () => showFinanceAnalysisPage(),
             'nav-birth-congrats':                   () => showBirthCongratsPage(),
             'nav-birth-testimonials':               () => showBirthTestimonialsPage(),
             'nav-invoice-history':                  () => showInvoiceHistoryPage(),

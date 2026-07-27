@@ -2436,6 +2436,12 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
         patientActivityNav?.querySelector('.nav-link')?.classList.add('active');
 
+        const titleEl = document.getElementById('page-title');
+        if (titleEl) {
+            titleEl.textContent = 'Aktivitas Pasien';
+        }
+        window.dispatchStaffPageChanged?.('patient-activity');
+
         // Hide floating panel
         const floatingPanel = document.getElementById('floating-kelola-pasien');
         if (floatingPanel) {
@@ -2627,6 +2633,12 @@ Apakah Anda yakin ingin melanjutkan?`;
             guestActivityNav.classList.remove('d-none');
         }
         guestActivityNav?.querySelector('.nav-link')?.classList.add('active');
+
+        const titleEl = document.getElementById('page-title');
+        if (titleEl) {
+            titleEl.textContent = 'Aktivitas Demo';
+        }
+        window.dispatchStaffPageChanged?.('guest-activity');
 
         const floatingPanel = document.getElementById('floating-kelola-pasien');
         if (floatingPanel) floatingPanel.classList.add('d-none');
