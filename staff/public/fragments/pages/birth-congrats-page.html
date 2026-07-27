@@ -1,0 +1,157 @@
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-primary">
+                <div class="card-header" style="background: linear-gradient(135deg, #007bff, #0056b3);">
+                    <h3 class="card-title"><i class="fas fa-baby mr-2"></i>Ucapan Selamat Kelahiran</h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-light btn-sm" data-action="birth-add">
+                            <i class="fas fa-plus mr-1"></i>Tambah Baru
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="birth-congrats-list">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                            <p>Memuat data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="birthCongratsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white;">
+                <h5 class="modal-title"><i class="fas fa-baby mr-2"></i><span id="birthCongratsModalTitle">Tambah Ucapan Kelahiran</span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="birthCongratsForm">
+                    <input type="hidden" id="bc-edit-id">
+
+                    <div class="form-group">
+                        <label><i class="fas fa-user text-primary mr-1"></i>Pilih Pasien <span class="text-danger">*</span></label>
+                        <select class="form-control" id="bc-patient-id" style="width: 100%;" required>
+                            <option value="">-- Pilih Pasien --</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-baby text-primary mr-1"></i>Nama Bayi</label>
+                                <input type="text" class="form-control" id="bc-baby-name" placeholder="Contoh: Baby Ananda">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-venus-mars text-primary mr-1"></i>Jenis Kelamin</label>
+                                <select class="form-control" id="bc-gender">
+                                    <option value="">-- Pilih --</option>
+                                    <option value="male">Laki-laki</option>
+                                    <option value="female">Perempuan</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-calendar text-primary mr-1"></i>Tanggal Lahir</label>
+                                <input type="date" class="form-control" id="bc-birth-date">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-clock text-primary mr-1"></i>Jam Lahir</label>
+                                <input type="time" class="form-control" id="bc-birth-time">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-weight text-primary mr-1"></i>Berat Badan</label>
+                                <input type="text" class="form-control" id="bc-birth-weight" placeholder="Contoh: 3.2 kg">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label><i class="fas fa-ruler-vertical text-primary mr-1"></i>Panjang Badan</label>
+                                <input type="text" class="form-control" id="bc-birth-length" placeholder="Contoh: 50 cm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-comment-dots text-primary mr-1"></i>Pesan dari Dokter</label>
+                        <textarea class="form-control" id="bc-message" rows="3" placeholder="Tuliskan ucapan selamat..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-image text-primary mr-1"></i>Foto Kelahiran</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="bc-photo" accept="image/*">
+                            <label class="custom-file-label" for="bc-photo">Pilih foto...</label>
+                        </div>
+                        <small class="text-muted">Maks. 10MB, format: JPG, PNG</small>
+                        <div id="bc-photo-preview" class="mt-2" style="display: none;">
+                            <img src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 10px;">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label><i class="fas fa-palette text-primary mr-1"></i>Tema Warna</label>
+                        <div class="d-flex flex-wrap" id="bc-color-options">
+                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" data-action="birth-color" data-color="pink">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fff5f8, #ffd6e8); border: 3px solid #333;" class="color-box" data-color="pink"></div>
+                                <small class="d-block">Pink</small>
+                            </div>
+                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" data-action="birth-color" data-color="blue">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 3px solid transparent;" class="color-box" data-color="blue"></div>
+                                <small class="d-block">Blue</small>
+                            </div>
+                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" data-action="birth-color" data-color="green">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 3px solid transparent;" class="color-box" data-color="green"></div>
+                                <small class="d-block">Green</small>
+                            </div>
+                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" data-action="birth-color" data-color="purple">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #f3e5f5, #e1bee7); border: 3px solid transparent;" class="color-box" data-color="purple"></div>
+                                <small class="d-block">Purple</small>
+                            </div>
+                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" data-action="birth-color" data-color="gold">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fffde7, #fff9c4); border: 3px solid transparent;" class="color-box" data-color="gold"></div>
+                                <small class="d-block">Gold</small>
+                            </div>
+                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" data-action="birth-color" data-color="peach">
+                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fff3e0, #ffe0b2); border: 3px solid transparent;" class="color-box" data-color="peach"></div>
+                                <small class="d-block">Peach</small>
+                            </div>
+                        </div>
+                        <input type="hidden" name="bc-theme-color" id="bc-theme-color" value="pink">
+                    </div>
+
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="bc-is-published" checked>
+                            <label class="custom-control-label" for="bc-is-published">Tampilkan di Dashboard Pasien</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" data-action="birth-save">
+                    <i class="fas fa-save mr-1"></i>Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

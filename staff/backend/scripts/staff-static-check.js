@@ -45,6 +45,9 @@ check(server.includes('reportOnly: true'), 'report-only CSP is missing');
     ['staff', 'public', 'scripts', 'safe-render.js'],
     ['staff', 'public', 'scripts', 'medify-sync.js'],
     ['staff', 'public', 'scripts', 'pages', 'finance-analysis-page.js'],
+    ['staff', 'public', 'scripts', 'pages', 'birth-content-page.js'],
+    ['staff', 'public', 'scripts', 'pages', 'invoice-history-page.js'],
+    ['staff', 'public', 'scripts', 'pages', 'content-moderation-page.js'],
     ['staff', 'public', 'scripts', 'shell', 'bootstrap.js'],
     ['staff', 'public', 'scripts', 'shell', 'feature-loader.js']
 ].forEach(parts => checkModuleSyntax(...parts));

@@ -82,6 +82,18 @@ const featureLoaders = {
     notifications: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`./notifications.js?v=${version}`);
+    },
+    birthContent: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/birth-content-page.js?v=${version}`);
+    },
+    invoiceHistory: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/invoice-history-page.js?v=${version}`);
+    },
+    contentModeration: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/content-moderation-page.js?v=${version}`);
     }
 };
 

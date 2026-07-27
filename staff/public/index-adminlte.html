@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v359';
+        window.STAFF_CACHE_VERSION = 'v360';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v359">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v359">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v359">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v359">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v360">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v360">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v360">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v360">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v359">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v360">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v359">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v360">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -45,7 +45,7 @@
         }
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v359"></script>
+    <script src="scripts/error-handler.js?v=v360"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -60,10 +60,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v359">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v360">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v359">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v360">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -2397,192 +2397,9 @@
 
                 <!-- FINANCE ANALYSIS PAGE -->
                 <div id="finance-analysis-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/finance-analysis-page.html"></div>
-
-                <!-- BIRTH CONGRATULATIONS PAGE (Dokter Only) -->
-                <div id="birth-congrats-page" class="d-none">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card card-primary">
-                                    <div class="card-header" style="background: linear-gradient(135deg, #007bff, #0056b3);">
-                                        <h3 class="card-title"><i class="fas fa-baby mr-2"></i>Ucapan Selamat Kelahiran</h3>
-                                        <div class="card-tools">
-                                            <button class="btn btn-light btn-sm" onclick="showAddBirthCongratsModal()">
-                                                <i class="fas fa-plus mr-1"></i>Tambah Baru
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="birth-congrats-list">
-                                            <div class="text-center text-muted py-5">
-                                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
-                                                <p>Memuat data...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BIRTH TESTIMONIALS PAGE (Dokter/Staff) -->
-                <div id="birth-testimonials-page" class="d-none">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="card card-info">
-                                    <div class="card-header" style="background: linear-gradient(135deg, #17a2b8, #117a8b);">
-                                        <h3 class="card-title"><i class="fas fa-comment-dots mr-2"></i>Testimoni Pasien</h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="birth-testimonials-list">
-                                            <div class="text-center text-muted py-5">
-                                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
-                                                <p>Memuat data...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Birth Congratulations Modal -->
-                <div class="modal fade" id="birthCongratsModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white;">
-                                <h5 class="modal-title"><i class="fas fa-baby mr-2"></i><span id="birthCongratsModalTitle">Tambah Ucapan Kelahiran</span></h5>
-                                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
-                            </div>
-                            <div class="modal-body">
-                                <form id="birthCongratsForm">
-                                    <input type="hidden" id="bc-edit-id">
-
-                                    <!-- Patient Selection -->
-                                    <div class="form-group">
-                                        <label><i class="fas fa-user text-primary mr-1"></i>Pilih Pasien <span class="text-danger">*</span></label>
-                                        <select class="form-control" id="bc-patient-id" style="width: 100%;" required>
-                                            <option value="">-- Pilih Pasien --</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label><i class="fas fa-baby text-primary mr-1"></i>Nama Bayi</label>
-                                                <input type="text" class="form-control" id="bc-baby-name" placeholder="Contoh: Baby Ananda">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label><i class="fas fa-venus-mars text-primary mr-1"></i>Jenis Kelamin</label>
-                                                <select class="form-control" id="bc-gender">
-                                                    <option value="">-- Pilih --</option>
-                                                    <option value="male">Laki-laki</option>
-                                                    <option value="female">Perempuan</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label><i class="fas fa-calendar text-primary mr-1"></i>Tanggal Lahir</label>
-                                                <input type="date" class="form-control" id="bc-birth-date">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label><i class="fas fa-clock text-primary mr-1"></i>Jam Lahir</label>
-                                                <input type="time" class="form-control" id="bc-birth-time">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label><i class="fas fa-weight text-primary mr-1"></i>Berat Badan</label>
-                                                <input type="text" class="form-control" id="bc-birth-weight" placeholder="Contoh: 3.2 kg">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-group">
-                                                <label><i class="fas fa-ruler-vertical text-primary mr-1"></i>Panjang Badan</label>
-                                                <input type="text" class="form-control" id="bc-birth-length" placeholder="Contoh: 50 cm">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label><i class="fas fa-comment-dots text-primary mr-1"></i>Pesan dari Dokter</label>
-                                        <textarea class="form-control" id="bc-message" rows="3" placeholder="Tuliskan ucapan selamat..."></textarea>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label><i class="fas fa-image text-primary mr-1"></i>Foto Kelahiran</label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" id="bc-photo" accept="image/*">
-                                            <label class="custom-file-label" for="bc-photo">Pilih foto...</label>
-                                        </div>
-                                        <small class="text-muted">Maks. 10MB, format: JPG, PNG</small>
-                                        <div id="bc-photo-preview" class="mt-2" style="display: none;">
-                                            <img src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 10px;">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label><i class="fas fa-palette text-primary mr-1"></i>Tema Warna</label>
-                                        <div class="d-flex flex-wrap" id="bc-color-options">
-                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('pink')">
-                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fff5f8, #ffd6e8); border: 3px solid #333;" class="color-box" data-color="pink"></div>
-                                                <small class="d-block">Pink</small>
-                                            </div>
-                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('blue')">
-                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 3px solid transparent;" class="color-box" data-color="blue"></div>
-                                                <small class="d-block">Blue</small>
-                                            </div>
-                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('green')">
-                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 3px solid transparent;" class="color-box" data-color="green"></div>
-                                                <small class="d-block">Green</small>
-                                            </div>
-                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('purple')">
-                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #f3e5f5, #e1bee7); border: 3px solid transparent;" class="color-box" data-color="purple"></div>
-                                                <small class="d-block">Purple</small>
-                                            </div>
-                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('gold')">
-                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fffde7, #fff9c4); border: 3px solid transparent;" class="color-box" data-color="gold"></div>
-                                                <small class="d-block">Gold</small>
-                                            </div>
-                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('peach')">
-                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fff3e0, #ffe0b2); border: 3px solid transparent;" class="color-box" data-color="peach"></div>
-                                                <small class="d-block">Peach</small>
-                                            </div>
-                                        </div>
-                                        <input type="hidden" name="bc-theme-color" id="bc-theme-color" value="pink">
-                                    </div>
-
-                                    <div class="form-group">
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input" id="bc-is-published" checked>
-                                            <label class="custom-control-label" for="bc-is-published">Tampilkan di Dashboard Pasien</label>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                <button type="button" class="btn btn-primary" onclick="saveBirthCongrats()">
-                                    <i class="fas fa-save mr-1"></i>Simpan
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- BIRTH CONTENT PAGES (lazy) -->
+                <div id="birth-congrats-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/birth-congrats-page.html"></div>
+                <div id="birth-testimonials-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/birth-testimonials-page.html"></div>
 
                 <!-- APPOINTMENTS PAGE -->
                 <div id="appointments-page" class="d-none">
@@ -2655,343 +2472,16 @@
                         </div>
                     </div>
                 </div>
-
-                <div id="invoice-history-page" class="d-none">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title">
-                                        <i class="fas fa-file-invoice-dollar mr-2"></i>Riwayat Invoice / Keuangan
-                                    </h3>
-                                    <div class="card-tools">
-                                        <span class="badge badge-primary" id="invoice-count">0 invoice</span>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row mb-3">
-                                        <div class="col-md-3 mb-2">
-                                            <label for="invoice-start-date" class="mb-1">Tanggal Mulai</label>
-                                            <input type="date" id="invoice-start-date" class="form-control" onchange="loadInvoiceHistory()">
-                                        </div>
-                                        <div class="col-md-3 mb-2">
-                                            <label for="invoice-end-date" class="mb-1">Tanggal Akhir</label>
-                                            <input type="date" id="invoice-end-date" class="form-control" onchange="loadInvoiceHistory()">
-                                        </div>
-                                        <div class="col-md-2 mb-2">
-                                            <label for="invoice-status-filter" class="mb-1">Status</label>
-                                            <select id="invoice-status-filter" class="form-control" onchange="loadInvoiceHistory()">
-                                                <option value="">Semua Status</option>
-                                                <option value="pending">Pending</option>
-                                                <option value="paid">Lunas</option>
-                                                <option value="cancelled">Dibatalkan</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4 mb-2">
-                                            <label for="invoice-search" class="mb-1">Cari Pasien / ID</label>
-                                            <div class="input-group">
-                                                <input type="text" id="invoice-search" class="form-control" placeholder="Nama pasien atau ID pasien" onkeydown="if(event.key === 'Enter'){ loadInvoiceHistory(); }">
-                                                <div class="input-group-append">
-                                                    <button type="button" class="btn btn-primary" onclick="loadInvoiceHistory()">
-                                                        <i class="fas fa-search"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-hover">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th>No. Invoice</th>
-                                                    <th id="invoice-th-date" class="invoice-sort-th" onclick="sortInvoiceTable('date')">Tanggal <span id="invoice-sort-date" class="invoice-sort-icon">?</span></th>
-                                                    <th id="invoice-th-patient" class="invoice-sort-th" onclick="sortInvoiceTable('patient')">Pasien <span id="invoice-sort-patient" class="invoice-sort-icon">?</span></th>
-                                                    <th>Jenis Kunjungan</th>
-                                                    <th id="invoice-th-total" class="text-right invoice-sort-th" onclick="sortInvoiceTable('total')">Total <span id="invoice-sort-total" class="invoice-sort-icon">?</span></th>
-                                                    <th id="invoice-th-status" class="invoice-sort-th" onclick="sortInvoiceTable('status')">Status <span id="invoice-sort-status" class="invoice-sort-icon">?</span></th>
-                                                    <th class="text-center">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="invoice-history-tbody">
-                                                <tr>
-                                                    <td colspan="7" class="text-center text-muted py-4">
-                                                        <i class="fas fa-file-invoice"></i> Belum ada data dimuat
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- INVOICE HISTORY PAGE (lazy) -->
+                <div id="invoice-history-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/invoice-history-page.html"></div>
 
                 <div id="analytics-page" class="d-none"></div>
 
                 <!-- IMPORT FIELDS PAGE (Dokter Only) -->
                 <div id="import-fields-page" class="d-none"></div>
-
-                <!-- ARTIKEL KESEHATAN PAGE (Dokter Only) -->
-                <div id="artikel-kesehatan-page" class="d-none">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-book-reader mr-2"></i>Ruang Membaca</h3>
-                                    <div class="card-tools">
-                                        <button class="btn btn-primary btn-sm" onclick="showAddArticleModal()">
-                                            <i class="fas fa-plus mr-1"></i> Tambah Artikel
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Filter Section -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
-                                            <select id="article-filter-category" class="form-control form-control-sm" onchange="loadArticlesAdmin()">
-                                                <option value="all">Semua Kategori</option>
-                                                <option value="Kehamilan">Kehamilan</option>
-                                                <option value="Program Hamil">Program Hamil</option>
-                                                <option value="Ginekologi">Ginekologi</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <select id="article-filter-status" class="form-control form-control-sm" onchange="loadArticlesAdmin()">
-                                                <option value="all">Semua Status</option>
-                                                <option value="published">Published</option>
-                                                <option value="draft">Draft</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4 text-right">
-                                            <button class="btn btn-outline-secondary btn-sm" onclick="loadArticlesAdmin()">
-                                                <i class="fas fa-sync-alt"></i> Refresh
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Articles Table -->
-                                    <div class="table-responsive">
-                                        <table class="table table-striped table-hover" id="articles-admin-table">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 25%">Judul</th>
-                                                    <th style="width: 12%">Kategori</th>
-                                                    <th style="width: 10%">Status</th>
-                                                    <th style="width: 8%">Views</th>
-                                                    <th style="width: 8%">Likes</th>
-                                                    <th style="width: 15%">Updated</th>
-                                                    <th style="width: 22%">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="articles-admin-tbody">
-                                                <tr>
-                                                    <td colspan="7" class="text-center text-muted py-4">
-                                                        <i class="fas fa-spinner fa-spin"></i> Memuat artikel...
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- RUANG CERITA PAGE (Dokter/Admin Only) -->
-                <div id="ruang-cerita-page" class="d-none">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-comment-medical mr-2"></i>Moderasi Ruang Cerita</h3>
-                                    <div class="card-tools">
-                                        <button class="btn btn-outline-secondary btn-sm" onclick="loadPatientStoriesAdmin()">
-                                            <i class="fas fa-sync-alt"></i> Refresh
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
-                                            <select id="story-filter-status" class="form-control form-control-sm" onchange="loadPatientStoriesAdmin()">
-                                                <option value="">Semua Status</option>
-                                                <option value="pending">Pending</option>
-                                                <option value="published">Published</option>
-                                                <option value="rejected">Rejected</option>
-                                                <option value="archived">Archived</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <select id="story-filter-category" class="form-control form-control-sm" onchange="loadPatientStoriesAdmin()">
-                                                <option value="">Semua Kategori</option>
-                                                <option value="kehamilan">Kehamilan</option>
-                                                <option value="kesuburan">Kesuburan</option>
-                                                <option value="penyakit_kandungan">Penyakit kandungan</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div class="table-responsive">
-                                        <table class="table table-striped table-hover" id="patient-stories-admin-table">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width: 24%">Cerita</th>
-                                                    <th style="width: 12%">Kategori</th>
-                                                    <th style="width: 12%">Penulis</th>
-                                                    <th style="width: 10%">Status</th>
-                                                    <th style="width: 8%">Like</th>
-                                                    <th style="width: 8%">Report</th>
-                                                    <th style="width: 12%">Dikirim</th>
-                                                    <th style="width: 14%">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="patient-stories-admin-tbody">
-                                                <tr>
-                                                    <td colspan="8" class="text-center text-muted py-4">
-                                                        <i class="fas fa-spinner fa-spin"></i> Memuat cerita...
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="modal fade" id="patientStoryPreviewModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="patientStoryPreviewTitle">Preview Cerita</h5>
-                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-2 text-muted small" id="patientStoryPreviewMeta"></div>
-                                <div id="patientStoryPreviewBody" style="white-space: pre-line; line-height: 1.7;"></div>
-                            </div>
-                            <div class="modal-footer" id="patientStoryPreviewActions"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Article Modal -->
-                <div class="modal fade" id="articleModal" tabindex="-1">
-                    <div class="modal-dialog modal-xl">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="articleModalTitle">Tambah Artikel</h5>
-                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                            </div>
-                            <div class="modal-body">
-                                <form id="articleForm">
-                                    <input type="hidden" id="article-id">
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <div class="form-group">
-                                                <label>Judul Artikel <span class="text-danger">*</span></label>
-                                                <input type="text" id="article-title" class="form-control" required placeholder="Masukkan judul artikel">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label>Kategori</label>
-                                                <select id="article-category" class="form-control">
-                                                    <option value="Kehamilan">Kehamilan</option>
-                                                    <option value="Program Hamil">Program Hamil</option>
-                                                    <option value="Ginekologi">Ginekologi</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Ringkasan</label>
-                                        <textarea id="article-summary" class="form-control" rows="2" placeholder="Ringkasan singkat artikel (akan tampil di preview)"></textarea>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Konten Artikel</label>
-                                        <ul class="nav nav-tabs" id="articleContentTabs">
-                                            <li class="nav-item">
-                                                <a class="nav-link active" data-toggle="tab" href="#editor-tab">
-                                                    <i class="fas fa-edit"></i> Editor
-                                                </a>
-                                            </li>
-                                            <li class="nav-item">
-                                                <a class="nav-link" data-toggle="tab" href="#preview-tab">
-                                                    <i class="fas fa-eye"></i> Preview
-                                                </a>
-                                            </li>
-                                        </ul>
-                                        <div class="tab-content border border-top-0 p-3">
-                                            <div class="tab-pane fade show active" id="editor-tab">
-                                                <textarea id="article-content" class="form-control" rows="15" placeholder="Tulis konten artikel di sini... Mendukung Markdown.
-
-Contoh Markdown:
-# Heading 1
-## Heading 2
-**Bold text**
-*Italic text*
-- List item
-[Link](https://example.com)"></textarea>
-                                            </div>
-                                            <div class="tab-pane fade" id="preview-tab">
-                                                <div id="article-preview" class="p-3" style="min-height: 400px; background-color: #f8f9fa; border-radius: 4px;">
-                                                    <p class="text-muted"><i>Preview akan muncul di sini...</i></p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label>Sumber</label>
-                                                <input type="text" id="article-source" class="form-control" placeholder="Sumber atau referensi">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label>Icon</label>
-                                                <select id="article-icon" class="form-control">
-                                                    <option value="">Tanpa Icon</option>
-                                                    <option value="fa-heartbeat">Heartbeat</option>
-                                                    <option value="fa-baby">Baby</option>
-                                                    <option value="fa-utensils">Makanan</option>
-                                                    <option value="fa-apple-alt">Buah</option>
-                                                    <option value="fa-exclamation-triangle">Peringatan</option>
-                                                    <option value="fa-stethoscope">Stethoscope</option>
-                                                    <option value="fa-hospital">Hospital</option>
-                                                    <option value="fa-calendar-check">Kalender</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-group">
-                                                <label>Warna</label>
-                                                <input type="color" id="article-color" class="form-control" value="#28a7e9">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <div class="custom-control custom-switch">
-                                            <input type="checkbox" class="custom-control-input" id="article-published">
-                                            <label class="custom-control-label" for="article-published">Publish langsung</label>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                <button type="button" class="btn btn-primary" onclick="saveArticle()">
-                                    <i class="fas fa-save mr-1"></i> Simpan
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- CONTENT MODERATION PAGES (lazy) -->
+                <div id="artikel-kesehatan-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/artikel-kesehatan-page.html"></div>
+                <div id="ruang-cerita-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/ruang-cerita-page.html"></div>
 
                 <!-- PROFILE SETTINGS PAGE -->
                 <div id="profile-settings-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/profile-settings-page.html"></div>
@@ -4303,7 +3793,7 @@ Contoh Markdown:
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v359"></script>
+    <script defer src="scripts/shell/actions.js?v=v360"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -4383,8 +3873,8 @@ Contoh Markdown:
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v359" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v359" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v360" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v360" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -4396,7 +3886,7 @@ Contoh Markdown:
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v359"></script>
+<script defer src="scripts/rum.js?v=v360"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4621,7 +4111,7 @@ Contoh Markdown:
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v359"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v360"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4882,7 +4372,7 @@ Contoh Markdown:
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v359"></script>
+ <script src="scripts/mobile-helper.js?v=v360"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4894,8 +4384,8 @@ Contoh Markdown:
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v359"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v359"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v360"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v360"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

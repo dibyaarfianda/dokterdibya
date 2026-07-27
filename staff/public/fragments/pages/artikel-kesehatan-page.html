@@ -1,0 +1,174 @@
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-book-reader mr-2"></i>Ruang Membaca</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-primary btn-sm" data-action="article-add">
+                        <i class="fas fa-plus mr-1"></i> Tambah Artikel
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <select id="article-filter-category" class="form-control form-control-sm" data-action="article-filter">
+                            <option value="all">Semua Kategori</option>
+                            <option value="Kehamilan">Kehamilan</option>
+                            <option value="Program Hamil">Program Hamil</option>
+                            <option value="Ginekologi">Ginekologi</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <select id="article-filter-status" class="form-control form-control-sm" data-action="article-filter">
+                            <option value="all">Semua Status</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 text-right">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-action="article-refresh">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover" id="articles-admin-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%">Judul</th>
+                                <th style="width: 12%">Kategori</th>
+                                <th style="width: 10%">Status</th>
+                                <th style="width: 8%">Views</th>
+                                <th style="width: 8%">Likes</th>
+                                <th style="width: 15%">Updated</th>
+                                <th style="width: 22%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articles-admin-tbody">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-spinner fa-spin"></i> Memuat artikel...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="articleModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="articleModalTitle">Tambah Artikel</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <form id="articleForm">
+                    <input type="hidden" id="article-id">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label>Judul Artikel <span class="text-danger">*</span></label>
+                                <input type="text" id="article-title" class="form-control" required placeholder="Masukkan judul artikel">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Kategori</label>
+                                <select id="article-category" class="form-control">
+                                    <option value="Kehamilan">Kehamilan</option>
+                                    <option value="Program Hamil">Program Hamil</option>
+                                    <option value="Ginekologi">Ginekologi</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Ringkasan</label>
+                        <textarea id="article-summary" class="form-control" rows="2" placeholder="Ringkasan singkat artikel (akan tampil di preview)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Konten Artikel</label>
+                        <ul class="nav nav-tabs" id="articleContentTabs">
+                            <li class="nav-item">
+                                <a class="nav-link active" data-toggle="tab" href="#editor-tab">
+                                    <i class="fas fa-edit"></i> Editor
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#preview-tab">
+                                    <i class="fas fa-eye"></i> Preview
+                                </a>
+                            </li>
+                        </ul>
+                        <div class="tab-content border border-top-0 p-3">
+                            <div class="tab-pane fade show active" id="editor-tab">
+                                <textarea id="article-content" class="form-control" rows="15" placeholder="Tulis konten artikel di sini... Mendukung Markdown.
+
+Contoh Markdown:
+# Heading 1
+## Heading 2
+**Bold text**
+*Italic text*
+- List item
+[Link](https://example.com)"></textarea>
+                            </div>
+                            <div class="tab-pane fade" id="preview-tab">
+                                <div id="article-preview" class="p-3" style="min-height: 400px; background-color: #f8f9fa; border-radius: 4px;">
+                                    <p class="text-muted"><i>Preview akan muncul di sini...</i></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Sumber</label>
+                                <input type="text" id="article-source" class="form-control" placeholder="Sumber atau referensi">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Icon</label>
+                                <select id="article-icon" class="form-control">
+                                    <option value="">Tanpa Icon</option>
+                                    <option value="fa-heartbeat">Heartbeat</option>
+                                    <option value="fa-baby">Baby</option>
+                                    <option value="fa-utensils">Makanan</option>
+                                    <option value="fa-apple-alt">Buah</option>
+                                    <option value="fa-exclamation-triangle">Peringatan</option>
+                                    <option value="fa-stethoscope">Stethoscope</option>
+                                    <option value="fa-hospital">Hospital</option>
+                                    <option value="fa-calendar-check">Kalender</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Warna</label>
+                                <input type="color" id="article-color" class="form-control" value="#28a7e9">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input type="checkbox" class="custom-control-input" id="article-published">
+                            <label class="custom-control-label" for="article-published">Publish langsung</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" data-action="article-save">
+                    <i class="fas fa-save mr-1"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

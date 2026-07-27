@@ -13,7 +13,12 @@ const fragmentPages = [
     ['staff-points', 'content-staff-points', 'nav-staff-points', 'Point Staff'],
     ['staff-briefing', 'content-staff-briefing', 'nav-staff-briefing', 'Briefing'],
     ['staff-payroll', 'content-staff-payroll', 'nav-staff-payroll', 'Gajian'],
-    ['tanya-dokter', 'tanya-dokter-page', 'nav-tanya-dokter', 'Tanya Dokter']
+    ['tanya-dokter', 'tanya-dokter-page', 'nav-tanya-dokter', 'Tanya Dokter'],
+    ['birth-congrats', 'birth-congrats-page', 'nav-birth-congrats', 'Ucapan Kelahiran'],
+    ['birth-testimonials', 'birth-testimonials-page', 'nav-birth-testimonials', 'Testimoni Pasien'],
+    ['invoice-history', 'invoice-history-page', 'nav-invoice-history', 'Riwayat Invoice'],
+    ['artikel-kesehatan', 'artikel-kesehatan-page', 'nav-artikel-kesehatan', 'Ruang Membaca'],
+    ['ruang-cerita', 'ruang-cerita-page', 'nav-ruang-cerita', 'Ruang Cerita']
 ];
 
 export function createPageDescriptors() {

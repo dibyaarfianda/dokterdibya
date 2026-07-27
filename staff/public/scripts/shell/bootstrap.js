@@ -71,6 +71,39 @@ async function bootstrapStaffShell() {
         'markAllNotificationsRead',
         'markAllNotificationsReadPage'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'notifications'));
+    [
+        'showBirthCongratsPage',
+        'loadBirthCongratsList',
+        'showAddBirthCongratsModal',
+        'saveBirthCongrats',
+        'editBirthCongrats',
+        'deleteBirthCongrats',
+        'selectBirthCongratsColor'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'birthContent', 'birth-congrats'));
+    [
+        'showBirthTestimonialsPage',
+        'loadBirthTestimonialsList'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'birthContent', 'birth-testimonials'));
+    [
+        'showInvoiceHistoryPage',
+        'loadInvoiceHistory',
+        'sortInvoiceTable'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'invoiceHistory', 'invoice-history'));
+    [
+        'showArtikelKesehatanPage',
+        'loadArticlesAdmin',
+        'showAddArticleModal',
+        'editArticle',
+        'saveArticle',
+        'togglePublishArticle',
+        'deleteArticle'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'contentModeration', 'artikel-kesehatan'));
+    [
+        'showRuangCeritaPage',
+        'loadPatientStoriesAdmin',
+        'previewPatientStory',
+        'moderatePatientStory'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'contentModeration', 'ruang-cerita'));
 
     window.auth = auth;
     window.getIdToken = getIdToken;
