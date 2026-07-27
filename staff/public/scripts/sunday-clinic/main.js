@@ -6,6 +6,7 @@
 import { MR_CATEGORIES, SECTIONS } from './utils/constants.js';
 import apiClient from './utils/api-client.js';
 import stateManager from './utils/state-manager.js';
+import { isSuperadminUser } from '../role-constants.js';
 
 function applySundayClinicPwaPrimitives(container) {
     if (!container) return;
@@ -460,8 +461,7 @@ class SundayClinicApp {
         const category = categoryLabels[this.currentCategory] || categoryLabels[MR_CATEGORIES.OBSTETRI];
 
         // Check if user is dokter/superadmin for delete button
-        const userRole = window.currentStaffIdentity?.role || '';
-        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+        const isDokter = isSuperadminUser(window.currentStaffIdentity);
 
         // Get record ID from state
         const state = stateManager.getState();
@@ -2464,8 +2464,7 @@ class SundayClinicApp {
             window.showToast && window.showToast('error', 'Buka DRD pasien terlebih dahulu');
             return;
         }
-        const userRole = window.currentStaffIdentity?.role || '';
-        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+        const isDokter = isSuperadminUser(window.currentStaffIdentity);
         if (!isDokter) {
             window.showToast && window.showToast('error', 'Hanya dokter yang bisa memulai pemeriksaan');
             return;
@@ -2700,8 +2699,7 @@ class SundayClinicApp {
             const btn = document.getElementById('btn-periksa-pasien');
             const isPrivat = rec.visit_location === 'klinik_private';
             if (btn) {
-                const userRole = window.currentStaffIdentity?.role || '';
-                const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+                const isDokter = isSuperadminUser(window.currentStaffIdentity);
                 const canStart = isPrivat && isDokter && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
                 if (canStart) {
                     resetStartExaminationButton(btn);
@@ -2775,8 +2773,7 @@ class SundayClinicApp {
         // Listen for billing confirmed event
         this.billingNotifications.on('billing_confirmed', (data) => {
             console.log('[SundayClinic] billing_confirmed listener triggered with data:', data);
-            const userRole = window.currentStaffIdentity?.role || '';
-            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+            const isDokter = isSuperadminUser(window.currentStaffIdentity);
 
             if (!isDokter) {
                 BillingNotifications.showClientNotification(
@@ -2825,9 +2822,7 @@ class SundayClinicApp {
                 return;
             }
 
-            const userRole = window.currentStaffIdentity?.role || '';
-            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
-            console.log('[SundayClinic] User role:', userRole, 'isDokter:', isDokter);
+            const isDokter = isSuperadminUser(window.currentStaffIdentity);
 
             if (isDokter) {
                 console.log('[SundayClinic] Dokter confirmed, showing dialog');

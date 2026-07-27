@@ -1,5 +1,7 @@
 // VPS-based auth client
 
+import { isSuperadminUser } from './role-constants.js';
+
 // ==================== CONSTANTS ====================
 // Single source of truth for auth-related keys
 export const TOKEN_KEY = 'vps_auth_token';  // Use this everywhere!
@@ -212,7 +214,7 @@ export async function hasPermission(permissionName) {
     }
 
     // Superadmin/Dokter has all permissions
-    if (auth.currentUser && (auth.currentUser.is_superadmin || auth.currentUser.role === 'dokter' || auth.currentUser.role === 'superadmin')) {
+    if (isSuperadminUser(auth.currentUser)) {
         return true;
     }
 

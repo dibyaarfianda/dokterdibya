@@ -71,6 +71,13 @@ describe('staff panel wave 1 hardening contracts', () => {
         const auth = read('staff', 'public', 'scripts', 'auth.js');
         const chat = read('staff', 'public', 'scripts', 'chat-popup.js');
         const main = read('staff', 'public', 'scripts', 'main.js');
+        const vpsAuth = read('staff', 'public', 'scripts', 'vps-auth-v2.js');
+        const sundayClinic = read('staff', 'public', 'scripts', 'sunday-clinic', 'main.js');
+        const kantorSaya = read('staff', 'public', 'scripts', 'kantor-saya.js');
+        const tanyaDokter = read('staff', 'public', 'scripts', 'tanya-dokter.js');
+        const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        const html = read('staff', 'public', 'index-adminlte.html');
+        const accessSources = [main, vpsAuth, sundayClinic, kantorSaya, tanyaDokter, html];
 
         expect(auth).toContain("import { TOKEN_KEY } from './vps-auth-v2.js';");
         expect(auth).toMatch(/import\s*\{[\s\S]*?ROLE_IDS,[\s\S]*?\}\s*from '\.\/role-constants\.js';/);
@@ -78,6 +85,13 @@ describe('staff panel wave 1 hardening contracts', () => {
         expect(chat).toContain("import { ROLE_IDS } from './role-constants.js';");
         expect(chat).not.toMatch(/DOKTER:\s*1/);
         expect(main).not.toMatch(/role_id\s*===\s*1/);
+        expect(bootstrap).toContain('window.staffRoleConstants = roleConstants;');
+        expect(vpsAuth).toContain("import { isSuperadminUser } from './role-constants.js';");
+        expect(sundayClinic).toContain("import { isSuperadminUser } from '../role-constants.js';");
+        for (const source of accessSources) {
+            expect(source).not.toMatch(/===\s*['"]dokter['"]/);
+            expect(source).not.toMatch(/===\s*['"]superadmin['"]/);
+        }
     });
 
     test('duplicate notification helpers are removed', () => {

@@ -238,7 +238,10 @@
             ''
         ).toLowerCase();
 
-        return !!(currentUser && currentUser.is_superadmin) || role === 'dokter' || role === 'superadmin';
+        var roleHelper = window.staffRoleConstants && window.staffRoleConstants.isSuperadminUser;
+        return typeof roleHelper === 'function'
+            ? roleHelper(currentUser || { role: role })
+            : !!(currentUser && currentUser.is_superadmin);
     }
 
     function isWidgetAvailable(definition) {

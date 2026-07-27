@@ -4964,7 +4964,7 @@ async function applyMenuVisibility(user) {
     });
 
     // Superadmin/dokter sees everything - show all hidden menus
-    const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
+    const isDokter = isSuperadminUser(user);
     if (isDokter) {
         // Show dokter-only elements
         document.querySelectorAll('.dokter-only').forEach(el => {
@@ -5681,14 +5681,14 @@ async function showPatientDetail(patientId) {
             const token = getAuthToken();
             if (token) {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                isDokter = payload.is_superadmin || payload.role === 'dokter' || payload.role === 'superadmin';
+                isDokter = isSuperadminUser(payload);
                 console.log('[Patient Detail] JWT payload:', { role: payload.role, is_superadmin: payload.is_superadmin, isDokter });
             }
         } catch (e) {
             console.warn('[Patient Detail] Could not decode token:', e);
             // Fallback to auth.currentUser
             const staffUser = auth.currentUser || window.currentStaffUser;
-            isDokter = staffUser?.is_superadmin || staffUser?.role === 'dokter' || staffUser?.role === 'superadmin';
+            isDokter = isSuperadminUser(staffUser);
         }
 
         let visitsTableHtml = '';

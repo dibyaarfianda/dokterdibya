@@ -29,6 +29,7 @@ async function bootstrapStaffShell() {
     window.staffPageRegistry = pageRegistry;
     window.staffPollingCoordinator = pollingCoordinator;
     window.ensureStaffFeature = ensureFeature;
+    window.staffRoleConstants = roleConstants;
 
     function installLazyFeatureShim(globalName, featureName, pageKey = null) {
         const originalHandler = typeof window[globalName] === 'function' ? window[globalName] : null;

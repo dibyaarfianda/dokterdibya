@@ -4756,7 +4756,10 @@ Contoh Markdown:
 
         // Show floating panel (only for superadmin)
         const userRole = localStorage.getItem('vps_user_role');
-        if (userRole === 'superadmin') {
+        const isSuperadmin = window.staffRoleConstants?.isSuperadminUser?.(
+            window.auth?.currentUser || { role: userRole }
+        );
+        if (isSuperadmin) {
             const floatingPanel = document.getElementById('floating-kelola-pasien');
             if (floatingPanel) {
                 floatingPanel.classList.remove('d-none');
@@ -10774,7 +10777,7 @@ async function loadStaffAnnouncements() {
             return;
         }
 
-        const isDokter = window.auth?.currentUser?.is_superadmin || window.auth?.currentUser?.role === 'dokter';
+        const isDokter = window.staffRoleConstants?.isSuperadminUser?.(window.auth?.currentUser) === true;
 
         container.innerHTML = announcements.map(a => {
             const priorityClass = a.priority === 'urgent' ? 'border-danger' : (a.priority === 'important' ? 'border-warning' : 'border-info');

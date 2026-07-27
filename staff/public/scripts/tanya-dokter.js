@@ -331,7 +331,10 @@
         `;
 
         // Footer with reply form (dokter only)
-        const isDokter = window.auth?.currentUser?.role === 'dokter';
+        const roleHelper = window.staffRoleConstants?.isSuperadminUser;
+        const isDokter = typeof roleHelper === 'function'
+            ? roleHelper(window.auth?.currentUser)
+            : Boolean(window.auth?.currentUser?.is_superadmin);
 
         if (question.status === 'closed') {
             document.getElementById('tanya-thread-footer').innerHTML = `
