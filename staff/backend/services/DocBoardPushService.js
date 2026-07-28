@@ -75,10 +75,68 @@ async function sendWebPush(tokenRow, title, body, data) {
     url: data.url || '/docboard/',
     icon: '/docboard/icons/icon-192.png',
     badge: '/docboard/icons/icon-192.png',
+    tag: data.tag || undefined,
     data: data
   });
 
   return webpush.sendNotification(subscription, payload, { TTL: 86400 });
+}
+
+async function cleanupInvalidTokens(tokenIds) {
+  if (!tokenIds.length) return;
+  try {
+    await db.query('DELETE FROM docboard_push_tokens WHERE id IN (?)', [tokenIds]);
+  } catch (err) {
+    logger.error('Failed to cleanup invalid docboard tokens:', err.message);
+  }
+}
+
+/**
+ * Send an explicit notification to one DocBoard user.
+ * User-created agenda alarms bypass general reminder preferences.
+ */
+async function sendToUser(userId, title, body, data = {}) {
+  try {
+    const [tokens] = await db.query(
+      `SELECT id, user_id, endpoint, p256dh, auth_key
+       FROM docboard_push_tokens
+       WHERE user_id = ?`,
+      [String(userId || '')]
+    );
+
+    if (!tokens || tokens.length === 0) {
+      return { success: true, sent: 0, failed: 0, reason: 'no_tokens' };
+    }
+
+    let sent = 0;
+    let failed = 0;
+    const invalidTokenIds = [];
+    let lastError = '';
+
+    for (const token of tokens) {
+      try {
+        await sendWebPush(token, title, body, data);
+        sent++;
+      } catch (err) {
+        failed++;
+        lastError = err.message || 'Web Push failed';
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          invalidTokenIds.push(token.id);
+        }
+      }
+    }
+
+    await cleanupInvalidTokens(invalidTokenIds);
+    return {
+      success: sent > 0,
+      sent,
+      failed,
+      error: sent > 0 ? undefined : lastError
+    };
+  } catch (err) {
+    logger.error('Failed to send DocBoard push to user:', err.message);
+    return { success: false, sent: 0, failed: 0, error: err.message };
+  }
 }
 
 // Map notification type to preference key
@@ -147,14 +205,7 @@ async function sendToAllStaff(title, body, data = {}) {
     }
 
     // Cleanup invalid tokens
-    if (invalidTokenIds.length > 0) {
-      db.query(
-        'DELETE FROM docboard_push_tokens WHERE id IN (?)',
-        [invalidTokenIds]
-      ).catch(err => {
-        logger.error('Failed to cleanup invalid docboard tokens:', err.message);
-      });
-    }
+    await cleanupInvalidTokens(invalidTokenIds);
 
     return { success: true, sent, failed, skipped };
   } catch (err) {
@@ -324,6 +375,7 @@ function getVapidPublicKey() {
 module.exports = {
   storeNotification,
   storeGlobalNotification,
+  sendToUser,
   sendToAllStaff,
   sendNewBookingNotification,
   sendStatusChangeNotification,

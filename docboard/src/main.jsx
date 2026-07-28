@@ -1,8 +1,9 @@
 import { render } from 'preact';
 import App from './app';
 import './index.css';
+import { playAlarmSound } from './utils/alarmSound';
 
-const DOCBOARD_PWA_VERSION = '20260720-1';
+const DOCBOARD_PWA_VERSION = '20260728-1';
 let reloadingForWorkerUpdate = false;
 
 function showUpdatePrompt(registration) {
@@ -61,6 +62,11 @@ if ('serviceWorker' in navigator) {
     if (reloadingForWorkerUpdate) return;
     reloadingForWorkerUpdate = true;
     window.location.reload();
+  });
+
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type !== 'DOCBOARD_ALARM' || document.visibilityState !== 'visible') return;
+    playAlarmSound(event.data.soundKey || 'gentle').catch(() => {});
   });
 }
 

@@ -13,6 +13,7 @@ import GambiranAudit from './views/GambiranAudit';
 import MorbidCaseList from './views/MorbidCaseList';
 import MorbidCaseDetail from './views/MorbidCaseDetail';
 import Notifications from './views/Notifications';
+import TodayAlarms from './views/TodayAlarms';
 import Settings from './views/Settings';
 import Users from './views/Users';
 import Analytics from './views/Analytics';
@@ -91,6 +92,7 @@ export default function App() {
           <NandaOnlyRoute path="/docboard/morbid-cases" component={MorbidCaseList} />
           <NandaOnlyRoute path="/docboard/morbid-cases/:id" component={MorbidCaseDetail} />
           <Notifications path="/docboard/notifications" />
+          <TodayAlarms path="/docboard/alarms" />
           <CommandDashboard path="/docboard/command" />
           <ScientificScheduleRoute path="/docboard/scientific" space="ilmiah" />
           <SpaceSchedule path="/docboard/procedures" space="tindakan" />

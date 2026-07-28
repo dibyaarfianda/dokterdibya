@@ -21,7 +21,11 @@ const OPERATIONAL_SCHEMA_SCOPES = Object.freeze({
         contraction_events: ['id', 'session_id', 'started_at_client', 'duration_seconds']
     },
     docboard: {
-        docboard_space_schedules: ['id', 'user_id', 'space', 'schedule_date', 'status']
+        docboard_space_schedules: ['id', 'user_id', 'space', 'schedule_date', 'status'],
+        docboard_alarms: [
+            'id', 'user_id', 'source_type', 'source_id', 'event_date',
+            'alarm_at', 'sound_key', 'status', 'attempt_count'
+        ]
     },
     guestActivity: {
         guest_activity_log: ['id', 'session_id', 'event_type', 'created_at']

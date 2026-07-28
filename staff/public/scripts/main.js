@@ -2179,7 +2179,7 @@ function showDocboardPage() {
     if (pages.docboard) {
         pages.docboard.classList.remove('d-none');
         const iframe = document.getElementById('docboard-iframe');
-        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v348';
+        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v361';
         const docboardUrl = `/docboard/?embed=${encodeURIComponent(embedVersion)}`;
         if (iframe && iframe.getAttribute('data-docboard-version') !== embedVersion) {
             localStorage.setItem('docboard_token', token);

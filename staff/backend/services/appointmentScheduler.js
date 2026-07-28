@@ -284,6 +284,35 @@ function startSurgeryReminderScheduler() {
     logger.info('[Scheduler] Surgery reminder scheduler started (runs daily at 21:00 WIB)');
 }
 
+let docBoardAlarmJobRunning = false;
+
+/**
+ * Dispatch user-created DocBoard agenda alarms every minute.
+ * The database claim in DocBoardAlarmService keeps delivery idempotent.
+ */
+function startDocBoardAlarmScheduler() {
+    cron.schedule('* * * * *', async () => {
+        if (docBoardAlarmJobRunning) {
+            logger.warn('[Scheduler] Previous DocBoard alarm job is still running');
+            return;
+        }
+
+        docBoardAlarmJobRunning = true;
+        try {
+            const docboardAlarms = require('./DocBoardAlarmService');
+            await docboardAlarms.dispatchDueAlarms();
+        } catch (error) {
+            logger.error('[Scheduler] Error in DocBoard alarm job:', error);
+        } finally {
+            docBoardAlarmJobRunning = false;
+        }
+    }, {
+        timezone: 'Asia/Jakarta'
+    });
+
+    logger.info('[Scheduler] DocBoard alarm scheduler started (runs every minute, Asia/Jakarta)');
+}
+
 /**
  * Cleanup old policy log entries daily at 03:00 WIB
  */
@@ -495,6 +524,7 @@ function initSchedulers() {
     startAutoConfirmScheduler();
     startPublicCodeScheduler();
     startSurgeryReminderScheduler();
+    startDocBoardAlarmScheduler();
     startPolicyLogCleanupScheduler();
     startRuleExecCleanupScheduler();
     startDailyMetricsScheduler();

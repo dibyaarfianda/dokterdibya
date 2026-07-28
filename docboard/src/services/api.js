@@ -440,6 +440,22 @@ export const api = {
     return request('/notifications/unread-count');
   },
 
+  // Personalized alarms for today's agenda
+  getTodayAlarms() {
+    return request('/alarms/today');
+  },
+
+  saveTodayAlarm(data) {
+    return request('/alarms', {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
+  deleteTodayAlarm(id) {
+    return request(`/alarms/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
   // Push
   getVapidKey() {
     return request('/push/vapid-key');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docboard-pwa-20260720-1';
+const CACHE_NAME = 'docboard-pwa-20260728-1';
 const APP_SHELL = [
   '/docboard/',
   '/docboard/index.html',
@@ -80,6 +80,63 @@ self.addEventListener('fetch', (event) => {
       return response;
     } catch {
       return caches.match('/docboard/offline.html');
+    }
+  })());
+});
+
+self.addEventListener('push', (event) => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch {
+    payload = { title: 'DocBoard', body: event.data?.text() || 'Ada pengingat baru.' };
+  }
+
+  const data = payload.data || {};
+  const isAgendaAlarm = data.type === 'agenda_alarm';
+  const options = {
+    body: payload.body || 'Ada pengingat baru.',
+    icon: payload.icon || '/docboard/icons/icon-192.png',
+    badge: payload.badge || '/docboard/icons/icon-192.png',
+    tag: payload.tag || data.tag || (isAgendaAlarm ? `docboard-alarm-${data.alarmId || 'today'}` : undefined),
+    renotify: isAgendaAlarm,
+    requireInteraction: isAgendaAlarm,
+    silent: false,
+    vibrate: isAgendaAlarm ? [280, 120, 280, 120, 420] : [180, 100, 180],
+    timestamp: data.alarmAt ? Date.parse(String(data.alarmAt).replace(' ', 'T')) : Date.now(),
+    data: {
+      ...data,
+      url: payload.url || data.url || '/docboard/'
+    }
+  };
+
+  event.waitUntil(Promise.all([
+    self.registration.showNotification(payload.title || 'DocBoard', options),
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      if (!isAgendaAlarm) return;
+      clients.forEach(client => client.postMessage({
+        type: 'DOCBOARD_ALARM',
+        soundKey: data.soundKey || 'gentle',
+        alarmId: data.alarmId || null
+      }));
+    })
+  ]));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || '/docboard/', self.location.origin).href;
+  event.waitUntil((async () => {
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+        await client.focus();
+        if ('navigate' in client) await client.navigate(targetUrl);
+        return;
+      }
+    }
+    if (self.clients.openWindow) {
+      await self.clients.openWindow(targetUrl);
     }
   })());
 });

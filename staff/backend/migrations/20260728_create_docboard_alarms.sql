@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS docboard_alarms (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id VARCHAR(64) NOT NULL,
+  source_type VARCHAR(20) NOT NULL,
+  source_id VARCHAR(64) NOT NULL,
+  event_date DATE NOT NULL,
+  event_time TIME NULL,
+  title VARCHAR(255) NOT NULL,
+  subtitle VARCHAR(255) NULL,
+  location VARCHAR(255) NULL,
+  alarm_at DATETIME NOT NULL,
+  sound_key VARCHAR(32) NOT NULL DEFAULT 'gentle',
+  status VARCHAR(20) NOT NULL DEFAULT 'scheduled',
+  attempt_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  sent_at DATETIME NULL,
+  last_error VARCHAR(500) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_docboard_alarm_event (user_id, source_type, source_id),
+  KEY idx_docboard_alarm_due (status, alarm_at),
+  KEY idx_docboard_alarm_user_date (user_id, event_date, alarm_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

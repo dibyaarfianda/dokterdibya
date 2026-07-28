@@ -5,6 +5,7 @@ const { verifyStaffToken } = require('../middleware/auth');
 const { requireRoles } = require('../middleware/auth');
 const docboardService = require('../services/DocBoardService');
 const docboardPush = require('../services/DocBoardPushService');
+const docboardAlarms = require('../services/DocBoardAlarmService');
 const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
 const morbidCaseRoutes = require('./morbid-cases');
@@ -324,6 +325,66 @@ router.delete('/space-schedules/:id', async (req, res) => {
   } catch (error) {
     logger.error('DocBoard space schedule delete error:', error);
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+function alarmAccessOptions(user) {
+  return {
+    excludeScientific: !canAccessScientificSchedule(user),
+    excludePrivate: !canViewRestrictedDocBoard(user)
+  };
+}
+
+/**
+ * GET /api/docboard/alarms/today
+ * Personalized operation, procedure, scientific, and private events for today.
+ */
+router.get('/alarms/today', async (req, res) => {
+  try {
+    const result = await docboardAlarms.getTodayEvents(
+      req.user?.id,
+      alarmAccessOptions(req.user)
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('DocBoard today alarms error:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * PUT /api/docboard/alarms
+ * Create or replace one alarm for a visible event today.
+ */
+router.put('/alarms', async (req, res) => {
+  try {
+    const alarm = await docboardAlarms.upsertAlarm(
+      req.user?.id,
+      req.body || {},
+      alarmAccessOptions(req.user)
+    );
+    res.json({ success: true, alarm });
+  } catch (error) {
+    logger.error('DocBoard alarm save error:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
+  }
+});
+
+/**
+ * DELETE /api/docboard/alarms/:id
+ * Remove an alarm owned by the current user.
+ */
+router.delete('/alarms/:id', async (req, res) => {
+  try {
+    const deleted = await docboardAlarms.deleteAlarm(req.user?.id, req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Alarm tidak ditemukan' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('DocBoard alarm delete error:', error);
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 });
 

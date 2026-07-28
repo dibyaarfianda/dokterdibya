@@ -31,6 +31,7 @@ const REQUIRED_TABLES = [
     'contraction_sessions',
     'contraction_events',
     'docboard_space_schedules',
+    'docboard_alarms',
     'guest_activity_log',
     'kick_counter_sessions',
     'kick_counter_kicks',
