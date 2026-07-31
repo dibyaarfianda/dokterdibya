@@ -1,0 +1,49 @@
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-danger d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title mb-0"><i class="fas fa-bug mr-2"></i>Troubleshooting</h3>
+                                    <button type="button" class="btn btn-sm btn-light" data-action="refresh-troubleshooting">
+                                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-light border mb-3">
+                                        <div class="font-weight-bold mb-1">Laporan bug/error pasien pemakai portal</div>
+                                        <div class="small text-muted">Data diambil dari masukan pasien kategori bug pada portal pasien trial.</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-4 col-sm-6 mb-2">
+                                            <div class="small text-muted">Total laporan</div>
+                                            <div class="h4 mb-0" id="troubleshooting-total-count">-</div>
+                                        </div>
+                                        <div class="col-md-8 col-sm-6 mb-2">
+                                            <div class="small text-muted">Terakhir dimuat</div>
+                                            <div class="font-weight-bold" id="troubleshooting-last-loaded">-</div>
+                                        </div>
+                                    </div>
+                                    <div id="troubleshooting-status" class="alert alert-info py-2 small mb-3">
+                                        Memuat laporan bug/error pasien...
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped mb-0" id="troubleshooting-reports-table">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th class="troubleshooting-time-column">Waktu</th>
+                                                    <th class="troubleshooting-patient-column">Pasien</th>
+                                                    <th>Laporan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="troubleshooting-reports-body">
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin mr-1"></i> Memuat laporan...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>

@@ -66,6 +66,10 @@ const featureLoaders = {
         await loadScript('/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js');
     },
     supportChat: () => loadScript('/staff/public/scripts/support-chat-staff.js'),
+    troubleshooting: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/troubleshooting-page.js?v=${version}`);
+    },
     tanyaDokter: () => loadScript('/staff/public/scripts/tanya-dokter.js'),
     staffPoints: () => loadScript('/staff/public/scripts/staff-points.js'),
     staffBriefing: () => loadScript('/staff/public/scripts/staff-briefing.js'),

@@ -132,16 +132,18 @@ describe('approved web hardening plan', () => {
         const compatibilitySw = read('public', 'sisiwanita-sw.js');
         const patientMenu = read('public', 'patient-menu.html');
         const landing = read('public', 'sisiwanita', 'index.html');
+        const cacheVersion = sw.match(/const CACHE_VERSION = '([^']+)'/)?.[1];
 
         expect(canonicalManifest.id).toBe('/sisiwanita');
         expect(canonicalManifest.scope).toBe('/');
         expect(canonicalManifest.start_url).toContain('/patient-menu.html');
         expect(compatibilityManifest).toEqual(canonicalManifest);
-        expect(sw).toContain("const CACHE_VERSION = '20260731hardening1'");
-        expect(compatibilitySw.trim()).toBe("importScripts('/sw.js?v=20260731hardening1');");
-        expect(patientMenu).toContain('/patient-portal.webmanifest?v=20260731hardening1');
-        expect(landing).toContain('/patient-portal.webmanifest?v=20260731hardening1');
-        expect(landing).toContain("navigator.serviceWorker.register('/sw.js?v=20260731hardening1'");
+        expect(cacheVersion).toBeTruthy();
+        expect(canonicalManifest.start_url).toContain(`v=${cacheVersion}`);
+        expect(compatibilitySw.trim()).toBe(`importScripts('/sw.js?v=${cacheVersion}');`);
+        expect(patientMenu).toContain(`/patient-portal.webmanifest?v=${cacheVersion}`);
+        expect(landing).toContain(`/patient-portal.webmanifest?v=${cacheVersion}`);
+        expect(landing).toContain(`navigator.serviceWorker.register('/sw.js?v=${cacheVersion}'`);
         expect(sw).not.toMatch(/cachedResponse \|\| caches\.match\('\/patient-menu\.html'\)/);
     });
 
@@ -155,11 +157,13 @@ describe('approved web hardening plan', () => {
         }
     });
 
-    test('staff cache version is synchronized at v362', () => {
+    test('staff shell and service worker cache versions stay synchronized', () => {
         const html = read('staff', 'public', 'index-adminlte.html');
         const sw = read('staff', 'public', 'sw.js');
+        const shellVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        const workerVersion = sw.match(/const STAFF_PWA_VERSION = '([^']+)'/)?.[1];
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v362'");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v362'");
+        expect(shellVersion).toBeTruthy();
+        expect(workerVersion).toBe(shellVersion);
     });
 });

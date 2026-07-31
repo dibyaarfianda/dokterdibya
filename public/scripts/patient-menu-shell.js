@@ -8,43 +8,23 @@ import { createPatientRouter } from './patient-shell/router.js';
 import { bindPatientNavigation } from './patient-shell/navigation.js';
 import { bindPatientLayoutLifecycle } from './patient-shell/layout.js';
 import { loadPatientFeature } from './patient-shell/feature-loader.js';
+import {
+    createGuestSession,
+    GUEST_DEMO_PROFILE
+} from './patient-shell/guest-session.js';
+import {
+    getGuestNavigationUrl,
+    isGuestLoginRoute,
+    PATIENT_MENU_DATA
+} from './patient-shell/routes.js';
+import { createPatientSheetController } from './patient-shell/sheet-controller.js';
+import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
 
 (function initPatientMenuShell() {
         const CORNER_NAME_KEY = 'patient_my_corner_name';
-        const CORNER_NOTE_KEY = 'patient_my_corner_note';
         const TAP_SOUND_KEY = 'patient_tap_sound_enabled';
         const BUG_REPORT_MAX_LENGTH = 1500;
         const BUG_REPORT_API_MAX_LENGTH = 2000;
-        const GUEST_MODE_KEY = 'sisiwanita_guest_mode';
-        const GUEST_STARTED_AT_KEY = 'sisiwanita_guest_started_at';
-        const GUEST_SESSION_ID_KEY = 'sisiwanita_guest_session_id';
-        const GUEST_SESSION_TTL_MS = 4 * 60 * 60 * 1000;
-        const GUEST_DEMO_PROFILE = {
-            id: 'DEMO',
-            patient_id: 'DEMO',
-            medicalRecordId: 'DEMO',
-            fullname: 'Tamu SISIwanita',
-            full_name: 'Tamu SISIwanita',
-            name: 'Tamu SISIwanita',
-            email: 'demo@sisiwanita.id',
-            phone: '-',
-            birth_date: null,
-            is_guest: true
-        };
-        const GUEST_DEMO_ROUTES = {
-            '/patient-menu.html': {},
-            '/jadwal-rs.html': { mockParam: 'mockApi' },
-            '/perjalanan-ibu.html': {},
-            '/artikel.html': {},
-            '/info-terbaru.html': {}
-        };
-        const GUEST_LOGIN_ROUTES = new Set([
-            '/kick-counter.html',
-            '/pregnancy-tracker.html',
-            '/contraction-timer.html',
-            '/fertility-calendar.html',
-            '/jadwal-vitamin.html'
-        ]);
         let currentProfile = null;
         let homeInfoItems = [];
         let homeAnnouncementDetailsById = {};
@@ -68,6 +48,32 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
         let patientInstallPromptAutoShown = false;
         const PATIENT_INSTALL_DISMISS_KEY = 'sisiwanita_portal_pwa_install_dismissed';
 
+        const guestSession = createGuestSession({ clearPatientAuth });
+        const clearGuestMode = guestSession.clear;
+        const trackGuestActivity = guestSession.track;
+
+        // Compatibility wrappers retain the existing shell contract while the
+        // guest-session module owns validation, storage, expiry, and cleanup.
+        function isLocalDemoHost() {
+            return guestSession.isLocalHost();
+        }
+
+        function startGuestMode() {
+            if (!isLocalDemoHost()) {
+                guestSession.clear();
+                return false;
+            }
+            return guestSession.start();
+        }
+
+        function isGuestMode() {
+            if (!isLocalDemoHost()) {
+                guestSession.clear();
+                return false;
+            }
+            return guestSession.isActive();
+        }
+
         const patientRouter = createPatientRouter({
             isGuestMode,
             isGuestLoginRoute,
@@ -78,6 +84,22 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
         });
         const go = patientRouter.go;
         const isPatientHomeRoute = patientRouter.isHomeRoute;
+        const patientSheet = createPatientSheetController({ menuData: PATIENT_MENU_DATA });
+        const closeSheet = patientSheet.close;
+        const openSheet = patientSheet.open;
+        const updateRuangBacaBadges = patientSheet.updateBadges;
+        const myCornerController = createMyCornerController({
+            cornerNameKey: CORNER_NAME_KEY,
+            getProfile: () => currentProfile || getStoredProfile(),
+            getToken,
+            isGuestMode,
+            loadFeature: loadPatientFeature,
+            requireRealPatient,
+            showToast
+        });
+        const applyMyCorner = myCornerController.apply;
+        const openMyCorner = myCornerController.open;
+        const saveMyCorner = myCornerController.save;
 
         function isStandalonePwaMode() {
             return window.navigator.standalone === true ||
@@ -186,131 +208,6 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
             alert('Buka menu Share lalu pilih "Add to Home Screen" untuk memasang SISIwanita.');
         }
 
-        function clearGuestMode() {
-            try {
-                localStorage.removeItem(GUEST_MODE_KEY);
-                localStorage.removeItem(GUEST_STARTED_AT_KEY);
-                sessionStorage.removeItem(GUEST_MODE_KEY);
-                sessionStorage.removeItem(GUEST_STARTED_AT_KEY);
-                sessionStorage.removeItem(GUEST_SESSION_ID_KEY);
-            } catch (error) {}
-        }
-
-        function isLocalDemoHost() {
-            return window.location.hostname === 'localhost' ||
-                window.location.hostname === '127.0.0.1' ||
-                window.location.hostname === '[::1]';
-        }
-
-        function getGuestSessionId() {
-            try {
-                let existing = sessionStorage.getItem(GUEST_SESSION_ID_KEY);
-                if (existing) return existing;
-                existing = 'guest_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
-                sessionStorage.setItem(GUEST_SESSION_ID_KEY, existing);
-                return existing;
-            } catch (error) {
-                return 'guest_' + Date.now().toString(36);
-            }
-        }
-
-        function trackGuestActivity(eventType, details, pagePath) {
-            if (!isGuestMode()) return;
-            try {
-                const payload = JSON.stringify({
-                    session_id: getGuestSessionId(),
-                    event_type: eventType,
-                    page_path: pagePath || (window.location.pathname + window.location.search),
-                    page_title: document.title,
-                    details: details || '',
-                    referrer: document.referrer || ''
-                });
-                if (navigator.sendBeacon) {
-                    navigator.sendBeacon('/api/guest-activity', new Blob([payload], { type: 'application/json' }));
-                    return;
-                }
-                fetch('/api/guest-activity', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: payload,
-                    keepalive: true
-                }).catch(() => {});
-            } catch (error) {}
-        }
-
-        function startGuestMode() {
-            if (!isLocalDemoHost()) {
-                clearGuestMode();
-                return false;
-            }
-            try {
-                const existingGuestSessionId = sessionStorage.getItem(GUEST_SESSION_ID_KEY);
-                clearPatientAuth();
-                clearGuestMode();
-                if (existingGuestSessionId) sessionStorage.setItem(GUEST_SESSION_ID_KEY, existingGuestSessionId);
-                sessionStorage.setItem(GUEST_MODE_KEY, '1');
-                sessionStorage.setItem(GUEST_STARTED_AT_KEY, String(Date.now()));
-                return true;
-            } catch (error) {}
-            return false;
-        }
-
-        function isGuestMode() {
-            if (!isLocalDemoHost()) {
-                clearGuestMode();
-                return false;
-            }
-            const marker = sessionStorage.getItem(GUEST_MODE_KEY) || localStorage.getItem(GUEST_MODE_KEY);
-            if (marker !== '1') return false;
-            const startedAt = Number(sessionStorage.getItem(GUEST_STARTED_AT_KEY) || localStorage.getItem(GUEST_STARTED_AT_KEY) || 0);
-            if (startedAt && Date.now() - startedAt > GUEST_SESSION_TTL_MS) {
-                clearGuestMode();
-                return false;
-            }
-            return true;
-        }
-
-        function normalizePatientName(value) {
-            return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
-        }
-
-        const LIVE_PATIENT_IDS = ['P2025091', 'P001'];
-        const LIVE_PATIENT_NAMES = ['nanda ananda', 'feby kumalasari'];
-        const MY_CORNER_ALLOWED_NAMES = ['nanda ananda', 'feby kumalasari'];
-
-        function isLivePatientProfile(profile) {
-            const patientId = String(profile?.id || profile?.patient_id || profile?.medicalRecordId || '').trim();
-            const patientName = normalizePatientName(profile?.fullname || profile?.full_name || profile?.name || '');
-            return LIVE_PATIENT_IDS.includes(patientId) || LIVE_PATIENT_NAMES.includes(patientName);
-        }
-
-        function isMyCornerAllowedProfile(profile) {
-            const patientName = normalizePatientName(profile?.fullname || profile?.full_name || profile?.name || '');
-            return MY_CORNER_ALLOWED_NAMES.includes(patientName);
-        }
-
-        function showMyCornerComingSoon() {
-            showToast('Ruang Saya Coming Soon');
-        }
-
-        function trackMyCornerComingSoon() {
-            if (!currentProfile || isGuestMode()) return;
-            const token = getToken();
-            if (!token) return;
-            fetch('/api/patients/track-page', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({
-                    page_name: 'Ruang Saya - Coming Soon'
-                })
-            }).catch(() => {});
-        }
-
-        function redirectUnsupportedPatient(profile) { return false; }
-
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text == null ? '' : String(text);
@@ -363,23 +260,6 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
             trackGuestActivity('login_redirect', 'Guest diarahkan ke login/daftar');
             clearGuestMode();
             window.location.href = '/patient-login.html?mode=register';
-        }
-
-        function getGuestNavigationUrl(url) {
-            let parsed;
-            try { parsed = new URL(url, window.location.origin); } catch (error) { return null; }
-            if (parsed.origin !== window.location.origin) return null;
-            const rule = GUEST_DEMO_ROUTES[parsed.pathname];
-            if (!rule) return null;
-            parsed.searchParams.set('guest', '1');
-            if (rule.mockParam) parsed.searchParams.set(rule.mockParam, '1');
-            return parsed.pathname + parsed.search + parsed.hash;
-        }
-
-        function isGuestLoginRoute(url) {
-            let parsed;
-            try { parsed = new URL(url, window.location.origin); } catch (error) { return false; }
-            return parsed.origin === window.location.origin && GUEST_LOGIN_ROUTES.has(parsed.pathname);
         }
 
         function openTopbarModal(title, kicker, bodyHtml) {
@@ -1759,42 +1639,6 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
             if (soundTarget && !soundTarget.closest('#sound-toggle')) playTapSound();
         }, true);
 
-        function applyMyCorner() {
-            const fallback = currentProfile && currentProfile.fullname ? 'Ruang ' + currentProfile.fullname.split(' ')[0] : 'Ruang Saya';
-            const name = localStorage.getItem(CORNER_NAME_KEY) || fallback;
-            const note = localStorage.getItem(CORNER_NOTE_KEY) || 'Simpan catatan kecil, atur preferensi, dan pin hal yang sering Anda buka.';
-            const cornerName = document.getElementById('corner-name');
-            const cornerCardTitle = document.getElementById('corner-card-title');
-            const cornerDesc = document.getElementById('corner-desc');
-            const cornerAction = document.getElementById('my-corner-action-btn');
-            const isAllowed = isMyCornerAllowedProfile(currentProfile || getStoredProfile());
-            if (cornerName) cornerName.textContent = name;
-            if (cornerCardTitle) cornerCardTitle.textContent = name.length > 14 ? 'Ruang' : name;
-            if (cornerDesc) cornerDesc.textContent = isAllowed ? note : 'Coming Soon';
-            if (cornerAction && !isAllowed) cornerAction.innerHTML = '<i class="fa-solid fa-clock"></i> Coming Soon';
-            if (cornerAction && isAllowed) cornerAction.innerHTML = '<i class="fa-solid fa-pen"></i> Atur';
-        }
-
-        function openMyCorner() {
-            if (!requireRealPatient('Ruang personal tersimpan untuk akun pasien. Masuk untuk membuka dan mengaturnya.')) return;
-            if (!isMyCornerAllowedProfile(currentProfile || getStoredProfile())) {
-                trackMyCornerComingSoon();
-                showMyCornerComingSoon();
-                return;
-            }
-            if (window.PatientMyCorner && typeof window.PatientMyCorner.open === 'function') {
-                return window.PatientMyCorner.open();
-            }
-            showToast('Ruang sedang dimuat');
-        }
-
-        function saveMyCorner() {
-            if (window.PatientMyCorner && typeof window.PatientMyCorner.save === 'function') {
-                return window.PatientMyCorner.save();
-            }
-            showToast('Ruang sedang dimuat');
-        }
-
         function openModal(id) {
             closeSheet();
             document.getElementById('modal-overlay').classList.add('active');
@@ -1887,6 +1731,15 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
             },
             'open-birth-testimonial-modal': function(target, event) {
                 openBirthTestimonialModal(event, target.dataset.birthId);
+            },
+            'open-birth-date-wheel': function(target, event) {
+                openBirthDateWheelPicker(event, target.dataset.birthDatePrefix || '');
+            },
+            'select-birth-date-wheel-value': function(target) {
+                selectBirthDateWheelValue(
+                    target.dataset.wheelType || '',
+                    Number(target.dataset.wheelValue || 0)
+                );
             },
             'close-cancel-booking-modal': function(target, event) {
                 closeCancelBookingModal(event);
@@ -2472,7 +2325,7 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
             const parts = getBirthDateParts(value);
             return '<div class="settings-field birth-date-field">' +
                 '<label for="' + prefix + '-date-trigger">Tanggal Lahir</label>' +
-                '<button id="' + prefix + '-date-trigger" type="button" class="settings-input birth-date-trigger soundable" onclick="openBirthDateWheelPicker(event, \'' + prefix + '\')">' +
+                '<button id="' + prefix + '-date-trigger" type="button" class="settings-input birth-date-trigger soundable" data-shell-action="open-birth-date-wheel" data-birth-date-prefix="' + escapeHtml(prefix) + '">' +
                     '<span id="' + prefix + '-date-display">' + escapeHtml(formatBirthDateWheelDisplay(parts)) + '</span>' +
                     '<i class="fa-solid fa-calendar-days"></i>' +
                 '</button>' +
@@ -2485,7 +2338,7 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
         function renderBirthDateWheelOption(type, value, label) {
             const activeValue = Number(birthDateWheelState[type]);
             const isActive = activeValue === Number(value);
-            return '<button type="button" class="birth-date-wheel-option soundable' + (isActive ? ' active' : '') + '" data-wheel-value="' + value + '" onclick="selectBirthDateWheelValue(\'' + type + '\', ' + value + ')">' +
+            return '<button type="button" class="birth-date-wheel-option soundable' + (isActive ? ' active' : '') + '" data-shell-action="select-birth-date-wheel-value" data-wheel-type="' + escapeHtml(type) + '" data-wheel-value="' + value + '">' +
                 escapeHtml(label) +
             '</button>';
         }
@@ -3249,64 +3102,6 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
             }
         }
 
-        const RUANG_BACA_BADGE_KEY = 'patient_ruang_baca_opened_v1';
-        const menuData = {
-            dokumen: { title: 'Dokumen', items: [
-                ['fa-solid fa-image', 'Album USG', '/album-usg.html'],
-                ['fa-solid fa-flask', 'Hasil Lab', '/hasil-lab.html'],
-                ['fa-solid fa-file-medical', 'Resume Medis', '/dokumen-medis.html']
-            ]},
-            aplikasi: { title: 'Aplikasi', items: [
-                ['fa-solid fa-hand', 'Gerakan Bayi', '/kick-counter.html'],
-                ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
-                ['fa-solid fa-wave-square', 'Hitung Kontraksi', '/contraction-timer.html'],
-                ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
-                ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html']
-            ]},
-            jadwal: { title: 'Jadwal', items: [
-                ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
-                ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs.html'],
-                ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan.html'],
-                ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian.html']
-            ]},
-            edukasi: { title: 'Ruang Baca', items: [
-                ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
-                ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-                ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
-            ]}
-        };
-
-        function hasOpenedRuangBaca() {
-            try { return localStorage.getItem(RUANG_BACA_BADGE_KEY) === '1'; } catch (error) { return false; }
-        }
-
-        function updateRuangBacaBadges() {
-            const isOpened = hasOpenedRuangBaca();
-            document.querySelectorAll('[data-ruang-baca-badge]').forEach(badge => {
-                badge.style.display = isOpened ? 'none' : 'grid';
-            });
-        }
-
-        function markRuangBacaOpened() {
-            try { localStorage.setItem(RUANG_BACA_BADGE_KEY, '1'); } catch (error) {}
-            updateRuangBacaBadges();
-        }
-
-        function openSheet(category) {
-            const data = menuData[category];
-            if (!data) return;
-            if (category === 'edukasi') markRuangBacaOpened();
-            document.getElementById('sheet-title').textContent = data.title;
-            document.getElementById('sheet-menu').innerHTML = data.items.map(item => '<a class="sheet-item soundable" href="' + item[2] + '" data-shell-action="go" data-shell-href="' + item[2] + '"><i class="' + item[0] + '"></i><span>' + item[1] + '</span>' + (item[3] ? '<em class="feature-new-badge">' + item[3] + '</em>' : '') + '</a>').join('');
-            document.getElementById('sheet-overlay').classList.add('active');
-            document.getElementById('bottom-sheet').classList.add('active');
-        }
-
-        function closeSheet() {
-            document.getElementById('sheet-overlay').classList.remove('active');
-            document.getElementById('bottom-sheet').classList.remove('active');
-        }
-
         function scrollTopHome() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
         let homeSectionsUnlocked = false;
@@ -3503,7 +3298,7 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260731hardening1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260731stage2b1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
@@ -3604,6 +3399,7 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
                 return;
             }
 
+            loadPatientFeature('patientTracking').catch(function() {});
             refreshPatientServiceWorker();
 
             try {

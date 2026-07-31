@@ -26,7 +26,44 @@ function bindDelegatedLandingActions() {
     });
 }
 
+async function dispatchLandingFeatureAction(event, target) {
+    const module = await loadLandingFeature(target.dataset.landingFeature);
+    const action = module[target.dataset.landingAction || ''];
+    if (typeof action !== 'function') {
+        throw new Error(
+            `Unknown action "${target.dataset.landingAction || ''}" for landing feature "${target.dataset.landingFeature || ''}"`
+        );
+    }
+
+    return action({ event, trigger: target });
+}
+
+function bindDelegatedLandingFeatures() {
+    const selector = '[data-landing-feature][data-landing-action]';
+
+    document.addEventListener('click', event => {
+        const target = event.target.closest(selector);
+        if (!target) return;
+
+        event.preventDefault();
+        dispatchLandingFeatureAction(event, target)
+            .catch(error => reportOptionalFeatureFailure(target.dataset.landingFeature, error));
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+
+        const target = event.target.closest(selector);
+        if (!target) return;
+
+        event.preventDefault();
+        dispatchLandingFeatureAction(event, target)
+            .catch(error => reportOptionalFeatureFailure(target.dataset.landingFeature, error));
+    });
+}
+
 bindDelegatedLandingActions();
+bindDelegatedLandingFeatures();
 
 runIdle(() => {
     loadLandingFeature('patientTracking')

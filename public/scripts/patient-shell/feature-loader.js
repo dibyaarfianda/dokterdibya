@@ -1,7 +1,9 @@
 const featurePromises = new Map();
 
 const featureLoaders = {
-    profilePhotoCropper: () => import('../profile-photo-cropper.js')
+    profilePhotoCropper: () => import('../profile-photo-cropper.js'),
+    myCorner: () => import('../patient-my-corner.js'),
+    patientTracking: () => import('../../js/patient-tracker.js')
 };
 
 export async function loadPatientFeature(name) {

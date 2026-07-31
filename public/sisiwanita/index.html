@@ -18,8 +18,8 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260731hardening1">
-    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260731stage2b1">
+    <script src="/scripts/patient-session.js?v=20260731stage2b1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -4975,9 +4975,9 @@
                 <img id="birth-photo-modal-img" alt="Foto Kelahiran" onclick="event.stopPropagation()" hidden>
             </div>
 
-            <div class="queue-promo-modal" id="queue-promo-modal" role="dialog" aria-modal="true" aria-label="Preview Fitur Pasien Portal" onclick="closeQueuePromoModal()">
-                <div class="queue-promo-modal-card" onclick="event.stopPropagation()">
-                    <button type="button" class="queue-promo-modal-close" onclick="closeQueuePromoModal()">&times;</button>
+            <div class="queue-promo-modal" id="queue-promo-modal" role="dialog" aria-modal="true" aria-label="Preview Fitur Pasien Portal" data-landing-feature="promoPreview" data-landing-action="closeBackdrop">
+                <div class="queue-promo-modal-card" data-landing-feature="promoPreview" data-landing-action="stop">
+                    <button type="button" class="queue-promo-modal-close" data-landing-feature="promoPreview" data-landing-action="close">&times;</button>
                     <img id="queue-promo-modal-img" class="queue-promo-modal-media" src="../images/antrian-live-promo-fake.png" alt="Preview Antrian Live dengan data simulasi" loading="lazy">
                 </div>
             </div>
@@ -5060,21 +5060,21 @@
                         </div>
                     </div>
                     <div class="doc-links-row">
-                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Album USG" data-promo-src="../images/album-usg-promo-fake.png" data-promo-alt="Preview Album USG dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
+                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Album USG" data-promo-src="../images/album-usg-promo-fake.png" data-promo-alt="Preview Album USG dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                             <div class="doc-card-icon"><i class="fa-solid fa-camera"></i></div>
                             <div class="doc-card-label">
                                 <h3>Album USG</h3>
                                 <p>Foto USG kehamilan Anda</p>
                             </div>
                         </div>
-                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Resume Medis" data-promo-src="../images/resume-medis-promo-fake.png" data-promo-alt="Preview Resume Medis dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
+                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Resume Medis" data-promo-src="../images/resume-medis-promo-fake.png" data-promo-alt="Preview Resume Medis dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                             <div class="doc-card-icon"><i class="fa-solid fa-file-medical"></i></div>
                             <div class="doc-card-label">
                                 <h3>Resume Medis</h3>
                                 <p>Catatan medis Anda</p>
                             </div>
                         </div>
-                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Hasil Lab" data-promo-src="../images/hasil-lab-promo-fake.png" data-promo-alt="Preview Hasil Lab dengan data simulasi" onclick="return openQueuePromoModal(event, this)" onkeydown="if (event.key === 'Enter' || event.key === ' ') { return openQueuePromoModal(event, this); }">
+                            <div class="doc-card doc-card-side" role="button" tabindex="0" aria-label="Preview Hasil Lab" data-promo-src="../images/hasil-lab-promo-fake.png" data-promo-alt="Preview Hasil Lab dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                             <div class="doc-card-icon"><i class="fa-solid fa-flask"></i></div>
                             <div class="doc-card-label">
                                 <h3>Hasil Lab</h3>
@@ -5092,35 +5092,35 @@
                     </div>
 
 
-                    <a href="../images/antrian-live-promo-fake.png" class="proces-row" data-promo-src="../images/antrian-live-promo-fake.png" data-promo-alt="Preview Antrian Live dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/antrian-live-promo-fake.png" class="proces-row" data-promo-src="../images/antrian-live-promo-fake.png" data-promo-alt="Preview Antrian Live dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                         <span class="proces-step"><i class="fa-solid fa-list-ol" aria-hidden="true"></i></span>
                         <h3 class="proces-title">ANTRIAN LIVE</h3>
                         <p class="proces-desc">Pantau antrian klinik secara real-time. Lihat posisi antrean, siapa yang sedang dilayani, dan perkirakan giliran Anda dengan lebih jelas.</p>
                     </a>
 
 
-                    <a href="../images/gerakan-bayi-promo-fake.png" class="proces-row" data-promo-src="../images/gerakan-bayi-promo-fake.png" data-promo-alt="Preview Gerakan Bayi dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/gerakan-bayi-promo-fake.png" class="proces-row" data-promo-src="../images/gerakan-bayi-promo-fake.png" data-promo-alt="Preview Gerakan Bayi dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                         <span class="proces-step"><i class="fa-solid fa-baby" aria-hidden="true"></i></span>
                         <h3 class="proces-title">GERAKAN BAYI</h3>
                         <p class="proces-desc">Hitung dan pantau gerakan bayi Anda setiap hari. Catat setiap tendangan untuk memastikan kesehatan janin tetap terjaga dengan baik.</p>
                     </a>
 
 
-                    <a href="../images/monitoring-kehamilan-promo-fake.png" class="proces-row" data-promo-src="../images/monitoring-kehamilan-promo-fake.png" data-promo-alt="Preview Monitoring Kehamilan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/monitoring-kehamilan-promo-fake.png" class="proces-row" data-promo-src="../images/monitoring-kehamilan-promo-fake.png" data-promo-alt="Preview Monitoring Kehamilan dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                         <span class="proces-step"><i class="fa-solid fa-person-pregnant" aria-hidden="true"></i></span>
                         <h3 class="proces-title">MONITORING KEHAMILAN</h3>
                         <p class="proces-desc">Pantau perkembangan kehamilan minggu demi minggu. Lihat estimasi berat janin, ukuran, dan milestone penting setiap tahap kehamilan Anda.</p>
                     </a>
 
 
-                    <a href="../images/kalender-kesuburan-promo-fake.png" class="proces-row" data-promo-src="../images/kalender-kesuburan-promo-fake.png" data-promo-alt="Preview Kalender Kesuburan dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/kalender-kesuburan-promo-fake.png" class="proces-row" data-promo-src="../images/kalender-kesuburan-promo-fake.png" data-promo-alt="Preview Kalender Kesuburan dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                         <span class="proces-step"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></span>
                         <h3 class="proces-title">KALENDER KESUBURAN</h3>
                         <p class="proces-desc">Prediksi masa subur dan ovulasi berdasarkan siklus menstruasi Anda. Rencanakan kehamilan dengan lebih tepat dan terukur setiap bulannya.</p>
                     </a>
 
 
-                    <a href="../images/jadwal-vitamin-promo-fake.png" class="proces-row" data-promo-src="../images/jadwal-vitamin-promo-fake.png" data-promo-alt="Preview Jadwal Vitamin dengan data simulasi" onclick="return openQueuePromoModal(event, this)">
+                    <a href="../images/jadwal-vitamin-promo-fake.png" class="proces-row" data-promo-src="../images/jadwal-vitamin-promo-fake.png" data-promo-alt="Preview Jadwal Vitamin dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open">
                         <span class="proces-step"><i class="fa-solid fa-pills" aria-hidden="true"></i></span>
                         <h3 class="proces-title">JADWAL VITAMIN</h3>
                         <p class="proces-desc">Pengingat jadwal minum vitamin dan suplemen harian sesuai resep dokter. Tidak perlu mengingat sendiri, kami ingatkan tepat waktu setiap hari.</p>
@@ -5178,7 +5178,7 @@
                     </div>
 
                     <div class="journey-showcase-grid">
-                        <button type="button" class="journey-card card-perjalanan is-short" data-promo-src="../images/perjalanan-ibu-promo-fake.png" data-promo-alt="Preview Perjalanan Ibu dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Perjalanan Ibu: Langkah Awal Ibu">
+                        <button type="button" class="journey-card card-perjalanan is-short" data-promo-src="../images/perjalanan-ibu-promo-fake.png" data-promo-alt="Preview Perjalanan Ibu dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open" aria-label="Preview Perjalanan Ibu: Langkah Awal Ibu">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Perjalanan Ibu</span>
@@ -5189,7 +5189,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-membaca is-tall" data-promo-src="../images/ruang-membaca-promo-fake.png" data-promo-alt="Preview Ruang Membaca dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Ruang Membaca: Nadi Pengetahuan">
+                        <button type="button" class="journey-card card-membaca is-tall" data-promo-src="../images/ruang-membaca-promo-fake.png" data-promo-alt="Preview Ruang Membaca dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open" aria-label="Preview Ruang Membaca: Nadi Pengetahuan">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Ruang Membaca</span>
@@ -5200,7 +5200,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-update is-taller" data-promo-src="../images/update-terkini-promo-fake.png" data-promo-alt="Preview Update Terkini dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Update Terkini: Kabar Sehat Hari Ini">
+                        <button type="button" class="journey-card card-update is-taller" data-promo-src="../images/update-terkini-promo-fake.png" data-promo-alt="Preview Update Terkini dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open" aria-label="Preview Update Terkini: Kabar Sehat Hari Ini">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Update Terkini</span>
@@ -5211,7 +5211,7 @@
                             </span>
                         </button>
 
-                        <button type="button" class="journey-card card-obgyn is-short" data-promo-src="../images/tanya-dokter-promo-fake.png" data-promo-alt="Preview Fitur Tanya Dokter dengan data simulasi" onclick="return openQueuePromoModal(event, this)" aria-label="Preview Fitur Tanya Dokter">
+                        <button type="button" class="journey-card card-obgyn is-short" data-promo-src="../images/tanya-dokter-promo-fake.png" data-promo-alt="Preview Fitur Tanya Dokter dengan data simulasi" data-landing-feature="promoPreview" data-landing-action="open" aria-label="Preview Fitur Tanya Dokter">
                             <span class="journey-card-frame" aria-hidden="true"><span class="journey-card-media" aria-hidden="true"></span><span class="journey-card-blur" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></span>
                             <span class="journey-card-copy">
                                 <span class="journey-card-title">Fitur Tanya Dokter</span>
@@ -5922,7 +5922,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20260731hardening1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20260731stage2b1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -6475,69 +6475,10 @@
             document.body.style.paddingRight = '';
         }
 
-        const QUEUE_PROMO_IMAGE_URL = '../images/antrian-live-promo-fake.png';
-        const QUEUE_PROMO_IMAGE_ALT = 'Preview Antrian Live dengan data simulasi';
-        const QUEUE_PROMO_ANIMATION_MS = 1000;
-
-        function openQueuePromoModal(event, trigger) {
-            if (event) {
-                event.preventDefault();
-            }
-
-            const modal = document.getElementById('queue-promo-modal');
-            const modalImg = document.getElementById('queue-promo-modal-img');
-            if (!modal || !modalImg) return false;
-
-            if (modal._queuePromoHideTimer) {
-                window.clearTimeout(modal._queuePromoHideTimer);
-                modal._queuePromoHideTimer = null;
-            }
-
-            const promoSrc = trigger && trigger.dataset && trigger.dataset.promoSrc
-                ? trigger.dataset.promoSrc
-                : QUEUE_PROMO_IMAGE_URL;
-            const promoAlt = trigger && trigger.dataset && trigger.dataset.promoAlt
-                ? trigger.dataset.promoAlt
-                : QUEUE_PROMO_IMAGE_ALT;
-
-            modalImg.src = promoSrc;
-            modalImg.alt = promoAlt;
-            modal.classList.add('is-mounted');
-            modal.classList.remove('active');
-            modal.offsetWidth;
-            window.requestAnimationFrame(function() {
-                modal.classList.add('active');
-            });
-            var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
-            document.body.style.overflow = 'hidden';
-            document.body.style.paddingRight = scrollbarW + 'px';
-            return false;
-        }
-
-        function closeQueuePromoModal() {
-            const modal = document.getElementById('queue-promo-modal');
-            if (!modal) return;
-
-            modal.classList.remove('active');
-            if (modal._queuePromoHideTimer) {
-                window.clearTimeout(modal._queuePromoHideTimer);
-            }
-            modal._queuePromoHideTimer = window.setTimeout(function() {
-                modal.classList.remove('is-mounted');
-                modal._queuePromoHideTimer = null;
-            }, QUEUE_PROMO_ANIMATION_MS);
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
-        }
-
-        window.openQueuePromoModal = openQueuePromoModal;
-        window.closeQueuePromoModal = closeQueuePromoModal;
-
         // Close modal on escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeBirthPhotoModal();
-                closeQueuePromoModal();
             }
         });
 
@@ -8534,7 +8475,7 @@
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20260731stage2a"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20260731stage2b1"></script>
     <script>
         document.addEventListener('click', function(e) {
             var link = e.target && e.target.closest ? e.target.closest('.doc-cta-link') : null;

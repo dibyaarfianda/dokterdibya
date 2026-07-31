@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v362';
+        window.STAFF_CACHE_VERSION = 'v363';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v362">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v362">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v362">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v362">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v363">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v363">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v363">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v363">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v362">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v363">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v362">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v363">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -45,7 +45,7 @@
         }
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v362"></script>
+    <script src="scripts/error-handler.js?v=v363"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -60,10 +60,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v362">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v363">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v362">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v363">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -3318,57 +3318,7 @@
                 <div id="content-support-chat-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/content-support-chat-page.html"></div>
 
                 <!-- TROUBLESHOOTING PAGE -->
-                <div id="troubleshooting-page" class="d-none">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header bg-danger d-flex justify-content-between align-items-center">
-                                    <h3 class="card-title mb-0"><i class="fas fa-bug mr-2"></i>Troubleshooting</h3>
-                                    <button type="button" class="btn btn-sm btn-light" onclick="loadTroubleshootingReports()">
-                                        <i class="fas fa-sync-alt mr-1"></i>Refresh
-                                    </button>
-                                </div>
-                                <div class="card-body">
-                                    <div class="alert alert-light border mb-3">
-                                        <div class="font-weight-bold mb-1">Laporan bug/error pasien pemakai portal</div>
-                                        <div class="small text-muted">Data diambil dari masukan pasien kategori bug pada portal pasien trial.</div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <div class="col-md-4 col-sm-6 mb-2">
-                                            <div class="small text-muted">Total laporan</div>
-                                            <div class="h4 mb-0" id="troubleshooting-total-count">-</div>
-                                        </div>
-                                        <div class="col-md-8 col-sm-6 mb-2">
-                                            <div class="small text-muted">Terakhir dimuat</div>
-                                            <div class="font-weight-bold" id="troubleshooting-last-loaded">-</div>
-                                        </div>
-                                    </div>
-                                    <div id="troubleshooting-status" class="alert alert-info py-2 small mb-3">
-                                        Memuat laporan bug/error pasien...
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table class="table table-hover table-striped mb-0" id="troubleshooting-reports-table">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th class="troubleshooting-time-column">Waktu</th>
-                                                    <th class="troubleshooting-patient-column">Pasien</th>
-                                                    <th>Laporan</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="troubleshooting-reports-body">
-                                                <tr>
-                                                    <td colspan="3" class="text-center text-muted py-4">
-                                                        <i class="fas fa-spinner fa-spin mr-1"></i> Memuat laporan...
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div id="troubleshooting-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/troubleshooting-page.html"></div>
 
                 <!-- STAFF POINTS PAGE -->
                 <div id="content-staff-points" class="d-none" data-page-fragment="/staff/public/fragments/pages/content-staff-points.html"></div>
@@ -3793,7 +3743,7 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v362"></script>
+    <script defer src="scripts/shell/actions.js?v=v363"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3873,8 +3823,8 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v362" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v362" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v363" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v363" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3886,7 +3836,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v362"></script>
+<script defer src="scripts/rum.js?v=v363"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4111,7 +4061,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v362"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v363"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4372,7 +4322,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v362"></script>
+ <script src="scripts/mobile-helper.js?v=v363"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4384,8 +4334,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v362"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v362"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v363"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v363"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

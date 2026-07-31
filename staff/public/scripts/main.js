@@ -661,110 +661,6 @@ function openCommunityChatPopup() {
     }
 }
 
-function showTroubleshootingPage() {
-    hideAllPages();
-    pages.troubleshooting?.classList.remove('d-none');
-    setTitleAndActive('Troubleshooting', 'nav-troubleshooting', 'troubleshooting');
-    loadTroubleshootingReports();
-}
-
-function setTroubleshootingStatus(message, type = 'info') {
-    const status = document.getElementById('troubleshooting-status');
-    if (!status) return;
-    status.className = `alert alert-${type} py-2 small mb-3`;
-    status.textContent = message;
-}
-
-function formatTroubleshootingDate(value) {
-    if (!value) return '-';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleString('id-ID', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function renderTroubleshootingReports(reports) {
-    const tbody = document.getElementById('troubleshooting-reports-body');
-    if (!tbody) return;
-
-    if (!Array.isArray(reports) || reports.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4"><i class="far fa-check-circle mr-1"></i> Belum ada laporan bug/error pasien.</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = reports.map(report => {
-        const patientName = report.is_anonymous
-            ? 'Anonim'
-            : (report.patient_real_name || report.patient_name || 'Pasien');
-        const patientNickname = report.is_anonymous
-            ? '-'
-            : (report.patient_nickname || report.user_display_name || '-');
-        const message = escapeHtml(report.message || '-').replace(/\n/g, '<br>');
-        return `
-            <tr>
-                <td><small>${escapeHtml(formatTroubleshootingDate(report.created_at))}</small></td>
-                <td>
-                    <div class="font-weight-bold">${escapeHtml(patientName)}</div>
-                    <small class="text-muted">ID: ${escapeHtml(patientNickname)}</small>
-                </td>
-                <td class="troubleshooting-message-cell">${message}</td>
-            </tr>
-        `;
-    }).join('');
-}
-
-async function loadTroubleshootingReports() {
-    const tbody = document.getElementById('troubleshooting-reports-body');
-    const totalEl = document.getElementById('troubleshooting-total-count');
-    const loadedEl = document.getElementById('troubleshooting-last-loaded');
-    if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat laporan...</td></tr>';
-    }
-    setTroubleshootingStatus('Memuat laporan bug/error pasien...', 'info');
-
-    const token = getAuthToken();
-    if (!token) {
-        setTroubleshootingStatus('Sesi login tidak ditemukan. Silakan login ulang.', 'danger');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger py-4">Sesi login tidak ditemukan.</td></tr>';
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/patient-feedback?category=bug&limit=50&offset=0&_=' + Date.now(), {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Cache-Control': 'no-cache'
-            }
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.success) {
-            if (response.status === 403) {
-                throw new Error('Akses laporan troubleshooting hanya tersedia untuk superadmin.');
-            }
-            throw new Error(result.message || 'Gagal memuat laporan troubleshooting');
-        }
-
-        const reports = Array.isArray(result.data) ? result.data : [];
-        renderTroubleshootingReports(reports);
-        if (totalEl) totalEl.textContent = String(result.total ?? reports.length);
-        if (loadedEl) loadedEl.textContent = new Date().toLocaleString('id-ID');
-        setTroubleshootingStatus(reports.length ? 'Menampilkan laporan bug/error pasien terbaru.' : 'Belum ada laporan bug/error pasien.', reports.length ? 'success' : 'secondary');
-    } catch (error) {
-        console.error('[Troubleshooting] load reports error:', error);
-        const message = error && error.message ? error.message : String(error || 'Gagal memuat laporan');
-        if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-4">${escapeHtml(message)}</td></tr>`;
-        }
-        if (totalEl) totalEl.textContent = '-';
-        setTroubleshootingStatus(message || 'Gagal memuat laporan troubleshooting.', 'danger');
-    }
-}
-
 // Dashboard New Patients
 let dashboardNewPatientsPage = 1;
 let dashboardNewPatientsTotalPages = 1;
@@ -4472,7 +4368,7 @@ function restoreLastPage() {
             'nav-tanya-dokter':                    () => showTanyaDokterPage(),
             'nav-community-chat':                   () => showCommunityChatPage(),
             'nav-support-chat':                     () => showSupportChatPage(),
-            'nav-troubleshooting':                  () => showTroubleshootingPage(),
+            'nav-troubleshooting':                  () => window.showTroubleshootingPage?.(),
             'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage(),
             'nav-guest-activity':                   () => window.showGuestActivityPage && window.showGuestActivityPage(),
             'nav-penjualan-obat':                   () => showPenjualanObatPage(),
@@ -5702,8 +5598,6 @@ export { initMain };
 window.showDashboardPage = showDashboardPage;
 window.showCommunityChatPage = showCommunityChatPage;
 window.openCommunityChatPopup = openCommunityChatPopup;
-window.showTroubleshootingPage = showTroubleshootingPage;
-window.loadTroubleshootingReports = loadTroubleshootingReports;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.showAntrianOnlinePage = showAntrianOnlinePage;
 window.backToSundayClinicLanding = backToSundayClinicLanding;

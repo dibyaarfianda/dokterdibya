@@ -51,7 +51,9 @@ describe('Birth congratulations portal layout', () => {
         expect(patientPortalSource).toContain('renderBirthDateWheelInput(\'birth-extra\', record.birth_date)');
         expect(patientPortalSource).toContain('function renderBirthDateWheelInput(prefix, value)');
         expect(patientPortalSource).toContain('birth-date-trigger');
-        expect(patientPortalSource).toContain("onclick=\"openBirthDateWheelPicker(event, \\'' + prefix + '\\')\"");
+        expect(patientPortalSource).toContain('data-shell-action="open-birth-date-wheel"');
+        expect(patientPortalSource).toContain('data-birth-date-prefix="\' + escapeHtml(prefix) + \'"');
+        expect(patientPortalSource).not.toContain("onclick=\"openBirthDateWheelPicker(event, \\'' + prefix + '\\')\"");
         expect(patientPortalSource).toContain('id="\' + prefix + \'-day" type="hidden"');
         expect(patientPortalSource).toContain('id="\' + prefix + \'-month" type="hidden"');
         expect(patientPortalSource).toContain('id="\' + prefix + \'-year" type="hidden"');

@@ -10,6 +10,7 @@ const fragmentPages = [
     ['activity-log', 'activity-log-page', 'nav-activity-log', 'Activity Log'],
     ['patient-activity', 'patient-activity-page', 'nav-patient-activity', 'Aktivitas Pasien'],
     ['support-chat', 'content-support-chat-page', 'nav-support-chat', 'Chat Bantuan'],
+    ['troubleshooting', 'troubleshooting-page', 'nav-troubleshooting', 'Troubleshooting'],
     ['staff-points', 'content-staff-points', 'nav-staff-points', 'Point Staff'],
     ['staff-briefing', 'content-staff-briefing', 'nav-staff-briefing', 'Briefing'],
     ['staff-payroll', 'content-staff-payroll', 'nav-staff-payroll', 'Gajian'],

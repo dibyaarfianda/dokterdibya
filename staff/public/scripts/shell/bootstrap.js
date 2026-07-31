@@ -44,6 +44,8 @@ async function bootstrapStaffShell() {
     }
 
     installLazyFeatureShim('showTanyaDokterPage', 'tanyaDokter', 'tanya-dokter');
+    installLazyFeatureShim('showTroubleshootingPage', 'troubleshooting', 'troubleshooting');
+    installLazyFeatureShim('loadTroubleshootingReports', 'troubleshooting', 'troubleshooting');
     installLazyFeatureShim('viewPatientDetail', 'patientSearchDetail');
     [
         'showManagePatientsPage',
