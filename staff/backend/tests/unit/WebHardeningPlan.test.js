@@ -87,6 +87,11 @@ describe('approved web hardening plan', () => {
             expect(source).toContain('isLocalMockHost');
             expect(source).not.toMatch(/localStorage\.setItem\('vps_auth_token',\s*'mock-/);
         }
+
+        const patientMenuShell = read('public', 'scripts', 'patient-menu-shell.js');
+        expect(patientMenuShell).toContain('function isLocalDemoHost()');
+        expect(patientMenuShell).toMatch(/function startGuestMode\(\) \{\s*if \(!isLocalDemoHost\(\)\)/);
+        expect(patientMenuShell).toMatch(/function isGuestMode\(\) \{\s*if \(!isLocalDemoHost\(\)\)/);
     });
 
     test('backend hardening contracts are active', () => {

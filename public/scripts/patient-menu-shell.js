@@ -196,6 +196,12 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
             } catch (error) {}
         }
 
+        function isLocalDemoHost() {
+            return window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1' ||
+                window.location.hostname === '[::1]';
+        }
+
         function getGuestSessionId() {
             try {
                 let existing = sessionStorage.getItem(GUEST_SESSION_ID_KEY);
@@ -233,6 +239,10 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
         }
 
         function startGuestMode() {
+            if (!isLocalDemoHost()) {
+                clearGuestMode();
+                return false;
+            }
             try {
                 const existingGuestSessionId = sessionStorage.getItem(GUEST_SESSION_ID_KEY);
                 clearPatientAuth();
@@ -240,10 +250,16 @@ import { loadPatientFeature } from './patient-shell/feature-loader.js';
                 if (existingGuestSessionId) sessionStorage.setItem(GUEST_SESSION_ID_KEY, existingGuestSessionId);
                 sessionStorage.setItem(GUEST_MODE_KEY, '1');
                 sessionStorage.setItem(GUEST_STARTED_AT_KEY, String(Date.now()));
+                return true;
             } catch (error) {}
+            return false;
         }
 
         function isGuestMode() {
+            if (!isLocalDemoHost()) {
+                clearGuestMode();
+                return false;
+            }
             const marker = sessionStorage.getItem(GUEST_MODE_KEY) || localStorage.getItem(GUEST_MODE_KEY);
             if (marker !== '1') return false;
             const startedAt = Number(sessionStorage.getItem(GUEST_STARTED_AT_KEY) || localStorage.getItem(GUEST_STARTED_AT_KEY) || 0);
