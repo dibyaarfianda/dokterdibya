@@ -64,6 +64,10 @@ const trackError = (err) => {
  * Enhanced with tracking, correlation IDs, and better logging
  */
 const errorHandler = (err, req, res, next) => {
+    if (!err.isOperational && err.type === 'entity.too.large') {
+        err = new AppError('Payload exceeds the allowed size.', 413, true, 'PAYLOAD_TOO_LARGE');
+    }
+
     // Express JSON parser errors should be treated as client input errors.
     if (
         !err.isOperational &&

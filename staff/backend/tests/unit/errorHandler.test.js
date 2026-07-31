@@ -68,6 +68,22 @@ describe('errorHandler', () => {
         expect(logger.error).toHaveBeenCalled();
     });
 
+    it('returns 413 for oversized JSON payloads', () => {
+        const err = new Error('request entity too large');
+        err.type = 'entity.too.large';
+        err.status = 413;
+        const res = buildRes();
+
+        errorHandler(err, {}, res, jest.fn());
+
+        expect(res.status).toHaveBeenCalledWith(413);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+            success: false,
+            code: 'PAYLOAD_TOO_LARGE'
+        }));
+        expect(logger.warn).toHaveBeenCalled();
+    });
+
     it('includes stack output in development mode', () => {
         process.env.NODE_ENV = 'development';
         const err = new AppError('dev error', 418, true);
