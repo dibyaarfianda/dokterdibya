@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off" data-portal-nav-active="jadwal">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Antrian Hari Ini - SISIwanita</title>
@@ -604,8 +605,8 @@
         .nav-home i { font-size: 20px; }
     </style>
 <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260624shellwave8">
-    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260624shellwave8">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260731hardening1">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260731hardening1">
     <style>
         body.antrian-page #reminder-modal.reminder-modal {
             position: fixed !important;
@@ -1136,8 +1137,8 @@
         let _reminderSettings = loadReminderSettings();
 
         function getPatientToken() {
-            return sessionStorage.getItem('vps_auth_token')
-                || localStorage.getItem('vps_auth_token')
+            return window.PatientSession?.getToken()
+                || window.PatientSession?.getToken()
                 || sessionStorage.getItem('auth_token')
                 || localStorage.getItem('auth_token')
                 || sessionStorage.getItem('patient_token')
@@ -1955,8 +1956,8 @@
         loadQueue(false);
     </script>
 
-    <script src="/scripts/patient-tool-shell.js?v=20260624shellwave8"></script>
-    <script src="/scripts/patient-tool-retrofit.js?v=20260624shellwave8"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260731hardening1"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260731hardening1"></script>
     <script src="/js/patient-tracker.js?v=20260601sisi1"></script>
 </body>
 </html>

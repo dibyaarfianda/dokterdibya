@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM ready, initializing complete profile...');
     
     // Check for token in same way as patient-dashboard.html for consistency
-    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+    const token = window.PatientSession?.getToken() || localStorage.getItem('patient_token');
 
     // Redirect if not logged in
     if (!token) {

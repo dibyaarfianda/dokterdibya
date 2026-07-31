@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260624shellwave8'; // 2026-06-24 Patient menu shell refactor phase 1
+const CACHE_VERSION = '20260731hardening1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -39,6 +39,7 @@ const PRECACHE_FILES = [
   '/styles/patient-tool-retrofit.css',
   '/styles/patient-my-corner.css',
   '/scripts/patient-menu-shell.js',
+  '/scripts/patient-session.js',
   '/scripts/patient-tool-shell.js',
   '/scripts/patient-tool-retrofit.js',
   '/scripts/patient-my-corner.js',

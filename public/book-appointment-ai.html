@@ -655,7 +655,10 @@
         function showUserMessage(message) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'user-message';
-            messageDiv.innerHTML = `<div class="user-bubble">${message}</div>`;
+            const bubble = document.createElement('div');
+            bubble.className = 'user-bubble';
+            bubble.textContent = String(message);
+            messageDiv.appendChild(bubble);
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }

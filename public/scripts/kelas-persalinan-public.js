@@ -1,6 +1,5 @@
 (function() {
     const API_BASE = '/api/birth-classes';
-    const TOKEN_KEY = 'vps_auth_token';
     let sessionsCache = [];
     let currentProfile = null;
 
@@ -38,10 +37,7 @@
     }
 
     function getToken() {
-        return localStorage.getItem(TOKEN_KEY) ||
-            sessionStorage.getItem(TOKEN_KEY) ||
-            localStorage.getItem('patient_token') ||
-            '';
+        return window.PatientSession?.getToken() || '';
     }
 
     function normalizeList(value) {

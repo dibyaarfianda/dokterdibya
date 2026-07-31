@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Logout - dokterDIBYA</title>
@@ -54,8 +55,7 @@
 
     <script>
         // Clear all auth data
-        localStorage.removeItem('vps_auth_token');
-        sessionStorage.removeItem('vps_auth_token');
+        window.PatientSession?.clearAuth();
         localStorage.removeItem('patient_user');
         localStorage.removeItem('from_mobile_app');
         localStorage.removeItem('patient_token');

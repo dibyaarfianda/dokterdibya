@@ -98,7 +98,25 @@ server {
         return 404;
     }
 
-    # Standalone PWA files
+    # Canonical PWA files
+    location = /patient-portal.webmanifest {
+        try_files /patient-portal.webmanifest =404;
+        default_type application/manifest+json;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+    }
+
+    location = /sw.js {
+        try_files /sw.js =404;
+        default_type application/javascript;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+        add_header Service-Worker-Allowed "/" always;
+    }
+
+    # Compatibility aliases retained through at least 2026-08-30.
     location = /sisiwanita.webmanifest {
         try_files /sisiwanita.webmanifest =404;
         default_type application/manifest+json;

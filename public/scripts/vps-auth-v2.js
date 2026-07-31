@@ -30,7 +30,7 @@ function notifyAuthChange() {
 
 export async function getIdToken() {
     // Check localStorage first (for "remember me"), then sessionStorage
-    return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || null;
+    return window.PatientSession?.getToken() || null;
 }
 
 export async function fetchMe() {
@@ -70,12 +70,11 @@ export async function signIn(email, password, remember = false) {
         }
         const result = await res.json();
         console.log('[AUTH] Login result:', result);
-        
-        if (result && result.success && result.data.token) {
-            if (remember) localStorage.setItem('vps_auth_token', result.data.token);
-            else sessionStorage.setItem('vps_auth_token', result.data.token);
 
+        if (result && result.success && result.data.token) {
+            window.PatientSession?.setToken(result.data.token, { persistent: remember });
             auth.currentUser = result.data.user || null;
+            window.PatientSession?.setUser(auth.currentUser, { persistent: remember });
             notifyAuthChange();
             return result;
         } else {
@@ -89,15 +88,14 @@ export async function signIn(email, password, remember = false) {
 }
 
 export async function signOut() {
-    localStorage.removeItem('vps_auth_token');
-    sessionStorage.removeItem('vps_auth_token');
+    window.PatientSession?.clearAuth();
     auth.currentUser = null;
     notifyAuthChange();
 }
 
 // Initialize auth state when called
 export async function initAuth() {
-    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    const token = window.PatientSession?.getToken();
     if (token) {
         const user = await fetchMe();
         if (user) {

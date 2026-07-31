@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Gallery Kenangan Anda - Dokter Dibya</title>
@@ -1085,7 +1086,7 @@
                 <i class="fas fa-chevron-left"></i>
             </button>
             <div class="lightbox-image-container">
-                <img src="" alt="" class="lightbox-image" id="lightboxImage" onclick="toggleZoom()">
+                <img alt="" class="lightbox-image" id="lightboxImage" onclick="toggleZoom()" hidden>
             </div>
             <button class="lightbox-nav next" onclick="navigateLightbox(1)">
                 <i class="fas fa-chevron-right"></i>
@@ -1403,7 +1404,9 @@
             const image = galleryImages[currentImageIndex];
             if (!image) return;
 
-            document.getElementById('lightboxImage').src = image.file_url;
+            const lightboxImage = document.getElementById('lightboxImage');
+            lightboxImage.src = image.file_url;
+            lightboxImage.hidden = false;
             document.getElementById('lightboxTitle').textContent = image.title || 'USG 4D';
             document.getElementById('lightboxCaption').textContent = image.title || 'Momen Spesial';
             document.getElementById('lightboxDate').textContent = formatDate(image.published_at || image.created_at);
@@ -1520,8 +1523,8 @@
         // UTILITIES
         // =====================================================
         function getAuthToken() {
-            return localStorage.getItem('vps_auth_token') ||
-                   sessionStorage.getItem('vps_auth_token') ||
+            return window.PatientSession?.getToken() ||
+                   window.PatientSession?.getToken() ||
                    localStorage.getItem('patient_token');
         }
 

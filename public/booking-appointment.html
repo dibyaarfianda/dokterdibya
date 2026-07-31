@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -11,7 +12,7 @@
     <script>
         (function() {
             console.log('[Booking-HEAD] Auth check v3');
-            var t = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+            var t = window.PatientSession?.getToken() || localStorage.getItem('patient_token');
             console.log('[Booking-HEAD] Token:', t ? 'YES' : 'NO');
             if (!t) {
                 console.log('[Booking-HEAD] Redirecting...');

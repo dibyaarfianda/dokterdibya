@@ -71,7 +71,7 @@
     }
 
     function getToken() {
-        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token') || '';
+        return window.PatientSession?.getToken() || localStorage.getItem('patient_token') || '';
     }
 
     function normalizePatientName(value) {
@@ -595,8 +595,7 @@
     }
 
     function logout() {
-        localStorage.removeItem('vps_auth_token');
-        sessionStorage.removeItem('vps_auth_token');
+        window.PatientSession?.clearAuth();
         localStorage.removeItem('patient_user');
         window.location.href = '/patient-login.html';
     }

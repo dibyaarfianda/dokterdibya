@@ -68,7 +68,7 @@ describe('Patient portal header branding', () => {
         expect(retrofitCss).toContain('body.legacy-tool-retrofit main.story-room');
         expect(retrofitJs).toContain("document.querySelector('main.story-room')");
         expect(retrofitJs).toContain("document.querySelector('.story-room')");
-        expect(sisiwanitaSw).toContain(`const CACHE_VERSION = '${shellVersion}';`);
+        expect(sisiwanitaSw.trim()).toBe(`importScripts('/sw.js?v=${shellVersion}');`);
 
         shellPages.forEach(fileName => {
             const page = readRepoFile('public', fileName);

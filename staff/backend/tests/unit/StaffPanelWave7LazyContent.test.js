@@ -116,7 +116,8 @@ describe('staff panel wave 7 lazy content contracts', () => {
         const html = read('staff', 'public', 'index-adminlte.html');
         const sw = read('staff', 'public', 'sw.js');
 
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v360'");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v360'");
+        const version = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        expect(version).toBeTruthy();
+        expect(sw).toContain(`const STAFF_PWA_VERSION = '${version}'`);
     });
 });

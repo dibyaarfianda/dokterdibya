@@ -42,6 +42,18 @@ describe('observability authorization integration', () => {
         expect(response.body.accepted).toBe(2);
     });
 
+    test('RUM ingestion rejects unknown metric keys', async () => {
+        const response = await request(app)
+            .post('/api/rum')
+            .send({ page: 'dashboard', metrics: { attackerControlledMetric: 1 } });
+
+        expect(response.status).toBe(400);
+        expect(response.body).toMatchObject({
+            success: false,
+            code: 'RUM_UNKNOWN_METRIC'
+        });
+    });
+
     test('RUM summary rejects anonymous and non-superadmin requests', async () => {
         const anonymous = await request(app).get('/api/rum/summary');
         const staff = await request(app)

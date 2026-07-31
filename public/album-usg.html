@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
@@ -516,8 +517,8 @@
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260624shellwave8">
-    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260624shellwave8">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260731hardening1">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260731hardening1">
     <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit album-usg-page" data-tool-shell-active="dokumen" data-tool-kicker="Album USG" data-tool-title="Album USG." data-tool-copy="Galeri privat untuk foto USG dari kunjungan Anda, termasuk penanda foto baru dan pilihan thumbnail." data-tool-meta-label="Status" data-tool-meta-value="Galeri USG">
@@ -577,7 +578,7 @@
             <button class="lightbox-nav prev" onclick="navigateLightbox(-1)">
                 <i class="fa-solid fa-chevron-left"></i>
             </button>
-            <img id="lightbox-img" src="" alt="USG">
+            <img id="lightbox-img" alt="USG" hidden>
             <button class="lightbox-nav next" onclick="navigateLightbox(1)">
                 <i class="fa-solid fa-chevron-right"></i>
             </button>
@@ -778,7 +779,9 @@
             const date = new Date(img.published_at || img.created_at);
             const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-            document.getElementById('lightbox-img').src = img.file_url;
+            const lightboxImage = document.getElementById('lightbox-img');
+            lightboxImage.src = img.file_url;
+            lightboxImage.hidden = false;
             document.getElementById('lightbox-date').textContent = dateStr;
             document.getElementById('lightbox-notes').textContent = img.title || img.description || '';
             document.getElementById('lightbox-title').textContent = img.title || 'USG';
@@ -864,7 +867,7 @@
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
-<script src="/scripts/patient-tool-shell.js?v=20260624shellwave8"></script>
-<script src="/scripts/patient-tool-retrofit.js?v=20260624shellwave8"></script>
+<script src="/scripts/patient-tool-shell.js?v=20260731hardening1"></script>
+<script src="/scripts/patient-tool-retrofit.js?v=20260731hardening1"></script>
 </body>
 </html>

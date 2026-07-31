@@ -195,6 +195,11 @@ function wrapDbPool(pool, options = {}) {
 
 function getDbStats() {
     rollMinute();
+    const recentWindowStart = Date.now() - (15 * 60 * 1000);
+    const slowQueriesLast15m = state.slowQueries.filter((entry) => {
+        const timestamp = Date.parse(entry.ts);
+        return Number.isFinite(timestamp) && timestamp >= recentWindowStart;
+    }).length;
     const avgMs = state.totalQueries > 0
         ? Math.round(state.totalDurationMs / state.totalQueries)
         : 0;
@@ -209,6 +214,7 @@ function getDbStats() {
         avgQueriesPerMinute: avgQpm,
         currentMinuteQueries: state.currentMinuteCount,
         slowQueryCount: state.slowQueries.length,
+        slowQueriesLast15m,
         recentSlowQueries: state.slowQueries.slice(-10),
         queriesPerMinuteHistory: qpmArr,
         totalConnectionCheckouts: state.totalConnectionCheckouts,

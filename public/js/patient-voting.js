@@ -14,8 +14,8 @@
     const pendingLikeCommentIds = new Set();
 
     function getToken() {
-        return localStorage.getItem('vps_auth_token') ||
-            sessionStorage.getItem('vps_auth_token') ||
+        return window.PatientSession?.getToken() ||
+            window.PatientSession?.getToken() ||
             localStorage.getItem('patient_token');
     }
 

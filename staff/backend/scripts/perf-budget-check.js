@@ -1,197 +1,239 @@
 #!/usr/bin/env node
 /**
- * Performance Budget Check — CI/CD guardrail
- * Runs against a live server to validate performance budgets.
- * Exit code 0 = pass, 1 = budget violation.
+ * Strict performance budget guardrail.
  *
- * Usage:  node perf-budget-check.js [--base-url http://localhost:3000] [--token JWT]
+ * Usage:
+ *   node perf-budget-check.js --base-url https://example.test --token JWT
+ *     [--page-url https://example.test/] [--allow-unreachable]
  */
 
 const http = require('http');
 const https = require('https');
-const url = require('url');
+const puppeteer = require('puppeteer');
 
-// ---------------------------------------------------------------------------
-// Budgets — fail if exceeded
-// ---------------------------------------------------------------------------
+const WARMUP_RUNS = 3;
+const MEASURED_RUNS = 20;
+
 const BUDGETS = {
-    // API latency thresholds (ms)
     api: {
-        '/api/patients':              { p95: 100 },
-        '/api/dashboard-stats':       { p95: 50 },
-        '/api/notifications/count':   { p95: 30 },
-        '/api/rum/summary':           { p95: 50 },
+        '/api/patients': { p95: 100 },
+        '/api/dashboard-stats': { p95: 50 },
+        '/api/notifications/count': { p95: 30 },
+        '/api/rum/summary': { p95: 50 }
     },
-    // Page asset budgets
     page: {
-        maxJsSizeKB: 500,       // total JS per page (excluding CDN)
-        maxImageSizeKB: 300,    // largest single image
-        maxRequestCount: 40,    // initial page load request ceiling
+        maxJsSizeKB: 500,
+        maxImageSizeKB: 300,
+        maxRequestCount: 40
     }
 };
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-function fetch(reqUrl, headers = {}) {
+function argumentValue(args, name, fallback = null) {
+    const index = args.indexOf(name);
+    return index >= 0 && args[index + 1] ? args[index + 1] : fallback;
+}
+
+function fetchUrl(requestUrl, headers = {}) {
     return new Promise((resolve, reject) => {
-        const parsed = new URL(reqUrl);
-        const mod = parsed.protocol === 'https:' ? https : http;
-        const opts = {
+        const parsed = new URL(requestUrl);
+        const transport = parsed.protocol === 'https:' ? https : http;
+        const request = transport.get({
             hostname: parsed.hostname,
             port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
             path: parsed.pathname + parsed.search,
-            headers
-        };
-        mod.get(opts, res => {
+            headers,
+            timeout: 15000
+        }, (response) => {
             let data = '';
-            res.on('data', c => data += c);
-            res.on('end', () => {
-                try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-                catch (_) { resolve({ status: res.statusCode, body: data }); }
+            response.on('data', chunk => { data += chunk; });
+            response.on('end', () => {
+                let body = data;
+                try { body = JSON.parse(data); } catch (_) {}
+                resolve({ status: response.statusCode, body });
             });
-        }).on('error', reject);
+        });
+        request.on('timeout', () => request.destroy(new Error('Request timed out')));
+        request.on('error', reject);
     });
 }
 
-async function benchEndpoint(baseUrl, path, token, runs = 5) {
-    const times = [];
-    const headers = token ? { Authorization: `Bearer ${token}` } : {};
-    for (let i = 0; i < runs; i++) {
-        const t0 = Date.now();
-        await fetch(`${baseUrl}${path}?_t=${Date.now()}`, headers);
-        times.push(Date.now() - t0);
+function assertSuccess(response, label) {
+    if (response.status < 200 || response.status >= 300) {
+        throw new Error(`${label} returned HTTP ${response.status}`);
     }
-    const sorted = [...times].sort((a, b) => a - b);
+    return response;
+}
+
+function percentile(values, requestedPercentile) {
+    const sorted = [...values].sort((a, b) => a - b);
+    const index = Math.max(0, Math.ceil((requestedPercentile / 100) * sorted.length) - 1);
+    return sorted[index];
+}
+
+async function benchEndpoint(baseUrl, endpoint, token) {
+    const headers = { Authorization: `Bearer ${token}` };
+    for (let index = 0; index < WARMUP_RUNS; index++) {
+        const response = await fetchUrl(`${baseUrl}${endpoint}?_t=${Date.now()}-${index}`, headers);
+        assertSuccess(response, endpoint);
+    }
+
+    const timings = [];
+    for (let index = 0; index < MEASURED_RUNS; index++) {
+        const startedAt = Date.now();
+        const response = await fetchUrl(`${baseUrl}${endpoint}?_t=${Date.now()}-${index}`, headers);
+        assertSuccess(response, endpoint);
+        timings.push(Date.now() - startedAt);
+    }
+
     return {
-        p50: sorted[Math.floor(runs * 0.5)],
-        p95: sorted[Math.floor(runs * 0.95)],
-        avg: Math.round(times.reduce((a, b) => a + b, 0) / runs),
-        min: sorted[0],
-        max: sorted[sorted.length - 1]
+        p50: percentile(timings, 50),
+        p95: percentile(timings, 95),
+        avg: Math.round(timings.reduce((sum, value) => sum + value, 0) / timings.length),
+        min: Math.min(...timings),
+        max: Math.max(...timings)
     };
 }
 
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-(async () => {
-    const args = process.argv.slice(2);
-    const baseUrl = args.includes('--base-url') ? args[args.indexOf('--base-url') + 1] : 'http://localhost:3000';
-    const token = args.includes('--token') ? args[args.indexOf('--token') + 1] : null;
+async function inspectPage(pageUrl, token) {
+    const browser = await puppeteer.launch({ headless: true });
+    try {
+        const page = await browser.newPage();
+        if (token) {
+            await page.evaluateOnNewDocument((authToken) => {
+                try { localStorage.setItem('vps_auth_token', authToken); } catch (_) {}
+            }, token);
+        }
 
+        const targetOrigin = new URL(pageUrl).origin;
+        let requestCount = 0;
+        let firstPartyJsBytes = 0;
+        let largestImageBytes = 0;
+        const responseReads = [];
+
+        page.on('request', (request) => {
+            if (!request.url().startsWith('data:')) requestCount++;
+        });
+        page.on('response', (response) => {
+            const task = (async () => {
+                const request = response.request();
+                const resourceType = request.resourceType();
+                if (!['script', 'image'].includes(resourceType)) return;
+
+                let size = Number(response.headers()['content-length'] || 0);
+                if (!size) {
+                    try { size = (await response.buffer()).length; } catch (_) { size = 0; }
+                }
+
+                if (resourceType === 'script' && new URL(response.url()).origin === targetOrigin) {
+                    firstPartyJsBytes += size;
+                }
+                if (resourceType === 'image') {
+                    largestImageBytes = Math.max(largestImageBytes, size);
+                }
+            })();
+            responseReads.push(task);
+        });
+
+        const response = await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+        if (!response || !response.ok()) {
+            throw new Error(`Page returned HTTP ${response?.status() || 'unknown'}`);
+        }
+        await Promise.allSettled(responseReads);
+
+        return {
+            requestCount,
+            firstPartyJsKB: Math.round(firstPartyJsBytes / 1024),
+            largestImageKB: Math.round(largestImageBytes / 1024)
+        };
+    } finally {
+        await browser.close();
+    }
+}
+
+async function main() {
+    const args = process.argv.slice(2);
+    const baseUrl = argumentValue(args, '--base-url', 'http://localhost:3000').replace(/\/$/, '');
+    const pageUrl = argumentValue(args, '--page-url', `${baseUrl}/`);
+    const token = argumentValue(args, '--token');
+    const allowUnreachable = args.includes('--allow-unreachable');
     let violations = 0;
 
-    console.log('=== Performance Budget Check ===');
-    console.log(`Target: ${baseUrl}\n`);
+    if (!token) {
+        console.error('[CONFIG] --token is required because API, metrics, and SLO checks are protected.');
+        process.exit(1);
+    }
 
-    // 1. API latency checks
-    console.log('--- API Latency ---');
-    for (const [path, budget] of Object.entries(BUDGETS.api)) {
+    async function runRequired(label, operation) {
         try {
-            const result = await benchEndpoint(baseUrl, path, token);
-            const pass = result.p95 <= budget.p95;
-            const icon = pass ? 'PASS' : 'FAIL';
-            console.log(`  [${icon}] ${path}: p95=${result.p95}ms (budget: ${budget.p95}ms) avg=${result.avg}ms`);
-            if (!pass) violations++;
-        } catch (e) {
-            console.log(`  [SKIP] ${path}: ${e.message}`);
-        }
-    }
-
-    // 2. Metrics sanity check
-    console.log('\n--- Metrics Health ---');
-    try {
-        const { body: m } = await fetch(`${baseUrl}/api/metrics`);
-        // Use 5xx error rate — 4xx (401/403) are expected for unauthenticated probes
-        const serverErrors = (m.errors?.byType?.server || 0);
-        const totalReqs = m.requests?.total || 1;
-        const serverErrorRate = Math.round((serverErrors / totalReqs) * 100 * 100) / 100;
-        const pass = serverErrorRate < 5;
-        console.log(`  [${pass ? 'PASS' : 'FAIL'}] Server error rate (5xx): ${serverErrorRate}% (budget: <5%)`);
-        if (!pass) violations++;
-
-        const p99 = m.performance?.p99Ms || 0;
-        const p99Pass = p99 < 500;
-        console.log(`  [${p99Pass ? 'PASS' : 'FAIL'}] Global p99: ${p99}ms (budget: <500ms)`);
-        if (!p99Pass) violations++;
-
-        // Cache health — prefer direct m.cache path, fall back to rum.cacheStats
-        const cache = m.cache || m.rum?.cacheStats || {};
-        const shortHits = cache.short?.hits || 0;
-        const shortMisses = cache.short?.misses || 0;
-        const hitRate = (shortHits + shortMisses) > 0
-            ? Math.round(shortHits / (shortHits + shortMisses) * 100)
-            : 0;
-        console.log(`  [INFO] Cache hit rate (short): ${hitRate}% (${shortHits} hits / ${shortMisses} misses)`);
-    } catch (e) {
-        console.log(`  [SKIP] Metrics: ${e.message}`);
-    }
-
-    // 3. Canary / coalescing health
-    console.log('\n--- Canary Health ---');
-    try {
-        const { body: m } = await fetch(`${baseUrl}/api/metrics`);
-        const c = m.coalescing || {};
-        const enabled = c.enabled !== false;
-        console.log(`  [${enabled ? 'PASS' : 'WARN'}] Coalescing active: ${enabled} (config: ${c.configEnabled})`);
-        if (!enabled && c.configEnabled) violations++; // failsafe tripped unexpectedly
-
-        const fsTripped = c.failsafe?.tripped || false;
-        console.log(`  [${fsTripped ? 'WARN' : 'PASS'}] Failsafe tripped: ${fsTripped}`);
-        if (fsTripped) violations++;
-
-        const fsTriggers = c.failsafe?.triggerCount || 0;
-        console.log(`  [INFO] Failsafe trigger count: ${fsTriggers}`);
-
-        const mapSize = c.mapSize || 0;
-        const mapPass = mapSize < (c.maxInflight || 100);
-        console.log(`  [${mapPass ? 'PASS' : 'FAIL'}] Inflight map size: ${mapSize} (max: ${c.maxInflight || 100})`);
-        if (!mapPass) violations++;
-    } catch (e) {
-        console.log(`  [SKIP] Canary: ${e.message}`);
-    }
-
-    // 4. SLO dashboard check
-    console.log('\n--- SLO Dashboard ---');
-    try {
-        const { body: slo } = await fetch(`${baseUrl}/api/slo`);
-        if (slo.slos) {
-            for (const [key, s] of Object.entries(slo.slos)) {
-                const icon = s.pass ? 'PASS' : 'FAIL';
-                console.log(`  [${icon}] ${s.name}: ${s.value}`);
-                if (!s.pass) violations++;
+            return await operation();
+        } catch (error) {
+            if (allowUnreachable && /timed out|ECONN|ENOTFOUND|socket hang up/i.test(error.message)) {
+                console.warn(`[WARN] ${label} unreachable: ${error.message}`);
+                return null;
             }
+            console.error(`[FAIL] ${label}: ${error.message}`);
+            violations++;
+            return null;
         }
-        console.log(`  [INFO] Overall: ${slo.status} (pid: ${slo.pid}, uptime: ${slo.uptime}s)`);
-    } catch (e) {
-        console.log(`  [SKIP] SLO: ${e.message}`);
     }
 
-    // 5. PDF queue health
-    console.log('\n--- PDF Queue ---');
-    try {
-        const { body: m } = await fetch(`${baseUrl}/api/metrics`);
-        const q = m.pdfQueue || {};
-        const queueDepthPass = (q.queued || 0) + (q.processing || 0) < 20;
-        console.log(`  [${queueDepthPass ? 'PASS' : 'FAIL'}] Queue depth: ${q.queued || 0} queued, ${q.processing || 0} processing`);
-        if (!queueDepthPass) violations++;
-        console.log(`  [INFO] Workers: ${q.activeWorkers || 0}/${q.maxConcurrent || 2}  Failed: ${q.failed || 0}  Completed: ${q.completed || 0}`);
-    } catch (e) {
-        console.log(`  [SKIP] PDF Queue: ${e.message}`);
+    console.log(`Performance budgets for ${baseUrl}`);
+
+    for (const [endpoint, budget] of Object.entries(BUDGETS.api)) {
+        const result = await runRequired(endpoint, () => benchEndpoint(baseUrl, endpoint, token));
+        if (!result) continue;
+        const pass = result.p95 <= budget.p95;
+        console.log(`[${pass ? 'PASS' : 'FAIL'}] ${endpoint} p95=${result.p95}ms budget=${budget.p95}ms`);
+        if (!pass) violations++;
     }
 
-    // 6. Cluster / process info
-    console.log('\n--- Cluster Info ---');
-    try {
-        const { body: m } = await fetch(`${baseUrl}/api/metrics`);
-        const c = m.cluster || {};
-        console.log(`  [INFO] PID: ${c.pid}  Worker: ${c.workerId}  Uptime: ${c.uptime}s`);
-    } catch (e) {
-        console.log(`  [SKIP] Cluster: ${e.message}`);
+    const headers = { Authorization: `Bearer ${token}` };
+    const metrics = await runRequired('/api/metrics', async () => {
+        const response = await fetchUrl(`${baseUrl}/api/metrics`, headers);
+        return assertSuccess(response, '/api/metrics').body;
+    });
+    if (metrics) {
+        const serverErrors = metrics.errors?.byType?.server || 0;
+        const totalRequests = metrics.requests?.total || 1;
+        const serverErrorRate = (serverErrors / totalRequests) * 100;
+        const errorPass = serverErrorRate < 5;
+        const p99Pass = (metrics.performance?.p99Ms || 0) < 500;
+        console.log(`[${errorPass ? 'PASS' : 'FAIL'}] Server 5xx rate=${serverErrorRate.toFixed(2)}%`);
+        console.log(`[${p99Pass ? 'PASS' : 'FAIL'}] Global p99=${metrics.performance?.p99Ms || 0}ms`);
+        if (!errorPass) violations++;
+        if (!p99Pass) violations++;
     }
 
-    // 7. Summary
-    console.log(`\n=== Result: ${violations === 0 ? 'ALL PASS' : violations + ' VIOLATION(S)'} ===`);
+    const slo = await runRequired('/api/slo', async () => {
+        const response = await fetchUrl(`${baseUrl}/api/slo`, headers);
+        return assertSuccess(response, '/api/slo').body;
+    });
+    if (slo?.slos) {
+        for (const item of Object.values(slo.slos)) {
+            console.log(`[${item.pass ? 'PASS' : 'FAIL'}] ${item.name}: ${item.value}`);
+            if (!item.pass) violations++;
+        }
+    }
+
+    const page = await runRequired(pageUrl, () => inspectPage(pageUrl, token));
+    if (page) {
+        const checks = [
+            ['Initial requests', page.requestCount, BUDGETS.page.maxRequestCount],
+            ['First-party JavaScript (KB)', page.firstPartyJsKB, BUDGETS.page.maxJsSizeKB],
+            ['Largest image (KB)', page.largestImageKB, BUDGETS.page.maxImageSizeKB]
+        ];
+        for (const [label, value, budget] of checks) {
+            const pass = value <= budget;
+            console.log(`[${pass ? 'PASS' : 'FAIL'}] ${label}=${value} budget=${budget}`);
+            if (!pass) violations++;
+        }
+    }
+
+    console.log(`Result: ${violations === 0 ? 'ALL PASS' : `${violations} VIOLATION(S)`}`);
     process.exit(violations > 0 ? 1 : 0);
-})().catch(e => { console.error('Fatal:', e); process.exit(1); });
+}
+
+main().catch((error) => {
+    console.error('Fatal performance-check error:', error);
+    process.exit(1);
+});

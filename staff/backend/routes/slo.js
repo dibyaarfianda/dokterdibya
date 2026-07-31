@@ -14,8 +14,9 @@
 
 const express = require('express');
 const router = express.Router();
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
-router.get('/', (req, res) => {
+router.get('/', verifyToken, requireSuperadmin, (req, res) => {
     const { getMetrics } = require('../middleware/metrics');
     const { getRumSummary, getCacheStats } = require('./rum');
     const { getDbStats } = require('../middleware/dbMonitor');
@@ -66,10 +67,10 @@ router.get('/', (req, res) => {
         dbHealth: {
             name: 'DB avg query < 50ms',
             value: `${db.avgQueryMs || 0}ms`,
-            pass: (db.avgQueryMs || 0) < 50 && (db.slowQueryCount || 0) < 5,
+            pass: (db.avgQueryMs || 0) < 50 && (db.slowQueriesLast15m || 0) < 5,
             detail: {
                 totalQueries: db.totalQueries,
-                slowQueries: db.slowQueryCount,
+                slowQueriesLast15m: db.slowQueriesLast15m,
             },
         },
         pdfQueueHealth: {

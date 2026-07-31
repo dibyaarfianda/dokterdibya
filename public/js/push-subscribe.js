@@ -33,8 +33,8 @@
 
     // Get auth token
     function getToken() {
-        return localStorage.getItem('vps_auth_token') ||
-            sessionStorage.getItem('vps_auth_token') ||
+        return window.PatientSession?.getToken() ||
+            window.PatientSession?.getToken() ||
             localStorage.getItem('auth_token') ||
             sessionStorage.getItem('auth_token') ||
             localStorage.getItem('patient_token') ||

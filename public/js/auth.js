@@ -42,15 +42,11 @@ function disableGoogleSignInButtons(message) {
 }
 
 function storePatientSession(data, provider) {
-    localStorage.removeItem('patient_token');
-    localStorage.removeItem('vps_auth_token');
-    sessionStorage.removeItem('vps_auth_token');
-    localStorage.removeItem('patient_user');
+    window.PatientSession?.clearAuth();
     localStorage.removeItem('patient_intake_draft_v3');
 
-    localStorage.setItem('patient_token', data.token);
-    localStorage.setItem('vps_auth_token', data.token);
-    localStorage.setItem('patient_user', JSON.stringify(data.user || {}));
+    window.PatientSession?.setToken(data.token, { persistent: true });
+    window.PatientSession?.setUser(data.user || {}, { persistent: true });
     localStorage.setItem('patient_name', data.user?.full_name || data.user?.name || '');
     localStorage.setItem('patient_email', data.user?.email || '');
     localStorage.setItem('auth_provider', provider);
@@ -269,8 +265,8 @@ async function checkProfileCompletionAndRedirect() {
 // Logout function
 function logout() {
     localStorage.removeItem('patient_token');
-    localStorage.removeItem('vps_auth_token');
-    sessionStorage.removeItem('vps_auth_token');
+    window.PatientSession?.clearAuth();
+
     localStorage.removeItem('patient_user');
     localStorage.removeItem('auth_provider'); // Clear auth_provider on logout
     localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft to prevent data leakage

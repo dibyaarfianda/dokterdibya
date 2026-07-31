@@ -3,6 +3,7 @@ import { broadcastPatientSelection } from './realtime-sync.js';
 import { showSuccess, showError, showConfirm } from './toast.js';
 import { setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
 import { updateSessionPatient } from './session-manager.js';
+import { escapeHtml, escapeAttribute } from './safe-render.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -108,14 +109,14 @@ function renderList(items) {
             <div class="d-flex justify-content-between align-items-center" style="gap: 8px;">
                 <div class="flex-grow-1" style="cursor: pointer; min-width: 0;">
                     <div class="d-flex align-items-center" style="gap: 6px;">
-                        <span class="badge badge-secondary" style="font-size: 0.7rem;">${patientId}</span>
-                        <span class="text-truncate" style="font-weight: 600; font-size: 0.9rem;">${p.name || '-'}</span>
+                        <span class="badge badge-secondary" style="font-size: 0.7rem;">${escapeHtml(patientId)}</span>
+                        <span class="text-truncate" style="font-weight: 600; font-size: 0.9rem;">${escapeHtml(p.name || '-')}</span>
                     </div>
-                    <div class="small text-muted" style="font-size: 0.75rem;">📞 ${p.whatsapp || '-'}</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">📞 ${escapeHtml(p.whatsapp || '-')}</div>
                 </div>
                 <div class="text-right d-flex align-items-center" style="gap: 6px; flex-shrink: 0;">
                     ${getResumeStatusBadge(p.resume_status)}
-                    <button class="btn btn-sm btn-success select-patient-btn py-0 px-2" data-patient-id="${p.id}" data-patient-name="${p.name}" style="font-size: 0.75rem;">
+                    <button class="btn btn-sm btn-success select-patient-btn py-0 px-2" data-patient-id="${escapeAttribute(p.id)}" data-patient-name="${escapeAttribute(p.name)}" style="font-size: 0.75rem;">
                         <i class="fas fa-check"></i>
                     </button>
                 </div>
@@ -178,15 +179,15 @@ async function showDetails(p) {
     // Initial render
     detailsEl.innerHTML = `
         <div class="p-2">
-            <div class="h6 mb-2" style="font-weight: 600;">${p.name || '-'} <span class="badge badge-secondary">${patientId}</span></div>
-            <div class="small text-muted">No. WhatsApp: ${p.whatsapp || '-'}</div>
-            <div class="small text-muted">Tanggal Lahir: ${birthDateFormatted}</div>
-            <div class="small text-muted">Usia: ${p.age || '-'}</div>
+            <div class="h6 mb-2" style="font-weight: 600;">${escapeHtml(p.name || '-')} <span class="badge badge-secondary">${escapeHtml(patientId)}</span></div>
+            <div class="small text-muted">No. WhatsApp: ${escapeHtml(p.whatsapp || '-')}</div>
+            <div class="small text-muted">Tanggal Lahir: ${escapeHtml(birthDateFormatted)}</div>
+            <div class="small text-muted">Usia: ${escapeHtml(p.age || '-')}</div>
             <div class="small text-muted">Hamil: ${p.pregnant ? 'Ya' : 'Tidak'}</div>
             ${p.pregnant ? `<div class="small text-muted">Status Obstetri: G${p.gravida || 0} P${p.term || 0}${p.preterm || 0}${p.abortion || 0}${p.living || 0}</div>` : ''}
-            <div class="small text-muted">Alergi: ${p.allergy || '-'}</div>
-            <div class="small text-muted">Riwayat Penyakit: ${p.history || '-'}</div>
-            <div class="small text-muted">HPHT: ${p.hpht || '-'}</div>
+            <div class="small text-muted">Alergi: ${escapeHtml(p.allergy || '-')}</div>
+            <div class="small text-muted">Riwayat Penyakit: ${escapeHtml(p.history || '-')}</div>
+            <div class="small text-muted">HPHT: ${escapeHtml(p.hpht || '-')}</div>
             <hr class="my-2">
             <div class="h6 mb-2" style="font-weight: 600;">Riwayat Kontrol:</div>
             <div id="patient-history-list" class="small text-muted">
@@ -287,7 +288,7 @@ async function loadPatientHistory(patient) {
                     </div>
                                             <div class="small mt-1">
                             <span style="font-weight: 600;">Terakhir:</span><br>
-                            ${lastVisitStr}
+                            ${escapeHtml(lastVisitStr)}
                         </div>
                 </div>
                 <div class="h6 mb-2" style="font-weight: 600;">5 Kunjungan Terakhir:</div>
@@ -309,24 +310,24 @@ async function loadPatientHistory(patient) {
                     const diagnosis = v.anamnesa.pregnant === 'ya' ? 
                         `G${v.anamnesa.gravida || 0} P${v.anamnesa.term || 0}${v.anamnesa.preterm || 0}${v.anamnesa.abortion || 0}${v.anamnesa.living || 0}` : 
                         'Tidak hamil';
-                    examSummary += `<div style="font-size: 0.8em;">📋 Anamnesa: ${diagnosis}</div>`;
+                    examSummary += `<div style="font-size: 0.8em;">📋 Anamnesa: ${escapeHtml(diagnosis)}</div>`;
                 }
                 if (v.physicalExam) {
                     const bp = v.physicalExam.bpSystolic && v.physicalExam.bpDiastolic ? 
                         `${v.physicalExam.bpSystolic}/${v.physicalExam.bpDiastolic} mmHg` : '-';
-                    examSummary += `<div style="font-size: 0.8em;">🩺 TD: ${bp}, Nadi: ${v.physicalExam.pulse || '-'}</div>`;
+                    examSummary += `<div style="font-size: 0.8em;">🩺 TD: ${escapeHtml(bp)}, Nadi: ${escapeHtml(v.physicalExam.pulse || '-')}</div>`;
                 }
                 if (v.usgExam) {
                     const ga = v.usgExam.gaWeeks ? `${v.usgExam.gaWeeks} minggu ${v.usgExam.gaDays || 0} hari` : '-';
-                    examSummary += `<div style="font-size: 0.8em;">👶 USG: UK ${ga}</div>`;
+                    examSummary += `<div style="font-size: 0.8em;">👶 USG: UK ${escapeHtml(ga)}</div>`;
                 }
                 
                 html += `
                     <div class="border-bottom pb-2 mb-2">
-                        <div class="h6 mb-1" style="font-weight: 600;">${idx + 1}. ${dateStr} ${timeStr}</div>
+                        <div class="h6 mb-1" style="font-weight: 600;">${idx + 1}. ${escapeHtml(dateStr)} ${escapeHtml(timeStr)}</div>
                         ${examSummary}
-                        <div class="text-muted" style="font-size: 0.85em;">💉 Tindakan: ${services}</div>
-                        <div class="text-muted" style="font-size: 0.85em;">💊 Obat: ${obat}</div>
+                        <div class="text-muted" style="font-size: 0.85em;">💉 Tindakan: ${escapeHtml(services)}</div>
+                        <div class="text-muted" style="font-size: 0.85em;">💊 Obat: ${escapeHtml(obat)}</div>
                         <div class="text-success" style="font-size: 0.85em; font-weight: 600;">💰 Total: Rp ${total.toLocaleString('id-ID')}</div>
                     </div>
                 `;
@@ -336,7 +337,10 @@ async function loadPatientHistory(patient) {
         }
     } catch (err) {
         console.error('Failed to load patient history:', err);
-        historyListEl.innerHTML = `<div class="text-danger">Gagal memuat riwayat: ${err.message}</div>`;
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'text-danger';
+        errorMessage.textContent = `Gagal memuat riwayat: ${err.message}`;
+        historyListEl.replaceChildren(errorMessage);
     }
 }
 

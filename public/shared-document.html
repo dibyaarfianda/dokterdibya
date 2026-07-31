@@ -226,8 +226,14 @@
 
                 // Show preview for images
                 if (doc.fileType && doc.fileType.startsWith('image/')) {
-                    previewContainer.innerHTML = `<img src="${doc.fileUrl}" alt="${doc.title}">`;
-                    previewContainer.style.display = 'block';
+                    const previewImage = document.createElement('img');
+                    const previewUrl = new URL(doc.fileUrl, window.location.origin);
+                    if (['http:', 'https:'].includes(previewUrl.protocol)) {
+                        previewImage.src = previewUrl.href;
+                        previewImage.alt = String(doc.title || 'Dokumen');
+                        previewContainer.replaceChildren(previewImage);
+                        previewContainer.style.display = 'block';
+                    }
                 }
 
                 loadingEl.style.display = 'none';

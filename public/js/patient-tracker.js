@@ -4,7 +4,7 @@
  * Include this script in patient-facing HTML pages.
  */
 (function() {
-    var token = localStorage.getItem('vps_auth_token');
+    var token = window.PatientSession?.getToken();
     if (!token) return;
 
     var pageLabels = {

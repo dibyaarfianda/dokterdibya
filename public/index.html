@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
 		<meta charset="utf-8">
 		<!-- 
         Awesome Template
@@ -422,14 +423,14 @@
 							window.location.href = '/staff/index.html';
 						} else {
 							// Patient login - clear old data first to prevent cache issues
-							localStorage.removeItem('vps_auth_token');
-							sessionStorage.removeItem('vps_auth_token');
+							window.PatientSession?.clearAuth();
+
 							localStorage.removeItem('patient_user');
 							localStorage.removeItem('patient_token');
 							localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
 
 							// Set new token and user data
-							localStorage.setItem('vps_auth_token', response.data.token);
+							window.PatientSession.setToken(response.data.token, { persistent: true });
 							localStorage.setItem('patient_user', JSON.stringify({
 								id: response.data.user.id,
 								name: response.data.user.name,

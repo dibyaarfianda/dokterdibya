@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login dengan Google...</title>
@@ -122,7 +123,7 @@
                         localStorage.removeItem('from_mobile_app');
                     } else {
                         // Web browser flow - store token and redirect to dashboard
-                        localStorage.setItem('vps_auth_token', data.token);
+                        window.PatientSession.setToken(data.token, { persistent: true });
                         if (data.user) {
                             localStorage.setItem('patient_user', JSON.stringify(data.user));
                         }

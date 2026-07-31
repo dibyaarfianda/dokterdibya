@@ -24,6 +24,7 @@ const swaggerSpec = require('./config/swagger');
 const activityLogger = require('./services/activityLogger');
 const { validateAllOperationalSchemas } = require('./services/OperationalSchemaValidator');
 const createSystemRoutes = require('./routes/system');
+const rumRoutes = require('./routes/rum');
 
 const app = express();
 const server = http.createServer(app);
@@ -64,7 +65,7 @@ const io = new Server(server, {
     transports: ['polling'], // POLLING ONLY - mobile ISPs kill WebSocket connections
     allowEIO3: true,
     allowUpgrades: false, // Prevent upgrade to websocket
-    maxHttpBufferSize: 1e8, // 100MB - fix 413 errors for large polling payloads
+    maxHttpBufferSize: 1e6, // 1MB ceiling; uploads use HTTP routes, not Socket.IO
     httpCompression: true // Compress polling data
 });
 
@@ -127,6 +128,19 @@ app.use(cors({
     origin: corsOriginDelegate,
     credentials: true
 }));
+
+const rumPayloadLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, code: 'RUM_RATE_LIMITED', message: 'Too many telemetry requests' }
+});
+app.use('/api/rum', rumPayloadLimiter, express.json({
+    limit: '32kb',
+    type: ['application/json']
+}), rumRoutes);
+
 app.use(express.json({
     limit: '10mb',
     type: ['application/json', 'application/csp-report', 'application/reports+json']
@@ -295,7 +309,6 @@ const visitInvoicesRoutes = require('./routes/visit-invoices');
 const aiRoutes = require('./routes/ai');
 const kickCounterRoutes = require('./routes/kick-counter');
 const contractionTimerRoutes = require('./routes/contraction-timer');
-const rumRoutes = require('./routes/rum');
 const pdfQueue = require('./services/pdfQueue');
 const { getDbStats } = require('./middleware/dbMonitor');
 const communityChatRoutes = require('./routes/community-chat');
@@ -789,9 +802,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     }
 }));
 
-// RUM (Real User Monitoring) telemetry - no auth required
-app.use('/api/rum', rumRoutes);
-
 app.use(createSystemRoutes({
     pool,
     getMetrics,
@@ -810,16 +820,6 @@ app.use(createSystemRoutes({
     verifyToken,
     requireSuperadmin
 }));
-
-// Basic API routes
-app.get('/api/patients', async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM patients ORDER BY created_at DESC LIMIT 10');
-        res.json({ success: true, data: rows });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
 // Async PDF queue routes
 const pdfQueueRoutes = require('./routes/pdf-queue');

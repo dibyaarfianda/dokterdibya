@@ -211,8 +211,9 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('-webkit-text-size-adjust: 100% !important;');
         expect(pwaCss).toContain('--sc-pwa-font-body: var(--sc-pwa-platform-font-body, 11px);');
         expect(pwaCss).not.toMatch(/(?:iPhone|iPad|ios).*android-pwa-compact/i);
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v360';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v360';");
+        const version = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        expect(version).toBeTruthy();
+        expect(sw).toContain(`const STAFF_PWA_VERSION = '${version}';`);
     });
 
     test('Sunday Clinic PWA removes the profile slot so header controls cannot be clipped', () => {
@@ -225,7 +226,8 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .main-header .navbar-nav.ml-auto {');
         expect(pwaCss).toContain('max-width: 100% !important;');
         expect(pwaCss).not.toMatch(/body\.mobile-app-mode(?!\.sunday-clinic-embedded-active)[^{]*\.user-menu\s*\{/);
-        expect(html).toContain("window.STAFF_CACHE_VERSION = 'v360';");
-        expect(sw).toContain("const STAFF_PWA_VERSION = 'v360';");
+        const version = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        expect(version).toBeTruthy();
+        expect(sw).toContain(`const STAFF_PWA_VERSION = '${version}';`);
     });
 });

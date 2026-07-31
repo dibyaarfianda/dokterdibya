@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -696,8 +697,8 @@
 
         function startGuestDemo() {
             try {
-                localStorage.removeItem('vps_auth_token');
-                sessionStorage.removeItem('vps_auth_token');
+                window.PatientSession?.clearAuth();
+
                 localStorage.removeItem('patient_token');
                 localStorage.removeItem('patient_user');
                 localStorage.removeItem('auth_provider');
@@ -711,7 +712,7 @@
 
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {
-            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const token = window.PatientSession?.getToken();
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
                 window.location.href = '/patient-menu.html';
@@ -869,7 +870,8 @@
                 var data = await res.json();
 
                 if (res.ok && data.success) {
-                    localStorage.setItem('vps_auth_token', data.token);
+                    window.PatientSession.setToken(data.token, { persistent: true });
+                    window.PatientSession.setUser(data.user || data.data?.user || null, { persistent: true });
                     if (data.user) {
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
                     }

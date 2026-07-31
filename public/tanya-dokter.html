@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#f5f3ef">
@@ -568,8 +569,8 @@
         }
     </style>
 <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260624shellwave8">
-    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260624shellwave8">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260731hardening1">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260731hardening1">
     <style>
         /* Final Tanya Dokter polish: keep the consultation flow, elevate the patient-facing surface. */
         body.tanya-dokter-page {
@@ -1037,7 +1038,7 @@
                                     <i class="fa fa-camera"></i> Tambah Foto
                                 </button>
                                 <div class="image-preview" id="image-preview">
-                                    <img id="preview-img" src="" alt="Preview">
+                                    <img id="preview-img" alt="Preview" hidden>
                                     <button type="button" class="remove-btn" onclick="removeImage()" aria-label="Hapus foto">
                                         <i class="fa fa-times"></i>
                                     </button>
@@ -1250,7 +1251,9 @@
             if (e.target.files && e.target.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(ev) {
-                    document.getElementById('preview-img').src = ev.target.result;
+                    const previewImage = document.getElementById('preview-img');
+                    previewImage.src = ev.target.result;
+                    previewImage.hidden = false;
                     document.getElementById('image-preview').style.display = 'block';
                 };
                 reader.readAsDataURL(e.target.files[0]);
@@ -1259,6 +1262,9 @@
 
         function removeImage() {
             document.getElementById('question-image').value = '';
+            const previewImage = document.getElementById('preview-img');
+            previewImage.removeAttribute('src');
+            previewImage.hidden = true;
             document.getElementById('image-preview').style.display = 'none';
         }
 
@@ -1504,7 +1510,7 @@
     </script>
     <script src="/js/patient-tracker.js?v=20260209"></script>
     <script src="/js/push-subscribe.js?v=20260209"></script>
-    <script src="/scripts/patient-tool-shell.js?v=20260624shellwave8"></script>
-    <script src="/scripts/patient-tool-retrofit.js?v=20260624shellwave8"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260731hardening1"></script>
+    <script src="/scripts/patient-tool-retrofit.js?v=20260731hardening1"></script>
 </body>
 </html>

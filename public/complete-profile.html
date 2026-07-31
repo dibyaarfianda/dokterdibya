@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Lengkapi Profil - SISIwanita</title>
@@ -479,7 +480,7 @@
             const tokenFromUrl = urlParams.get('token');
             if (tokenFromUrl) {
                 console.log('[Complete Profile] Token received from URL, storing in localStorage');
-                localStorage.setItem('vps_auth_token', tokenFromUrl);
+                window.PatientSession.setToken(tokenFromUrl, { persistent: true });
                 localStorage.setItem('auth_provider', 'google');
                 localStorage.setItem('from_mobile_app', 'true');
             }

@@ -58,7 +58,7 @@
         const PATIENT_INSTALL_DISMISS_KEY = 'sisiwanita_portal_pwa_install_dismissed';
 
         function getToken() {
-            return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+            return window.PatientSession?.getToken() || localStorage.getItem('patient_token');
         }
 
         function isStandalonePwaMode() {
@@ -217,8 +217,8 @@
         function startGuestMode() {
             try {
                 const existingGuestSessionId = sessionStorage.getItem(GUEST_SESSION_ID_KEY);
-                localStorage.removeItem('vps_auth_token');
-                sessionStorage.removeItem('vps_auth_token');
+                window.PatientSession?.clearAuth();
+
                 localStorage.removeItem('patient_token');
                 localStorage.removeItem('patient_user');
                 clearGuestMode();
@@ -329,8 +329,8 @@
         function endGuestAndLogin(event) {
             stopTopbarEvent(event);
             try {
-                localStorage.removeItem('vps_auth_token');
-                sessionStorage.removeItem('vps_auth_token');
+                window.PatientSession?.clearAuth();
+
                 localStorage.removeItem('patient_token');
                 localStorage.removeItem('patient_user');
             } catch (error) {}
@@ -2970,6 +2970,7 @@
             const modalImg = document.getElementById('birth-photo-modal-img');
             if (!modal || !modalImg) return;
             modalImg.src = src;
+            modalImg.hidden = false;
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
             document.body.style.overflow = 'hidden';
@@ -2983,7 +2984,10 @@
                 modal.classList.remove('active');
                 modal.setAttribute('aria-hidden', 'true');
             }
-            if (modalImg) modalImg.removeAttribute('src');
+            if (modalImg) {
+                modalImg.removeAttribute('src');
+                modalImg.hidden = true;
+            }
             if (!document.querySelector('.modal-card.active, .bottom-sheet.active')) {
                 document.body.style.overflow = '';
             }
@@ -3491,8 +3495,8 @@
         }
 
         function logout() {
-            localStorage.removeItem('vps_auth_token');
-            sessionStorage.removeItem('vps_auth_token');
+            window.PatientSession?.clearAuth();
+
             localStorage.removeItem('patient_token');
             localStorage.removeItem('patient_user');
             clearGuestMode();
@@ -3501,7 +3505,7 @@
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260624shellwave8';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260731hardening1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});

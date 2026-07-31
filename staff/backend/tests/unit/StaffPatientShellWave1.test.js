@@ -29,7 +29,7 @@ describe('staff and patient shell wave 1 contracts', () => {
         expect(versionMatch).not.toBeNull();
         const shellVersion = versionMatch[1];
 
-        expect(sisiwanitaSw).toContain(`const CACHE_VERSION = '${shellVersion}';`);
+        expect(sisiwanitaSw.trim()).toBe(`importScripts('/sw.js?v=${shellVersion}');`);
         expect(patientMenu).toContain(`/patient-portal.webmanifest?v=${shellVersion}`);
         expect(patientMenu).toContain(`/sw.js?v=${shellVersion}`);
         expect(patientMenu).toContain(`/scripts/patient-menu-shell.js?v=${shellVersion}`);

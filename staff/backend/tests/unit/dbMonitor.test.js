@@ -61,4 +61,27 @@ describe('dbMonitor connection checkout tracking', () => {
         );
         expect(getDbStats().longHeldConnectionCount).toBe(1);
     });
+
+    test('reports slow-query health over a rolling 15-minute window', async () => {
+        const pool = {
+            query: jest.fn().mockImplementation(async () => {
+                jest.advanceTimersByTime(250);
+                return [[]];
+            })
+        };
+
+        wrapDbPool(pool);
+        await pool.query('SELECT SLEEP(0.25)');
+
+        expect(getDbStats()).toMatchObject({
+            slowQueryCount: 1,
+            slowQueriesLast15m: 1
+        });
+
+        jest.advanceTimersByTime((15 * 60 * 1000) + 1);
+        expect(getDbStats()).toMatchObject({
+            slowQueryCount: 1,
+            slowQueriesLast15m: 0
+        });
+    });
 });

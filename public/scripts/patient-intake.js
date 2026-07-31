@@ -557,7 +557,7 @@ function serializeFields() {
 async function loadExistingIntake() {
     console.log('[Patient Intake] === loadExistingIntake START ===');
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = window.PatientSession?.getToken();
         console.log('[Patient Intake] Token check:', token ? 'TOKEN EXISTS' : 'NO TOKEN');
         
         if (!token) {
@@ -1191,7 +1191,7 @@ form.addEventListener('submit', async (event) => {
     submitBtn.textContent = existingIntakeId ? 'Memperbarui...' : 'Mengirim...';
     
     const payload = buildPayload();
-    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    const token = window.PatientSession?.getToken();
     
     try {
         // Use PUT if updating existing intake, POST if creating new

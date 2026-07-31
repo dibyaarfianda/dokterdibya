@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
@@ -18,7 +18,8 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/sisiwanita.webmanifest?v=20260606installgate">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260731hardening1">
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -4710,11 +4711,6 @@
 
     </style>
 
-    <!-- Socket.io for real-time announcements -->
-    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
-    <!-- Markdown and sanitization libraries for announcements -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 </head>
 <body>
 
@@ -4766,7 +4762,7 @@
                 <!-- User Avatar with Dropdown -->
                 <div style="position: relative;">
                     <div class="avatar" id="user-avatar" onclick="toggleDropdown(event)" aria-label="Profil">
-                        <img id="user-avatar-img" src="" alt="">
+                        <img id="user-avatar-img" alt="Foto profil" hidden>
                         <span id="user-avatar-initials">--</span>
                         <span class="vip-badge" id="vip-badge">VIP</span>
                     </div>
@@ -4834,7 +4830,7 @@
                 (function() {
                     var fallback = 'Portal Wanita Sehat — konsultasi, jadwal, dan dokumen medis.';
                     function loadQuote() {
-                        var token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+                        var token = window.PatientSession?.getToken();
                         if (!token) {
                             document.getElementById('hero-copy').textContent = fallback;
                             return;
@@ -4950,7 +4946,7 @@
 
                 <div class="birth-content">
                     <div class="birth-photo" id="birth-photo-container" onclick="openBirthPhotoModal()">
-                        <img id="birth-photo" src="" alt="Foto Kelahiran">
+                        <img id="birth-photo" alt="Foto Kelahiran" hidden>
                     </div>
                     <div class="birth-details">
                         <h3 id="birth-baby-name"></h3>
@@ -4986,7 +4982,7 @@
             <!-- Birth Photo Modal -->
             <div class="birth-photo-modal" id="birth-photo-modal" onclick="closeBirthPhotoModal()">
                 <button class="birth-photo-modal-close" onclick="closeBirthPhotoModal()">&times;</button>
-                <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
+                <img id="birth-photo-modal-img" alt="Foto Kelahiran" onclick="event.stopPropagation()" hidden>
             </div>
 
             <div class="queue-promo-modal" id="queue-promo-modal" role="dialog" aria-modal="true" aria-label="Preview Fitur Pasien Portal" onclick="closeQueuePromoModal()">
@@ -5504,8 +5500,8 @@
 
         // ==================== AUTHENTICATION ====================
         function getToken() {
-            return localStorage.getItem('vps_auth_token') ||
-                   sessionStorage.getItem('vps_auth_token') ||
+            return window.PatientSession?.getToken() ||
+                   window.PatientSession?.getToken() ||
                    localStorage.getItem('patient_token');
         }
 
@@ -5953,7 +5949,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sisiwanita-sw.js').then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20260731hardening1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -6148,6 +6144,7 @@
                     if (profile.profile_picture) {
                         const avatarImg = document.getElementById('user-avatar-img');
                         avatarImg.src = profile.profile_picture;
+                        avatarImg.hidden = false;
                         avatarImg.style.display = 'block';
                         avatarImg.onerror = function() {
                             this.style.display = 'none';
@@ -6466,6 +6463,7 @@
                 const photoImg = document.getElementById('birth-photo');
                 if (data.photo_url) {
                     photoImg.src = data.photo_url;
+                    photoImg.hidden = false;
                     photoImg.onerror = function() {
                         photoContainer.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);"><i class="fa-solid fa-baby" style="font-size:48px;color:var(--text-muted);"></i></div>';
                     };
@@ -6488,6 +6486,7 @@
 
             const modalImg = document.getElementById('birth-photo-modal-img');
             modalImg.src = photoImg.src;
+            modalImg.hidden = false;
             document.getElementById('birth-photo-modal').style.display = 'flex';
             var scrollbarW = window.innerWidth - document.documentElement.clientWidth;
             document.body.style.overflow = 'hidden';
@@ -6496,6 +6495,9 @@
 
         function closeBirthPhotoModal() {
             document.getElementById('birth-photo-modal').style.display = 'none';
+            const modalImg = document.getElementById('birth-photo-modal-img');
+            modalImg.removeAttribute('src');
+            modalImg.hidden = true;
             document.body.style.overflow = '';
             document.body.style.paddingRight = '';
         }
@@ -6586,8 +6588,8 @@
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (response.status === 401) {
-                    localStorage.removeItem('vps_auth_token');
-                    sessionStorage.removeItem('vps_auth_token');
+                    window.PatientSession?.clearAuth();
+
                     window.location.href = SISIWANITA_LOGIN_URL;
                     return;
                 }
@@ -6830,8 +6832,8 @@
         // ==================== LOGOUT ====================
         function logout(event) {
             if (event) event.preventDefault();
-            localStorage.removeItem('vps_auth_token');
-            sessionStorage.removeItem('vps_auth_token');
+            window.PatientSession?.clearAuth();
+
             localStorage.removeItem('patient_token');
             localStorage.removeItem('patient_user');
 

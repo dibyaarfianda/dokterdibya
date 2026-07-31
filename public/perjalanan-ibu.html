@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Perjalanan Ibu - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260606installgate">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260731hardening1">
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +20,7 @@
         window.__patientPortalHeaderInstalled = true;
     </script>
 <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260624shellwave8">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260731hardening1">
 
     <style>
         body.journey-book-page .hero-title {
@@ -384,12 +385,12 @@
 
     <div class="book-image-viewer" id="book-image-viewer" onclick="closeImageViewerOnBackdrop(event)">
         <button type="button" onclick="closeImageViewer()" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button>
-        <img id="viewer-image" src="" alt="Halaman buku diperbesar">
+        <img id="viewer-image" alt="Halaman buku diperbesar" hidden>
     </div>
 
     <div id="toast-container"></div>
 
-    <script src="/scripts/patient-tool-shell.js?v=20260624shellwave8"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260731hardening1"></script>
     <script>
         const BOOK_IMAGES = [
             '1.png', '2.png', '6.png', '7.png', '8.png', '9.png',
@@ -402,7 +403,7 @@
         let touchStartY = 0;
 
         function getToken() {
-            return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+            return window.PatientSession?.getToken() || localStorage.getItem('patient_token');
         }
 
         function checkAuth() {
@@ -483,6 +484,7 @@
             const image = document.getElementById('viewer-image');
             if (!viewer || !image) return;
             image.src = src;
+            image.hidden = false;
             viewer.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
@@ -495,7 +497,10 @@
             const viewer = document.getElementById('book-image-viewer');
             const image = document.getElementById('viewer-image');
             if (viewer) viewer.classList.remove('active');
-            if (image) image.removeAttribute('src');
+            if (image) {
+                image.removeAttribute('src');
+                image.hidden = true;
+            }
             document.body.style.overflow = '';
         }
 
@@ -525,7 +530,7 @@
 
         function registerPatientServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('/sw.js?v=20260530h', { scope: '/' })
+            navigator.serviceWorker.register('/sw.js?v=20260731hardening1', { scope: '/' })
                 .then(function(registration) { return registration.update().catch(function() {}); })
                 .catch(function() {});
         }

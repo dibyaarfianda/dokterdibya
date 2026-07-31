@@ -35,7 +35,7 @@ describe('patient Google registration flow contract', () => {
         expect(mobileDisabled).not.toContain('autoGoogle=1');
         expect(shellVersionMatch).not.toBeNull();
         const [, shellVersion] = shellVersionMatch;
-        expect(sisiwanitaSw).toContain(`const CACHE_VERSION = '${shellVersion}';`);
+        expect(sisiwanitaSw.trim()).toBe(`importScripts('/sw.js?v=${shellVersion}');`);
         expect(patientMenu).toContain(`/patient-portal.webmanifest?v=${shellVersion}`);
         expect(patientMenu).toContain(`/sw.js?v=${shellVersion}`);
         expect(manifest).toContain(`/patient-menu.html?source=pwa&v=${shellVersion}`);

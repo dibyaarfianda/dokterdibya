@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -825,7 +826,7 @@
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260624shellwave8">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260731hardening1">
     <style>
         :root {
             --blue: #4a6f9d;
@@ -1382,23 +1383,20 @@
         </div>
     </nav>
 
-    <script src="/scripts/patient-tool-shell.js?v=20260624shellwave8"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260731hardening1"></script>
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, formatTime, showLoading, showEmptyState } from '/scripts/patient-utils.js';
 
         window.PatientToolShell?.init({ activeNav: 'aplikasi' });
 
         const urlParams = new URLSearchParams(window.location.search);
-        const isMockKickMode = urlParams.has('mockApi') || urlParams.has('mockKick');
+        const isLocalMockHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+        const isMockKickMode = isLocalMockHost && (urlParams.has('mockApi') || urlParams.has('mockKick'));
         const mockKickState = {
             session: null,
             totalKicks: 0,
             sessions: []
         };
-
-            if (isMockKickMode && !getToken()) {
-            localStorage.setItem('vps_auth_token', 'mock-kick-token');
-        }
 
         function formatLocalDateForKick(date = new Date()) {
             const d = new Date(date);
@@ -1514,7 +1512,7 @@
 
         // Init
         document.addEventListener('DOMContentLoaded', async function() {
-            if (!checkAuth()) return;
+            if (!isMockKickMode && !checkAuth()) return;
             window.PatientToolShell?.updateAvatarInitials();
 
             await loadKickCounter();

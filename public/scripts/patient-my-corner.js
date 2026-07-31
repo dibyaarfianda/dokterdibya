@@ -227,7 +227,7 @@
     ];
 
     function getToken() {
-        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token') || '';
+        return window.PatientSession?.getToken() || localStorage.getItem('patient_token') || '';
     }
 
     function clearGuestMode() {

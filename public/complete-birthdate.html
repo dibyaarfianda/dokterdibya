@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lengkapi Tanggal Lahir - Dokter Dibya</title>
@@ -229,7 +230,7 @@
         document.getElementById('birth_date').setAttribute('max', getGMT7Date());
         
         // Check authentication - consistent with patient-dashboard.html
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+        const token = window.PatientSession?.getToken() || localStorage.getItem('patient_token');
         if (!token) {
             window.location.href = '/index.html#masuk';
         }

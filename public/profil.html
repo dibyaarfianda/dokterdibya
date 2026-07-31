@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -907,7 +908,7 @@
                     <div class="avatar-container">
                         <div class="avatar-large" id="avatar">
                             <span id="avatar-initials">--</span>
-                            <img id="avatar-img" src="" style="display: none;">
+                            <img id="avatar-img" alt="Foto profil" hidden>
                         </div>
                         <button class="edit-avatar-btn" onclick="editAvatar()">
                             <i class="fa-solid fa-camera"></i>
@@ -1232,7 +1233,7 @@
             if (profileData.profile_picture || profileData.photo_url) {
                 const avatarImg = document.getElementById('avatar-img');
                 avatarImg.src = profileData.profile_picture || profileData.photo_url;
-                avatarImg.style.display = 'block';
+                avatarImg.hidden = false;
                 document.getElementById('avatar-initials').style.display = 'none';
             } else {
                 document.getElementById('avatar-initials').textContent = getInitials(name);
@@ -1256,7 +1257,7 @@
         // Check if patient has VIP subscription
         async function checkVipSubscription() {
             try {
-                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                const token = window.PatientSession?.getToken() || localStorage.getItem('patient_token');
                 if (!token) return;
 
                 const response = await fetch('/api/patient-questions/can-ask', {
@@ -1571,8 +1572,8 @@
         // Logout
         function logout() {
             if (confirm('Apakah Anda yakin ingin keluar?')) {
-                localStorage.removeItem('vps_auth_token');
-                sessionStorage.removeItem('vps_auth_token');
+                window.PatientSession?.clearAuth();
+
                 localStorage.removeItem('patient_token');
                 localStorage.removeItem('patient_user');
 

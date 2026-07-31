@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/patient-session.js?v=20260731hardening1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Langganan Berhasil - Klinik Dr. Dibya</title>
@@ -429,8 +430,8 @@
 
         // Get auth token (same keys as patient-menu.html)
         function getAuthToken() {
-            return localStorage.getItem('vps_auth_token') ||
-                   sessionStorage.getItem('vps_auth_token') ||
+            return window.PatientSession?.getToken() ||
+                   window.PatientSession?.getToken() ||
                    localStorage.getItem('patient_token');
         }
 

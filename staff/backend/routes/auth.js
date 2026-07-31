@@ -23,6 +23,7 @@ const {
 } = require('../utils/patientAccessBlocklist');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const PATIENT_JWT_EXPIRES_IN = process.env.PATIENT_JWT_EXPIRES_IN || '24h';
 const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
 const STAFF_FEMALE_AVATAR = '/staff/public/images/avatarwanita.png';
 const PATIENT_AUTH_BLOCKLIST_ENABLED = process.env.PATIENT_AUTH_BLOCKLIST_ENABLED === 'true';
@@ -225,7 +226,7 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
             is_superadmin: false
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
+        { expiresIn: PATIENT_JWT_EXPIRES_IN }
     );
 
     logger.info(`Patient logged in: ${user.email}`);
@@ -1211,7 +1212,7 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
             is_superadmin: false
         },
         JWT_SECRET,
-        { expiresIn: JWT_EXPIRES_IN }
+        { expiresIn: PATIENT_JWT_EXPIRES_IN }
     );
 
     logger.info(`New patient account created: ${userId} - ${email}`);

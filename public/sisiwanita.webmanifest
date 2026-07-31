@@ -1,16 +1,14 @@
 {
-  "id": "/",
+  "id": "/sisiwanita",
   "name": "SISIwanita",
   "short_name": "SISIwanita",
-  "description": "Portal pasien SISIwanita untuk akses jadwal, dokumen medis, tanya dokter, dan informasi kesehatan.",
-  "start_url": "/?source=pwa",
-  "scope": "/",
+  "description": "Portal pasien SISIwanita untuk booking jadwal, riwayat kunjungan, dan informasi kesehatan",
+  "start_url": "/patient-menu.html?source=pwa&v=20260731hardening1",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",
   "orientation": "portrait-primary",
-  "lang": "id-ID",
-  "categories": ["health", "medical"],
+  "scope": "/",
   "icons": [
     {
       "src": "/images/pwa-icons/sw2v8-any-192x192.png",
@@ -36,5 +34,7 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "categories": ["health", "medical"],
+  "lang": "id-ID"
 }

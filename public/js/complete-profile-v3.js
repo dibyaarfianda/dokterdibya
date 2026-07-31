@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Detect which flow the user came from
     const verifiedToken = sessionStorage.getItem('verified_token');
     const email = sessionStorage.getItem('registration_email');
-    const googleToken = localStorage.getItem('vps_auth_token');
+    const googleToken = window.PatientSession?.getToken();
     const authProvider = localStorage.getItem('auth_provider');
 
     // Determine flow type

@@ -49,7 +49,10 @@ export function setCurrentPatientForExam(patient) {
     patientNameEls.forEach(el => {
         if (el) {
             const patientId = String(patient.patientId || '').padStart(5, '0');
-            el.innerHTML = `<span class="badge badge-secondary mr-2">${patientId}</span>${patient.name}`;
+            const badge = document.createElement('span');
+            badge.className = 'badge badge-secondary mr-2';
+            badge.textContent = patientId;
+            el.replaceChildren(badge, document.createTextNode(String(patient.name || '')));
         }
     });
     

@@ -3,8 +3,7 @@
  * Shared utility functions for all patient portal pages
  */
 
-// Token key - matches vps-auth-v2.js
-const TOKEN_KEY = 'vps_auth_token';
+const TOKEN_KEY = window.PatientSession?.TOKEN_KEY || 'vps_auth_token';
 const GUEST_MODE_KEY = 'sisiwanita_guest_mode';
 const GUEST_STARTED_AT_KEY = 'sisiwanita_guest_started_at';
 const GUEST_SESSION_TTL_MS = 4 * 60 * 60 * 1000;
@@ -19,7 +18,7 @@ const API_BASE = window.location.hostname === 'localhost'
  * Checks both localStorage and sessionStorage
  */
 function getToken() {
-    return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    return window.PatientSession?.getToken() || null;
 }
 
 function clearGuestStorage() {
@@ -42,10 +41,7 @@ function isGuestMode() {
 
 function startGuestSession(options = {}) {
     const storage = options.persist ? localStorage : sessionStorage;
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('patient_token');
-    localStorage.removeItem('patient_user');
+    window.PatientSession?.clearAuth();
     clearGuestStorage();
     storage.setItem(GUEST_MODE_KEY, '1');
     storage.setItem(GUEST_STARTED_AT_KEY, String(Date.now()));
@@ -105,10 +101,7 @@ function checkAuth(options = {}) {
  * Logout user - clear token and redirect
  */
 function logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem('patient_token');
-    localStorage.removeItem('patient_user');
+    window.PatientSession?.clearAuth();
     clearGuestStorage();
     window.location.href = '/patient-login.html';
 }
@@ -154,8 +147,7 @@ async function apiRequest(endpoint, options = {}) {
 
         // Handle 401 Unauthorized
         if (response.status === 401) {
-            localStorage.removeItem(TOKEN_KEY);
-            sessionStorage.removeItem(TOKEN_KEY);
+            window.PatientSession?.clearAuth();
             window.location.href = '/patient-login.html';
             return null;
         }
@@ -192,7 +184,12 @@ function showToast(message, type = 'info', duration = 3000) {
     };
 
     if (iconMap[type]) {
-        toast.innerHTML = `<i class="fa ${iconMap[type]}"></i> ${message}`;
+        const icon = document.createElement('i');
+        icon.className = `fa ${iconMap[type]}`;
+        icon.setAttribute('aria-hidden', 'true');
+        const messageNode = document.createElement('span');
+        messageNode.textContent = String(message);
+        toast.replaceChildren(icon, document.createTextNode(' '), messageNode);
     }
 
     const toastContainer = document.getElementById('toast-container');

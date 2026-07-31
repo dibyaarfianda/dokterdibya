@@ -68,7 +68,7 @@ if (!JWT_SECRET) {
     console.error('FATAL: JWT_SECRET must be defined in environment variables');
     process.exit(1);
 }
-const JWT_EXPIRES_IN = '7d';
+const PATIENT_JWT_EXPIRES_IN = process.env.PATIENT_JWT_EXPIRES_IN || '24h';
 
 // Google OAuth Client
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
@@ -350,7 +350,7 @@ async function handlePatientRegister(req, res) {
                 email_verified: false
             },
             JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
+            { expiresIn: PATIENT_JWT_EXPIRES_IN }
         );
 
         res.status(201).json({
@@ -457,7 +457,7 @@ router.post('/login', async (req, res) => {
                 role: 'patient'
             },
             JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
+            { expiresIn: PATIENT_JWT_EXPIRES_IN }
         );
         
         // Check if intake form is completed
@@ -736,7 +736,7 @@ router.post('/auth/google', async (req, res) => {
                 role: 'patient'
             },
             JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
+            { expiresIn: PATIENT_JWT_EXPIRES_IN }
         );
         
         // Ensure user record exists in users table for new patients
@@ -965,7 +965,7 @@ router.post('/google-auth-code', async (req, res) => {
                 role: 'patient'
             },
             JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN }
+            { expiresIn: PATIENT_JWT_EXPIRES_IN }
         );
 
         const intakeCompleted = patient.intake_completed === 1;

@@ -14,6 +14,20 @@ const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 // ---------------------------------------------------------------------------
 
 const MAX_SAMPLES = 500;
+const MAX_API_CALLS = 50;
+const MAX_ERRORS = 20;
+const MAX_API_BUCKETS = 200;
+const MAX_PAGE_BUCKETS = 100;
+const ALLOWED_METRICS = new Set([
+    'LCP',
+    'INP',
+    'CLS',
+    'FCP',
+    'domContentLoaded',
+    'load',
+    'firstPaint',
+    'firstContentfulPaint'
+]);
 const metricStore = {};
 const clientErrorStore = {};
 
@@ -30,11 +44,19 @@ function cappedPush(arr, value, max) {
 }
 
 function recordMetric(name, value, page) {
+    if (name.startsWith('api:') && !metricStore[name]) {
+        const apiBucketCount = Object.keys(metricStore).filter(key => key.startsWith('api:')).length;
+        if (apiBucketCount >= MAX_API_BUCKETS) name = 'api:/other';
+    }
     const bucket = ensureBucket(name);
     cappedPush(bucket.samples, value, MAX_SAMPLES);
     if (page) {
-        if (!bucket.byPage[page]) bucket.byPage[page] = [];
-        cappedPush(bucket.byPage[page], value, MAX_SAMPLES);
+        let pageKey = page;
+        if (!bucket.byPage[pageKey] && Object.keys(bucket.byPage).length >= MAX_PAGE_BUCKETS) {
+            pageKey = '/other';
+        }
+        if (!bucket.byPage[pageKey]) bucket.byPage[pageKey] = [];
+        cappedPush(bucket.byPage[pageKey], value, MAX_SAMPLES);
     }
 }
 
@@ -179,23 +201,33 @@ function getCacheStats() {
  */
 router.post('/', (req, res) => {
     const body = req.body || {};
-    const page = typeof body.page === 'string' ? body.page.slice(0, 50) : null;
+    const page = typeof body.page === 'string'
+        ? body.page.replace(/[^a-z0-9/_-]/gi, '').slice(0, 50) || null
+        : null;
     let accepted = 0;
 
     // Record web vitals & page load metrics
     if (body.metrics && typeof body.metrics === 'object') {
-        for (const [key, value] of Object.entries(body.metrics)) {
+        const metricEntries = Object.entries(body.metrics);
+        const unknownMetric = metricEntries.find(([key]) => !ALLOWED_METRICS.has(key));
+        if (unknownMetric) {
+            return res.status(400).json({
+                success: false,
+                code: 'RUM_UNKNOWN_METRIC',
+                message: `Unsupported metric: ${String(unknownMetric[0]).slice(0, 40)}`
+            });
+        }
+        for (const [key, value] of metricEntries) {
             if (typeof value !== 'number' || !isFinite(value)) continue;
-            const name = key.toUpperCase() === key ? key : key; // preserve case
-            recordMetric(name, value, page);
+            recordMetric(key, value, page);
             accepted++;
         }
     }
 
     // Record API call timings
     if (Array.isArray(body.apiCalls)) {
-        for (const call of body.apiCalls.slice(0, 50)) {
-            if (!call || typeof call.duration !== 'number') continue;
+        for (const call of body.apiCalls.slice(0, MAX_API_CALLS)) {
+            if (!call || typeof call.duration !== 'number' || !Number.isFinite(call.duration)) continue;
             const ep = normalizeApiPath(call.endpoint);
             recordMetric('api:' + ep, call.duration, page);
             accepted++;
@@ -203,7 +235,7 @@ router.post('/', (req, res) => {
     }
 
     if (Array.isArray(body.errors)) {
-        for (const clientError of body.errors.slice(0, 20)) {
+        for (const clientError of body.errors.slice(0, MAX_ERRORS)) {
             if (recordClientError(clientError, page)) accepted++;
         }
     }

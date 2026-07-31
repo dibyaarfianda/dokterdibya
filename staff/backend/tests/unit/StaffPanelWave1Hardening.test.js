@@ -70,7 +70,8 @@ describe('staff panel wave 1 hardening contracts', () => {
         expect(clientRum).toContain("trackError(event.reason, 'unhandled_rejection')");
         expect(serverRum).toContain('function sanitizeClientErrorText(value)');
         expect(serverRum).toContain('const clientErrorStore = {};');
-        expect(serverRum).toContain('body.errors.slice(0, 20)');
+        expect(serverRum).toContain('const MAX_ERRORS = 20;');
+        expect(serverRum).toContain('body.errors.slice(0, MAX_ERRORS)');
         expect(errorHandler).toContain("window.__rum?.trackError?.({");
         expect(errorHandler).not.toContain("stack: error.stack,\n                url: window.location.href");
     });

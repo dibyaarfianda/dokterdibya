@@ -13,50 +13,13 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const { sendSuccess } = require('../utils/response');
 const logger = require('../utils/logger');
 
-/**
- * @swagger
- * /api/pdf/receipt/{visitId}:
- *   get:
- *     summary: Generate visit receipt PDF
- *     tags: [PDF]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: visitId
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: PDF generated successfully
- *         content:
- *           application/pdf:
- *             schema:
- *               type: string
- *               format: binary
- */
-router.get('/receipt/:visitId', verifyToken, asyncHandler(async (req, res) => {
-    const { visitId } = req.params;
-    
-    // Get visit details
-    const visit = await VisitService.getVisitById(visitId);
-    const patient = await PatientService.getPatientById(visit.patient_id);
-    
-    // Get visit items (if available)
-    // TODO: Implement visit items retrieval from billing
-    const items = [];
-    
-    // Generate PDF
-    const result = await PDFService.generateVisitReceipt(visit, patient, items);
-    
-    // Send PDF file
-    res.download(result.filepath, result.filename, (err) => {
-        if (err) {
-            logger.error('Error downloading PDF', { error: err.message });
-        }
+router.get('/receipt/:visitId', verifyToken, (req, res) => {
+    return res.status(410).json({
+        success: false,
+        code: 'RECEIPT_ENDPOINT_RETIRED',
+        message: 'Legacy visit receipts are retired. Use the current Sunday Clinic invoice endpoints.'
     });
-}));
+});
 
 /**
  * @swagger
