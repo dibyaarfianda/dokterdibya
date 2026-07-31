@@ -7637,37 +7637,7 @@
             updateNavContrast();
         })();
 
-        // ==================== HEAVY SCROLL (momentum damping) ====================
-        (function() {
-            var targetY = window.scrollY;
-            var currentY = window.scrollY;
-            // Damping tunggal di seluruh halaman. Sebelumnya welcome pakai 0.03
-            // (heavy feel) dan section lain 0.07 — tapi transisi di batas welcome
-            // bikin title "tersentak" karena currentY catch-up cepat dari lag besar
-            // yang tertumpuk selama damping rendah. Satu nilai = transisi halus.
-            var damping = 0.07;
-            var wheelForce = 0.75;
-            var rafId = null;
-
-            window.addEventListener('wheel', function(e) {
-                e.preventDefault();
-                targetY += e.deltaY * wheelForce;
-                targetY = Math.max(0, Math.min(targetY, document.documentElement.scrollHeight - window.innerHeight));
-                if (!rafId) tick();
-            }, { passive: false });
-
-            function tick() {
-                currentY += (targetY - currentY) * damping;
-                if (Math.abs(targetY - currentY) < 0.5) {
-                    currentY = targetY;
-                    window.scrollTo(0, currentY);
-                    rafId = null;
-                    return;
-                }
-                window.scrollTo(0, currentY);
-                rafId = requestAnimationFrame(tick);
-            }
-        })();
+        // Preserve native wheel, trackpad, touch, keyboard, and assistive scrolling.
 
         // ==================== BACKGROUND FADE ON SCROLL (Hero → Selamat Datang → Fade Out) ====================
         (function() {

@@ -49,6 +49,14 @@ describe('frontend modularization stage 2', () => {
         expect(featureLoader).toContain('export async function loadLandingFeature');
     });
 
+    test('landing page preserves native responsive scrolling', () => {
+        const html = read('public', 'sisiwanita', 'index.html');
+
+        expect(html).not.toMatch(/addEventListener\('wheel',\s*function\(e\)\s*\{\s*e\.preventDefault\(\)/);
+        expect(html).not.toContain('targetY += e.deltaY * wheelForce');
+        expect(html).toContain('Preserve native wheel, trackpad, touch, keyboard, and assistive scrolling.');
+    });
+
     test('staff shell supports delegated compatibility actions while globals migrate', () => {
         const html = read('staff', 'public', 'index-adminlte.html');
         const actions = read('staff', 'public', 'scripts', 'shell', 'actions.js');
