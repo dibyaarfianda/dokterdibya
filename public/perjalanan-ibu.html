@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
-    <script src="/scripts/patient-session.js?v=20260801stage2e1"></script>
+    <script src="/scripts/patient-session.js?v=20260801stage2f1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Perjalanan Ibu - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260801stage2e1">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260801stage2f1">
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,7 +20,7 @@
         window.__patientPortalHeaderInstalled = true;
     </script>
 <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260801stage2e1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260801stage2f1">
 
     <style>
         body.journey-book-page .hero-title {
@@ -390,7 +390,7 @@
 
     <div id="toast-container"></div>
 
-    <script src="/scripts/patient-tool-shell.js?v=20260801stage2e1"></script>
+    <script src="/scripts/patient-tool-shell.js?v=20260801stage2f1"></script>
     <script>
         const BOOK_IMAGES = [
             '1.png', '2.png', '6.png', '7.png', '8.png', '9.png',
@@ -530,7 +530,7 @@
 
         function registerPatientServiceWorker() {
             if (!('serviceWorker' in navigator)) return;
-            navigator.serviceWorker.register('/sw.js?v=20260801stage2e1', { scope: '/' })
+            navigator.serviceWorker.register('/sw.js?v=20260801stage2f1', { scope: '/' })
                 .then(function(registration) { return registration.update().catch(function() {}); })
                 .catch(function() {});
         }

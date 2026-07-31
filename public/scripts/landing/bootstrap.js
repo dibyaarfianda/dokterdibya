@@ -77,6 +77,10 @@ loadLandingFeature('announcementGuard')
     .then(module => module.init?.())
     .catch(error => reportOptionalFeatureFailure('announcementGuard', error));
 
+loadLandingFeature('footerEffects')
+    .then(module => module.init?.())
+    .catch(error => reportOptionalFeatureFailure('footerEffects', error));
+
 runIdle(() => {
     loadLandingFeature('patientTracking')
         .catch(error => reportOptionalFeatureFailure('patientTracking', error));

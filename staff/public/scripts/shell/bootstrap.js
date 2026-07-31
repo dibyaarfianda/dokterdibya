@@ -54,6 +54,9 @@ async function bootstrapStaffShell() {
     installLazyFeatureShim('reloadEstimasiBiayaConfig', 'estimasiBiaya', 'estimasi-biaya');
     installLazyFeatureShim('showTroubleshootingPage', 'troubleshooting', 'troubleshooting');
     installLazyFeatureShim('loadTroubleshootingReports', 'troubleshooting', 'troubleshooting');
+    installLazyFeatureShim('markBadgeRead', 'notificationBadges');
+    installLazyFeatureShim('loadNotificationBadges', 'notificationBadges');
+    installLazyFeatureShim('scheduleNotificationBadges', 'notificationBadges');
     installLazyFeatureShim('viewPatientDetail', 'patientSearchDetail');
     [
         'showManagePatientsPage',

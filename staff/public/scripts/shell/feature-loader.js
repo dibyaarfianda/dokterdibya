@@ -110,6 +110,10 @@ const featureLoaders = {
     contentModeration: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/content-moderation-page.js?v=${version}`);
+    },
+    notificationBadges: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`./notification-badges.js?v=${version}`);
     }
 };
 

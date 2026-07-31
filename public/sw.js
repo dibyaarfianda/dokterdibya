@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260801stage2e1';
+const CACHE_VERSION = '20260801stage2f1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -48,6 +48,7 @@ const PRECACHE_FILES = [
   '/scripts/patient-shell/layout.js',
   '/scripts/patient-shell/sheet-controller.js',
   '/scripts/patient-shell/pwa-install-controller.js',
+  '/scripts/patient-shell/exit-controller.js',
   '/scripts/patient-shell/feature-loader.js',
   '/scripts/patient-shell/features/my-corner-controller.js',
     '/scripts/patient-shell/features/bug-report-controller.js',
@@ -62,6 +63,7 @@ const PRECACHE_FILES = [
   '/scripts/landing/install-prompt.js',
     '/scripts/landing/navigation-interactions.js',
     '/scripts/landing/announcement-guard.js',
+    '/scripts/landing/footer-effects.js',
   '/js/patient-tracker.js',
   '/patient-login.html',
   '/patient-intake.html',

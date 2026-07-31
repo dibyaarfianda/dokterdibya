@@ -2207,119 +2207,6 @@ function showImportFieldsPage() {
 }
 
 
-// ==================== NOTIFICATION BADGES ====================
-
-/**
- * Get last seen timestamp for a location from localStorage
- */
-function getLastSeenTimestamp(location) {
-    const key = `badge_last_seen_${location}`;
-    return localStorage.getItem(key) || null;
-}
-
-/**
- * Mark a badge as read - save current timestamp to localStorage
- */
-function markBadgeRead(location) {
-    const key = `badge_last_seen_${location}`;
-    localStorage.setItem(key, new Date().toISOString());
-
-    // Hide the badge immediately
-    const badgeId = `badge-${location.replace(/_/g, '-')}`;
-    const badge = document.getElementById(badgeId);
-    if (badge) {
-        badge.classList.add('d-none');
-        badge.textContent = '0';
-    }
-}
-
-/**
- * Update a single badge element
- */
-function updateBadge(badgeId, count) {
-    const badge = document.getElementById(badgeId);
-    if (!badge) return;
-
-    if (count > 0) {
-        badge.textContent = count;
-        badge.classList.remove('d-none');
-    } else {
-        badge.classList.add('d-none');
-    }
-}
-
-/**
- * Load and update sidebar notification badge counts
- */
-async function loadNotificationBadges() {
-    try {
-        const token = getAuthToken();
-        if (!token) return;
-
-        // Get last seen timestamps for all locations
-        const lastSeen = {
-            klinik_private: getLastSeenTimestamp('klinik_private'),
-            rsia_melinda: getLastSeenTimestamp('rsia_melinda'),
-            rsud_gambiran: getLastSeenTimestamp('rsud_gambiran'),
-            rs_bhayangkara: getLastSeenTimestamp('rs_bhayangkara'),
-            artikel: getLastSeenTimestamp('artikel')
-        };
-
-        const response = await fetch('/api/notifications/badge-counts', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ lastSeen })
-        });
-
-        if (!response.ok) return;
-
-        const result = await response.json();
-        if (!result.success) return;
-
-        const { counts } = result;
-
-        // Update all badges
-        updateBadge('badge-klinik-private', counts.klinik_private || 0);
-        updateBadge('badge-rsia-melinda', counts.rsia_melinda || 0);
-        updateBadge('badge-rsud-gambiran', counts.rsud_gambiran || 0);
-        updateBadge('badge-rs-bhayangkara', counts.rs_bhayangkara || 0);
-        updateBadge('badge-artikel-likes', counts.artikel || 0);
-
-    } catch (error) {
-        console.error('Error loading notification badges:', error);
-    }
-}
-
-let notificationBadgeScheduleHandle = null;
-
-function scheduleNotificationBadges(delayMs = 900) {
-    if (notificationBadgeScheduleHandle) return;
-
-    const execute = () => {
-        notificationBadgeScheduleHandle = null;
-        loadNotificationBadges();
-    };
-
-    if (typeof window.requestIdleCallback === 'function') {
-        notificationBadgeScheduleHandle = window.requestIdleCallback(execute, { timeout: delayMs + 800 });
-    } else {
-        notificationBadgeScheduleHandle = setTimeout(execute, delayMs);
-    }
-}
-
-// Export markBadgeRead to window
-window.markBadgeRead = markBadgeRead;
-
-// Reload badges every 2 minutes (only when tab visible)
-setInterval(() => {
-    if (document.visibilityState === 'visible') loadNotificationBadges();
-}, 120000);
-
-// ==================== END NOTIFICATION BADGES ====================
-
 async function showProfileSettings() {
     await ensureRegisteredPage('profile-settings');
     hideAllPages();
@@ -3019,7 +2906,7 @@ async function initializeApp(user) {
         });
 
         // Defer badge counts so first render is not blocked by non-critical request.
-        scheduleNotificationBadges();
+        window.scheduleNotificationBadges?.();
 
         // Initialize real-time sync for online users tracking
         console.log('[MAIN] Calling initRealtimeSync with:', { id: user.id, name: user.name, role: user.role });

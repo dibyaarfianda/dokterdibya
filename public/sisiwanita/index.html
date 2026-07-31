@@ -18,8 +18,8 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260801stage2e1">
-    <script src="/scripts/patient-session.js?v=20260801stage2e1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260801stage2f1">
+    <script src="/scripts/patient-session.js?v=20260801stage2f1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -5569,74 +5569,6 @@
 
         // Check authentication on page load
         document.addEventListener('DOMContentLoaded', function() {
-            (function() {
-                var footer = document.querySelector('.site-footer');
-                if (!footer) return;
-                var isStandalonePwa = document.documentElement.classList.contains('standalone-pwa');
-                var isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-                var reduceScrollWork = isStandalonePwa && isCoarsePointer;
-                var ticking = false;
-
-                function updateFooterParallax() {
-                    ticking = false;
-
-                    // Journey-card parallax feel (-200px → -94px translateY on over-extended image),
-                    // tapi range progress dikalibrasi untuk footer (elemen terminal yang nggak bisa
-                    // scroll keluar atas viewport). Jadi progress 0 = footer mulai masuk dari bawah,
-                    // progress 1 = footer fully visible di layar — bukan sampai keluar atas.
-                    var frame = footer.querySelector('.footer-card-frame') || footer;
-                    var rect = frame.getBoundingClientRect();
-                    var vh = window.innerHeight || document.documentElement.clientHeight || 1;
-                    var travel = 106;
-                    var startOffset = -200;
-                    var startTop = vh;
-                    var endTop = Math.max(0, vh - rect.height);
-                    var span = Math.max(1, startTop - endTop);
-                    var rawProgress = (startTop - rect.top) / span;
-                    var eased = Math.max(0, Math.min(1, rawProgress));
-                    eased = eased * eased * (3 - (2 * eased));
-                    var photoShift = startOffset + (travel * eased);
-                    var progress = eased;
-                    var backdropShift = 0;
-                    var gridShift = 0;
-                    var orbLeftShift = 0;
-                    var orbRightShift = 0;
-
-                    footer.style.setProperty('--footer-progress', progress.toFixed(3));
-                    footer.style.setProperty('--footer-shift-photo', photoShift.toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-a', backdropShift.toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-b', gridShift.toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-c', orbLeftShift.toFixed(2) + 'px');
-                    footer.style.setProperty('--footer-shift-d', orbRightShift.toFixed(2) + 'px');
-                }
-
-                function scheduleFooterParallax() {
-                    if (ticking) return;
-                    ticking = true;
-                    window.requestAnimationFrame(updateFooterParallax);
-                }
-
-                window.addEventListener('scroll', scheduleFooterParallax, { passive: true });
-                window.addEventListener('wheel', scheduleFooterParallax, { passive: true });
-                window.addEventListener('touchmove', scheduleFooterParallax, { passive: true });
-                window.addEventListener('resize', scheduleFooterParallax, { passive: true });
-                window.setInterval(scheduleFooterParallax, 90);
-                scheduleFooterParallax();
-                setTimeout(scheduleFooterParallax, 180);
-            })();
-
-            // Hide bottom-nav when footer is visible (scroll to bottom)
-            (function() {
-                var footer = document.querySelector('.site-footer');
-                if (!footer || !('IntersectionObserver' in window)) return;
-                var io = new IntersectionObserver(function(entries) {
-                    entries.forEach(function(e) {
-                        document.body.classList.toggle('footer-visible', e.isIntersecting);
-                    });
-                }, { root: null, threshold: 0.01, rootMargin: '0px 0px -40px 0px' });
-                io.observe(footer);
-            })();
-
             // Scroll-driven arc on .cta-card top edge via clip-path ellipse.
             // progress 0 (just entering) → --cta-flatten = 0 → ellipse ry = 100% of card height (pronounced arc).
             // progress 1 (fully in view) → --cta-flatten = MAX → ellipse ry huge → top edge nearly flat.
@@ -5852,7 +5784,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20260801stage2e1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20260801stage2f1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -8169,6 +8101,6 @@
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20260801stage2e1"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20260801stage2f1"></script>
 </body>
 </html>

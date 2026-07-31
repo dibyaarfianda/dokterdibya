@@ -22,6 +22,7 @@ import { createMyCornerController } from './patient-shell/features/my-corner-con
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';
 import { createPatientNotificationController } from './patient-shell/features/notification-controller.js';
 import { createPatientPwaInstallController } from './patient-shell/pwa-install-controller.js';
+import { createPatientExitController } from './patient-shell/exit-controller.js';
 
 (function initPatientMenuShell() {
         const CORNER_NAME_KEY = 'patient_my_corner_name';
@@ -42,9 +43,6 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
             nickname: null,
             notification_sound: 'default'
         };
-        let homeBackGuardInstalled = false;
-        let homeBackExitConfirmed = false;
-
         const guestSession = createGuestSession({ clearPatientAuth });
         const clearGuestMode = guestSession.clear;
         const trackGuestActivity = guestSession.track;
@@ -1330,86 +1328,15 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
             toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
         }
 
-        function hasActiveHomeSurface() {
-            return !!document.querySelector('.bottom-sheet.active, .modal-card.active:not(#exit-app-modal)');
-        }
-
-        function rearmHomeBackGuard() {
-            if (homeBackExitConfirmed || !homeBackGuardInstalled || !isPatientHomeRoute()) return;
-            try {
-                history.pushState({ patientHomeBackGuard: true }, '', window.location.href);
-            } catch (error) {}
-        }
-
-        function showExitAppModal() {
-            closeSheet();
-            const overlay = document.getElementById('modal-overlay');
-            const modal = document.getElementById('exit-app-modal');
-            if (!overlay || !modal) return;
-            overlay.classList.add('active');
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function cancelExitApp(event) {
-            stopTopbarEvent(event);
-            closeAllModals();
-        }
-
-        function isAndroidWebView() {
-            return /;\s*wv\)|\bwv\b|Version\/\d+(?:\.\d+)?\s+Chrome\/\d+.*Mobile Safari/i.test(navigator.userAgent || '');
-        }
-
-        function requestPwaClose() {
-            // Android Chrome PWA does not expose a reliable JS API to close
-            // a home-screen-launched app window, but this succeeds in some
-            // browser contexts. Fallback is handled by confirmExitApp().
-            try { window.open('', '_self').close(); } catch (error) {}
-            try { window.close(); } catch (error) {}
-            return false;
-        }
-
-        function confirmExitApp(event) {
-            stopTopbarEvent(event);
-            homeBackExitConfirmed = true;
-            const overlay = document.getElementById('modal-overlay');
-            const modal = document.getElementById('exit-app-modal');
-            if (overlay) overlay.classList.remove('active');
-            if (modal) modal.classList.remove('active');
-            document.body.style.overflow = '';
-
-            const pwaClosed = requestPwaClose();
-            if (!pwaClosed) {
-                // If Chrome blocks window.close(), show a terminal closed state.
-                // Do not redirect to login because an authenticated patient can
-                // be auto-forwarded back to home.
-                window.setTimeout(function() {
-                    if (document.visibilityState !== 'hidden') {
-                        window.location.replace('/app-closed.html');
-                    }
-                }, 350);
-            }
-        }
-
-        function installHomeBackExitGuard() {
-            if (homeBackGuardInstalled || !isPatientHomeRoute() || !history.pushState) return;
-            homeBackGuardInstalled = true;
-            try {
-                history.replaceState(Object.assign({}, history.state || {}, { patientHomeRoot: true }), '', window.location.href);
-                history.pushState({ patientHomeBackGuard: true }, '', window.location.href);
-            } catch (error) {}
-
-            window.addEventListener('popstate', function() {
-                if (homeBackExitConfirmed || !isPatientHomeRoute()) return;
-                if (hasActiveHomeSurface()) {
-                    closeSheet();
-                    closeAllModals();
-                    rearmHomeBackGuard();
-                    return;
-                }
-                showExitAppModal();
-            });
-        }
+        const exitController = createPatientExitController({
+            isHomeRoute: isPatientHomeRoute,
+            closeSheet,
+            closeAllModals,
+            stopEvent: stopTopbarEvent
+        });
+        const installHomeBackExitGuard = exitController.install;
+        const cancelExitApp = exitController.cancel;
+        const confirmExitApp = exitController.confirm;
 
         function getTapSoundPreference() {
             return localStorage.getItem(TAP_SOUND_KEY) !== '0';
@@ -3028,7 +2955,7 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2e1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2f1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
