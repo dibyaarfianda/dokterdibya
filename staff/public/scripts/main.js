@@ -620,7 +620,8 @@ async function showDashboardPage() {
     setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard');
     const dashboardModule = await importWithVersion('./dashboard.js');
     await dashboardModule.activateDashboard?.();
-    loadDashboardNewPatients();
+    await window.ensureStaffFeature?.('dashboardNewPatients');
+    await window.loadDashboardNewPatients?.();
 }
 
 function showCommunityChatPage() {
@@ -661,82 +662,6 @@ function openCommunityChatPopup() {
     }
 }
 
-// Dashboard New Patients
-let dashboardNewPatientsPage = 1;
-let dashboardNewPatientsTotalPages = 1;
-let dashboardNewPatientsController = null;
-
-async function loadDashboardNewPatients(page = 1) {
-    const tbody = document.getElementById('dashboard-new-patients-tbody');
-    if (!tbody) return;
-
-    dashboardNewPatientsPage = page;
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
-
-    if (dashboardNewPatientsController) dashboardNewPatientsController.abort();
-    const controller = new AbortController();
-    dashboardNewPatientsController = controller;
-
-    try {
-        const token = getAuthToken();
-        const response = await fetch(`/api/patients?view=basic&last_visit_location=no_visit&sort=recent&limit=10&page=${page}&fresh=1`, {
-            signal: controller.signal,
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) throw new Error('Gagal memuat data');
-
-        const data = await response.json();
-        const pagination = data.pagination || { total: 0, page: 1, totalPages: 1 };
-        dashboardNewPatientsTotalPages = pagination.totalPages;
-
-        const start = data.data?.length > 0 ? ((page - 1) * 10) + 1 : 0;
-        const end = start > 0 ? start + data.data.length - 1 : 0;
-
-        document.getElementById('dashboard-new-patients-info').textContent =
-            `Menampilkan ${start}-${end} dari ${pagination.total}`;
-        document.getElementById('dashboard-new-patients-prev').disabled = page <= 1;
-        document.getElementById('dashboard-new-patients-next').disabled = page >= dashboardNewPatientsTotalPages;
-
-        if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = data.data.map(patient => {
-            const regDateTime = patient.created_at ? new Date(patient.created_at).toLocaleString('id-ID', {
-                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-            }) : '-';
-
-            return `
-                <tr>
-                    <td>${escapeHtml(patient.full_name || '-')}</td>
-                    <td><small class="text-muted">${regDateTime}</small></td>
-                    <td>
-                        <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${escapeHtml(patient.id)}')" title="Lihat Detail">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-    } catch (error) {
-        if (error?.name === 'AbortError') return;
-        console.error('Load dashboard new patients error:', error);
-        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
-    } finally {
-        if (dashboardNewPatientsController === controller) dashboardNewPatientsController = null;
-    }
-}
-document.addEventListener('page:changed', event => {
-    if (event.detail?.page !== 'dashboard' && dashboardNewPatientsController) {
-        dashboardNewPatientsController.abort();
-        dashboardNewPatientsController = null;
-    }
-});
-window.loadDashboardNewPatients = loadDashboardNewPatients;
-window.dashboardNewPatientsPage = dashboardNewPatientsPage;
 function showKlinikPrivatePage() {
     hideAllPages();
     document.body.classList.add('klinik-private-active');

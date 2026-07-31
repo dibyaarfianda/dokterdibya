@@ -18,8 +18,8 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260731stage2b1">
-    <script src="/scripts/patient-session.js?v=20260731stage2b1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260801stage2c1">
+    <script src="/scripts/patient-session.js?v=20260801stage2c1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -5231,10 +5231,10 @@
                 <h4><i class="fa-solid fa-mobile-screen-button"></i> Dapatkan Aplikasi</h4>
                 <p>Akses lebih cepat & notifikasi langsung</p>
                 <div class="download-buttons">
-                    <button type="button" class="download-btn" id="btn-download-android" onclick="installPatientPWA()" aria-label="Install aplikasi SISIwanita di Android">
+                    <button type="button" class="download-btn" id="btn-download-android" data-landing-feature="installPrompt" data-landing-action="install" aria-label="Install aplikasi SISIwanita di Android">
                         <i class="fa-brands fa-android"></i> Install di Android
                     </button>
-                    <button class="download-btn pwa-install" id="btn-pwa-install" onclick="showIosInstallPrompt()" aria-label="Install PWA ke iPhone" style="display:none;">
+                    <button class="download-btn pwa-install" id="btn-pwa-install" data-landing-feature="installPrompt" data-landing-action="showIos" aria-label="Install PWA ke iPhone" style="display:none;">
                         <i class="fa-brands fa-apple"></i> Install ke iPhone
                     </button>
                     <span class="download-btn appstore" id="btn-appstore-ios" style="display:none;">
@@ -5301,12 +5301,12 @@
     </footer>
 
     <!-- iOS PWA Install Prompt -->
-    <div class="ios-install-prompt-overlay" id="ios-install-overlay" onclick="dismissIosInstallPrompt()"></div>
+    <div class="ios-install-prompt-overlay" id="ios-install-overlay" data-landing-feature="installPrompt" data-landing-action="dismiss"></div>
     <div class="ios-install-prompt" id="ios-install-prompt" role="dialog" aria-label="Install ke iPhone">
         <div class="ios-install-prompt-handle"></div>
         <div class="ios-install-prompt-header">
             <h4 id="pwa-install-title"><i class="fa-solid fa-mobile-screen-button"></i> Install SISIwanita</h4>
-            <button class="ios-install-prompt-close" onclick="dismissIosInstallPrompt()" aria-label="Tutup">
+            <button class="ios-install-prompt-close" data-landing-feature="installPrompt" data-landing-action="dismiss" aria-label="Tutup">
                 &times;
             </button>
         </div>
@@ -5327,7 +5327,7 @@
                 <span>Tap <strong>"Add"</strong> di pojok kanan atas</span>
             </li>
         </ol>
-        <button type="button" class="pwa-install-action" id="pwa-install-action" onclick="installPatientPWA()">
+        <button type="button" class="pwa-install-action" id="pwa-install-action" data-landing-feature="installPrompt" data-landing-action="install">
             <i class="fa-solid fa-download"></i> Install sekarang
         </button>
         <p class="pwa-install-note" id="pwa-install-note">
@@ -5922,7 +5922,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20260731stage2b1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20260801stage2c1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -8273,209 +8273,11 @@
             pullIndicator.classList.remove('visible');
         }, { passive: true });
 
-        var patientDeferredInstallPrompt = null;
-        var installPromptDismissKey = 'sisiwanita_pwa_install_dismissed';
-        var installPromptAutoShown = false;
-
-        function isStandalonePwaMode() {
-            return window.navigator.standalone === true ||
-                window.matchMedia('(display-mode: standalone)').matches;
-        }
-
-        function isNativeCapacitorApp() {
-            return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-        }
-
-        function getInstallPlatform() {
-            var ua = navigator.userAgent || '';
-            var isIOS = /iPad|iPhone|iPod/.test(ua) ||
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            var isAndroid = /Android/i.test(ua);
-            if (isIOS) return 'ios';
-            if (isAndroid) return 'android';
-            return 'desktop';
-        }
-
-        window.addEventListener('beforeinstallprompt', function(e) {
-            e.preventDefault();
-            patientDeferredInstallPrompt = e;
-            if (typeof window.updatePatientPortalInstallButtons === 'function') {
-                window.updatePatientPortalInstallButtons();
-            }
-        });
-
-        window.addEventListener('appinstalled', function() {
-            patientDeferredInstallPrompt = null;
-            sessionStorage.setItem(installPromptDismissKey, 'true');
-            dismissIosInstallPrompt();
-            if (typeof window.updatePatientPortalInstallButtons === 'function') {
-                window.updatePatientPortalInstallButtons();
-            }
-        });
-
-        // ==================== ANDROID / iOS PWA INSTALL PROMPT ====================
-        (function() {
-            var platform = getInstallPlatform();
-            var isIOS = platform === 'ios';
-            var isAndroid = platform === 'android';
-            var isStandalone = isStandalonePwaMode();
-            var isCapacitorApp = isNativeCapacitorApp();
-
-            window._iosDetection = {
-                isIOS: isIOS,
-                isAndroid: isAndroid,
-                isStandalone: isStandalone,
-                isCapacitorApp: isCapacitorApp
-            };
-
-            window.updatePatientPortalInstallButtons = function() {
-                var btnAndroid = document.getElementById('btn-download-android');
-                if (!btnAndroid) return;
-
-                if (isNativeCapacitorApp() || isStandalonePwaMode()) {
-                    btnAndroid.style.display = 'none';
-                    return;
-                }
-
-                btnAndroid.style.display = 'inline-flex';
-                btnAndroid.innerHTML = '<i class="fa-brands fa-android"></i> Install di Android';
-
-                if (getInstallPlatform() !== 'android') {
-                    btnAndroid.innerHTML = '<i class="fa-solid fa-download"></i> Install di Browser';
-                }
-            };
-
-            function updateDownloadBanner() {
-                var btnPwaInstall = document.getElementById('btn-pwa-install');
-                var btnAppstoreIos = document.getElementById('btn-appstore-ios');
-                var btnAndroid = document.getElementById('btn-download-android');
-
-                if (isIOS && !isStandalonePwaMode() && !isNativeCapacitorApp()) {
-                    if (btnPwaInstall) btnPwaInstall.style.display = 'inline-flex';
-                    if (btnAppstoreIos) btnAppstoreIos.style.display = 'inline-flex';
-                    if (btnAndroid) btnAndroid.style.display = 'none';
-                } else if (isIOS && isStandalonePwaMode()) {
-                    if (btnAppstoreIos) btnAppstoreIos.style.display = 'inline-flex';
-                    if (btnPwaInstall) btnPwaInstall.style.display = 'none';
-                    if (btnAndroid) btnAndroid.style.display = 'none';
-                } else {
-                    if (btnAppstoreIos) btnAppstoreIos.style.display = 'inline-flex';
-                }
-
-                window.updatePatientPortalInstallButtons();
-            }
-
-            updateDownloadBanner();
-        })();
-
-        function configureInstallPrompt(platform) {
-            var prompt = document.getElementById('ios-install-prompt');
-            var overlay = document.getElementById('ios-install-overlay');
-            var title = document.getElementById('pwa-install-title');
-            var subtitle = document.getElementById('pwa-install-subtitle');
-            var action = document.getElementById('pwa-install-action');
-            var note = document.getElementById('pwa-install-note');
-            if (!prompt || !overlay) return;
-
-            prompt.classList.toggle('is-android', platform === 'android');
-
-            if (platform === 'android') {
-                if (title) title.innerHTML = '<i class="fa-brands fa-android"></i> Install SISIwanita';
-                if (subtitle) subtitle.textContent = 'Pasang SISIwanita sebagai PWA di layar utama Android untuk akses cepat dan notifikasi yang tetap berjalan.';
-                if (action) action.innerHTML = '<i class="fa-solid fa-download"></i> Install sekarang';
-                if (note) note.textContent = 'Jika tombol belum memunculkan prompt, buka menu Chrome lalu pilih "Install app" atau "Tambahkan ke layar utama".';
-                return;
-            }
-
-            if (title) title.innerHTML = '<i class="fa-brands fa-apple"></i> Install SISIwanita';
-            if (subtitle) subtitle.textContent = 'Simpan SISIwanita ke Home Screen iPhone/iPad agar portal terasa seperti aplikasi.';
-            if (note) note.textContent = 'Setelah di-install, buka dari Home Screen untuk pengalaman terbaik.';
-        }
-
-        function showPortalInstallPrompt(platform) {
-            var prompt = document.getElementById('ios-install-prompt');
-            var overlay = document.getElementById('ios-install-overlay');
-            if (!prompt || !overlay) return;
-
-            configureInstallPrompt(platform || getInstallPlatform());
-            overlay.classList.add('active');
-            prompt.classList.add('active');
-            requestAnimationFrame(function() {
-                prompt.style.transform = 'translateY(0)';
-            });
-        }
-
-        // Global functions for PWA install prompt
-        function showIosInstallPrompt() {
-            showPortalInstallPrompt('ios');
-        }
-
-        function autoShowInstallPrompt() {
-            if (installPromptAutoShown) return;
-            if (isStandalonePwaMode() || isNativeCapacitorApp()) return;
-            if (sessionStorage.getItem(installPromptDismissKey) === 'true') return;
-
-            var platform = getInstallPlatform();
-            if (platform !== 'android' && platform !== 'ios') return;
-
-            installPromptAutoShown = true;
-            showPortalInstallPrompt(platform);
-        }
-
-        function installPatientPWA() {
-            if (patientDeferredInstallPrompt) {
-                patientDeferredInstallPrompt.prompt();
-                patientDeferredInstallPrompt.userChoice.then(function() {
-                    patientDeferredInstallPrompt = null;
-                    sessionStorage.setItem(installPromptDismissKey, 'true');
-                    dismissIosInstallPrompt();
-                    if (typeof window.updatePatientPortalInstallButtons === 'function') {
-                        window.updatePatientPortalInstallButtons();
-                    }
-                });
-                return;
-            }
-
-            if (/Android/i.test(navigator.userAgent || '')) {
-                alert('Untuk memasang SISIwanita, buka menu browser lalu pilih "Install app" atau "Tambahkan ke layar utama".');
-                return;
-            }
-
-            alert('Buka halaman ini dari browser Android atau gunakan menu browser untuk memasang PWA SISIwanita.');
-        }
-
-        window.installPatientPWA = installPatientPWA;
-        window.showIosInstallPrompt = showIosInstallPrompt;
-        window.showPortalInstallPrompt = showPortalInstallPrompt;
-        window.autoShowInstallPrompt = autoShowInstallPrompt;
-
-        function dismissIosInstallPrompt() {
-            var prompt = document.getElementById('ios-install-prompt');
-            var overlay = document.getElementById('ios-install-overlay');
-            if (!prompt || !overlay) return;
-
-            prompt.classList.remove('active');
-            prompt.classList.remove('is-android');
-            overlay.classList.remove('active');
-            sessionStorage.setItem(installPromptDismissKey, 'true');
-        }
-
-        window.dismissIosInstallPrompt = dismissIosInstallPrompt;
-
-        // Close iOS prompt on escape key
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                var prompt = document.getElementById('ios-install-prompt');
-                if (prompt && prompt.classList.contains('active')) {
-                    dismissIosInstallPrompt();
-                }
-            }
-        });
     </script>
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20260731stage2b1"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20260801stage2c1"></script>
     <script>
         document.addEventListener('click', function(e) {
             var link = e.target && e.target.closest ? e.target.closest('.doc-cta-link') : null;

@@ -65,6 +65,10 @@ function bindDelegatedLandingFeatures() {
 bindDelegatedLandingActions();
 bindDelegatedLandingFeatures();
 
+loadLandingFeature('installPrompt')
+    .then(module => module.init?.())
+    .catch(error => reportOptionalFeatureFailure('installPrompt', error));
+
 runIdle(() => {
     loadLandingFeature('patientTracking')
         .catch(error => reportOptionalFeatureFailure('patientTracking', error));

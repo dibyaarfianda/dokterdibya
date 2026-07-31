@@ -19,6 +19,7 @@ import {
 } from './patient-shell/routes.js';
 import { createPatientSheetController } from './patient-shell/sheet-controller.js';
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
+import { createPatientPwaInstallController } from './patient-shell/pwa-install-controller.js';
 
 (function initPatientMenuShell() {
         const CORNER_NAME_KEY = 'patient_my_corner_name';
@@ -44,9 +45,6 @@ import { createMyCornerController } from './patient-shell/features/my-corner-con
         };
         let homeBackGuardInstalled = false;
         let homeBackExitConfirmed = false;
-        let patientDeferredInstallPrompt = null;
-        let patientInstallPromptAutoShown = false;
-        const PATIENT_INSTALL_DISMISS_KEY = 'sisiwanita_portal_pwa_install_dismissed';
 
         const guestSession = createGuestSession({ clearPatientAuth });
         const clearGuestMode = guestSession.clear;
@@ -100,113 +98,16 @@ import { createMyCornerController } from './patient-shell/features/my-corner-con
         const applyMyCorner = myCornerController.apply;
         const openMyCorner = myCornerController.open;
         const saveMyCorner = myCornerController.save;
-
-        function isStandalonePwaMode() {
-            return window.navigator.standalone === true ||
-                (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-        }
-
-        function isNativeCapacitorApp() {
-            return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
-        }
-
-        function getInstallPlatform() {
-            const ua = navigator.userAgent || '';
-            const isIOS = /iPad|iPhone|iPod/.test(ua) ||
-                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            if (isIOS) return 'ios';
-            if (/Android/i.test(ua)) return 'android';
-            return 'desktop';
-        }
-
-        function isIntakeCompleted(profile) {
-            return !!profile && (profile.intake_completed === true ||
-                profile.intake_completed === 1 ||
-                profile.intake_completed === '1');
-        }
-
-        function canShowPatientInstallPrompt() {
-            if (!currentProfile || currentProfile.is_guest || currentProfile.id === 'DEMO') return false;
-            if (!isIntakeCompleted(currentProfile)) return false;
-            if (!getToken()) return false;
-            if (isGuestMode()) return false;
-            if (isStandalonePwaMode() || isNativeCapacitorApp()) return false;
-            return getInstallPlatform() === 'android' || getInstallPlatform() === 'ios';
-        }
-
-        function configurePatientInstallPrompt(platform) {
-            const prompt = document.getElementById('ios-install-prompt');
-            const title = document.getElementById('pwa-install-title');
-            const subtitle = document.getElementById('pwa-install-subtitle');
-            const action = document.getElementById('pwa-install-action');
-            const note = document.getElementById('pwa-install-note');
-            if (!prompt) return;
-
-            prompt.classList.toggle('is-android', platform === 'android');
-            if (platform === 'android') {
-                if (title) title.innerHTML = '<i class="fa-brands fa-android"></i> Install SISIwanita';
-                if (subtitle) subtitle.textContent = 'Pasang SISIwanita di layar utama Android untuk akses portal lebih cepat.';
-                if (action) action.innerHTML = '<i class="fa-solid fa-download"></i> Install sekarang';
-                if (note) note.textContent = 'Jika tombol belum memunculkan prompt, buka menu Chrome lalu pilih "Install app".';
-                return;
-            }
-
-            if (title) title.innerHTML = '<i class="fa-brands fa-apple"></i> Install SISIwanita';
-            if (subtitle) subtitle.textContent = 'Simpan SISIwanita ke Home Screen iPhone/iPad setelah login portal.';
-            if (note) note.textContent = 'Setelah di-install, buka dari Home Screen untuk pengalaman terbaik.';
-        }
-
-        function showPatientInstallPrompt(platform) {
-            if (!canShowPatientInstallPrompt()) return;
-            const prompt = document.getElementById('ios-install-prompt');
-            const overlay = document.getElementById('ios-install-overlay');
-            if (!prompt || !overlay) return;
-
-            configurePatientInstallPrompt(platform || getInstallPlatform());
-            overlay.classList.add('active');
-            prompt.classList.add('active');
-            requestAnimationFrame(() => {
-                prompt.style.transform = 'translateY(0)';
-            });
-        }
-
-        function autoShowPatientInstallPrompt() {
-            if (patientInstallPromptAutoShown) return;
-            if (sessionStorage.getItem(PATIENT_INSTALL_DISMISS_KEY) === 'true') return;
-            if (!canShowPatientInstallPrompt()) return;
-
-            patientInstallPromptAutoShown = true;
-            setTimeout(() => showPatientInstallPrompt(getInstallPlatform()), 900);
-        }
-
-        function dismissPatientInstallPrompt() {
-            const prompt = document.getElementById('ios-install-prompt');
-            const overlay = document.getElementById('ios-install-overlay');
-            if (!prompt || !overlay) return;
-
-            prompt.classList.remove('active', 'is-android');
-            overlay.classList.remove('active');
-            sessionStorage.setItem(PATIENT_INSTALL_DISMISS_KEY, 'true');
-        }
-
-        function installPatientPWA() {
-            if (!canShowPatientInstallPrompt()) return;
-            if (patientDeferredInstallPrompt) {
-                patientDeferredInstallPrompt.prompt();
-                patientDeferredInstallPrompt.userChoice.then(() => {
-                    patientDeferredInstallPrompt = null;
-                    sessionStorage.setItem(PATIENT_INSTALL_DISMISS_KEY, 'true');
-                    dismissPatientInstallPrompt();
-                });
-                return;
-            }
-
-            if (/Android/i.test(navigator.userAgent || '')) {
-                alert('Untuk memasang SISIwanita, buka menu Chrome lalu pilih "Install app".');
-                return;
-            }
-            alert('Buka menu Share lalu pilih "Add to Home Screen" untuk memasang SISIwanita.');
-        }
+        const patientPwaInstall = createPatientPwaInstallController({
+            getProfile: () => currentProfile || getStoredProfile(),
+            getToken,
+            isGuestMode
+        });
+        const autoShowPatientInstallPrompt = patientPwaInstall.autoShow;
+        const dismissPatientInstallPrompt = patientPwaInstall.dismiss;
+        const installPatientPWA = patientPwaInstall.install;
+        const showPatientInstallPrompt = patientPwaInstall.show;
+        patientPwaInstall.init();
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -3298,7 +3199,7 @@ import { createMyCornerController } from './patient-shell/features/my-corner-con
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260731stage2b1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2c1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
@@ -3556,18 +3457,6 @@ import { createMyCornerController } from './patient-shell/features/my-corner-con
 
         if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
         window.scrollTo(0, 0);
-
-        window.addEventListener('beforeinstallprompt', function(event) {
-            event.preventDefault();
-            patientDeferredInstallPrompt = event;
-            autoShowPatientInstallPrompt();
-        });
-
-        window.addEventListener('appinstalled', function() {
-            patientDeferredInstallPrompt = null;
-            sessionStorage.setItem(PATIENT_INSTALL_DISMISS_KEY, 'true');
-            dismissPatientInstallPrompt();
-        });
 
         bindPatientLayoutLifecycle({
             init,
