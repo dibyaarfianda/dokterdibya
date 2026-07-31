@@ -5,7 +5,8 @@ const featureLoaders = {
     patientTracking: () => import('../../js/patient-tracker.js'),
     appUpdater: () => import('../app-updater.js'),
     promoPreview: () => import('./promo-preview.js'),
-    installPrompt: () => import('./install-prompt.js')
+    installPrompt: () => import('./install-prompt.js'),
+    navigationInteractions: () => import('./navigation-interactions.js')
 };
 
 export async function loadLandingFeature(name) {

@@ -19,13 +19,12 @@ import {
 } from './patient-shell/routes.js';
 import { createPatientSheetController } from './patient-shell/sheet-controller.js';
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
+import { createBugReportController } from './patient-shell/features/bug-report-controller.js';
 import { createPatientPwaInstallController } from './patient-shell/pwa-install-controller.js';
 
 (function initPatientMenuShell() {
         const CORNER_NAME_KEY = 'patient_my_corner_name';
         const TAP_SOUND_KEY = 'patient_tap_sound_enabled';
-        const BUG_REPORT_MAX_LENGTH = 1500;
-        const BUG_REPORT_API_MAX_LENGTH = 2000;
         let currentProfile = null;
         let homeInfoItems = [];
         let homeAnnouncementDetailsById = {};
@@ -108,6 +107,19 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
         const installPatientPWA = patientPwaInstall.install;
         const showPatientInstallPrompt = patientPwaInstall.show;
         patientPwaInstall.init();
+        const bugReportController = createBugReportController({
+            getProfile: () => currentProfile || getStoredProfile(),
+            getToken,
+            requireRealPatient,
+            stopEvent: stopTopbarEvent,
+            openModal,
+            closeAllModals,
+            showToast
+        });
+        const openBugReportModal = bugReportController.open;
+        const closeBugReportModal = bugReportController.close;
+        const updateBugReportCount = bugReportController.updateCount;
+        const submitBugReport = bugReportController.submit;
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -1647,109 +1659,6 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
             }
         };
 
-        function openBugReportModal(event) {
-            stopTopbarEvent(event);
-            if (!requireRealPatient('Laporan bug memakai konteks akun pasien agar tim bisa menindaklanjuti dengan tepat.', event)) return;
-            const textarea = document.getElementById('bug-report-message');
-            if (textarea) textarea.value = '';
-            updateBugReportCount();
-            setBugReportSubmitting(false);
-            openModal('bug-report-modal');
-            setTimeout(function() {
-                if (textarea) textarea.focus();
-            }, 120);
-        }
-
-        function closeBugReportModal(event) {
-            stopTopbarEvent(event);
-            closeAllModals();
-        }
-
-        function updateBugReportCount() {
-            const textarea = document.getElementById('bug-report-message');
-            const counter = document.getElementById('bug-report-count');
-            if (!textarea || !counter) return;
-            counter.textContent = String(textarea.value.length);
-        }
-
-        function setBugReportSubmitting(isSubmitting) {
-            const textarea = document.getElementById('bug-report-message');
-            const button = document.getElementById('bug-report-submit-btn');
-            if (textarea) textarea.disabled = isSubmitting;
-            if (button) {
-                button.disabled = isSubmitting;
-                button.innerHTML = isSubmitting
-                    ? '<i class="fa-solid fa-spinner fa-spin"></i> Mengirim...'
-                    : '<i class="fa-solid fa-paper-plane"></i> Kirim';
-            }
-        }
-
-        function buildBugReportMessage(message) {
-            const profile = currentProfile || getStoredProfile();
-            const context = [
-                '',
-                '--- Konteks otomatis ---',
-                'Halaman: ' + window.location.href,
-                'Viewport: ' + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0),
-                'Pasien: ' + (profile.fullname || profile.full_name || profile.name || '-'),
-                'Patient ID: ' + (profile.id || profile.patient_id || profile.medicalRecordId || '-'),
-                'User agent: ' + (navigator.userAgent || '-')
-            ].join('\n');
-            const combined = message + context;
-            if (combined.length <= BUG_REPORT_API_MAX_LENGTH) return combined;
-            return combined.slice(0, BUG_REPORT_API_MAX_LENGTH - 14) + '\n[terpotong]';
-        }
-
-        async function submitBugReport(event) {
-            stopTopbarEvent(event);
-            if (!requireRealPatient('Mode demo tidak dapat mengirim laporan bug.', event)) return;
-            const textarea = document.getElementById('bug-report-message');
-            const message = (textarea && textarea.value ? textarea.value : '').trim();
-            if (!message) {
-                showToast('Tuliskan detail bug/error terlebih dahulu');
-                if (textarea) textarea.focus();
-                return;
-            }
-            if (message.length > BUG_REPORT_MAX_LENGTH) {
-                showToast('Laporan maksimal ' + BUG_REPORT_MAX_LENGTH + ' karakter');
-                return;
-            }
-            const token = getToken();
-            if (!token) {
-                showToast('Silakan login ulang untuk mengirim laporan');
-                setTimeout(function() { window.location.href = '/patient-login.html'; }, 1000);
-                return;
-            }
-
-            setBugReportSubmitting(true);
-            try {
-                const response = await fetch('/api/patient-feedback', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + token,
-                        'Cache-Control': 'no-cache'
-                    },
-                    body: JSON.stringify({
-                        category: 'bug',
-                        message: buildBugReportMessage(message),
-                        rating: null,
-                        is_anonymous: false
-                    })
-                });
-                const data = await response.json().catch(function() { return {}; });
-                if (!response.ok || !data.success) throw new Error(data.message || 'Gagal mengirim laporan');
-                if (textarea) textarea.value = '';
-                updateBugReportCount();
-                closeAllModals();
-                showToast(data.message || 'Laporan bug/error berhasil dikirim');
-            } catch (error) {
-                showToast(error.message || 'Koneksi bermasalah, coba lagi');
-            } finally {
-                setBugReportSubmitting(false);
-            }
-        }
-
         function todayLabel() {
             const todayValue = document.getElementById('today-value');
             if (todayValue) {
@@ -3199,7 +3108,7 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2c1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2d1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});

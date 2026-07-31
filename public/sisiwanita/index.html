@@ -18,8 +18,8 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260801stage2c1">
-    <script src="/scripts/patient-session.js?v=20260801stage2c1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260801stage2d1">
+    <script src="/scripts/patient-session.js?v=20260801stage2d1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -5922,7 +5922,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20260801stage2c1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20260801stage2d1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -8235,74 +8235,10 @@
             updateHeroBgFade();
         })();
 
-        // ==================== PULL TO REFRESH ====================
-        let touchStartY = 0;
-        let touchEndY = 0;
-        const pullIndicator = document.getElementById('pullIndicator');
-
-        document.addEventListener('touchstart', function(e) {
-            if (window.scrollY === 0) {
-                touchStartY = e.touches[0].clientY;
-            }
-        }, { passive: true });
-
-        document.addEventListener('touchmove', function(e) {
-            if (window.scrollY === 0 && touchStartY > 0) {
-                touchEndY = e.touches[0].clientY;
-                const pullDistance = touchEndY - touchStartY;
-                if (pullDistance > 80) {
-                    pullIndicator.classList.add('visible');
-                } else {
-                    pullIndicator.classList.remove('visible');
-                }
-            }
-        }, { passive: true });
-
-        document.addEventListener('touchend', function(e) {
-            if (window.scrollY === 0 && touchStartY > 0) {
-                const pullDistance = touchEndY - touchStartY;
-                if (pullDistance > 80) {
-                    pullIndicator.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memuat...';
-                    setTimeout(function() {
-                        window.location.reload();
-                    }, 300);
-                }
-            }
-            touchStartY = 0;
-            touchEndY = 0;
-            pullIndicator.classList.remove('visible');
-        }, { passive: true });
-
     </script>
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20260801stage2c1"></script>
-    <script>
-        document.addEventListener('click', function(e) {
-            var link = e.target && e.target.closest ? e.target.closest('.doc-cta-link') : null;
-            if (!link) return;
-
-            if (link.dataset && link.dataset.promoSrc) return;
-
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-            if (link.target === '_blank') return;
-
-            var href = link.getAttribute('href');
-            if (!href || href.charAt(0) === '#' || href.indexOf('javascript:') === 0) return;
-
-            e.preventDefault();
-            e.stopImmediatePropagation();
-            if (link.dataset.animating === '1') return;
-
-            link.dataset.animating = '1';
-            link.classList.add('is-animating');
-            link.style.pointerEvents = 'none';
-
-            setTimeout(function() {
-                window.location.href = link.href || href;
-            }, 760);
-        }, true);
-    </script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20260801stage2d1"></script>
 </body>
 </html>

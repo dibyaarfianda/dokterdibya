@@ -8,6 +8,7 @@ const fragmentPages = [
     ['profile-settings', 'profile-settings-page', 'nav-profile-settings', 'Profile Settings'],
     ['kelola-obat', 'kelola-obat-page', 'management-nav-kelola-obat', 'Kelola Obat'],
     ['activity-log', 'activity-log-page', 'nav-activity-log', 'Activity Log'],
+    ['staff-activity', 'staff-activity-page', 'nav-staff-activity', 'Aktivitas Staff'],
     ['patient-activity', 'patient-activity-page', 'nav-patient-activity', 'Aktivitas Pasien'],
     ['support-chat', 'content-support-chat-page', 'nav-support-chat', 'Chat Bantuan'],
     ['troubleshooting', 'troubleshooting-page', 'nav-troubleshooting', 'Troubleshooting'],

@@ -45,6 +45,9 @@ async function bootstrapStaffShell() {
 
     installLazyFeatureShim('showTanyaDokterPage', 'tanyaDokter', 'tanya-dokter');
     installLazyFeatureShim('loadDashboardNewPatients', 'dashboardNewPatients');
+    installLazyFeatureShim('showStaffActivityPage', 'staffActivity', 'staff-activity');
+    installLazyFeatureShim('loadStaffActivityLogs', 'staffActivity', 'staff-activity');
+    installLazyFeatureShim('loadStaffActivityFilters', 'staffActivity', 'staff-activity');
     installLazyFeatureShim('showTroubleshootingPage', 'troubleshooting', 'troubleshooting');
     installLazyFeatureShim('loadTroubleshootingReports', 'troubleshooting', 'troubleshooting');
     installLazyFeatureShim('viewPatientDetail', 'patientSearchDetail');

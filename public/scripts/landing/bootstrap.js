@@ -69,6 +69,10 @@ loadLandingFeature('installPrompt')
     .then(module => module.init?.())
     .catch(error => reportOptionalFeatureFailure('installPrompt', error));
 
+loadLandingFeature('navigationInteractions')
+    .then(module => module.init?.())
+    .catch(error => reportOptionalFeatureFailure('navigationInteractions', error));
+
 runIdle(() => {
     loadLandingFeature('patientTracking')
         .catch(error => reportOptionalFeatureFailure('patientTracking', error));

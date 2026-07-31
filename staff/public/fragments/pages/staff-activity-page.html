@@ -1,0 +1,113 @@
+<div class="row">
+    <div class="col-12">
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title"><i class="fas fa-user-clock mr-2"></i>Log Aktivitas Staff</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-tool" data-action="refresh-staff-activity" aria-label="Muat ulang aktivitas staff">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3" id="staff-activity-summary">
+                    <div class="col-md-3">
+                        <div class="info-box bg-info">
+                            <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Aktivitas (7 hari)</span>
+                                <span class="info-box-number" id="staff-activity-total">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-box bg-success">
+                            <span class="info-box-icon"><i class="fas fa-users"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Staff Aktif</span>
+                                <span class="info-box-number" id="staff-activity-users">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card card-outline card-warning mb-0">
+                            <div class="card-header compact">
+                                <h5 class="card-title text-sm">Staff Teraktif</h5>
+                            </div>
+                            <div class="card-body py-2" id="staff-activity-top-users">
+                                <span class="text-muted">Memuat...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="form-group mb-0">
+                            <label class="small text-muted">Filter Staff</label>
+                            <select id="staff-activity-user-filter" class="form-control form-control-sm">
+                                <option value="">Semua Staff</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mb-0">
+                            <label class="small text-muted">Filter Aksi</label>
+                            <select id="staff-activity-action-filter" class="form-control form-control-sm">
+                                <option value="">Semua Aksi</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-0">
+                            <label class="small text-muted">Dari</label>
+                            <input type="date" id="staff-activity-start-date" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-0">
+                            <label class="small text-muted">Sampai</label>
+                            <input type="date" id="staff-activity-end-date" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group mb-0">
+                            <label class="small text-muted">&nbsp;</label>
+                            <button type="button" class="btn btn-info btn-sm btn-block" data-action="refresh-staff-activity">
+                                <i class="fas fa-filter"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width:160px">Waktu</th>
+                                <th style="width:150px">Staff</th>
+                                <th style="width:150px">Aksi</th>
+                                <th>Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staff-activity-body">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                    <p class="mb-0">Memuat data...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div class="text-muted small" id="staff-activity-pagination-info">Menampilkan 0 dari 0</div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="staff-activity-pagination"></ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,4 +1,4 @@
-﻿// Core AdminLTE bootstrap for dibyaklinik
+// Core AdminLTE bootstrap for dibyaklinik
 // This module ports essential UX from index-asli.html: clock, page switching, and basic bindings.
 
 import { auth, onAuthStateChanged } from './vps-auth-v2.js';
@@ -2745,126 +2745,6 @@ function showPatientBlockListPage() {
     });
 }
 
-function showStaffActivityPage() {
-    hideAllPages();
-    pages.staffActivity?.classList.remove('d-none');
-    setTitleAndActive('Aktivitas Staff', 'nav-staff-activity', 'staff-activity');
-    loadStaffActivityLogs();
-    loadStaffActivityFilters();
-}
-
-async function loadStaffActivityLogs() {
-    const token = getAuthToken();
-    const tbody = document.getElementById('staff-activity-body');
-    if (!tbody) return;
-
-    // Get filter values
-    const userId = document.getElementById('staff-activity-user-filter')?.value || '';
-    const action = document.getElementById('staff-activity-action-filter')?.value || '';
-    const startDate = document.getElementById('staff-activity-start-date')?.value || '';
-    const endDate = document.getElementById('staff-activity-end-date')?.value || '';
-
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>`;
-
-    try {
-        // Load summary
-        const summaryRes = await fetch('/api/logs/summary?days=7', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const summaryData = await summaryRes.json();
-
-        if (summaryData.success) {
-            document.getElementById('staff-activity-total').textContent = summaryData.data.total_activities || 0;
-            document.getElementById('staff-activity-users').textContent = summaryData.data.unique_users || 0;
-
-            // Render top users
-            const topUsersEl = document.getElementById('staff-activity-top-users');
-            if (topUsersEl && summaryData.data.most_active_users?.length > 0) {
-                topUsersEl.innerHTML = summaryData.data.most_active_users.slice(0, 5)
-                    .map(u => `<span class="badge badge-secondary mr-1">${u.user_name} (${u.action_count})</span>`)
-                    .join('');
-            } else {
-                topUsersEl.innerHTML = '<span class="text-muted">Belum ada aktivitas</span>';
-            }
-        }
-
-        // Build query params
-        const params = new URLSearchParams();
-        if (userId) params.append('user_id', userId);
-        if (action) params.append('action', action);
-        if (startDate) params.append('start_date', startDate);
-        if (endDate) params.append('end_date', endDate);
-        params.append('limit', '100');
-
-        // Load logs
-        const logsRes = await fetch(`/api/logs?${params.toString()}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const logsData = await logsRes.json();
-
-        if (logsData.success && logsData.data?.length > 0) {
-            tbody.innerHTML = logsData.data.map(log => {
-                const timestamp = new Date(log.timestamp).toLocaleString('id-ID', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
-                });
-                return `
-                    <tr>
-                        <td><small>${timestamp}</small></td>
-                        <td><span class="badge badge-info">${log.user_name}</span></td>
-                        <td><span class="badge badge-light">${log.action}</span></td>
-                        <td><small class="text-muted">${log.details || '-'}</small></td>
-                    </tr>
-                `;
-            }).join('');
-
-            document.getElementById('staff-activity-pagination-info').textContent =
-                `Menampilkan ${logsData.data.length} aktivitas`;
-        } else {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">
-                <i class="fas fa-inbox fa-2x mb-2"></i><p>Belum ada aktivitas tercatat</p></td></tr>`;
-        }
-    } catch (error) {
-        console.error('Error loading staff activity:', error);
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">
-            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p>Gagal memuat data</p></td></tr>`;
-    }
-}
-
-async function loadStaffActivityFilters() {
-    const token = getAuthToken();
-
-    try {
-        // Load actions for filter
-        const actionsRes = await fetch('/api/logs/actions', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const actionsData = await actionsRes.json();
-
-        const actionSelect = document.getElementById('staff-activity-action-filter');
-        if (actionSelect && actionsData.success && actionsData.data?.length > 0) {
-            actionSelect.innerHTML = '<option value="">Semua Aksi</option>' +
-                actionsData.data.map(a => `<option value="${a}">${a}</option>`).join('');
-        }
-
-        // Load users for filter (from summary endpoint)
-        const summaryRes = await fetch('/api/logs/summary?days=30', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const summaryData = await summaryRes.json();
-
-        const userSelect = document.getElementById('staff-activity-user-filter');
-        if (userSelect && summaryData.success && summaryData.data.most_active_users?.length > 0) {
-            userSelect.innerHTML = '<option value="">Semua Staff</option>' +
-                summaryData.data.most_active_users.map(u =>
-                    `<option value="${u.user_id}">${u.user_name}</option>`
-                ).join('');
-        }
-    } catch (error) {
-        console.error('Error loading filters:', error);
-    }
-}
-
 async function showFinanceAnalysisPage() {
     await ensureRegisteredPage('finance-analysis');
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('financeAnalysis');
@@ -4301,7 +4181,7 @@ function restoreLastPage() {
             'nav-medify-sync':                      () => showMedifySyncPage(),
             'management-nav-kelola-roles':          () => showKelolaRolesPage(),
             'management-nav-block-list':            () => showPatientBlockListPage(),
-            'nav-staff-activity':                   () => showStaffActivityPage(),
+            'nav-staff-activity':                   () => window.showStaffActivityPage?.(),
             'nav-staff-points':                     () => showStaffPointsPage(),
             'nav-staff-briefing':                   () => showStaffBriefingPage(),
             'nav-staff-payroll':                    () => showStaffPayrollPage(),
@@ -5554,8 +5434,6 @@ window.saveEstimasiBiayaPortalConfig = saveEstimasiBiayaPortalConfig;
 window.reloadEstimasiBiayaConfig = reloadEstimasiBiayaConfig;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showKelolaRolesPage = showKelolaRolesPage;
-window.showStaffActivityPage = showStaffActivityPage;
-window.loadStaffActivityLogs = loadStaffActivityLogs;
 window.showBookingSettingsPage = showBookingSettingsPage;
 window.showBirthClassPage = showBirthClassPage;
 window.showImportFieldsPage = showImportFieldsPage;

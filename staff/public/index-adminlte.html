@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v364';
+        window.STAFF_CACHE_VERSION = 'v365';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v364">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v364">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v364">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v364">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v365">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v365">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v365">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v365">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v364">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v365">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v364">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v365">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -45,7 +45,7 @@
         }
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v364"></script>
+    <script src="scripts/error-handler.js?v=v365"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -60,10 +60,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v364">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v365">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v364">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v365">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -2887,125 +2887,7 @@
                 <div id="activity-log-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/activity-log-page.html"></div>
 
                 <!-- Staff Activity Page -->
-                <div id="staff-activity-page" class="d-none">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card card-primary">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-user-clock mr-2"></i>Log Aktivitas Staff</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-tool" onclick="loadStaffActivityLogs()">
-                                            <i class="fas fa-sync-alt"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <!-- Summary Cards -->
-                                    <div class="row mb-3" id="staff-activity-summary">
-                                        <div class="col-md-3">
-                                            <div class="info-box bg-info">
-                                                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
-                                                <div class="info-box-content">
-                                                    <span class="info-box-text">Total Aktivitas (7 hari)</span>
-                                                    <span class="info-box-number" id="staff-activity-total">0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="info-box bg-success">
-                                                <span class="info-box-icon"><i class="fas fa-users"></i></span>
-                                                <div class="info-box-content">
-                                                    <span class="info-box-text">Staff Aktif</span>
-                                                    <span class="info-box-number" id="staff-activity-users">0</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="card card-outline card-warning mb-0">
-                                                <div class="card-header compact">
-                                                    <h5 class="card-title text-sm">Staff Teraktif</h5>
-                                                </div>
-                                                <div class="card-body py-2" id="staff-activity-top-users">
-                                                    <span class="text-muted">Memuat...</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Filters -->
-                                    <div class="row mb-3">
-                                        <div class="col-md-3">
-                                            <div class="form-group mb-0">
-                                                <label class="small text-muted">Filter Staff</label>
-                                                <select id="staff-activity-user-filter" class="form-control form-control-sm">
-                                                    <option value="">Semua Staff</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="form-group mb-0">
-                                                <label class="small text-muted">Filter Aksi</label>
-                                                <select id="staff-activity-action-filter" class="form-control form-control-sm">
-                                                    <option value="">Semua Aksi</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-group mb-0">
-                                                <label class="small text-muted">Dari</label>
-                                                <input type="date" id="staff-activity-start-date" class="form-control form-control-sm">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-group mb-0">
-                                                <label class="small text-muted">Sampai</label>
-                                                <input type="date" id="staff-activity-end-date" class="form-control form-control-sm">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="form-group mb-0">
-                                                <label class="small text-muted">&nbsp;</label>
-                                                <button type="button" class="btn btn-info btn-sm btn-block" onclick="loadStaffActivityLogs()">
-                                                    <i class="fas fa-filter"></i> Filter
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Activity Table -->
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-hover table-striped">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th style="width:160px">Waktu</th>
-                                                    <th style="width:150px">Staff</th>
-                                                    <th style="width:150px">Aksi</th>
-                                                    <th>Detail</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="staff-activity-body">
-                                                <tr>
-                                                    <td colspan="4" class="text-center text-muted py-4">
-                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
-                                                        <p class="mb-0">Memuat data...</p>
-                                                    </td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-
-                                    <!-- Pagination -->
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <div class="text-muted small" id="staff-activity-pagination-info">Menampilkan 0 dari 0</div>
-                                        <nav>
-                                            <ul class="pagination pagination-sm mb-0" id="staff-activity-pagination"></ul>
-                                        </nav>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div id="staff-activity-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/staff-activity-page.html"></div>
 
                 <!-- PATIENT ACTIVITY PAGE -->
                 <div id="patient-activity-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/patient-activity-page.html"></div>
@@ -3743,7 +3625,7 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v364"></script>
+    <script defer src="scripts/shell/actions.js?v=v365"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3823,8 +3705,8 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v364" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v364" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v365" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v365" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3836,7 +3718,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v364"></script>
+<script defer src="scripts/rum.js?v=v365"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4061,7 +3943,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v364"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v365"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4322,7 +4204,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v364"></script>
+ <script src="scripts/mobile-helper.js?v=v365"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4334,8 +4216,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v364"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v364"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v365"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v365"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->
