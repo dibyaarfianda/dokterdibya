@@ -33,11 +33,11 @@ describe('patient menu shell refactor phase 1', () => {
         expect(page).not.toContain('id="home-notif-btn" onclick=');
         expect(page).not.toContain('id="my-corner-action-btn" onclick=');
 
-        expect(shell).toContain('const shellActionHandlers = {');
+        expect(shell).toContain('const shellActionHandlers = Object.assign({}, modalActionHandlers, {');
         expect(shell).toContain("'open-settings'");
         expect(shell).toContain("'open-profile'");
         expect(shell).toContain("'open-sheet'");
         expect(shell).toContain("'scroll-top-home'");
-        expect(shell).toContain("document.addEventListener('click'");
+        expect(shell).toContain('bindPatientNavigation(shellActionHandlers);');
     });
 });

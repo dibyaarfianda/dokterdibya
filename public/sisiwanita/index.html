@@ -4754,14 +4754,14 @@
             </a>
             <div class="top-actions" hidden>
                 <!-- Notification Bell -->
-                <button class="circle-btn" id="notification-bell" onclick="navigateTo('notifikasi')" aria-label="Notifikasi">
+                <button class="circle-btn" id="notification-bell" data-landing-call="navigateTo" data-landing-args='["notifikasi"]' aria-label="Notifikasi">
                     <i class="fa-solid fa-bell"></i>
                     <span class="notif-badge" id="notif-badge">0</span>
                     <span class="notif-dot" id="notif-dot"></span>
                 </button>
                 <!-- User Avatar with Dropdown -->
                 <div style="position: relative;">
-                    <div class="avatar" id="user-avatar" onclick="toggleDropdown(event)" aria-label="Profil">
+                    <div class="avatar" id="user-avatar" data-landing-call="toggleDropdown" aria-label="Profil">
                         <img id="user-avatar-img" alt="Foto profil" hidden>
                         <span id="user-avatar-initials">--</span>
                         <span class="vip-badge" id="vip-badge">VIP</span>
@@ -4779,7 +4779,7 @@
                             <i class="fa-solid fa-comment-dots"></i>
                             <span>Saran & Masukan</span>
                         </a>
-                        <a href="#" onclick="logout(event)" class="logout">
+                        <a href="#" data-landing-call="logout" class="logout">
                             <i class="fa-solid fa-right-from-bracket"></i>
                             <span>Log out</span>
                         </a>
@@ -4856,7 +4856,7 @@
             <div class="welcome-pinned" id="welcome-pinned">
                 <div class="welcome-pinned-inner">
                     <div class="welcome-window">
-                        <button class="welcome-skip" id="welcome-skip" onclick="skipWelcomeWindow()" aria-label="Lewati">
+                        <button class="welcome-skip" id="welcome-skip" data-landing-call="skipWelcomeWindow" aria-label="Lewati">
                             <i class="fa-solid fa-chevron-down"></i>
                         </button>
                         <div class="welcome-window-left">
@@ -4882,7 +4882,7 @@
 
             <!-- Idul Fitri Greeting Card -->
             <div class="eid-card" id="eid-greeting-card" style="display: none;">
-                <button class="eid-close" onclick="dismissEidGreeting()">&times;</button>
+                <button class="eid-close" data-landing-call="dismissEidGreeting">&times;</button>
                 <div class="eid-inner">
                     <!-- Decorative elements -->
                     <span class="eid-stars" style="top:15px;left:20px;font-size:8px;">&#9733;</span>
@@ -4945,7 +4945,7 @@
                 </div>
 
                 <div class="birth-content">
-                    <div class="birth-photo" id="birth-photo-container" onclick="openBirthPhotoModal()">
+                    <div class="birth-photo" id="birth-photo-container" data-landing-call="openBirthPhotoModal">
                         <img id="birth-photo" alt="Foto Kelahiran" hidden>
                     </div>
                     <div class="birth-details">
@@ -8572,28 +8572,7 @@
 
     </div><!-- End app-wrapper -->
 
-    <!-- App Updater - check for updates on mobile app -->
-    <script type="module">
-        import { checkForUpdates, getAppVersion } from '/scripts/app-updater.js';
-
-        // Check for updates after page loads (only in Capacitor)
-        window.addEventListener('load', function() {
-            setTimeout(() => {
-                checkForUpdates();
-            }, 2000);
-        });
-
-        // Expose for manual check
-        window.checkForAppUpdates = function() {
-            import('/scripts/app-updater.js').then(module => {
-                module.manualCheckForUpdates();
-            });
-        };
-
-        window.getAppVersion = getAppVersion;
-    </script>
-    <script src="/js/push-subscribe.js?v=20260322"></script>
-    <script src="/js/patient-tracker.js?v=20260322"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20260731stage2a"></script>
     <script>
         document.addEventListener('click', function(e) {
             var link = e.target && e.target.closest ? e.target.closest('.doc-cta-link') : null;

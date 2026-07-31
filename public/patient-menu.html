@@ -3120,7 +3120,7 @@
                         <h3 id="booking-status-title">Booking Aktif</h3>
                         <p id="booking-status-desc">-</p>
                     </div>
-                    <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" onclick="cancelActiveBooking(event)">Batalkan</button>
+                    <button type="button" class="cancel-btn soundable" id="booking-cancel-btn" data-shell-action="cancel-active-booking">Batalkan</button>
                 </div>
             </section>
 
@@ -3253,7 +3253,7 @@
         <p id="booking-cancel-error" style="display:none;color:#b91c1c;font-size:12px;margin-top:8px;"></p>
         <div class="modal-actions">
             <button class="ghost-action soundable" id="booking-cancel-close-btn" data-shell-action="close-cancel-booking-modal">Batal</button>
-            <button class="primary-action soundable" id="booking-cancel-submit-btn" onclick="submitCancelBooking()">Ya, Batalkan</button>
+            <button class="primary-action soundable" id="booking-cancel-submit-btn" data-shell-action="submit-cancel-booking">Ya, Batalkan</button>
         </div>
     </section>
 
@@ -3279,7 +3279,7 @@
         <p class="exit-modal-copy">Tuliskan kendala saat memakai portal, misalnya halaman, tombol yang ditekan, pesan error, atau hal yang tidak sesuai.</p>
         <div class="field">
             <label for="bug-report-message">Detail laporan</label>
-            <textarea id="bug-report-message" maxlength="1500" oninput="updateBugReportCount()" placeholder="Contoh: Saat membuka Album USG, tombol unduh tidak merespons setelah saya tekan."></textarea>
+            <textarea id="bug-report-message" maxlength="1500" data-shell-action="update-bug-report-count" placeholder="Contoh: Saat membuka Album USG, tombol unduh tidak merespons setelah saya tekan."></textarea>
             <div class="field-meta">
                 <span>Laporan masuk ke tim SISIwanita.</span>
                 <span><span id="bug-report-count">0</span>/1500</span>
@@ -3339,7 +3339,7 @@
             </div>
             <div class="birth-date-wheel-actions">
                 <button type="button" class="ghost-action soundable" data-shell-action="close-birth-date-wheel">Batal</button>
-                <button type="button" class="primary-action soundable" onclick="applyBirthDateWheelPicker(event)"><i class="fa-solid fa-check"></i> Pilih Tanggal</button>
+                <button type="button" class="primary-action soundable" data-shell-action="apply-birth-date-wheel"><i class="fa-solid fa-check"></i> Pilih Tanggal</button>
             </div>
         </section>
     </div>
@@ -3354,10 +3354,9 @@
         </div>
     </nav>
 
-    <input type="file" id="birth-photo-input" class="hidden-file-input" accept="image/*" onchange="handleBirthPhotoUpload(event)">
+    <input type="file" id="birth-photo-input" class="hidden-file-input" accept="image/*" data-shell-action="birth-photo-upload">
     <input type="file" id="profile-photo-camera-input" class="hidden-file-input" accept="image/*">
     <input type="file" id="profile-photo-input" class="hidden-file-input" accept="image/*">
-    <script src="/scripts/profile-photo-cropper.js?v=20260601crop1"></script>
     <div class="toast" id="toast"></div>
 
     <div class="ios-install-prompt-overlay" id="ios-install-overlay" data-shell-action="dismiss-patient-install-prompt"></div>

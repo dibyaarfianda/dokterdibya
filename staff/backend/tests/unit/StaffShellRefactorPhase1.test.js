@@ -92,8 +92,8 @@ describe('staff shell refactor phase 1', () => {
         const patientTools = readNormalizedFile('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
         const kantorSaya = readNormalizedFile('staff', 'public', 'scripts', 'kantor-saya.js');
 
-        expect(html).toMatch(/id="nav-patient-activity"[\s\S]*?onclick="showPatientActivityPage\(\); return false;"/);
-        expect(html).toMatch(/id="nav-guest-activity"[\s\S]*?onclick="showGuestActivityPage\(\); return false;"/);
+        expect(html).toMatch(/id="nav-patient-activity"[\s\S]*?data-staff-call="showPatientActivityPage"/);
+        expect(html).toMatch(/id="nav-guest-activity"[\s\S]*?data-staff-call="showGuestActivityPage"/);
         expect(patientTools).toContain('window.showPatientActivityPage = async function()');
         expect(patientTools).toContain('window.showGuestActivityPage = function()');
         expect(patientTools).toContain('window.loadPatientActivity = async function(page = 0)');

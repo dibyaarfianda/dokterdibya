@@ -380,25 +380,25 @@
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-rsia-melinda">
-                        <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); markBadgeRead('rsia_melinda'); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rsia_melinda"]' data-staff-after="markBadgeRead" data-staff-after-args='["rsia_melinda"]'>
                             <i class="nav-icon fas fa-calendar-check text-danger"></i>
                             <p>RSIA Melinda <span class="badge badge-warning right d-none" id="badge-rsia-melinda">0</span></p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-rsud-gambiran">
-                        <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); markBadgeRead('rsud_gambiran'); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rsud_gambiran"]' data-staff-after="markBadgeRead" data-staff-after-args='["rsud_gambiran"]'>
                             <i class="nav-icon fas fa-calendar-check text-info"></i>
                             <p>RSUD Gambiran <span class="badge badge-warning right d-none" id="badge-rsud-gambiran">0</span></p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-rs-bhayangkara">
-                        <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rs_bhayangkara'); markBadgeRead('rs_bhayangkara'); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rs_bhayangkara"]' data-staff-after="markBadgeRead" data-staff-after-args='["rs_bhayangkara"]'>
                             <i class="nav-icon fas fa-calendar-check text-success"></i>
                             <p>RS Bhayangkara <span class="badge badge-warning right d-none" id="badge-rs-bhayangkara">0</span></p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-jadwal-booking">
-                        <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showKelolaJadwalPage">
                             <i class="nav-icon fas fa-calendar-alt"></i>
                             <p>Jadwal</p>
                         </a>
@@ -413,19 +413,19 @@
                         </a>
                     </li>
                     <li class="nav-item" id="nav-pasien-baru">
-                        <a href="#" class="nav-link" onclick="showPasienBaruPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showPasienBaruPage">
                             <i class="nav-icon fas fa-user-plus"></i>
                             <p>Pasien Baru</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-perhatian-khusus">
-                        <a href="#" class="nav-link" onclick="showPerhatianKhususPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showPerhatianKhususPage">
                             <i class="nav-icon fas fa-exclamation-circle text-danger"></i>
                             <p>Perhatian Khusus</p>
                         </a>
                     </li>
                     <li class="nav-item" style="display: none !important;" id="nav-record-history">
-                        <a href="#" class="nav-link" onclick="showRecordHistoryPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showRecordHistoryPage">
                             <i class="nav-icon fas fa-notes-medical"></i>
                             <p>Rekam / Riwayat</p>
                         </a>
@@ -439,55 +439,55 @@
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-support-chat">
-                        <a href="#" class="nav-link" onclick="showSupportChatPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showSupportChatPage">
                             <i class="nav-icon fas fa-headset text-success"></i>
                             <p>Chat Bantuan <span class="badge badge-danger right d-none" id="support-chat-badge">0</span></p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-community-chat">
-                        <a href="#" class="nav-link" onclick="showCommunityChatPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showCommunityChatPage">
                             <i class="nav-icon fas fa-comment-dots"></i>
                             <p>Chat Komunitas</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-pengumuman">
-                        <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showKelolaPengumumanPage">
                             <i class="nav-icon fas fa-bullhorn"></i>
                             <p>Pengumuman</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-voting">
-                        <a href="#" class="nav-link" onclick="showVotingPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showVotingPage">
                             <i class="nav-icon fas fa-poll text-warning"></i>
                             <p>Voting Pasien</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-birth-class">
-                        <a href="#" class="nav-link" onclick="showBirthClassPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showBirthClassPage">
                             <i class="nav-icon fas fa-baby-carriage text-info"></i>
                             <p>Kelas Dr. Dibya</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-birth-congrats">
-                        <a href="#" class="nav-link" onclick="showBirthCongratsPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showBirthCongratsPage">
                             <i class="nav-icon fas fa-baby text-pink"></i>
                             <p>Ucapan Kelahiran</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-birth-testimonials">
-                        <a href="#" class="nav-link" onclick="showBirthTestimonialsPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showBirthTestimonialsPage">
                             <i class="nav-icon fas fa-comment-medical text-success"></i>
                             <p>Testimoni Pasien</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-artikel-kesehatan">
-                        <a href="#" class="nav-link" onclick="showArtikelKesehatanPage(); markBadgeRead('artikel'); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showArtikelKesehatanPage" data-staff-after="markBadgeRead" data-staff-after-args='["artikel"]'>
                             <i class="nav-icon fas fa-book-reader"></i>
                             <p>Artikel Kesehatan <span class="badge badge-success right d-none" id="badge-artikel-likes">0</span></p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-ruang-cerita">
-                        <a href="#" class="nav-link" onclick="showRuangCeritaPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showRuangCeritaPage">
                             <i class="nav-icon fas fa-comment-medical text-info"></i>
                             <p>Ruang Cerita</p>
                         </a>
@@ -496,61 +496,61 @@
                     <!-- OPERASIONAL -->
                     <li class="nav-header">OPERASIONAL</li>
                     <li class="nav-item" id="management-nav-kelola-obat">
-                        <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showKelolaObatManagementPage">
                             <i class="nav-icon fas fa-capsules"></i>
                             <p>Obat</p>
                         </a>
                     </li>
                     <li class="nav-item" id="management-nav-kelola-supplier">
-                        <a href="#" class="nav-link" onclick="showKelolaSupplierPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showKelolaSupplierPage">
                             <i class="nav-icon fas fa-truck"></i>
                             <p>Supplier</p>
                         </a>
                     </li>
                     <li class="nav-item" id="management-nav-kelola-tindakan">
-                        <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showKelolaTindakanPage">
                             <i class="nav-icon fas fa-hand-holding-medical"></i>
                             <p>Tindakan</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-penjualan-obat">
-                        <a href="#" class="nav-link" onclick="showPenjualanObatPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showPenjualanObatPage">
                             <i class="nav-icon fas fa-pills"></i>
                             <p>Penjualan Obat</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-estimasi-biaya">
-                        <a href="#" class="nav-link" onclick="showEstimasiBiayaPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showEstimasiBiayaPage">
                             <i class="nav-icon fas fa-calculator"></i>
                             <p>Estimasi Biaya</p>
                         </a>
                     </li>
                     <li class="nav-item d-none" id="nav-invoice-history">
-                        <a href="#" class="nav-link" onclick="showInvoiceHistoryPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showInvoiceHistoryPage">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
                             <p>Invoice / Keuangan</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-finance-analysis">
-                        <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showFinanceAnalysisPage">
                             <i class="nav-icon fas fa-chart-line text-success"></i>
                             <p>Analisa Keuangan</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-staff-payroll">
-                        <a href="#" class="nav-link" onclick="showStaffPayrollPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showStaffPayrollPage">
                             <i class="nav-icon fas fa-money-check-alt text-warning"></i>
                             <p>Gajian</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-staff-briefing">
-                        <a href="#" class="nav-link" onclick="showStaffBriefingPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showStaffBriefingPage">
                             <i class="nav-icon fas fa-clipboard-check text-info"></i>
                             <p>Briefing</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
-                        <a href="#" class="nav-link" onclick="showBulkUploadUSGPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showBulkUploadUSGPage">
                             <i class="nav-icon fas fa-cloud-upload-alt text-primary"></i>
                             <p>Upload USG</p>
                         </a>
@@ -559,31 +559,31 @@
                     <!-- MONITORING -->
                     <li class="nav-header">MONITORING</li>
                     <li class="nav-item dokter-only d-none" id="nav-patient-activity">
-                        <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showPatientActivityPage">
                             <i class="nav-icon fas fa-user-check"></i>
                             <p>Aktivitas Pasien</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-guest-activity">
-                        <a href="#" class="nav-link" onclick="showGuestActivityPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showGuestActivityPage">
                             <i class="nav-icon fas fa-user-secret text-success"></i>
                             <p>Aktivitas Demo</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-staff-activity">
-                        <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showStaffActivityPage">
                             <i class="nav-icon fas fa-user-clock"></i>
                             <p>Aktivitas Staff</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-troubleshooting">
-                        <a href="#" class="nav-link" onclick="showTroubleshootingPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showTroubleshootingPage">
                             <i class="nav-icon fas fa-bug text-danger"></i>
                             <p>Troubleshooting</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="management-nav-block-list">
-                        <a href="#" class="nav-link" onclick="showPatientBlockListPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showPatientBlockListPage">
                             <i class="nav-icon fas fa-ban"></i>
                             <p>Block List</p>
                         </a>
@@ -592,31 +592,31 @@
                     <!-- SISTEM -->
                     <li class="nav-header">SISTEM</li>
                     <li class="nav-item dokter-only d-none" id="management-nav-kelola-roles">
-                        <a href="#" class="nav-link" onclick="showKelolaRolesPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showKelolaRolesPage">
                             <i class="nav-icon fas fa-user-shield"></i>
                             <p>Users / Roles</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-booking-settings">
-                        <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showBookingSettingsPage">
                             <i class="nav-icon fas fa-calendar-day"></i>
                             <p>Booking Settings</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" style="display: none !important;" id="nav-pengaturan">
-                        <a href="#" class="nav-link" onclick="showPengaturanPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showPengaturanPage">
                             <i class="nav-icon fas fa-cog"></i>
                             <p>Pengaturan</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-import-fields" style="display: none !important;">
-                        <a href="#" class="nav-link" onclick="showImportFieldsPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showImportFieldsPage">
                             <i class="nav-icon fas fa-i-cursor"></i>
                             <p>Import Fields</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-medify-sync" style="display: none !important;">
-                        <a href="#" class="nav-link" onclick="showMedifySyncPage(); return false;">
+                        <a href="#" class="nav-link" data-staff-call="showMedifySyncPage">
                             <i class="nav-icon fas fa-hospital-user"></i>
                             <p>MEDIFY Sync</p>
                         </a>

@@ -233,14 +233,29 @@ function bindShellActions() {
 
     document.addEventListener('click', function(event) {
         var target = event.target.closest('[data-shell-action]');
+        if (target) {
+            var actionName = target.dataset.shellAction || '';
+            var handler = shellActionHandlers[actionName];
+            if (typeof handler !== 'function') return;
+
+            event.preventDefault();
+            handler(target, event);
+            return;
+        }
+
+        target = event.target.closest('[data-staff-call]');
         if (!target) return;
-
-        var actionName = target.dataset.shellAction || '';
-        var handler = shellActionHandlers[actionName];
-        if (typeof handler !== 'function') return;
-
+        var globalHandler = window[target.dataset.staffCall || ''];
+        if (typeof globalHandler !== 'function') return;
         event.preventDefault();
-        handler(target, event);
+        var args = JSON.parse(target.dataset.staffArgs || '[]');
+        globalHandler.apply(window, args);
+
+        var afterHandler = window[target.dataset.staffAfter || ''];
+        if (typeof afterHandler === 'function') {
+            var afterArgs = JSON.parse(target.dataset.staffAfterArgs || '[]');
+            afterHandler.apply(window, afterArgs);
+        }
     });
 }
 

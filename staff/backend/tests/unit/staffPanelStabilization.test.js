@@ -128,19 +128,19 @@ describe('staff panel stabilization sources', () => {
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
 
         expect(html).toContain('id="nav-voting"');
-        expect(html).toContain('showVotingPage(); return false;');
+        expect(html).toContain('data-staff-call="showVotingPage"');
         expect(html).toContain('<p>Voting Pasien</p>');
 
         expect(html).toContain('id="nav-birth-class"');
-        expect(html).toContain('showBirthClassPage(); return false;');
+        expect(html).toContain('data-staff-call="showBirthClassPage"');
         expect(html).toContain('<p>Kelas Dr. Dibya</p>');
 
         expect(html).toContain('id="nav-birth-congrats"');
-        expect(html).toContain('showBirthCongratsPage(); return false;');
+        expect(html).toContain('data-staff-call="showBirthCongratsPage"');
         expect(html).toContain('<p>Ucapan Kelahiran</p>');
 
         expect(html).toContain('id="nav-birth-testimonials"');
-        expect(html).toContain('showBirthTestimonialsPage(); return false;');
+        expect(html).toContain('data-staff-call="showBirthTestimonialsPage"');
         expect(html).toContain('<p>Testimoni Pasien</p>');
 
         expect(mainJs).toContain("'klinik_privat': ['nav-klinik-private', 'nav-voting', 'nav-birth-class']");
@@ -636,7 +636,7 @@ describe('staff panel stabilization sources', () => {
         const server = readRepoFile('staff', 'backend', 'server.js');
 
         expect(html).toContain('id="nav-staff-payroll"');
-        expect(html).toContain('showStaffPayrollPage(); return false;');
+        expect(html).toContain('data-staff-call="showStaffPayrollPage"');
         expect(html).toContain('<p>Gajian</p>');
         expect(html).toContain('id="content-staff-payroll"');
         expect(payrollFragment).toContain('id="staff-payroll-tbody"');
@@ -665,7 +665,7 @@ describe('staff panel stabilization sources', () => {
         const server = readRepoFile('staff', 'backend', 'server.js');
 
         expect(html).toContain('id="nav-staff-briefing"');
-        expect(html).toContain('showStaffBriefingPage(); return false;');
+        expect(html).toContain('data-staff-call="showStaffBriefingPage"');
         expect(html).toContain('<p>Briefing</p>');
         expect(html).toContain('id="content-staff-briefing"');
         expect(briefingFragment).toContain('id="staff-briefing-checklist"');

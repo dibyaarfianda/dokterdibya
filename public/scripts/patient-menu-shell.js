@@ -1,3 +1,14 @@
+import {
+    getPatientToken as getToken,
+    getPatientUser,
+    setPatientUser,
+    clearPatientAuth
+} from './patient-shell/session-bootstrap.js';
+import { createPatientRouter } from './patient-shell/router.js';
+import { bindPatientNavigation } from './patient-shell/navigation.js';
+import { bindPatientLayoutLifecycle } from './patient-shell/layout.js';
+import { loadPatientFeature } from './patient-shell/feature-loader.js';
+
 (function initPatientMenuShell() {
         const CORNER_NAME_KEY = 'patient_my_corner_name';
         const CORNER_NOTE_KEY = 'patient_my_corner_note';
@@ -57,9 +68,16 @@
         let patientInstallPromptAutoShown = false;
         const PATIENT_INSTALL_DISMISS_KEY = 'sisiwanita_portal_pwa_install_dismissed';
 
-        function getToken() {
-            return window.PatientSession?.getToken() || localStorage.getItem('patient_token');
-        }
+        const patientRouter = createPatientRouter({
+            isGuestMode,
+            isGuestLoginRoute,
+            getGuestNavigationUrl,
+            endGuestAndLogin,
+            showGuestUpgradePrompt,
+            trackGuestActivity
+        });
+        const go = patientRouter.go;
+        const isPatientHomeRoute = patientRouter.isHomeRoute;
 
         function isStandalonePwaMode() {
             return window.navigator.standalone === true ||
@@ -217,10 +235,7 @@
         function startGuestMode() {
             try {
                 const existingGuestSessionId = sessionStorage.getItem(GUEST_SESSION_ID_KEY);
-                window.PatientSession?.clearAuth();
-
-                localStorage.removeItem('patient_token');
-                localStorage.removeItem('patient_user');
+                clearPatientAuth();
                 clearGuestMode();
                 if (existingGuestSessionId) sessionStorage.setItem(GUEST_SESSION_ID_KEY, existingGuestSessionId);
                 sessionStorage.setItem(GUEST_MODE_KEY, '1');
@@ -298,7 +313,7 @@
 
         function getStoredProfile() {
             if (isGuestMode()) return Object.assign({}, GUEST_DEMO_PROFILE);
-            try { return JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) { return {}; }
+            return getPatientUser();
         }
 
         function renderGuestPromptBody(message) {
@@ -328,12 +343,7 @@
 
         function endGuestAndLogin(event) {
             stopTopbarEvent(event);
-            try {
-                window.PatientSession?.clearAuth();
-
-                localStorage.removeItem('patient_token');
-                localStorage.removeItem('patient_user');
-            } catch (error) {}
+            clearPatientAuth();
             trackGuestActivity('login_redirect', 'Guest diarahkan ke login/daftar');
             clearGuestMode();
             window.location.href = '/patient-login.html?mode=register';
@@ -1058,6 +1068,11 @@
                 if (input) input.value = '';
                 return;
             }
+            try {
+                await loadPatientFeature('profilePhotoCropper');
+            } catch (error) {
+                console.error('[PatientShell] Photo editor failed to load:', error);
+            }
             if (typeof window.openProfilePhotoCropper !== 'function') {
                 showToast('Editor foto belum siap. Muat ulang halaman lalu coba lagi.');
                 if (input) input.value = '';
@@ -1451,6 +1466,11 @@
                 return;
             }
 
+            try {
+                await loadPatientFeature('profilePhotoCropper');
+            } catch (error) {
+                console.error('[PatientShell] Photo editor failed to load:', error);
+            }
             if (typeof window.openProfilePhotoCropper !== 'function') {
                 showToast('Editor foto belum siap. Muat ulang halaman lalu coba lagi.');
                 input.value = '';
@@ -1490,7 +1510,7 @@
                     photo_url: photoUrl,
                     profile_picture: photoUrl
                 });
-                try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
+                setPatientUser(currentProfile);
                 window.currentProfile = currentProfile;
                 updateProfileAvatar(currentProfile);
                 openTopbarModal('Profil', 'Akun pasien', renderProfileModal(currentProfile));
@@ -1547,7 +1567,7 @@
                 if (!response.ok) return currentProfile || getStoredProfile();
                 const data = await response.json().catch(() => ({}));
                 currentProfile = data.user || currentProfile || getStoredProfile();
-                try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
+                setPatientUser(currentProfile);
                 return currentProfile;
             } catch (error) {
                 if (error.message === 'unauthorized') throw error;
@@ -1567,24 +1587,6 @@
             }
         }
 
-        function go(url) {
-            if (isGuestMode()) {
-                if (isGuestLoginRoute(url)) {
-                    endGuestAndLogin();
-                    return;
-                }
-                const guestUrl = getGuestNavigationUrl(url);
-                if (!guestUrl) {
-                    showGuestUpgradePrompt('Halaman ini memakai data atau aksi pasien asli. Masuk dengan akun pasien untuk membukanya.');
-                    return;
-                }
-                trackGuestActivity('demo_navigation', 'Buka halaman demo: ' + guestUrl, guestUrl);
-                window.location.href = guestUrl;
-                return;
-            }
-            window.location.href = url;
-        }
-
         function handleSheetNavigation(event, url) {
             stopTopbarEvent(event);
             go(url);
@@ -1597,10 +1599,6 @@
             toast.classList.add('show');
             clearTimeout(toast._timer);
             toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
-        }
-
-        function isPatientHomeRoute() {
-            return window.location.pathname === '/patient-menu.html';
         }
 
         function hasActiveHomeSurface() {
@@ -1879,19 +1877,6 @@
             }
         };
 
-        function handleShellModalAction(event) {
-            const button = event && event.target && event.target.closest ? event.target.closest('[data-shell-action]') : null;
-            if (!button) return;
-            const action = String(button.getAttribute('data-shell-action') || '').trim();
-            if (!action) return;
-            const handler = modalActionHandlers[action];
-            if (typeof handler !== 'function') return;
-            stopTopbarEvent(event);
-            handler(button, event);
-        }
-
-        document.addEventListener('click', handleShellModalAction, true);
-
         function openBugReportModal(event) {
             stopTopbarEvent(event);
             if (!requireRealPatient('Laporan bug memakai konteks akun pasien agar tim bisa menindaklanjuti dengan tepat.', event)) return;
@@ -2012,7 +1997,7 @@
             if (!response.ok) throw new Error('profile failed');
             const data = await response.json();
             currentProfile = data.user || {};
-            try { localStorage.setItem('patient_user', JSON.stringify(currentProfile)); } catch (error) {}
+            setPatientUser(currentProfile);
             
             window.currentProfile = currentProfile;
 
@@ -3495,10 +3480,7 @@
         }
 
         function logout() {
-            window.PatientSession?.clearAuth();
-
-            localStorage.removeItem('patient_token');
-            localStorage.removeItem('patient_user');
+            clearPatientAuth();
             clearGuestMode();
             window.location.href = '/patient-login.html';
         }
@@ -3595,8 +3577,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('guest') === '1') startGuestMode();
             const token = getToken();
-            let user = {};
-            try { user = JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) {}
+            const user = getPatientUser();
             if (!token || !user.id) {
                 if (isGuestMode()) {
                     refreshPatientServiceWorker();
@@ -3641,7 +3622,7 @@
             autoShowPatientInstallPrompt();
         }
 
-        const shellActionHandlers = {
+        const shellActionHandlers = Object.assign({}, modalActionHandlers, {
             'open-settings': function(target, event) {
                 openSettingsModal(event);
             },
@@ -3686,24 +3667,25 @@
             },
             'scroll-top-home': function() {
                 scrollTopHome();
+            },
+            'cancel-active-booking': function(target, event) {
+                cancelActiveBooking(event);
+            },
+            'submit-cancel-booking': function() {
+                submitCancelBooking();
+            },
+            'update-bug-report-count': function() {
+                updateBugReportCount();
+            },
+            'apply-birth-date-wheel': function(target, event) {
+                applyBirthDateWheelPicker(event);
+            },
+            'birth-photo-upload': function(target, event) {
+                handleBirthPhotoUpload(event);
             }
-        };
-
-        document.addEventListener('click', function(event) {
-            if (event.target.closest('[data-shell-stop-propagation]')) {
-                event.stopPropagation();
-                return;
-            }
-            const trigger = event.target.closest('[data-shell-action]');
-            if (!trigger) return;
-
-            const actionName = trigger.dataset.shellAction || '';
-            const handler = shellActionHandlers[actionName];
-            if (typeof handler !== 'function') return;
-
-            event.preventDefault();
-            handler(trigger, event);
         });
+
+        bindPatientNavigation(shellActionHandlers);
 
         window.openMyCorner = openMyCorner;
         window.saveMyCorner = saveMyCorner;
@@ -3775,41 +3757,43 @@
             dismissPatientInstallPrompt();
         });
 
-        document.addEventListener('DOMContentLoaded', init);
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape' && document.getElementById('birth-date-wheel-modal')?.classList.contains('active')) {
-                closeBirthDateWheelPicker(event);
-                return;
-            }
-            if (event.key === 'Escape' && document.getElementById('birth-photo-modal')?.classList.contains('active')) {
-                closeBirthPhotoModal(event);
-            }
-        });
-        window.addEventListener('scroll', handleHomeScrollReveal, { passive: true });
-        window.addEventListener('wheel', handleHomeWheelReveal, { passive: true });
-        window.addEventListener('wheel', preventHomeScrollDuringBrake, { passive: false, capture: true });
-        window.addEventListener('touchstart', handleHomeTouchStart, { passive: true });
-        window.addEventListener('touchmove', handleHomeTouchMove, { passive: true });
-        window.addEventListener('touchmove', preventHomeScrollDuringBrake, { passive: false, capture: true });
-        window.addEventListener('resize', updateHomeActionGap, { passive: true });
-        if (window.visualViewport) window.visualViewport.addEventListener('resize', updateHomeActionGap, { passive: true });
-        window.addEventListener('resize', function() {
-            if (document.getElementById('home-hero-photo')) updateHomeHeroPhoto();
-        }, { passive: true });
-        window.addEventListener('pageshow', function(event) {
-            resetScrollToTop();
-            lockHomeSections();
-            requestAnimationFrame(updateHomeActionGap);
-            triggerHomeIntroAnimation();
-            scheduleHomeAutoUnlock();
-            if (isGuestMode()) return;
-            if (event.persisted) {
-                loadNotificationCount();
+        bindPatientLayoutLifecycle({
+            init,
+            keydown(event) {
+                if (event.key === 'Escape' && document.getElementById('birth-date-wheel-modal')?.classList.contains('active')) {
+                    closeBirthDateWheelPicker(event);
+                    return;
+                }
+                if (event.key === 'Escape' && document.getElementById('birth-photo-modal')?.classList.contains('active')) {
+                    closeBirthPhotoModal(event);
+                }
+            },
+            scroll: handleHomeScrollReveal,
+            wheel: handleHomeWheelReveal,
+            wheelGuard: preventHomeScrollDuringBrake,
+            touchstart: handleHomeTouchStart,
+            touchmove: handleHomeTouchMove,
+            touchGuard: preventHomeScrollDuringBrake,
+            resize() {
+                updateHomeActionGap();
+                if (document.getElementById('home-hero-photo')) updateHomeHeroPhoto();
+            },
+            visualResize: updateHomeActionGap,
+            pageshow(event) {
+                resetScrollToTop();
+                lockHomeSections();
+                requestAnimationFrame(updateHomeActionGap);
+                triggerHomeIntroAnimation();
+                scheduleHomeAutoUnlock();
+                if (isGuestMode()) return;
+                if (event.persisted) {
+                    loadNotificationCount();
                     loadHomeAnnouncements();
                     loadUnreadDocCounts();
                     checkActiveBooking();
                     checkBirthPending({ silent: true });
                     loadBirthCongratsHome();
                 }
-            });
+            }
+        });
 })();

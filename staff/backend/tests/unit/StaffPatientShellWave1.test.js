@@ -56,8 +56,8 @@ describe('staff and patient shell wave 1 contracts', () => {
         const shell = readNormalizedFile('public', 'scripts', 'patient-menu-shell.js');
 
         expect(shell).toContain('const modalActionHandlers = {');
-        expect(shell).toContain("const handler = modalActionHandlers[action];");
-        expect(shell).toContain("if (typeof handler !== 'function') return;");
+        expect(shell).toContain('const shellActionHandlers = Object.assign({}, modalActionHandlers, {');
+        expect(shell).toContain('bindPatientNavigation(shellActionHandlers);');
         expect(shell).toContain('data-shell-action="mark-all-notifications"');
         expect(shell).toContain('data-shell-action="mark-notification-read"');
         expect(shell).toContain('data-shell-action="open-settings-notifications"');
@@ -180,8 +180,11 @@ describe('staff and patient shell wave 1 contracts', () => {
         expect(patientMenu).not.toContain('class="close-btn soundable" onclick="closeCancelBookingModal()"');
         expect(patientMenu).not.toContain('id="booking-cancel-close-btn" onclick="closeCancelBookingModal()"');
 
-        expect(patientMenu).toContain('id="booking-cancel-btn" onclick="cancelActiveBooking(event)"');
-        expect(patientMenu).toContain('id="booking-cancel-submit-btn" onclick="submitCancelBooking()"');
-        expect(patientMenu).toContain('onclick="applyBirthDateWheelPicker(event)"');
+        expect(patientMenu).toContain('id="booking-cancel-btn" data-shell-action="cancel-active-booking"');
+        expect(patientMenu).toContain('id="booking-cancel-submit-btn" data-shell-action="submit-cancel-booking"');
+        expect(patientMenu).toContain('data-shell-action="apply-birth-date-wheel"');
+        expect(patientMenu).not.toContain('onclick="cancelActiveBooking(event)"');
+        expect(patientMenu).not.toContain('onclick="submitCancelBooking()"');
+        expect(patientMenu).not.toContain('onclick="applyBirthDateWheelPicker(event)"');
     });
 });
