@@ -20,6 +20,7 @@ import {
 import { createPatientSheetController } from './patient-shell/sheet-controller.js';
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';
+import { createPatientNotificationController } from './patient-shell/features/notification-controller.js';
 import { createPatientPwaInstallController } from './patient-shell/pwa-install-controller.js';
 
 (function initPatientMenuShell() {
@@ -31,7 +32,6 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
         let audioContext = null;
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
-        let topbarNotifications = [];
         let currentBirthCongratsId = '';
         let currentBirthCongratsData = null;
         let currentBirthPending = null;
@@ -120,6 +120,20 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
         const closeBugReportModal = bugReportController.close;
         const updateBugReportCount = bugReportController.updateCount;
         const submitBugReport = bugReportController.submit;
+        const notificationController = createPatientNotificationController({
+            escapeHtml,
+            formatInfoTime: value => formatInfoTime(value),
+            getToken,
+            loadNotificationCount: () => loadNotificationCount(),
+            logout,
+            openTopbarModal,
+            renderModalLoading,
+            requireRealPatient,
+            stopEvent: stopTopbarEvent
+        });
+        const openNotificationModal = notificationController.open;
+        const markTopbarNotificationRead = notificationController.markRead;
+        const markAllTopbarNotificationsRead = notificationController.markAllRead;
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -200,100 +214,6 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
 
         function renderModalLoading(text) {
             return '<div class="modal-empty"><i class="fa-solid fa-spinner fa-spin"></i><p>' + escapeHtml(text || 'Memuat...') + '</p></div>';
-        }
-
-        function getNotificationIcon(type) {
-            const iconMap = {
-                question_reply: 'fa-solid fa-reply',
-                thread_closed: 'fa-solid fa-circle-check',
-                booking_confirmed: 'fa-regular fa-calendar-check',
-                booking_cancelled: 'fa-regular fa-calendar-xmark',
-                appointment: 'fa-regular fa-calendar',
-                new_document: 'fa-regular fa-file-lines',
-                document: 'fa-regular fa-file-lines',
-                new_usg: 'fa-regular fa-image',
-                new_lab: 'fa-solid fa-flask',
-                announcement: 'fa-solid fa-bullhorn',
-                reminder: 'fa-solid fa-bell'
-            };
-            return iconMap[type] || 'fa-solid fa-bell';
-        }
-
-        function renderNotificationsModal(notifications) {
-            notifications = Array.isArray(notifications) ? notifications : [];
-            const unreadCount = notifications.filter(item => !item.read_at).length;
-            const summary = '<div class="topbar-modal-summary">' +
-                '<div><strong>' + notifications.length + '</strong><span>Total notifikasi</span></div>' +
-                '<div><strong>' + unreadCount + '</strong><span>Belum dibaca</span></div>' +
-            '</div>';
-            if (!notifications.length) {
-                return summary + '<div class="modal-empty"><i class="fa-regular fa-bell-slash"></i><p>Belum ada notifikasi baru.</p></div>';
-            }
-            const readAll = unreadCount ? '<button type="button" class="ghost-action soundable" data-shell-action="mark-all-notifications"><i class="fa-solid fa-check-double"></i> Tandai semua dibaca</button>' : '';
-            const items = notifications.slice(0, 12).map(function(item) {
-                const isUnread = !item.read_at;
-                return '<button type="button" class="notification-item ' + (isUnread ? 'unread' : '') + '" data-shell-action="mark-notification-read" data-notification-id="' + escapeHtml(item.id) + '">' +
-                    '<span class="notification-icon"><i class="' + getNotificationIcon(item.type) + '"></i></span>' +
-                    '<span class="notification-copy">' +
-                        '<strong>' + escapeHtml(item.title || 'Notifikasi') + '</strong>' +
-                        '<span>' + escapeHtml(item.message || '') + '</span>' +
-                        '<small>' + escapeHtml(formatInfoTime(item.created_at)) + '</small>' +
-                    '</span>' +
-                    (isUnread ? '<span class="unread-dot"></span>' : '') +
-                '</button>';
-            }).join('');
-            return summary + readAll + '<div class="notification-list">' + items + '</div>';
-        }
-
-        async function fetchTopbarNotifications() {
-            const response = await fetch('/api/patient-notifications?_t=' + Date.now(), {
-                headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
-                cache: 'no-store'
-            });
-            if (response.status === 401) throw new Error('unauthorized');
-            if (!response.ok) throw new Error('notifications failed');
-            const data = await response.json().catch(() => ({}));
-            return data.success && Array.isArray(data.notifications) ? data.notifications : [];
-        }
-
-        async function openNotificationModal(event) {
-            stopTopbarEvent(event);
-            if (!requireRealPatient('Notifikasi berisi data pribadi pasien. Masuk dengan akun pasien untuk membukanya.', event)) return;
-            openTopbarModal('Notifikasi', 'Update pasien', renderModalLoading('Memuat notifikasi...'));
-            try {
-                topbarNotifications = await fetchTopbarNotifications();
-                openTopbarModal('Notifikasi', 'Update pasien', renderNotificationsModal(topbarNotifications));
-                loadNotificationCount();
-            } catch (error) {
-                if (error.message === 'unauthorized') { logout(); return; }
-                openTopbarModal('Notifikasi', 'Update pasien', '<div class="modal-empty"><i class="fa-regular fa-bell-slash"></i><p>Notifikasi belum bisa dimuat.</p></div>');
-            }
-        }
-
-        async function markTopbarNotificationRead(id) {
-            const item = topbarNotifications.find(notif => String(notif.id) === String(id));
-            if (item) item.read_at = new Date().toISOString();
-            openTopbarModal('Notifikasi', 'Update pasien', renderNotificationsModal(topbarNotifications));
-            loadNotificationCount();
-            try {
-                await fetch('/api/patient-notifications/' + encodeURIComponent(id) + '/read', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + getToken() }
-                });
-            } catch (error) {}
-        }
-
-        async function markAllTopbarNotificationsRead(event) {
-            stopTopbarEvent(event);
-            topbarNotifications.forEach(item => { item.read_at = new Date().toISOString(); });
-            openTopbarModal('Notifikasi', 'Update pasien', renderNotificationsModal(topbarNotifications));
-            loadNotificationCount();
-            try {
-                await fetch('/api/patient-notifications/read-all', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + getToken() }
-                });
-            } catch (error) {}
         }
 
         function getPortalDisplayName(profile) {
@@ -3108,7 +3028,7 @@ import { createPatientPwaInstallController } from './patient-shell/pwa-install-c
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2d1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2e1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});

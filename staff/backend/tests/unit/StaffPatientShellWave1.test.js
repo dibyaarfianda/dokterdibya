@@ -54,12 +54,19 @@ describe('staff and patient shell wave 1 contracts', () => {
 
     test('patient home shell modal actions are delegated without blocking page shell actions', () => {
         const shell = readNormalizedFile('public', 'scripts', 'patient-menu-shell.js');
+        const notificationController = readNormalizedFile(
+            'public',
+            'scripts',
+            'patient-shell',
+            'features',
+            'notification-controller.js'
+        );
 
         expect(shell).toContain('const modalActionHandlers = {');
         expect(shell).toContain('const shellActionHandlers = Object.assign({}, modalActionHandlers, {');
         expect(shell).toContain('bindPatientNavigation(shellActionHandlers);');
-        expect(shell).toContain('data-shell-action="mark-all-notifications"');
-        expect(shell).toContain('data-shell-action="mark-notification-read"');
+        expect(notificationController).toContain('data-shell-action="mark-all-notifications"');
+        expect(notificationController).toContain('data-shell-action="mark-notification-read"');
         expect(shell).toContain('data-shell-action="open-settings-notifications"');
         expect(shell).toContain('data-shell-action="test-portal-sound"');
         expect(shell).toContain('data-shell-action="save-portal-settings"');

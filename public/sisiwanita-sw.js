@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20260801stage2d1');
+importScripts('/sw.js?v=20260801stage2e1');

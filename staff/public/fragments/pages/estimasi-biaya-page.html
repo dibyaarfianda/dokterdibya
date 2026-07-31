@@ -8,7 +8,7 @@
                                 <div class="col-md-4">
                                     <div class="form-group">
                                         <label><i class="fas fa-baby mr-1"></i> Trimester</label>
-                                        <select class="form-control" id="estimasi-fase" onchange="updateEstimasiBiaya()">
+                                        <select class="form-control" id="estimasi-fase">
                                             <option value="t1">Trimester 1 (1-13 Minggu)</option>
                                             <option value="t2">Trimester 2 (14-27 Minggu)</option>
                                             <option value="t3">Trimester 3 (28-40 Minggu)</option>
@@ -26,10 +26,10 @@
                                         <div id="estimasi-config-status" class="small text-muted">Memuat konfigurasi estimasi biaya...</div>
                                     </div>
                                     <div class="d-flex">
-                                        <button type="button" class="btn btn-outline-secondary btn-sm mr-2" onclick="reloadEstimasiBiayaConfig()">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-action="reload-estimasi-biaya">
                                             <i class="fas fa-sync-alt mr-1"></i>Muat Ulang
                                         </button>
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="saveEstimasiBiayaPortalConfig()">
+                                        <button type="button" class="btn btn-primary btn-sm" data-action="save-estimasi-biaya">
                                             <i class="fas fa-save mr-1"></i>Simpan Konfigurasi
                                         </button>
                                     </div>

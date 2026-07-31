@@ -73,6 +73,10 @@ loadLandingFeature('navigationInteractions')
     .then(module => module.init?.())
     .catch(error => reportOptionalFeatureFailure('navigationInteractions', error));
 
+loadLandingFeature('announcementGuard')
+    .then(module => module.init?.())
+    .catch(error => reportOptionalFeatureFailure('announcementGuard', error));
+
 runIdle(() => {
     loadLandingFeature('patientTracking')
         .catch(error => reportOptionalFeatureFailure('patientTracking', error));

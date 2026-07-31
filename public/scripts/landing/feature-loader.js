@@ -6,7 +6,8 @@ const featureLoaders = {
     appUpdater: () => import('../app-updater.js'),
     promoPreview: () => import('./promo-preview.js'),
     installPrompt: () => import('./install-prompt.js'),
-    navigationInteractions: () => import('./navigation-interactions.js')
+    navigationInteractions: () => import('./navigation-interactions.js'),
+    announcementGuard: () => import('./announcement-guard.js')
 };
 
 export async function loadLandingFeature(name) {

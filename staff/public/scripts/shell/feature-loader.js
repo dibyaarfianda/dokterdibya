@@ -74,6 +74,10 @@ const featureLoaders = {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/staff-activity-page.js?v=${version}`);
     },
+    estimasiBiaya: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/estimasi-biaya-page.js?v=${version}`);
+    },
     troubleshooting: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/troubleshooting-page.js?v=${version}`);
