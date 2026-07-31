@@ -101,26 +101,26 @@
             background: var(--bg-page) !important;
         }
 
-        html.mobile-scroll-light {
+        html.feature-stack-static {
             scroll-behavior: auto;
             overscroll-behavior-x: none;
             overscroll-behavior-y: auto;
         }
 
-        html.mobile-scroll-light body {
+        html.feature-stack-static body {
             overscroll-behavior-x: none;
             overscroll-behavior-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
-        html.mobile-scroll-light .proces-section {
+        html.feature-stack-static .proces-section {
             padding-top: 104px !important;
             min-height: auto !important;
             overflow-anchor: none !important;
             background: var(--bg-page) !important;
         }
 
-        html.mobile-scroll-light .proces-row {
+        html.feature-stack-static .proces-row {
             position: relative !important;
             top: auto !important;
             z-index: auto !important;
@@ -131,7 +131,7 @@
             overflow-anchor: none !important;
         }
 
-        html.mobile-scroll-light .proces-desc {
+        html.feature-stack-static .proces-desc {
             opacity: 1 !important;
             max-height: none !important;
             transition: none !important;
@@ -139,27 +139,13 @@
             overflow-anchor: none !important;
         }
 
-        html.mobile-scroll-light .proces-spacer {
+        html.feature-stack-static .proces-spacer {
             height: 72px !important;
         }
 
-        html.sticky-stack-light {
-            scroll-behavior: auto;
-            overscroll-behavior-x: none;
-            overscroll-behavior-y: auto;
-        }
-
-        html.sticky-stack-light body {
-            overscroll-behavior-x: none;
-            overscroll-behavior-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        html.sticky-stack-light .proces-section,
-        html.sticky-stack-light .proces-row,
-        html.sticky-stack-light .proces-desc {
-            transition: none !important;
-            will-change: auto !important;
+        .patient-features-section,
+        .patient-features-section .proces-row,
+        .patient-features-section .proces-desc {
             overflow-anchor: none !important;
         }
 
@@ -2730,11 +2716,15 @@
             box-shadow: none !important;
         }
 
+        .patient-features-section .proces-row[hidden] {
+            display: none !important;
+        }
+
         .proces-row:hover { opacity: 1; }
         .proces-row:active { opacity: 1; }
 
         .proces-spacer {
-            height: 200px;
+            height: 72px;
         }
 
         .proces-step {
@@ -5137,7 +5127,7 @@
                     </a>
 
                     <!-- Estimasi Biaya — tester only, hidden by default -->
-                    <a href="/patient-login.html?autoGoogle=1" class="proces-row" id="menu-estimasi-biaya" style="display:none;">
+                    <a href="/patient-login.html?autoGoogle=1" class="proces-row" id="menu-estimasi-biaya" hidden>
                         <span class="proces-step"><i class="fa-solid fa-calculator" aria-hidden="true"></i></span>
                         <h3 class="proces-title">ESTIMASI BIAYA</h3>
                         <p class="proces-desc">Perkiraan biaya obat dan suplemen per trimester berdasarkan konfigurasi dokter. Harga bersifat indikatif sesuai kebijakan klinik.</p>
@@ -5412,28 +5402,11 @@
                 return !!(window.matchMedia && window.matchMedia(query).matches);
             }
 
-            var ua = navigator.userAgent || '';
-            var hasTouch = (navigator.maxTouchPoints || 0) > 0 ||
-                matchesQuery('(pointer: coarse)') ||
-                matchesQuery('(hover: none)');
-            var isIpad = /iPad/i.test(ua) ||
-                (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
-            var isIphone = /iPhone|iPod/i.test(ua);
-            var isAndroid = /Android/i.test(ua);
-            var isSmallViewport = matchesQuery('(max-width: 600px)');
-            var usePhoneStaticLight = hasTouch && isSmallViewport && isIphone && !isAndroid;
-            var useStickyStackLight = hasTouch && !usePhoneStaticLight &&
-                (isIpad || isAndroid || matchesQuery('(max-width: 1180px)'));
-
-            if (usePhoneStaticLight) {
-                document.documentElement.classList.add('mobile-scroll-light');
-            } else if (useStickyStackLight) {
-                document.documentElement.classList.add('sticky-stack-light');
-            }
-
-            window.__portalStickyStackMode = usePhoneStaticLight ? 'phone-static' :
-                (useStickyStackLight ? 'touch-sticky-light' : 'full');
-            window.__portalReduceMobileScrollWork = usePhoneStaticLight;
+            var desktopStickyCandidate = matchesQuery(
+                '(min-width: 769px) and (hover: hover) and (pointer: fine)'
+            );
+            document.documentElement.classList.toggle('feature-stack-static', !desktopStickyCandidate);
+            window.__portalStickyStackMode = desktopStickyCandidate ? 'full' : 'static';
             window.__portalReducePwaScrollWork = isStandalonePwa &&
                 (!window.matchMedia || window.matchMedia('(pointer: coarse)').matches);
 
@@ -6176,7 +6149,7 @@
                     // Show Estimasi Biaya for tester patient
                     if (profile.id === 'P2025091') {
                         var menuEstimasi = document.getElementById('menu-estimasi-biaya');
-                        if (menuEstimasi) menuEstimasi.style.display = '';
+                        if (menuEstimasi) menuEstimasi.hidden = false;
                     }
 
                     // Show content
@@ -7772,24 +7745,15 @@
         // a thin title-only bar. Next row stacks below. Last row wipes all above.
         (function() {
             var STICKY_OFFSET = 130;
+            var STACK_SAFE_GAP = 48;
             var PAD_TOP_MAX = 14;
             var PAD_TOP_MIN = 14; // match MAX so title+step don't shift during collapse
             var PAD_BOT_MAX = 96;
             var PAD_BOT_MIN = 10;
+            var DESKTOP_STICKY_QUERY = '(min-width: 769px) and (hover: hover) and (pointer: fine)';
+            var PROCES_DEBUG = /(?:^|[?&])procesDebug=1(?:&|$)/.test(window.location.search || '');
             var sections = document.querySelectorAll('.proces-section');
             if (!sections.length) return;
-
-            var stickyMode = window.__portalStickyStackMode || 'full';
-            var isTouchStickyLight = stickyMode === 'touch-sticky-light';
-
-            if (window.__portalReduceMobileScrollWork) {
-                document.documentElement.classList.add('mobile-scroll-light');
-                return;
-            }
-
-            if (isTouchStickyLight) {
-                document.documentElement.classList.add('sticky-stack-light');
-            }
 
             // Compute COLLAPSED_H from the actual collapsed title block.
             function getCollapsedH() {
@@ -7843,6 +7807,7 @@
             }
 
             var COLLAPSED_H = getCollapsedH();
+            var isStickyStackEnabled = false;
 
             function getVisibleRows(section) {
                 return Array.from(section.querySelectorAll('.proces-row')).filter(function(row) {
@@ -7850,34 +7815,72 @@
                 });
             }
 
+            function supportsDesktopSticky() {
+                return !!(window.matchMedia && window.matchMedia(DESKTOP_STICKY_QUERY).matches);
+            }
+
+            function stackFitsViewport(rows) {
+                var viewportHeight = window.innerHeight;
+                if (window.visualViewport && window.visualViewport.height) {
+                    viewportHeight = Math.min(viewportHeight, window.visualViewport.height);
+                }
+                var requiredHeight = STICKY_OFFSET + (rows.length * COLLAPSED_H) + STACK_SAFE_GAP;
+                return requiredHeight <= viewportHeight;
+            }
+
+            function clearRowInlineState(row) {
+                row.style.removeProperty('top');
+                row.style.removeProperty('z-index');
+                row.style.removeProperty('padding-top');
+                row.style.removeProperty('padding-bottom');
+                var desc = row.querySelector('.proces-desc');
+                if (desc) {
+                    desc.style.removeProperty('opacity');
+                    desc.style.removeProperty('max-height');
+                }
+            }
+
+            function reconcileStickyMode(rows) {
+                var nextStickyState = supportsDesktopSticky() && stackFitsViewport(rows);
+                var modeChanged = nextStickyState !== isStickyStackEnabled;
+                isStickyStackEnabled = nextStickyState;
+                document.documentElement.classList.toggle('feature-stack-static', !isStickyStackEnabled);
+                window.__portalStickyStackMode = isStickyStackEnabled ? 'full' : 'static';
+                return modeChanged;
+            }
+
             function assignStickyTops() {
                 COLLAPSED_H = getCollapsedH();
+                var modeRows = getVisibleRows(sections[0]);
+                var modeChanged = reconcileStickyMode(modeRows);
+
                 sections.forEach(function(section) {
                     var rows = getVisibleRows(section);
                     if (!rows.length) return;
 
                     rows.forEach(function(row, i) {
-                        row.style.top = (STICKY_OFFSET + i * COLLAPSED_H) + 'px';
-                        row.style.zIndex = 100 + i; // later rows on top (card-deck)
+                        if (isStickyStackEnabled) {
+                            row.style.top = (STICKY_OFFSET + i * COLLAPSED_H) + 'px';
+                            row.style.zIndex = 100 + i; // later rows on top (card-deck)
+                        } else {
+                            clearRowInlineState(row);
+                        }
                     });
                 });
-                if (PROCES_DEBUG) console.log('[PROCES] COLLAPSED_H =', COLLAPSED_H);
+                if (PROCES_DEBUG) {
+                    console.log('[PROCES] stack mode =', window.__portalStickyStackMode, 'COLLAPSED_H =', COLLAPSED_H);
+                }
+                return modeChanged;
             }
 
             assignStickyTops();
-            window.addEventListener('resize', function() { assignStickyTops(); });
 
             // Strict sequential collapse — segmented scroll timeline.
             // Only ONE row animates at a time. Row N finishes before Row N+1 starts.
-            var DELAY_BEFORE_LAST = 200; // px of extra scroll pause before last row collapses
-            var COLLAPSE_LEAD_PX = 72;
-            var WIPE_HOLD_PX = 20;
             var metricsReady = false;
             var scrollSyncFrame = 0;
             var lastObservedScrollY = window.scrollY;
             var stableFrames = 0;
-            var scrollSyncInterval = 0;
-            var PROCES_DEBUG = /(?:^|[?&])procesDebug=1(?:&|$)/.test(window.location.search || '');
 
             var sectionData = [];
             sections.forEach(function(section) {
@@ -7888,27 +7891,22 @@
                     startY: 0,
                     endY: 0,
                     rowStartY: [],
-                    finalRowCompleteP: 1,
                     activeIndex: -1,
                     targetP: rows.map(function() { return 0; }),
                     renderP: rows.map(function() { return 0; })
                 });
             });
 
-            function getDocTop(el) {
-                return el.getBoundingClientRect().top + window.scrollY;
-            }
-
             function rebuildMetrics() {
                 var contentWrapper = document.getElementById('content-wrapper');
                 if (contentWrapper && contentWrapper.style.display === 'none') return;
-                assignStickyTops();
+                var modeChanged = assignStickyTops();
                 sectionData.forEach(function(sd) {
                     sd.rows = getVisibleRows(sd.el);
                     var firstRow = sd.rows[0];
                     var sampleMetrics = measureExpandedRow(firstRow);
                     var isPatientFeaturesSection = sd.el.classList.contains('patient-features-section');
-                    if (isPatientFeaturesSection) {
+                    if (isPatientFeaturesSection && isStickyStackEnabled) {
                         var sectionStyle = window.getComputedStyle(sd.el);
                         var paddingTop = parseFloat(sectionStyle.paddingTop) || 0;
                         var paddingBottom = parseFloat(sectionStyle.paddingBottom) || 0;
@@ -7923,24 +7921,18 @@
                         }, 0);
                         var stableSectionHeight = paddingTop + paddingBottom + headerHeight + headerMarginBottom + expandedRowsHeight + spacerHeight;
                         sd.el.style.minHeight = Math.ceil(stableSectionHeight) + 'px';
+                    } else if (isPatientFeaturesSection) {
+                        sd.el.style.removeProperty('min-height');
                     }
                     sd.segment = Math.max(96, Math.round(sampleMetrics.rowHeight - COLLAPSED_H));
                     sd.startY = firstRow ? (firstRow.offsetTop - STICKY_OFFSET) : 0;
-                    sd.finalRowCompleteP = isPatientFeaturesSection ? 0.45 : 1;
                     sd.rowStartY = sd.rows.map(function(row, i) {
                         var slotTop = STICKY_OFFSET + (i * COLLAPSED_H);
-                        var rowLead = COLLAPSE_LEAD_PX;
-                        if (isPatientFeaturesSection) {
-                            rowLead = i * 56;
-                        }
-                        var start = row.offsetTop - slotTop - rowLead;
-                        if (i === sd.rows.length - 1 && sd.rows.length > 1) {
-                            start += isPatientFeaturesSection ? 16 : DELAY_BEFORE_LAST;
-                        }
+                        var start = row.offsetTop - slotTop;
                         return start;
                     });
                     sd.endY = sd.rowStartY.length
-                        ? (sd.rowStartY[sd.rowStartY.length - 1] + (sd.segment * sd.finalRowCompleteP))
+                        ? (sd.rowStartY[sd.rowStartY.length - 1] + sd.segment)
                         : sd.startY;
 
                     sd.descHeights = sd.rows.map(function(row) {
@@ -7950,6 +7942,7 @@
                         return row.querySelector('.proces-desc');
                     });
                     sd.lastStyleState = sd.rows.map(function(_, i) {
+                        if (modeChanged || !isStickyStackEnabled) return {};
                         return (sd.lastStyleState && sd.lastStyleState[i]) || {};
                     });
 
@@ -7974,7 +7967,31 @@
             }
             new MutationObserver(function() { scheduleRebuild(); })
                 .observe(document.getElementById('content-wrapper'), { attributes: true });
+
+            var lastVisibleRowCount = getVisibleRows(sections[0]).length;
+            new MutationObserver(function() {
+                var nextVisibleRowCount = getVisibleRows(sections[0]).length;
+                if (nextVisibleRowCount === lastVisibleRowCount) return;
+                lastVisibleRowCount = nextVisibleRowCount;
+                scheduleRebuild();
+            }).observe(sections[0], {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['hidden']
+            });
+
             window.addEventListener('resize', scheduleRebuild);
+            window.addEventListener('orientationchange', scheduleRebuild);
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', scheduleRebuild);
+            }
+            if (window.matchMedia) {
+                var desktopPointerMedia = window.matchMedia(DESKTOP_STICKY_QUERY);
+                if (desktopPointerMedia.addEventListener) {
+                    desktopPointerMedia.addEventListener('change', scheduleRebuild);
+                }
+            }
             // Rebuild at 500ms and 1500ms — content-wrapper may become visible at any time
             setTimeout(rebuildMetrics, 500);
             setTimeout(rebuildMetrics, 1500);
@@ -7983,14 +8000,7 @@
                 var row = sd.rows[i];
                 if (!row) return;
 
-                if (isTouchStickyLight) {
-                    p = Math.round(p * 100) / 100;
-                }
-
                 var state = (sd.lastStyleState && sd.lastStyleState[i]) || {};
-                if (isTouchStickyLight && state.p === p) {
-                    return;
-                }
 
                 // Later rows stack on top of earlier rows (card-deck effect).
                 // Expanded (incoming from below) > transitioning > collapsed.
@@ -8049,7 +8059,7 @@
             }
 
             function onScroll() {
-                if (!metricsReady) { return; }
+                if (!metricsReady || !isStickyStackEnabled) { return; }
                 var scrollY = window.scrollY;
 
                 sectionData.forEach(function(sd) {
@@ -8058,15 +8068,8 @@
 
                     var segment = sd.segment || 96;
                     var activeIndex = -1;
-                    var rowProgress = sd.rowStartY.map(function(start, i) {
-                        var effectiveSegment = segment;
-                        if (i === count - 1) {
-                            effectiveSegment = Math.max(48, segment * (sd.finalRowCompleteP || 1));
-                        }
-                        var p = (scrollY - start) / effectiveSegment;
-                        if (i === count - 1 && scrollY > sd.endY + WIPE_HOLD_PX) {
-                            p = 1;
-                        }
+                    var rowProgress = sd.rowStartY.map(function(start) {
+                        var p = (scrollY - start) / segment;
                         return Math.max(0, Math.min(1, p));
                     });
 
@@ -8135,18 +8138,7 @@
             }
 
             window.addEventListener('scroll', scheduleScrollSync, { passive: true });
-            if (!isTouchStickyLight) {
-                window.addEventListener('wheel', scheduleScrollSync, { passive: true });
-                window.addEventListener('touchmove', scheduleScrollSync, { passive: true });
-            }
-
             onScroll();
-            if (!isTouchStickyLight) {
-                scrollSyncInterval = window.setInterval(onScroll, 33);
-            } else {
-                setTimeout(scheduleScrollSync, 120);
-                setTimeout(scheduleScrollSync, 700);
-            }
         })();
 
         // ==================== HERO FIXED BG FADE ON SCROLL ====================

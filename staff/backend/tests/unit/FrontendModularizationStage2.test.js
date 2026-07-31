@@ -57,6 +57,45 @@ describe('frontend modularization stage 2', () => {
         expect(html).toContain('Preserve native wheel, trackpad, touch, keyboard, and assistive scrolling.');
     });
 
+    test('landing feature stack is sticky only on eligible desktops', () => {
+        const html = read('public', 'sisiwanita', 'index.html');
+
+        expect(html).toContain('(min-width: 769px) and (hover: hover) and (pointer: fine)');
+        expect(html).toContain('var STACK_SAFE_GAP = 48;');
+        expect(html).toContain('STICKY_OFFSET + (rows.length * COLLAPSED_H) + STACK_SAFE_GAP');
+        expect(html).toContain("window.__portalStickyStackMode = isStickyStackEnabled ? 'full' : 'static';");
+        expect(html).toMatch(/html\.feature-stack-static \.proces-row\s*\{[\s\S]*?position:\s*relative !important;[\s\S]*?top:\s*auto !important;[\s\S]*?z-index:\s*auto !important;/);
+        expect(html).toMatch(/html\.feature-stack-static \.proces-desc\s*\{[\s\S]*?opacity:\s*1 !important;[\s\S]*?max-height:\s*none !important;/);
+        expect(html).toMatch(/\.patient-features-section \.proces-row\[hidden\]\s*\{\s*display:\s*none !important;/);
+        expect(html).toContain("row.style.removeProperty('top');");
+        expect(html).toContain("row.style.removeProperty('z-index');");
+        expect(html).toContain("row.style.removeProperty('padding-top');");
+        expect(html).toContain("row.style.removeProperty('padding-bottom');");
+        expect(html).toContain("desc.style.removeProperty('opacity');");
+        expect(html).toContain("desc.style.removeProperty('max-height');");
+        expect(html).toContain("sd.el.style.removeProperty('min-height');");
+        expect(html).toContain("attributeFilter: ['hidden']");
+    });
+
+    test('landing feature stack keeps downward scrolling monotonic and releases promptly', () => {
+        const html = read('public', 'sisiwanita', 'index.html');
+        const stickyStart = html.indexOf('// ==================== STICKY STACK');
+        const stickyEnd = html.indexOf('// ==================== HERO FIXED BG', stickyStart);
+
+        expect(stickyStart).toBeGreaterThan(-1);
+        expect(stickyEnd).toBeGreaterThan(stickyStart);
+        const sticky = html.slice(stickyStart, stickyEnd);
+        expect(html).toMatch(/\.patient-features-section,[\s\S]*?\.patient-features-section \.proces-row,[\s\S]*?\.patient-features-section \.proces-desc\s*\{[\s\S]*?overflow-anchor:\s*none !important;/);
+        expect(html).toMatch(/\.proces-spacer\s*\{\s*height:\s*72px;/);
+        expect(sticky).toContain('var start = row.offsetTop - slotTop;');
+        expect(sticky).not.toContain('rowLead = i * 56');
+        expect(sticky).not.toContain('finalRowCompleteP');
+        expect(sticky).not.toContain('setInterval(onScroll, 33)');
+        expect(sticky).not.toContain("addEventListener('wheel', scheduleScrollSync");
+        expect(sticky).not.toContain("addEventListener('touchmove', scheduleScrollSync");
+        expect(sticky).toContain("window.addEventListener('scroll', scheduleScrollSync, { passive: true });");
+    });
+
     test('staff shell supports delegated compatibility actions while globals migrate', () => {
         const html = read('staff', 'public', 'index-adminlte.html');
         const actions = read('staff', 'public', 'scripts', 'shell', 'actions.js');
