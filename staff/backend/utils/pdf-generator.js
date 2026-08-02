@@ -732,7 +732,7 @@ class PDFGenerator {
                 // Patient Info
                 y += 15;
                 doc.fontSize(10).font('Helvetica');
-                const patientName = this.sanitizeTextForPdfForPdf(patientData.fullName || patientData.full_name || '-');
+                const patientName = this.sanitizeTextForPdf(patientData.fullName || patientData.full_name || '-');
                 doc.text(`Nama Pasien: ${patientName}`, leftMargin, y);
                 doc.text(`Tanggal: ${this.formatDateEuropean()}`, leftMargin + 300, y);
 
@@ -750,7 +750,7 @@ class PDFGenerator {
                 let resumeText = resumeData.resume || resumeData || '';
 
                 // Sanitize the resume text
-                resumeText = this.sanitizeTextForPdfForPdf(resumeText);
+                resumeText = this.sanitizeTextForPdf(resumeText);
 
                 if (resumeText) {
                     doc.fontSize(10).font('Helvetica');
