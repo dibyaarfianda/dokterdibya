@@ -267,6 +267,42 @@ async function normalizeAdditionalBillingItems(connection, rawItems) {
             continue;
         }
 
+        if (itemType === 'tindakan') {
+            const tindakanId = Number(rawItem.tindakan_id ?? rawItem.tindakanId ?? rawItem.id);
+            if (!Number.isSafeInteger(tindakanId) || tindakanId <= 0) {
+                throw createAdditionalBillingError('Pelayanan tagihan tambahan tidak valid.');
+            }
+
+            const [[tindakan]] = await connection.query(
+                `SELECT id, code, name, category, price
+                 FROM tindakan
+                 WHERE id = ?
+                   AND is_active = 1
+                   AND UPPER(COALESCE(category, '')) <> 'ADMINISTRATIF'
+                 LIMIT 1`,
+                [tindakanId]
+            );
+            if (!tindakan) {
+                throw createAdditionalBillingError('Pelayanan tidak ditemukan atau sudah tidak aktif.');
+            }
+
+            const price = Number(tindakan.price || 0);
+            normalizedItems.push({
+                item_type: 'tindakan',
+                item_code: tindakan.code || null,
+                item_name: tindakan.name,
+                quantity,
+                price,
+                total: price * quantity,
+                item_data: {
+                    source: 'additional-billing',
+                    tindakanId: tindakan.id,
+                    category: tindakan.category || ''
+                }
+            });
+            continue;
+        }
+
         if (itemType === 'admin') {
             const code = typeof (rawItem.item_code || rawItem.code) === 'string'
                 ? (rawItem.item_code || rawItem.code).trim().toUpperCase()

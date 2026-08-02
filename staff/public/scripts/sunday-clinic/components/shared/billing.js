@@ -90,6 +90,16 @@ function getAdditionalBillingItemMeta(item) {
         };
     }
 
+    if (item.item_type === 'tindakan') {
+        const tindakan = additionalBillingModalState?.tindakanList?.find(
+            entry => Number(entry.id) === Number(item.tindakan_id ?? item.tindakanId)
+        );
+        return {
+            name: tindakan?.name || item.item_name || 'Pelayanan',
+            price: Number(tindakan?.price ?? item.price ?? 0)
+        };
+    }
+
     const obat = additionalBillingModalState?.obatList?.find(
         entry => Number(entry.id) === Number(item.obat_id ?? item.obatId)
     );
@@ -116,6 +126,32 @@ function renderAdditionalBillingObatOptions(filterText = '') {
     if (previousValue && select.querySelector(`option[value="${previousValue}"]`)) {
         select.value = previousValue;
     }
+}
+
+function renderAdditionalBillingTindakanOptions(filterText = '') {
+    const select = document.getElementById('additional-billing-tindakan-select');
+    if (!select || !additionalBillingModalState) return;
+
+    const previousValue = select.value;
+    const normalizedFilter = filterText.trim().toLowerCase();
+    const options = (additionalBillingModalState.tindakanList || [])
+        .filter(item => !normalizedFilter ||
+            String(item.name || '').toLowerCase().includes(normalizedFilter) ||
+            String(item.code || '').toLowerCase().includes(normalizedFilter) ||
+            String(item.category || '').toLowerCase().includes(normalizedFilter))
+        .map(item => `<option value="${Number(item.id)}">${escapeHtml(item.name)}${item.code ? ` (${escapeHtml(item.code)})` : ''} - ${formatRupiah(item.price)}</option>`)
+        .join('');
+
+    select.innerHTML = '<option value="">Pilih pelayanan</option>' + options;
+    if (previousValue && select.querySelector(`option[value="${previousValue}"]`)) {
+        select.value = previousValue;
+    }
+}
+
+function getAdditionalBillingItemTypeLabel(itemType) {
+    if (itemType === 'obat') return 'Obat';
+    if (itemType === 'tindakan') return 'Pelayanan';
+    return 'Surat/Buku';
 }
 
 function renderAdditionalBillingModalItems() {
@@ -146,7 +182,7 @@ function renderAdditionalBillingModalItems() {
                     ${escapeHtml(meta.name)}
                     ${subtitle}
                 </td>
-                <td><span class="badge badge-light">${item.item_type === 'obat' ? 'Obat' : 'Surat/Buku'}</span></td>
+                <td><span class="badge badge-light">${getAdditionalBillingItemTypeLabel(item.item_type)}</span></td>
                 <td class="text-center">${Number(item.quantity || 0)}</td>
                 <td class="text-right">${formatRupiah(meta.price * Number(item.quantity || 0))}</td>
                 <td class="text-center">
@@ -163,8 +199,10 @@ function renderAdditionalBillingModalItems() {
 function toggleAdditionalBillingPicker() {
     const itemType = document.getElementById('additional-billing-item-type')?.value || 'obat';
     const obatFields = document.getElementById('additional-billing-obat-fields');
+    const tindakanFields = document.getElementById('additional-billing-tindakan-fields');
     const addOnFields = document.getElementById('additional-billing-addon-fields');
     if (obatFields) obatFields.style.display = itemType === 'obat' ? '' : 'none';
+    if (tindakanFields) tindakanFields.style.display = itemType === 'tindakan' ? '' : 'none';
     if (addOnFields) addOnFields.style.display = itemType === 'admin' ? '' : 'none';
 }
 
@@ -187,10 +225,11 @@ function ensureAdditionalBillingEditorModal() {
                                         <label for="additional-billing-item-type">Jenis</label>
                                         <select id="additional-billing-item-type" class="form-control">
                                             <option value="obat">Obat</option>
+                                            <option value="tindakan">Pelayanan</option>
                                             <option value="admin">Surat / Buku</option>
                                         </select>
                                     </div>
-                                </div>
+                            </div>
                                 <div class="col-md-2">
                                     <div class="form-group">
                                         <label for="additional-billing-item-quantity">Jumlah</label>
@@ -229,6 +268,22 @@ function ensureAdditionalBillingEditorModal() {
                                         <div class="form-group">
                                             <label for="additional-billing-latin-sig">Signa Latin</label>
                                             <input id="additional-billing-latin-sig" class="form-control" type="text" maxlength="500">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="additional-billing-tindakan-fields" style="display:none;">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="additional-billing-tindakan-search">Cari Pelayanan</label>
+                                            <input id="additional-billing-tindakan-search" class="form-control" type="search" placeholder="Nama, kode, atau kategori">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label for="additional-billing-tindakan-select">Pelayanan</label>
+                                            <select id="additional-billing-tindakan-select" class="form-control"></select>
                                         </div>
                                     </div>
                                 </div>
@@ -281,6 +336,9 @@ function ensureAdditionalBillingEditorModal() {
     document.getElementById('additional-billing-obat-search')?.addEventListener('input', event => {
         renderAdditionalBillingObatOptions(event.target.value || '');
     });
+    document.getElementById('additional-billing-tindakan-search')?.addEventListener('input', event => {
+        renderAdditionalBillingTindakanOptions(event.target.value || '');
+    });
     document.getElementById('additional-billing-add-item')?.addEventListener('click', () => {
         if (!additionalBillingModalState) return;
         const itemType = document.getElementById('additional-billing-item-type')?.value || 'obat';
@@ -305,6 +363,21 @@ function ensureAdditionalBillingEditorModal() {
                 quantity,
                 caraPakai: document.getElementById('additional-billing-cara-pakai')?.value || '',
                 latinSig: document.getElementById('additional-billing-latin-sig')?.value || ''
+            });
+        } else if (itemType === 'tindakan') {
+            const tindakanId = Number(document.getElementById('additional-billing-tindakan-select')?.value || 0);
+            const tindakan = additionalBillingModalState.tindakanList.find(item => Number(item.id) === tindakanId);
+            if (!tindakan) {
+                setAdditionalBillingModalError('Pilih pelayanan terlebih dahulu.');
+                return;
+            }
+            additionalBillingModalState.items.push({
+                item_type: 'tindakan',
+                tindakan_id: tindakan.id,
+                item_code: tindakan.code,
+                item_name: tindakan.name,
+                price: Number(tindakan.price || 0),
+                quantity
             });
         } else {
             const code = document.getElementById('additional-billing-addon-select')?.value || '';
@@ -393,6 +466,7 @@ async function openAdditionalBillingEditor(billing = null) {
         items: (billing?.items || []).map(item => ({
             item_type: item.item_type,
             obat_id: item.item_data?.obatId,
+            tindakan_id: item.item_data?.tindakanId,
             item_code: item.item_code,
             item_name: item.item_name,
             price: Number(item.price || 0),
@@ -400,13 +474,15 @@ async function openAdditionalBillingEditor(billing = null) {
             caraPakai: item.item_data?.caraPakai || item.item_data?.cara_pakai || '',
             latinSig: item.item_data?.latinSig || item.item_data?.latin_sig || ''
         })),
-        obatList: []
+        obatList: [],
+        tindakanList: []
     };
 
     document.getElementById('additionalBillingModalTitle').innerHTML = billing
         ? '<i class="fas fa-edit mr-2"></i>Ubah Tagihan Tambahan'
         : '<i class="fas fa-plus-circle mr-2"></i>Tagihan Tambahan';
     document.getElementById('additional-billing-obat-search').value = '';
+    document.getElementById('additional-billing-tindakan-search').value = '';
     document.getElementById('additional-billing-item-type').value = 'obat';
     toggleAdditionalBillingPicker();
     setAdditionalBillingModalError('');
@@ -414,18 +490,32 @@ async function openAdditionalBillingEditor(billing = null) {
     showModal(modal);
 
     try {
-        const response = await fetch('/api/obat?active=true', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || !result.success) {
-            throw new Error(result.message || 'Gagal memuat daftar obat.');
+        const [obatResponse, tindakanResponse] = await Promise.all([
+            fetch('/api/obat?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch('/api/tindakan?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+        const [obatResult, tindakanResult] = await Promise.all([
+            obatResponse.json().catch(() => ({})),
+            tindakanResponse.json().catch(() => ({}))
+        ]);
+        if (!obatResponse.ok || !obatResult.success) {
+            throw new Error(obatResult.message || 'Gagal memuat daftar obat.');
         }
-        additionalBillingModalState.obatList = Array.isArray(result.data) ? result.data : [];
+        if (!tindakanResponse.ok || !tindakanResult.success) {
+            throw new Error(tindakanResult.message || 'Gagal memuat daftar pelayanan.');
+        }
+        additionalBillingModalState.obatList = Array.isArray(obatResult.data) ? obatResult.data : [];
+        additionalBillingModalState.tindakanList = (Array.isArray(tindakanResult.data) ? tindakanResult.data : [])
+            .filter(item => String(item.category || '').trim().toUpperCase() !== 'ADMINISTRATIF');
         renderAdditionalBillingObatOptions();
+        renderAdditionalBillingTindakanOptions();
         renderAdditionalBillingModalItems();
     } catch (error) {
-        setAdditionalBillingModalError(error.message || 'Gagal memuat daftar obat.');
+        setAdditionalBillingModalError(error.message || 'Gagal memuat katalog tagihan tambahan.');
     }
 }
 
