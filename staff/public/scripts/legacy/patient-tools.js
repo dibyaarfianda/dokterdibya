@@ -9,15 +9,6 @@
     // Socket.IO is now initialized via initRealtimeSync() which handles user registration
     // The socket is available as window.socket after initRealtimeSync completes
 
-    // Global helper to hide floating panel
-    window.hideFloatingPanel = function() {
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel && !floatingPanel.classList.contains('d-none')) {
-            console.log('Hiding floating panel');
-            floatingPanel.classList.add('d-none');
-        }
-    };
-
     // Helper function to get valid token
     window.getValidToken = function() {
         const token = (window.getAuthToken ? window.getAuthToken() : '');
@@ -63,45 +54,6 @@
             throw error;
         }
     };
-    // Intercept all navigation clicks to hide floating panel except Kelola Pasien
-    document.addEventListener('click', function(e) {
-        const navLink = e.target.closest('.nav-link');
-        if (!navLink) return;
-
-        const onclickValue = navLink.getAttribute('onclick') || '';
-        const shellAction = navLink.dataset.shellAction || '';
-        const isKelolaPasienNav =
-            onclickValue.includes('showManagePatientsPage') ||
-            onclickValue.includes('showKelolaPasienPage') ||
-            shellAction === 'show-manage-patients';
-
-        // Only hide if NOT navigating to Kelola Pasien page
-        if (!isKelolaPasienNav && (onclickValue || shellAction)) {
-            setTimeout(() => hideFloatingPanel(), 100);
-        }
-    });
-
-    // Watch for page changes and hide floating panel if not on Kelola Pasien page
-    const pageObserver = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (mutation.attributeName === 'class') {
-                const target = mutation.target;
-                // If manage-patients-page becomes hidden, hide the floating panel
-                if (target.id === 'manage-patients-page' && target.classList.contains('d-none')) {
-                    setTimeout(() => hideFloatingPanel(), 50);
-                }
-            }
-        });
-    });
-
-    // Start observing when DOM is ready
-    setTimeout(() => {
-        const managePatientsPage = document.getElementById('manage-patients-page');
-        if (managePatientsPage) {
-            pageObserver.observe(managePatientsPage, { attributes: true, attributeFilter: ['class'] });
-        }
-    }, 1000);
-
     // Manage Web Patients Page Functions
     window.showManagePatientsPage = async function() {
         if (typeof window.ensureStaffFeature === 'function') {
@@ -134,18 +86,6 @@
             titleEl.textContent = 'Kelola Pasien';
         }
         window.dispatchStaffPageChanged?.('kelola-pasien');
-
-        // Show floating panel (only for superadmin)
-        const userRole = localStorage.getItem('vps_user_role');
-        const isSuperadmin = window.staffRoleConstants?.isSuperadminUser?.(
-            window.auth?.currentUser || { role: userRole }
-        );
-        if (isSuperadmin) {
-            const floatingPanel = document.getElementById('floating-kelola-pasien');
-            if (floatingPanel) {
-                floatingPanel.classList.remove('d-none');
-            }
-        }
 
         // Load the managed patient table only; the legacy new-patient table is no longer rendered.
         loadWebPatients();
@@ -1065,12 +1005,6 @@
                 });
             }
 
-            // Also update floating panel if it's visible
-            const floatingPanel = document.getElementById('floating-kelola-pasien');
-            if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
-                loadFloatingPanelPatients();
-            }
-
         } catch (error) {
             console.error('Error loading web patients:', error);
             document.getElementById('manage-patients-tbody').innerHTML =
@@ -1346,12 +1280,6 @@ Apakah Anda yakin ingin melanjutkan?`;
             loadWebPatients(); // Reload the main list
             if (typeof window.loadHplRiskPatients === 'function') {
                 window.loadHplRiskPatients();
-            }
-
-            // Also reload floating panel if visible
-            const floatingPanel = document.getElementById('floating-kelola-pasien');
-            if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
-                loadFloatingPanelPatients();
             }
 
             // Reload patient list in appointments module
@@ -1980,12 +1908,6 @@ Apakah Anda yakin ingin melanjutkan?`;
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#management-nav-kelola-obat .nav-link').classList.add('active');
 
-        // Hide floating panel
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
-            floatingPanel.classList.add('d-none');
-        }
-
         // Always load the latest kelola-obat module with current asset version.
         try {
             const v = window.__assetVersion || Date.now().toString();
@@ -2010,12 +1932,6 @@ Apakah Anda yakin ingin melanjutkan?`;
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#management-nav-kelola-supplier .nav-link')?.classList.add('active');
 
-        // Hide floating panel
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
-            floatingPanel.classList.add('d-none');
-        }
-
         // Load suppliers
         loadSuppliers();
     };
@@ -2032,12 +1948,6 @@ Apakah Anda yakin ingin melanjutkan?`;
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#management-nav-activity-log .nav-link')?.classList.add('active');
-
-        // Hide floating panel
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
-            floatingPanel.classList.add('d-none');
-        }
 
         // Set default date range (last 7 days) - use local timezone
         const today = new Date();
@@ -2220,12 +2130,6 @@ Apakah Anda yakin ingin melanjutkan?`;
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#nav-staff-activity .nav-link')?.classList.add('active');
-
-        // Hide floating panel
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
-            floatingPanel.classList.add('d-none');
-        }
 
         // Load data
         loadStaffActivityLogs();
@@ -2442,12 +2346,6 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
         window.dispatchStaffPageChanged?.('patient-activity');
 
-        // Hide floating panel
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
-            floatingPanel.classList.add('d-none');
-        }
-
         // Set default date range (last 30 days)
         const today = new Date();
         const thirtyDaysAgo = new Date(today);
@@ -2639,9 +2537,6 @@ Apakah Anda yakin ingin melanjutkan?`;
             titleEl.textContent = 'Aktivitas Demo';
         }
         window.dispatchStaffPageChanged?.('guest-activity');
-
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) floatingPanel.classList.add('d-none');
 
         const today = new Date();
         const thirtyDaysAgo = new Date(today);
@@ -3295,11 +3190,6 @@ Apakah Anda yakin ingin melanjutkan?`;
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#nav-pengaturan .nav-link')?.classList.add('active');
 
-        // Hide floating panel
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
-            floatingPanel.classList.add('d-none');
-        }
     };
 
     // Download Tindakan Price List PDF

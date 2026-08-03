@@ -1013,50 +1013,6 @@
             padding: 2px 6px;
         }
         
-        /* Floating Kelola Pasien Panel */
-        #floating-kelola-pasien {
-            position: fixed !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100vw !important;
-            z-index: 1040 !important;
-            background: white;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-            max-height: 50vh;
-            overflow-y: auto;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-        
-        #floating-kelola-pasien.collapsed {
-            transform: translateY(calc(100% - 50px));
-        }
-        
-        #floating-kelola-pasien .card {
-            margin-bottom: 0;
-            border-radius: 0;
-        }
-        
-        #floating-kelola-pasien .card-header {
-            cursor: pointer;
-            user-select: none;
-        }
-        
-        #floating-kelola-pasien .toggle-icon {
-            transition: transform 0.3s ease;
-        }
-        
-        #floating-kelola-pasien.collapsed .toggle-icon {
-            transform: rotate(180deg);
-        }
-        
-        /* Adjust main content for floating panel */
-        body:not(.sidebar-collapse) .content-wrapper {
-            padding-bottom: 60px;
-        }
-
         html.kantor-saya-active,
         html.kantor-saya-active body,
         body.kantor-saya-active,
@@ -1096,13 +1052,6 @@
                 padding-bottom: 96px !important;
                 overflow-y: visible !important;
                 -webkit-overflow-scrolling: touch !important;
-            }
-        }
-        
-        /* Hide on mobile */
-        @media (max-width: 768px) {
-            #floating-kelola-pasien {
-                display: none;
             }
         }
         
