@@ -124,6 +124,21 @@ describe('staff panel wave 2 lazy shell contracts', () => {
         expect(bootstrap).not.toContain("ensureFeature('notifications')");
     });
 
+    test('inventory purchase actions load patient tools before inline handlers run', () => {
+        const html = read('staff', 'public', 'index-adminlte.html');
+        const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        const patientTools = read('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
+        const patientToolsShims = bootstrap.match(
+            /\[\s*'showManagePatientsPage'[\s\S]*?\]\.forEach\(globalName => installLazyFeatureShim\(globalName, 'patientTools'\)\);/
+        )?.[0] || '';
+
+        expect(html).toContain('onclick="submitPurchaseStock()"');
+        expect(patientTools).toContain('window.openPurchaseModal = async function');
+        expect(patientTools).toContain('window.submitPurchaseStock = async function');
+        expect(patientToolsShims).toContain("'openPurchaseModal'");
+        expect(patientToolsShims).toContain("'submitPurchaseStock'");
+    });
+
     test('PageRegistry loads once and emits activate/deactivate lifecycle in order', async () => {
         const registryPath = path.join(repoRoot, 'staff', 'public', 'scripts', 'shell', 'page-registry.js');
         delete require.cache[require.resolve(registryPath)];
