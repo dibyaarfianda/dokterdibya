@@ -344,6 +344,7 @@ class GambiranResumeService {
       const supported = isPdf(downloaded.buffer, downloaded.mimeType, downloaded.filename)
         || isImage(downloaded.mimeType, downloaded.filename);
       await convertToJpegs(downloaded.buffer, downloaded.mimeType, downloaded.filename, {
+        isolatePdf: true,
         onPage: async item => {
           const jpgKey = `${baseKey}/jpg/${caseFolder}/${prefix}-p${String(item.page).padStart(4, '0')}.jpg`;
           try {

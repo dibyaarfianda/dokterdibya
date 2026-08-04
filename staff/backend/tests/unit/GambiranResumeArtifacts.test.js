@@ -99,7 +99,7 @@ describe('GambiranResumeArtifacts', () => {
     const pdfPath = path.join(tempDir, 'hasil.pdf');
     fs.writeFileSync(pdfPath, pdf);
     const mediaPath = path.join(__dirname, '../../services/GambiranResumeMedia.js');
-    const script = `const fs=require('fs'); const media=require(process.argv[1]); (async()=>{ const pdf=fs.readFileSync(process.argv[2]); const streamed=[]; const retained=await media.convertToJpegs(pdf,'application/pdf','hasil.pdf',{onPage:async item=>streamed.push({page:item.page,magic:item.buffer.subarray(0,2).toString('hex')})}); process.stdout.write(JSON.stringify({retained:retained.length,streamed})); })().catch(error=>{console.error(error);process.exit(1)});`;
+    const script = `const fs=require('fs'); const media=require(process.argv[1]); (async()=>{ const pdf=fs.readFileSync(process.argv[2]); const streamed=[]; const retained=await media.convertToJpegs(pdf,'application/pdf','hasil.pdf',{isolatePdf:true,onPage:async item=>streamed.push({page:item.page,magic:item.buffer.subarray(0,2).toString('hex')})}); process.stdout.write(JSON.stringify({retained:retained.length,streamed})); })().catch(error=>{console.error(error);process.exit(1)});`;
     const child = spawnSync(process.execPath, ['-e', script, mediaPath, pdfPath], { encoding: 'utf8' });
     fs.rmSync(tempDir, { recursive: true, force: true });
     expect(child.status).toBe(0);
