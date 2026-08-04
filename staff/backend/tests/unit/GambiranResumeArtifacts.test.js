@@ -12,7 +12,12 @@ const {
   buildResumeText,
   buildDocxFromTemplate,
 } = require('../../services/GambiranResumeArtifacts');
-const { convertToJpegs, withTimeout } = require('../../services/GambiranResumeMedia');
+const {
+  convertToJpegs,
+  withTimeout,
+  PDFJS_STANDARD_FONT_DATA_PATH,
+  PDFJS_STANDARD_FONT_DATA_URL,
+} = require('../../services/GambiranResumeMedia');
 
 const templatePath = path.join(__dirname, '../../templates/gambiran-resume-legal-memorandum.docx');
 
@@ -82,6 +87,8 @@ describe('GambiranResumeArtifacts', () => {
   });
 
   test('converts image originals and every PDF page to JPEG', async () => {
+    expect(fs.statSync(PDFJS_STANDARD_FONT_DATA_PATH).isDirectory()).toBe(true);
+    expect(PDFJS_STANDARD_FONT_DATA_URL.endsWith('/')).toBe(true);
     const png = await sharp({ create: { width: 20, height: 20, channels: 3, background: '#663399' } }).png().toBuffer();
     const imagePages = await convertToJpegs(png, 'image/png', 'foto.png');
     expect(imagePages).toHaveLength(1);

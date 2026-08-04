@@ -1,8 +1,12 @@
 const path = require('path');
+const { pathToFileURL } = require('url');
 const sharp = require('sharp');
 const { createCanvas } = require('canvas');
 
 const DEFAULT_PDF_RENDER_TIMEOUT_MS = 30000;
+const PDFJS_ROOT = path.dirname(require.resolve('pdfjs-dist/package.json'));
+const PDFJS_STANDARD_FONT_DATA_PATH = `${path.join(PDFJS_ROOT, 'standard_fonts')}${path.sep}`;
+const PDFJS_STANDARD_FONT_DATA_URL = pathToFileURL(PDFJS_STANDARD_FONT_DATA_PATH).href;
 
 function trim(value) {
   return value === undefined || value === null ? '' : String(value).trim();
@@ -51,7 +55,12 @@ async function imageToJpeg(buffer) {
 
 async function pdfToJpegs(buffer) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer), disableWorker: true });
+  const loadingTask = pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    disableWorker: true,
+    standardFontDataUrl: PDFJS_STANDARD_FONT_DATA_URL,
+    useSystemFonts: true,
+  });
   const timeoutMs = pdfRenderTimeoutMs();
   const document = await withTimeout(
     loadingTask.promise,
@@ -90,4 +99,13 @@ async function convertToJpegs(buffer, mimeType, filename) {
   return [];
 }
 
-module.exports = { convertToJpegs, imageToJpeg, pdfToJpegs, isPdf, isImage, withTimeout };
+module.exports = {
+  convertToJpegs,
+  imageToJpeg,
+  pdfToJpegs,
+  isPdf,
+  isImage,
+  withTimeout,
+  PDFJS_STANDARD_FONT_DATA_PATH,
+  PDFJS_STANDARD_FONT_DATA_URL,
+};
