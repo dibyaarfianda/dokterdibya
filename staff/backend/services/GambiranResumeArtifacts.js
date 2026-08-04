@@ -2,6 +2,14 @@ const AdmZip = require('adm-zip');
 
 const WIB_OFFSET = '+07:00';
 const ACTIVE_CREDENTIAL_KEY = /^(?:_token|csrf(?:_token)?|token|password|cookie|authorization|session)$/i;
+const EVENT_DISPLAY_METADATA_KEYS = new Set([
+  'id', 'event_id', 'uuid', 'case_id', 'source_file_id', 'created_at', 'updated_at',
+  'occurred_at', 'recorded_at', 'date_time', 'datetime', 'timestamp', 'time_at',
+  'date', 'time', 'tanggal', 'jam', 'record_date', 'record_time', 'author',
+  'author_role', 'created_by_name', 'petugas', 'dokter', 'provider', 'category',
+  'source_section', 'exists',
+]);
+const EVENT_TITLE_KEYS = new Set(['title', 'name', 'label', 'jenis', 'type', 'tindakan', 'assessment', 'diagnosis']);
 
 const CATEGORY_PRIORITY = {
   admission: 10,
@@ -146,12 +154,45 @@ function stableJson(value) {
   return JSON.stringify(value);
 }
 
+function isEmptyStructuredValue(value) {
+  if (value === null || value === undefined || value === '') return true;
+  if (Array.isArray(value)) return value.every(isEmptyStructuredValue);
+  if (value && typeof value === 'object') return Object.values(value).every(isEmptyStructuredValue);
+  return false;
+}
+
+function eventDisplayData(event) {
+  const source = event?.data && typeof event.data === 'object' && !Array.isArray(event.data) ? event.data : {};
+  const output = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (EVENT_DISPLAY_METADATA_KEYS.has(key) || isEmptyStructuredValue(value)) continue;
+    if (EVENT_TITLE_KEYS.has(key) && trim(value) && trim(value) === trim(event.title)) continue;
+    output[key] = value;
+  }
+  if (Object.keys(output).length === 1 && output.fields && typeof output.fields === 'object' && !Array.isArray(output.fields)) {
+    return output.fields;
+  }
+  return output;
+}
+
+function titleCarriesClinicalData(event) {
+  return Object.entries(event?.data || {}).some(([key, value]) => (
+    EVENT_TITLE_KEYS.has(key) && trim(value) && trim(value) === trim(event.title)
+  ));
+}
+
+function isRenderableEvent(event) {
+  return !isEmptyStructuredValue(eventDisplayData(event)) || titleCarriesClinicalData(event);
+}
+
 function normalizeEvent(item, defaults = {}) {
   const clean = cleanForStorage(item || {});
   const timestamp = eventTimestamp(clean);
   const category = trim(clean.category || defaults.category || 'other').toLowerCase();
+  const sourceId = trim(clean.id || clean.event_id || clean.uuid) || null;
   return {
-    id: trim(clean.id || clean.event_id || clean.uuid || defaults.id) || null,
+    id: sourceId || trim(defaults.id) || null,
+    source_id: sourceId,
     case_id: trim(clean.case_id || defaults.case_id) || null,
     encounter_index: Number.isFinite(defaults.encounter_index) ? defaults.encounter_index : null,
     category: CATEGORY_PRIORITY[category] ? category : defaults.category || 'other',
@@ -200,14 +241,39 @@ function buildTimeline(snapshot) {
     }
   }
 
-  const deduped = new Map();
-  for (const event of events) {
-    const key = event.id
-      ? `${event.case_id || ''}:${event.id}`
-      : `${event.case_id || ''}:${event.category}:${event.occurred_at || ''}:${stableJson(event.data)}`;
-    if (!deduped.has(key)) deduped.set(key, event);
+  const deduped = [];
+  const sourceIndex = new Map();
+  const semanticIndex = new Map();
+  for (const event of events.filter(isRenderableEvent)) {
+    const sourceKey = event.source_id ? `${event.category}:${event.source_id}` : null;
+    const semanticKey = [
+      event.category,
+      event.occurred_at || '',
+      trim(event.author).toLowerCase(),
+      trim(event.author_role).toLowerCase(),
+      trim(event.title).toLowerCase(),
+      stableJson(eventDisplayData(event)),
+    ].join(':');
+    let existing = sourceKey ? sourceIndex.get(sourceKey) : null;
+    const semanticMatch = semanticIndex.get(semanticKey);
+    if (!existing && semanticMatch && semanticMatch.case_id !== event.case_id) existing = semanticMatch;
+    if (!existing) {
+      deduped.push(event);
+      if (sourceKey) sourceIndex.set(sourceKey, event);
+      if (!semanticIndex.has(semanticKey)) semanticIndex.set(semanticKey, event);
+      continue;
+    }
+    const sourceCases = [...new Set([
+      ...(existing.source_case_ids || []),
+      existing.case_id,
+      ...(event.source_case_ids || []),
+      event.case_id,
+    ].filter(Boolean))];
+    if (sourceCases.length > 1) existing.source_case_ids = sourceCases;
+    if (sourceKey) sourceIndex.set(sourceKey, existing);
+    semanticIndex.set(semanticKey, existing);
   }
-  return [...deduped.values()].sort((left, right) => (
+  return deduped.sort((left, right) => (
     left._epoch - right._epoch
     || (left.encounter_index ?? 999999) - (right.encounter_index ?? 999999)
     || (CATEGORY_PRIORITY[left.category] || 900) - (CATEGORY_PRIORITY[right.category] || 900)
@@ -293,9 +359,11 @@ function buildResumeText({ snapshot, medicalRecord, timeline, warnings = [], fil
   if (!timeline.length) lines.push('Tidak ada entri klinis bertanggal yang tersedia.');
   for (const event of timeline.filter(item => item.occurred_at)) {
     lines.push(`[${formatWib(event.occurred_at)}] ${humanize(event.category)} - ${event.title}`);
-    if (event.case_id) lines.push(`Case ID: ${event.case_id}`);
+    const sourceCases = event.source_case_ids?.length ? event.source_case_ids : (event.case_id ? [event.case_id] : []);
+    if (sourceCases.length === 1) lines.push(`Case ID: ${sourceCases[0]}`);
+    else if (sourceCases.length > 1) lines.push(`Case ID sumber: ${sourceCases.join(', ')}`);
     if (event.author) lines.push(`Petugas: ${event.author}${event.author_role ? ` (${event.author_role})` : ''}`);
-    lines.push(...formatStructured(event.data, '  '), '');
+    lines.push(...formatStructured(eventDisplayData(event), '  '), '');
   }
 
   const undated = timeline.filter(item => !item.occurred_at);
@@ -303,8 +371,11 @@ function buildResumeText({ snapshot, medicalRecord, timeline, warnings = [], fil
   if (!undated.length) lines.push('Tidak ada entri tanpa tanggal/jam.');
   for (const event of undated) {
     lines.push(`${humanize(event.category)} - ${event.title}`);
-    if (event.case_id) lines.push(`Case ID: ${event.case_id}`);
-    lines.push(...formatStructured(event.data, '  '), '');
+    const sourceCases = event.source_case_ids?.length ? event.source_case_ids : (event.case_id ? [event.case_id] : []);
+    if (sourceCases.length === 1) lines.push(`Case ID: ${sourceCases[0]}`);
+    else if (sourceCases.length > 1) lines.push(`Case ID sumber: ${sourceCases.join(', ')}`);
+    if (event.author) lines.push(`Petugas: ${event.author}${event.author_role ? ` (${event.author_role})` : ''}`);
+    lines.push(...formatStructured(eventDisplayData(event), '  '), '');
   }
 
   lines.push('## STATUS AKHIR DAN TINDAK LANJ');

@@ -63,6 +63,73 @@ describe('GambiranResumeArtifacts', () => {
     expect(timeline[3].occurred_at).toBeNull();
   });
 
+  test('deduplicates the same clinical source across encounters and skips empty wrappers', () => {
+    const sharedCppt = {
+      id: 'cppt-shared',
+      created_at: '2026-08-01 09:00:00',
+      author: 'Petugas Sintetis',
+      author_role: 'dokter',
+      assessment: 'Catatan yang sama',
+    };
+    const timeline = buildTimeline({
+      encounters: [
+        { case_id: 'med-test-1', cppt: [sharedCppt], resume: { exists: false, fields: {} } },
+        { case_id: 'med-test-2', cppt: [{ ...sharedCppt }], resume: { exists: false, fields: {} } },
+      ],
+    });
+
+    expect(timeline).toHaveLength(1);
+    expect(timeline[0].case_id).toBe('med-test-1');
+    expect(timeline[0].source_case_ids).toEqual(['med-test-1', 'med-test-2']);
+  });
+
+  test('keeps distinct source records from the same encounter even when their clinical text matches', () => {
+    const sharedFields = {
+      created_at: '2026-08-01 09:00:00',
+      author: 'Petugas Sintetis',
+      assessment: 'Catatan yang sama',
+    };
+    const timeline = buildTimeline({
+      encounters: [{
+        case_id: 'med-test-1',
+        cppt: [
+          { id: 'cppt-source-1', ...sharedFields },
+          { id: 'cppt-source-2', ...sharedFields },
+        ],
+      }],
+    });
+
+    expect(timeline.map(item => item.id)).toEqual(['cppt-source-1', 'cppt-source-2']);
+  });
+
+  test('does not repeat event metadata that is already rendered in the timeline header', () => {
+    const medicalRecord = normalizeMedicalRecordNumber('123456');
+    const snapshot = {
+      patient: { name: 'PASIEN SINTETIS' },
+      encounters: [{
+        case_id: 'med-test-1',
+        cppt: [{
+          id: 'cppt-shared',
+          created_at: '2026-08-01 09:00:00',
+          date: '2026-08-01',
+          time: '09:00',
+          author: 'Petugas Sintetis',
+          author_role: 'dokter',
+          assessment: 'Catatan uji',
+        }],
+      }],
+    };
+    const timeline = buildTimeline(snapshot);
+    const text = buildResumeText({ snapshot, medicalRecord, timeline, files: [] });
+
+    expect(text).toContain('Petugas: Petugas Sintetis (dokter)');
+    expect(text).toContain('Cppt - Catatan uji');
+    expect((text.match(/Catatan uji/g) || [])).toHaveLength(1);
+    expect(text).not.toContain('Created At:');
+    expect(text).not.toContain('Author Role:');
+    expect(text).not.toContain('Id: cppt-shared');
+  });
+
   test('creates deterministic TXT and a valid DOCX cloned from the retained template', () => {
     const medicalRecord = normalizeMedicalRecordNumber('123456');
     const snapshot = {
