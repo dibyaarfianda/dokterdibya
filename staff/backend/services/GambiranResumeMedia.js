@@ -2,6 +2,8 @@ const path = require('path');
 const sharp = require('sharp');
 const { createCanvas } = require('canvas');
 
+const DEFAULT_PDF_RENDER_TIMEOUT_MS = 30000;
+
 function trim(value) {
   return value === undefined || value === null ? '' : String(value).trim();
 }
@@ -18,6 +20,26 @@ function isImage(mimeType, filename) {
       .includes(path.extname(trim(filename)).toLowerCase());
 }
 
+function pdfRenderTimeoutMs() {
+  const configured = Number(process.env.GAMBIRAN_RESUME_PDF_RENDER_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_PDF_RENDER_TIMEOUT_MS;
+}
+
+async function withTimeout(promise, timeoutMs, message, onTimeout) {
+  let timer;
+  const timeout = new Promise((resolve, reject) => {
+    timer = setTimeout(() => {
+      try { onTimeout?.(); } catch {}
+      reject(new Error(message));
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function imageToJpeg(buffer) {
   return sharp(buffer, { animated: false, failOn: 'warning' })
     .rotate()
@@ -30,7 +52,13 @@ async function imageToJpeg(buffer) {
 async function pdfToJpegs(buffer) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer), disableWorker: true });
-  const document = await loadingTask.promise;
+  const timeoutMs = pdfRenderTimeoutMs();
+  const document = await withTimeout(
+    loadingTask.promise,
+    timeoutMs,
+    'Membuka PDF melebihi batas waktu',
+    () => loadingTask.destroy()
+  );
   try {
     const pages = [];
     for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
@@ -40,7 +68,13 @@ async function pdfToJpegs(buffer) {
       const context = canvas.getContext('2d');
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, canvas.width, canvas.height);
-      await page.render({ canvasContext: context, viewport, canvas }).promise;
+      const renderTask = page.render({ canvasContext: context, viewport, canvas });
+      await withTimeout(
+        renderTask.promise,
+        timeoutMs,
+        `Render PDF halaman ${pageNumber} melebihi batas waktu`,
+        () => renderTask.cancel()
+      );
       pages.push({ page: pageNumber, buffer: await imageToJpeg(canvas.toBuffer('image/png')) });
       page.cleanup();
     }
@@ -56,4 +90,4 @@ async function convertToJpegs(buffer, mimeType, filename) {
   return [];
 }
 
-module.exports = { convertToJpegs, imageToJpeg, pdfToJpegs, isPdf, isImage };
+module.exports = { convertToJpegs, imageToJpeg, pdfToJpegs, isPdf, isImage, withTimeout };

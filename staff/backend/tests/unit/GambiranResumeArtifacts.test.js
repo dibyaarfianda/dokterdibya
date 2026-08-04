@@ -12,7 +12,7 @@ const {
   buildResumeText,
   buildDocxFromTemplate,
 } = require('../../services/GambiranResumeArtifacts');
-const { convertToJpegs } = require('../../services/GambiranResumeMedia');
+const { convertToJpegs, withTimeout } = require('../../services/GambiranResumeMedia');
 
 const templatePath = path.join(__dirname, '../../templates/gambiran-resume-legal-memorandum.docx');
 
@@ -97,5 +97,12 @@ describe('GambiranResumeArtifacts', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
     expect(child.status).toBe(0);
     expect(JSON.parse(child.stdout)).toEqual({ count: 1, magic: 'ffd8' });
+  });
+
+  test('stops a stalled PDF operation and calls its cancellation hook', async () => {
+    let cancelled = false;
+    await expect(withTimeout(new Promise(() => {}), 10, 'render timeout', () => { cancelled = true; }))
+      .rejects.toThrow('render timeout');
+    expect(cancelled).toBe(true);
   });
 });
