@@ -53,7 +53,15 @@ async function imageToJpeg(buffer) {
     .toBuffer();
 }
 
-async function pdfToJpegs(buffer) {
+async function emitJpeg(item, pages, options) {
+  if (typeof options.onPage === 'function') {
+    await options.onPage(item);
+    return;
+  }
+  pages.push(item);
+}
+
+async function pdfToJpegs(buffer, options = {}) {
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
@@ -74,18 +82,24 @@ async function pdfToJpegs(buffer) {
       const page = await document.getPage(pageNumber);
       const viewport = page.getViewport({ scale: 2 });
       const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
-      const context = canvas.getContext('2d');
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      const renderTask = page.render({ canvasContext: context, viewport, canvas });
-      await withTimeout(
-        renderTask.promise,
-        timeoutMs,
-        `Render PDF halaman ${pageNumber} melebihi batas waktu`,
-        () => renderTask.cancel()
-      );
-      pages.push({ page: pageNumber, buffer: await imageToJpeg(canvas.toBuffer('image/png')) });
-      page.cleanup();
+      try {
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        const renderTask = page.render({ canvasContext: context, viewport, canvas });
+        await withTimeout(
+          renderTask.promise,
+          timeoutMs,
+          `Render PDF halaman ${pageNumber} melebihi batas waktu`,
+          () => renderTask.cancel()
+        );
+        const item = { page: pageNumber, buffer: await imageToJpeg(canvas.toBuffer('image/png')) };
+        await emitJpeg(item, pages, options);
+      } finally {
+        page.cleanup();
+        canvas.width = 0;
+        canvas.height = 0;
+      }
     }
     return pages;
   } finally {
@@ -93,9 +107,13 @@ async function pdfToJpegs(buffer) {
   }
 }
 
-async function convertToJpegs(buffer, mimeType, filename) {
-  if (isPdf(buffer, mimeType, filename)) return pdfToJpegs(buffer);
-  if (isImage(mimeType, filename)) return [{ page: 1, buffer: await imageToJpeg(buffer) }];
+async function convertToJpegs(buffer, mimeType, filename, options = {}) {
+  if (isPdf(buffer, mimeType, filename)) return pdfToJpegs(buffer, options);
+  if (isImage(mimeType, filename)) {
+    const pages = [];
+    await emitJpeg({ page: 1, buffer: await imageToJpeg(buffer) }, pages, options);
+    return pages;
+  }
   return [];
 }
 

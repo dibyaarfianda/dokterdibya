@@ -338,25 +338,27 @@ class GambiranResumeService {
     await this.r2.uploadBuffer(originalKey, downloaded.buffer, downloaded.mimeType, this.bucket, {
       contentDisposition: `attachment; filename="${downloaded.filename.replace(/"/g, '')}"`,
     });
-    let jpgs = [];
+    const jpgKeys = [];
     const conversionWarnings = [];
     try {
-      jpgs = await convertToJpegs(downloaded.buffer, downloaded.mimeType, downloaded.filename);
-      if (!jpgs.length && !isPdf(downloaded.buffer, downloaded.mimeType, downloaded.filename) && !isImage(downloaded.mimeType, downloaded.filename)) {
+      const supported = isPdf(downloaded.buffer, downloaded.mimeType, downloaded.filename)
+        || isImage(downloaded.mimeType, downloaded.filename);
+      await convertToJpegs(downloaded.buffer, downloaded.mimeType, downloaded.filename, {
+        onPage: async item => {
+          const jpgKey = `${baseKey}/jpg/${caseFolder}/${prefix}-p${String(item.page).padStart(4, '0')}.jpg`;
+          try {
+            await this.r2.uploadBuffer(jpgKey, item.buffer, 'image/jpeg', this.bucket);
+            jpgKeys.push(jpgKey);
+          } catch (error) {
+            conversionWarnings.push(`Upload JPG halaman ${item.page} untuk ${downloaded.filename} gagal: ${error.message}`);
+          }
+        },
+      });
+      if (!supported) {
         conversionWarnings.push(`Format ${downloaded.filename} disimpan asli tanpa turunan JPG`);
       }
     } catch (error) {
       conversionWarnings.push(`Konversi JPG ${downloaded.filename} gagal: ${error.message}`);
-    }
-    const jpgKeys = [];
-    for (const item of jpgs) {
-      const jpgKey = `${baseKey}/jpg/${caseFolder}/${prefix}-p${String(item.page).padStart(4, '0')}.jpg`;
-      try {
-        await this.r2.uploadBuffer(jpgKey, item.buffer, 'image/jpeg', this.bucket);
-        jpgKeys.push(jpgKey);
-      } catch (error) {
-        conversionWarnings.push(`Upload JPG halaman ${item.page} untuk ${downloaded.filename} gagal: ${error.message}`);
-      }
     }
     const occurredAt = toMysqlDateTime(file.occurred_at);
     const [result] = await this.db.query(
