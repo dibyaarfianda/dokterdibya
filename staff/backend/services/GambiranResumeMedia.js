@@ -1,7 +1,7 @@
 const path = require('path');
 const { pathToFileURL } = require('url');
 const sharp = require('sharp');
-const { createCanvas } = require('canvas');
+const { createCanvas } = require('@napi-rs/canvas');
 
 const DEFAULT_PDF_RENDER_TIMEOUT_MS = 30000;
 const PDFJS_ROOT = path.dirname(require.resolve('pdfjs-dist/package.json'));

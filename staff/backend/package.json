@@ -18,6 +18,7 @@
     "perf:budget": "node scripts/perf-budget-check.js"
   },
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.80",
     "@aws-sdk/client-s3": "^3.939.0",
     "@aws-sdk/s3-request-presigner": "^3.939.0",
     "@socket.io/redis-adapter": "^8.3.0",
