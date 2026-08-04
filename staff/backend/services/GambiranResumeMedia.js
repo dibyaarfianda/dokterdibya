@@ -1,0 +1,59 @@
+const path = require('path');
+const sharp = require('sharp');
+const { createCanvas } = require('canvas');
+
+function trim(value) {
+  return value === undefined || value === null ? '' : String(value).trim();
+}
+
+function isPdf(buffer, mimeType, filename) {
+  return trim(mimeType).toLowerCase().includes('pdf')
+    || path.extname(trim(filename)).toLowerCase() === '.pdf'
+    || Buffer.from(buffer).subarray(0, 5).toString('ascii') === '%PDF-';
+}
+
+function isImage(mimeType, filename) {
+  return trim(mimeType).toLowerCase().startsWith('image/')
+    || ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tif', '.tiff', '.heic', '.heif']
+      .includes(path.extname(trim(filename)).toLowerCase());
+}
+
+async function imageToJpeg(buffer) {
+  return sharp(buffer, { animated: false, failOn: 'warning' })
+    .rotate()
+    .flatten({ background: '#ffffff' })
+    .toColourspace('srgb')
+    .jpeg({ quality: 88, mozjpeg: true })
+    .toBuffer();
+}
+
+async function pdfToJpegs(buffer) {
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const loadingTask = pdfjs.getDocument({ data: new Uint8Array(buffer), disableWorker: true });
+  const document = await loadingTask.promise;
+  try {
+    const pages = [];
+    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
+      const page = await document.getPage(pageNumber);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height));
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: context, viewport, canvas }).promise;
+      pages.push({ page: pageNumber, buffer: await imageToJpeg(canvas.toBuffer('image/png')) });
+      page.cleanup();
+    }
+    return pages;
+  } finally {
+    await document.destroy();
+  }
+}
+
+async function convertToJpegs(buffer, mimeType, filename) {
+  if (isPdf(buffer, mimeType, filename)) return pdfToJpegs(buffer);
+  if (isImage(mimeType, filename)) return [{ page: 1, buffer: await imageToJpeg(buffer) }];
+  return [];
+}
+
+module.exports = { convertToJpegs, imageToJpeg, pdfToJpegs, isPdf, isImage };

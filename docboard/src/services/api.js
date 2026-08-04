@@ -609,6 +609,36 @@ export const api = {
     return `${path}${separator}token=${encodeURIComponent(token)}`;
   },
 
+  getGambiranResumes(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/gambiran-resumes${qs ? '?' + qs : ''}`);
+  },
+
+  createGambiranResume(medicalRecordNumber) {
+    return request('/gambiran-resumes', {
+      method: 'POST',
+      body: JSON.stringify({ medical_record_number: medicalRecordNumber })
+    });
+  },
+
+  getGambiranResume(id) {
+    return request(`/gambiran-resumes/${encodeURIComponent(id)}`);
+  },
+
+  getGambiranResumeFiles(id, params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/gambiran-resumes/${encodeURIComponent(id)}/files${qs ? '?' + qs : ''}`);
+  },
+
+  getGambiranResumeFileDownload(id, fileId, params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/gambiran-resumes/${encodeURIComponent(id)}/files/${encodeURIComponent(fileId)}/download-url${qs ? '?' + qs : ''}`);
+  },
+
+  getGambiranResumeArtifactDownload(id, kind) {
+    return request(`/gambiran-resumes/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(kind)}/download-url`);
+  },
+
   // PDF Export - returns URL string (not a fetch, used with window.open)
   getExportPDFUrl(startDate, endDate) {
     const token = getToken();

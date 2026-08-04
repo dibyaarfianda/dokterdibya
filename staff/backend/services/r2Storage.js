@@ -130,7 +130,7 @@ const deleteFile = async (key) => {
  * @param {string} key - File key in R2
  * @param {number} expiresIn - URL expiry in seconds (default 1 hour)
  */
-const getSignedDownloadUrl = async (key, expiresIn = 3600) => {
+const getSignedDownloadUrl = async (key, expiresIn = 3600, bucketName = R2_BUCKET_NAME, response = {}) => {
     if (!isR2Configured()) {
         throw new Error('R2 storage is not configured');
     }
@@ -139,8 +139,10 @@ const getSignedDownloadUrl = async (key, expiresIn = 3600) => {
 
     try {
         const command = new GetObjectCommand({
-            Bucket: R2_BUCKET_NAME,
+            Bucket: resolveBucket(bucketName),
             Key: key,
+            ResponseContentType: response.contentType,
+            ResponseContentDisposition: response.contentDisposition,
         });
 
         const signedUrl = await getSignedUrl(client, command, { expiresIn });
@@ -183,6 +185,38 @@ const getFileBuffer = async (key, bucketName = R2_BUCKET_NAME) => {
     }
 };
 
+/**
+ * Upload a buffer using an exact object key. Immutable archive manifests need
+ * stable object paths, so this intentionally differs from uploadFile().
+ */
+const uploadBuffer = async (key, fileBuffer, mimeType = 'application/octet-stream', bucketName = R2_BUCKET_NAME, options = {}) => {
+    if (!isR2Configured()) {
+        throw new Error('R2 storage is not configured');
+    }
+    const cleanKey = String(key || '').replace(/^\/+/, '').trim();
+    if (!cleanKey || cleanKey.includes('..')) {
+        throw new Error('R2 object key is invalid');
+    }
+    const bucket = resolveBucket(bucketName);
+    const body = Buffer.isBuffer(fileBuffer) ? fileBuffer : Buffer.from(fileBuffer);
+    try {
+        await getS3Client().send(new PutObjectCommand({
+            Bucket: bucket,
+            Key: cleanKey,
+            Body: body,
+            ContentType: mimeType,
+            CacheControl: options.cacheControl || 'private, no-store',
+            ContentDisposition: options.contentDisposition,
+            Metadata: options.metadata,
+        }));
+        logger.info('Buffer uploaded to R2', { key: cleanKey, bucket, bytes: body.length });
+        return { success: true, key: cleanKey, bucket, bytes: body.length };
+    } catch (error) {
+        logger.error('R2 upload buffer error', { error: error.message, key: cleanKey, bucket });
+        throw error;
+    }
+};
+
 const uploadJson = async (key, data, bucketName = R2_BUCKET_NAME) => {
     if (!isR2Configured()) {
         throw new Error('R2 storage is not configured');
@@ -217,6 +251,7 @@ const getJson = async (key, bucketName = R2_BUCKET_NAME) => {
 module.exports = {
     isR2Configured,
     uploadFile,
+    uploadBuffer,
     uploadJson,
     deleteFile,
     getSignedDownloadUrl,

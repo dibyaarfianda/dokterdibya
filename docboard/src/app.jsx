@@ -12,6 +12,8 @@ import GambiranMonitor from './views/GambiranMonitor';
 import GambiranAudit from './views/GambiranAudit';
 import MorbidCaseList from './views/MorbidCaseList';
 import MorbidCaseDetail from './views/MorbidCaseDetail';
+import GambiranResumeList from './views/GambiranResumeList';
+import GambiranResumeDetail from './views/GambiranResumeDetail';
 import Notifications from './views/Notifications';
 import TodayAlarms from './views/TodayAlarms';
 import Settings from './views/Settings';
@@ -91,6 +93,8 @@ export default function App() {
           <NandaOnlyRoute path="/docboard/audit" component={GambiranAudit} />
           <NandaOnlyRoute path="/docboard/morbid-cases" component={MorbidCaseList} />
           <NandaOnlyRoute path="/docboard/morbid-cases/:id" component={MorbidCaseDetail} />
+          <NandaOnlyRoute path="/docboard/gambiran-resumes" component={GambiranResumeList} />
+          <NandaOnlyRoute path="/docboard/gambiran-resumes/:id" component={GambiranResumeDetail} />
           <Notifications path="/docboard/notifications" />
           <TodayAlarms path="/docboard/alarms" />
           <CommandDashboard path="/docboard/command" />

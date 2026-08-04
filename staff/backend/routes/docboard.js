@@ -9,6 +9,7 @@ const docboardAlarms = require('../services/DocBoardAlarmService');
 const surgeryRoutes = require('./surgery');
 const operationDataRoutes = require('./operation-data');
 const morbidCaseRoutes = require('./morbid-cases');
+const gambiranResumeRoutes = require('./gambiran-resumes');
 const OperationAuditService = require('../services/OperationAuditService');
 const OperationPathologyService = require('../services/OperationPathologyService');
 const OperationDoctorJourneyService = require('../services/OperationDoctorJourneyService');
@@ -80,6 +81,11 @@ router.use('/morbid-cases', (req, res, next) => {
   next();
 });
 router.use('/morbid-cases', morbidCaseRoutes);
+router.use('/gambiran-resumes', (req, res, next) => {
+  if (!canViewRestrictedDocBoard(req.user)) return restrictedDocBoardForbidden(res);
+  next();
+});
+router.use('/gambiran-resumes', gambiranResumeRoutes);
 
 router.get('/users', async (req, res) => {
   try {
