@@ -15,8 +15,13 @@ describe('DocBoard Gambiran longitudinal resume contract', () => {
   });
 
   test('exposes asynchronous RM-only APIs with no-store responses', () => {
+    const parentRoute = readRepoFile('staff', 'backend', 'routes', 'docboard.js');
     const route = readRepoFile('staff', 'backend', 'routes', 'gambiran-resumes.js');
     const api = readRepoFile('docboard', 'src', 'services', 'api.js');
+    const noStoreIndex = parentRoute.indexOf("router.use('/gambiran-resumes', (req, res, next) => {\n  res.setHeader('Cache-Control'");
+    const authIndex = parentRoute.indexOf('router.use(verifyStaffToken);');
+    expect(noStoreIndex).toBeGreaterThan(-1);
+    expect(noStoreIndex).toBeLessThan(authIndex);
     expect(route).toContain('req.body?.medical_record_number');
     expect(route).toContain('res.status(202)');
     expect(route).toContain("Cache-Control', 'no-store, no-cache");

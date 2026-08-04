@@ -66,6 +66,15 @@ router.use((req, res, next) => {
   next();
 });
 
+// Clinical archive responses must never be cached, including authentication
+// and authorization failures that return before the child router is reached.
+router.use('/gambiran-resumes', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // All routes require staff authentication
 router.use(verifyStaffToken);
 
