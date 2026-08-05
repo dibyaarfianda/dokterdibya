@@ -125,7 +125,11 @@ function collectFiles(snapshot) {
   }
   const unique = new Map();
   for (const file of found) {
-    const key = `${file.case_id || ''}:${file.id}:${file.download_path || file.filename}`;
+    const logicalFilename = trim(file.filename).toLowerCase().replace(/\s+/g, ' ');
+    const logicalOccurredAt = toMysqlDateTime(file.occurred_at);
+    const key = file.case_id && logicalFilename && logicalOccurredAt
+      ? `clinical:${file.case_id}:${logicalOccurredAt}:${logicalFilename}`
+      : `source:${file.case_id || ''}:${file.id}:${file.download_path || file.filename}`;
     if (!unique.has(key)) unique.set(key, file);
   }
   return [...unique.values()];
@@ -329,8 +333,7 @@ class GambiranResumeService {
     }
   }
 
-  async archiveFile(id, baseKey, mr, file, index) {
-    const downloaded = await this.fetchCommFile(mr, file);
+  async archiveDownloadedFile(id, baseKey, file, index, downloaded) {
     const checksum = crypto.createHash('sha256').update(downloaded.buffer).digest('hex');
     const caseFolder = safeSegment(file.case_id, 'patient');
     const prefix = `${String(index + 1).padStart(4, '0')}-${safeSegment(path.basename(downloaded.filename, path.extname(downloaded.filename)), 'dokumen')}`;
@@ -379,6 +382,68 @@ class GambiranResumeService {
     };
   }
 
+  async archiveFile(id, baseKey, mr, file, index) {
+    const downloaded = await this.fetchCommFile(mr, file);
+    return this.archiveDownloadedFile(id, baseKey, file, index, downloaded);
+  }
+
+  async loadPreviousFile(currentId, mr, file) {
+    const sourceFileId = trim(file.id).slice(0, 255);
+    const caseId = trim(file.case_id).slice(0, 64) || null;
+    const category = trim(file.category).slice(0, 64) || 'dokumen';
+    const occurredAt = toMysqlDateTime(file.occurred_at);
+    if (!sourceFileId) return null;
+
+    const [rows] = await this.db.query(
+      `SELECT f.*, r.archive_version, r.r2_bucket
+         FROM docboard_gambiran_resume_files f
+         JOIN docboard_gambiran_resumes r ON r.id = f.resume_id
+        WHERE r.facility = 'gambiran' AND r.mr_digits = ? AND r.id <> ?
+          AND r.status IN ('ready','ready_with_warnings')
+          AND f.source_file_id = ? AND f.case_id <=> ? AND f.category = ? AND f.occurred_at <=> ?
+        ORDER BY r.archive_version DESC, f.id DESC LIMIT 5`,
+      [mr.digits, currentId, sourceFileId, caseId, category, occurredAt]
+    );
+
+    for (const row of rows) {
+      try {
+        const buffer = await this.r2.getFileBuffer(row.original_r2_key, row.r2_bucket || this.bucket);
+        const checksum = crypto.createHash('sha256').update(buffer).digest('hex');
+        if (checksum !== trim(row.sha256).toLowerCase()) {
+          logger.warn('Gambiran prior archive checksum mismatch', { resumeId: row.resume_id, fileId: row.id });
+          continue;
+        }
+        return {
+          downloaded: {
+            buffer,
+            mimeType: trim(row.mime_type) || file.mime_type || 'application/octet-stream',
+            filename: sanitizeFilename(row.filename || file.filename),
+          },
+          provenance: {
+            resume_id: Number(row.resume_id),
+            archive_version: Number(row.archive_version),
+            file_id: Number(row.id),
+            sha256: checksum,
+          },
+        };
+      } catch (error) {
+        logger.warn('Gambiran prior archive read failed', { resumeId: row.resume_id, fileId: row.id, message: error.message });
+      }
+    }
+    return null;
+  }
+
+  async archiveFileWithFallback(id, baseKey, mr, file, index) {
+    try {
+      return await this.archiveFile(id, baseKey, mr, file, index);
+    } catch (error) {
+      const previous = await this.loadPreviousFile(id, mr, file);
+      if (!previous) throw error;
+      const archived = await this.archiveDownloadedFile(id, baseKey, file, index, previous.downloaded);
+      return { ...archived, reused_from: previous.provenance, recovered_error: error.message };
+    }
+  }
+
   async process(id, mr) {
     try {
       await this.db.query(
@@ -394,7 +459,7 @@ class GambiranResumeService {
       const files = collectFiles(snapshot);
       for (let index = 0; index < files.length; index += 1) {
         try {
-          const archived = await this.archiveFile(id, baseKey, mr, files[index], index);
+          const archived = await this.archiveFileWithFallback(id, baseKey, mr, files[index], index);
           archivedFiles.push(archived);
           warnings.push(...archived.conversion_warnings);
         } catch (error) {
@@ -419,7 +484,13 @@ class GambiranResumeService {
         medify_search_number: mr.digits,
         generated_at: generatedAt,
         case_ids: caseIds,
-        counts: { cases: caseIds.length, events: timeline.length, files: archivedFiles.length, jpg: archivedFiles.reduce((sum, file) => sum + file.jpg_keys.length, 0) },
+        counts: {
+          cases: caseIds.length,
+          events: timeline.length,
+          files: archivedFiles.length,
+          jpg: archivedFiles.reduce((sum, file) => sum + file.jpg_keys.length, 0),
+          reused_files: archivedFiles.filter(file => file.reused_from).length,
+        },
         warnings,
         artifacts: { snapshot: snapshotKey, manifest: manifestKey, resume_txt: txtKey, resume_docx: docxKey },
         files: archivedFiles,

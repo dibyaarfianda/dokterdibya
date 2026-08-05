@@ -61,6 +61,93 @@ describe('GambiranResumeService', () => {
     expect(files[2]).toEqual(expect.objectContaining({ case_id: 'med-1', category: 'anestesi' }));
   });
 
+  test('deduplicates alternate COMM representations of the same clinical file', () => {
+    const files = GambiranResumeService.collectFiles({
+      penunjang: { files: [{
+        id: 'hash-source', case_id: 'med-1', category: 'penunjang',
+        filename: 'HASIL_LAB_PK-D-Dimer__03-08-2026', occurred_at: '2026-08-03 15:14:44',
+        download_path: '/api/internal/gambiran/patients/123/files/hash-source?caseId=med-1',
+      }] },
+      encounters: [{
+        case_id: 'med-1',
+        penunjang: { files: [{
+          id: 'numeric-source', category: 'labpk',
+          filename: 'HASIL_LAB_PK-D-Dimer__03-08-2026', occurred_at: '2026-08-03 15:14:44',
+        }] },
+      }],
+    });
+
+    expect(files).toHaveLength(1);
+    expect(files[0]).toEqual(expect.objectContaining({ id: 'hash-source', case_id: 'med-1' }));
+  });
+
+  test('falls back to a checksum-verified prior archive when COMM fetch fails', async () => {
+    const service = new GambiranResumeService({ db: {}, r2: { R2_BUCKET_NAME: 'private' }, bucket: 'private' });
+    const fetchError = new Error('fetch failed');
+    const prior = {
+      downloaded: { buffer: Buffer.from('prior-pdf'), mimeType: 'application/pdf', filename: 'hasil.pdf' },
+      provenance: { resume_id: 12, archive_version: 4, file_id: 55, sha256: 'abc' },
+    };
+    service.archiveFile = jest.fn().mockRejectedValue(fetchError);
+    service.loadPreviousFile = jest.fn().mockResolvedValue(prior);
+    service.archiveDownloadedFile = jest.fn().mockResolvedValue({ id: 99, filename: 'hasil.pdf' });
+
+    const result = await service.archiveFileWithFallback(
+      17, 'gambiran-resumes/123456/17', { digits: '123456' },
+      { id: 'source-1', case_id: 'med-1', category: 'penunjang', filename: 'hasil.pdf' }, 0
+    );
+
+    expect(service.loadPreviousFile).toHaveBeenCalledWith(17, { digits: '123456' }, expect.objectContaining({ id: 'source-1' }));
+    expect(service.archiveDownloadedFile).toHaveBeenCalledWith(
+      17, 'gambiran-resumes/123456/17', expect.any(Object), 0, prior.downloaded
+    );
+    expect(result).toEqual(expect.objectContaining({
+      id: 99,
+      reused_from: prior.provenance,
+      recovered_error: 'fetch failed',
+    }));
+  });
+
+  test('loads only an exact prior source and verifies its stored checksum', async () => {
+    const buffer = Buffer.from('verified-prior-pdf');
+    const sha256 = require('crypto').createHash('sha256').update(buffer).digest('hex');
+    const db = { query: jest.fn(async () => [[{
+      id: 55, resume_id: 12, archive_version: 4, r2_bucket: 'private',
+      filename: 'hasil.pdf', mime_type: 'application/pdf', sha256,
+      original_r2_key: 'gambiran-resumes/123456/12/originals/hasil.pdf',
+    }]]) };
+    const r2 = { R2_BUCKET_NAME: 'private', getFileBuffer: jest.fn(async () => buffer) };
+    const service = new GambiranResumeService({ db, r2, bucket: 'private' });
+
+    const result = await service.loadPreviousFile(17, { digits: '123456' }, {
+      id: 'source-1', case_id: 'med-1', category: 'penunjang',
+      filename: 'hasil.pdf', occurred_at: '2026-08-03 15:14:44',
+    });
+
+    expect(db.query.mock.calls[0][1]).toEqual([
+      '123456', 17, 'source-1', 'med-1', 'penunjang', '2026-08-03 15:14:44',
+    ]);
+    expect(r2.getFileBuffer).toHaveBeenCalledWith('gambiran-resumes/123456/12/originals/hasil.pdf', 'private');
+    expect(result).toEqual(expect.objectContaining({
+      downloaded: expect.objectContaining({ buffer, mimeType: 'application/pdf', filename: 'hasil.pdf' }),
+      provenance: expect.objectContaining({ resume_id: 12, archive_version: 4, file_id: 55, sha256 }),
+    }));
+  });
+
+  test('rejects a prior archive object when its checksum no longer matches', async () => {
+    const db = { query: jest.fn(async () => [[{
+      id: 55, resume_id: 12, archive_version: 4, r2_bucket: 'private',
+      filename: 'hasil.pdf', mime_type: 'application/pdf', sha256: '0'.repeat(64),
+      original_r2_key: 'gambiran-resumes/123456/12/originals/hasil.pdf',
+    }]]) };
+    const r2 = { R2_BUCKET_NAME: 'private', getFileBuffer: jest.fn(async () => Buffer.from('changed')) };
+    const service = new GambiranResumeService({ db, r2, bucket: 'private' });
+
+    await expect(service.loadPreviousFile(17, { digits: '123456' }, {
+      id: 'source-1', case_id: 'med-1', category: 'penunjang', occurred_at: '2026-08-03 15:14:44',
+    })).resolves.toBeNull();
+  });
+
   test('runs the asynchronous archive lifecycle and writes all four immutable artifacts', async () => {
     const catalog = {
       id: 17, facility: 'gambiran', mr_digits: '123456', mr_display: '00-00-12-34-56', archive_version: 1,
