@@ -1,8 +1,8 @@
 const db = require('../db');
 const { matchesAnyTerm, parseSearchTerms } = require('../utils/searchTerms');
+const { TARGET_DOCTOR_KEYS, classifyTargetDoctorTransfer } = require('../utils/operationDoctorTransfer');
 const ExcelJS = require('exceljs');
 
-const TARGET_DOCTOR_KEYS = ['dibya', 'tri_aji', 'latifa'];
 const DOCTOR_LABELS = {
     dibya: 'dr. Dibya',
     tri_aji: 'dr. Tri Aji',
@@ -65,7 +65,7 @@ function daysBetween(firstDate, secondDate) {
 
 function mapRow(row) {
     const hasJourney = Boolean(row.journey_id) && Number(row.journey_model_version || 1) === 2;
-    const doctorJourney = hasJourney ? {
+    let doctorJourney = hasJourney ? {
         id: row.journey_id,
         model_version: Number(row.journey_model_version),
         transfer_status: row.journey_transfer_status || 'unknown',
@@ -101,6 +101,18 @@ function mapRow(row) {
         error_message: row.journey_error_message || null,
         analysis_status: row.journey_error_message ? 'failed' : 'ready',
     } : null;
+    if (doctorJourney) {
+        const transferStatus = classifyTargetDoctorTransfer(
+            doctorJourney.transfer_status,
+            doctorJourney.origin_doctor,
+            doctorJourney.final_doctor
+        );
+        doctorJourney = {
+            ...doctorJourney,
+            transfer_status: transferStatus,
+            transition_count: transferStatus === 'yes' ? doctorJourney.transition_count : 0,
+        };
+    }
     return {
         ...row,
         operation_date: normalizeDate(row.operation_date),

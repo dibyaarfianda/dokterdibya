@@ -26,8 +26,8 @@ function cachedRow(overrides = {}) {
         model_version: 2,
         transfer_status: 'yes',
         confidence: 'verified',
-        origin_doctor_name: 'dr. Dokter Awal',
-        origin_doctor_key: 'dokter awal',
+        origin_doctor_name: 'dr. Latifa Maharani, Sp.OG',
+        origin_doctor_key: 'latifa maharani',
         origin_doctor_source: 'cppt_author',
         last_visit_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
         last_visit_doctor_key: 'dibya arfianda',
@@ -49,6 +49,29 @@ function cachedRow(overrides = {}) {
 }
 
 describe('OperationDoctorJourneyService', () => {
+    test('normalizes cached transfers to different target doctors only', () => {
+        const mapCachedRow = OperationDoctorJourneyService.mapCachedRow;
+
+        expect(mapCachedRow(cachedRow({
+            origin_doctor_name: 'dr. Latifa Maharani, Sp.OG',
+            origin_doctor_key: 'latifa maharani',
+            final_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
+            final_doctor_key: 'dibya arfianda'
+        })).transfer_status).toBe('yes');
+        expect(mapCachedRow(cachedRow({
+            origin_doctor_name: 'dr. Latifa Maharani, Sp.OG',
+            origin_doctor_key: 'latifa maharani',
+            final_doctor_name: 'dr. Latifa Maharani, Sp.OG',
+            final_doctor_key: 'latifa'
+        }))).toEqual(expect.objectContaining({ transfer_status: 'no', transition_count: 0 }));
+        expect(mapCachedRow(cachedRow({
+            origin_doctor_name: 'dr. Dokter Lain, Sp.OG',
+            origin_doctor_key: 'dokter lain',
+            final_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
+            final_doctor_key: 'dibya arfianda'
+        }))).toEqual(expect.objectContaining({ transfer_status: 'no', transition_count: 0 }));
+    });
+
     test('refreshes through the protected COMM endpoint and persists only the validated summary', async () => {
         const db = {
             query: jest.fn(async (sql) => {

@@ -226,8 +226,8 @@ describe('OperationAuditService', () => {
                 journey_id: 91,
                 journey_transfer_status: 'yes',
                 journey_confidence: 'verified',
-                journey_origin_doctor_name: 'dr. Dokter Awal',
-                journey_origin_doctor_key: 'dokter awal',
+                journey_origin_doctor_name: 'dr. Latifa Maharani, Sp.OG',
+                journey_origin_doctor_key: 'latifa maharani',
                 journey_last_visit_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
                 journey_last_visit_doctor_key: 'dibya arfianda',
                 journey_visit_count: 3,
@@ -270,6 +270,37 @@ describe('OperationAuditService', () => {
         }));
     });
 
+    test('counts transfers only between different target doctors', async () => {
+        const journey = (id, originName, originKey, finalName, finalKey) => row({
+            id,
+            source_key: `gambiran:pendaftaran:${id}`,
+            journey_id: 100 + id,
+            journey_transfer_status: 'yes',
+            journey_confidence: 'verified',
+            journey_origin_doctor_name: originName,
+            journey_origin_doctor_key: originKey,
+            journey_final_doctor_name: finalName,
+            journey_final_doctor_key: finalKey
+        });
+        const db = createDbMock([[
+            [
+                journey(1, 'dr. Latifa Maharani, Sp.OG', 'latifa maharani', 'dr. Dibya Arfianda, Sp.OG', 'dibya arfianda'),
+                journey(2, 'dr. Latifa Maharani, Sp.OG', 'latifa maharani', 'dr. Latifa Maharani, Sp.OG', 'latifa'),
+                journey(3, 'dr. Dokter Lain, Sp.OG', 'dokter lain', 'dr. Dibya Arfianda, Sp.OG', 'dibya arfianda')
+            ]
+        ]]);
+        const service = new OperationAuditService(db);
+
+        const result = await service.getGambiranAudit({
+            start: '2026-06-01',
+            end: '2026-06-30',
+            transfer: 'yes'
+        });
+
+        expect(result.data.map(item => item.id)).toEqual([1]);
+        expect(result.summary.transfer_count).toBe(1);
+    });
+
     test('builds a formatted Gambiran audit XLSX export with summary and detail sheets', async () => {
         const db = createDbMock([
             [[row({
@@ -285,7 +316,8 @@ describe('OperationAuditService', () => {
                 journey_id: 99,
                 journey_transfer_status: 'yes',
                 journey_confidence: 'verified',
-                journey_origin_doctor_name: 'dr. Dokter Awal',
+                journey_origin_doctor_name: 'dr. Dibya Arfianda, Sp.OG',
+                journey_origin_doctor_key: 'dibya arfianda',
                 journey_last_visit_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
                 journey_procedure_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
                 journey_final_doctor_name: 'dr. Tri Aji Wibowo, Sp.OG',
@@ -333,7 +365,7 @@ describe('OperationAuditService', () => {
             '38 tahun',
             'SVH',
             'Tidak',
-            'dr. Dokter Awal',
+            'dr. Dibya Arfianda, Sp.OG',
             'Ya',
             'dr. Tri Aji Wibowo, Sp.OG',
             'Terverifikasi',

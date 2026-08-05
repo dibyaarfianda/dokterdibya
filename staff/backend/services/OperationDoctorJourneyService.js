@@ -1,4 +1,5 @@
 const dbPool = require('../db');
+const { classifyTargetDoctorTransfer } = require('../utils/operationDoctorTransfer');
 const JOURNEY_MODEL_VERSION = 2;
 
 function trim(value) {
@@ -34,20 +35,27 @@ function mapCachedRow(row) {
   if (!row) return null;
   const modelVersion = Number(row.model_version || 1);
   const visits = parseJson(row.timeline_json, []);
+  const originDoctor = doctorFromColumns(row, 'origin');
+  const finalDoctor = doctorFromColumns(row, 'final');
+  const transferStatus = classifyTargetDoctorTransfer(
+    row.transfer_status || 'unknown',
+    originDoctor,
+    finalDoctor
+  );
   return {
     id: row.id,
     operation_data_id: row.operation_data_id,
     facility: row.facility,
     simrs_operasi_id: row.simrs_operasi_id,
     model_version: modelVersion,
-    transfer_status: row.transfer_status || 'unknown',
+    transfer_status: transferStatus,
     confidence: row.confidence || 'unknown',
-    origin_doctor: doctorFromColumns(row, 'origin'),
+    origin_doctor: originDoctor,
     last_cppt_doctor: doctorFromColumns(row, 'last_cppt'),
     last_visit_doctor: doctorFromColumns(row, 'last_visit'),
     procedure_doctor: doctorFromColumns(row, 'procedure'),
-    final_doctor: doctorFromColumns(row, 'final'),
-    transition_count: Number(row.transition_count || 0),
+    final_doctor: finalDoctor,
+    transition_count: transferStatus === 'yes' ? Number(row.transition_count || 0) : 0,
     visit_count: Number(row.visit_count || visits.length || 0),
     visits,
     timeline: visits,
