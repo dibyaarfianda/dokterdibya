@@ -2,6 +2,15 @@
    Loaded after sunday-clinic.css and enabled only for the embedded mobile app. */
 
 @media (max-width: 991.98px) {
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-pwa-mobile-only,
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-pwa-mobile-title {
+        display: inline-flex !important;
+    }
+
+    body.mobile-app-mode.sunday-clinic-embedded-active .sc-desktop-title {
+        display: none !important;
+    }
+
     body.mobile-app-mode.sunday-clinic-embedded-active {
         --sc-pwa-space-0: 2px;
         --sc-pwa-space-1: 4px;
@@ -273,6 +282,7 @@
         width: 100% !important; /* Fixed navigation must not widen the document. */
         max-width: 100% !important;
         min-height: var(--sc-pwa-bottom-nav-height) !important;
+        flex-wrap: nowrap !important;
         gap: var(--sc-pwa-space-0) !important;
         padding: var(--sc-pwa-space-1) var(--sc-pwa-space-2) calc(var(--sc-pwa-space-1) + env(safe-area-inset-bottom, 0px)) !important;
         overflow-x: auto !important;

@@ -181,6 +181,12 @@ body.sidebar-collapse .main-header {
     min-height: 320px;
 }
 
+/* The restored clinical actions belong to installed mobile PWAs only. */
+.sc-pwa-mobile-only,
+.sc-pwa-mobile-title {
+    display: none !important;
+}
+
 /* Desktop Sunday Clinic shell: keep actions and section navigation tidy at
    medium widths without changing the dedicated embedded PWA layout. */
 body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-toolbar-card {
@@ -218,6 +224,10 @@ body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions .btn {
     min-height: 34px !important;
     margin: 0 !important;
     white-space: nowrap !important;
+}
+
+body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions .sc-pwa-mobile-only {
+    display: none !important;
 }
 
 body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-section-bar {

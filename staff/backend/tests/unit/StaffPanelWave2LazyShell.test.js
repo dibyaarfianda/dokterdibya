@@ -168,10 +168,11 @@ describe('staff panel wave 2 lazy shell contracts', () => {
         expect(fakeFetch).toHaveBeenCalledTimes(1);
         expect(containers.patients.innerHTML).toBe('<p>patient fragment</p>');
         expect(calls).toEqual(['dashboard:activate', 'dashboard:deactivate', 'patients:load', 'patients:activate', 'patients:activate']);
-        expect(events.map(event => event.detail)).toEqual([
-            { page: 'dashboard', previousPage: null },
-            { page: 'patients', previousPage: 'dashboard' },
-            { page: 'patients', previousPage: 'patients' }
+        expect(events.map(event => ({ type: event.type, detail: event.detail }))).toEqual([
+            { type: 'page:changed', detail: { page: 'dashboard', previousPage: null } },
+            { type: 'staff:fragment-loaded', detail: { page: 'patients', containerId: 'patients' } },
+            { type: 'page:changed', detail: { page: 'patients', previousPage: 'dashboard' } },
+            { type: 'page:changed', detail: { page: 'patients', previousPage: 'patients' } }
         ]);
     });
 });

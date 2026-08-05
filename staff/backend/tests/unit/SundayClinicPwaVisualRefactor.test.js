@@ -73,7 +73,7 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(main).toContain("sundayClinicPwaMediaQuery.removeEventListener('change', reconcileSundayClinicPwaMode);");
         expect(main).toContain("document.body.classList.add('sunday-clinic-embedded-active');");
         expect(shell).toContain("const mobileRequestedFromUrl = urlParams.get('mobile') === '1';");
-        expect(shell).toContain('const mobileFromUrl = mobileRequestedFromUrl && !isDesktopFinePointer;');
+        expect(shell).toContain('const mobileFromUrl = mobileRequestedFromUrl && allowsMobilePwaMode;');
         expect(shell).toContain("sessionStorage.removeItem('mobileAppMode');");
         expect(shell).toContain("localStorage.removeItem('mobileAppMode');");
         expect(shell).toContain('id="mobile-responsive-stylesheet"');

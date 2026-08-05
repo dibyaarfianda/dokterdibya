@@ -59,6 +59,14 @@
                     this.loadedFeatures.add(key);
                 }
                 container.dataset.pageLoaded = 'true';
+                if (descriptor.fragment) {
+                    const detail = { page: key, containerId: descriptor.containerId };
+                    const EventCtor = global.CustomEvent;
+                    const event = typeof EventCtor === 'function'
+                        ? new EventCtor('staff:fragment-loaded', { detail })
+                        : { type: 'staff:fragment-loaded', detail };
+                    this.eventTarget?.dispatchEvent?.(event);
+                }
                 return container;
             })();
 

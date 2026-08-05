@@ -36,15 +36,20 @@ describe('Sunday Clinic desktop layout', () => {
         expect(sharedCss).not.toContain('min-width: 140px !important;');
     });
 
-    test('uses Klinik Privat branding and keeps only the required header actions', () => {
-        expect(page).toContain('<i class="fas fa-clinic-medical mr-2"></i>Klinik Privat');
+    test('keeps Klinik Privat branding and the compact action surface on desktop', () => {
+        expect(page).toContain('<span class="sc-desktop-title">Klinik Privat</span>');
         expect(page).toContain('class="btn btn-outline-secondary btn-sm mobile-back-btn"');
         expect(page).toContain('id="btn-header-queue"');
         expect(page).toContain('id="btn-toggle-patient-sidebar"');
-        expect(page).not.toContain('id="sc-open-directory"');
-        expect(page).not.toContain('id="btn-header-search"');
-        expect(page).not.toContain('window.openImportModal');
-        expect(page).not.toContain('window.openBulkImportModal');
+        expect(page).toContain('id="sc-open-directory"');
+        expect(page).toContain('id="btn-header-search"');
+        expect(page).toContain('window.openImportModal');
+        expect(page).toContain('window.openBulkImportModal');
+        expect(sharedCss).toContain('.sc-pwa-mobile-only,');
+        expect(sharedCss).toContain('.sc-pwa-mobile-title {');
+        expect(sharedCss).toContain('display: none !important;');
+        expect(sharedCss).toContain('body.sunday-clinic-embedded-active:not(.mobile-app-mode) .sc-page-actions .sc-pwa-mobile-only');
+        expect(pwaCss).toContain('body.mobile-app-mode.sunday-clinic-embedded-active .sc-pwa-mobile-only');
     });
 
     test('removes duplicate desktop section labels and hides an empty context header', () => {

@@ -541,6 +541,8 @@ async function ensureRegisteredPage(key) {
     if (!window.staffPageRegistry?.get(key)) return null;
     const container = await window.staffPageRegistry.ensureLoaded(key);
     initPages();
+    window.syncStaffPwaMode?.();
+    queueSundayClinicPwaViewportSync();
     return container;
 }
 
