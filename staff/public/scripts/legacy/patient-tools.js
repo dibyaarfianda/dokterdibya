@@ -729,6 +729,311 @@
             .replace(/'/g, '&#39;');
     }
 
+    function getPatientDrdSortKey(value) {
+        const text = String(value || '').trim();
+        const match = /^DRD0*(\d+)$/i.exec(text);
+        return {
+            isDrd: Boolean(match),
+            number: match ? Number.parseInt(match[1], 10) : Number.POSITIVE_INFINITY,
+            text
+        };
+    }
+
+    function sortPatientDrdRecordsAscending(records) {
+        return [...(records || [])].sort((left, right) => {
+            const leftKey = getPatientDrdSortKey(left?.mr_id);
+            const rightKey = getPatientDrdSortKey(right?.mr_id);
+            if (leftKey.isDrd !== rightKey.isDrd) return leftKey.isDrd ? -1 : 1;
+            if (leftKey.number !== rightKey.number) return leftKey.number - rightKey.number;
+            return leftKey.text.localeCompare(rightKey.text, 'id', { numeric: true, sensitivity: 'base' });
+        });
+    }
+
+    async function fetchPatientMergeJson(url, options = {}) {
+        const token = (window.getAuthToken ? window.getAuthToken() : '');
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
+                ...(options.headers || {})
+            }
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.success) {
+            const error = new Error(payload.message || 'Proses merge pasien gagal');
+            error.details = payload.details || null;
+            throw error;
+        }
+        return payload;
+    }
+
+    async function searchPatientMergeCandidates(search = '') {
+        const params = new URLSearchParams({ limit: '100' });
+        if (String(search || '').trim()) params.set('search', String(search).trim());
+        const payload = await fetchPatientMergeJson(`/api/patients/merge/candidates?${params.toString()}`);
+        return payload.data || [];
+    }
+
+    function renderPatientMergeTargetOptions(candidates, selectedId = '') {
+        const options = candidates.map(patient => {
+            const unavailable = patient.status !== 'active' || patient.is_quarantined;
+            const meta = [
+                patient.id,
+                `${patient.drd_count || 0} DRD`,
+                patient.has_account ? 'ada login' : 'tanpa login',
+                patient.is_quarantined ? 'quarantine' : patient.status
+            ].join(' · ');
+            return `<option value="${escapeHtmlSafe(patient.id)}" ${patient.id === selectedId ? 'selected' : ''} ${unavailable ? 'disabled' : ''}>${escapeHtmlSafe(patient.full_name || '-')} — ${escapeHtmlSafe(meta)}</option>`;
+        }).join('');
+        return `<option value="">Pilih akun tujuan...</option>${options}`;
+    }
+
+    function renderPatientMergeSourceList(candidates, targetPatientId, selectedSources) {
+        const available = candidates.filter(patient => patient.id !== targetPatientId);
+        if (available.length === 0) {
+            return '<div class="text-muted text-center py-3">Pasien sumber tidak ditemukan</div>';
+        }
+
+        return available.map(patient => {
+            const checked = selectedSources.has(patient.id) ? 'checked' : '';
+            const quarantineBadge = patient.is_quarantined
+                ? '<span class="badge badge-warning ml-1">Quarantine</span>'
+                : '';
+            return `
+                <label class="d-flex align-items-start border rounded p-2 mb-2 text-left" style="cursor:pointer; gap:10px;">
+                    <input type="checkbox" class="patient-merge-source-check mt-1" value="${escapeHtmlSafe(patient.id)}" ${checked}>
+                    <span class="flex-grow-1">
+                        <strong>${escapeHtmlSafe(patient.full_name || '-')}</strong>${quarantineBadge}
+                        <span class="d-block text-muted small">${escapeHtmlSafe(patient.id)} · ${Number(patient.drd_count || 0)} DRD · ${patient.has_account ? 'ada login' : 'tanpa login'}</span>
+                    </span>
+                </label>`;
+        }).join('');
+    }
+
+    function renderPatientMergeSelectedSources(selectedSources, candidateCache) {
+        const selected = [...selectedSources].map(patientId => candidateCache.get(patientId)).filter(Boolean);
+        const container = document.getElementById('patient-merge-selected-sources');
+        if (!container) return;
+        container.innerHTML = selected.length === 0
+            ? '<span class="text-muted">Belum ada pasien sumber dipilih</span>'
+            : selected.map(patient => `<span class="badge badge-info mr-1 mb-1">${escapeHtmlSafe(patient.full_name || patient.id)} (${escapeHtmlSafe(patient.id)})</span>`).join('');
+    }
+
+    function uniquePatientMergeDrds(records) {
+        const seen = new Set();
+        return sortPatientDrdRecordsAscending(records).filter(record => {
+            const mrId = String(record?.mr_id || '').trim().toUpperCase();
+            if (!mrId || seen.has(mrId)) return false;
+            seen.add(mrId);
+            return true;
+        });
+    }
+
+    window.openPatientMergeModal = async function() {
+        try {
+            const initialCandidates = await searchPatientMergeCandidates('');
+            const candidateCache = new Map(initialCandidates.map(patient => [String(patient.id), patient]));
+
+            const targetResult = await Swal.fire({
+                title: 'Pilih Akun Tujuan',
+                html: `
+                    <p class="text-muted text-left">Nama, biodata, dan login akun tujuan akan dipertahankan.</p>
+                    <input id="patient-merge-target-search" class="form-control mb-2" placeholder="Cari nama atau ID pasien...">
+                    <select id="patient-merge-target-select" class="form-control">
+                        ${renderPatientMergeTargetOptions(initialCandidates)}
+                    </select>`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Lanjut Pilih Sumber',
+                cancelButtonText: 'Batal',
+                width: 650,
+                didOpen: () => {
+                    const searchInput = document.getElementById('patient-merge-target-search');
+                    const select = document.getElementById('patient-merge-target-select');
+                    let timer = null;
+                    searchInput?.addEventListener('input', () => {
+                        clearTimeout(timer);
+                        timer = setTimeout(async () => {
+                            const previousValue = select.value;
+                            try {
+                                const candidates = await searchPatientMergeCandidates(searchInput.value);
+                                candidates.forEach(patient => candidateCache.set(String(patient.id), patient));
+                                select.innerHTML = renderPatientMergeTargetOptions(candidates, previousValue);
+                            } catch (error) {
+                                Swal.showValidationMessage(error.message);
+                            }
+                        }, 300);
+                    });
+                },
+                preConfirm: () => {
+                    const targetPatientId = document.getElementById('patient-merge-target-select')?.value;
+                    if (!targetPatientId) {
+                        Swal.showValidationMessage('Pilih satu akun pasien tujuan.');
+                        return false;
+                    }
+                    return targetPatientId;
+                }
+            });
+            if (!targetResult.isConfirmed) return;
+
+            const targetPatientId = String(targetResult.value);
+            const selectedSources = new Set();
+            let visibleSources = initialCandidates;
+            const sourceResult = await Swal.fire({
+                title: 'Pilih Pasien Sumber',
+                html: `
+                    <div class="alert alert-warning text-left py-2">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Seluruh DRD pasien sumber akan dipindahkan dan akun sumber akan dihapus permanen.
+                    </div>
+                    <input id="patient-merge-source-search" class="form-control mb-2" placeholder="Cari nama atau ID pasien sumber...">
+                    <div id="patient-merge-selected-sources" class="small text-left mb-2"></div>
+                    <div id="patient-merge-source-list" style="max-height:330px; overflow-y:auto;">
+                        ${renderPatientMergeSourceList(initialCandidates, targetPatientId, selectedSources)}
+                    </div>`,
+                showCancelButton: true,
+                confirmButtonText: 'Tinjau Seluruh DRD',
+                cancelButtonText: 'Batal',
+                width: 720,
+                didOpen: () => {
+                    const searchInput = document.getElementById('patient-merge-source-search');
+                    const sourceList = document.getElementById('patient-merge-source-list');
+                    let timer = null;
+                    const bindSourceChecks = () => {
+                        sourceList.querySelectorAll('.patient-merge-source-check').forEach(input => {
+                            input.addEventListener('change', () => {
+                                if (input.checked) selectedSources.add(input.value);
+                                else selectedSources.delete(input.value);
+                                renderPatientMergeSelectedSources(selectedSources, candidateCache);
+                            });
+                        });
+                    };
+                    bindSourceChecks();
+                    renderPatientMergeSelectedSources(selectedSources, candidateCache);
+                    searchInput?.addEventListener('input', () => {
+                        clearTimeout(timer);
+                        timer = setTimeout(async () => {
+                            try {
+                                visibleSources = await searchPatientMergeCandidates(searchInput.value);
+                                visibleSources.forEach(patient => candidateCache.set(String(patient.id), patient));
+                                sourceList.innerHTML = renderPatientMergeSourceList(visibleSources, targetPatientId, selectedSources);
+                                bindSourceChecks();
+                            } catch (error) {
+                                Swal.showValidationMessage(error.message);
+                            }
+                        }, 300);
+                    });
+                },
+                preConfirm: () => {
+                    if (selectedSources.size === 0) {
+                        Swal.showValidationMessage('Pilih minimal satu pasien sumber.');
+                        return false;
+                    }
+                    return [...selectedSources];
+                }
+            });
+            if (!sourceResult.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Menyusun Pratinjau...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+            const previewPayload = await fetchPatientMergeJson('/api/patients/merge/preview', {
+                method: 'POST',
+                body: JSON.stringify({
+                    target_patient_id: targetPatientId,
+                    source_patient_ids: sourceResult.value
+                })
+            });
+            const preview = previewPayload.data;
+            const sourceDrds = uniquePatientMergeDrds(preview.source_drds || []);
+            const resultingDrds = uniquePatientMergeDrds(preview.resulting_drds || []);
+            const confirmationText = `MERGE ${preview.target.id}`;
+            const sourceRows = (preview.sources || []).map(source => `
+                <tr>
+                    <td>${escapeHtmlSafe(source.full_name || '-')}</td>
+                    <td>${escapeHtmlSafe(source.id)}</td>
+                    <td class="text-center">${Number(preview.drd_counts_by_source?.[source.id] || 0)}</td>
+                </tr>`).join('');
+            const drdBadges = sourceDrds.length > 0
+                ? sourceDrds.map(record => `<span class="badge badge-primary mr-1 mb-1">${escapeHtmlSafe(String(record.mr_id || '').toUpperCase())}</span>`).join('')
+                : '<span class="text-muted">Tidak ada DRD pada pasien sumber</span>';
+
+            const confirmation = await Swal.fire({
+                title: 'Konfirmasi Merge Permanen',
+                html: `
+                    <div class="text-left">
+                        <div class="alert alert-danger py-2"><strong>Tindakan ini tidak dapat dibatalkan dari aplikasi.</strong></div>
+                        <p class="mb-2">Akun tujuan: <strong>${escapeHtmlSafe(preview.target.full_name || '-')} (${escapeHtmlSafe(preview.target.id)})</strong></p>
+                        <div class="table-responsive"><table class="table table-sm table-bordered">
+                            <thead><tr><th>Pasien sumber</th><th>ID</th><th>DRD</th></tr></thead>
+                            <tbody>${sourceRows}</tbody>
+                        </table></div>
+                        <p class="mb-1"><strong>DRD yang dipindahkan (${sourceDrds.length}), urut kecil ke besar:</strong></p>
+                        <div class="border rounded p-2 mb-2" style="max-height:130px; overflow-y:auto;">${drdBadges}</div>
+                        <p class="small text-muted mb-0">Setelah merge, akun tujuan memiliki ${resultingDrds.length} DRD unik.</p>
+                        <p class="mt-3 mb-1">Ketik <strong>${escapeHtmlSafe(confirmationText)}</strong> untuk melanjutkan:</p>
+                    </div>`,
+                input: 'text',
+                inputPlaceholder: confirmationText,
+                showCancelButton: true,
+                confirmButtonText: 'Merge dan Hapus Sumber',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc3545',
+                width: 760,
+                preConfirm: value => {
+                    if (String(value || '').trim() !== confirmationText) {
+                        Swal.showValidationMessage(`Ketik persis: ${confirmationText}`);
+                        return false;
+                    }
+                    return true;
+                }
+            });
+            if (!confirmation.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Menggabungkan Pasien...',
+                html: 'Jangan menutup halaman sampai transaksi selesai.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+            const mergePayload = await fetchPatientMergeJson('/api/patients/merge', {
+                method: 'POST',
+                body: JSON.stringify({
+                    target_patient_id: targetPatientId,
+                    source_patient_ids: sourceResult.value
+                })
+            });
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Merge Berhasil',
+                html: `<p>${escapeHtmlSafe(mergePayload.message)}</p><p class="small text-muted mb-0">Batch: ${escapeHtmlSafe(mergePayload.data.merge_batch_id)}</p>`,
+                confirmButtonText: 'Lihat Daftar DRD'
+            });
+            await loadWebPatients();
+            const target = mergePayload.data.target;
+            await window.showPatientMRList(target.id, target.full_name || target.id);
+        } catch (error) {
+            console.error('Patient merge failed:', error);
+            const remaining = error.details?.remaining_references || [];
+            const detailsHtml = remaining.length > 0
+                ? `<div class="text-left small mt-2"><strong>Relasi yang belum aman:</strong><ul>${remaining.map(item => `<li>${escapeHtmlSafe(item.table)}.${escapeHtmlSafe(item.column)} (${Number(item.count || 0)})</li>`).join('')}</ul></div>`
+                : '';
+            await Swal.fire({
+                icon: 'error',
+                title: 'Merge Dibatalkan',
+                html: `<p>${escapeHtmlSafe(error.message || 'Proses merge pasien gagal')}</p>${detailsHtml}`
+            });
+        }
+    };
+
     function formatControlDate(value) {
         if (!value) return '-';
         const d = new Date(value);
@@ -1730,11 +2035,12 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             const result = await response.json();
             const records = result.data || [];
+            const sortedRecords = sortPatientDrdRecordsAscending(records);
 
             // Build records table
             let recordsHtml = '';
             const escapedPatientName = (patientName || '').replace(/'/g, "\\'");
-            if (records.length === 0) {
+            if (sortedRecords.length === 0) {
                 recordsHtml = `
                     <div class="text-center py-4">
                         <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
@@ -1756,7 +2062,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                 </tr>
                             </thead>
                             <tbody>
-                                ${records.map(record => {
+                                ${sortedRecords.map(record => {
                                     const visitDate = record.visit_date ? new Date(record.visit_date).toLocaleDateString('id-ID', {
                                         weekday: 'short',
                                         day: 'numeric',
@@ -1803,7 +2109,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             const modalBodyContent = `
                 <p class="text-muted mb-3">
                     <i class="fas fa-user mr-1"></i> ID Pasien: <strong>${patientId}</strong>
-                    <span class="badge badge-info ml-2">${records.length} rekam medis</span>
+                    <span class="badge badge-info ml-2">${sortedRecords.length} rekam medis</span>
                 </p>
                 ${recordsHtml}
             `;

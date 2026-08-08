@@ -9,17 +9,19 @@ const cache = require('../utils/cache');
 const multer = require('multer');
 const sharp = require('sharp');
 const r2Storage = require('../services/r2Storage');
-const { verifyToken, verifyPatientToken } = require('../middleware/auth');
+const { verifyToken, verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
 const { validatePatient } = require('../middleware/validation');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
 const PatientListService = require('../services/PatientListService');
+const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
 const {
     normalizePatientName,
     refreshConfiguredBlocklist
 } = require('../utils/patientAccessBlocklist');
 const patientListService = new PatientListService(db);
+const patientMergeService = new PatientMergeService(db);
 
 // Enrichment failure counters — exposed via getEnrichmentStats() for /api/metrics
 const _enrichFailures = {
@@ -68,6 +70,87 @@ function visiblePatientCondition(alias = 'p') {
 function appendVisiblePatientCondition(query, alias = 'p', hasOuterWhere = true) {
     return query + (hasOuterWhere ? ' AND ' : ' WHERE ') + visiblePatientCondition(alias);
 }
+
+function sendPatientMergeError(res, error) {
+    const statusCode = error instanceof PatientMergeError
+        ? error.statusCode
+        : Number(error?.statusCode || 500);
+    return res.status(statusCode).json({
+        success: false,
+        code: error.code || 'PATIENT_MERGE_FAILED',
+        message: error.message || 'Gagal menggabungkan pasien',
+        details: error.details || null
+    });
+}
+
+// Doctor-only candidate search includes quarantined duplicates so old manual
+// quarantine records can be completed through the permanent merge workflow.
+router.get('/api/patients/merge/candidates', verifyStaffToken, requireSuperadmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    try {
+        const data = await patientMergeService.getCandidates(req.query.search, req.query.limit);
+        return res.json({ success: true, count: data.length, data });
+    } catch (error) {
+        logger.error('Patient merge candidate search failed', { error: error.message });
+        return sendPatientMergeError(res, error);
+    }
+});
+
+router.post('/api/patients/merge/preview', verifyStaffToken, requireSuperadmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    try {
+        const preview = await patientMergeService.preview(
+            req.body?.target_patient_id,
+            req.body?.source_patient_ids
+        );
+        return res.json({ success: true, data: preview });
+    } catch (error) {
+        logger.warn('Patient merge preview rejected', {
+            error: error.message,
+            code: error.code,
+            userId: req.user?.id
+        });
+        return sendPatientMergeError(res, error);
+    }
+});
+
+router.post('/api/patients/merge', verifyStaffToken, requireSuperadmin, async (req, res) => {
+    try {
+        const result = await patientMergeService.mergePatients({
+            targetPatientId: req.body?.target_patient_id,
+            sourcePatientIds: req.body?.source_patient_ids,
+            actor: {
+                id: req.user?.id,
+                name: req.user?.name || req.user?.display_name || req.user?.id
+            }
+        });
+
+        cache.delPattern('patients:');
+        if (cache.keys?.patient) {
+            cache.del(cache.keys.patient(result.target.id));
+        } else {
+            cache.del(`patient:${result.target.id}`);
+        }
+        await activityLogger.logFromRequest(
+            req,
+            activityLogger.ACTIONS.MERGE_PATIENT,
+            `Merged ${result.deleted_sources.map(source => source.id).join(', ')} into ${result.target.id}; moved ${result.moved_drds.length} DRD rows`
+        );
+
+        return res.json({
+            success: true,
+            message: `${result.deleted_sources.length} pasien berhasil digabungkan ke ${result.target.full_name || result.target.id}`,
+            data: result
+        });
+    } catch (error) {
+        logger.error('Patient merge failed', {
+            error: error.message,
+            code: error.code,
+            userId: req.user?.id
+        });
+        return sendPatientMergeError(res, error);
+    }
+});
 
 function getR2ProxyUrl(key) {
     return key ? `/api/r2/${key}` : '';

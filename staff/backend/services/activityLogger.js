@@ -19,6 +19,7 @@ const ACTIONS = {
     ADD_PATIENT: 'Add Patient',
     UPDATE_PATIENT: 'Update Patient',
     DELETE_PATIENT: 'Delete Patient',
+    MERGE_PATIENT: 'Merge Patient',
 
     // Medical Records
     CREATE_MR: 'Create Medical Record',

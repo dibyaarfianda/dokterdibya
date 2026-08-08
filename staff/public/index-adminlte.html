@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v369';
+        window.STAFF_CACHE_VERSION = 'v370';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v369">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v369">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v369">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v369">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v370">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v370">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v370">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v370">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v369">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v370">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v369">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v370">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -45,7 +45,7 @@
         }
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v369"></script>
+    <script src="scripts/error-handler.js?v=v370"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -60,10 +60,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v369">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v370">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v369">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v370">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -2793,6 +2793,9 @@
                                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
                                     <div class="card-tools">
                                         <span id="adv-search-result-count" class="badge badge-light mr-2"></span>
+                                        <button type="button" class="btn btn-info btn-sm mr-2 dokter-only d-none" onclick="openPatientMergeModal()" title="Gabungkan pasien duplikat ke satu akun tujuan">
+                                            <i class="fas fa-object-group mr-1"></i>Merge Pasien
+                                        </button>
                                         <button type="button" class="btn btn-warning btn-sm mr-2" onclick="fixPatientNames()" title="Perbaiki kapitalisasi nama pasien (RAHAYU -> Rahayu)">
                                             <i class="fas fa-magic mr-1"></i>Auto-Fix Nama
                                         </button>
@@ -3646,7 +3649,7 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-    <script defer src="scripts/shell/actions.js?v=v369"></script>
+    <script defer src="scripts/shell/actions.js?v=v370"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3726,8 +3729,8 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v369" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v369" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v370" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v370" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3739,7 +3742,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v369"></script>
+<script defer src="scripts/rum.js?v=v370"></script>
 
 <!-- Core app modules -->
 <script>
@@ -3964,7 +3967,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v369"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v370"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4114,7 +4117,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v369"></script>
+ <script src="scripts/mobile-helper.js?v=v370"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4126,8 +4129,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v369"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v369"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v370"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v370"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

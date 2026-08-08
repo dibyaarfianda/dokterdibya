@@ -10,7 +10,9 @@ jest.mock('../../utils/cache', () => ({
 }));
 jest.mock('../../middleware/auth', () => ({
     verifyToken: (req, res, next) => { req.user = { id: 1, role_id: 1 }; next(); },
-    verifyPatientToken: (req, res, next) => next()
+    verifyPatientToken: (req, res, next) => next(),
+    verifyStaffToken: (req, res, next) => { req.user = { id: 1, role_id: 1 }; next(); },
+    requireSuperadmin: (req, res, next) => next()
 }));
 jest.mock('../../services/r2Storage', () => ({}));
 jest.mock('../../services/patientDeletion', () => ({ deletePatientWithRelations: jest.fn() }));
