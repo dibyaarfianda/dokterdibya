@@ -34,6 +34,24 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain("window.addEventListener('load', syncStaffPwaMode);");
     });
 
+    test('dashboard live queue uses balanced compact typography without affecting other cards', () => {
+        const queueUtils = readNormalizedFile('staff', 'public', 'scripts', 'live-queue-dashboard-utils.js');
+        const shellCss = readNormalizedFile('staff', 'public', 'styles', 'staff-shell.css');
+
+        expect(queueUtils).toContain('class="dashboard-live-queue-name text-truncate mr-2"');
+        expect(queueUtils).toContain('class="dashboard-live-queue-status badge ${statusConfig.badge}"');
+        expect(queueUtils).toContain('class="dashboard-live-queue-meta small text-muted"');
+        expect(shellCss).toMatch(
+            /#dashboard-live-queue-list \.dashboard-live-queue-name\s*\{[^}]*font-size: var\(--font-size-base\) !important;[^}]*font-weight: var\(--font-weight-semibold\) !important;/
+        );
+        expect(shellCss).toMatch(
+            /#dashboard-live-queue-list \.dashboard-live-queue-meta\s*\{[^}]*font-size: var\(--font-size-sm\) !important;/
+        );
+        expect(shellCss).toMatch(
+            /#dashboard-live-queue-list \.dashboard-live-queue-status\s*\{[^}]*font-size: var\(--font-size-xs\) !important;/
+        );
+    });
+
     test('Kelola Pasien inline route preserves reload state and releases Kantor Saya scroll lock', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');

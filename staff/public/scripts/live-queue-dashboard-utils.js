@@ -222,14 +222,14 @@ function renderQueueItem(item, index) {
         <span class="badge badge-primary mr-2" style="min-width:28px;">${index + 1}</span>
         <div class="flex-grow-1" style="min-width:0;">
           <div class="d-flex justify-content-between align-items-start">
-            <strong class="text-truncate mr-2">${escapeHtml(patientName)}</strong>
-            <span class="badge ${statusConfig.badge}">${escapeHtml(statusConfig.label)}</span>
+            <strong class="dashboard-live-queue-name text-truncate mr-2">${escapeHtml(patientName)}</strong>
+            <span class="dashboard-live-queue-status badge ${statusConfig.badge}">${escapeHtml(statusConfig.label)}</span>
           </div>
-          <div class="small text-muted">
+          <div class="dashboard-live-queue-meta small text-muted">
             ${escapeHtml(sessionLabel)} &bull; ${escapeHtml(slotText)}
             ${mrId ? ` &bull; <span class="text-primary">${escapeHtml(mrId)}</span>` : ''}
           </div>
-          <div class="small text-muted text-truncate">${escapeHtml(complaint)}</div>
+          <div class="dashboard-live-queue-meta small text-muted text-truncate">${escapeHtml(complaint)}</div>
         </div>
       </div>
     </div>
