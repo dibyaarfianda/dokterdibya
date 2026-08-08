@@ -22,6 +22,18 @@ describe('staff panel stabilization sources', () => {
         expect(html).not.toMatch(/__assetVersion\s*=\s*'v250'/);
     });
 
+    test('desktop web restores the full sidebar without changing mobile pre-collapse behavior', () => {
+        const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+
+        expect(html).toMatch(
+            /const shouldPrecollapseMobileSidebar\s*=\s*window\.innerWidth <= 991\s*&&\s*\(!isEarlyDesktopFinePointer \|\| isEarlyMobileUserAgent\);/
+        );
+        expect(html).toContain('function expandDesktopWebSidebar()');
+        expect(html).toContain("document.body.classList.remove('sidebar-collapse', 'sidebar-closed', 'sidebar-open');");
+        expect(html).toContain('if (isDesktopFinePointer && !isMobileUserAgent) {');
+        expect(html).toContain("window.addEventListener('load', syncStaffPwaMode);");
+    });
+
     test('Kelola Pasien inline route preserves reload state and releases Kantor Saya scroll lock', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
