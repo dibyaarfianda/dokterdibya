@@ -73,6 +73,9 @@ async function bootstrapStaffShell() {
         'submitPurchaseStock',
         'showPatientMRList',
         'openPatientMergeModal',
+        'openBulkPatientDeleteModal',
+        'togglePatientBulkSelection',
+        'toggleAllManagePatientsForBulkDelete',
         'syncWebPatients'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'patientTools'));
     [

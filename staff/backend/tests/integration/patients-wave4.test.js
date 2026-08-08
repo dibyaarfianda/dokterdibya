@@ -15,7 +15,10 @@ jest.mock('../../middleware/auth', () => ({
     requireSuperadmin: (req, res, next) => next()
 }));
 jest.mock('../../services/r2Storage', () => ({}));
-jest.mock('../../services/patientDeletion', () => ({ deletePatientWithRelations: jest.fn() }));
+jest.mock('../../services/patientDeletion', () => ({
+    deletePatientWithRelations: jest.fn(),
+    deletePatientWithRelationsOnConnection: jest.fn()
+}));
 jest.mock('../../services/activityLogger', () => ({ log: jest.fn() }));
 jest.mock('../../services/pushNotificationService', () => ({ getVapidPublicKey: jest.fn() }));
 jest.mock('../../utils/patientAccessBlocklist', () => ({

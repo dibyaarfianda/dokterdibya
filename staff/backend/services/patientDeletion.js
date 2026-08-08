@@ -5,26 +5,21 @@ const db = require('../db');
  * Handles dual-table system (users + patients).
  * Returns an object containing the deleted patient metadata and per-table deletion counts.
  */
-async function deletePatientWithRelations(patientId) {
-    const connection = await db.getConnection();
+async function deletePatientWithRelationsOnConnection(connection, patientId) {
     const deletedData = {};
 
-    try {
-        await connection.beginTransaction();
+    // Check both tables for patient info (dual-table system)
+    const [patients] = await connection.query(
+        `SELECT p.id, p.full_name, p.email, u.new_id as user_id
+         FROM patients p
+         LEFT JOIN users u ON u.new_id = p.id
+         WHERE p.id = ?`,
+        [patientId]
+    );
 
-        // Check both tables for patient info (dual-table system)
-        const [patients] = await connection.query(
-            `SELECT p.id, p.full_name, p.email, u.new_id as user_id
-             FROM patients p
-             LEFT JOIN users u ON u.new_id = p.id
-             WHERE p.id = ?`,
-            [patientId]
-        );
-
-        if (patients.length === 0) {
-            await connection.rollback();
-            return { patient: null, deletedData: null };
-        }
+    if (patients.length === 0) {
+        return { patient: null, deletedData: null };
+    }
 
         const patient = patients[0];
 
@@ -161,6 +156,35 @@ async function deletePatientWithRelations(patientId) {
             'ai_summary_logs'
         );
 
+        // RESTRICT chains must be removed child-first before the patients row.
+        await deleteOptionalChild(connection,
+            'DELETE FROM question_replies WHERE question_id IN (SELECT id FROM patient_questions WHERE patient_id = ?)',
+            [patientId],
+            deletedData,
+            'question_replies'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_questions WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_questions'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM tanya_payments WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'tanya_payments'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM tanya_subscriptions WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'tanya_subscriptions'
+        );
+
         // Clear registration code reference (don't delete the code, just clear patient reference)
         await deleteOptionalChild(connection,
             'UPDATE registration_codes SET used_by_patient_id = NULL WHERE used_by_patient_id = ?',
@@ -222,6 +246,41 @@ async function deletePatientWithRelations(patientId) {
             'email_verifications'
         );
 
+        // Patient-owned community identities use polymorphic columns rather than
+        // patient_id, so they are not covered by the generic direct-reference pass.
+        await deleteOptionalChild(connection,
+            "DELETE FROM community_chat_messages WHERE sender_id = ? AND sender_type = 'patient'",
+            [patientId],
+            deletedData,
+            'community_chat_messages'
+        );
+        await deleteOptionalChild(connection,
+            "DELETE FROM community_chat_room_members WHERE user_id = ? AND user_type = 'patient'",
+            [patientId],
+            deletedData,
+            'community_chat_room_members'
+        );
+        await deleteOptionalChild(connection,
+            "DELETE FROM community_chat_profiles WHERE user_id = ? AND user_type = 'patient'",
+            [patientId],
+            deletedData,
+            'community_chat_profiles'
+        );
+        await deleteOptionalChild(connection,
+            'UPDATE community_chat_rooms SET direct_patient_id = NULL WHERE direct_patient_id = ?',
+            [patientId],
+            deletedData,
+            'community_chat_rooms_direct_patient_cleared'
+        );
+        await deleteOptionalChild(connection,
+            "UPDATE community_chat_rooms SET created_by = NULL WHERE created_by = ? AND created_by_type = 'patient'",
+            [patientId],
+            deletedData,
+            'community_chat_rooms_creator_cleared'
+        );
+
+        await deleteRemainingDirectPatientRows(connection, patientId, deletedData);
+
         // Delete from patients table (medical records)
         const [patientResult] = await connection.query(
             'DELETE FROM patients WHERE id = ?',
@@ -236,9 +295,21 @@ async function deletePatientWithRelations(patientId) {
         );
         deletedData.users = userResult.affectedRows;
 
-        await connection.commit();
+    return { patient, deletedData };
+}
 
-        return { patient, deletedData };
+async function deletePatientWithRelations(patientId) {
+    const connection = await db.getConnection();
+
+    try {
+        await connection.beginTransaction();
+        const result = await deletePatientWithRelationsOnConnection(connection, patientId);
+        if (!result.patient) {
+            await connection.rollback();
+            return result;
+        }
+        await connection.commit();
+        return result;
     } catch (error) {
         await connection.rollback();
         throw error;
@@ -261,6 +332,29 @@ async function deleteOptionalChild(connection, query, params, deletedData, key) 
             return;
         }
         throw error;
+    }
+}
+
+async function deleteRemainingDirectPatientRows(connection, patientId, deletedData) {
+    const [tables] = await connection.query(
+        `SELECT TABLE_NAME AS table_name
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE()
+           AND COLUMN_NAME = 'patient_id'
+           AND DATA_TYPE IN ('char', 'varchar', 'tinytext', 'text', 'mediumtext', 'longtext')
+         ORDER BY TABLE_NAME ASC`
+    );
+
+    for (const row of tables) {
+        const tableName = String(row.table_name || '');
+        if (!/^[A-Za-z0-9_]+$/.test(tableName)) {
+            throw new Error(`Unsafe patient relation table name: ${tableName}`);
+        }
+        const [result] = await connection.query(
+            `DELETE FROM \`${tableName}\` WHERE patient_id = ?`,
+            [patientId]
+        );
+        deletedData[tableName] = Number(deletedData[tableName] || 0) + Number(result.affectedRows || 0);
     }
 }
 
@@ -333,5 +427,7 @@ async function deletePatientByEmail(email) {
 
 module.exports = {
     deletePatientWithRelations,
+    deletePatientWithRelationsOnConnection,
+    deleteRemainingDirectPatientRows,
     deletePatientByEmail
 };

@@ -11,17 +11,21 @@ const sharp = require('sharp');
 const r2Storage = require('../services/r2Storage');
 const { verifyToken, verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
 const { validatePatient } = require('../middleware/validation');
-const { deletePatientWithRelations } = require('../services/patientDeletion');
 const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
 const PatientListService = require('../services/PatientListService');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
+const {
+    BulkPatientDeletionService,
+    BulkPatientDeletionError
+} = require('../services/BulkPatientDeletionService');
 const {
     normalizePatientName,
     refreshConfiguredBlocklist
 } = require('../utils/patientAccessBlocklist');
 const patientListService = new PatientListService(db);
 const patientMergeService = new PatientMergeService(db);
+const bulkPatientDeletionService = new BulkPatientDeletionService(db);
 
 // Enrichment failure counters — exposed via getEnrichmentStats() for /api/metrics
 const _enrichFailures = {
@@ -149,6 +153,75 @@ router.post('/api/patients/merge', verifyStaffToken, requireSuperadmin, async (r
             userId: req.user?.id
         });
         return sendPatientMergeError(res, error);
+    }
+});
+
+function sendBulkPatientDeleteError(res, error) {
+    const statusCode = error instanceof BulkPatientDeletionError
+        ? error.statusCode
+        : Number(error?.statusCode || 500);
+    return res.status(statusCode).json({
+        success: false,
+        code: error.code || 'BULK_PATIENT_DELETE_FAILED',
+        message: error.message || 'Gagal menghapus pasien terpilih',
+        details: error.details || null
+    });
+}
+
+router.post('/api/patients/bulk-delete/preview', verifyStaffToken, requireSuperadmin, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    try {
+        const preview = await bulkPatientDeletionService.preview(req.body?.patient_ids);
+        return res.json({ success: true, data: preview });
+    } catch (error) {
+        logger.warn('Bulk patient deletion preview rejected', {
+            error: error.message,
+            code: error.code,
+            userId: req.user?.id
+        });
+        return sendBulkPatientDeleteError(res, error);
+    }
+});
+
+router.post('/api/patients/bulk-delete', verifyStaffToken, requireSuperadmin, async (req, res) => {
+    try {
+        const result = await bulkPatientDeletionService.deletePatients(
+            req.body?.patient_ids,
+            req.body?.confirmation
+        );
+
+        cache.delPattern('patients:');
+        result.deleted_patients.forEach(item => {
+            const patientId = item.patient.id;
+            if (cache.keys?.patient) cache.del(cache.keys.patient(patientId));
+            else cache.del(`patient:${patientId}`);
+        });
+
+        try {
+            await activityLogger.logFromRequest(
+                req,
+                activityLogger.ACTIONS.BULK_DELETE_PATIENT,
+                `Deleted ${result.deleted_count} patients in one transaction: ${result.deleted_patients.map(item => item.patient.id).join(', ')}`
+            );
+        } catch (activityError) {
+            logger.warn('Bulk patient deletion activity log failed after commit', {
+                error: activityError.message,
+                userId: req.user?.id
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: `${result.deleted_count} pasien dan seluruh data terkait berhasil dihapus`,
+            data: result
+        });
+    } catch (error) {
+        logger.error('Bulk patient deletion failed', {
+            error: error.message,
+            code: error.code,
+            userId: req.user?.id
+        });
+        return sendBulkPatientDeleteError(res, error);
     }
 });
 

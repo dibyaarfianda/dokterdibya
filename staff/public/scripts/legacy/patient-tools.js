@@ -1169,6 +1169,206 @@
         }, extraOptions);
     }
 
+    const bulkDeletePatientSelection = new Map();
+
+    function getBulkDeletePageCheckboxes() {
+        return [...document.querySelectorAll('#manage-patients-tbody .patient-bulk-delete-check')];
+    }
+
+    function syncBulkDeletePatientUi() {
+        const button = document.getElementById('bulk-delete-patients-btn');
+        const selectAll = document.getElementById('bulk-delete-select-all');
+        const pageCheckboxes = getBulkDeletePageCheckboxes();
+        pageCheckboxes.forEach(checkbox => {
+            checkbox.checked = bulkDeletePatientSelection.has(String(checkbox.dataset.patientId || ''));
+        });
+
+        const selectedOnPage = pageCheckboxes.filter(checkbox => checkbox.checked).length;
+        if (selectAll) {
+            selectAll.checked = pageCheckboxes.length > 0 && selectedOnPage === pageCheckboxes.length;
+            selectAll.indeterminate = selectedOnPage > 0 && selectedOnPage < pageCheckboxes.length;
+        }
+        if (button) {
+            const count = bulkDeletePatientSelection.size;
+            button.disabled = count === 0;
+            button.innerHTML = `<i class="fas fa-trash-alt mr-1"></i>Hapus Terpilih${count > 0 ? ` (${count})` : ''}`;
+        }
+    }
+
+    function clearBulkDeletePatientSelection() {
+        bulkDeletePatientSelection.clear();
+        syncBulkDeletePatientUi();
+    }
+
+    function bindBulkDeleteTableDrawSync() {
+        if (!window.jQuery || !$.fn.DataTable) return;
+        $('#manage-patients-table')
+            .off('draw.dt.bulkPatientDelete')
+            .on('draw.dt.bulkPatientDelete', syncBulkDeletePatientUi);
+        syncBulkDeletePatientUi();
+    }
+
+    window.togglePatientBulkSelection = function(checkbox) {
+        const patientId = String(checkbox?.dataset?.patientId || '').trim();
+        const patientName = String(checkbox?.dataset?.patientName || patientId).trim();
+        if (!patientId) return;
+
+        if (checkbox.checked) {
+            if (bulkDeletePatientSelection.size >= 50 && !bulkDeletePatientSelection.has(patientId)) {
+                checkbox.checked = false;
+                Swal.fire({ icon: 'warning', title: 'Batas 50 Pasien', text: 'Maksimal 50 pasien dapat dihapus dalam satu transaksi.' });
+            } else {
+                bulkDeletePatientSelection.set(patientId, { id: patientId, full_name: patientName });
+            }
+        } else {
+            bulkDeletePatientSelection.delete(patientId);
+        }
+        syncBulkDeletePatientUi();
+    };
+
+    window.toggleAllManagePatientsForBulkDelete = function(selectAll) {
+        const checkboxes = getBulkDeletePageCheckboxes();
+        let limitReached = false;
+        checkboxes.forEach(checkbox => {
+            const patientId = String(checkbox.dataset.patientId || '').trim();
+            const patientName = String(checkbox.dataset.patientName || patientId).trim();
+            if (!patientId) return;
+            if (!selectAll.checked) {
+                bulkDeletePatientSelection.delete(patientId);
+                checkbox.checked = false;
+                return;
+            }
+            if (bulkDeletePatientSelection.has(patientId) || bulkDeletePatientSelection.size < 50) {
+                bulkDeletePatientSelection.set(patientId, { id: patientId, full_name: patientName });
+                checkbox.checked = true;
+            } else {
+                checkbox.checked = false;
+                limitReached = true;
+            }
+        });
+        syncBulkDeletePatientUi();
+        if (limitReached) {
+            Swal.fire({ icon: 'warning', title: 'Batas 50 Pasien', text: 'Hanya 50 pasien pertama yang dipilih. Hapus batch ini sebelum memilih pasien lain.' });
+        }
+    };
+
+    async function fetchBulkPatientDeleteJson(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : '')}`,
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache',
+                ...(options.headers || {})
+            }
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.success) {
+            const error = new Error(payload.message || 'Gagal menghapus pasien terpilih');
+            error.details = payload.details || null;
+            throw error;
+        }
+        return payload;
+    }
+
+    window.openBulkPatientDeleteModal = async function() {
+        const patientIds = [...bulkDeletePatientSelection.keys()];
+        if (patientIds.length === 0) {
+            await Swal.fire({ icon: 'info', title: 'Belum Ada Pilihan', text: 'Centang pasien yang ingin dihapus terlebih dahulu.' });
+            return;
+        }
+
+        try {
+            Swal.fire({
+                title: 'Menyiapkan Pratinjau...',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+            const previewPayload = await fetchBulkPatientDeleteJson('/api/patients/bulk-delete/preview', {
+                method: 'POST',
+                body: JSON.stringify({ patient_ids: patientIds })
+            });
+            const preview = previewPayload.data;
+            const rows = preview.patients.map(patient => `
+                <tr>
+                    <td>${escapeHtmlSafe(patient.full_name || '-')}</td>
+                    <td>${escapeHtmlSafe(patient.id)}</td>
+                    <td class="text-center">${Number(patient.drd_count || 0)}</td>
+                    <td>${escapeHtmlSafe(patient.status || '-')}</td>
+                </tr>`).join('');
+
+            const confirmation = await Swal.fire({
+                title: 'Hapus Pasien Terpilih?',
+                html: `
+                    <div class="text-left">
+                        <div class="alert alert-danger py-2">
+                            <strong>${preview.count} pasien dan ${preview.total_drd_count} DRD akan dihapus permanen.</strong>
+                            Seluruh batch akan rollback bila satu penghapusan gagal.
+                        </div>
+                        <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                            <table class="table table-sm table-bordered">
+                                <thead><tr><th>Nama</th><th>ID</th><th>DRD</th><th>Status</th></tr></thead>
+                                <tbody>${rows}</tbody>
+                            </table>
+                        </div>
+                        <p class="mt-3 mb-1">Ketik <strong>${escapeHtmlSafe(preview.confirmation_phrase)}</strong> untuk melanjutkan:</p>
+                    </div>`,
+                input: 'text',
+                inputPlaceholder: preview.confirmation_phrase,
+                showCancelButton: true,
+                confirmButtonText: `Hapus ${preview.count} Pasien`,
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#dc3545',
+                width: 760,
+                preConfirm: value => {
+                    if (String(value || '').trim() !== preview.confirmation_phrase) {
+                        Swal.showValidationMessage(`Ketik persis: ${preview.confirmation_phrase}`);
+                        return false;
+                    }
+                    return String(value).trim();
+                }
+            });
+            if (!confirmation.isConfirmed) return;
+
+            Swal.fire({
+                title: 'Menghapus Pasien...',
+                html: 'Jangan menutup halaman sampai seluruh transaksi selesai.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+            const resultPayload = await fetchBulkPatientDeleteJson('/api/patients/bulk-delete', {
+                method: 'POST',
+                body: JSON.stringify({
+                    patient_ids: preview.patient_ids,
+                    confirmation: confirmation.value
+                })
+            });
+
+            clearBulkDeletePatientSelection();
+            await Swal.fire({
+                icon: 'success',
+                title: 'Penghapusan Berhasil',
+                text: `${resultPayload.data.deleted_count} pasien telah dihapus dalam satu transaksi.`
+            });
+            await loadWebPatients();
+            if (typeof window.loadHplRiskPatients === 'function') await window.loadHplRiskPatients();
+            if (typeof window.reloadAppointmentPatients === 'function') await window.reloadAppointmentPatients();
+            if (window.klinikPrivate && typeof window.klinikPrivate.reload === 'function') await window.klinikPrivate.reload();
+        } catch (error) {
+            console.error('Bulk patient deletion failed:', error);
+            const missing = error.details?.missing_patient_ids || [];
+            const missingText = missing.length > 0 ? `<p class="small text-muted">ID tidak ditemukan: ${missing.map(escapeHtmlSafe).join(', ')}</p>` : '';
+            await Swal.fire({
+                icon: 'error',
+                title: 'Penghapusan Dibatalkan',
+                html: `<p>${escapeHtmlSafe(error.message || 'Gagal menghapus pasien terpilih')}</p>${missingText}`
+            });
+        }
+    };
+
     function renderManagePatientRow(patient) {
         const registeredAt = patient.registration_date || patient.created_at;
         const registerDate = formatPatientTableDate(registeredAt);
@@ -1228,6 +1428,7 @@
         return `
             <tr>
                 <td class="text-nowrap">
+                    <input type="checkbox" class="patient-bulk-delete-check mr-1" data-patient-id="${escapeHtmlSafe(patient.id)}" data-patient-name="${escapeHtmlSafe(patient.full_name || patient.id)}" onchange="togglePatientBulkSelection(this)" aria-label="Pilih ${escapeHtmlSafe(patient.full_name || patient.id)} untuk dihapus">
                     <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                         <i class="fas fa-eye"></i>
                     </button>
@@ -1278,6 +1479,7 @@
             const data = await response.json();
             window.staffDebugLog('PatientSearch', 'Loaded patients', { count: Array.isArray(data.data) ? data.data.length : 0 });
             const tbody = document.getElementById('manage-patients-tbody');
+            clearBulkDeletePatientSelection();
 
             if (!data.data || data.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada pasien</td></tr>';
@@ -1302,6 +1504,7 @@
                 if (savedPage > 0) {
                     dt.page(savedPage).draw('page');
                 }
+                bindBulkDeleteTableDrawSync();
             }
 
             if (typeof window.installPatientViewButtons === 'function') {
@@ -1433,6 +1636,7 @@
             }
 
             const data = await response.json();
+            clearBulkDeletePatientSelection();
 
             window.staffDebugLog('PatientSearch', 'Advanced search response', {
                 filters: {
@@ -1472,6 +1676,7 @@
                 "paging": data.data.length > 25, // Only show pagination if more than 25 results
                 "info": true
             }));
+            bindBulkDeleteTableDrawSync();
 
             if (typeof window.installPatientViewButtons === 'function') {
                 window.installPatientViewButtons({
