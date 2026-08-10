@@ -5,6 +5,8 @@ const {
     logger,
     normalizeMrId,
     createPatientNotification,
+    listActiveQueueReminderSettings,
+    markQueueReminderTriggered,
     realtimeSync,
     getSessionLabel,
     getSlotTime,
@@ -95,7 +97,7 @@ async function loadTodayQueueForReminderChecks() {
 
 async function processQueueReminderNotifications() {
     try {
-        if (!createPatientNotification || !patientNotifications.listActiveQueueReminderSettings) {
+        if (!createPatientNotification || !listActiveQueueReminderSettings || !markQueueReminderTriggered) {
             return;
         }
 
@@ -105,7 +107,7 @@ async function processQueueReminderNotifications() {
         }
 
         const patientIds = queue.map((item) => item.patient_id).filter(Boolean);
-        const settingsRows = await patientNotifications.listActiveQueueReminderSettings(patientIds);
+        const settingsRows = await listActiveQueueReminderSettings(patientIds);
 
         if (!settingsRows.length) {
             return;
@@ -151,7 +153,7 @@ async function processQueueReminderNotifications() {
             });
 
             if (notification && notification.success) {
-                await patientNotifications.markQueueReminderTriggered(settings.patient_id, signature);
+                await markQueueReminderTriggered(settings.patient_id, signature);
             }
         }
     } catch (error) {

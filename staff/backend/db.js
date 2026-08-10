@@ -29,7 +29,12 @@ pool.on('connection', (connection) => {
     logger.info('New database connection established');
 
     connection.on('error', (err) => {
-        logger.error('Database connection error:', err.message);
+        logger.error('Database connection error', {
+            code: err.code || null,
+            errno: err.errno || null,
+            sqlState: err.sqlState || null,
+            fatal: Boolean(err.fatal)
+        });
         // Destroy broken connections so the pool doesn't try to reuse them
         if (err.code === 'ECONNRESET' || err.code === 'PROTOCOL_CONNECTION_LOST' || err.fatal) {
             try {

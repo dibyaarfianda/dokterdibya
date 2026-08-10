@@ -469,7 +469,6 @@ async function createSundayClinicRecord({
                 if (existing) {
                     if (manageTransaction) {
                         await conn.commit();
-                        conn.release();
                     }
                     return { record: existing, created: false };
                 }
@@ -507,8 +506,13 @@ async function createSundayClinicRecord({
             return { record: rows[0], created: true };
         } catch (error) {
             if (manageTransaction) {
-                await conn.rollback();
-                conn.release();
+                try {
+                    await conn.rollback();
+                } catch (rollbackError) {
+                    logger.error('Failed to roll back Sunday Clinic record transaction', {
+                        code: rollbackError.code || null
+                    });
+                }
             }
 
             // Retry on duplicate key error (counter out of sync)
@@ -532,8 +536,9 @@ async function createSundayClinicRecord({
             });
             throw error;
         } finally {
-            // Only release if we manage the transaction AND we're not retrying
-            // (conn.release is already called in catch for retry cases)
+            if (manageTransaction) {
+                conn.release();
+            }
         }
     }
 }

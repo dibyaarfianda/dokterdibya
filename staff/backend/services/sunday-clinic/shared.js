@@ -23,6 +23,8 @@ const {
 } = require('../SundayClinicBillingAuditService');
 
 const createPatientNotification = patientNotifications.createPatientNotification;
+const listActiveQueueReminderSettings = patientNotifications.listActiveQueueReminderSettings;
+const markQueueReminderTriggered = patientNotifications.markQueueReminderTriggered;
 
 const ADDITIONAL_BILLING_ADD_ONS = Object.freeze({
     S02: { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 },
@@ -907,6 +909,8 @@ module.exports = {
     logBillingAudit,
     logAdditionalBillingAudit,
     createPatientNotification,
+    listActiveQueueReminderSettings,
+    markQueueReminderTriggered,
     ADDITIONAL_BILLING_ADD_ONS,
     ADDITIONAL_BILLING_PAYMENT_METHODS,
     ADDITIONAL_BILLING_MAX_ITEMS,
