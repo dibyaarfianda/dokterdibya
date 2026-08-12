@@ -386,6 +386,15 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
               AND payroll_date >= ? AND payroll_date < ?
         `, [startDate, nextMonthStart]);
 
+        const [driverPayrollRows] = await pool.query(`
+            SELECT
+                COUNT(*) AS payroll_count,
+                COALESCE(SUM(total_amount), 0) AS total_gaji
+            FROM staff_driver_payrolls
+            WHERE status = 'finalized'
+              AND payroll_month >= ? AND payroll_month < ?
+        `, [startDate, nextMonthStart]);
+
         const [payrollItemRows] = await pool.query(`
             SELECT
                 COUNT(*) AS item_count,
@@ -399,8 +408,12 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
 
         const payrollSummary = payrollRows[0] || {};
         const payrollItems = payrollItemRows[0] || {};
-        const totalGajiStaff = parseFloat(payrollSummary.total_gaji) || 0;
+        const driverPayrollSummary = driverPayrollRows[0] || {};
+        const totalGajiPraktik = parseFloat(payrollSummary.total_gaji) || 0;
+        const totalGajiSupir = parseFloat(driverPayrollSummary.total_gaji) || 0;
+        const totalGajiStaff = totalGajiPraktik + totalGajiSupir;
         const payrollBatchCount = parseInt(payrollSummary.batch_count, 10) || 0;
+        const driverPayrollCount = parseInt(driverPayrollSummary.payroll_count, 10) || 0;
         const payrollItemCount = parseInt(payrollItems.item_count, 10) || 0;
         const paidStaffCount = parseInt(payrollItems.paid_staff_count, 10) || 0;
         const totalPayrollAttendance = parseInt(payrollItems.total_kehadiran, 10) || 0;
@@ -428,11 +441,14 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
                 marginLabaKotor: pendapatanKotor > 0 ? (labaKotor / pendapatanKotor * 100) : 0
             },
             staffCost: {
-                source: 'staff_payroll_batches',
+                source: 'staff_payroll_batches + staff_driver_payrolls',
                 batchCount: payrollBatchCount,
+                driverPayrollCount,
                 itemCount: payrollItemCount,
                 paidStaffCount,
                 totalKehadiran: totalPayrollAttendance,
+                totalGajiPraktik,
+                totalGajiSupir,
                 totalGaji: totalGajiStaff
             },
             netProfit: {

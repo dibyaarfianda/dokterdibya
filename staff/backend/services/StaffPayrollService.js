@@ -3,6 +3,12 @@ const PAYROLL_CONFIG = Object.freeze({
     ADDITIONAL_RATE: 100000
 });
 
+const DRIVER_PAYROLL_CONFIG = Object.freeze({
+    MONTHLY_SALARY: 1500000,
+    DEDUCTION_ROUNDING: 1000,
+    WEEKLY_DAY_OFF: 0
+});
+
 function toInteger(value, fieldName) {
     const normalized = value === undefined || value === null || value === '' ? 0 : Number(value);
     if (!Number.isInteger(normalized)) {
@@ -52,6 +58,64 @@ function calculatePayroll(attendanceCount, adjustmentAmount = 0) {
     };
 }
 
+function normalizePayrollMonth(value) {
+    const month = String(value || '').trim();
+    const match = /^(\d{4})-(\d{2})$/.exec(month);
+    if (!match) {
+        throw new Error('bulan_gaji harus format YYYY-MM');
+    }
+
+    const year = Number(match[1]);
+    const monthNumber = Number(match[2]);
+    if (year < 2000 || year > 2100 || monthNumber < 1 || monthNumber > 12) {
+        throw new Error('bulan_gaji tidak valid');
+    }
+
+    return month;
+}
+
+function calculateDriverPayroll(payrollMonth, absenceDays = 0) {
+    const normalizedMonth = normalizePayrollMonth(payrollMonth);
+    const absence = toInteger(absenceDays, 'hari_tidak_masuk');
+    if (absence < 0) {
+        throw new Error('hari_tidak_masuk tidak boleh negatif');
+    }
+
+    const [year, monthNumber] = normalizedMonth.split('-').map(Number);
+    const calendarDays = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+    let sundayCount = 0;
+    for (let day = 1; day <= calendarDays; day += 1) {
+        if (new Date(Date.UTC(year, monthNumber - 1, day)).getUTCDay() === DRIVER_PAYROLL_CONFIG.WEEKLY_DAY_OFF) {
+            sundayCount += 1;
+        }
+    }
+
+    const workingDays = calendarDays - sundayCount;
+    if (absence > workingDays) {
+        throw new Error(`hari_tidak_masuk tidak boleh melebihi ${workingDays} hari kerja`);
+    }
+
+    const dailyDeduction = Math.ceil(
+        (DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY / workingDays) / DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING
+    ) * DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING;
+    const deductionAmount = Math.min(
+        DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY,
+        absence * dailyDeduction
+    );
+
+    return {
+        payroll_month: `${normalizedMonth}-01`,
+        calendar_days: calendarDays,
+        sunday_count: sundayCount,
+        working_days: workingDays,
+        monthly_salary: DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY,
+        absence_days: absence,
+        daily_deduction: dailyDeduction,
+        deduction_amount: deductionAmount,
+        total_amount: DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY - deductionAmount
+    };
+}
+
 function validateEmployeePayrollInput(input) {
     const name = String(input && input.name ? input.name : '').trim();
     if (!name) {
@@ -66,7 +130,10 @@ function sumPayrollItems(items) {
 
 module.exports = {
     PAYROLL_CONFIG,
+    DRIVER_PAYROLL_CONFIG,
     calculatePayroll,
+    calculateDriverPayroll,
+    normalizePayrollMonth,
     validateEmployeePayrollInput,
     sumPayrollItems
 };

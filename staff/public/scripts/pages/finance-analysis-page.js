@@ -607,6 +607,9 @@
             const payrollLabel = staffCost.batchCount > 0
                 ? `Gaji Staff (${staffCost.batchCount} batch, ${staffCost.paidStaffCount || 0} staff dibayar, ${staffCost.totalKehadiran || 0} hadir)`
                 : 'Gaji Staff (belum ada payroll finalized)';
+            const driverPayrollLabel = staffCost.driverPayrollCount > 0
+                ? `Gaji Supir (${staffCost.driverPayrollCount} bulan finalized)`
+                : 'Gaji Supir (belum ada payroll finalized)';
 
             // Update Profit Loss Table
             const plTable = document.getElementById('pc-profit-loss-table');
@@ -620,7 +623,8 @@
                 <tr class="font-weight-bold border-top"><td>Laba Kotor</td><td class="text-right text-info">${formatRp(data.summary.labaKotor)}</td></tr>
                 <tr class="bg-light"><td colspan="2"><strong>BIAYA OPERASIONAL</strong></td></tr>
                 <tr><td class="pl-4">Sewa, Listrik, Air</td><td class="text-right text-muted">Rp 0 <small>(ditanggung RS)</small></td></tr>
-                <tr><td class="pl-4">${payrollLabel}</td><td class="text-right text-danger">(${formatRp(staffCost.totalGaji)})</td></tr>
+                <tr><td class="pl-4">${payrollLabel}</td><td class="text-right text-danger">(${formatRp(staffCost.totalGajiPraktik || 0)})</td></tr>
+                <tr><td class="pl-4">${driverPayrollLabel}</td><td class="text-right text-danger">(${formatRp(staffCost.totalGajiSupir || 0)})</td></tr>
                 <tr class="font-weight-bold bg-success text-white"><td>LABA BERSIH</td><td class="text-right">${formatRp(data.netProfit.labaBersih)}</td></tr>
                 <tr><td class="text-muted">Margin Laba Bersih</td><td class="text-right text-success font-weight-bold">${formatPercent(data.netProfit.marginLabaBersih)}</td></tr>
             `;

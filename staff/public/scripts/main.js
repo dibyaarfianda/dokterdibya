@@ -2974,6 +2974,11 @@ async function applyMenuVisibility(user) {
     // Closing finance is deliberately stricter than generic doctor/superadmin UI.
     // Only the canonical doctor role id may see its launchers; backend repeats this guard.
     const isSundayClinicClosingDoctor = Number(user?.role_id) === ROLE_IDS.DOKTER;
+    document.querySelectorAll('.doctor-role-only').forEach(element => {
+        element.classList.toggle('d-none', !isSundayClinicClosingDoctor);
+        if (isSundayClinicClosingDoctor) element.removeAttribute('hidden');
+        else element.setAttribute('hidden', 'hidden');
+    });
     document.querySelectorAll('.sunday-clinic-closing-doctor-only').forEach(element => {
         element.classList.toggle('d-none', !isSundayClinicClosingDoctor);
         if (isSundayClinicClosingDoctor) element.removeAttribute('hidden');

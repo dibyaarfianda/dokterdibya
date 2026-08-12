@@ -1,10 +1,13 @@
 const express = require('express');
 const db = require('../db');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireDoctorRole } = require('../middleware/auth');
 const { ROLE_IDS } = require('../constants/roles');
 const {
     PAYROLL_CONFIG,
+    DRIVER_PAYROLL_CONFIG,
     calculatePayroll,
+    calculateDriverPayroll,
+    normalizePayrollMonth,
     sumPayrollItems
 } = require('../services/StaffPayrollService');
 
@@ -126,11 +129,33 @@ async function loadBatch(batchId, queryable = db) {
     return batch;
 }
 
+function normalizeDriverPayrollRow(row) {
+    if (!row) return null;
+    return {
+        ...row,
+        payroll_month: formatDateOnly(row.payroll_month)
+    };
+}
+
+async function loadDriverPayroll(payrollMonth, queryable = db) {
+    const [rows] = await queryable.query(
+        `SELECT id, payroll_month, calendar_days, sunday_count, working_days,
+                monthly_salary, absence_days, daily_deduction, deduction_amount,
+                total_amount, status, created_by, finalized_by, finalized_at,
+                created_at, updated_at
+         FROM staff_driver_payrolls
+         WHERE payroll_month = ?
+         LIMIT 1`,
+        [`${normalizePayrollMonth(payrollMonth)}-01`]
+    );
+    return normalizeDriverPayrollRow(rows[0]);
+}
+
 function badRequest(res, message) {
     return res.status(400).json({ success: false, message });
 }
 
-router.get('/practice-dates', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/practice-dates', verifyToken, requireDoctorRole, async (req, res) => {
     try {
         const practiceDates = await getLatestPracticeDates(req.query.limit);
         const latestCycle = practiceDates.slice(0, 4).sort();
@@ -147,7 +172,7 @@ router.get('/practice-dates', verifyToken, requireSuperadmin, async (req, res) =
     }
 });
 
-router.get('/batches', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/batches', verifyToken, requireDoctorRole, async (req, res) => {
     try {
         const limit = Math.max(1, Math.min(50, Number.parseInt(req.query.limit, 10) || 20));
         const [rows] = await db.query(
@@ -182,7 +207,7 @@ router.get('/batches', verifyToken, requireSuperadmin, async (req, res) => {
     }
 });
 
-router.get('/batches/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
     try {
         const batch = await loadBatch(req.params.id);
         if (!batch) {
@@ -195,7 +220,7 @@ router.get('/batches/:id', verifyToken, requireSuperadmin, async (req, res) => {
     }
 });
 
-router.post('/batches', verifyToken, requireSuperadmin, async (req, res) => {
+router.post('/batches', verifyToken, requireDoctorRole, async (req, res) => {
     let practiceDates;
     try {
         practiceDates = req.body && req.body.practice_dates
@@ -331,7 +356,7 @@ router.post('/batches', verifyToken, requireSuperadmin, async (req, res) => {
     }
 });
 
-router.put('/batches/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.put('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
     const batchId = req.params.id;
     const updates = Array.isArray(req.body && req.body.items) ? req.body.items : null;
     if (!updates) {
@@ -415,7 +440,7 @@ router.put('/batches/:id', verifyToken, requireSuperadmin, async (req, res) => {
     }
 });
 
-router.post('/batches/:id/finalize', verifyToken, requireSuperadmin, async (req, res) => {
+router.post('/batches/:id/finalize', verifyToken, requireDoctorRole, async (req, res) => {
     let payrollDate = null;
     if (req.body && req.body.payroll_date) {
         try {
@@ -464,7 +489,7 @@ router.post('/batches/:id/finalize', verifyToken, requireSuperadmin, async (req,
     }
 });
 
-router.delete('/batches/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
     const connection = await db.getConnection();
     await connection.beginTransaction();
 
@@ -493,8 +518,192 @@ router.delete('/batches/:id', verifyToken, requireSuperadmin, async (req, res) =
     }
 });
 
-router.get('/config', verifyToken, requireSuperadmin, (req, res) => {
-    return res.json({ success: true, data: PAYROLL_CONFIG });
+router.get('/driver-payrolls', verifyToken, requireDoctorRole, async (req, res) => {
+    try {
+        const limit = Math.max(1, Math.min(60, Number.parseInt(req.query.limit, 10) || 24));
+        const [rows] = await db.query(
+            `SELECT id, payroll_month, calendar_days, sunday_count, working_days,
+                    monthly_salary, absence_days, daily_deduction, deduction_amount,
+                    total_amount, status, finalized_at, created_at, updated_at
+             FROM staff_driver_payrolls
+             ORDER BY payroll_month DESC
+             LIMIT ?`,
+            [limit]
+        );
+        return res.json({ success: true, data: rows.map(normalizeDriverPayrollRow) });
+    } catch (err) {
+        console.error('[staff-payroll] driver list error:', err);
+        return res.status(500).json({ success: false, message: 'Gagal memuat gaji supir' });
+    }
+});
+
+router.put('/driver-payrolls/:month', verifyToken, requireDoctorRole, async (req, res) => {
+    let payroll;
+    try {
+        payroll = calculateDriverPayroll(req.params.month, req.body && req.body.absence_days);
+    } catch (err) {
+        return badRequest(res, err.message);
+    }
+
+    const actorId = String(req.user && (req.user.id || req.user.new_id || '') || '').trim() || null;
+    const connection = await db.getConnection();
+    let transactionStarted = false;
+    try {
+        await connection.beginTransaction();
+        transactionStarted = true;
+        const [existingRows] = await connection.query(
+            'SELECT id, status FROM staff_driver_payrolls WHERE payroll_month = ? FOR UPDATE',
+            [payroll.payroll_month]
+        );
+        const existing = existingRows[0];
+        if (existing && existing.status === 'finalized') {
+            await connection.rollback();
+            transactionStarted = false;
+            return res.status(409).json({
+                success: false,
+                message: 'Gaji supir bulan ini sudah difinalkan dan tidak bisa diubah'
+            });
+        }
+
+        if (existing) {
+            await connection.query(
+                `UPDATE staff_driver_payrolls
+                 SET calendar_days = ?, sunday_count = ?, working_days = ?, monthly_salary = ?,
+                     absence_days = ?, daily_deduction = ?, deduction_amount = ?, total_amount = ?
+                 WHERE id = ?`,
+                [
+                    payroll.calendar_days,
+                    payroll.sunday_count,
+                    payroll.working_days,
+                    payroll.monthly_salary,
+                    payroll.absence_days,
+                    payroll.daily_deduction,
+                    payroll.deduction_amount,
+                    payroll.total_amount,
+                    existing.id
+                ]
+            );
+        } else {
+            await connection.query(
+                `INSERT INTO staff_driver_payrolls
+                 (payroll_month, calendar_days, sunday_count, working_days, monthly_salary,
+                  absence_days, daily_deduction, deduction_amount, total_amount, status, created_by)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+                [
+                    payroll.payroll_month,
+                    payroll.calendar_days,
+                    payroll.sunday_count,
+                    payroll.working_days,
+                    payroll.monthly_salary,
+                    payroll.absence_days,
+                    payroll.daily_deduction,
+                    payroll.deduction_amount,
+                    payroll.total_amount,
+                    actorId
+                ]
+            );
+        }
+
+        const saved = await loadDriverPayroll(req.params.month, connection);
+        await connection.commit();
+        transactionStarted = false;
+        return res.json({ success: true, message: 'Draft gaji supir berhasil disimpan', data: saved });
+    } catch (err) {
+        if (transactionStarted) {
+            try { await connection.rollback(); } catch (_rollbackError) {}
+        }
+        console.error('[staff-payroll] driver save error:', err);
+        return res.status(500).json({ success: false, message: 'Gagal menyimpan gaji supir' });
+    } finally {
+        connection.release();
+    }
+});
+
+router.post('/driver-payrolls/:month/finalize', verifyToken, requireDoctorRole, async (req, res) => {
+    let month;
+    try {
+        month = normalizePayrollMonth(req.params.month);
+    } catch (err) {
+        return badRequest(res, err.message);
+    }
+
+    const actorId = String(req.user && (req.user.id || req.user.new_id || '') || '').trim() || null;
+    const connection = await db.getConnection();
+    let transactionStarted = false;
+    try {
+        await connection.beginTransaction();
+        transactionStarted = true;
+        const [rows] = await connection.query(
+            'SELECT id, status FROM staff_driver_payrolls WHERE payroll_month = ? FOR UPDATE',
+            [`${month}-01`]
+        );
+        if (!rows.length) {
+            await connection.rollback();
+            transactionStarted = false;
+            return res.status(404).json({ success: false, message: 'Draft gaji supir belum dibuat' });
+        }
+        if (rows[0].status === 'finalized') {
+            await connection.rollback();
+            transactionStarted = false;
+            return res.status(409).json({ success: false, message: 'Gaji supir bulan ini sudah difinalkan' });
+        }
+
+        await connection.query(
+            `UPDATE staff_driver_payrolls
+             SET status = 'finalized', finalized_by = ?, finalized_at = NOW()
+             WHERE id = ?`,
+            [actorId, rows[0].id]
+        );
+        const finalized = await loadDriverPayroll(month, connection);
+        await connection.commit();
+        transactionStarted = false;
+        return res.json({ success: true, message: 'Gaji supir berhasil difinalkan', data: finalized });
+    } catch (err) {
+        if (transactionStarted) {
+            try { await connection.rollback(); } catch (_rollbackError) {}
+        }
+        console.error('[staff-payroll] driver finalize error:', err);
+        return res.status(500).json({ success: false, message: 'Gagal finalisasi gaji supir' });
+    } finally {
+        connection.release();
+    }
+});
+
+router.delete('/driver-payrolls/:month', verifyToken, requireDoctorRole, async (req, res) => {
+    let month;
+    try {
+        month = normalizePayrollMonth(req.params.month);
+    } catch (err) {
+        return badRequest(res, err.message);
+    }
+
+    try {
+        const [result] = await db.query(
+            `DELETE FROM staff_driver_payrolls
+             WHERE payroll_month = ? AND status = 'draft'`,
+            [`${month}-01`]
+        );
+        if (!result.affectedRows) {
+            return res.status(409).json({
+                success: false,
+                message: 'Draft tidak ditemukan atau gaji supir sudah difinalkan'
+            });
+        }
+        return res.json({ success: true, message: 'Draft gaji supir berhasil dihapus' });
+    } catch (err) {
+        console.error('[staff-payroll] driver delete error:', err);
+        return res.status(500).json({ success: false, message: 'Gagal menghapus draft gaji supir' });
+    }
+});
+
+router.get('/config', verifyToken, requireDoctorRole, (req, res) => {
+    return res.json({
+        success: true,
+        data: {
+            staff: PAYROLL_CONFIG,
+            driver: DRIVER_PAYROLL_CONFIG
+        }
+    });
 });
 
 module.exports = router;

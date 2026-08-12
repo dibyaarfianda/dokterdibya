@@ -9,7 +9,9 @@
         practiceDates: [],
         latestCycle: [],
         batches: [],
-        currentBatch: null
+        currentBatch: null,
+        driverPayrolls: [],
+        currentDriverPayroll: null
     };
 
     function getToken() {
@@ -41,6 +43,41 @@
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     }
 
+    function defaultDriverPayrollMonth() {
+        var d = new Date();
+        d.setDate(1);
+        d.setMonth(d.getMonth() - 1);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    }
+
+    function calculateDriverPreview(month, absenceDays) {
+        var match = /^(\d{4})-(\d{2})$/.exec(String(month || ''));
+        if (!match) return null;
+        var year = Number(match[1]);
+        var monthNumber = Number(match[2]);
+        var calendarDays = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
+        var sundayCount = 0;
+        for (var day = 1; day <= calendarDays; day += 1) {
+            if (new Date(Date.UTC(year, monthNumber - 1, day)).getUTCDay() === 0) sundayCount += 1;
+        }
+        var workingDays = calendarDays - sundayCount;
+        var absence = Math.max(0, Math.min(workingDays, Math.trunc(Number(absenceDays) || 0)));
+        var monthlySalary = 1500000;
+        var dailyDeduction = Math.ceil((monthlySalary / workingDays) / 1000) * 1000;
+        var deductionAmount = Math.min(monthlySalary, absence * dailyDeduction);
+        return {
+            payroll_month: month + '-01',
+            calendar_days: calendarDays,
+            sunday_count: sundayCount,
+            working_days: workingDays,
+            monthly_salary: monthlySalary,
+            absence_days: absence,
+            daily_deduction: dailyDeduction,
+            deduction_amount: deductionAmount,
+            total_amount: monthlySalary - deductionAmount
+        };
+    }
+
     async function api(path, options) {
         var token = getToken();
         var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, 'Cache-Control': 'no-cache' };
@@ -68,6 +105,115 @@
         document.querySelectorAll('[data-payroll-action]').forEach(function (btn) {
             btn.disabled = isBusy;
         });
+    }
+
+    function driverMonthKey(value) {
+        return String(value || '').slice(0, 7);
+    }
+
+    function renderDriverHistory() {
+        var tbody = document.getElementById('driver-payroll-history');
+        if (!tbody) return;
+        if (!state.driverPayrolls.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Belum ada gaji supir tersimpan.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = state.driverPayrolls.map(function (item) {
+            var month = driverMonthKey(item.payroll_month);
+            var active = state.currentDriverPayroll && driverMonthKey(state.currentDriverPayroll.payroll_month) === month;
+            var badge = item.status === 'finalized' ? 'badge-success' : 'badge-warning';
+            return '<tr data-driver-payroll-month="' + escapeHtml(month) + '" class="' + (active ? 'table-active' : '') + '" style="cursor:pointer;">' +
+                '<td><strong>' + escapeHtml(month) + '</strong></td>' +
+                '<td class="text-right">' + Number(item.working_days || 0) + '</td>' +
+                '<td class="text-right">' + Number(item.absence_days || 0) + '</td>' +
+                '<td class="text-right">' + escapeHtml(formatRp(item.daily_deduction)) + '</td>' +
+                '<td class="text-right font-weight-bold">' + escapeHtml(formatRp(item.total_amount)) + '</td>' +
+                '<td><span class="badge ' + badge + '">' + escapeHtml(item.status) + '</span></td>' +
+                '</tr>';
+        }).join('');
+
+        tbody.querySelectorAll('[data-driver-payroll-month]').forEach(function (row) {
+            row.addEventListener('click', function () {
+                selectDriverPayroll(row.getAttribute('data-driver-payroll-month'));
+            });
+        });
+    }
+
+    function renderDriverPreview() {
+        var monthInput = document.getElementById('driver-payroll-month');
+        var absenceInput = document.getElementById('driver-payroll-absence-days');
+        if (!monthInput || !absenceInput) return;
+        if (!monthInput.value) monthInput.value = defaultDriverPayrollMonth();
+
+        var preview = calculateDriverPreview(monthInput.value, absenceInput.value);
+        if (!preview) return;
+        absenceInput.max = String(preview.working_days);
+        if (Number(absenceInput.value || 0) !== preview.absence_days) {
+            absenceInput.value = String(preview.absence_days);
+        }
+
+        var values = {
+            'driver-payroll-calendar-days': preview.calendar_days,
+            'driver-payroll-sundays': preview.sunday_count,
+            'driver-payroll-working-days': preview.working_days,
+            'driver-payroll-daily-deduction': formatRp(preview.daily_deduction),
+            'driver-payroll-deduction': formatRp(preview.deduction_amount),
+            'driver-payroll-total': formatRp(preview.total_amount)
+        };
+        Object.keys(values).forEach(function (id) {
+            var element = document.getElementById(id);
+            if (element) element.textContent = values[id];
+        });
+
+        var selectedMonth = monthInput.value;
+        var stored = state.driverPayrolls.find(function (item) {
+            return driverMonthKey(item.payroll_month) === selectedMonth;
+        }) || null;
+        state.currentDriverPayroll = stored;
+        var finalized = Boolean(stored && stored.status === 'finalized');
+        absenceInput.disabled = finalized;
+        var status = document.getElementById('driver-payroll-status');
+        if (status) {
+            status.className = 'badge ' + (finalized ? 'badge-success' : stored ? 'badge-warning' : 'badge-light');
+            status.textContent = finalized ? 'Finalized' : stored ? 'Draft' : 'Draft baru';
+        }
+        var saveButton = document.querySelector('[data-payroll-action="driver-save"]');
+        var finalizeButton = document.querySelector('[data-payroll-action="driver-finalize"]');
+        var deleteButton = document.querySelector('[data-payroll-action="driver-delete"]');
+        if (saveButton) saveButton.disabled = state.loading || finalized;
+        if (finalizeButton) finalizeButton.disabled = state.loading || finalized;
+        if (deleteButton) deleteButton.disabled = state.loading || finalized || !stored;
+        renderDriverHistory();
+    }
+
+    function selectDriverPayroll(month) {
+        var monthInput = document.getElementById('driver-payroll-month');
+        var absenceInput = document.getElementById('driver-payroll-absence-days');
+        if (!monthInput || !absenceInput) return;
+        var record = state.driverPayrolls.find(function (item) {
+            return driverMonthKey(item.payroll_month) === month;
+        }) || null;
+        monthInput.value = month;
+        absenceInput.value = String(record ? Number(record.absence_days || 0) : 0);
+        state.currentDriverPayroll = record;
+        renderDriverPreview();
+    }
+
+    function bindDriverPayrollInputs() {
+        var monthInput = document.getElementById('driver-payroll-month');
+        var absenceInput = document.getElementById('driver-payroll-absence-days');
+        if (monthInput && monthInput.dataset.bound !== 'true') {
+            monthInput.dataset.bound = 'true';
+            monthInput.addEventListener('change', function () {
+                selectDriverPayroll(monthInput.value);
+            });
+        }
+        if (absenceInput && absenceInput.dataset.bound !== 'true') {
+            absenceInput.dataset.bound = 'true';
+            absenceInput.addEventListener('input', renderDriverPreview);
+            absenceInput.addEventListener('change', renderDriverPreview);
+        }
     }
 
     function renderCyclePicker() {
@@ -229,6 +375,89 @@
             '<button type="button" class="btn btn-sm btn-outline-danger" data-payroll-action="delete" onclick="if(window.staffPayroll) window.staffPayroll.removeDraft()"><i class="fas fa-trash mr-1"></i>Hapus Draft</button>';
     }
 
+    async function loadDriverPayrolls() {
+        var result = await api('/driver-payrolls?limit=24');
+        state.driverPayrolls = result.data || [];
+        bindDriverPayrollInputs();
+        var monthInput = document.getElementById('driver-payroll-month');
+        var selectedMonth = monthInput && monthInput.value ? monthInput.value : defaultDriverPayrollMonth();
+        selectDriverPayroll(selectedMonth);
+    }
+
+    function collectDriverPayrollInput() {
+        var month = (document.getElementById('driver-payroll-month') || {}).value || defaultDriverPayrollMonth();
+        var absenceDays = Number((document.getElementById('driver-payroll-absence-days') || {}).value || 0);
+        return { month: month, absence_days: absenceDays };
+    }
+
+    async function persistDriverDraft(showSuccess) {
+        var input = collectDriverPayrollInput();
+        var result = await api('/driver-payrolls/' + encodeURIComponent(input.month), {
+            method: 'PUT',
+            body: JSON.stringify({ absence_days: input.absence_days })
+        });
+        state.currentDriverPayroll = result.data;
+        await loadDriverPayrolls();
+        selectDriverPayroll(input.month);
+        if (showSuccess) showMessage('Draft gaji supir berhasil disimpan', 'success');
+        return result.data;
+    }
+
+    async function saveDriver() {
+        setBusy(true);
+        try {
+            await persistDriverDraft(true);
+        } catch (err) {
+            console.error('[staff-payroll] driver save error:', err);
+            showMessage(err.message || 'Gagal menyimpan gaji supir', 'error');
+        } finally {
+            setBusy(false);
+            renderDriverPreview();
+        }
+    }
+
+    async function finalizeDriver() {
+        var input = collectDriverPayrollInput();
+        if (!confirm('Finalize gaji supir bulan ' + input.month + '? Setelah finalized, data tidak bisa diubah dan akan mengurangi Analisa Keuangan.')) return;
+        setBusy(true);
+        try {
+            await persistDriverDraft(false);
+            var result = await api('/driver-payrolls/' + encodeURIComponent(input.month) + '/finalize', {
+                method: 'POST',
+                body: JSON.stringify({})
+            });
+            state.currentDriverPayroll = result.data;
+            await loadDriverPayrolls();
+            selectDriverPayroll(input.month);
+            showMessage('Gaji supir berhasil difinalkan', 'success');
+        } catch (err) {
+            console.error('[staff-payroll] driver finalize error:', err);
+            showMessage(err.message || 'Gagal finalisasi gaji supir', 'error');
+        } finally {
+            setBusy(false);
+            renderDriverPreview();
+        }
+    }
+
+    async function removeDriverDraft() {
+        var input = collectDriverPayrollInput();
+        if (!confirm('Hapus draft gaji supir bulan ' + input.month + '?')) return;
+        setBusy(true);
+        try {
+            await api('/driver-payrolls/' + encodeURIComponent(input.month), { method: 'DELETE' });
+            state.currentDriverPayroll = null;
+            await loadDriverPayrolls();
+            selectDriverPayroll(input.month);
+            showMessage('Draft gaji supir berhasil dihapus', 'success');
+        } catch (err) {
+            console.error('[staff-payroll] driver delete error:', err);
+            showMessage(err.message || 'Gagal menghapus draft gaji supir', 'error');
+        } finally {
+            setBusy(false);
+            renderDriverPreview();
+        }
+    }
+
     async function loadPracticeDates() {
         var result = await api('/practice-dates?limit=12');
         state.practiceDates = result.data && result.data.practice_dates ? result.data.practice_dates : [];
@@ -256,6 +485,7 @@
             showMessage(err.message || 'Gagal memuat batch', 'error');
         } finally {
             setBusy(false);
+            renderDriverPreview();
         }
     }
 
@@ -380,6 +610,7 @@
         if (state.loading) return;
         setBusy(true);
         try {
+            await loadDriverPayrolls();
             await loadPracticeDates();
             await loadBatches();
             if (!state.currentBatch && state.batches.length > 0) {
@@ -394,6 +625,7 @@
             if (tbody) tbody.innerHTML = '<tr><td colspan="12" class="text-center text-danger py-4">' + escapeHtml(err.message || 'Gagal memuat payroll') + '</td></tr>';
         } finally {
             setBusy(false);
+            renderDriverPreview();
         }
     }
 
@@ -404,6 +636,9 @@
         save: save,
         finalize: finalize,
         removeDraft: removeDraft,
-        loadBatch: loadBatch
+        loadBatch: loadBatch,
+        saveDriver: saveDriver,
+        finalizeDriver: finalizeDriver,
+        removeDriverDraft: removeDriverDraft
     };
 })();

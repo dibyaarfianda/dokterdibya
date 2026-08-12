@@ -1,6 +1,8 @@
 const {
     PAYROLL_CONFIG,
+    DRIVER_PAYROLL_CONFIG,
     calculatePayroll,
+    calculateDriverPayroll,
     validateEmployeePayrollInput,
     sumPayrollItems
 } = require('../../services/StaffPayrollService');
@@ -9,6 +11,37 @@ describe('StaffPayrollService', () => {
     test('uses configured integer payroll rates', () => {
         expect(PAYROLL_CONFIG.BASE_AMOUNT).toBe(150000);
         expect(PAYROLL_CONFIG.ADDITIONAL_RATE).toBe(100000);
+        expect(DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY).toBe(1500000);
+        expect(DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING).toBe(1000);
+    });
+
+    test('calculates July 2026 driver payroll with Sundays off and rounded-up daily deduction', () => {
+        expect(calculateDriverPayroll('2026-07', 1)).toEqual({
+            payroll_month: '2026-07-01',
+            calendar_days: 31,
+            sunday_count: 4,
+            working_days: 27,
+            monthly_salary: 1500000,
+            absence_days: 1,
+            daily_deduction: 56000,
+            deduction_amount: 56000,
+            total_amount: 1444000
+        });
+    });
+
+    test('keeps full driver salary when absence is zero', () => {
+        expect(calculateDriverPayroll('2026-07', 0).total_amount).toBe(1500000);
+    });
+
+    test('never produces a negative salary when every working day is absent', () => {
+        const result = calculateDriverPayroll('2026-07', 27);
+
+        expect(result.deduction_amount).toBe(1500000);
+        expect(result.total_amount).toBe(0);
+    });
+
+    test('rejects driver absence above the working days for that month', () => {
+        expect(() => calculateDriverPayroll('2026-07', 28)).toThrow(/hari kerja/);
     });
 
     test.each([
