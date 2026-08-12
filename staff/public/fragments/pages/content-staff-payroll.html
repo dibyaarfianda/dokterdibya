@@ -32,6 +32,9 @@
                                                     <button type="button" class="btn btn-sm btn-success mr-2" data-payroll-action="driver-finalize" onclick="if(window.staffPayroll) window.staffPayroll.finalizeDriver()">
                                                         <i class="fas fa-check mr-1"></i>Finalize
                                                     </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary mr-2" data-payroll-action="driver-print" onclick="if(window.staffPayroll) window.staffPayroll.printDriverSlip()" disabled>
+                                                        <i class="fas fa-print mr-1"></i>Cetak Slip
+                                                    </button>
                                                     <button type="button" class="btn btn-sm btn-outline-danger" data-payroll-action="driver-delete" onclick="if(window.staffPayroll) window.staffPayroll.removeDriverDraft()">
                                                         <i class="fas fa-trash mr-1"></i>Hapus Draft
                                                     </button>
@@ -60,10 +63,11 @@
                                                             <th class="text-right">Potongan/Hari</th>
                                                             <th class="text-right">Gaji Diterima</th>
                                                             <th>Status</th>
+                                                            <th class="text-center">Slip</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody id="driver-payroll-history">
-                                                        <tr><td colspan="6" class="text-center text-muted py-3">Memuat gaji supir...</td></tr>
+                                                        <tr><td colspan="7" class="text-center text-muted py-3">Memuat gaji supir...</td></tr>
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -133,12 +137,13 @@
                                                     <th rowspan="2" class="text-right">Bonus/Penyesuaian</th>
                                                     <th rowspan="2" class="text-right">Total</th>
                                                     <th rowspan="2">Catatan</th>
+                                                    <th rowspan="2" class="text-center">Slip</th>
                                                 </tr>
                                                 <tr id="staff-payroll-date-head"></tr>
                                             </thead>
                                             <tbody id="staff-payroll-tbody">
                                                 <tr>
-                                                    <td colspan="12" class="text-center text-muted py-4">
+                                                    <td colspan="13" class="text-center text-muted py-4">
                                                         <i class="fas fa-spinner fa-spin mr-1"></i> Memuat payroll...
                                                     </td>
                                                 </tr>

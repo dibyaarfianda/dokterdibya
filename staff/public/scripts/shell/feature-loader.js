@@ -85,7 +85,10 @@ const featureLoaders = {
     tanyaDokter: () => loadScript('/staff/public/scripts/tanya-dokter.js'),
     staffPoints: () => loadScript('/staff/public/scripts/staff-points.js'),
     staffBriefing: () => loadScript('/staff/public/scripts/staff-briefing.js'),
-    staffPayroll: () => loadScript('/staff/public/scripts/staff-payroll.js'),
+    staffPayroll: async () => {
+        await loadScript('/staff/public/scripts/staff-payroll-print.js');
+        await loadScript('/staff/public/scripts/staff-payroll.js');
+    },
     appointmentDebug: () => loadScript('/staff/public/scripts/shell/appointment-debug.js'),
     patientSearchDetail: () => loadScript('/staff/public/scripts/shell/patient-search-detail.js'),
     patientTools: () => loadScript('/staff/public/scripts/legacy/patient-tools.js'),

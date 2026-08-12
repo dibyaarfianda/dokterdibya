@@ -100,6 +100,26 @@
         }
     }
 
+    function getPrintModule() {
+        if (!window.staffPayrollPrint) {
+            throw new Error('Modul cetak slip gaji belum tersedia. Silakan refresh halaman.');
+        }
+        return window.staffPayrollPrint;
+    }
+
+    function openPrintWindow(html, title) {
+        var printWindow = window.open('', '_blank', 'width=900,height=750');
+        if (!printWindow) {
+            throw new Error('Popup cetak diblokir browser. Izinkan popup untuk situs ini.');
+        }
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.document.title = title || 'Slip Gaji';
+        printWindow.focus();
+        window.setTimeout(function () { printWindow.print(); }, 250);
+    }
+
     function setBusy(isBusy) {
         state.loading = isBusy;
         document.querySelectorAll('[data-payroll-action]').forEach(function (btn) {
@@ -115,7 +135,7 @@
         var tbody = document.getElementById('driver-payroll-history');
         if (!tbody) return;
         if (!state.driverPayrolls.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Belum ada gaji supir tersimpan.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Belum ada gaji supir tersimpan.</td></tr>';
             return;
         }
 
@@ -130,12 +150,21 @@
                 '<td class="text-right">' + escapeHtml(formatRp(item.daily_deduction)) + '</td>' +
                 '<td class="text-right font-weight-bold">' + escapeHtml(formatRp(item.total_amount)) + '</td>' +
                 '<td><span class="badge ' + badge + '">' + escapeHtml(item.status) + '</span></td>' +
+                '<td class="text-center">' + (item.status === 'finalized' ?
+                    '<button type="button" class="btn btn-xs btn-outline-primary" data-payroll-action="driver-history-print" data-driver-slip-month="' + escapeHtml(month) + '" title="Cetak slip gaji supir"' + (state.loading ? ' disabled' : '') + '><i class="fas fa-print mr-1"></i>Cetak Slip</button>' :
+                    '<span class="text-muted small">Finalize dulu</span>') + '</td>' +
                 '</tr>';
         }).join('');
 
         tbody.querySelectorAll('[data-driver-payroll-month]').forEach(function (row) {
             row.addEventListener('click', function () {
                 selectDriverPayroll(row.getAttribute('data-driver-payroll-month'));
+            });
+        });
+        tbody.querySelectorAll('[data-driver-slip-month]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.stopPropagation();
+                printDriverSlip(button.getAttribute('data-driver-slip-month'));
             });
         });
     }
@@ -181,10 +210,26 @@
         var saveButton = document.querySelector('[data-payroll-action="driver-save"]');
         var finalizeButton = document.querySelector('[data-payroll-action="driver-finalize"]');
         var deleteButton = document.querySelector('[data-payroll-action="driver-delete"]');
+        var printButton = document.querySelector('[data-payroll-action="driver-print"]');
         if (saveButton) saveButton.disabled = state.loading || finalized;
         if (finalizeButton) finalizeButton.disabled = state.loading || finalized;
         if (deleteButton) deleteButton.disabled = state.loading || finalized || !stored;
+        if (printButton) printButton.disabled = state.loading || !finalized;
         renderDriverHistory();
+    }
+
+    function printDriverSlip(month) {
+        try {
+            var selectedMonth = month || driverMonthKey(state.currentDriverPayroll && state.currentDriverPayroll.payroll_month);
+            var record = state.driverPayrolls.find(function (item) {
+                return driverMonthKey(item.payroll_month) === selectedMonth;
+            }) || state.currentDriverPayroll;
+            var html = getPrintModule().buildDriverSlipDocument(record);
+            openPrintWindow(html, 'Slip Gaji Supir - ' + selectedMonth);
+        } catch (err) {
+            console.error('[staff-payroll] driver slip print error:', err);
+            showMessage(err.message || 'Gagal mencetak slip gaji supir', 'error');
+        }
     }
 
     function selectDriverPayroll(month) {
@@ -288,7 +333,7 @@
         var batch = state.currentBatch;
         if (!batch) {
             thead.innerHTML = '';
-            tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted py-4">Belum ada batch dipilih.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-4">Belum ada batch dipilih.</td></tr>';
             renderActions();
             return;
         }
@@ -316,8 +361,17 @@
                 '<td style="min-width:130px;"><input type="number" step="1" class="form-control form-control-sm text-right staff-payroll-adjustment" value="' + (Number(item.adjustment_amount) || 0) + '"' + (readonly ? ' disabled' : '') + '></td>' +
                 '<td class="text-right font-weight-bold payroll-total">' + escapeHtml(formatRp(item.total_amount)) + '</td>' +
                 '<td style="min-width:150px;"><input type="text" class="form-control form-control-sm staff-payroll-notes" value="' + escapeHtml(item.notes || '') + '"' + (readonly ? ' disabled' : '') + '></td>' +
+                '<td class="text-center" style="min-width:110px;">' + (readonly && Number(item.total_amount) > 0 ?
+                    '<button type="button" class="btn btn-xs btn-outline-primary" data-staff-slip-id="' + escapeHtml(item.staff_id) + '"><i class="fas fa-print mr-1"></i>Cetak Slip</button>' :
+                    '<span class="text-muted small">' + (readonly ? 'Tidak dibayar' : 'Finalize dulu') + '</span>') + '</td>' +
                 '</tr>';
         }).join('');
+
+        tbody.querySelectorAll('[data-staff-slip-id]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                printStaffSlip(button.getAttribute('data-staff-slip-id'));
+            });
+        });
 
         tbody.querySelectorAll('input').forEach(function (input) {
             input.addEventListener('change', recalcClientTotals);
@@ -364,7 +418,8 @@
 
         if (batch.status === 'finalized') {
             el.innerHTML = '<span class="badge badge-success mr-2"><i class="fas fa-lock mr-1"></i>Finalized</span>' +
-                '<strong>Total: <span id="staff-payroll-live-total">' + escapeHtml(formatRp(batch.total_amount)) + '</span></strong>';
+                '<strong class="mr-2">Total: <span id="staff-payroll-live-total">' + escapeHtml(formatRp(batch.total_amount)) + '</span></strong>' +
+                '<button type="button" class="btn btn-sm btn-outline-primary" data-payroll-action="print-all" onclick="if(window.staffPayroll) window.staffPayroll.printAllStaffSlips()"><i class="fas fa-print mr-1"></i>Cetak Semua Slip</button>';
             return;
         }
 
@@ -373,6 +428,30 @@
             '<button type="button" class="btn btn-sm btn-primary mr-2" data-payroll-action="save" onclick="if(window.staffPayroll) window.staffPayroll.save()"><i class="fas fa-save mr-1"></i>Simpan Draft</button>' +
             '<button type="button" class="btn btn-sm btn-success mr-2" data-payroll-action="finalize" onclick="if(window.staffPayroll) window.staffPayroll.finalize()"><i class="fas fa-check mr-1"></i>Finalize</button>' +
             '<button type="button" class="btn btn-sm btn-outline-danger" data-payroll-action="delete" onclick="if(window.staffPayroll) window.staffPayroll.removeDraft()"><i class="fas fa-trash mr-1"></i>Hapus Draft</button>';
+    }
+
+    function printStaffSlip(staffId) {
+        try {
+            var batch = state.currentBatch;
+            var item = batch && (batch.items || []).find(function (candidate) {
+                return String(candidate.staff_id) === String(staffId);
+            });
+            var html = getPrintModule().buildStaffSlipDocument(batch, item);
+            openPrintWindow(html, 'Slip Gaji - ' + (item ? item.staff_name : 'Pegawai'));
+        } catch (err) {
+            console.error('[staff-payroll] staff slip print error:', err);
+            showMessage(err.message || 'Gagal mencetak slip gaji pegawai', 'error');
+        }
+    }
+
+    function printAllStaffSlips() {
+        try {
+            var html = getPrintModule().buildBatchSlipDocument(state.currentBatch);
+            openPrintWindow(html, 'Slip Gaji Pegawai Sunday Clinic');
+        } catch (err) {
+            console.error('[staff-payroll] batch slip print error:', err);
+            showMessage(err.message || 'Gagal mencetak seluruh slip gaji', 'error');
+        }
     }
 
     async function loadDriverPayrolls() {
@@ -622,7 +701,7 @@
         } catch (err) {
             console.error('[staff-payroll] init error:', err);
             var tbody = document.getElementById('staff-payroll-tbody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="12" class="text-center text-danger py-4">' + escapeHtml(err.message || 'Gagal memuat payroll') + '</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-center text-danger py-4">' + escapeHtml(err.message || 'Gagal memuat payroll') + '</td></tr>';
         } finally {
             setBusy(false);
             renderDriverPreview();
@@ -639,6 +718,9 @@
         loadBatch: loadBatch,
         saveDriver: saveDriver,
         finalizeDriver: finalizeDriver,
-        removeDriverDraft: removeDriverDraft
+        removeDriverDraft: removeDriverDraft,
+        printDriverSlip: printDriverSlip,
+        printStaffSlip: printStaffSlip,
+        printAllStaffSlips: printAllStaffSlips
     };
 })();

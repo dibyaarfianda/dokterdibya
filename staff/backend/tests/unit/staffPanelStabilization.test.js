@@ -672,7 +672,8 @@ describe('staff panel stabilization sources', () => {
         expect(payrollFragment).toContain('id="staff-payroll-tbody"');
         const staffVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
         expect(staffVersion).toBeTruthy();
-        expect(featureLoader).toContain("staffPayroll: () => loadScript('/staff/public/scripts/staff-payroll.js')");
+        expect(featureLoader).toContain("await loadScript('/staff/public/scripts/staff-payroll-print.js')");
+        expect(featureLoader).toContain("await loadScript('/staff/public/scripts/staff-payroll.js')");
         expect(html).toContain('window.showStaffPayrollPage = showStaffPayrollPage;');
 
         expect(mainJs).toContain("pages.staffPayroll = grab('content-staff-payroll');");

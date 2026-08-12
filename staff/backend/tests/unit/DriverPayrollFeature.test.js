@@ -49,4 +49,16 @@ describe('doctor-only private driver payroll feature', () => {
         expect(analytics).toContain('totalGajiSupir');
         expect(financePage).toContain('totalGajiSupir');
     });
+
+    test('offers finalized driver and Sunday Clinic payroll slip printing', () => {
+        const payrollScript = read('staff', 'public', 'scripts', 'staff-payroll.js');
+        const featureLoader = read('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
+
+        expect(featureLoader).toContain('/staff/public/scripts/staff-payroll-print.js');
+        expect(payrollScript).toContain('printDriverSlip');
+        expect(payrollScript).toContain('printStaffSlip');
+        expect(payrollScript).toContain('printAllStaffSlips');
+        expect(payrollScript).toContain('Cetak Semua Slip');
+        expect(payrollScript).toContain('Cetak Slip');
+    });
 });
