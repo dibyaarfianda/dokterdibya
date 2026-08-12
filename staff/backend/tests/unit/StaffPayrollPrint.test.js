@@ -75,6 +75,25 @@ describe('staff payroll printable slips', () => {
         expect(html).not.toContain('Pegawai Dua');
     });
 
+    test('adds the supplied dr. Dibya signature to driver and staff slips', () => {
+        const driverHtml = buildDriverSlipDocument(finalizedDriver);
+        const staffHtml = buildStaffSlipDocument(finalizedBatch, finalizedBatch.items[0]);
+
+        [driverHtml, staffHtml].forEach((html) => {
+            expect(html).toContain('class="signature-image"');
+            expect(html).toContain('src="data:image/jpeg;base64,');
+            expect(html).toContain('alt="Tanda tangan dr. Dibya"');
+            expect(html).toContain('>dr. Dibya</div>');
+
+            const signatureMatch = html.match(/class="signature-image" src="data:image\/jpeg;base64,([^"]+)"/);
+            expect(signatureMatch).not.toBeNull();
+            const signatureBytes = Buffer.from(signatureMatch[1], 'base64');
+            expect(signatureBytes).toHaveLength(5436);
+            expect([...signatureBytes.subarray(0, 2)]).toEqual([0xff, 0xd8]);
+            expect([...signatureBytes.subarray(-2)]).toEqual([0xff, 0xd9]);
+        });
+    });
+
     test('rejects draft records so unofficial slips cannot be printed', () => {
         expect(() => buildDriverSlipDocument({ ...finalizedDriver, status: 'draft' })).toThrow(/finalized/i);
         expect(() => buildStaffSlipDocument({ ...finalizedBatch, status: 'draft' }, finalizedBatch.items[0])).toThrow(/finalized/i);
