@@ -3,6 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS staff_driver_payrolls (
     id INT NOT NULL AUTO_INCREMENT,
+    driver_name VARCHAR(120) NULL,
     payroll_month DATE NOT NULL,
     calendar_days TINYINT UNSIGNED NOT NULL,
     sunday_count TINYINT UNSIGNED NOT NULL,

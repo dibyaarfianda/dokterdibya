@@ -28,6 +28,7 @@ describe('staff payroll printable slips', () => {
     const finalizedDriver = {
         id: 4,
         status: 'finalized',
+        driver_name: 'Budi Driver',
         payroll_month: '2026-07-01',
         calendar_days: 31,
         sunday_count: 4,
@@ -53,7 +54,10 @@ describe('staff payroll printable slips', () => {
     test('builds a finalized monthly driver slip with deduction details', () => {
         const html = buildDriverSlipDocument(finalizedDriver);
 
-        expect(html).toContain('SLIP GAJI SUPIR');
+        expect(html).toContain('SLIP GAJI DRIVER');
+        expect(html).toContain('Nama Driver');
+        expect(html).toContain('Budi Driver');
+        expect(html).not.toContain('Supir');
         expect(html).toContain('Private');
         expect(html).toContain('Juli 2026');
         expect(html).toContain('Rp 1.500.000');
@@ -97,5 +101,13 @@ describe('staff payroll printable slips', () => {
     test('rejects draft records so unofficial slips cannot be printed', () => {
         expect(() => buildDriverSlipDocument({ ...finalizedDriver, status: 'draft' })).toThrow(/finalized/i);
         expect(() => buildStaffSlipDocument({ ...finalizedBatch, status: 'draft' }, finalizedBatch.items[0])).toThrow(/finalized/i);
+    });
+
+    test('requires and escapes the driver name', () => {
+        expect(() => buildDriverSlipDocument({ ...finalizedDriver, driver_name: '' })).toThrow(/nama driver/i);
+
+        const html = buildDriverSlipDocument({ ...finalizedDriver, driver_name: 'Budi <Driver>' });
+        expect(html).toContain('Budi &lt;Driver&gt;');
+        expect(html).not.toContain('Budi <Driver>');
     });
 });

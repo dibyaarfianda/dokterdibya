@@ -113,11 +113,13 @@
     }
 
     function buildDriverSlip(record) {
-        assertFinalized(record, 'Gaji supir');
+        assertFinalized(record, 'Gaji driver');
+        var driverName = String(record.driver_name || '').trim();
+        if (!driverName) throw new Error('Nama driver wajib diisi sebelum slip dicetak');
         var monthKey = String(record.payroll_month || '').slice(0, 7).replace('-', '');
         var slipNumber = 'DRV-' + safeSlipPart(monthKey);
         var body = '<div class="section-title">Identitas & periode</div><table class="meta">' +
-            row('Penerima', 'Supir') +
+            row('Nama Driver', escapeHtml(driverName)) +
             row('Bulan Gaji', escapeHtml(formatMonth(record.payroll_month))) +
             (record.finalized_at ? row('Tanggal Finalisasi', escapeHtml(formatDate(record.finalized_at))) : '') +
             row('Status', '<span class="status">FINALIZED</span>') +
@@ -131,7 +133,7 @@
             row('Total Potongan', escapeHtml(formatRp(record.deduction_amount))) +
             row('GAJI DITERIMA', escapeHtml(formatRp(record.total_amount)), 'total') +
             '</table>';
-        return slipFrame('SLIP GAJI SUPIR', slipNumber, 'Private', body);
+        return slipFrame('SLIP GAJI DRIVER', slipNumber, 'Private', body);
     }
 
     function buildStaffSlipDocument(batch, item) {
@@ -148,7 +150,7 @@
     }
 
     function buildDriverSlipDocument(record) {
-        return documentShell('Slip Gaji Supir - ' + formatMonth(record && record.payroll_month), [buildDriverSlip(record)]);
+        return documentShell('Slip Gaji Driver - ' + formatMonth(record && record.payroll_month), [buildDriverSlip(record)]);
     }
 
     return {

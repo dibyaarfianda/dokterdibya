@@ -608,8 +608,8 @@
                 ? `Gaji Staff (${staffCost.batchCount} batch, ${staffCost.paidStaffCount || 0} staff dibayar, ${staffCost.totalKehadiran || 0} hadir)`
                 : 'Gaji Staff (belum ada payroll finalized)';
             const driverPayrollLabel = staffCost.driverPayrollCount > 0
-                ? `Gaji Supir (${staffCost.driverPayrollCount} bulan finalized)`
-                : 'Gaji Supir (belum ada payroll finalized)';
+                ? `Gaji Driver (${staffCost.driverPayrollCount} bulan finalized)`
+                : 'Gaji Driver (belum ada payroll finalized)';
 
             // Update Profit Loss Table
             const plTable = document.getElementById('pc-profit-loss-table');

@@ -17,20 +17,21 @@ describe('doctor-only private driver payroll feature', () => {
         expect(html).toMatch(/id="nav-private"[\s\S]*nav-treeview[\s\S]*id="nav-staff-payroll"/);
     });
 
-    test('exposes only month selection and absence-day input for driver payroll', () => {
+    test('exposes driver name, month, and absence-day inputs for driver payroll', () => {
         const fragment = read('staff', 'public', 'fragments', 'pages', 'content-staff-payroll.html');
 
+        expect(fragment).toContain('id="driver-payroll-name"');
         expect(fragment).toContain('id="driver-payroll-month"');
         expect(fragment).toContain('id="driver-payroll-absence-days"');
         expect(fragment).toContain('id="driver-payroll-working-days"');
         expect(fragment).toContain('id="driver-payroll-daily-deduction"');
         expect(fragment).toContain('id="driver-payroll-total"');
-        expect(fragment).not.toContain('id="driver-payroll-name"');
     });
 
     test('protects driver payroll APIs with literal doctor role and persists monthly records', () => {
         const route = read('staff', 'backend', 'routes', 'staff-payroll.js');
         const migration = read('staff', 'backend', 'migrations', '20260812_create_staff_driver_payrolls.sql');
+        const nameMigration = read('staff', 'backend', 'migrations', '20260813_add_driver_name_to_payroll.sql');
 
         expect(route).toContain("requireDoctorRole");
         expect(route).not.toContain('requireSuperadmin');
@@ -38,7 +39,11 @@ describe('doctor-only private driver payroll feature', () => {
         expect(route).toMatch(/router\.put\('\/driver-payrolls\/:month',[\s\S]{0,120}requireDoctorRole/);
         expect(route).toMatch(/router\.post\('\/driver-payrolls\/:month\/finalize',[\s\S]{0,120}requireDoctorRole/);
         expect(migration).toContain('CREATE TABLE IF NOT EXISTS staff_driver_payrolls');
+        expect(migration).toContain('driver_name VARCHAR(120)');
         expect(migration).toContain('UNIQUE KEY uniq_staff_driver_payroll_month');
+        expect(nameMigration).toContain('ADD COLUMN IF NOT EXISTS driver_name VARCHAR(120)');
+        expect(route).toContain("router.patch('/driver-payrolls/:month/name'");
+        expect(route).toContain('normalizeDriverName');
     });
 
     test('includes finalized driver payroll in private-clinic finance analysis', () => {
