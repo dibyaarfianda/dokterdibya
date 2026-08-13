@@ -33,4 +33,12 @@ describe('staff page visibility isolation', () => {
         expect(patientTools).toMatch(/function hideLegacyStaffPages\(\)[\s\S]*?#content-staff-payroll/);
         expect(patientTools).toMatch(/function hideLegacyStaffPages\(\)[\s\S]*?#content-kantor-saya/);
     });
+
+    test('legacy patient tools do not overwrite lazy staff activity handlers', () => {
+        const patientTools = read('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
+
+        expect(patientTools).toContain('window.showStaffActivityPage ||= function()');
+        expect(patientTools).toContain('window.loadStaffActivityLogs ||= async function(page = 0)');
+        expect(patientTools).toMatch(/window\.showGuestActivityPage = function\(\)[\s\S]*?hideLegacyStaffPages\(\);[\s\S]*?guest-activity-page/);
+    });
 });

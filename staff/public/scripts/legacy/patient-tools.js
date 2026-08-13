@@ -2648,7 +2648,8 @@ Apakah Anda yakin ingin melanjutkan?`;
     let staffActivityPage = 0;
     const staffActivityLimit = 50;
 
-    window.showStaffActivityPage = function() {
+    // Keep the shell's lazy modular handler when patient tools load first from another menu.
+    window.showStaffActivityPage ||= function() {
         // Hide all pages
         hideLegacyStaffPages();
 
@@ -2663,7 +2664,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         loadStaffActivityLogs();
     };
 
-    window.loadStaffActivityLogs = async function(page = 0) {
+    window.loadStaffActivityLogs ||= async function(page = 0) {
         staffActivityPage = page;
         const tbody = document.getElementById('staff-activity-body');
 
