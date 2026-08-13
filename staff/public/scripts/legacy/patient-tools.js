@@ -6,6 +6,23 @@
         callback();
     }
 
+    function hideLegacyStaffPages() {
+        if (typeof window.hideAllPages === 'function') {
+            window.hideAllPages();
+            return;
+        }
+
+        document.querySelectorAll([
+            '[id$="-page"]',
+            '[data-page-fragment]',
+            '#content-support-chat-page',
+            '#content-staff-points',
+            '#content-staff-briefing',
+            '#content-staff-payroll',
+            '#content-kantor-saya'
+        ].join(',')).forEach(page => page.classList.add('d-none'));
+    }
+
     // Socket.IO is now initialized via initRealtimeSync() which handles user registration
     // The socket is available as window.socket after initRealtimeSync completes
 
@@ -69,7 +86,7 @@
         document.body.style.overflowY = 'auto';
 
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show manage patients page
         document.getElementById('manage-patients-page').classList.remove('d-none');
@@ -621,7 +638,7 @@
 
     window.showRegistrasiPasienPage = function() {
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show registrasi pasien page
         document.getElementById('registrasi-pasien-page').classList.remove('d-none');
@@ -2410,7 +2427,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     // Kelola Obat Page Function
     window.showKelolaObatPage = async function() {
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show kelola obat page
         document.getElementById('kelola-obat-page').classList.remove('d-none');
@@ -2434,7 +2451,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     // Kelola Supplier Page Function
     window.showKelolaSupplierPage = function() {
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show kelola supplier page
         document.getElementById('kelola-supplier-page').classList.remove('d-none');
@@ -2451,7 +2468,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     window.showActivityLogPage = async function() {
         await window.staffPageRegistry?.ensureLoaded('activity-log');
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show activity log page
         document.getElementById('activity-log-page').classList.remove('d-none');
@@ -2633,7 +2650,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     window.showStaffActivityPage = function() {
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show staff activity page
         document.getElementById('staff-activity-page').classList.remove('d-none');
@@ -2837,7 +2854,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         document.body.style.overflow = '';
 
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show patient activity page
         document.getElementById('patient-activity-page').classList.remove('d-none');
@@ -3032,7 +3049,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         document.documentElement.style.overflow = '';
         document.body.style.overflow = '';
 
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
         document.getElementById('guest-activity-page')?.classList.remove('d-none');
 
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
@@ -3692,7 +3709,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     // Kelola Tindakan (Pengaturan) Page Function
     window.showPengaturanPage = function() {
         // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        hideLegacyStaffPages();
 
         // Show pengaturan page
         document.getElementById('pengaturan-page').classList.remove('d-none');

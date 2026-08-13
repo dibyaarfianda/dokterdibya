@@ -289,10 +289,8 @@ async function showNotificationsPage(highlightAnnouncementId = null) {
     const markdownReady = Promise.resolve(window.ensureStaffFeature?.('markdown'))
         .catch(error => console.warn('[Notifications] Markdown renderer unavailable, using plain text:', error));
 
-    // Hide all pages
-    document.querySelectorAll('[id$="-page"]').forEach(page => {
-        page.classList.add('d-none');
-    });
+    // Hide all registered pages, including content containers without a -page suffix.
+    window.hideAllPages?.();
 
     // Show notifications page
     const notifPage = document.getElementById('notifications-page');

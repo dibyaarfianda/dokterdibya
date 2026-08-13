@@ -742,8 +742,8 @@
         console.log('[INFO] Loading hospital appointments for:', location);
         currentHospitalLocation = location;
 
-        // Hide all pages
-        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        // Hide all registered pages, including content containers without a -page suffix.
+        window.hideAllPages?.();
 
         // Show hospital appointments page
         const hospitalPage = document.getElementById('hospital-appointments-page');
