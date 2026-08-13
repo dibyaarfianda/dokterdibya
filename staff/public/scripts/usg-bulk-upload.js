@@ -568,6 +568,7 @@ function renderPreview(data) {
         const isMatched = folder.status === 'matched';
         const hasMultiple = folder.status === 'multiple_matches';
         const isNoMatch = folder.status === 'no_match';
+        const isDateMismatch = folder.status === 'date_mismatch';
 
         let patientSelect = '';
         if (hasMultiple) {
@@ -575,7 +576,7 @@ function renderPreview(data) {
                 <select class="form-control form-control-sm patient-select" data-folder="${folder.folderName}">
                     <option value="">-- Pilih Pasien --</option>
                     ${folder.matchedPatients.map(p => `
-                        <option value="${p.patient_id}" data-mr="${p.mr_id}">${p.full_name} (${p.mr_id || 'No MR'})</option>
+                        <option value="${p.patient_id}" data-mr="${p.mr_id || ''}" data-scr="${p.scr_id || ''}">${p.full_name} (${p.mr_id || 'No MR'})</option>
                     `).join('')}
                 </select>
             `;
@@ -586,17 +587,19 @@ function renderPreview(data) {
                     <i class="fas fa-check mr-1"></i>${p.full_name}
                     <br><small class="text-muted">${p.mr_id || 'No MR'}</small>
                 </span>
-                <input type="hidden" class="selected-patient" value="${p.patient_id}" data-mr="${p.mr_id}">
+                <input type="hidden" class="selected-patient" value="${p.patient_id}" data-mr="${p.mr_id || ''}" data-scr="${p.scr_id || ''}">
             `;
         } else if (isNoMatch && data.allPatients?.length > 0) {
             patientSelect = `
                 <select class="form-control form-control-sm patient-select" data-folder="${folder.folderName}">
                     <option value="">-- Pilih Manual --</option>
                     ${data.allPatients.map(p => `
-                        <option value="${p.patient_id}" data-mr="${p.mr_id}">${p.full_name} (${p.mr_id || 'No MR'})</option>
+                        <option value="${p.patient_id}" data-mr="${p.mr_id || ''}" data-scr="${p.scr_id || ''}">${p.full_name} (${p.mr_id || 'No MR'})</option>
                     `).join('')}
                 </select>
             `;
+        } else if (isDateMismatch) {
+            patientSelect = `<span class="text-danger">${folder.reason || 'Tanggal folder berbeda'}</span>`;
         } else {
             patientSelect = '<span class="text-danger">Tidak ada pasien</span>';
         }
@@ -606,6 +609,8 @@ function renderPreview(data) {
             statusBadge = '<span class="badge badge-success">Cocok</span>';
         } else if (hasMultiple) {
             statusBadge = '<span class="badge badge-warning">Pilih Pasien</span>';
+        } else if (isDateMismatch) {
+            statusBadge = '<span class="badge badge-danger">Tanggal Berbeda</span>';
         } else {
             statusBadge = '<span class="badge badge-danger">Tidak Cocok</span>';
         }
@@ -616,7 +621,7 @@ function renderPreview(data) {
                 <input type="checkbox" class="folder-checkbox"
                        data-folder="${folder.folderName}"
                        ${isMatched ? 'checked' : ''}
-                       ${isNoMatch && !data.allPatients?.length ? 'disabled' : ''}>
+                       ${(isNoMatch && !data.allPatients?.length) || isDateMismatch ? 'disabled' : ''}>
             </td>
             <td>
                 <code>${folder.folderName}</code>
@@ -645,6 +650,7 @@ async function executeUpload() {
 
         let patient_id = null;
         let mr_id = null;
+        let scr_id = null;
 
         // Check for selected patient (hidden input or select)
         const row = cb.closest('tr');
@@ -654,16 +660,19 @@ async function executeUpload() {
         if (hiddenInput) {
             patient_id = hiddenInput.value;
             mr_id = hiddenInput.dataset.mr;
+            scr_id = hiddenInput.dataset.scr;
         } else if (selectInput && selectInput.value) {
             patient_id = selectInput.value;
             mr_id = selectInput.options[selectInput.selectedIndex].dataset.mr;
+            scr_id = selectInput.options[selectInput.selectedIndex].dataset.scr;
         }
 
-        if (patient_id && mr_id) {
+        if (patient_id && mr_id && scr_id) {
             mappings.push({
                 folderName,
                 patient_id,
                 mr_id,
+                scr_id,
                 files: folder.files
             });
         }

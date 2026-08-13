@@ -13,6 +13,14 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const r2Storage = require('../services/r2Storage');
 const { verifyToken } = require('../middleware/auth');
+const {
+    extractPatientName,
+    extractDateFromFolder,
+    isValidIsoDate,
+    findBestNameMatches,
+    getPatientsForDate,
+    resolveVisitRecord
+} = require('../services/UsgBulkUploadMatchingService');
 
 // Configure multer for ZIP file upload (memory storage)
 const upload = multer({
@@ -32,70 +40,6 @@ const upload = multer({
 });
 
 /**
- * Extract patient name from folder name
- * Input: "07122025-100332_NY. DESI"
- * Output: "DESI"
- */
-function extractPatientName(folderName) {
-    // Extract after the underscore
-    const match = folderName.match(/_(.+)$/);
-    if (!match) return null;
-
-    let name = match[1];
-    // Remove NY./Ny./ny. prefix (with optional space/dot)
-    name = name.replace(/^(NY|Ny|ny)[.\s]*/i, '');
-    return name.trim().toUpperCase();
-}
-
-/**
- * Extract date from folder name
- * Input: "07122025-100332_NY. DESI" or "07122025"
- * Output: "2025-12-07" (ISO format)
- */
-function extractDateFromFolder(folderName) {
-    const match = folderName.match(/^(\d{8})/);
-    if (!match) return null;
-
-    const ddmmyyyy = match[1];
-    const day = ddmmyyyy.substring(0, 2);
-    const month = ddmmyyyy.substring(2, 4);
-    const year = ddmmyyyy.substring(4, 8);
-    return `${year}-${month}-${day}`;
-}
-
-/**
- * Fuzzy match patient names
- * Handles cases like "ULVIATUL, NY_" matching "Ulviatul Fitriani"
- */
-function fuzzyMatch(inputName, dbName) {
-    if (!inputName || !dbName) return false;
-
-    // Normalize both names (lowercase, remove non-letters)
-    const input = inputName.toLowerCase().replace(/[^a-z]/g, '');
-    const dbNorm = dbName.toLowerCase().replace(/[^a-z]/g, '');
-
-    // Exact match
-    if (input === dbNorm) return true;
-
-    // Check if one contains the other (partial match)
-    if (dbNorm.includes(input) || input.includes(dbNorm)) return true;
-
-    // Check first name match (extract first word from both)
-    const inputWords = inputName.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/);
-    const dbWords = dbName.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/);
-
-    // First name must match
-    if (inputWords[0] && dbWords[0] && inputWords[0].length >= 3) {
-        // First name exact match
-        if (inputWords[0] === dbWords[0]) return true;
-        // First name contains
-        if (dbWords[0].includes(inputWords[0]) || inputWords[0].includes(dbWords[0])) return true;
-    }
-
-    return false;
-}
-
-/**
  * Hospital location mappings
  */
 const HOSPITAL_LOCATIONS = {
@@ -104,80 +48,6 @@ const HOSPITAL_LOCATIONS = {
     rsud_gambiran: 'RSUD Gambiran',
     rs_bhayangkara: 'RS Bhayangkara'
 };
-
-/**
- * Get patients with medical records on a specific date at specified hospital
- * Also includes patients who moved from other hospitals (have appointment at this hospital)
- * Returns only the LATEST MR for each patient
- */
-async function getPatientsForDate(date, hospital) {
-    // Get patients from:
-    // 1. sunday_clinic_records at this hospital on this date
-    // 2. appointments at this hospital on this date (even if their records are from other hospitals)
-    const [rows] = await db.query(`
-        SELECT
-            p.id as patient_id,
-            p.full_name,
-            scr.mr_id,
-            scr.mr_category,
-            scr.id as scr_id
-        FROM patients p
-        LEFT JOIN sunday_clinic_records scr ON p.id = scr.patient_id
-            AND scr.id = (
-                SELECT id FROM sunday_clinic_records
-                WHERE patient_id = p.id
-                ORDER BY created_at DESC
-                LIMIT 1
-            )
-        WHERE p.id IN (
-            -- Patients with records at this hospital on this date
-            SELECT DISTINCT patient_id FROM sunday_clinic_records
-            WHERE created_at >= ? AND created_at < DATE_ADD(?, INTERVAL 1 DAY) AND visit_location = ?
-            UNION
-            -- Patients with appointments at this hospital on this date
-            SELECT DISTINCT patient_id FROM appointments
-            WHERE appointment_date = ? AND hospital_location = ?
-            AND status IN ('confirmed', 'completed')
-        )
-        ORDER BY p.full_name
-    `, [date, date, hospital, date, hospital]);
-
-    return rows;
-}
-
-/**
- * Search all patients by name for fuzzy matching (when patient moved hospitals)
- * Returns only the LATEST MR for each patient
- */
-async function searchAllPatientsByName(searchName) {
-    if (!searchName || searchName.length < 3) return [];
-
-    // Normalize search name - extract first word
-    const firstWord = searchName.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/)[0];
-    if (!firstWord || firstWord.length < 3) return [];
-
-    const [rows] = await db.query(`
-        SELECT
-            p.id as patient_id,
-            p.full_name,
-            scr.mr_id,
-            scr.mr_category,
-            scr.id as scr_id
-        FROM patients p
-        LEFT JOIN sunday_clinic_records scr ON p.id = scr.patient_id
-            AND scr.id = (
-                SELECT id FROM sunday_clinic_records
-                WHERE patient_id = p.id
-                ORDER BY created_at DESC
-                LIMIT 1
-            )
-        WHERE LOWER(p.full_name) LIKE ?
-        ORDER BY p.full_name
-        LIMIT 10
-    `, [`${firstWord}%`]);
-
-    return rows;
-}
 
 /**
  * POST /api/usg-bulk-upload/preview
@@ -255,10 +125,10 @@ router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) 
         // Use date from request or detected from folder
         const targetDate = req.body.date || detectedDate;
 
-        if (!targetDate) {
+        if (!targetDate || !isValidIsoDate(targetDate)) {
             return res.status(400).json({
                 success: false,
-                message: 'Tanggal USG harus dipilih'
+                message: 'Tanggal USG harus dipilih dan valid'
             });
         }
 
@@ -272,7 +142,7 @@ router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) 
         }
 
         // Get patients for this date and hospital
-        const patients = await getPatientsForDate(targetDate, hospital);
+        const patients = await getPatientsForDate(db, targetDate, hospital);
         logger.info('[BulkUSG] Found patients for date', { date: targetDate, hospital, count: patients.length });
 
         // Match folders to patients
@@ -282,6 +152,17 @@ router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) 
 
         for (const [folderName, folderData] of folderMap) {
             const extractedName = folderData.extractedName;
+
+            if (folderData.dateFromFolder && folderData.dateFromFolder !== targetDate) {
+                folders.push({
+                    ...folderData,
+                    matchedPatients: [],
+                    status: 'date_mismatch',
+                    reason: `Tanggal folder ${folderData.dateFromFolder} berbeda dari tanggal yang dipilih ${targetDate}`
+                });
+                noMatchCount++;
+                continue;
+            }
 
             if (!extractedName) {
                 folders.push({
@@ -294,14 +175,8 @@ router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) 
                 continue;
             }
 
-            // Find matching patients from hospital-specific list first
-            let matchedPatients = patients.filter(p => fuzzyMatch(extractedName, p.full_name));
-
-            // If no match found, search ALL patients by name (for patients who moved hospitals)
-            if (matchedPatients.length === 0) {
-                const globalSearch = await searchAllPatientsByName(extractedName);
-                matchedPatients = globalSearch.filter(p => fuzzyMatch(extractedName, p.full_name));
-            }
+            // Match only against patients who visited the selected hospital on the selected date.
+            const matchedPatients = findBestNameMatches(extractedName, patients);
 
             if (matchedPatients.length > 0) {
                 folders.push({
@@ -351,7 +226,8 @@ router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) 
                 patient_id: p.patient_id,
                 full_name: p.full_name,
                 mr_id: p.mr_id,
-                mr_category: p.mr_category
+                mr_category: p.mr_category,
+                scr_id: p.scr_id
             })),
             summary: {
                 totalFolders: folders.length,
@@ -399,6 +275,14 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
             return res.status(400).json({ success: false, message: 'No mappings provided' });
         }
 
+        if (!isValidIsoDate(date)) {
+            return res.status(400).json({ success: false, message: 'Tanggal USG tidak valid' });
+        }
+
+        if (!hospital || !HOSPITAL_LOCATIONS[hospital]) {
+            return res.status(400).json({ success: false, message: 'Lokasi rumah sakit tidak valid' });
+        }
+
         logger.info('[BulkUSG] Executing bulk upload', {
             date,
             hospital,
@@ -414,12 +298,19 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
         let errorCount = 0;
 
         for (const mapping of mappingsData) {
-            const { folderName, patient_id, mr_id, files } = mapping;
-
-            // Extract date from folder name (e.g., "21122025-061603_NAMA" -> "2025-12-21")
-            // Fallback to today's date if parsing fails
+            const { folderName, patient_id, mr_id, scr_id, files } = mapping;
             const folderDate = extractDateFromFolder(folderName);
-            const recordDate = folderDate || new Date().toISOString().slice(0, 10);
+            const recordDate = date;
+
+            if (folderDate && folderDate !== date) {
+                results.push({
+                    folder: folderName,
+                    status: 'skipped',
+                    reason: 'Tanggal folder berbeda dari tanggal USG yang dipilih'
+                });
+                skipCount++;
+                continue;
+            }
 
             if (!patient_id) {
                 results.push({
@@ -432,21 +323,21 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
             }
 
             try {
-                // Check if patient has kunjungan at THIS hospital
-                const [existingKunjungan] = await db.query(`
-                    SELECT id, mr_id FROM sunday_clinic_records
-                    WHERE patient_id = ? AND visit_location = ?
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                `, [patient_id, hospital]);
+                // Resolve the exact visit selected during preview. Never fall back to the latest DRD.
+                const selectedVisit = await resolveVisitRecord(db, {
+                    scrId: scr_id,
+                    mrId: mr_id,
+                    patientId: patient_id,
+                    date,
+                    hospital
+                });
 
                 let effectiveMrId;
                 let targetRecordId;
 
-                if (existingKunjungan.length > 0) {
-                    // Use existing kunjungan at this hospital
-                    effectiveMrId = existingKunjungan[0].mr_id;
-                    targetRecordId = existingKunjungan[0].id;
+                if (selectedVisit) {
+                    effectiveMrId = selectedVisit.mr_id;
+                    targetRecordId = selectedVisit.id;
                     logger.info('[BulkUSG] Using existing kunjungan at hospital', {
                         patient_id,
                         mr_id: effectiveMrId,
@@ -463,7 +354,7 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
                     results.push({
                         folder: folderName,
                         status: 'skipped',
-                        reason: 'Pasien belum punya DRD di RS ini. Gunakan PERIKSA untuk membuat DRD baru.'
+                        reason: 'DRD untuk tanggal dan lokasi yang dipilih tidak ditemukan. Gunakan PERIKSA untuk membuat DRD kunjungan.'
                     });
                     skipCount++;
                     continue;
