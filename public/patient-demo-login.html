@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Membuka Portal Pasien Dummy</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; font-family: system-ui, -apple-system, sans-serif; background: #fff7e6; color: #31250d; }
+        main { width: min(520px, 100%); background: #fff; border: 2px solid #f0ad00; border-radius: 18px; padding: 28px; box-shadow: 0 16px 40px rgba(96, 65, 0, .12); text-align: center; }
+        .badge { display: inline-block; border-radius: 999px; padding: 7px 12px; background: #231a05; color: #ffd76b; font-weight: 800; letter-spacing: .04em; }
+        h1 { font-size: 1.45rem; margin: 18px 0 8px; }
+        p { line-height: 1.55; }
+        .error { color: #a31515; }
+        button { border: 0; border-radius: 10px; background: #1f6feb; color: white; padding: 11px 18px; font-weight: 700; cursor: pointer; }
+    </style>
+    <script src="/scripts/patient-session.js?v=20260814demo1"></script>
+</head>
+<body>
+    <main>
+        <span class="badge">MODE DUMMY</span>
+        <h1 id="title">Menyiapkan portal pasien dummy…</h1>
+        <p id="message">Kode akses hanya dapat digunakan satu kali dan akan segera dihapus dari alamat halaman.</p>
+        <button id="back" type="button" hidden onclick="window.close()">Tutup halaman</button>
+    </main>
+    <script>
+        (async function exchangeDemoCode() {
+            const params = new URLSearchParams(location.search);
+            const code = params.get('code') || '';
+            history.replaceState({}, document.title, '/patient-demo-login.html');
+            const title = document.getElementById('title');
+            const message = document.getElementById('message');
+            const back = document.getElementById('back');
+
+            try {
+                if (!code) throw new Error('Kode akses dummy tidak tersedia.');
+                const response = await fetch('/api/patient-demo/exchange', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+                    body: JSON.stringify({ code })
+                });
+                const data = await response.json();
+                if (!response.ok || !data.success || !data.token) throw new Error(data.message || 'Kode dummy tidak dapat digunakan.');
+
+                PatientSession.setToken(data.token, { persistent: false });
+                PatientSession.setUser(data.user, { persistent: false });
+                PatientSession.setDemoMode(true);
+                location.replace('/patient-menu.html');
+            } catch (error) {
+                PatientSession.clearAuth();
+                title.textContent = 'Portal dummy tidak dapat dibuka';
+                message.textContent = error.message;
+                message.className = 'error';
+                back.hidden = false;
+            }
+        })();
+    </script>
+</body>
+</html>

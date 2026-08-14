@@ -3,7 +3,7 @@
   "name": "SISIwanita",
   "short_name": "SISIwanita",
   "description": "Portal pasien SISIwanita untuk booking jadwal, riwayat kunjungan, dan informasi kesehatan",
-  "start_url": "/patient-menu.html?source=pwa&v=20260801stage2f1",
+  "start_url": "/patient-menu.html?source=pwa&v=20260814demo1",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#ffffff",

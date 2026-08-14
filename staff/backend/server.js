@@ -313,6 +313,8 @@ const pdfQueue = require('./services/pdfQueue');
 const { getDbStats } = require('./middleware/dbMonitor');
 const communityChatRoutes = require('./routes/community-chat');
 const supportChatRoutes = require('./routes/support-chat');
+const patientDemoRoutes = require('./routes/patient-demo');
+const patientDemoGuard = require('./middleware/patientDemoGuard');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
@@ -358,6 +360,12 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads'), {
 }));
 
 // Use routes
+
+// Patient demo bootstrap is public only for one-time code exchange. Staff-only
+// session creation/status/reset are protected inside the router. The guard is
+// mounted before every production patient route so demo writes fail closed.
+app.use('/api/patient-demo', patientDemoRoutes);
+app.use('/api', patientDemoGuard);
 
 // ==================== PATIENT ACCESS BLOCKER ====================
 // Block patients from accessing staff-only API routes

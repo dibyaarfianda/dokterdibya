@@ -2955,7 +2955,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260801stage2f1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260814demo1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});

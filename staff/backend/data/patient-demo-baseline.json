@@ -1,0 +1,148 @@
+{
+  "schemaVersion": "2026.08.14-1",
+  "profile": {
+    "id": "DEMO-PATIENT",
+    "mr_id": "DEMO-0001",
+    "full_name": "Ayu Contoh",
+    "name": "Ayu Contoh",
+    "email": "ayu.contoh@example.invalid",
+    "phone": "080000000000",
+    "date_of_birth": "1993-05-18",
+    "address": "Alamat sintetis untuk evaluasi portal",
+    "user_type": "patient",
+    "is_demo": true
+  },
+  "pregnancy": {
+    "edd": { "wibDateOffset": 112 },
+    "usgDate": { "wibDateOffset": -14 },
+    "weeksPregnant": 24,
+    "daysExtra": 0,
+    "trimester": 2,
+    "progressPercent": 60,
+    "babySize": "seukuran jagung",
+    "tip": "Data ini hanya contoh untuk evaluasi tampilan."
+  },
+  "visits": [
+    {
+      "id": "DEMO-VISIT-1",
+      "mr_id": "DEMO-0001",
+      "visit_date": { "wibDateOffset": -21 },
+      "visit_location": "klinik_private",
+      "doctor_name": "dr. Demo",
+      "diagnosis": "Kunjungan antenatal sintetis",
+      "status": "completed"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "DEMO-BOOKING-1",
+      "appointment_date": { "wibDateOffset": 7 },
+      "date": { "wibDateOffset": 7 },
+      "session": "morning",
+      "sessionLabel": "Pagi",
+      "slot_number": 3,
+      "slot_time": "09:00",
+      "chief_complaint": "Kontrol rutin contoh",
+      "category": "pregnancy",
+      "categoryLabel": "Kehamilan",
+      "status": "confirmed"
+    }
+  ],
+  "documents": [
+    {
+      "id": "DEMO-DOC-1",
+      "title": "Hasil USG Contoh",
+      "description": "Dokumen sintetis ber-watermark DEMO",
+      "document_type": "usg",
+      "documentType": "usg",
+      "file_url": "/demo-assets/demo-usg.svg",
+      "fileUrl": "/demo-assets/demo-usg.svg",
+      "file_name": "DEMO-hasil-usg.svg",
+      "fileName": "DEMO-hasil-usg.svg",
+      "is_read": false,
+      "viewed_at": null,
+      "created_at": { "wibDateTimeOffsetHours": -72 },
+      "content": "DOKUMEN DEMO. Tidak berisi hasil pemeriksaan pasien nyata."
+    },
+    {
+      "id": "DEMO-DOC-2",
+      "title": "Resume Medis Contoh",
+      "description": "Resume sintetis untuk menguji keadaan sudah dibaca",
+      "document_type": "resume",
+      "documentType": "resume",
+      "file_url": "/demo-assets/demo-resume.svg",
+      "fileUrl": "/demo-assets/demo-resume.svg",
+      "file_name": "DEMO-resume.svg",
+      "fileName": "DEMO-resume.svg",
+      "is_read": true,
+      "viewed_at": { "wibDateTimeOffsetHours": -24 },
+      "created_at": { "wibDateTimeOffsetHours": -96 },
+      "content": "DOKUMEN DEMO. Resume ini sepenuhnya sintetis."
+    }
+  ],
+  "notifications": [
+    {
+      "id": "DEMO-NOTIF-1",
+      "title": "Pengingat vitamin contoh",
+      "message": "Saatnya minum vitamin. Ini notifikasi sintetis.",
+      "type": "reminder",
+      "is_read": false,
+      "created_at": { "wibDateTimeOffsetHours": -2 },
+      "link": "/jadwal-vitamin.html"
+    },
+    {
+      "id": "DEMO-NOTIF-2",
+      "title": "Dokumen contoh tersedia",
+      "message": "Resume DEMO sudah tersedia.",
+      "type": "document",
+      "is_read": true,
+      "created_at": { "wibDateTimeOffsetHours": -48 },
+      "link": "/dokumen-saya.html"
+    }
+  ],
+  "billings": [
+    {
+      "id": "DEMO-BILL-1",
+      "invoice_number": "DEMO-INV-001",
+      "visit_date": { "wibDateOffset": -21 },
+      "total_amount": 350000,
+      "payment_status": "unpaid",
+      "status": "simulation",
+      "is_demo": true
+    }
+  ],
+  "settings": {
+    "queue_reminder_enabled": true,
+    "queue_reminder_minutes": 30,
+    "email_notifications": false,
+    "push_notifications": false,
+    "theme": "light"
+  },
+  "trackers": {
+    "kick_counter": { "count": 8, "events": [] },
+    "contraction_timer": { "events": [], "active": false },
+    "fertility_calendar": { "cycle_length": 28, "last_period_date": { "wibDateOffset": -12 } },
+    "vitamins": [
+      { "id": "DEMO-VIT-1", "name": "Vitamin prenatal contoh", "time": "20:00", "taken": false }
+    ]
+  },
+  "workdesk": {
+    "notes": "Catatan My Corner sintetis. Silakan ubah untuk reproduksi bug.",
+    "tasks": [
+      { "id": "DEMO-TASK-1", "title": "Siapkan pertanyaan kontrol", "done": false }
+    ]
+  },
+  "stories": [
+    { "id": "DEMO-STORY-1", "title": "Cerita contoh", "content": "Cerita ini tidak pernah dipublikasikan.", "status": "demo_only" }
+  ],
+  "feedback": [
+    { "id": "DEMO-FEEDBACK-1", "category": "bug", "message": "Contoh laporan bug awal.", "status": "demo_only" }
+  ],
+  "queue": {
+    "settings": { "is_visible": true, "message": "Antrean simulasi" },
+    "items": [
+      { "number": 1, "name": "Pasien Demo A", "status": "serving" },
+      { "number": 2, "name": "Pasien Demo B", "status": "waiting" }
+    ]
+  }
+}

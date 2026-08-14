@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1300" viewBox="0 0 1000 1300">
+  <rect width="1000" height="1300" fill="#fff"/>
+  <rect x="65" y="65" width="870" height="1170" rx="16" fill="none" stroke="#24364b" stroke-width="5"/>
+  <text x="110" y="150" font-family="Arial" font-size="45" font-weight="bold" fill="#24364b">RESUME MEDIS CONTOH</text>
+  <text x="110" y="225" font-family="Arial" font-size="28" fill="#445">Nama: Ayu Contoh</text>
+  <text x="110" y="280" font-family="Arial" font-size="28" fill="#445">Nomor: DEMO-0001</text>
+  <text x="110" y="380" font-family="Arial" font-size="27" fill="#445">Dokumen ini sepenuhnya sintetis dan hanya</text>
+  <text x="110" y="425" font-family="Arial" font-size="27" fill="#445">digunakan untuk evaluasi antarmuka portal.</text>
+  <text x="500" y="760" text-anchor="middle" transform="rotate(-28 500 760)" font-family="Arial" font-size="190" font-weight="bold" fill="#d11" opacity=".22">DEMO</text>
+  <text x="500" y="1150" text-anchor="middle" font-family="Arial" font-size="25" fill="#9a1b1b">TIDAK BERLAKU UNTUK KEPERLUAN MEDIS</text>
+</svg>

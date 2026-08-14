@@ -1113,6 +1113,10 @@ function setupSocketHandlers(io) {
         // Patient or staff joins a support chat room to receive real-time messages
         socket.on('support:join', (data) => {
             if (!data || !data.sessionId) return;
+            if (String(data.sessionId).startsWith('DEMO-')) {
+                socket.emit('support:error', { code: 'DEMO_SOCKET_BLOCKED', message: 'Support chat nyata dinonaktifkan pada mode dummy.' });
+                return;
+            }
             socket.join(`support:${data.sessionId}`);
         });
 

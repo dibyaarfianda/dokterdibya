@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="820" viewBox="0 0 1200 820">
+  <rect width="1200" height="820" fill="#17212b"/>
+  <ellipse cx="600" cy="410" rx="370" ry="250" fill="#374552"/>
+  <path d="M410 490c120-210 285-220 390-40-155 65-275 84-390 40z" fill="#cad3d9" opacity=".65"/>
+  <text x="600" y="110" text-anchor="middle" font-family="Arial" font-size="56" fill="#fff">HASIL USG SINTETIS</text>
+  <text x="600" y="455" text-anchor="middle" font-family="Arial" font-size="170" font-weight="bold" fill="#ffcf33" opacity=".78">DEMO</text>
+  <text x="600" y="740" text-anchor="middle" font-family="Arial" font-size="34" fill="#fff">BUKAN DATA ATAU HASIL PEMERIKSAAN PASIEN</text>
+</svg>

@@ -1066,6 +1066,10 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
 
                 await ensureSchema();
                 const user = jwt.verify(token, JWT_SECRET);
+                if (user.demo_mode === true) {
+                    socket.emit('community:error', { code: 'DEMO_SOCKET_BLOCKED', message: 'Chat nyata dinonaktifkan pada mode dummy.' });
+                    return;
+                }
                 const room = await getRoomBySlug(roomSlug);
                 if (!room || !canAccessRoom(room, user)) return;
 

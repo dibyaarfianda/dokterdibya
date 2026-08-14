@@ -294,6 +294,7 @@ function initPages() {
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
     pages.guestActivity = grab('guest-activity-page');
+    pages.patientDemo = grab('patient-demo-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
     pages.troubleshooting = grab('troubleshooting-page');
     pages.patientBlockList = grab('patient-block-list-page');
@@ -3468,6 +3469,7 @@ function resumeSavedPageIfRequested(params) {
         'nav-troubleshooting':                  () => window.showTroubleshootingPage?.(),
         'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage(),
         'nav-guest-activity':                   () => window.showGuestActivityPage && window.showGuestActivityPage(),
+        'nav-patient-demo':                     () => window.showPatientDemoPage && window.showPatientDemoPage(),
         'nav-penjualan-obat':                   () => showPenjualanObatPage(),
         'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
         'nav-medify-sync':                      () => showMedifySyncPage(),
@@ -3510,7 +3512,8 @@ function restoreLastPage() {
         }
         const pageParamMap = {
             'patient-activity': () => window.showPatientActivityPage && window.showPatientActivityPage(),
-            'guest-activity': () => window.showGuestActivityPage && window.showGuestActivityPage()
+            'guest-activity': () => window.showGuestActivityPage && window.showGuestActivityPage(),
+            'patient-demo': () => window.showPatientDemoPage && window.showPatientDemoPage()
         };
         if (pageParamMap[pageParam]) {
             pageParamMap[pageParam]();

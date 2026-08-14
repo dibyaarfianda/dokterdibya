@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v385';
+        window.STAFF_CACHE_VERSION = 'v386';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v385">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v385">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v385">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v385">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v386">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v386">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v386">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v386">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v385">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v386">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v385">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v386">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -54,7 +54,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v385"></script>
+    <script src="scripts/error-handler.js?v=v386"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -69,10 +69,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v385">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v386">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v385">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v386">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -626,6 +626,12 @@
                         <a href="#" class="nav-link" data-staff-call="showGuestActivityPage">
                             <i class="nav-icon fas fa-user-secret text-success"></i>
                             <p>Aktivitas Demo</p>
+                        </a>
+                    </li>
+                    <li class="nav-item dokter-only d-none" id="nav-patient-demo">
+                        <a href="#" class="nav-link" data-staff-call="showPatientDemoPage">
+                            <i class="nav-icon fas fa-flask text-warning"></i>
+                            <p>Portal Pasien Dummy</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-staff-activity">
@@ -2953,6 +2959,39 @@
                 <div id="patient-activity-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/patient-activity-page.html"></div>
 
                 <!-- GUEST / DEMO ACTIVITY PAGE -->
+                <div id="patient-demo-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-warning card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-flask mr-2"></i>Portal Pasien Dummy</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" onclick="loadPatientDemoStatus()" title="Muat ulang status"><i class="fas fa-sync-alt"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-warning">
+                                        <strong>Sandbox terisolasi.</strong> Seluruh identitas, kunjungan, booking, dokumen, tagihan, dan tracker pada portal ini adalah data sintetis. Pembayaran, pesan, upload, push, dan transaksi produksi diblokir.
+                                    </div>
+                                    <div id="patient-demo-error" class="alert alert-danger d-none"></div>
+                                    <div class="row">
+                                        <div class="col-lg-3 col-6"><div class="small-box bg-info"><div class="inner"><h3 id="patient-demo-active-sessions">-</h3><p>Sesi Aktif</p></div><div class="icon"><i class="fas fa-user-clock"></i></div></div></div>
+                                        <div class="col-lg-3 col-6"><div class="small-box bg-secondary"><div class="inner"><h3 id="patient-demo-version" style="font-size:1.35rem">-</h3><p>Versi Data Contoh</p></div><div class="icon"><i class="fas fa-code-branch"></i></div></div></div>
+                                        <div class="col-lg-3 col-6"><div class="small-box bg-success"><div class="inner"><h3 id="patient-demo-last-reset" style="font-size:1.1rem">-</h3><p>Reset Terakhir (WIB)</p></div><div class="icon"><i class="fas fa-undo"></i></div></div></div>
+                                        <div class="col-lg-3 col-6"><div class="small-box bg-dark"><div class="inner"><h3 id="patient-demo-updated" style="font-size:1.1rem">-</h3><p>Perubahan Terakhir (WIB)</p></div><div class="icon"><i class="fas fa-save"></i></div></div></div>
+                                    </div>
+                                    <div class="d-flex flex-wrap" style="gap:12px">
+                                        <button id="patient-demo-open-btn" type="button" class="btn btn-primary btn-lg" onclick="openPatientDemo()"><i class="fas fa-external-link-alt mr-2"></i>Buka Portal Dummy</button>
+                                        <button id="patient-demo-reset-btn" type="button" class="btn btn-outline-danger btn-lg" onclick="resetPatientDemo()"><i class="fas fa-trash-restore mr-2"></i>Reset Data Dummy</button>
+                                    </div>
+                                    <p class="text-muted mt-3 mb-0">Kode akses berlaku 2 menit dan hanya sekali pakai. Sesi portal berlaku 60 menit serta disimpan khusus pada tab portal di sisiwanita.id; token staff tidak dipindahkan.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GUEST / DEMO ACTIVITY PAGE -->
                 <div id="guest-activity-page" class="d-none">
                     <div class="row">
                         <div class="col-12">
@@ -3685,7 +3724,7 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/actions.js?v=v385"></script>
+<script defer src="scripts/shell/actions.js?v=v386"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3765,8 +3804,8 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v385" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v385" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v386" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v386" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3778,7 +3817,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v385"></script>
+<script defer src="scripts/rum.js?v=v386"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4003,7 +4042,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v385"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v386"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4156,7 +4195,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v385"></script>
+ <script src="scripts/mobile-helper.js?v=v386"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4168,8 +4207,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v385"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v385"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v386"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v386"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->
