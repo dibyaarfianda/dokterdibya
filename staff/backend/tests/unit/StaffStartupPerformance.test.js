@@ -107,7 +107,10 @@ describe('staff startup performance regressions', () => {
         expect(showBody).toContain('scheduleManagePatientTableEnhancement();');
         expect(showBody).not.toMatch(/await\s+Promise\.all\(\[\s*window\.ensureStaffFeature\('dataTables'\)/);
         expect(loadBody).toContain('scheduleManagePatientTableEnhancement(savedPage);');
+        expect(loadBody).toContain('window.staffDebugLog?.');
+        expect(loadBody).not.toMatch(/window\.staffDebugLog\(/);
         expect(loadBody).not.toMatch(/\n\s*enhanceManagePatientTable\(savedPage\);/);
+        expect(patientTools).toContain("document.querySelector('#manage-patients-tbody .btn-view-patient')");
         expect(bootstrap).toContain('warmPatientManagementAssets');
         expect(bootstrap).toContain("ensureFeature('patientTools')");
         expect(bootstrap).toContain("ensureFeature('dataTables')");

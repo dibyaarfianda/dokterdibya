@@ -1226,6 +1226,7 @@
             managePatientEnhancementScheduled = false;
             const pageToRestore = managePatientSavedPage;
             managePatientSavedPage = 0;
+            if (!document.querySelector('#manage-patients-tbody .btn-view-patient')) return;
             enhanceManagePatientTable(pageToRestore);
             bindManagePatientDetailButtons();
         };
@@ -1530,7 +1531,7 @@
     async function loadWebPatients() {
         try {
             const token = (window.getAuthToken ? window.getAuthToken() : '');
-            window.staffDebugLog('PatientSearch', 'Loading all patients', { hasToken: Boolean(token) });
+            window.staffDebugLog?.('PatientSearch', 'Loading all patients', { hasToken: Boolean(token) });
 
             // Use unified patients endpoint
             const response = await fetch(`/api/patients?_=${Date.now()}`, {
@@ -1541,7 +1542,7 @@
                 }
             });
 
-            window.staffDebugLog('PatientSearch', 'Load patients response', { status: response.status });
+            window.staffDebugLog?.('PatientSearch', 'Load patients response', { status: response.status });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -1550,7 +1551,7 @@
             }
 
             const data = await response.json();
-            window.staffDebugLog('PatientSearch', 'Loaded patients', { count: Array.isArray(data.data) ? data.data.length : 0 });
+            window.staffDebugLog?.('PatientSearch', 'Loaded patients', { count: Array.isArray(data.data) ? data.data.length : 0 });
             const tbody = document.getElementById('manage-patients-tbody');
             clearBulkDeletePatientSelection();
 
@@ -1695,7 +1696,7 @@
             const data = await response.json();
             clearBulkDeletePatientSelection();
 
-            window.staffDebugLog('PatientSearch', 'Advanced search response', {
+            window.staffDebugLog?.('PatientSearch', 'Advanced search response', {
                 filters: {
                     name: Boolean(name),
                     id: Boolean(id),
@@ -2015,7 +2016,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
         // Fallback to old implementation if showPatientDetail not available
         try {
-            window.staffDebugLog('PatientDetail', 'Fallback detail loader called', {
+            window.staffDebugLog?.('PatientDetail', 'Fallback detail loader called', {
                 patientId,
                 hasToken: Boolean(window.getAuthToken ? window.getAuthToken() : '')
             });
@@ -2032,7 +2033,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
 
             const data = await response.json();
-            window.staffDebugLog('PatientDetail', 'Fallback detail response received', {
+            window.staffDebugLog?.('PatientDetail', 'Fallback detail response received', {
                 hasPatient: Boolean(data?.data?.patient),
                 hasIntake: Boolean(data?.data?.intake)
             });
