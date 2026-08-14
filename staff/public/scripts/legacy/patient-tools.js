@@ -73,12 +73,12 @@
     };
     // Manage Web Patients Page Functions
     window.showManagePatientsPage = async function() {
-        if (typeof window.ensureStaffFeature === 'function') {
-            await Promise.all([
+        const enhancementPromise = Promise.allSettled(
+            typeof window.ensureStaffFeature === 'function' ? [
                 window.ensureStaffFeature('dataTables'),
                 window.ensureStaffFeature('patientSearchDetail')
-            ]);
-        }
+            ] : []
+        );
         try { sessionStorage.setItem('lastStaffNavId', 'nav-kelola-pasien'); } catch (_storageError) {}
         document.documentElement.classList.remove('kantor-saya-active');
         document.body.classList.remove('kantor-saya-active');
@@ -104,11 +104,25 @@
         }
         window.dispatchStaffPageChanged?.('kelola-pasien');
 
-        // Load the managed patient table only; the legacy new-patient table is no longer rendered.
-        loadWebPatients();
-        if (typeof window.loadHplRiskPatients === 'function') {
-            window.loadHplRiskPatients();
-        }
+        // Start the critical patient request immediately. DataTables and the
+        // detail helper enhance the already-visible table when they are ready.
+        const patientLoadPromise = loadWebPatients();
+        enhancementPromise
+            .then(() => patientLoadPromise)
+            .then(() => {
+                scheduleManagePatientTableEnhancement();
+            });
+
+        // HPL panels are useful secondary information. Load them after the main
+        // patient rows so they do not compete with the first useful result.
+        patientLoadPromise.finally(() => {
+            const loadHplPanels = () => window.loadHplRiskPatients?.();
+            if (typeof window.requestIdleCallback === 'function') {
+                window.requestIdleCallback(loadHplPanels, { timeout: 1200 });
+            } else {
+                setTimeout(loadHplPanels, 50);
+            }
+        });
     };
 
     // ==================== Medical Import Functions ====================
@@ -1186,6 +1200,48 @@
         }, extraOptions);
     }
 
+    function enhanceManagePatientTable(savedPage = 0) {
+        if (!window.jQuery || !$.fn.DataTable) return null;
+        if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
+            return $('#manage-patients-table').DataTable();
+        }
+
+        const dt = $('#manage-patients-table').DataTable(getManagePatientDataTableOptions({
+            "order": [[6, 'desc']]
+        }));
+        if (savedPage > 0) dt.page(savedPage).draw('page');
+        bindBulkDeleteTableDrawSync();
+        return dt;
+    }
+
+    let managePatientEnhancementScheduled = false;
+    let managePatientSavedPage = 0;
+
+    function scheduleManagePatientTableEnhancement(savedPage = 0) {
+        managePatientSavedPage = Math.max(managePatientSavedPage, Number(savedPage) || 0);
+        if (managePatientEnhancementScheduled) return;
+
+        managePatientEnhancementScheduled = true;
+        const runEnhancement = () => {
+            managePatientEnhancementScheduled = false;
+            const pageToRestore = managePatientSavedPage;
+            managePatientSavedPage = 0;
+            enhanceManagePatientTable(pageToRestore);
+            bindManagePatientDetailButtons();
+        };
+
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(runEnhancement, { timeout: 500 });
+        } else {
+            setTimeout(runEnhancement, 0);
+        }
+    }
+
+    function bindManagePatientDetailButtons() {
+        if (typeof window.installPatientViewButtons !== 'function') return;
+        window.installPatientViewButtons({ onView: viewPatientDetail });
+    }
+
     const bulkDeletePatientSelection = new Map();
 
     function getBulkDeletePageCheckboxes() {
@@ -1512,23 +1568,7 @@
 
             tbody.innerHTML = data.data.map(renderManagePatientRow).join('');
 
-            // Initialize DataTable with fresh data (already cleared before DOM update)
-            if ($.fn.DataTable) {
-                const dt = $('#manage-patients-table').DataTable(getManagePatientDataTableOptions({
-                    "order": [[6, 'desc']], // Sort by visit date (column 6: Terakhir Visit) - newest first
-                }));
-                // Restore previous page position so user doesn't jump back to page 1
-                if (savedPage > 0) {
-                    dt.page(savedPage).draw('page');
-                }
-                bindBulkDeleteTableDrawSync();
-            }
-
-            if (typeof window.installPatientViewButtons === 'function') {
-                window.installPatientViewButtons({
-                    onView: viewPatientDetail
-                });
-            }
+            scheduleManagePatientTableEnhancement(savedPage);
 
         } catch (error) {
             console.error('Error loading web patients:', error);

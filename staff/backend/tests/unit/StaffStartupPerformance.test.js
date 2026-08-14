@@ -88,4 +88,28 @@ describe('staff startup performance regressions', () => {
         const coreModulesEnd = bootstrap.indexOf('const serverVerifiedUser', coreModulesStart);
         expect(bootstrap.slice(coreModulesStart, coreModulesEnd)).not.toContain("import('../chat-popup.js')");
     });
+
+    test('Kelola Pasien paints before optional table enhancements and warms assets after first paint', () => {
+        const patientTools = read('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
+        const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        const showStart = patientTools.indexOf('window.showManagePatientsPage = async function()');
+        const showEnd = patientTools.indexOf('// ==================== Medical Import Functions', showStart);
+        const showBody = patientTools.slice(showStart, showEnd);
+        const loadStart = patientTools.indexOf('async function loadWebPatients()');
+        const loadEnd = patientTools.indexOf('// Advanced Search Functions', loadStart);
+        const loadBody = patientTools.slice(loadStart, loadEnd);
+
+        expect(showBody).toContain('const enhancementPromise = Promise.allSettled');
+        expect(showBody).toContain('const patientLoadPromise = loadWebPatients();');
+        expect(showBody.indexOf("document.getElementById('manage-patients-page').classList.remove('d-none')"))
+            .toBeLessThan(showBody.indexOf('const patientLoadPromise = loadWebPatients();'));
+        expect(showBody).toContain('patientLoadPromise.finally');
+        expect(showBody).toContain('scheduleManagePatientTableEnhancement();');
+        expect(showBody).not.toMatch(/await\s+Promise\.all\(\[\s*window\.ensureStaffFeature\('dataTables'\)/);
+        expect(loadBody).toContain('scheduleManagePatientTableEnhancement(savedPage);');
+        expect(loadBody).not.toMatch(/\n\s*enhanceManagePatientTable\(savedPage\);/);
+        expect(bootstrap).toContain('warmPatientManagementAssets');
+        expect(bootstrap).toContain("ensureFeature('patientTools')");
+        expect(bootstrap).toContain("ensureFeature('dataTables')");
+    });
 });

@@ -225,6 +225,14 @@ async function bootstrapStaffShell() {
             () => import('./support-chat-badge.js').then(module => module.initSupportChatBadge?.()),
             2200
         );
+        const warmPatientManagementAssets = async () => {
+            await new Promise(resolve => setTimeout(resolve, 900));
+            await Promise.allSettled([
+                ensureFeature('patientTools'),
+                ensureFeature('dataTables')
+            ]);
+        };
+        scheduleDeferredStartup(warmPatientManagementAssets, 2600);
 
         runIdle(() => {
             try {
