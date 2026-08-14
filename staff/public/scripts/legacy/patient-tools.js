@@ -104,14 +104,9 @@
         }
         window.dispatchStaffPageChanged?.('kelola-pasien');
 
-        // Start the critical patient request immediately. DataTables and the
-        // detail helper enhance the already-visible table when they are ready.
-        const patientLoadPromise = loadWebPatients();
-        enhancementPromise
-            .then(() => patientLoadPromise)
-            .then(() => {
-                scheduleManagePatientTableEnhancement();
-            });
+        // Start the critical request immediately while table assets load in parallel.
+        // Rows are painted only once, already in their final DataTables layout.
+        const patientLoadPromise = loadWebPatients(enhancementPromise);
 
         // HPL panels are useful secondary information. Load them after the main
         // patient rows so they do not compete with the first useful result.
@@ -1190,6 +1185,7 @@
         return Object.assign({
             "pageLength": 25,
             "searching": false,
+            "autoWidth": false,
             "columnDefs": [
                 {
                     "targets": [3, 5, 6],
@@ -1214,28 +1210,11 @@
         return dt;
     }
 
-    let managePatientEnhancementScheduled = false;
-    let managePatientSavedPage = 0;
-
-    function scheduleManagePatientTableEnhancement(savedPage = 0) {
-        managePatientSavedPage = Math.max(managePatientSavedPage, Number(savedPage) || 0);
-        if (managePatientEnhancementScheduled) return;
-
-        managePatientEnhancementScheduled = true;
-        const runEnhancement = () => {
-            managePatientEnhancementScheduled = false;
-            const pageToRestore = managePatientSavedPage;
-            managePatientSavedPage = 0;
-            if (!document.querySelector('#manage-patients-tbody .btn-view-patient')) return;
-            enhanceManagePatientTable(pageToRestore);
-            bindManagePatientDetailButtons();
-        };
-
-        if (typeof window.requestIdleCallback === 'function') {
-            window.requestIdleCallback(runEnhancement, { timeout: 500 });
-        } else {
-            setTimeout(runEnhancement, 0);
-        }
+    function enhanceManagePatientTableImmediately(savedPage = 0) {
+        if (!document.querySelector('#manage-patients-tbody .btn-view-patient')) return null;
+        const dataTable = enhanceManagePatientTable(savedPage);
+        bindManagePatientDetailButtons();
+        return dataTable;
     }
 
     function bindManagePatientDetailButtons() {
@@ -1528,7 +1507,7 @@
     }
     // ─────────────────────────────────────────────────────────────────────────
 
-    async function loadWebPatients() {
+    async function loadWebPatients(enhancementPromise = null) {
         try {
             const token = (window.getAuthToken ? window.getAuthToken() : '');
             window.staffDebugLog?.('PatientSearch', 'Loading all patients', { hasToken: Boolean(token) });
@@ -1555,6 +1534,10 @@
             const tbody = document.getElementById('manage-patients-tbody');
             clearBulkDeletePatientSelection();
 
+            // Keep the loading row visible until DataTables is ready, then render
+            // and enhance in the same task so no intermediate table layout is painted.
+            if (enhancementPromise) await enhancementPromise;
+
             if (!data.data || data.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center">Tidak ada pasien</td></tr>';
                 return;
@@ -1569,7 +1552,7 @@
 
             tbody.innerHTML = data.data.map(renderManagePatientRow).join('');
 
-            scheduleManagePatientTableEnhancement(savedPage);
+            enhanceManagePatientTableImmediately(savedPage);
 
         } catch (error) {
             console.error('Error loading web patients:', error);

@@ -89,28 +89,33 @@ describe('staff startup performance regressions', () => {
         expect(bootstrap.slice(coreModulesStart, coreModulesEnd)).not.toContain("import('../chat-popup.js')");
     });
 
-    test('Kelola Pasien paints before optional table enhancements and warms assets after first paint', () => {
+    test('Kelola Pasien renders one stable final table after its assets are ready', () => {
         const patientTools = read('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
         const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        const index = read('staff', 'public', 'index-adminlte.html');
         const showStart = patientTools.indexOf('window.showManagePatientsPage = async function()');
         const showEnd = patientTools.indexOf('// ==================== Medical Import Functions', showStart);
         const showBody = patientTools.slice(showStart, showEnd);
-        const loadStart = patientTools.indexOf('async function loadWebPatients()');
+        const loadStart = patientTools.indexOf('async function loadWebPatients(');
         const loadEnd = patientTools.indexOf('// Advanced Search Functions', loadStart);
         const loadBody = patientTools.slice(loadStart, loadEnd);
 
         expect(showBody).toContain('const enhancementPromise = Promise.allSettled');
-        expect(showBody).toContain('const patientLoadPromise = loadWebPatients();');
+        expect(showBody).toContain('const patientLoadPromise = loadWebPatients(enhancementPromise);');
         expect(showBody.indexOf("document.getElementById('manage-patients-page').classList.remove('d-none')"))
-            .toBeLessThan(showBody.indexOf('const patientLoadPromise = loadWebPatients();'));
+            .toBeLessThan(showBody.indexOf('const patientLoadPromise = loadWebPatients(enhancementPromise);'));
         expect(showBody).toContain('patientLoadPromise.finally');
-        expect(showBody).toContain('scheduleManagePatientTableEnhancement();');
         expect(showBody).not.toMatch(/await\s+Promise\.all\(\[\s*window\.ensureStaffFeature\('dataTables'\)/);
-        expect(loadBody).toContain('scheduleManagePatientTableEnhancement(savedPage);');
+        expect(loadBody).toContain('enhanceManagePatientTableImmediately(savedPage);');
+        expect(loadBody).toContain('if (enhancementPromise) await enhancementPromise;');
+        expect(loadBody.indexOf('if (enhancementPromise) await enhancementPromise;'))
+            .toBeLessThan(loadBody.indexOf('tbody.innerHTML = data.data.map(renderManagePatientRow)'));
         expect(loadBody).toContain('window.staffDebugLog?.');
         expect(loadBody).not.toMatch(/window\.staffDebugLog\(/);
-        expect(loadBody).not.toMatch(/\n\s*enhanceManagePatientTable\(savedPage\);/);
+        expect(patientTools).toContain('"autoWidth": false');
+        expect(patientTools).toContain('function enhanceManagePatientTableImmediately(savedPage = 0)');
         expect(patientTools).toContain("document.querySelector('#manage-patients-tbody .btn-view-patient')");
+        expect(index).toContain('id="manage-patients-table" class="table table-bordered table-striped table-sm" style="width: 100%;"');
         expect(bootstrap).toContain('warmPatientManagementAssets');
         expect(bootstrap).toContain("ensureFeature('patientTools')");
         expect(bootstrap).toContain("ensureFeature('dataTables')");
