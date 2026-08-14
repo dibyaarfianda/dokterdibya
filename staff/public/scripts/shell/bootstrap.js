@@ -82,6 +82,7 @@ async function bootstrapStaffShell() {
         'showProfileCompletionModal',
         'toggleCompletionPassword',
         'openGenerateCodeModal',
+        'initHeaderRegistrationCode',
         'loadDashboardCurrentCode'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'registrationCodes'));
     [
@@ -226,12 +227,11 @@ async function bootstrapStaffShell() {
             }
 
             try {
-                if (window.__currentPage !== 'dashboard') return;
                 ensureFeature('registrationCodes')
-                    .then(() => window.loadDashboardCurrentCode?.())
-                    .catch(error => console.warn('[WARN] Dashboard registration code unavailable:', error));
+                    .then(() => window.initHeaderRegistrationCode?.())
+                    .catch(error => console.warn('[WARN] Header registration code unavailable:', error));
             } catch (error) {
-                console.error('[ERROR] Error loading dashboard code:', error);
+                console.error('[ERROR] Error loading header registration code:', error);
             }
         }, { timeout: 1500 });
 

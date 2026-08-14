@@ -267,6 +267,9 @@ let currentGeneratedPhone = null;
 let currentPatientName = null;
 let regCodesCurrentPage = 1;
 let regCodesTotalPages = 1;
+let headerRegistrationCodeTimer = null;
+let headerRegistrationVisibilityBound = false;
+const HEADER_REGISTRATION_CODE_REFRESH_MS = 5 * 60 * 1000;
 
 // Legacy function - redirects to main page function
 async function loadRegistrationCodes(page = 1) {
@@ -329,8 +332,8 @@ async function generatePublicCode() {
             loadNewPatients(newPatientsCurrentPage || 1);
         }
 
-        // Update dashboard display
-        updateDashboardCodeDisplay(data.code, data.expires_at);
+        // Keep the persistent header in sync with the newly generated code.
+        updateRegistrationCodeDisplay(data.code, data.expires_at);
 
     } catch (error) {
         alert('Error: ' + error.message);
@@ -340,44 +343,70 @@ async function generatePublicCode() {
     }
 }
 
-// Update dashboard code display
-function updateDashboardCodeDisplay(code, expiresAt) {
-    console.log('[REG CODE] updateDashboardCodeDisplay called with:', code);
-    const el = document.getElementById('dashboard-current-code');
-    console.log('[REG CODE] Element found:', !!el, el);
-    if (el && code) {
-        el.textContent = code;
-        console.log('[REG CODE] Element updated to:', el.textContent);
-    } else {
-        console.log('[REG CODE] Element not found or code is empty');
+function updateRegistrationCodeDisplay(code, expiresAt) {
+    const codeElement = document.getElementById('header-registration-code');
+    const container = document.getElementById('header-registration-code-container');
+    if (!codeElement) return;
+
+    const normalizedCode = String(code || '').trim();
+    codeElement.textContent = normalizedCode || 'Belum ada';
+    codeElement.classList.toggle('is-empty', !normalizedCode);
+
+    if (container) {
+        const expiry = expiresAt ? new Date(expiresAt) : null;
+        container.title = normalizedCode && expiry && !Number.isNaN(expiry.getTime())
+            ? `Kode registrasi pasien aktif sampai ${expiry.toLocaleString('id-ID')}`
+            : 'Tidak ada kode registrasi pasien aktif';
     }
 }
 
-// Load current code for dashboard on page load
-async function loadDashboardCurrentCode() {
-    console.log('[REG CODE] loadDashboardCurrentCode called');
+async function loadHeaderRegistrationCode() {
     try {
         const token = (window.getAuthToken ? window.getAuthToken() : '');
-        console.log('[REG CODE] Token exists:', !!token);
-        const response = await fetch('/api/registration-codes/public', {
-            headers: { 'Authorization': `Bearer ${token}` }
+        if (!token) return;
+
+        const response = await fetch(`/api/registration-codes/public?_t=${Date.now()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            }
         });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
         const data = await response.json();
-        console.log('[REG CODE] API response:', data);
-        if (data.success && data.code) {
-            console.log('[REG CODE] Updating display with code:', data.code);
-            updateDashboardCodeDisplay(data.code, data.expires_at);
-        } else {
-            console.log('[REG CODE] No active code in response');
+        updateRegistrationCodeDisplay(data.success ? data.code : null, data.expires_at);
+        return data;
+    } catch (error) {
+        const codeElement = document.getElementById('header-registration-code');
+        const container = document.getElementById('header-registration-code-container');
+        if (codeElement) {
+            codeElement.textContent = 'Coba lagi';
+            codeElement.classList.add('is-empty');
         }
-    } catch (e) {
-        console.error('[REG CODE] Error:', e);
+        if (container) container.title = 'Kode registrasi gagal dimuat dan akan dicoba kembali';
+        console.warn('[REG CODE] Header refresh failed:', error.message);
+    }
+}
+
+function initHeaderRegistrationCode() {
+    void loadHeaderRegistrationCode();
+
+    if (headerRegistrationCodeTimer) clearInterval(headerRegistrationCodeTimer);
+    headerRegistrationCodeTimer = setInterval(loadHeaderRegistrationCode, HEADER_REGISTRATION_CODE_REFRESH_MS);
+
+    if (!headerRegistrationVisibilityBound) {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') void loadHeaderRegistrationCode();
+        });
+        headerRegistrationVisibilityBound = true;
     }
 }
 
 // Make function globally available
 window.openGenerateCodeModal = openGenerateCodeModal;
-window.loadDashboardCurrentCode = loadDashboardCurrentCode;
+window.initHeaderRegistrationCode = initHeaderRegistrationCode;
+window.loadHeaderRegistrationCode = loadHeaderRegistrationCode;
+window.loadDashboardCurrentCode = loadHeaderRegistrationCode;
 
 async function sendCodeWhatsApp() {
     if (!currentGeneratedCode || !currentGeneratedPhone) {

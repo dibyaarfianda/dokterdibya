@@ -1493,6 +1493,60 @@ body.mobile-app-mode .mobile-action-bar-force button {
     cursor: pointer !important;
     -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
 }
+
+/* Persistent patient registration code in the global staff header. */
+.navbar-registration-code {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    min-width: 118px !important;
+    margin: 0 10px 0 4px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+}
+.navbar-registration-code-label {
+    color: #6c757d !important;
+    font-size: 9px !important;
+    font-weight: 500 !important;
+    margin-bottom: 3px !important;
+    text-transform: uppercase !important;
+}
+.navbar-registration-code-value {
+    background: #007bff !important;
+    border-radius: 6px !important;
+    color: #fff !important;
+    font-family: monospace !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: 2px !important;
+    min-width: 84px !important;
+    padding: 5px 9px !important;
+    text-align: center !important;
+}
+.navbar-registration-code-value.is-empty {
+    background: #6c757d !important;
+    font-family: inherit !important;
+    font-size: 11px !important;
+    letter-spacing: 0 !important;
+}
+
+@media (max-width: 767.98px) {
+    .navbar-registration-code {
+        min-width: 70px !important;
+        margin-right: 4px !important;
+    }
+    .navbar-registration-code-label {
+        display: none !important;
+    }
+    .navbar-registration-code-value {
+        font-size: 12px !important;
+        letter-spacing: 1px !important;
+        min-width: 68px !important;
+        padding: 5px 6px !important;
+    }
+}
+
 /* ===== MOBILE TOP GAP FIX (inline - no cache dependency) ===== */
 @media (max-width: 991.98px) {
     .content-wrapper,
