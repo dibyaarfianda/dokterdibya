@@ -137,8 +137,7 @@ async function bootstrapStaffShell() {
         import('../toast.js'),
         import('../main.js'),
         import('../auth.js'),
-        import('../session-manager.js'),
-        import('../patient-demo-manager.js')
+        import('../session-manager.js')
     ]);
 
     const serverVerifiedUser = await authInitPromise;
@@ -171,8 +170,7 @@ async function bootstrapStaffShell() {
         _,
         mainModule,
         authModule,
-        sessionModule,
-        _patientDemoManagerModule
+        sessionModule
     ] = await coreModulesPromise;
 
     const { initMain } = mainModule;

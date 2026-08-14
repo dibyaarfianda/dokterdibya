@@ -1,5 +1,3 @@
-import { ROLE_IDS } from './role-constants.js';
-
 const apiHeaders = () => ({
     'Authorization': `Bearer ${typeof window.getAuthToken === 'function' ? window.getAuthToken() : ''}`,
     'Content-Type': 'application/json',
@@ -7,6 +5,7 @@ const apiHeaders = () => ({
 });
 
 function assertDoctor() {
+    const { ROLE_IDS } = window.staffRoleConstants || {};
     if (Number(window.auth?.currentUser?.role_id) !== ROLE_IDS.DOKTER) {
         throw new Error('Halaman Portal Pasien Dummy hanya tersedia untuk dokter.');
     }
