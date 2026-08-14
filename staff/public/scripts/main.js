@@ -2910,9 +2910,9 @@ async function initializeApp(user) {
         // Defer badge counts so first render is not blocked by non-critical request.
         window.scheduleNotificationBadges?.();
 
-        // Initialize real-time sync for online users tracking
-        console.log('[MAIN] Calling initRealtimeSync with:', { id: user.id, name: user.name, role: user.role });
-        initRealtimeSync(user);
+        // Realtime presence is useful, but it must not compete with the first
+        // dashboard paint and its critical data requests.
+        scheduleRealtimeStartup(user);
 
         // Check for SIMRS Melinda import data
         const importParam = new URLSearchParams(window.location.search).get('import');
@@ -2942,6 +2942,20 @@ async function initializeApp(user) {
         // User is not logged in, or session expired
         // Disconnect from real-time sync
         disconnectRealtimeSync();
+    }
+}
+
+function scheduleRealtimeStartup(user) {
+    const startRealtime = () => {
+        if (!user?.id || window.currentStaffUser?.id !== user.id) return;
+        console.log('[MAIN] Starting deferred realtime sync for:', { id: user.id, role: user.role });
+        initRealtimeSync(user);
+    };
+
+    if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(startRealtime, { timeout: 2000 });
+    } else {
+        setTimeout(startRealtime, 500);
     }
 }
 
@@ -3413,6 +3427,73 @@ function initMain() {
     restoreLastPage();
 }
 
+function resumeSavedPageIfRequested(params) {
+    if (params.get('resume') !== '1') return false;
+
+    const navId = sessionStorage.getItem('lastStaffNavId');
+    const pageMap = {
+        'nav-dashboard':                        () => showDashboardPage(),
+        'nav-kantor-saya':                      () => showKantorSayaPage(),
+        'nav-klinik-private':                   () => showKlinikPrivatePage(),
+        'nav-antrian-online':                   () => showAntrianOnlinePage(),
+        'nav-sunday-clinic':                    () => showKlinikPrivatePage(),
+        'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
+        'nav-rsud-gambiran':                    () => showHospitalAppointmentsPage('rsud_gambiran'),
+        'nav-rs-bhayangkara':                   () => showHospitalAppointmentsPage('rs_bhayangkara'),
+        'nav-klinik-private-pasien':            () => showHospitalPatientsPage('klinik_private'),
+        'nav-rsia-melinda-pasien':              () => showHospitalPatientsPage('rsia_melinda'),
+        'nav-rsud-gambiran-pasien':             () => showHospitalPatientsPage('rsud_gambiran'),
+        'nav-rs-bhayangkara-pasien':            () => showHospitalPatientsPage('rs_bhayangkara'),
+        'nav-pasien-baru':                      () => showPasienBaruPage(),
+        'nav-patient':                          () => showPatientPage(),
+        'nav-kelola-pasien':                   () => showKelolaPasienPage(),
+        'nav-record-history':                   () => showRecordHistoryPage(),
+        'nav-admin':                            () => showStokOpnamePage(),
+        'nav-pengaturan':                       () => showPengaturanPage(),
+        'management-nav-kelola-obat':           () => showKelolaObatManagementPage(),
+        'nav-logs':                             () => showLogPage(),
+        'nav-appointments':                     () => showAppointmentsPage(),
+        'nav-analytics':                        () => showAnalyticsPage(),
+        'nav-finance':                          () => showFinancePage(),
+        'management-nav-kelola-pasien':         () => showKelolaPasienPage(),
+        'management-nav-kelola-appointment':    () => showKelolaAppointmentPage(),
+        'nav-jadwal':                           () => showKelolaJadwalPage(),
+        'management-nav-kelola-tindakan':       () => showKelolaTindakanPage(),
+        'nav-estimasi-biaya':                   () => window.showEstimasiBiayaPage?.(),
+        'nav-pengumuman':                       () => showKelolaPengumumanPage(),
+        'nav-voting':                           () => showVotingPage(),
+        'nav-tanya-dokter':                    () => showTanyaDokterPage(),
+        'nav-community-chat':                   () => showCommunityChatPage(),
+        'nav-support-chat':                     () => showSupportChatPage(),
+        'nav-troubleshooting':                  () => window.showTroubleshootingPage?.(),
+        'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage(),
+        'nav-guest-activity':                   () => window.showGuestActivityPage && window.showGuestActivityPage(),
+        'nav-penjualan-obat':                   () => showPenjualanObatPage(),
+        'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
+        'nav-medify-sync':                      () => showMedifySyncPage(),
+        'management-nav-kelola-roles':          () => showKelolaRolesPage(),
+        'management-nav-block-list':            () => showPatientBlockListPage(),
+        'nav-staff-activity':                   () => window.showStaffActivityPage?.(),
+        'nav-staff-points':                     () => showStaffPointsPage(),
+        'nav-staff-briefing':                   () => showStaffBriefingPage(),
+        'nav-staff-payroll':                    () => showStaffPayrollPage(),
+        'nav-finance-analysis':                 () => showFinanceAnalysisPage(),
+        'nav-birth-congrats':                   () => window.showBirthCongratsPage?.(),
+        'nav-birth-testimonials':               () => window.showBirthTestimonialsPage?.(),
+        'nav-invoice-history':                  () => window.showInvoiceHistoryPage?.(),
+        'nav-booking-settings':                 () => showBookingSettingsPage(),
+        'nav-birth-class':                      () => showBirthClassPage(),
+        'nav-import-fields':                    () => showImportFieldsPage(),
+        'nav-artikel-kesehatan':                () => window.showArtikelKesehatanPage?.(),
+        'nav-ruang-cerita':                     () => window.showRuangCeritaPage?.(),
+        'nav-profile-settings':                 () => showProfileSettings(),
+    };
+    const fn = pageMap[navId];
+    if (!fn) return false;
+    fn();
+    return true;
+}
+
 function restoreLastPage() {
     try {
         const params = new URLSearchParams(window.location.search);
@@ -3436,67 +3517,12 @@ function restoreLastPage() {
             return;
         }
 
-        const navId = sessionStorage.getItem('lastStaffNavId');
-        if (!navId) { showDashboardPage(); return; }
-        const pageMap = {
-            'nav-dashboard':                        () => showDashboardPage(),
-            'nav-kantor-saya':                      () => showKantorSayaPage(),
-            'nav-klinik-private':                   () => showKlinikPrivatePage(),
-            'nav-antrian-online':                   () => showAntrianOnlinePage(),
-            'nav-sunday-clinic':                    () => showKlinikPrivatePage(),
-            'nav-rsia-melinda':                     () => showHospitalAppointmentsPage('rsia_melinda'),
-            'nav-rsud-gambiran':                    () => showHospitalAppointmentsPage('rsud_gambiran'),
-            'nav-rs-bhayangkara':                   () => showHospitalAppointmentsPage('rs_bhayangkara'),
-            'nav-klinik-private-pasien':            () => showHospitalPatientsPage('klinik_private'),
-            'nav-rsia-melinda-pasien':              () => showHospitalPatientsPage('rsia_melinda'),
-            'nav-rsud-gambiran-pasien':             () => showHospitalPatientsPage('rsud_gambiran'),
-            'nav-rs-bhayangkara-pasien':            () => showHospitalPatientsPage('rs_bhayangkara'),
-            'nav-pasien-baru':                      () => showPasienBaruPage(),
-            'nav-patient':                          () => showPatientPage(),
-            'nav-kelola-pasien':                   () => showKelolaPasienPage(),
-            'nav-record-history':                   () => showRecordHistoryPage(),
-            'nav-admin':                            () => showStokOpnamePage(),
-            'nav-pengaturan':                       () => showPengaturanPage(),
-            'management-nav-kelola-obat':           () => showKelolaObatManagementPage(),
-            'nav-logs':                             () => showLogPage(),
-            'nav-appointments':                     () => showAppointmentsPage(),
-            'nav-analytics':                        () => showAnalyticsPage(),
-            'nav-finance':                          () => showFinancePage(),
-            'management-nav-kelola-pasien':         () => showKelolaPasienPage(),
-            'management-nav-kelola-appointment':    () => showKelolaAppointmentPage(),
-            'nav-jadwal':                           () => showKelolaJadwalPage(),
-            'management-nav-kelola-tindakan':       () => showKelolaTindakanPage(),
-            'nav-estimasi-biaya':                   () => window.showEstimasiBiayaPage?.(),
-            'nav-pengumuman':                       () => showKelolaPengumumanPage(),
-            'nav-voting':                           () => showVotingPage(),
-            'nav-tanya-dokter':                    () => showTanyaDokterPage(),
-            'nav-community-chat':                   () => showCommunityChatPage(),
-            'nav-support-chat':                     () => showSupportChatPage(),
-            'nav-troubleshooting':                  () => window.showTroubleshootingPage?.(),
-            'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage(),
-            'nav-guest-activity':                   () => window.showGuestActivityPage && window.showGuestActivityPage(),
-            'nav-penjualan-obat':                   () => showPenjualanObatPage(),
-            'nav-bulk-upload-usg':                  () => showBulkUploadUSGPage(),
-            'nav-medify-sync':                      () => showMedifySyncPage(),
-            'management-nav-kelola-roles':          () => showKelolaRolesPage(),
-            'management-nav-block-list':            () => showPatientBlockListPage(),
-            'nav-staff-activity':                   () => window.showStaffActivityPage?.(),
-            'nav-staff-points':                     () => showStaffPointsPage(),
-            'nav-staff-briefing':                   () => showStaffBriefingPage(),
-            'nav-staff-payroll':                    () => showStaffPayrollPage(),
-            'nav-finance-analysis':                 () => showFinanceAnalysisPage(),
-            'nav-birth-congrats':                   () => window.showBirthCongratsPage?.(),
-            'nav-birth-testimonials':               () => window.showBirthTestimonialsPage?.(),
-            'nav-invoice-history':                  () => window.showInvoiceHistoryPage?.(),
-            'nav-booking-settings':                 () => showBookingSettingsPage(),
-            'nav-birth-class':                      () => showBirthClassPage(),
-            'nav-import-fields':                    () => showImportFieldsPage(),
-            'nav-artikel-kesehatan':                () => window.showArtikelKesehatanPage?.(),
-            'nav-ruang-cerita':                     () => window.showRuangCeritaPage?.(),
-            'nav-profile-settings':                 () => showProfileSettings(),
-        };
-        const fn = pageMap[navId];
-        if (fn) { fn(); } else { showDashboardPage(); }
+        if (resumeSavedPageIfRequested(params)) return;
+
+        // A normal reload always starts from the lightweight Dashboard. Deep
+        // links above remain authoritative, while heavy pages load only after
+        // the user explicitly selects them from the menu.
+        showDashboardPage();
     } catch (e) {
         console.error('[MAIN] restoreLastPage error:', e);
         showDashboardPage();

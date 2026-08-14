@@ -15,6 +15,8 @@ const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
 const PatientPasswordService = require('../services/PatientPasswordService');
 const PatientPasswordResetService = require('../services/PatientPasswordResetService');
+const sharp = require('sharp');
+const { resolveStaffIdentity, decodeDataImageUrl } = require('../utils/staffIdentity');
 const {
     BLOCKED_PATIENT_MESSAGE,
     isPatientIdentityBlocked,
@@ -24,23 +26,7 @@ const {
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const PATIENT_JWT_EXPIRES_IN = process.env.PATIENT_JWT_EXPIRES_IN || '24h';
-const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
-const STAFF_FEMALE_AVATAR = '/staff/public/images/avatarwanita.png';
 const PATIENT_AUTH_BLOCKLIST_ENABLED = process.env.PATIENT_AUTH_BLOCKLIST_ENABLED === 'true';
-
-function resolveStaffIdentity(name, photoUrl) {
-    const normalizedName = String(name || '')
-        .toLowerCase()
-        .replace(/\s+/g, '')
-        .replace(/\./g, '');
-    const gender = normalizedName === 'drdibya' ? 'laki-laki' : 'perempuan';
-    const hasCustomPhoto = typeof photoUrl === 'string' && photoUrl.trim().length > 0;
-
-    return {
-        gender,
-        photo_url: hasCustomPhoto ? photoUrl : (gender === 'laki-laki' ? STAFF_MALE_AVATAR : STAFF_FEMALE_AVATAR)
-    };
-}
 
 function isEmailLike(value) {
     return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -58,7 +44,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             u.password_hash,
             u.role,
             u.role_id,
-            u.photo_url,
+            CASE WHEN u.photo_url IS NULL OR u.photo_url = '' THEN 0 ELSE 1 END AS has_photo,
+            UNIX_TIMESTAMP(u.updated_at) AS avatar_version,
             u.user_type,
             u.is_superadmin,
             u.profile_completed,
@@ -132,7 +119,12 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     }
 
     const isStaffUser = (user.user_type || 'patient') === 'staff';
-    const staffIdentity = isStaffUser ? resolveStaffIdentity(user.name, user.photo_url) : null;
+    const staffIdentity = isStaffUser ? resolveStaffIdentity({
+        name: user.name,
+        userId,
+        hasPhoto: Boolean(user.has_photo),
+        avatarVersion: user.avatar_version
+    }) : null;
 
     sendSuccess(res, {
         token,
@@ -143,7 +135,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             role: roleForToken,
             role_id: user.role_id || null,
             role_display_name: resolvedRoleDisplay || roleForToken,
-            photo_url: isStaffUser ? staffIdentity.photo_url : user.photo_url,
+            photo_url: isStaffUser ? staffIdentity.photo_url : null,
             gender: isStaffUser ? staffIdentity.gender : null,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false,
@@ -151,6 +143,38 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             must_change_password: user.must_change_password || false
         }
     }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
+}));
+
+// Staff avatars are served as small cacheable WebP files so auth responses never
+// carry large inline base64 images. Staff IDs are opaque and patient photos are
+// deliberately excluded from this public image route.
+router.get('/api/auth/staff-avatar/:userId', asyncHandler(async (req, res) => {
+    const userId = String(req.params.userId || '').trim();
+    if (!/^[A-Za-z0-9_-]{3,64}$/.test(userId)) {
+        throw new AppError('Invalid staff avatar id', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const [rows] = await db.query(
+        `SELECT photo_url
+         FROM users
+         WHERE new_id = ? AND user_type = 'staff'
+         LIMIT 1`,
+        [userId]
+    );
+
+    const decoded = decodeDataImageUrl(rows[0]?.photo_url);
+    if (!decoded) {
+        throw new AppError(ERROR_MESSAGES.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+
+    const avatar = await sharp(decoded.buffer)
+        .rotate()
+        .resize(128, 128, { fit: 'cover', position: 'centre', withoutEnlargement: true })
+        .webp({ quality: 78 })
+        .toBuffer();
+
+    res.set('Cache-Control', 'public, max-age=604800, stale-while-revalidate=86400');
+    res.type('image/webp').send(avatar);
 }));
 
 // POST /api/auth/patient-login - Patient login endpoint
@@ -259,7 +283,8 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             u.email,
             u.role,
             u.role_id,
-            u.photo_url,
+            CASE WHEN u.photo_url IS NULL OR u.photo_url = '' THEN 0 ELSE 1 END AS has_photo,
+            UNIX_TIMESTAMP(u.updated_at) AS avatar_version,
             u.user_type,
             u.is_superadmin,
             u.profile_completed,
@@ -298,7 +323,12 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
         permissions = allPerms.map(p => p.name);
     }
 
-    const staffIdentity = resolveStaffIdentity(user.name, user.photo_url);
+    const staffIdentity = resolveStaffIdentity({
+        name: user.name,
+        userId: user.new_id,
+        hasPhoto: Boolean(user.has_photo),
+        avatarVersion: user.avatar_version
+    });
 
     sendSuccess(res, {
         user: {
@@ -333,7 +363,8 @@ router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
             u.email,
             u.role,
             u.role_id,
-            u.photo_url,
+            CASE WHEN u.photo_url IS NULL OR u.photo_url = '' THEN 0 ELSE 1 END AS has_photo,
+            UNIX_TIMESTAMP(u.updated_at) AS avatar_version,
             u.user_type,
             u.is_superadmin,
             r.name AS resolved_role_name,
@@ -353,7 +384,12 @@ router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
     const roleForClient = user.role || 'staff';
     const resolvedRoleDisplay = user.resolved_role_display;
 
-    const staffIdentity = resolveStaffIdentity(user.name, user.photo_url);
+    const staffIdentity = resolveStaffIdentity({
+        name: user.name,
+        userId: user.new_id,
+        hasPhoto: Boolean(user.has_photo),
+        avatarVersion: user.avatar_version
+    });
 
     sendSuccess(res, {
         id: user.new_id,

@@ -137,8 +137,7 @@ async function bootstrapStaffShell() {
         import('../toast.js'),
         import('../main.js'),
         import('../auth.js'),
-        import('../session-manager.js'),
-        import('../chat-popup.js')
+        import('../session-manager.js')
     ]);
 
     const serverVerifiedUser = await authInitPromise;
@@ -171,8 +170,7 @@ async function bootstrapStaffShell() {
         _,
         mainModule,
         authModule,
-        sessionModule,
-        _chatPopupModule
+        sessionModule
     ] = await coreModulesPromise;
 
     const { initMain } = mainModule;
@@ -214,11 +212,20 @@ async function bootstrapStaffShell() {
             if (navRole) navRole.textContent = user.role_display_name || user.role || 'Staff';
         }
 
-        import('./support-chat-badge.js')
-            .then(module => module.initSupportChatBadge?.())
-            .catch(error => console.warn('[WARN] Support badge fallback unavailable:', error));
-
         // Non-critical boot tasks run during idle so first paint can happen sooner.
+        const scheduleDeferredStartup = (task, timeout = 2000) => {
+            runIdle(() => {
+                Promise.resolve()
+                    .then(task)
+                    .catch(error => console.warn('[WARN] Deferred startup task unavailable:', error));
+            }, { timeout });
+        };
+
+        scheduleDeferredStartup(
+            () => import('./support-chat-badge.js').then(module => module.initSupportChatBadge?.()),
+            2200
+        );
+
         runIdle(() => {
             try {
                 initSessionManager();

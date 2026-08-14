@@ -21,30 +21,53 @@
     }
 
     function ensureChatPopupScriptLoaded() {
-        if (window.toggleChatPopup || window._realToggleChatPopup) {
+        const activeToggle = window.toggleChatPopup;
+        if ((activeToggle && activeToggle !== window.__lazyChatToggle) || window._realToggleChatPopup) {
             markChatPopupReady();
-            return;
+            return Promise.resolve();
         }
 
-        if (window.__chatPopupScriptRequested) {
+        if (window.__chatPopupScriptPromise) {
             console.log('[GlobalChat] chat-popup.js load already requested');
-            return;
+            return window.__chatPopupScriptPromise;
         }
 
         window.__chatPopupScriptRequested = true;
 
         const version = window.STAFF_CACHE_VERSION || window.__assetVersion || 'v312';
         const moduleUrl = `/staff/public/scripts/chat-popup.js?v=${encodeURIComponent(version)}`;
-        import(moduleUrl)
+        window.__chatPopupScriptPromise = import(moduleUrl)
             .then(() => {
                 console.log('[GlobalChat] chat-popup.js loaded dynamically as ESM');
                 markChatPopupReady();
             })
             .catch(error => {
                 window.__chatPopupScriptRequested = false;
+                window.__chatPopupScriptPromise = null;
                 console.error('[GlobalChat] Failed to load chat-popup.js dynamically:', error);
+                throw error;
             });
         console.log('[GlobalChat] Loading chat-popup.js dynamically as ESM');
+        return window.__chatPopupScriptPromise;
+    }
+
+    function installLazyChatToggle() {
+        if (window.toggleChatPopup || window._realToggleChatPopup) return;
+
+        const lazyToggle = async function() {
+            try {
+                await ensureChatPopupScriptLoaded();
+                const realToggle = window.toggleChatPopup || window._realToggleChatPopup;
+                if (typeof realToggle === 'function' && realToggle !== lazyToggle) {
+                    realToggle();
+                }
+            } catch (error) {
+                console.error('[GlobalChat] Chat belum dapat dibuka:', error);
+            }
+        };
+
+        window.__lazyChatToggle = lazyToggle;
+        window.toggleChatPopup = lazyToggle;
     }
 
     // Function to initialize chat
@@ -122,17 +145,15 @@
             }
         }
 
-        // On pages like Sunday Clinic, chat-popup.js is not included statically.
-        // Delay this check one tick so index-adminlte's following static script tag can load first.
-        setTimeout(() => {
-            if (window.toggleChatPopup || window._realToggleChatPopup) {
-                console.log('[GlobalChat] Auth ready, chat-popup.js already loaded statically');
-                markChatPopupReady();
-                return;
-            }
-
-            ensureChatPopupScriptLoaded();
-        }, 0);
+        // Make the chat button responsive immediately, but fetch and initialize
+        // chat history only after the first page paint (or on the first click).
+        installLazyChatToggle();
+        const loadChatWhenIdle = () => ensureChatPopupScriptLoaded().catch(() => {});
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(loadChatWhenIdle, { timeout: 2500 });
+        } else {
+            setTimeout(loadChatWhenIdle, 800);
+        }
 
         // Check if auth is valid (support both Firebase 'uid' and VPS auth 'id').
         // Chat popup should still bootstrap even if auth finishes a little later.
