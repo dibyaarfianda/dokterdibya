@@ -66,8 +66,8 @@ describe('patient demo portal isolation contract', () => {
         expect(staff).toContain('Buka Portal Dummy');
         expect(staff).toContain('Reset Data Dummy');
         expect(manager).toContain('ROLE_IDS.DOKTER');
-        expect(staff).toContain('v390');
-        expect(staffSw).toContain('v390');
+        expect(staff).toContain('v391');
+        expect(staffSw).toContain('v391');
         expect(patientMenu).toContain('20260814demo1');
         expect(patientSw).toContain('20260814demo1');
     });

@@ -901,7 +901,8 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto {
-        display: flex !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         align-items: center !important;
         justify-content: center !important;
         width: 100% !important;
@@ -917,6 +918,7 @@ body.mobile-app-mode .main-header {
         align-items: center !important;
         gap: 8px !important;
         min-width: 0 !important;
+        width: 100% !important;
         margin: 0 !important;
     }
 
@@ -929,7 +931,9 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code-value {
-        min-width: 68px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         padding: 4px 7px !important;
         font-size: 12px !important;
         line-height: 1.1 !important;
@@ -941,7 +945,18 @@ body.mobile-app-mode .main-header {
         flex: 0 1 auto !important;
         align-items: center !important;
         min-width: 0 !important;
+        width: 100% !important;
         margin: 0 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code-value,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-queue-vis-toggle,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-doctor-toggle {
+        width: 100% !important; /* Equal-size header controls. */
+        min-width: 0 !important;
+        min-height: 30px !important;
+        height: 30px !important;
+        box-sizing: border-box !important;
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-queue-vis-toggle,
@@ -949,9 +964,6 @@ body.mobile-app-mode .main-header {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        min-width: 0 !important;
-        min-height: 30px !important;
-        height: 30px !important;
         padding: 4px 6px !important;
         border-radius: 8px !important;
         font-size: 9px !important;

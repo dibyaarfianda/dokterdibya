@@ -41,6 +41,8 @@ describe('global registration code header', () => {
         expect(mobileCss).toContain('.navbar-doctor-control');
         expect(mobileCss).toContain('#btn-queue-vis-toggle');
         expect(mobileCss).toContain('#btn-doctor-toggle');
+        expect(mobileCss).toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important;');
+        expect(mobileCss).toContain('width: 100% !important; /* Equal-size header controls. */');
     });
 
     test('loads and refreshes the header code independently of the active page', () => {
