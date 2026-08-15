@@ -28,6 +28,21 @@ describe('global registration code header', () => {
         expect(html).toContain("contentWrapper.style.removeProperty('padding-top');");
     });
 
+    test('places queue and doctor toggles beside the registration code in the PWA header', () => {
+        const html = read('staff', 'public', 'index-adminlte.html');
+        const mobileCss = read('staff', 'public', 'styles', 'mobile-responsive.css');
+        const navbar = html.slice(html.indexOf('<nav class="main-header'), html.indexOf('</nav>') + 6);
+
+        expect(navbar).toContain('class="nav-item navbar-queue-control"');
+        expect(navbar).toContain('class="nav-item navbar-doctor-control"');
+        expect(navbar.indexOf('navbar-queue-control')).toBeGreaterThan(navbar.indexOf('navbar-registration-code'));
+        expect(navbar.indexOf('navbar-doctor-control')).toBeGreaterThan(navbar.indexOf('navbar-queue-control'));
+        expect(mobileCss).toContain('.navbar-queue-control');
+        expect(mobileCss).toContain('.navbar-doctor-control');
+        expect(mobileCss).toContain('#btn-queue-vis-toggle');
+        expect(mobileCss).toContain('#btn-doctor-toggle');
+    });
+
     test('loads and refreshes the header code independently of the active page', () => {
         const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
         const registration = read('staff', 'public', 'scripts', 'shell', 'registration-codes.js');

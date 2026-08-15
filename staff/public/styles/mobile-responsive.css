@@ -896,7 +896,7 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar > .navbar-nav:first-child,
-    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto > .nav-item:not(.navbar-registration-code) {
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto > .nav-item:not(.navbar-registration-code):not(.navbar-queue-control):not(.navbar-doctor-control) {
         display: none !important;
     }
 
@@ -907,6 +907,7 @@ body.mobile-app-mode .main-header {
         width: 100% !important;
         height: 100% !important;
         margin-left: 0 !important;
+        gap: 4px !important;
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code {
@@ -920,7 +921,7 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code-label {
-        display: block !important;
+        display: none !important;
         margin: 0 !important;
         color: #6c757d !important;
         font-size: 9px !important;
@@ -932,6 +933,41 @@ body.mobile-app-mode .main-header {
         padding: 4px 7px !important;
         font-size: 12px !important;
         line-height: 1.1 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-queue-control,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-doctor-control {
+        display: flex !important;
+        flex: 0 1 auto !important;
+        align-items: center !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-queue-vis-toggle,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-doctor-toggle {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 0 !important;
+        min-height: 30px !important;
+        height: 30px !important;
+        padding: 4px 6px !important;
+        border-radius: 8px !important;
+        font-size: 9px !important;
+        line-height: 1 !important;
+        white-space: nowrap !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #lbl-queue-vis,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #lbl-doctor-toggle {
+        display: block !important;
+        max-width: 72px !important;
+        overflow: hidden !important;
+        font-size: 9px !important;
+        line-height: 1 !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .content-wrapper {
