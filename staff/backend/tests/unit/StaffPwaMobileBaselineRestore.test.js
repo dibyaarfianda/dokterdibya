@@ -7,15 +7,18 @@ const read = (...segments) => fs
     .replace(/\r\n/g, '\n');
 
 describe('staff PWA mobile baseline restoration', () => {
-    test('recognizes installed Android and iOS PWAs without enabling desktop mobile mode', () => {
+    test('recognizes real mobile browsers and installed PWAs without enabling desktop mobile mode', () => {
         const shell = read('staff', 'public', 'index-adminlte.html');
 
         expect(shell).toContain("const isMobileUserAgent = /(?:Android|Mobi|iPad|iPhone|iPod)/i.test(navigator.userAgent);");
         expect(shell).toContain("const hasTouchInput = navigator.maxTouchPoints > 0 || 'ontouchstart' in window;");
         expect(shell).toContain('const isTouchMobileDevice = isMobileUserAgent && hasTouchInput;');
+        expect(shell).toContain("const isMobileViewport = window.matchMedia('(max-width: 991.98px)').matches;");
+        expect(shell).toContain('const mobileBrowserMode = isTouchMobileDevice && isMobileViewport;');
         expect(shell).toContain('const allowsMobilePwaMode = isTouchMobileDevice || !isDesktopFinePointer || isAndroidWebView;');
         expect(shell).toContain('const mobileFromUrl = mobileRequestedFromUrl && allowsMobilePwaMode;');
         expect(shell).toContain('const standaloneMobileMode = isStandalonePWA && allowsMobilePwaMode;');
+        expect(shell).toMatch(/const isMobileApp = mobileBrowserMode \|\|\s+mobileFromUrl \|\|/);
         expect(shell).toContain('window.syncStaffPwaMode = syncStaffPwaMode;');
         expect(shell).toContain("window.addEventListener('pageshow', syncStaffPwaMode);");
         expect(shell).toContain("document.addEventListener('staff:fragment-loaded', syncStaffPwaMode);");
