@@ -870,6 +870,75 @@ body.mobile-app-mode .main-header {
     display: none !important;
 }
 
+/*
+ * Keep the patient registration code visible after it moved out of the
+ * Dashboard card. Sunday Clinic owns its richer mobile header separately.
+ */
+@media (max-width: 991.98px) {
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: fixed !important;
+        top: 0 !important;
+        right: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        margin-left: 0 !important;
+        padding: 5px 10px !important;
+        box-sizing: border-box !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08) !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+        z-index: 1061 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar > .navbar-nav:first-child,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto > .nav-item:not(.navbar-registration-code) {
+        display: none !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin-left: 0 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code {
+        display: flex !important;
+        flex: 0 0 auto !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code-label {
+        display: block !important;
+        margin: 0 !important;
+        color: #6c757d !important;
+        font-size: 9px !important;
+        line-height: 1 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code-value {
+        min-width: 68px !important;
+        padding: 4px 7px !important;
+        font-size: 12px !important;
+        line-height: 1.1 !important;
+    }
+
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .content-wrapper {
+        padding-top: 44px !important;
+    }
+}
+
 /* Base font size for mobile app mode - use rem scaling instead of wildcard */
 body.mobile-app-mode {
     font-size: 12px !important;

@@ -17,6 +17,17 @@ describe('global registration code header', () => {
         expect(html).not.toContain('id="dashboard-current-code"');
     });
 
+    test('keeps the registration code visible in the compact PWA header', () => {
+        const html = read('staff', 'public', 'index-adminlte.html');
+        const mobileCss = read('staff', 'public', 'styles', 'mobile-responsive.css');
+
+        expect(mobileCss).toContain('body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar');
+        expect(mobileCss).toContain('body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code-label');
+        expect(mobileCss).toContain('body.mobile-app-mode:not(.sunday-clinic-embedded-active) .content-wrapper');
+        expect(mobileCss).toContain('padding-top: 44px !important;');
+        expect(html).toContain("contentWrapper.style.removeProperty('padding-top');");
+    });
+
     test('loads and refreshes the header code independently of the active page', () => {
         const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
         const registration = read('staff', 'public', 'scripts', 'shell', 'registration-codes.js');
