@@ -318,6 +318,13 @@ describe('staff panel stabilization sources', () => {
             'utils',
             'planning-helpers.js'
         );
+        const sundayClinicMain = readNormalizedFile(
+            'staff',
+            'public',
+            'scripts',
+            'sunday-clinic',
+            'main.js'
+        );
 
         expect(staffHtml).not.toContain('id="tindakan-quick-select"');
         expect(planComponent).toContain('id="planning-tindakan-quick-select"');
@@ -337,6 +344,9 @@ describe('staff panel stabilization sources', () => {
         expect(planningHelpers).toContain("usg_skrining: ['usg kelainan janin', 'usg skrining']");
         expect(planningHelpers).toContain('await addTindakan(tindakan.name, tindakan.code, tindakan.id, {');
         expect(planningHelpers).toContain('window.addQuickTindakan = addQuickTindakan;');
+        expect(sundayClinicMain).toContain("const componentVersion = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');");
+        expect(sundayClinicMain).toContain('const cacheBuster = `?v=${componentVersion}`;');
+        expect(sundayClinicMain).not.toContain("const COMPONENT_VERSION = '3.0.18';");
     });
 
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {

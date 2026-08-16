@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v395'; // Add Sunday Clinic USG screening quick choice
+const STAFF_PWA_VERSION = 'v396'; // Refresh Sunday Clinic component modules with staff cache
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `static-${STAFF_PWA_VERSION}`;
 const DYNAMIC_CACHE = `dynamic-${STAFF_PWA_VERSION}`;
