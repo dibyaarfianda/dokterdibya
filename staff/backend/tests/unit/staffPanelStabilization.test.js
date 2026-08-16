@@ -301,6 +301,15 @@ describe('staff panel stabilization sources', () => {
 
     test('Sunday Clinic Planning offers cumulative quick choices for common USG procedures', () => {
         const staffHtml = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const planComponent = readNormalizedFile(
+            'staff',
+            'public',
+            'scripts',
+            'sunday-clinic',
+            'components',
+            'shared',
+            'plan.js'
+        );
         const planningHelpers = readNormalizedFile(
             'staff',
             'public',
@@ -310,20 +319,21 @@ describe('staff panel stabilization sources', () => {
             'planning-helpers.js'
         );
 
-        expect(staffHtml).toContain('id="tindakan-quick-select"');
-        expect(staffHtml).toContain('Pilih cepat');
-        expect(staffHtml).toContain('>USG 2D</button>');
-        expect(staffHtml).toContain('>USG TVS</button>');
-        expect(staffHtml).toContain('>USG 4D</button>');
-        expect(staffHtml).toContain("window.selectQuickTindakan('usg_2d')");
-        expect(staffHtml).toContain("window.selectQuickTindakan('usg_tvs')");
-        expect(staffHtml).toContain("window.selectQuickTindakan('usg_4d')");
+        expect(staffHtml).not.toContain('id="tindakan-quick-select"');
+        expect(planComponent).toContain('id="planning-tindakan-quick-select"');
+        expect(planComponent).toContain('Pilih cepat');
+        expect(planComponent).toContain('>USG 2D</button>');
+        expect(planComponent).toContain('>USG TVS</button>');
+        expect(planComponent).toContain('>USG 4D</button>');
+        expect(planComponent).toContain("window.addQuickTindakan('usg_2d', this)");
+        expect(planComponent).toContain("window.addQuickTindakan('usg_tvs', this)");
+        expect(planComponent).toContain("window.addQuickTindakan('usg_4d', this)");
 
-        expect(planningHelpers).toContain('function selectQuickTindakan(quickKey)');
+        expect(planningHelpers).toContain('async function addQuickTindakan(quickKey, button)');
         expect(planningHelpers).toContain("usg_2d: ['usg 2 dimensi', 'usg 2d']");
         expect(planningHelpers).toContain("usg_4d: ['usg 4 dimensi', 'usg 4d']");
-        expect(planningHelpers).toContain('window.selectedTindakanKeys.add(selectionKey);');
-        expect(planningHelpers).toContain('window.selectQuickTindakan = selectQuickTindakan;');
+        expect(planningHelpers).toContain('await addTindakan(tindakan.name, tindakan.code, tindakan.id, {');
+        expect(planningHelpers).toContain('window.addQuickTindakan = addQuickTindakan;');
     });
 
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {

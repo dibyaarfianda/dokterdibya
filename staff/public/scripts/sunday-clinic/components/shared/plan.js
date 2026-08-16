@@ -254,6 +254,16 @@ export default {
                     <div class="mb-3">
                         <label class="font-weight-bold">Tindakan</label>
 
+                        <div id="planning-tindakan-quick-select" class="mb-2" aria-label="Pilih cepat tindakan USG">
+                            <small class="text-muted d-block mb-1">Pilih cepat</small>
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2 mb-2"
+                                    onclick="window.addQuickTindakan('usg_2d', this)">USG 2D</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2 mb-2"
+                                    onclick="window.addQuickTindakan('usg_tvs', this)">USG TVS</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2 mb-2"
+                                    onclick="window.addQuickTindakan('usg_4d', this)">USG 4D</button>
+                        </div>
+
                         <!-- Item list with individual delete buttons (synced with billing) -->
                         <div id="tindakan-items-container" class="mb-2">
                             <p class="text-muted small">Memuat daftar tindakan...</p>

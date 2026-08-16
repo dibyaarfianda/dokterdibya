@@ -13,7 +13,7 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-08-16-v16-usg-live-aliases';
+window.PLANNING_HELPERS_VERSION = '2026-08-16-v17-usg-front-page';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
@@ -99,52 +99,73 @@ function syncTindakanCheckboxSelection(checkbox) {
     updateTindakanCount();
 }
 
-function selectQuickTindakan(quickKey) {
+function findQuickTindakan(quickKey, tindakanList) {
     const aliases = QUICK_TINDAKAN_ALIASES[quickKey];
-    const tindakanList = Array.isArray(window.availableTindakanList)
-        ? window.availableTindakanList
-        : [];
-
-    if (!aliases || tindakanList.length === 0) {
-        window.showToast?.('warning', 'Daftar tindakan belum tersedia');
-        return false;
-    }
+    if (!aliases || !Array.isArray(tindakanList)) return null;
 
     const normalizedAliases = aliases.map(normalizeTindakanName);
     const exactMatch = tindakanList.find((item) =>
         normalizedAliases.includes(normalizeTindakanName(item.name))
     );
-    const tindakan = exactMatch || tindakanList.find((item) => {
+    return exactMatch || tindakanList.find((item) => {
         const normalizedName = normalizeTindakanName(item.name);
         return normalizedAliases.some((alias) => normalizedName.includes(alias));
     });
+}
 
-    if (!tindakan) {
-        window.showToast?.('warning', `Tindakan ${aliases[0].toUpperCase()} tidak ditemukan`);
+async function addQuickTindakan(quickKey, button) {
+    const aliases = QUICK_TINDAKAN_ALIASES[quickKey];
+    if (!aliases) return false;
+
+    if (button) {
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+    }
+
+    try {
+        let tindakanList = Array.isArray(window.availableTindakanList)
+            ? window.availableTindakanList
+            : [];
+
+        if (tindakanList.length === 0) {
+            const token = await window.getToken();
+            if (!token) throw new Error('Sesi habis. Silakan login ulang.');
+
+            const response = await fetch('/api/tindakan?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error(`Gagal memuat tindakan (HTTP ${response.status})`);
+
+            const result = await response.json();
+            const availableItems = result.data || result;
+            tindakanList = availableItems.filter((item) => item.category !== 'ADMINISTRATIF');
+            window.availableTindakanList = tindakanList;
+        }
+
+        const tindakan = findQuickTindakan(quickKey, tindakanList);
+
+        if (!tindakan) throw new Error(`Tindakan ${aliases[0].toUpperCase()} tidak ditemukan`);
+
+        return await addTindakan(tindakan.name, tindakan.code, tindakan.id, {
+            addToTextarea: false,
+            hideModal: false,
+            refreshList: true,
+            successMessage: `Tindakan "${tindakan.name}" ditambahkan ke Tagihan`
+        });
+    } catch (error) {
+        console.error('Error adding quick tindakan:', error);
+        if (typeof showError === 'function') {
+            showError(error.message);
+        } else {
+            window.showToast?.('error', error.message);
+        }
         return false;
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.removeAttribute('aria-busy');
+        }
     }
-
-    const selectionKey = getTindakanSelectionKey(tindakan);
-    window.selectedTindakanKeys.add(selectionKey);
-
-    const searchInput = document.querySelector('#tindakan-modal #sc-tindakan-search')
-        || document.querySelector('#tindakan-modal #tindakan-search');
-    if (searchInput && typeof searchInput.oninput === 'function') {
-        searchInput.value = tindakan.name || aliases[0];
-        searchInput.oninput({ target: searchInput });
-    }
-
-    const selectedCheckbox = Array.from(document.querySelectorAll('.tindakan-checkbox'))
-        .find((checkbox) => checkbox.dataset.tindakanKey === selectionKey);
-    if (selectedCheckbox) {
-        selectedCheckbox.checked = true;
-        syncTindakanCheckboxSelection(selectedCheckbox);
-        selectedCheckbox.closest('.tindakan-item')?.scrollIntoView({ block: 'nearest' });
-    } else {
-        updateTindakanCount();
-    }
-
-    return true;
 }
 
 async function openTindakanModal() {
@@ -501,9 +522,15 @@ async function addSelectedTindakan() {
     }
 }
 
-async function addTindakan(tindakanName, tindakanCode, tindakanId) {
+async function addTindakan(tindakanName, tindakanCode, tindakanId, options = {}) {
+    const {
+        addToTextarea = true,
+        hideModal = true,
+        refreshList = false,
+        successMessage = `Tindakan "${tindakanName}" ditambahkan ke Planning dan Tagihan`
+    } = options;
     const textarea = document.getElementById('planning-tindakan');
-    if (!textarea) return;
+    if (!textarea) return false;
 
     try {
         // Save to billing database first
@@ -562,23 +589,32 @@ async function addTindakan(tindakanName, tindakanCode, tindakanId) {
             }
         }
 
-        // Add to textarea
-        const currentValue = textarea.value.trim();
-        if (currentValue) {
-            textarea.value = currentValue + '\n' + tindakanName;
-        } else {
-            textarea.value = tindakanName;
+        // Add to textarea only for legacy/manual flows.
+        if (addToTextarea) {
+            const currentValue = textarea.value.trim();
+            if (currentValue) {
+                textarea.value = currentValue + '\n' + tindakanName;
+            } else {
+                textarea.value = tindakanName;
+            }
         }
 
-        // Hide modal
-        $('#tindakan-modal').modal('hide');
+        if (hideModal && typeof $ !== 'undefined' && $('#tindakan-modal').length) {
+            $('#tindakan-modal').modal('hide');
+        }
 
         if (typeof showSuccess === 'function') {
-            showSuccess(`Tindakan "${tindakanName}" ditambahkan ke Planning dan Tagihan`);
+            showSuccess(successMessage);
         }
 
         // Refresh billing component if it exists
         refreshBillingIfActive();
+
+        if (refreshList && window.renderTindakanItemsList) {
+            await window.renderTindakanItemsList();
+        }
+
+        return true;
 
     } catch (error) {
         console.error('Error adding tindakan:', error);
@@ -587,6 +623,7 @@ async function addTindakan(tindakanName, tindakanCode, tindakanId) {
         } else {
             window.showToast('error', 'Gagal menambahkan tindakan: ' + error.message);
         }
+        return false;
     }
 }
 
@@ -1903,7 +1940,7 @@ window.openTerapiModal = openTerapiModal;
 window.addTindakan = addTindakan;
 window.addSelectedTindakan = addSelectedTindakan;
 window.updateTindakanCount = updateTindakanCount;
-window.selectQuickTindakan = selectQuickTindakan;
+window.addQuickTindakan = addQuickTindakan;
 window.resetTindakan = resetTindakan;
 window.resetTerapi = resetTerapi;
 window.proceedToCaraPakai = proceedToCaraPakai;
