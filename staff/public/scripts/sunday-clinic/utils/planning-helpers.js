@@ -13,7 +13,7 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-08-16-v15-usg-quick-select';
+window.PLANNING_HELPERS_VERSION = '2026-08-16-v16-usg-live-aliases';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
@@ -62,9 +62,9 @@ function showLoadingStatus(modalBody, status) {
 // ============================================================================
 
 const QUICK_TINDAKAN_ALIASES = Object.freeze({
-    usg_2d: ['usg 2d'],
+    usg_2d: ['usg 2 dimensi', 'usg 2d'],
     usg_tvs: ['usg tvs', 'tvs', 'usg transvaginal', 'ultrasonografi transvaginal'],
-    usg_4d: ['usg 4d']
+    usg_4d: ['usg 4 dimensi', 'usg 4d']
 });
 
 function normalizeTindakanName(value) {

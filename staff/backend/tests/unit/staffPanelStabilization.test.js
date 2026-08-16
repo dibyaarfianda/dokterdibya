@@ -320,6 +320,8 @@ describe('staff panel stabilization sources', () => {
         expect(staffHtml).toContain("window.selectQuickTindakan('usg_4d')");
 
         expect(planningHelpers).toContain('function selectQuickTindakan(quickKey)');
+        expect(planningHelpers).toContain("usg_2d: ['usg 2 dimensi', 'usg 2d']");
+        expect(planningHelpers).toContain("usg_4d: ['usg 4 dimensi', 'usg 4d']");
         expect(planningHelpers).toContain('window.selectedTindakanKeys.add(selectionKey);');
         expect(planningHelpers).toContain('window.selectQuickTindakan = selectQuickTindakan;');
     });
