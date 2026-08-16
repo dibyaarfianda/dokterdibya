@@ -14,10 +14,12 @@ router.get('/stats/daily', verifyToken, requirePermission('visits.view'), async 
         if (exclude_dummy === 'true') {
             let query = `
                 SELECT
-                    DATE(scr.created_at) as visit_date,
+                    COALESCE(sa.appointment_date, DATE(scr.created_at)) as visit_date,
                     COUNT(*) as count
                 FROM sunday_clinic_records scr
-                WHERE 1=1
+                LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
+                WHERE (scr.queue_status IN ('selesai_periksa', 'lunas') OR sa.status = 'completed')
+                  AND (sa.id IS NULL OR sa.status NOT IN ('cancelled', 'no_show'))
             `;
             const params = [];
 
@@ -27,16 +29,16 @@ router.get('/stats/daily', verifyToken, requirePermission('visits.view'), async 
             }
 
             if (start_date) {
-                query += ' AND scr.created_at >= ?';
-                params.push(`${start_date} 00:00:00`);
+                query += ' AND COALESCE(sa.appointment_date, DATE(scr.created_at)) >= ?';
+                params.push(start_date);
             }
 
             if (end_date) {
-                query += ' AND scr.created_at < DATE_ADD(?, INTERVAL 1 DAY)';
+                query += ' AND COALESCE(sa.appointment_date, DATE(scr.created_at)) < DATE_ADD(?, INTERVAL 1 DAY)';
                 params.push(end_date);
             }
 
-            query += ' GROUP BY DATE(scr.created_at) ORDER BY visit_date ASC';
+            query += ' GROUP BY COALESCE(sa.appointment_date, DATE(scr.created_at)) ORDER BY visit_date ASC';
 
             const [rows] = await pool.query(query, params);
 

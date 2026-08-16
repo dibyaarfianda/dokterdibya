@@ -52,6 +52,18 @@ describe('staff panel stabilization sources', () => {
         );
     });
 
+    test('dashboard visit stats use the actual completed visit date instead of record creation time', () => {
+        const visitsRoute = readNormalizedFile('staff', 'backend', 'routes', 'visits.js');
+        const dashboard = readNormalizedFile('staff', 'public', 'scripts', 'dashboard.js');
+
+        expect(visitsRoute).toContain('LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id');
+        expect(visitsRoute).toContain('COALESCE(sa.appointment_date, DATE(scr.created_at)) as visit_date');
+        expect(visitsRoute).toContain("scr.queue_status IN ('selesai_periksa', 'lunas')");
+        expect(visitsRoute).toContain("OR sa.status = 'completed'");
+        expect(visitsRoute).toContain("sa.status NOT IN ('cancelled', 'no_show')");
+        expect(dashboard).toContain("exclude_dummy: 'true'");
+    });
+
     test('Kelola Pasien inline route preserves reload state and releases Kantor Saya scroll lock', () => {
         const html = readNormalizedFile('staff', 'public', 'index-adminlte.html');
         const mainJs = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
