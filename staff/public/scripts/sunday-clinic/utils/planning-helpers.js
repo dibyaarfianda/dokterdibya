@@ -13,7 +13,7 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-08-16-v18-usg-screening';
+window.PLANNING_HELPERS_VERSION = '2026-08-16-v19-edit-saved-therapy';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
@@ -1666,6 +1666,107 @@ async function deleteIndividualObat(itemId, itemName) {
     }
 }
 
+async function updateIndividualObat(itemId, button) {
+    const quantityInput = document.getElementById(`terapi-quantity-${itemId}`);
+    const caraPakaiInput = document.getElementById(`terapi-cara-pakai-${itemId}`);
+    const quantity = Number.parseInt(quantityInput?.value || '', 10);
+    const caraPakai = caraPakaiInput?.value?.trim() || '';
+
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000) {
+        window.showToast?.('warning', 'Jumlah obat harus berupa angka bulat antara 1 dan 1000');
+        quantityInput?.focus();
+        return false;
+    }
+
+    const originalButtonHtml = button?.innerHTML;
+    if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan';
+    }
+
+    try {
+        const token = await window.getToken();
+        if (!token) throw new Error('Sesi habis. Silakan login ulang.');
+
+        const mrSlug = window.routeMrSlug;
+        if (!mrSlug) throw new Error('MR ID tidak ditemukan');
+
+        const currentResponse = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!currentResponse.ok) throw new Error('Gagal memuat tagihan terbaru');
+
+        const currentResult = await currentResponse.json();
+        const billing = currentResult.data || {};
+        const numericItemId = Number(itemId);
+        const currentItems = Array.isArray(billing.items) ? billing.items : [];
+        const targetItem = currentItems.find((item) =>
+            Number(item.id) === numericItemId && item.item_type === 'obat'
+        );
+        if (!targetItem) throw new Error('Item obat tidak ditemukan pada tagihan');
+
+        const items = currentItems.map((item) => {
+            const itemData = item.item_data && typeof item.item_data === 'object'
+                ? item.item_data
+                : {};
+            const isTarget = Number(item.id) === numericItemId;
+
+            return {
+                item_type: item.item_type,
+                item_code: item.item_code,
+                item_name: item.item_name,
+                quantity: isTarget ? quantity : item.quantity,
+                item_data: isTarget
+                    ? {
+                        ...itemData,
+                        caraPakai,
+                        latinSig: convertToLatinSig(caraPakai)
+                    }
+                    : itemData
+            };
+        });
+
+        const saveResponse = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                items,
+                billingData: billing.billing_data || {}
+            })
+        });
+        if (!saveResponse.ok) {
+            const errorData = await saveResponse.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Gagal memperbarui terapi');
+        }
+
+        if (typeof showSuccess === 'function') {
+            showSuccess(`Terapi "${targetItem.item_name}" diperbarui`);
+        } else {
+            window.showToast?.('success', `Terapi "${targetItem.item_name}" diperbarui`);
+        }
+
+        refreshBillingIfActive();
+        await renderTerapiItemsList();
+        return true;
+    } catch (error) {
+        console.error('Error updating individual obat:', error);
+        if (typeof showError === 'function') {
+            showError(error.message);
+        } else {
+            window.showToast?.('error', error.message);
+        }
+        return false;
+    } finally {
+        if (button && button.isConnected) {
+            button.disabled = false;
+            button.innerHTML = originalButtonHtml;
+        }
+    }
+}
+
 /**
  * Render terapi items as a list with individual delete buttons
  * Fetches current billing obat items and displays them
@@ -1712,25 +1813,47 @@ async function renderTerapiItemsList() {
 
         const listHtml = obatItems.map(item => {
             const itemData = item.item_data || {};
-            const caraPakai = itemData.caraPakai || itemData.latinSig || '-';
+            const caraPakai = itemData.caraPakai || itemData.latinSig || '';
             const escapedName = escapeHtmlLocal(item.item_name);
+            const escapedCaraPakai = escapeHtmlLocal(caraPakai);
+            const quantity = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
 
             return `
-                <div class="terapi-item d-flex align-items-center p-2 mb-1 border rounded"
+                <div class="terapi-item p-2 mb-1 border rounded"
                      data-item-id="${item.id}">
-                    ${isDraft ? `
-                        <button type="button" class="btn btn-sm btn-outline-danger mr-2 terapi-delete-btn"
-                                onclick="window.deleteIndividualObat(${item.id}, '${escapedName.replace(/'/g, "\\'")}')"
-                                title="Hapus obat ini">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    ` : ''}
-                    <div class="flex-grow-1">
+                    <div class="d-flex align-items-center">
+                        ${isDraft ? `
+                            <button type="button" class="btn btn-sm btn-outline-danger mr-2 terapi-delete-btn"
+                                    onclick="window.deleteIndividualObat(${item.id}, '${escapedName.replace(/'/g, "\\'")}')"
+                                    title="Hapus obat ini">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
                         <strong class="small">${escapedName}</strong>
-                        <small class="text-muted ml-1">x${item.quantity}</small>
-                        <br>
-                        <small class="text-muted">${escapeHtmlLocal(caraPakai)}</small>
                     </div>
+                    ${isDraft ? `
+                        <div class="row mt-2">
+                            <div class="col-4 col-md-2">
+                                <label class="small text-muted mb-1" for="terapi-quantity-${item.id}">Jumlah</label>
+                                <input type="number" class="form-control form-control-sm"
+                                       id="terapi-quantity-${item.id}" min="1" max="1000" value="${quantity}">
+                            </div>
+                            <div class="col-8 col-md-7">
+                                <label class="small text-muted mb-1" for="terapi-cara-pakai-${item.id}">Cara pakai</label>
+                                <input type="text" class="form-control form-control-sm"
+                                       id="terapi-cara-pakai-${item.id}" value="${escapedCaraPakai}"
+                                       placeholder="Contoh: 1x1 malam">
+                            </div>
+                            <div class="col-12 col-md-3 d-flex align-items-end mt-2 mt-md-0">
+                                <button type="button" class="btn btn-sm btn-outline-primary btn-block"
+                                        onclick="window.updateIndividualObat(${item.id}, this)">
+                                    <i class="fas fa-save mr-1"></i>Simpan
+                                </button>
+                            </div>
+                        </div>
+                    ` : `
+                        <small class="text-muted d-block mt-1">x${quantity}${caraPakai ? ` • ${escapedCaraPakai}` : ''}</small>
+                    `}
                 </div>
             `;
         }).join('');
@@ -1958,6 +2081,7 @@ window.getDraftTerapi = getDraftTerapi;
 window.clearDraftTerapi = clearDraftTerapi;
 window.removeObatFromPlanning = removeObatFromPlanning;
 window.deleteIndividualObat = deleteIndividualObat;
+window.updateIndividualObat = updateIndividualObat;
 window.renderTerapiItemsList = renderTerapiItemsList;
 window.deleteIndividualTindakan = deleteIndividualTindakan;
 window.renderTindakanItemsList = renderTindakanItemsList;

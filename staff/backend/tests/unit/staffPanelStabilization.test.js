@@ -349,6 +349,25 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicMain).not.toContain("const COMPONENT_VERSION = '3.0.18';");
     });
 
+    test('Sunday Clinic Planning keeps saved therapy quantity and instructions editable', () => {
+        const planningHelpers = readNormalizedFile(
+            'staff',
+            'public',
+            'scripts',
+            'sunday-clinic',
+            'utils',
+            'planning-helpers.js'
+        );
+
+        expect(planningHelpers).toContain('id="terapi-quantity-${item.id}"');
+        expect(planningHelpers).toContain('id="terapi-cara-pakai-${item.id}"');
+        expect(planningHelpers).toContain('window.updateIndividualObat(${item.id}, this)');
+        expect(planningHelpers).toContain('async function updateIndividualObat(itemId, button)');
+        expect(planningHelpers).toContain("method: 'POST'");
+        expect(planningHelpers).toContain('billingData: billing.billing_data || {}');
+        expect(planningHelpers).toContain('window.updateIndividualObat = updateIndividualObat;');
+    });
+
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {
         const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic', 'prescription.js');
         const sundayClinicService = readNormalizedFile('staff', 'backend', 'services', 'sunday-clinic', 'prescription.js');
