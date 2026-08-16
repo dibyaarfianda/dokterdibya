@@ -262,6 +262,9 @@ export default {
                                     onclick="window.addQuickTindakan('usg_tvs', this)">USG TVS</button>
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2 mb-2"
                                     onclick="window.addQuickTindakan('usg_4d', this)">USG 4D</button>
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2 mb-2"
+                                    title="USG Kelainan Janin (18-23 minggu)"
+                                    onclick="window.addQuickTindakan('usg_skrining', this)">USG Skrining</button>
                         </div>
 
                         <!-- Item list with individual delete buttons (synced with billing) -->

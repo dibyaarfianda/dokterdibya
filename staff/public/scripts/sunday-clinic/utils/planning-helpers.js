@@ -13,7 +13,7 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-08-16-v17-usg-front-page';
+window.PLANNING_HELPERS_VERSION = '2026-08-16-v18-usg-screening';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
@@ -64,7 +64,8 @@ function showLoadingStatus(modalBody, status) {
 const QUICK_TINDAKAN_ALIASES = Object.freeze({
     usg_2d: ['usg 2 dimensi', 'usg 2d'],
     usg_tvs: ['usg tvs', 'tvs', 'usg transvaginal', 'ultrasonografi transvaginal'],
-    usg_4d: ['usg 4 dimensi', 'usg 4d']
+    usg_4d: ['usg 4 dimensi', 'usg 4d'],
+    usg_skrining: ['usg kelainan janin', 'usg skrining']
 });
 
 function normalizeTindakanName(value) {

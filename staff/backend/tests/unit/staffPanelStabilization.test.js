@@ -325,13 +325,16 @@ describe('staff panel stabilization sources', () => {
         expect(planComponent).toContain('>USG 2D</button>');
         expect(planComponent).toContain('>USG TVS</button>');
         expect(planComponent).toContain('>USG 4D</button>');
+        expect(planComponent).toContain('>USG Skrining</button>');
         expect(planComponent).toContain("window.addQuickTindakan('usg_2d', this)");
         expect(planComponent).toContain("window.addQuickTindakan('usg_tvs', this)");
         expect(planComponent).toContain("window.addQuickTindakan('usg_4d', this)");
+        expect(planComponent).toContain("window.addQuickTindakan('usg_skrining', this)");
 
         expect(planningHelpers).toContain('async function addQuickTindakan(quickKey, button)');
         expect(planningHelpers).toContain("usg_2d: ['usg 2 dimensi', 'usg 2d']");
         expect(planningHelpers).toContain("usg_4d: ['usg 4 dimensi', 'usg 4d']");
+        expect(planningHelpers).toContain("usg_skrining: ['usg kelainan janin', 'usg skrining']");
         expect(planningHelpers).toContain('await addTindakan(tindakan.name, tindakan.code, tindakan.id, {');
         expect(planningHelpers).toContain('window.addQuickTindakan = addQuickTindakan;');
     });
