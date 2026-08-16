@@ -13,17 +13,19 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-06-28-v14-prescription-templates';
+window.PLANNING_HELPERS_VERSION = '2026-08-16-v15-usg-quick-select';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
 
 window.availableTindakanList = null;
+window.selectedTindakanKeys = new Set();
 window.selectedObatForPrescription = null;
 window.prescriptionTemplates = [];
 window.editingPrescriptionTemplate = null;
 
 function resetTindakanModalSelection() {
+    window.selectedTindakanKeys.clear();
     document.querySelectorAll('.tindakan-checkbox').forEach((checkbox) => {
         checkbox.checked = false;
     });
@@ -58,6 +60,92 @@ function showLoadingStatus(modalBody, status) {
 // ============================================================================
 // TINDAKAN FUNCTIONS
 // ============================================================================
+
+const QUICK_TINDAKAN_ALIASES = Object.freeze({
+    usg_2d: ['usg 2d'],
+    usg_tvs: ['usg tvs', 'tvs', 'usg transvaginal', 'ultrasonografi transvaginal'],
+    usg_4d: ['usg 4d']
+});
+
+function normalizeTindakanName(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+function getTindakanSelectionKey(item) {
+    if (item?.id !== undefined && item?.id !== null && item.id !== '') {
+        return `id:${item.id}`;
+    }
+    if (item?.code) return `code:${normalizeTindakanName(item.code)}`;
+    return `name:${normalizeTindakanName(item?.name)}`;
+}
+
+function syncTindakanCheckboxSelection(checkbox) {
+    if (!checkbox) return;
+
+    const selectionKey = checkbox.dataset.tindakanKey;
+    if (selectionKey) {
+        if (checkbox.checked) {
+            window.selectedTindakanKeys.add(selectionKey);
+        } else {
+            window.selectedTindakanKeys.delete(selectionKey);
+        }
+    }
+
+    const item = checkbox.closest('.tindakan-item');
+    if (item) item.classList.toggle('selected', checkbox.checked);
+    updateTindakanCount();
+}
+
+function selectQuickTindakan(quickKey) {
+    const aliases = QUICK_TINDAKAN_ALIASES[quickKey];
+    const tindakanList = Array.isArray(window.availableTindakanList)
+        ? window.availableTindakanList
+        : [];
+
+    if (!aliases || tindakanList.length === 0) {
+        window.showToast?.('warning', 'Daftar tindakan belum tersedia');
+        return false;
+    }
+
+    const normalizedAliases = aliases.map(normalizeTindakanName);
+    const exactMatch = tindakanList.find((item) =>
+        normalizedAliases.includes(normalizeTindakanName(item.name))
+    );
+    const tindakan = exactMatch || tindakanList.find((item) => {
+        const normalizedName = normalizeTindakanName(item.name);
+        return normalizedAliases.some((alias) => normalizedName.includes(alias));
+    });
+
+    if (!tindakan) {
+        window.showToast?.('warning', `Tindakan ${aliases[0].toUpperCase()} tidak ditemukan`);
+        return false;
+    }
+
+    const selectionKey = getTindakanSelectionKey(tindakan);
+    window.selectedTindakanKeys.add(selectionKey);
+
+    const searchInput = document.querySelector('#tindakan-modal #sc-tindakan-search')
+        || document.querySelector('#tindakan-modal #tindakan-search');
+    if (searchInput && typeof searchInput.oninput === 'function') {
+        searchInput.value = tindakan.name || aliases[0];
+        searchInput.oninput({ target: searchInput });
+    }
+
+    const selectedCheckbox = Array.from(document.querySelectorAll('.tindakan-checkbox'))
+        .find((checkbox) => checkbox.dataset.tindakanKey === selectionKey);
+    if (selectedCheckbox) {
+        selectedCheckbox.checked = true;
+        syncTindakanCheckboxSelection(selectedCheckbox);
+        selectedCheckbox.closest('.tindakan-item')?.scrollIntoView({ block: 'nearest' });
+    } else {
+        updateTindakanCount();
+    }
+
+    return true;
+}
 
 async function openTindakanModal() {
     console.log('[Planning v11] openTindakanModal called');
@@ -220,15 +308,19 @@ function showTindakanModal(tindakanList) {
             byCategory[category].forEach((item) => {
                 const escapedName = escapeHtml(item.name || '');
                 const escapedCode = escapeHtml(item.code || '');
+                const selectionKey = getTindakanSelectionKey(item);
+                const escapedSelectionKey = escapeHtml(selectionKey);
+                const isSelected = window.selectedTindakanKeys.has(selectionKey);
                 html += `
                     <div class="col-6 col-md-3 mb-2">
-                        <div class="tindakan-item" data-tindakan-id="${item.id || ''}">
+                        <div class="tindakan-item${isSelected ? ' selected' : ''}" data-tindakan-id="${item.id || ''}">
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input tindakan-checkbox"
                                        id="tindakan-${item.id}"
                                        data-tindakan-name="${escapedName}"
                                        data-tindakan-code="${escapedCode}"
-                                       data-tindakan-id="${item.id || ''}">
+                                       data-tindakan-id="${item.id || ''}"
+                                       data-tindakan-key="${escapedSelectionKey}"${isSelected ? ' checked' : ''}>
                                 <label class="custom-control-label" for="tindakan-${item.id}">
                                     ${escapedName}
                                 </label>
@@ -263,8 +355,7 @@ function showTindakanModal(tindakanList) {
                     const checkbox = item.querySelector('.tindakan-checkbox');
                     if (checkbox) {
                         checkbox.checked = !checkbox.checked;
-                        item.classList.toggle('selected', checkbox.checked);
-                        updateTindakanCount();
+                        syncTindakanCheckboxSelection(checkbox);
                     }
                 }
             });
@@ -273,9 +364,7 @@ function showTindakanModal(tindakanList) {
         // Add change listener to each checkbox
         container.querySelectorAll('.tindakan-checkbox').forEach(cb => {
             cb.addEventListener('change', function() {
-                const item = this.closest('.tindakan-item');
-                if (item) item.classList.toggle('selected', this.checked);
-                updateTindakanCount();
+                syncTindakanCheckboxSelection(this);
             });
         });
     }
@@ -297,7 +386,7 @@ function showTindakanModal(tindakanList) {
 }
 
 function updateTindakanCount() {
-    const selectedCount = document.querySelectorAll('.tindakan-checkbox:checked').length;
+    const selectedCount = window.selectedTindakanKeys.size;
     const countEl = document.getElementById('selected-tindakan-count');
     if (countEl) {
         countEl.innerHTML = `<small>${selectedCount} tindakan dipilih</small>`;
@@ -305,10 +394,15 @@ function updateTindakanCount() {
 }
 
 async function addSelectedTindakan() {
-    // Get all selected tindakan
-    const selectedCheckboxes = document.querySelectorAll('.tindakan-checkbox:checked');
+    const selectedTindakan = (window.availableTindakanList || [])
+        .filter((item) => window.selectedTindakanKeys.has(getTindakanSelectionKey(item)))
+        .map((item) => ({
+            name: item.name,
+            code: item.code,
+            id: item.id
+        }));
 
-    if (selectedCheckboxes.length === 0) {
+    if (selectedTindakan.length === 0) {
         if (typeof showError === 'function') {
             showError('Silakan pilih minimal satu tindakan');
         } else {
@@ -316,12 +410,6 @@ async function addSelectedTindakan() {
         }
         return;
     }
-
-    const selectedTindakan = Array.from(selectedCheckboxes).map(cb => ({
-        name: cb.dataset.tindakanName,
-        code: cb.dataset.tindakanCode,
-        id: cb.dataset.tindakanId
-    }));
 
     const textarea = document.getElementById('planning-tindakan');
     if (!textarea) return;
@@ -1815,6 +1903,7 @@ window.openTerapiModal = openTerapiModal;
 window.addTindakan = addTindakan;
 window.addSelectedTindakan = addSelectedTindakan;
 window.updateTindakanCount = updateTindakanCount;
+window.selectQuickTindakan = selectQuickTindakan;
 window.resetTindakan = resetTindakan;
 window.resetTerapi = resetTerapi;
 window.proceedToCaraPakai = proceedToCaraPakai;

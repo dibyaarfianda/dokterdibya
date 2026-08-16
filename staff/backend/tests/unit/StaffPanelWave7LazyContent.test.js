@@ -112,10 +112,9 @@ describe('staff panel wave 7 lazy content contracts', () => {
         expect(Buffer.byteLength(html, 'utf8')).toBeLessThanOrEqual(330000);
     });
 
-    test('shell and service worker advance together to v360', () => {
+    test('shell and service worker advance together', () => {
         const html = read('staff', 'public', 'index-adminlte.html');
         const sw = read('staff', 'public', 'sw.js');
-
         const version = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
         expect(version).toBeTruthy();
         expect(sw).toContain(`const STAFF_PWA_VERSION = '${version}'`);

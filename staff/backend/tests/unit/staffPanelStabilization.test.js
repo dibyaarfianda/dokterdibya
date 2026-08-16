@@ -299,6 +299,31 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicMain).toContain('this.render(SECTIONS.BILLING)');
     });
 
+    test('Sunday Clinic Planning offers cumulative quick choices for common USG procedures', () => {
+        const staffHtml = readNormalizedFile('staff', 'public', 'index-adminlte.html');
+        const planningHelpers = readNormalizedFile(
+            'staff',
+            'public',
+            'scripts',
+            'sunday-clinic',
+            'utils',
+            'planning-helpers.js'
+        );
+
+        expect(staffHtml).toContain('id="tindakan-quick-select"');
+        expect(staffHtml).toContain('Pilih cepat');
+        expect(staffHtml).toContain('>USG 2D</button>');
+        expect(staffHtml).toContain('>USG TVS</button>');
+        expect(staffHtml).toContain('>USG 4D</button>');
+        expect(staffHtml).toContain("window.selectQuickTindakan('usg_2d')");
+        expect(staffHtml).toContain("window.selectQuickTindakan('usg_tvs')");
+        expect(staffHtml).toContain("window.selectQuickTindakan('usg_4d')");
+
+        expect(planningHelpers).toContain('function selectQuickTindakan(quickKey)');
+        expect(planningHelpers).toContain('window.selectedTindakanKeys.add(selectionKey);');
+        expect(planningHelpers).toContain('window.selectQuickTindakan = selectQuickTindakan;');
+    });
+
     test('Sunday Clinic shared prescription templates expose CRUD API and staff UI controls', () => {
         const sundayClinicRoute = readNormalizedFile('staff', 'backend', 'routes', 'sunday-clinic', 'prescription.js');
         const sundayClinicService = readNormalizedFile('staff', 'backend', 'services', 'sunday-clinic', 'prescription.js');
