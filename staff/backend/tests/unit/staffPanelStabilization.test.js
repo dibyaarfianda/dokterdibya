@@ -60,7 +60,9 @@ describe('staff panel stabilization sources', () => {
         expect(visitsRoute).toContain('COALESCE(sa.appointment_date, DATE(scr.created_at)) as visit_date');
         expect(visitsRoute).toContain("scr.queue_status IN ('selesai_periksa', 'lunas')");
         expect(visitsRoute).toContain("OR sa.status = 'completed'");
-        expect(visitsRoute).toContain("sa.status NOT IN ('cancelled', 'no_show')");
+        // A closed medical visit remains authoritative even if its appointment
+        // status was later left as cancelled/no-show.
+        expect(visitsRoute).not.toContain("AND (sa.id IS NULL OR sa.status NOT IN ('cancelled', 'no_show'))");
         expect(dashboard).toContain("exclude_dummy: 'true'");
     });
 

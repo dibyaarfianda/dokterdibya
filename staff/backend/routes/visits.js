@@ -19,7 +19,6 @@ router.get('/stats/daily', verifyToken, requirePermission('visits.view'), async 
                 FROM sunday_clinic_records scr
                 LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
                 WHERE (scr.queue_status IN ('selesai_periksa', 'lunas') OR sa.status = 'completed')
-                  AND (sa.id IS NULL OR sa.status NOT IN ('cancelled', 'no_show'))
             `;
             const params = [];
 
