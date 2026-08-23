@@ -57,6 +57,8 @@ describe('Sunday Clinic closing persistence', () => {
         expect(sql).toContain('COALESCE(sa.appointment_date, DATE(scr.created_at)) = ?');
         expect(sql).toContain('b.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id');
         expect(sql).toContain('ab.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id');
+        expect(sql).toContain('sa.status AS appointment_status');
+        expect(sql).toContain("sa.status NOT IN ('cancelled', 'no_show')");
         expect(sql).toContain('b.pending_changes');
         expect(sql).toContain('FROM sunday_clinic_billing_revisions br');
         expect(sql).toContain("br.status = 'pending'");

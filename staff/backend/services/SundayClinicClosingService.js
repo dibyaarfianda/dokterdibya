@@ -133,6 +133,30 @@ function createIssue(code, message, details = {}) {
     return { code, message, ...details };
 }
 
+const INACTIVE_APPOINTMENT_STATUSES = new Set(['cancelled', 'canceled', 'no_show']);
+
+function hasLinkedBilling(record = {}) {
+    return record.billing_id !== null && record.billing_id !== undefined && record.billing_id !== '';
+}
+
+function isInactiveUnbilledClosingRecord(record = {}) {
+    if (hasLinkedBilling(record)) return false;
+    const appointmentStatus = String(record.appointment_status || '').trim().toLowerCase();
+    return INACTIVE_APPOINTMENT_STATUSES.has(appointmentStatus);
+}
+
+function recordsRequiredForClosing(records = []) {
+    return records.filter(record => !isInactiveUnbilledClosingRecord(record));
+}
+
+function inactiveUnbilledRecordSql(appointmentAlias = 'sa', billingAlias = 'b') {
+    return `(
+        ${billingAlias}.id IS NOT NULL
+        OR ${appointmentAlias}.id IS NULL
+        OR ${appointmentAlias}.status NOT IN ('cancelled', 'no_show')
+    )`;
+}
+
 function buildClosingPreview({
     clinicDate,
     records = [],
@@ -143,7 +167,8 @@ function buildClosingPreview({
     pendingPayments = [],
     pendingRevisions = []
 } = {}) {
-    const recordByMrId = new Map(records.map(record => [String(record.mr_id), record]));
+    const closingRecords = recordsRequiredForClosing(records);
+    const recordByMrId = new Map(closingRecords.map(record => [String(record.mr_id), record]));
     const mainByMrId = new Map(mainBillings.map(billing => [String(billing.mr_id), billing]));
     const mainItemsByBilling = new Map();
     const additionalItemsByBilling = new Map();
@@ -161,7 +186,7 @@ function buildClosingPreview({
         additionalItemsByBilling.get(key).push(normalizeItem(item));
     }
 
-    for (const record of records) {
+    for (const record of closingRecords) {
         const billing = record.billing_id
             ? mainBillings.find(item => String(item.id) === String(record.billing_id))
             : mainByMrId.get(String(record.mr_id));
@@ -307,7 +332,7 @@ function buildClosingPreview({
 
     const fingerprint = buildSourceFingerprint({
         clinicDate,
-        records: records.map(record => ({
+        records: closingRecords.map(record => ({
             mr_id: record.mr_id,
             patient_id: record.patient_id,
             billing_id: record.billing_id || null
@@ -357,7 +382,8 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
     const records = await queryRows(client, `
         SELECT scr.mr_id, scr.patient_id,
                COALESCE(NULLIF(p.full_name, ''), NULLIF(sa.patient_name, ''), scr.patient_id) AS patient_name,
-               b.id AS billing_id
+               b.id AS billing_id,
+               sa.status AS appointment_status
         FROM sunday_clinic_records scr
         LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
         LEFT JOIN patients p ON p.id = scr.patient_id
@@ -365,6 +391,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
                ON b.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id
         WHERE ${privateClinicFilter('scr')}
           AND ${serviceDateSql('scr', 'sa')} = ?
+          AND ${inactiveUnbilledRecordSql('sa', 'b')}
         ORDER BY scr.mr_id${lockClause}
     `, [clinicDate]);
 

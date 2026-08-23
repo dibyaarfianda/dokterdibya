@@ -114,6 +114,94 @@ describe('SundayClinicClosingService', () => {
         expect(preview.can_close).toBe(false);
     });
 
+    test('does not require billing for a cancelled leftover visit when the same patient already has a paid bill', () => {
+        const preview = buildClosingPreview({
+            clinicDate: '2026-08-23',
+            records: [
+                {
+                    mr_id: 'DRD1164',
+                    patient_id: 'P2026352',
+                    patient_name: 'Merly Asyifa Hasrinda',
+                    billing_id: null,
+                    appointment_status: 'cancelled'
+                },
+                {
+                    mr_id: 'DRD1181',
+                    patient_id: 'P2026352',
+                    patient_name: 'Merly Asyifa Hasrinda',
+                    billing_id: 944
+                }
+            ],
+            mainBillings: [paidMain({
+                id: 944,
+                mr_id: 'DRD1181',
+                patient_id: 'P2026352',
+                patient_name: 'Merly Asyifa Hasrinda',
+                total: 181500
+            })],
+            mainItems: [
+                { id: 1, billing_id: 944, item_type: 'tindakan', item_code: 'T01', item_name: 'USG', quantity: 1, price: 181500, total: 181500 }
+            ]
+        });
+
+        expect(preview.blockers).toEqual([]);
+        expect(preview.anomalies).toEqual([]);
+        expect(preview.can_close).toBe(true);
+        expect(preview.summary).toEqual({
+            main_total: 181500,
+            additional_total: 0,
+            grand_total: 181500,
+            patient_count: 1,
+            transaction_count: 1
+        });
+        expect(preview.fingerprint).toBe(buildClosingPreview({
+            clinicDate: '2026-08-23',
+            records: [{
+                mr_id: 'DRD1181',
+                patient_id: 'P2026352',
+                patient_name: 'Merly Asyifa Hasrinda',
+                billing_id: 944
+            }],
+            mainBillings: [paidMain({
+                id: 944,
+                mr_id: 'DRD1181',
+                patient_id: 'P2026352',
+                patient_name: 'Merly Asyifa Hasrinda',
+                total: 181500
+            })],
+            mainItems: [
+                { id: 1, billing_id: 944, item_type: 'tindakan', item_code: 'T01', item_name: 'USG', quantity: 1, price: 181500, total: 181500 }
+            ]
+        }).fingerprint);
+    });
+
+    test('still requires billing for a no-show leftover that later received a paid bill', () => {
+        const preview = buildClosingPreview({
+            clinicDate: '2026-08-23',
+            records: [{
+                mr_id: 'DRD2001',
+                patient_id: 'P2001',
+                patient_name: 'Pasien No Show',
+                billing_id: 81,
+                appointment_status: 'no_show'
+            }],
+            mainBillings: [paidMain({
+                id: 81,
+                mr_id: 'DRD2001',
+                patient_id: 'P2001',
+                patient_name: 'Pasien No Show',
+                total: 135000
+            })],
+            mainItems: [
+                { id: 1, billing_id: 81, item_type: 'tindakan', item_code: 'T01', item_name: 'USG', quantity: 1, price: 135000, total: 135000 }
+            ]
+        });
+
+        expect(preview.blockers).toEqual([]);
+        expect(preview.can_close).toBe(true);
+        expect(preview.summary.main_total).toBe(135000);
+    });
+
     test('flags inconsistent paid timestamps as payment anomalies', () => {
         const preview = buildClosingPreview({
             clinicDate: '2026-07-19',
