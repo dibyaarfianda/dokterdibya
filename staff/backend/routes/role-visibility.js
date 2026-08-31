@@ -26,7 +26,8 @@ const MENUS = [
     { key: 'ucapan_kelahiran', label: 'Ucapan Kelahiran', icon: 'fa-baby' },
     { key: 'staff_points', label: 'Point Staff', icon: 'fa-star' },
     { key: 'staff_briefing', label: 'Briefing Poli Minggu', icon: 'fa-clipboard-check' },
-    { key: 'staff_payroll', label: 'Gajian', icon: 'fa-money-check-alt' }
+    { key: 'staff_payroll', label: 'Gajian', icon: 'fa-money-check-alt' },
+    { key: 'bulk-upload-usg', label: 'Upload USG', icon: 'fa-cloud-upload-alt' }
 ];
 
 /**

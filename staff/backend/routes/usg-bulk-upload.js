@@ -14,13 +14,22 @@ const logger = require('../utils/logger');
 const r2Storage = require('../services/r2Storage');
 const { verifyToken } = require('../middleware/auth');
 const {
-    extractPatientName,
     extractDateFromFolder,
     isValidIsoDate,
     findBestNameMatches,
     getPatientsForDate,
-    resolveVisitRecord
+    resolveVisitRecord,
+    groupZipImageEntries
 } = require('../services/UsgBulkUploadMatchingService');
+
+function findZipEntry(zip, entryPath) {
+    const requested = String(entryPath || '');
+    const direct = zip.getEntry(requested);
+    if (direct) return direct;
+
+    const normalized = requested.replace(/\\/g, '/');
+    return zip.getEntries().find((entry) => String(entry.entryName || '').replace(/\\/g, '/') === normalized) || null;
+}
 
 // Configure multer for ZIP file upload (memory storage)
 const upload = multer({
@@ -66,59 +75,12 @@ router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) 
 
         // Extract ZIP file
         const zip = new AdmZip(req.file.buffer);
-        const zipEntries = zip.getEntries();
+        const { folderMap, detectedDate } = groupZipImageEntries(zip.getEntries());
 
-        // Group files by folder
-        const folderMap = new Map();
-        let detectedDate = null;
-
-        for (const entry of zipEntries) {
-            if (entry.isDirectory) continue;
-
-            const entryPath = entry.entryName;
-            const parts = entryPath.split('/').filter(p => p);
-
-            // Need at least folder/file structure
-            if (parts.length < 2) continue;
-
-            // Only include image files
-            const ext = path.extname(entry.entryName).toLowerCase();
-            if (!['.jpg', '.jpeg', '.png', '.gif', '.bmp'].includes(ext)) continue;
-
-            // Detect date from first folder if it looks like a date
-            if (!detectedDate) {
-                detectedDate = extractDateFromFolder(parts[0]);
-            }
-
-            // Determine patient folder based on structure
-            let patientFolder;
-
-            // Case 1: DDMMYYYY/PatientName/file.jpg (date folder at root)
-            if (parts[0].match(/^\d{8}$/) && parts.length >= 3) {
-                patientFolder = parts[1];
-            }
-            // Case 2: DDMMYYYY-PatientName/file.jpg (date prefix in folder name)
-            else if (parts[0].match(/^\d{8}-/)) {
-                patientFolder = parts[0];
-            }
-            // Case 3: PatientName/file.jpg (simple structure, no date)
-            else {
-                patientFolder = parts[0];
-            }
-
-            if (!folderMap.has(patientFolder)) {
-                folderMap.set(patientFolder, {
-                    folderName: patientFolder,
-                    files: [],
-                    extractedName: extractPatientName(patientFolder),
-                    dateFromFolder: extractDateFromFolder(patientFolder)
-                });
-            }
-
-            folderMap.get(patientFolder).files.push({
-                name: path.basename(entry.entryName),
-                path: entry.entryName,
-                size: entry.header.size
+        if (!folderMap.size) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tidak ada folder pasien yang terdeteksi di dalam ZIP. Pastikan ZIP berisi folder nama pasien dengan file foto di dalamnya.'
             });
         }
 
@@ -364,7 +326,7 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
 
                 // Upload each file in the folder
                 for (const file of files) {
-                    const entry = zip.getEntry(file.path);
+                    const entry = findZipEntry(zip, file.path);
                     if (!entry) continue;
 
                     const fileBuffer = entry.getData();

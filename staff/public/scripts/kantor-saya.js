@@ -215,8 +215,7 @@
     var REMOVED_WIDGET_IDS = {
         'online-users-mini': true,
         'point-saya': true,
-        'inventory-alert': true,
-        'bulk-upload-usg-page-launcher': true
+        'inventory-alert': true
     };
 
     var QUOTES = [
