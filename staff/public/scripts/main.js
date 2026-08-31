@@ -2004,7 +2004,7 @@ function showDocboardPage() {
     if (pages.docboard) {
         pages.docboard.classList.remove('d-none');
         const iframe = document.getElementById('docboard-iframe');
-        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v397';
+        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v398';
         const docboardUrl = `/docboard/?embed=${encodeURIComponent(embedVersion)}`;
         if (iframe && iframe.getAttribute('data-docboard-version') !== embedVersion) {
             localStorage.setItem('docboard_token', token);
@@ -2978,6 +2978,7 @@ async function applyMenuVisibility(user) {
         'obat_alkes': ['management-nav-kelola-obat', 'management-nav-kelola-tindakan'],
         'keuangan': ['nav-invoice-history'],
         'kelola_roles': ['management-nav-kelola-roles'],
+        'bulk-upload-usg': ['nav-bulk-upload-usg'],
         'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
         'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials'],
         'ruang_cerita': ['nav-ruang-cerita'],

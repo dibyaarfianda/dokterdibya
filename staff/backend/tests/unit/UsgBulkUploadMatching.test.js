@@ -36,7 +36,9 @@ const {
     extractPatientName,
     findBestNameMatches,
     getPatientsForDate,
-    resolveVisitRecord
+    resolveVisitRecord,
+    resolvePatientFolderFromEntryPath,
+    groupZipImageEntries
 } = require('../../services/UsgBulkUploadMatchingService');
 
 function createApp() {
@@ -127,10 +129,72 @@ describe('USG bulk upload patient matching regressions', () => {
         }));
     });
 
-    test('supports both legacy timestamp folders and simple patient folders', () => {
-        expect(extractPatientName('09082026-103314_NY. NIA')).toBe('NIA');
-        expect(extractPatientName('Nia')).toBe('NIA');
-        expect(extractPatientName('09082026/Nia')).toBe('NIA');
+    test('detects patient folders inside wrapped, nested, and Windows-style ZIP paths', () => {
+        expect(resolvePatientFolderFromEntryPath('USG 9 Agustus/09082026-103314_NY. NIA/image.jpg'))
+            .toBe('09082026-103314_NY. NIA');
+        expect(resolvePatientFolderFromEntryPath('09082026/Nia/Images/scan.jpg')).toBe('Nia');
+        expect(resolvePatientFolderFromEntryPath('09082026-103314_NY. NIA\\image.jpg'))
+            .toBe('09082026-103314_NY. NIA');
+        expect(resolvePatientFolderFromEntryPath('__MACOSX/09082026-103314_NY. NIA/._image.jpg'))
+            .toBeNull();
+    });
+
+    test('groups wrapped ZIP entries by the actual patient folder instead of the wrapper', async () => {
+        const zip = new AdmZip();
+        zip.addFile('USG 9 Agustus/09082026-103314_NY. NIA/image.jpg', Buffer.from('test-image'));
+        zip.addFile('__MACOSX/09082026-103314_NY. NIA/._image.jpg', Buffer.from('junk'));
+
+        const grouped = groupZipImageEntries(zip.getEntries());
+        expect(Array.from(grouped.folderMap.keys())).toEqual(['09082026-103314_NY. NIA']);
+        expect(grouped.detectedDate).toBe('2026-08-09');
+
+        const response = await request(createApp())
+            .post('/api/usg-bulk-upload/preview')
+            .field('hospital', 'klinik_private')
+            .field('date', '2026-08-09')
+            .attach('zipFile', zip.toBuffer(), {
+                filename: 'wrapped-usg.zip',
+                contentType: 'application/zip'
+            });
+
+        expect(response.status).toBe(200);
+        expect(response.body.folders[0]).toEqual(expect.objectContaining({
+            folderName: '09082026-103314_NY. NIA',
+            extractedName: 'NIA',
+            status: 'matched'
+        }));
+    });
+
+    test('rejects a ZIP with no detectable patient photo folders', async () => {
+        const zip = new AdmZip();
+        zip.addFile('readme.txt', Buffer.from('no photos'));
+
+        const response = await request(createApp())
+            .post('/api/usg-bulk-upload/preview')
+            .field('hospital', 'klinik_private')
+            .field('date', '2026-08-09')
+            .attach('zipFile', zip.toBuffer(), {
+                filename: 'empty-usg.zip',
+                contentType: 'application/zip'
+            });
+
+        expect(response.status).toBe(400);
+        expect(response.body.message).toMatch(/tidak ada folder pasien yang terdeteksi/i);
+    });
+
+    test('staff panel keeps the Upload USG widget detectable in Kantor Saya', () => {
+        const kantorSaya = fs.readFileSync(
+            path.resolve(__dirname, '../../../public/scripts/kantor-saya.js'),
+            'utf8'
+        );
+        const removedBlock = kantorSaya.match(/var REMOVED_WIDGET_IDS = \{[\s\S]*?\};/)[0];
+
+        expect(kantorSaya).toContain("'bulk-upload-usg-page-launcher': buildPageLauncherWidgetDef");
+        expect(removedBlock).not.toContain('bulk-upload-usg-page-launcher');
+        expect(fs.readFileSync(
+            path.resolve(__dirname, '../../../public/index-adminlte.html'),
+            'utf8'
+        )).toContain('id="nav-bulk-upload-usg"');
     });
 
     test.each([

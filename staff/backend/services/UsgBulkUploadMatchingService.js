@@ -39,6 +39,105 @@ function extractDateFromFolder(folderName) {
     return isoDate;
 }
 
+const USG_IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tif', '.tiff']);
+const GENERIC_USG_FOLDER_NAMES = new Set([
+    'images', 'image', 'img', 'imgs', 'pictures', 'picture', 'photos', 'photo',
+    'scan', 'scans', 'report', 'reports', 'export', 'exports', 'dcim', 'dicom',
+    'print', 'prints', 'screen', 'screenshots'
+]);
+
+function normalizeZipPath(entryPath) {
+    return String(entryPath || '').replace(/\\/g, '/');
+}
+
+function getFileExtension(fileName) {
+    const base = String(fileName || '').split('/').pop() || '';
+    const dot = base.lastIndexOf('.');
+    return dot >= 0 ? base.slice(dot).toLowerCase() : '';
+}
+
+function isUsgImageFile(fileName) {
+    return USG_IMAGE_EXTENSIONS.has(getFileExtension(fileName));
+}
+
+function isJunkZipPart(part) {
+    const value = String(part || '');
+    const lowered = value.toLowerCase();
+    return !value
+        || lowered === '__macosx'
+        || lowered === '.ds_store'
+        || lowered === 'thumbs.db'
+        || value.startsWith('._');
+}
+
+function isDateOnlyFolder(name) {
+    return /^\d{8}$/.test(String(name || ''));
+}
+
+function looksLikePatientFolder(name) {
+    const value = String(name || '').trim();
+    if (!value || isJunkZipPart(value) || isDateOnlyFolder(value)) return false;
+    return !GENERIC_USG_FOLDER_NAMES.has(value.toLowerCase());
+}
+
+function resolvePatientFolderFromEntryPath(entryPath) {
+    const parts = normalizeZipPath(entryPath).split('/').filter(Boolean);
+    if (parts.length < 2 || parts.some(isJunkZipPart)) return null;
+
+    const fileName = parts[parts.length - 1];
+    if (!isUsgImageFile(fileName)) return null;
+
+    const folders = parts.slice(0, -1);
+    for (let index = folders.length - 1; index >= 0; index -= 1) {
+        if (looksLikePatientFolder(folders[index])) return folders[index];
+    }
+    return null;
+}
+
+function detectDateFromZipPath(entryPath) {
+    const parts = normalizeZipPath(entryPath).split('/').filter(Boolean);
+    for (const part of parts) {
+        const detected = extractDateFromFolder(part);
+        if (detected) return detected;
+    }
+    return null;
+}
+
+function groupZipImageEntries(entries) {
+    const folderMap = new Map();
+    let detectedDate = null;
+
+    for (const entry of entries || []) {
+        if (entry?.isDirectory) continue;
+
+        const entryPath = entry.entryName || entry.name || '';
+        const patientFolder = resolvePatientFolderFromEntryPath(entryPath);
+        if (!patientFolder) continue;
+
+        if (!detectedDate) {
+            detectedDate = detectDateFromZipPath(entryPath);
+        }
+
+        if (!folderMap.has(patientFolder)) {
+            folderMap.set(patientFolder, {
+                folderName: patientFolder,
+                files: [],
+                extractedName: extractPatientName(patientFolder),
+                dateFromFolder: extractDateFromFolder(patientFolder)
+            });
+        }
+
+        const fileName = normalizeZipPath(entryPath).split('/').filter(Boolean).pop();
+        folderMap.get(patientFolder).files.push({
+            name: fileName,
+            path: entryPath,
+            size: entry.header?.size || entry.size || 0
+        });
+    }
+
+    return { folderMap, detectedDate };
+}
+
 function levenshtein(left, right) {
     const a = String(left || '');
     const b = String(right || '');
@@ -247,6 +346,8 @@ module.exports = {
     isValidIsoDate,
     extractPatientName,
     extractDateFromFolder,
+    resolvePatientFolderFromEntryPath,
+    groupZipImageEntries,
     scoreNameMatch,
     findBestNameMatches,
     deduplicateVisitCandidates,
