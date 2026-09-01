@@ -6,6 +6,10 @@
     var DEFAULT_ACTIVE_NAV = 'beranda';
     var DEFAULT_HOME_URL = '/patient-menu.html';
     var RUANG_BACA_BADGE_KEY = 'patient_ruang_baca_opened_v1';
+    var PORTAL_SETTINGS_CACHE_KEY = 'patient_portal_settings';
+    var PORTAL_NICKNAME_KEY_PREFIX = 'patient_portal_nickname:';
+    var MIN_PORTAL_NICKNAME_LENGTH = 3;
+    var MAX_PORTAL_NICKNAME_LENGTH = 40;
     var state = window.__patientToolShellState || {
         initialized: false,
         activeNav: DEFAULT_ACTIVE_NAV,
@@ -68,6 +72,91 @@
 
     function getStoredPatient() {
         try { return JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) { return {}; }
+    }
+
+    function getCurrentPatientId() {
+        var user = getStoredPatient() || {};
+        return String(user.id || user.patient_id || user.medicalRecordId || user.medical_record_id || '').trim();
+    }
+
+    function normalizePortalNickname(value) {
+        return String(value == null ? '' : value).trim();
+    }
+
+    function isValidPortalNickname(value) {
+        var nickname = normalizePortalNickname(value);
+        return nickname.length >= MIN_PORTAL_NICKNAME_LENGTH && nickname.length <= MAX_PORTAL_NICKNAME_LENGTH;
+    }
+
+    function readStoredSettingsCache() {
+        try {
+            return JSON.parse(localStorage.getItem(PORTAL_SETTINGS_CACHE_KEY) || 'null');
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function writeLocalNickname(patientId, nickname) {
+        var id = String(patientId || '').trim();
+        var value = normalizePortalNickname(nickname);
+        if (!id || !isValidPortalNickname(value)) return '';
+        try { localStorage.setItem(PORTAL_NICKNAME_KEY_PREFIX + id, value); } catch (error) {}
+        return value;
+    }
+
+    function readLocalNickname(patientId) {
+        var id = String(patientId || '').trim();
+        if (id) {
+            try {
+                var keyed = normalizePortalNickname(localStorage.getItem(PORTAL_NICKNAME_KEY_PREFIX + id));
+                if (keyed) return keyed;
+            } catch (error) {}
+        }
+        var cached = readStoredSettingsCache();
+        var cachedNickname = normalizePortalNickname(cached && cached.nickname);
+        if (!cachedNickname) return '';
+        var cachedId = String(cached && cached.patient_id || '').trim();
+        if (id && cachedNickname && (!cachedId || cachedId === id)) {
+            writeLocalNickname(id, cachedNickname);
+            return cachedNickname;
+        }
+        return '';
+    }
+
+    function settingsFromCache(cached, patientId) {
+        if (!cached) return null;
+        var copy = Object.assign({}, cached);
+        var cachedId = String(cached.patient_id || '').trim();
+        var currentId = String(patientId || '').trim();
+        if (!cachedId || (currentId && cachedId !== currentId)) {
+            copy.nickname = null;
+        }
+        return copy;
+    }
+
+    function mergePortalSettingsPreserveLocalNickname(current, incoming, patientId) {
+        var next = Object.assign({}, current || {}, incoming || {});
+        var incomingPatientId = String(next.patient_id || '').trim();
+        var currentId = String(patientId || '').trim();
+        var incomingNickname = normalizePortalNickname(next.nickname);
+        if (incomingNickname && incomingPatientId && currentId && incomingPatientId !== currentId) {
+            incomingNickname = '';
+        }
+        if (incomingNickname && isValidPortalNickname(incomingNickname)) {
+            writeLocalNickname(currentId, incomingNickname);
+            next.nickname = incomingNickname;
+        } else {
+            var localNickname = readLocalNickname(currentId);
+            next.nickname = localNickname || null;
+        }
+        next.patient_id = currentId || incomingPatientId || null;
+        return next;
+    }
+
+    function applyPortalSettings(settings) {
+        state.portalSettings = mergePortalSettingsPreserveLocalNickname(state.portalSettings, settings, getCurrentPatientId());
+        try { localStorage.setItem(PORTAL_SETTINGS_CACHE_KEY, JSON.stringify(state.portalSettings)); } catch (error) {}
+        return state.portalSettings;
     }
 
     function getToken() {
@@ -320,9 +409,10 @@
 
     async function fetchPortalSettings() {
         var token = getToken();
-        var cached;
-        try { cached = JSON.parse(localStorage.getItem('patient_portal_settings') || 'null'); } catch (error) {}
-        if (cached) state.portalSettings = Object.assign({}, state.portalSettings, cached);
+        var cached = settingsFromCache(readStoredSettingsCache(), getCurrentPatientId());
+        var localNickname = readLocalNickname(getCurrentPatientId());
+        if (cached) applyPortalSettings(cached);
+        if (localNickname) applyPortalSettings({ nickname: localNickname });
         if (isMockToken(token)) return state.portalSettings;
 
         var response = await fetch('/api/patients/portal-settings?_t=' + Date.now(), {
@@ -335,8 +425,7 @@
         if (!response.ok) throw new Error('portal settings failed');
         var data = await response.json().catch(function () { return {}; });
         if (data && data.success && data.settings) {
-            state.portalSettings = Object.assign({}, state.portalSettings, data.settings);
-            try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
+            applyPortalSettings(data.settings);
         }
         return state.portalSettings;
     }
@@ -400,13 +489,16 @@
         var nicknameEl = document.getElementById('portal-nickname');
         var soundEl = document.getElementById('portal-notification-sound');
         var payload = {
-            nickname: nicknameEl ? nicknameEl.value : '',
+            nickname: nicknameEl ? normalizePortalNickname(nicknameEl.value) : '',
             notification_sound: soundEl ? soundEl.value : 'default'
         };
+        if (!isValidPortalNickname(payload.nickname)) {
+            showShellToast('Nickname minimal 3 karakter dan maksimal 40 karakter.');
+            return;
+        }
+        applyPortalSettings(payload);
+        openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
         if (isMockToken(token)) {
-            state.portalSettings = Object.assign({}, state.portalSettings, payload);
-            try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
-            openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
             showShellToast('Pengaturan portal disimpan');
             return;
         }
@@ -421,12 +513,11 @@
             });
             var data = await response.json().catch(function () { return {}; });
             if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan gagal disimpan');
-            state.portalSettings = Object.assign({}, state.portalSettings, data.settings);
-            try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
+            applyPortalSettings(data.settings);
             openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
             showShellToast('Pengaturan portal disimpan');
         } catch (error) {
-            showShellToast(error.message || 'Pengaturan gagal disimpan');
+            showShellToast('Pengaturan disimpan di perangkat ini');
         }
     }
 
