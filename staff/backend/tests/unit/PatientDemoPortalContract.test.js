@@ -69,8 +69,10 @@ describe('patient demo portal isolation contract', () => {
         expect(manager).toContain('ROLE_IDS.DOKTER');
         expect(staffVersion).toBeTruthy();
         expect(staffSw).toContain(`const STAFF_PWA_VERSION = '${staffVersion}'`);
-        expect(patientMenu).toContain('20260814demo1');
-        expect(patientSw).toContain('20260814demo1');
+        const patientCacheVersion = patientSw.match(/const CACHE_VERSION = '([^']+)';/)?.[1];
+        expect(patientCacheVersion).toBeTruthy();
+        expect(patientMenu).toContain(patientCacheVersion);
+        expect(patientSw).toContain(`const CACHE_VERSION = '${patientCacheVersion}'`);
     });
 
     test('guard explicitly blocks external and unknown demo mutations', () => {

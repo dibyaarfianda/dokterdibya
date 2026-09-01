@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20260814demo1');
+importScripts('/sw.js?v=20260901nick1');
