@@ -14,6 +14,7 @@ tags:
   - name: Alarms
   - name: Notifications
   - name: Sync
+  - name: UsgUpload
 paths:
   /api/auth/login:
     post:
@@ -414,6 +415,126 @@ paths:
     get:
       tags: [Calendar]
       summary: Staff user list
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/hospitals:
+    get:
+      tags: [UsgUpload]
+      summary: Hospital list for USG bulk upload
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/patients:
+    get:
+      tags: [UsgUpload]
+      summary: Patients for a USG date and hospital
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: hospital
+          in: query
+          required: true
+          schema: { $ref: "#/components/schemas/Location" }
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/history:
+    get:
+      tags: [UsgUpload]
+      summary: Bulk USG upload history
+      parameters:
+        - name: hospital
+          in: query
+          schema: { $ref: "#/components/schemas/Location" }
+        - name: startDate
+          in: query
+          schema: { type: string, format: date }
+        - name: endDate
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/bot/config:
+    get:
+      tags: [UsgUpload]
+      summary: Sunday 21:00 USG bot schedule config
+      responses:
+        "200": { description: OK }
+    put:
+      tags: [UsgUpload]
+      summary: Save ZIP sources for Sunday 21:00 or on-demand schedule run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled: { type: boolean }
+                sources:
+                  type: array
+                  items:
+                    type: object
+                    required: [hospital, zipUrl]
+                    properties:
+                      hospital: { $ref: "#/components/schemas/Location" }
+                      zipUrl: { type: string, format: uri }
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/bot/schedule:
+    get:
+      tags: [UsgUpload]
+      summary: Next Sunday 21:00 WIB USG upload schedule
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/bot/schedule/run-now:
+    post:
+      tags: [UsgUpload]
+      summary: Run configured Sunday USG ZIP sources now
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date: { type: string, format: date }
+                dryRun: { type: boolean }
+                force: { type: boolean }
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/bot/run:
+    post:
+      tags: [UsgUpload]
+      summary: Preview and upload unique USG folder matches from a ZIP URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [zipUrl, hospital]
+              properties:
+                zipUrl: { type: string, format: uri }
+                hospital: { $ref: "#/components/schemas/Location" }
+                date: { type: string, format: date }
+                dryRun: { type: boolean }
+                force: { type: boolean }
+                waitMs: { type: integer }
+      responses:
+        "200": { description: Completed or skipped }
+        "202": { description: Job still running; poll GET /bot/jobs/{id} }
+  /api/usg-bulk-upload/bot/jobs:
+    get:
+      tags: [UsgUpload]
+      summary: Recent USG bot jobs
+      responses:
+        "200": { description: OK }
+  /api/usg-bulk-upload/bot/jobs/{id}:
+    get:
+      tags: [UsgUpload]
+      summary: USG bot job status
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
       responses:
         "200": { description: OK }
 components:

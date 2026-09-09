@@ -173,7 +173,61 @@ GET /api/docboard/analytics/clinic?period=30d
 GET /api/docboard/users
 ```
 
-### 6. Jangan dipakai kecuali diminta eksplisit oleh dokter yang berwenang
+### 6. Bulk Upload USG (menu Staff Panel)
+
+Grok **tidak mengirim file ZIP** lewat chat. Pakai tautan unduhan HTTPS (`zipUrl`). Struktur ZIP sama seperti menu Bulk Upload USG: folder per pasien berisi `.jpg/.png`.
+
+Hanya folder **match unik** yang diunggah otomatis. `multiple_matches`, `no_match`, dan yang belum punya DRD dilaporkan di `needsReview` — jangan tebak pasien.
+
+Tanggal default = Minggu terdekat (hari ini jika hari Minggu, timezone `Asia/Jakarta`).
+
+```http
+GET /api/usg-bulk-upload/hospitals
+GET /api/usg-bulk-upload/patients?date=YYYY-MM-DD&hospital=klinik_private
+GET /api/usg-bulk-upload/history?hospital=&startDate=&endDate=
+GET /api/usg-bulk-upload/bot/config
+PUT /api/usg-bulk-upload/bot/config
+GET /api/usg-bulk-upload/bot/schedule
+POST /api/usg-bulk-upload/bot/run
+POST /api/usg-bulk-upload/bot/schedule/run-now
+GET /api/usg-bulk-upload/bot/jobs
+GET /api/usg-bulk-upload/bot/jobs/{id}
+```
+
+**Saat diminta sekarang** — wajib `zipUrl` + `hospital`. Opsional: `date`, `dryRun`, `force`, `waitMs`.
+
+```http
+POST /api/usg-bulk-upload/bot/run
+Content-Type: application/json
+{
+  "zipUrl": "https://drive.google.com/file/d/FILE_ID/view",
+  "hospital": "klinik_private",
+  "date": "2026-09-06",
+  "dryRun": false,
+  "force": false
+}
+```
+
+Jika `status` masih `queued` / `downloading` / `previewing` / `uploading`, poll `GET /bot/jobs/{id}` sampai `completed` atau `failed`.
+
+Jika server menjawab `already_uploaded`, jangan ulang kecuali dokter minta paksa (`force: true`).
+
+**Jadwal Minggu 21.00 WIB** — server cron `0 21 * * 0` Asia/Jakarta. Bot juga boleh memicu `POST /bot/schedule/run-now` jika dokter minta. Syarat: config `enabled: true` dan `sources` berisi `hospital` + `zipUrl` yang sudah disiapkan (tautan ZIP yang tetap valid setiap minggu, atau di-update sebelum jam 21).
+
+```http
+PUT /api/usg-bulk-upload/bot/config
+{
+  "enabled": true,
+  "sources": [
+    { "hospital": "klinik_private", "zipUrl": "https://..." },
+    { "hospital": "rsia_melinda", "zipUrl": "https://..." }
+  ]
+}
+```
+
+Jangan pakai `POST /preview` atau `POST /execute` multipart dari Grok (khusus UI Staff Panel).
+
+### 7. Jangan dipakai kecuali diminta eksplisit oleh dokter yang berwenang
 
 - `/api/docboard/audit/gambiran*`
 - `/api/docboard/monitor/gambiran`
@@ -197,6 +251,8 @@ GET /api/docboard/users
 | Cari pasien / RM | `search-patient` lalu `lookup-rm` |
 | Briefing pagi | `GET /ai/briefing/{date}` |
 | Ada bentrok? | Bandingkan jam operasi vs space-schedules + alarms |
+| Upload USG sekarang | `POST /api/usg-bulk-upload/bot/run` lalu poll job |
+| Upload USG minggu malam 21.00 | pastikan `PUT /bot/config` enabled+sources, atau `POST /bot/schedule/run-now` |
 
 Saat merangkum pasien: sebut **inisial atau nama + RM**, lokasi, jam, diagnosis/jenis operasi. Jangan dump nomor HP atau hasil lab lengkap kecuali diminta.
 

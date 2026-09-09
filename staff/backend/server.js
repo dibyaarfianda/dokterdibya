@@ -859,6 +859,9 @@ logger.info('Appointment schedulers initialized');
 const operationDoctorJourneyScheduler = require('./services/OperationDoctorJourneyScheduler');
 operationDoctorJourneyScheduler.initScheduler();
 
+const usgBulkUploadBotScheduler = require('./services/UsgBulkUploadBotScheduler');
+usgBulkUploadBotScheduler.initScheduler();
+
 // Track socket emission volume for cost observability
 const _origIoEmit = io.emit.bind(io);
 let _socketEmitCount = 0;
