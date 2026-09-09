@@ -27,6 +27,10 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 (function initPatientMenuShell() {
         const CORNER_NAME_KEY = 'patient_my_corner_name';
         const TAP_SOUND_KEY = 'patient_tap_sound_enabled';
+        const PORTAL_SETTINGS_CACHE_KEY = 'patient_portal_settings';
+        const PORTAL_NICKNAME_KEY_PREFIX = 'patient_portal_nickname:';
+        const MIN_PORTAL_NICKNAME_LENGTH = 3;
+        const MAX_PORTAL_NICKNAME_LENGTH = 40;
         let currentProfile = null;
         let homeInfoItems = [];
         let homeAnnouncementDetailsById = {};
@@ -154,6 +158,85 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             return getPatientUser();
         }
 
+        function getCurrentPatientId() {
+            const user = getPatientUser() || currentProfile || {};
+            return String(user.id || user.patient_id || user.medicalRecordId || user.medical_record_id || '').trim();
+        }
+
+        function normalizePortalNickname(value) {
+            return String(value == null ? '' : value).trim();
+        }
+
+        function isValidPortalNickname(value) {
+            const nickname = normalizePortalNickname(value);
+            return nickname.length >= MIN_PORTAL_NICKNAME_LENGTH && nickname.length <= MAX_PORTAL_NICKNAME_LENGTH;
+        }
+
+        function readStoredSettingsCache() {
+            try {
+                return JSON.parse(localStorage.getItem(PORTAL_SETTINGS_CACHE_KEY) || 'null');
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function writeLocalNickname(patientId, nickname) {
+            const id = String(patientId || '').trim();
+            const value = normalizePortalNickname(nickname);
+            if (!id || !isValidPortalNickname(value)) return '';
+            try { localStorage.setItem(PORTAL_NICKNAME_KEY_PREFIX + id, value); } catch (error) {}
+            return value;
+        }
+
+        function readLocalNickname(patientId) {
+            const id = String(patientId || '').trim();
+            if (id) {
+                try {
+                    const keyed = normalizePortalNickname(localStorage.getItem(PORTAL_NICKNAME_KEY_PREFIX + id));
+                    if (keyed) return keyed;
+                } catch (error) {}
+            }
+            const cached = readStoredSettingsCache();
+            const cachedNickname = normalizePortalNickname(cached && cached.nickname);
+            if (!cachedNickname) return '';
+            const cachedId = String(cached && cached.patient_id || '').trim();
+            if (id && cachedNickname && (!cachedId || cachedId === id)) {
+                writeLocalNickname(id, cachedNickname);
+                return cachedNickname;
+            }
+            return '';
+        }
+
+        function settingsFromCache(cached, patientId) {
+            if (!cached) return null;
+            const copy = Object.assign({}, cached);
+            const cachedId = String(cached.patient_id || '').trim();
+            const currentId = String(patientId || '').trim();
+            if (!cachedId || (currentId && cachedId !== currentId)) {
+                copy.nickname = null;
+            }
+            return copy;
+        }
+
+        function mergePortalSettingsPreserveLocalNickname(current, incoming, patientId) {
+            const next = Object.assign({}, current || {}, incoming || {});
+            const incomingPatientId = String(next.patient_id || '').trim();
+            const currentId = String(patientId || '').trim();
+            let incomingNickname = normalizePortalNickname(next.nickname);
+            if (incomingNickname && incomingPatientId && currentId && incomingPatientId !== currentId) {
+                incomingNickname = '';
+            }
+            if (incomingNickname && isValidPortalNickname(incomingNickname)) {
+                writeLocalNickname(currentId, incomingNickname);
+                next.nickname = incomingNickname;
+            } else {
+                const localNickname = readLocalNickname(currentId);
+                next.nickname = localNickname || null;
+            }
+            next.patient_id = currentId || incomingPatientId || null;
+            return next;
+        }
+
         function renderGuestPromptBody(message) {
             return '<div class="settings-panel guest-prompt-panel">' +
                 '<div class="modal-empty guest-prompt-empty">' +
@@ -221,8 +304,8 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         }
 
         function applyPortalSettings(settings) {
-            portalSettings = Object.assign({}, portalSettings, settings || {});
-            try { localStorage.setItem('patient_portal_settings', JSON.stringify(portalSettings)); } catch (error) {}
+            portalSettings = mergePortalSettingsPreserveLocalNickname(portalSettings, settings, getCurrentPatientId());
+            try { localStorage.setItem(PORTAL_SETTINGS_CACHE_KEY, JSON.stringify(portalSettings)); } catch (error) {}
             const heroTitle = document.getElementById('hero-title');
             if (heroTitle) heroTitle.textContent = getPortalDisplayName(currentProfile || getStoredProfile()) + ', ini ruang Anda.';
         }
@@ -240,12 +323,13 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
         async function loadPortalSettings() {
             try {
-                let cached = null;
-                try { cached = JSON.parse(localStorage.getItem('patient_portal_settings') || 'null'); } catch (error) {}
+                const cached = settingsFromCache(readStoredSettingsCache(), getCurrentPatientId());
+                const localNickname = readLocalNickname(getCurrentPatientId());
                 if (cached) applyPortalSettings(cached);
+                if (localNickname) applyPortalSettings({ nickname: localNickname });
                 const settings = await fetchPortalSettings();
                 applyPortalSettings(settings);
-                return settings;
+                return portalSettings;
             } catch (error) {
                 if (error.message === 'unauthorized') throw error;
                 return portalSettings;
@@ -426,8 +510,14 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         async function savePortalSettings(event) {
             stopTopbarEvent(event);
             if (!requireRealPatient('Mode demo tidak menyimpan pengaturan akun pasien.', event)) return;
-            const nickname = document.getElementById('portal-nickname')?.value || '';
+            const nickname = normalizePortalNickname(document.getElementById('portal-nickname')?.value);
             const notificationSound = document.getElementById('portal-notification-sound')?.value || 'default';
+            if (!isValidPortalNickname(nickname)) {
+                showToast('Nickname minimal 3 karakter dan maksimal 40 karakter.', 'warning');
+                return;
+            }
+            applyPortalSettings({ nickname: nickname, notification_sound: notificationSound });
+            openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
             try {
                 const response = await fetch('/api/patients/portal-settings', {
                     method: 'PUT',
@@ -447,7 +537,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                 openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
                 showToast('Pengaturan portal disimpan');
             } catch (error) {
-                showToast(error.message || 'Pengaturan gagal disimpan');
+                showToast('Pengaturan disimpan di perangkat ini');
             }
         }
 
@@ -470,31 +560,38 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         }
 
         async function ensurePortalNicknameOnLogin() {
-            const existingNickname = String(portalSettings.nickname || '').trim();
-            if (existingNickname) return true;
+            const existingNickname = normalizePortalNickname(portalSettings.nickname || readLocalNickname(getCurrentPatientId()));
+            if (isValidPortalNickname(existingNickname)) {
+                applyPortalSettings({ nickname: existingNickname });
+                return true;
+            }
 
             const ruleText = 'Nickname wajib diisi sebelum menggunakan portal.\n\nAturan nickname:\n- minimal 3 karakter\n- tidak boleh mengandung kata kotor/vulgar\n- tidak boleh mengandung nama staff atau nama Dr. Dibya Arfianda';
 
             for (let attempt = 0; attempt < 5; attempt += 1) {
                 const input = window.prompt(ruleText);
-                const candidate = String(input || '').trim();
+                const candidate = normalizePortalNickname(input);
                 if (!candidate) {
                     window.alert('Nickname wajib diisi.');
                     continue;
                 }
+                if (!isValidPortalNickname(candidate)) {
+                    window.alert('Nickname minimal 3 karakter dan maksimal 40 karakter.');
+                    continue;
+                }
 
+                applyPortalSettings({ nickname: candidate });
                 try {
                     const settings = await savePortalNicknameOnly(candidate, portalSettings.notification_sound || 'default');
                     applyPortalSettings(settings);
-                    showToast('Nickname berhasil disimpan');
-                    return true;
                 } catch (error) {
                     if (error.message === 'unauthorized') {
                         logout();
                         return false;
                     }
-                    window.alert(error.message || 'Nickname tidak valid. Coba nama lain.');
                 }
+                showToast('Nickname berhasil disimpan');
+                return true;
             }
 
             showToast('Nickname wajib diisi untuk melanjutkan.', 'warning');
@@ -2955,7 +3052,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260814demo1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260901nick1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});
