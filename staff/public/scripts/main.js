@@ -1602,57 +1602,67 @@ function startHospitalExam(appointmentId, patientId, patientName) {
     modal.on('hidden.bs.modal', function() { this.remove(); });
 }
 
+// Shared walk-in helper: reuse today's DRD at this location, or create one.
+async function resolveOrCreateWalkInRecord(patientId, location, category) {
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error('Sesi login berakhir. Silakan login ulang.');
+    }
+
+    const visitLocation = location || 'klinik_private';
+    const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${visitLocation}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const checkResult = await checkRes.json();
+
+    if (checkResult.success && checkResult.existingMrId) {
+        console.log('[WalkIn] Using existing DRD:', checkResult.existingMrId);
+        return {
+            mrId: checkResult.existingMrId,
+            status: checkResult.status,
+            location: visitLocation,
+            created: false
+        };
+    }
+
+    const createRes = await fetch('/api/sunday-clinic/start-walk-in', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            patient_id: patientId,
+            category: category,
+            location: visitLocation
+        })
+    });
+
+    if (!createRes.ok) {
+        const errData = await createRes.json().catch(() => ({}));
+        throw new Error(errData.message || 'Gagal membuat rekam medis');
+    }
+
+    const createResult = await createRes.json();
+    const mrId = createResult.data?.mrId || createResult.mrId || createResult.mr_id;
+    if (!mrId) {
+        throw new Error('Tidak dapat menentukan MR ID');
+    }
+
+    console.log('[WalkIn] Created new DRD:', mrId);
+    return {
+        mrId,
+        status: createResult.data?.status || 'draft',
+        location: visitLocation,
+        created: true
+    };
+}
+
 // Internal: check existing DRD or create new one, then redirect
 async function _startHospitalRecord(patientId, patientName, location, category) {
     try {
-        const token = getAuthToken();
-        if (!token) {
-            alert('Sesi login berakhir. Silakan login ulang.');
-            return;
-        }
+        const record = await resolveOrCreateWalkInRecord(patientId, location, category);
 
-        // 1. Check for existing DRD today at this location
-        const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${location}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const checkResult = await checkRes.json();
-
-        let mrId;
-
-        if (checkResult.success && checkResult.existingMrId) {
-            // Use existing DRD
-            mrId = checkResult.existingMrId;
-            console.log('[HospitalExam] Using existing DRD:', mrId);
-        } else {
-            // 2. Create new DRD via start-walk-in
-            const createRes = await fetch('/api/sunday-clinic/start-walk-in', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    patient_id: patientId,
-                    category: category,
-                    location: location
-                })
-            });
-
-            if (!createRes.ok) {
-                const errData = await createRes.json().catch(() => ({}));
-                throw new Error(errData.message || 'Gagal membuat rekam medis');
-            }
-
-            const createResult = await createRes.json();
-            mrId = createResult.data?.mrId || createResult.mrId || createResult.mr_id;
-            console.log('[HospitalExam] Created new DRD:', mrId);
-        }
-
-        if (!mrId) {
-            throw new Error('Tidak dapat menentukan MR ID');
-        }
-
-        // 3. Update session
         try {
             const { updateSessionPatient } = await import('./session-manager.js');
             updateSessionPatient({
@@ -1660,16 +1670,15 @@ async function _startHospitalRecord(patientId, patientName, location, category) 
                 patientId: patientId,
                 name: patientName,
                 sundayClinic: {
-                    mrId: mrId,
-                    location: location
+                    mrId: record.mrId,
+                    location: record.location
                 }
             });
         } catch (sessionError) {
             console.warn('Unable to update session:', sessionError);
         }
 
-        // 4. Redirect to Sunday Clinic page
-        await openHospitalRecordByMrId(patientId, patientName, location, mrId);
+        await openHospitalRecordByMrId(patientId, patientName, record.location, record.mrId);
 
     } catch (error) {
         console.error('[HospitalExam] Error:', error);
@@ -2004,7 +2013,7 @@ function showDocboardPage() {
     if (pages.docboard) {
         pages.docboard.classList.remove('d-none');
         const iframe = document.getElementById('docboard-iframe');
-        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v397';
+        const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v398';
         const docboardUrl = `/docboard/?embed=${encodeURIComponent(embedVersion)}`;
         if (iframe && iframe.getAttribute('data-docboard-version') !== embedVersion) {
             localStorage.setItem('docboard_token', token);
@@ -3533,8 +3542,6 @@ function restoreLastPage() {
 }
 
 // -------------------- START PATIENT VISIT (Walk-in) --------------------
-// NOTE: This function is DISABLED. Only PERIKSA button can create new DRD.
-// Use the PERIKSA button from Appointment page instead.
 async function startPatientVisit(patientId, patientName, location, category) {
     try {
         const token = getAuthToken();
@@ -3550,29 +3557,8 @@ async function startPatientVisit(patientId, patientName, location, category) {
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memeriksa...';
         }
 
-        // Check for existing DRD - DO NOT create new one (only PERIKSA can create)
-        const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${location || 'klinik_private'}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const checkResult = await checkRes.json();
+        const record = await resolveOrCreateWalkInRecord(patientId, location, category);
 
-        let mrId;
-        if (checkResult.success && checkResult.existingMrId) {
-            // Use existing DRD
-            mrId = checkResult.existingMrId;
-            console.log('[StartVisit] Using existing DRD:', mrId);
-        } else {
-            // No existing DRD - show error
-            alert('Pasien belum memiliki rekam medis hari ini.\n\nGunakan tombol PERIKSA di halaman Appointment untuk membuat rekam medis baru.');
-            // Reset button state
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-play-circle mr-1"></i> Mulai Kunjungan';
-            }
-            return;
-        }
-
-        // Update session with patient data
         try {
             const { updateSessionPatient } = await import('./session-manager.js');
             updateSessionPatient({
@@ -3580,9 +3566,9 @@ async function startPatientVisit(patientId, patientName, location, category) {
                 patientId: patientId,
                 name: patientName,
                 sundayClinic: {
-                    mrId: mrId,
-                    status: checkResult.status,
-                    location: location
+                    mrId: record.mrId,
+                    status: record.status,
+                    location: record.location
                 }
             });
         } catch (sessionError) {
@@ -3593,7 +3579,7 @@ async function startPatientVisit(patientId, patientName, location, category) {
         $('#patientDetailModal').modal('hide');
 
         // Redirect to Sunday Clinic page
-        window.location.href = buildSundayClinicAppUrl(mrId, 'identitas');
+        window.location.href = buildSundayClinicAppUrl(record.mrId, 'identitas');
 
     } catch (error) {
         console.error('Error starting patient visit:', error);
