@@ -1,0 +1,480 @@
+openapi: 3.0.3
+info:
+  title: DocBoard API for Grok Bot
+  version: "1.0.0"
+  description: Staff DocBoard endpoints for Grok custom actions. Authenticate with staff JWT from POST /api/auth/login.
+servers:
+  - url: https://dokterdibya.com
+security:
+  - bearerAuth: []
+tags:
+  - name: Calendar
+  - name: Surgery
+  - name: SpaceSchedules
+  - name: Alarms
+  - name: Notifications
+  - name: Sync
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Staff login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        "200":
+          description: Token in token or data.token
+  /api/docboard/today:
+    get:
+      tags: [Calendar]
+      summary: Today's practice data
+      responses:
+        "200": { description: OK }
+  /api/docboard/day/{date}:
+    get:
+      tags: [Calendar]
+      summary: Day detail with locations and patients
+      parameters:
+        - $ref: "#/components/parameters/DatePath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/calendar/{year}/{month}:
+    get:
+      tags: [Calendar]
+      summary: Calendar month grid
+      parameters:
+        - $ref: "#/components/parameters/YearPath"
+        - $ref: "#/components/parameters/MonthPath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/patients/{date}/{location}:
+    get:
+      tags: [Calendar]
+      summary: Patients for one date and location
+      parameters:
+        - $ref: "#/components/parameters/DatePath"
+        - $ref: "#/components/parameters/LocationPath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/schedules:
+    get:
+      tags: [Calendar]
+      summary: Practice schedules
+      responses:
+        "200": { description: OK }
+  /api/docboard/alarms/today:
+    get:
+      tags: [Alarms]
+      summary: Today's visible events and alarms
+      responses:
+        "200": { description: OK }
+  /api/docboard/ai/briefing/{date}:
+    get:
+      tags: [Calendar]
+      summary: AI morning briefing
+      parameters:
+        - $ref: "#/components/parameters/DatePath"
+        - name: refresh
+          in: query
+          schema: { type: boolean }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/upcoming:
+    get:
+      tags: [Surgery]
+      summary: Upcoming surgeries
+      parameters:
+        - name: days
+          in: query
+          schema: { type: integer, default: 7 }
+        - name: pastDays
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/day/{date}:
+    get:
+      tags: [Surgery]
+      summary: Surgeries for one day
+      parameters:
+        - $ref: "#/components/parameters/DatePath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/or-board:
+    get:
+      tags: [Surgery]
+      summary: OR board grouped by location
+      parameters:
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/calendar/{year}/{month}:
+    get:
+      tags: [Surgery]
+      summary: Surgery calendar month
+      parameters:
+        - $ref: "#/components/parameters/YearPath"
+        - $ref: "#/components/parameters/MonthPath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/operation-types:
+    get:
+      tags: [Surgery]
+      summary: Operation type catalog
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/search-patient:
+    get:
+      tags: [Surgery]
+      summary: Search patients by name
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/lookup-rm/{mrId}:
+    get:
+      tags: [Surgery]
+      summary: Lookup patient by RM / DRD
+      parameters:
+        - name: mrId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/{id}:
+    get:
+      tags: [Surgery]
+      summary: Surgery detail
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200": { description: OK }
+    put:
+      tags: [Surgery]
+      summary: Update surgery
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SurgeryPayload" }
+      responses:
+        "200": { description: OK }
+    delete:
+      tags: [Surgery]
+      summary: Delete surgery (dokter only)
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery:
+    post:
+      tags: [Surgery]
+      summary: Create surgery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SurgeryPayload" }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/{id}/status:
+    patch:
+      tags: [Surgery]
+      summary: Update surgery status
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [planned, confirmed, in_progress, completed, cancelled, postponed]
+                reason: { type: string }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/{id}/post-op-notes:
+    patch:
+      tags: [Surgery]
+      summary: Add post-op notes
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [post_op_notes]
+              properties:
+                post_op_notes: { type: string }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/analytics:
+    get:
+      tags: [Surgery]
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string, default: 30d }
+        - name: location
+          in: query
+          schema: { $ref: "#/components/schemas/Location" }
+      responses:
+        "200": { description: OK }
+  /api/docboard/surgery/analytics/outcomes:
+    get:
+      tags: [Surgery]
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string, default: 30d }
+      responses:
+        "200": { description: OK }
+  /api/docboard/space-schedules:
+    get:
+      tags: [SpaceSchedules]
+      parameters:
+        - name: space
+          in: query
+          schema: { $ref: "#/components/schemas/Space" }
+        - name: date
+          in: query
+          schema: { type: string, format: date }
+        - name: start
+          in: query
+          schema: { type: string, format: date }
+        - name: end
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        "200": { description: OK }
+    post:
+      tags: [SpaceSchedules]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [space, agenda, category, schedule_date]
+              properties:
+                space: { $ref: "#/components/schemas/Space" }
+                agenda: { type: string }
+                category: { type: string }
+                schedule_date: { type: string, format: date }
+                start_time: { type: string, example: "13:00" }
+                end_time: { type: string }
+                location: { type: string }
+                participants: { type: string }
+                notes: { type: string }
+                status: { type: string }
+      responses:
+        "200": { description: OK }
+  /api/docboard/space-schedules/calendar/{year}/{month}:
+    get:
+      tags: [SpaceSchedules]
+      parameters:
+        - $ref: "#/components/parameters/YearPath"
+        - $ref: "#/components/parameters/MonthPath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/space-schedules/{id}:
+    put:
+      tags: [SpaceSchedules]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agenda, category, schedule_date]
+              properties:
+                agenda: { type: string }
+                category: { type: string }
+                schedule_date: { type: string, format: date }
+                start_time: { type: string }
+                end_time: { type: string }
+                location: { type: string }
+                participants: { type: string }
+                notes: { type: string }
+      responses:
+        "200": { description: OK }
+    delete:
+      tags: [SpaceSchedules]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/space-schedules/{id}/status:
+    patch:
+      tags: [SpaceSchedules]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [scheduled, confirmed, done]
+      responses:
+        "200": { description: OK }
+  /api/docboard/notifications:
+    get:
+      tags: [Notifications]
+      responses:
+        "200": { description: OK }
+  /api/docboard/notifications/unread-count:
+    get:
+      tags: [Notifications]
+      responses:
+        "200": { description: OK }
+  /api/docboard/notifications/read-all:
+    patch:
+      tags: [Notifications]
+      responses:
+        "200": { description: OK }
+  /api/docboard/notifications/{id}/read:
+    patch:
+      tags: [Notifications]
+      parameters:
+        - $ref: "#/components/parameters/IdPath"
+      responses:
+        "200": { description: OK }
+  /api/docboard/preferences:
+    get:
+      tags: [Notifications]
+      responses:
+        "200": { description: OK }
+    put:
+      tags: [Notifications]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        "200": { description: OK }
+  /api/docboard/sync/status:
+    get:
+      tags: [Sync]
+      responses:
+        "200": { description: OK }
+  /api/docboard/sync/{location}:
+    post:
+      tags: [Sync]
+      summary: Manual sync. Bhayangkara is not supported.
+      parameters:
+        - $ref: "#/components/parameters/LocationPath"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date: { type: string, format: date }
+      responses:
+        "200": { description: OK }
+  /api/docboard/analytics/clinic:
+    get:
+      tags: [Calendar]
+      parameters:
+        - name: period
+          in: query
+          schema: { type: string, default: 30d }
+      responses:
+        "200": { description: OK }
+  /api/docboard/users:
+    get:
+      tags: [Calendar]
+      summary: Staff user list
+      responses:
+        "200": { description: OK }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DatePath:
+      name: date
+      in: path
+      required: true
+      schema: { type: string, format: date }
+    YearPath:
+      name: year
+      in: path
+      required: true
+      schema: { type: integer }
+    MonthPath:
+      name: month
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1, maximum: 12 }
+    LocationPath:
+      name: location
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/Location" }
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+  schemas:
+    Location:
+      type: string
+      enum: [klinik_private, rsia_melinda, rsud_gambiran, rs_bhayangkara]
+    Space:
+      type: string
+      enum: [ilmiah, pribadi, tindakan]
+    SurgeryPayload:
+      type: object
+      properties:
+        patient_name: { type: string }
+        diagnosis: { type: string }
+        location: { $ref: "#/components/schemas/Location" }
+        surgery_date: { type: string, format: date }
+        operation_type_id: { type: integer }
+        operation_type_other: { type: string }
+        patient_id: { type: string }
+        mr_id: { type: string }
+        patient_age: { type: integer }
+        surgery_time: { type: string }
+        estimated_duration_min: { type: integer }
+        anesthesia_type: { type: string }
+        asa_score: { type: integer }
+        npo_status: { type: string }
+        lab_results: { type: string }
+        usg_results: { type: string }
+        radiology_results: { type: string }
+        special_notes: { type: string }
+        team_members: {}
+      required: [patient_name, diagnosis, location, surgery_date]
