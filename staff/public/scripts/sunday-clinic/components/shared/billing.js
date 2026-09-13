@@ -1,3 +1,5 @@
+import { isSuperadminUser } from '../../../role-constants.js';
+
 /**
  * Billing Component (Shared / Tagihan)
  * Billing items, payments, invoice
@@ -45,6 +47,7 @@ const ADDITIONAL_BILLING_ADD_ONS = [
 
 let additionalBillingModalState = null;
 let additionalBillingPaymentState = null;
+let billingCancellationState = null;
 
 function getAdditionalBillingToken() {
     return window.getToken?.();
@@ -79,6 +82,111 @@ function setAdditionalBillingModalError(message = '') {
     if (!errorElement) return;
     errorElement.textContent = message;
     errorElement.style.display = message ? 'block' : 'none';
+}
+
+function canCancelBilling(billing) {
+    return isSuperadminUser(window.currentStaffIdentity)
+        && Boolean(billing?.id)
+        && (billing?.status === 'draft' || billing?.status === 'confirmed')
+        && !billing?.has_pending_payment;
+}
+
+function ensureBillingCancellationModal() {
+    let modal = document.getElementById('billing-cancellation-modal');
+    if (modal) return modal;
+
+    document.body.insertAdjacentHTML('beforeend', `
+        <div class="modal fade" id="billing-cancellation-modal" tabindex="-1" role="dialog" aria-labelledby="billingCancellationModalTitle" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="billingCancellationModalTitle">Batalkan Invoice</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="billing-cancellation-error" class="alert alert-danger" role="alert" style="display:none;"></div>
+                        <dl class="row mb-3">
+                            <dt class="col-4">Invoice</dt><dd class="col-8" id="billing-cancellation-reference"></dd>
+                            <dt class="col-4">Pasien</dt><dd class="col-8" id="billing-cancellation-patient"></dd>
+                            <dt class="col-4">Nominal asli</dt><dd class="col-8" id="billing-cancellation-total"></dd>
+                        </dl>
+                        <div class="form-group mb-0">
+                            <label for="billing-cancellation-reason">Alasan pembatalan <span class="text-danger">*</span></label>
+                            <textarea id="billing-cancellation-reason" class="form-control" rows="3" maxlength="2000" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Kembali</button>
+                        <button type="button" class="btn btn-danger" id="billing-cancellation-submit">Lanjutkan Pembatalan</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `);
+    modal = document.getElementById('billing-cancellation-modal');
+    document.getElementById('billing-cancellation-submit').addEventListener('click', submitBillingCancellation);
+    return modal;
+}
+
+function openBillingCancellationModal(billing, patientName, additional = false) {
+    if (!canCancelBilling(billing) || !window.routeMrSlug) return;
+    const modal = ensureBillingCancellationModal();
+    billingCancellationState = {
+        mrId: window.routeMrSlug,
+        additionalBillingId: additional ? billing.id : null,
+        reference: additional ? billing.reference_number : (billing.invoice_number || billing.mr_id || window.routeMrSlug),
+        patientName: patientName || '-',
+        total: Number(billing.total || 0)
+    };
+    document.getElementById('billing-cancellation-reference').textContent = billingCancellationState.reference;
+    document.getElementById('billing-cancellation-patient').textContent = billingCancellationState.patientName;
+    document.getElementById('billing-cancellation-total').textContent = formatRupiah(billingCancellationState.total);
+    document.getElementById('billing-cancellation-reason').value = '';
+    document.getElementById('billing-cancellation-error').style.display = 'none';
+    showModal(modal);
+}
+
+async function submitBillingCancellation() {
+    const state = billingCancellationState;
+    const reason = document.getElementById('billing-cancellation-reason').value.trim();
+    const errorElement = document.getElementById('billing-cancellation-error');
+    if (!state || !isSuperadminUser(window.currentStaffIdentity)) return;
+    if (!reason) {
+        errorElement.textContent = 'Alasan pembatalan wajib diisi.';
+        errorElement.style.display = 'block';
+        return;
+    }
+    if (!window.confirm(`Batalkan invoice ${state.reference} untuk ${state.patientName} sebesar ${formatRupiah(state.total)}? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+    const button = document.getElementById('billing-cancellation-submit');
+    const token = getAdditionalBillingToken();
+    if (!token) {
+        errorElement.textContent = 'Sesi staf tidak tersedia. Masuk kembali lalu coba lagi.';
+        errorElement.style.display = 'block';
+        return;
+    }
+    button.disabled = true;
+    try {
+        const path = state.additionalBillingId
+            ? `/api/sunday-clinic/billing/${encodeURIComponent(state.mrId)}/additional/${state.additionalBillingId}/cancel`
+            : `/api/sunday-clinic/billing/${encodeURIComponent(state.mrId)}/cancel`;
+        const response = await fetch(path, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result.success) throw new Error(result.message || 'Gagal membatalkan invoice.');
+        hideModal(document.getElementById('billing-cancellation-modal'));
+        billingCancellationState = null;
+        window.showSuccess?.(result.message || 'Invoice dibatalkan.');
+        refreshBillingSection();
+    } catch (error) {
+        errorElement.textContent = error.message || 'Gagal membatalkan invoice.';
+        errorElement.style.display = 'block';
+    } finally {
+        button.disabled = false;
+    }
 }
 
 function getAdditionalBillingItemMeta(item) {
@@ -455,6 +563,7 @@ function ensureAdditionalBillingEditorModal() {
 }
 
 async function openAdditionalBillingEditor(billing = null) {
+    if (billing && billing.status !== 'draft') return;
     const mrId = window.routeMrSlug;
     const token = getAdditionalBillingToken();
     if (!mrId || !token) return;
@@ -604,7 +713,7 @@ function ensureAdditionalBillingPaymentModal() {
 
 function openAdditionalBillingPaymentModal(billing) {
     const mrId = window.routeMrSlug;
-    if (!mrId || !billing?.id) return;
+    if (!mrId || !billing?.id || billing.status !== 'confirmed') return;
     const modal = ensureAdditionalBillingPaymentModal();
     additionalBillingPaymentState = { mrId, additionalBillingId: billing.id };
     document.getElementById('additional-billing-payment-method').value = 'cash';
@@ -618,6 +727,8 @@ async function runAdditionalBillingAction(action, billing) {
     const mrId = window.routeMrSlug;
     const token = getAdditionalBillingToken();
     if (!mrId || !token || !billing?.id) return;
+
+    if (billing.status === 'cancelled' && action !== 'print-invoice' && action !== 'print-etiket') return;
 
     if (action === 'edit') {
         await openAdditionalBillingEditor(billing);
@@ -666,6 +777,7 @@ async function runAdditionalBillingAction(action, billing) {
 function getAdditionalBillingStatusBadge(status) {
     if (status === 'confirmed') return '<span class="badge badge-success">Dikonfirmasi</span>';
     if (status === 'paid') return '<span class="badge badge-primary">Lunas</span>';
+    if (status === 'cancelled') return '<span class="badge badge-danger">Dibatalkan</span>';
     return '<span class="badge badge-warning">Draft</span>';
 }
 
@@ -683,16 +795,20 @@ function renderAdditionalBillingPanel(additionalBillings) {
             actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-primary" data-additional-billing-action="mark-paid" data-additional-billing-id="${billing.id}" title="Tandai lunas" aria-label="Tandai lunas"><i class="fas fa-money-bill-wave"></i></button>`);
         }
 
-        if (billing.status === 'confirmed' || billing.status === 'paid') {
+        if (canCancelBilling(billing)) {
+            actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-danger" data-additional-billing-action="cancel" data-additional-billing-id="${billing.id}" title="Batalkan invoice" aria-label="Batalkan invoice"><i class="fas fa-ban"></i></button>`);
+        }
+
+        if (billing.status === 'confirmed' || billing.status === 'paid' || billing.status === 'cancelled') {
             actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-success" data-additional-billing-action="print-invoice" data-additional-billing-id="${billing.id}" title="Cetak invoice" aria-label="Cetak invoice"><i class="fas fa-receipt"></i></button>`);
-            if (hasObat) {
+            if (hasObat && billing.status !== 'cancelled') {
                 actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-secondary" data-additional-billing-action="print-etiket" data-additional-billing-id="${billing.id}" title="Cetak etiket" aria-label="Cetak etiket"><i class="fas fa-tag"></i></button>`);
             }
         }
 
         return `
             <tr>
-                <td data-label="Referensi"><div class="additional-billing-value"><strong>${escapeHtml(billing.reference_number || '-')}</strong><small class="d-block text-muted">${escapeHtml(formatDateTime(billing.created_at))}</small></div></td>
+                <td data-label="Referensi"><div class="additional-billing-value"><strong>${escapeHtml(billing.reference_number || '-')}</strong><small class="d-block text-muted">${escapeHtml(formatDateTime(billing.created_at))}</small>${billing.status === 'cancelled' ? `<small class="d-block text-danger">Alasan: ${escapeHtml(billing.cancellation_reason || '-')}</small><small class="d-block text-muted">${escapeHtml(billing.cancelled_by_name || billing.cancelled_by || '-')} · ${escapeHtml(formatDateTime(billing.cancelled_at))}</small>` : ''}</div></td>
                 <td data-label="Item"><div class="additional-billing-value" title="${escapeHtml(itemSummary)}">${escapeHtml(itemSummary || '-')}</div></td>
                 <td data-label="Total" class="text-right font-weight-bold"><div class="additional-billing-value">${formatRupiah(billing.total)}</div></td>
                 <td data-label="Status" class="text-center"><div class="additional-billing-value">${getAdditionalBillingStatusBadge(billing.status)}</div></td>
@@ -1456,7 +1572,9 @@ export default {
         const items = billing.items || [];
         const status = billing.status || 'draft';
         const hasPendingPayment = !!billing.has_pending_payment;
-        const canEditBilling = status !== 'paid' && !(status === 'confirmed' && hasPendingPayment);
+        const canEditBilling = status !== 'paid' && status !== 'cancelled' && !(status === 'confirmed' && hasPendingPayment);
+        this.currentBilling = billing;
+        this.patientName = state.patientData?.fullName || state.patientData?.full_name || state.patientData?.name || billing.patient_name || '-';
 
         if (status === 'paid' && mrId) {
             try {
@@ -1533,6 +1651,8 @@ export default {
             statusBadge = `<span class="badge badge-success">Dikonfirmasi</span>`;
         } else if (status === 'paid') {
             statusBadge = `<span class="badge badge-primary">Lunas</span>`;
+        } else if (status === 'cancelled') {
+            statusBadge = `<span class="badge badge-danger">Dibatalkan</span>`;
         }
         const confirmedByHtml = (status === 'confirmed' || status === 'paid') && confirmedBy
             ? `<div class="sc-billing-meta sc-billing-meta-confirmed">
@@ -1548,6 +1668,16 @@ export default {
                    ${lastModifiedAt ? `<span class="text-muted ml-2">${lastModifiedAt}</span>` : ''}
                </div>`
             : '';
+        const cancellationHtml = status === 'cancelled'
+            ? `<div class="sc-billing-meta sc-billing-meta-cancelled text-danger">
+                   <i class="fas fa-ban mr-1"></i><strong>Invoice dibatalkan</strong>
+                   <span class="d-block">Alasan: ${escapeHtml(billing.cancellation_reason || '-')}</span>
+                   <span class="d-block">Oleh: ${escapeHtml(billing.cancelled_by_name || billing.cancelled_by || '-')} ${escapeHtml(formatDateTime(billing.cancelled_at))}</span>
+               </div>`
+            : '';
+        const cancelButtonHtml = canCancelBilling(billing)
+            ? `<button type="button" class="btn btn-outline-danger btn-sm flex-fill" id="btn-cancel-billing"><i class="fas fa-ban mr-1"></i>Batalkan Invoice</button>`
+            : '';
         const historyButtonHtml = billing.id
             ? `<button type="button" class="btn btn-outline-secondary btn-sm flex-fill sc-billing-history-action" id="btn-billing-audit-history">
                    <i class="fas fa-history mr-1"></i>Riwayat Perubahan
@@ -1562,6 +1692,7 @@ export default {
                     <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-confirm-billing">
                         <i class="fas fa-check mr-1"></i>Konfirmasi Tagihan
                     </button>
+                    ${cancelButtonHtml}
                     <button type="button" class="btn btn-secondary btn-sm flex-fill" id="btn-print-etiket" disabled>
                         <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
@@ -1579,6 +1710,7 @@ export default {
                     <button type="button" class="btn btn-info btn-sm flex-fill" id="btn-pay-online">
                         <i class="fas fa-qrcode mr-1"></i>Bayar Online
                     </button>
+                    ${cancelButtonHtml}
                     <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
                         <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
@@ -1602,6 +1734,14 @@ export default {
                     </button>
                     ${historyButtonHtml}
                     ${billing.printed_at ? '<span class="small text-muted align-self-center sc-billing-printed-state">Telah dicetak</span>' : ''}
+                </div>`;
+        } else if (status === 'cancelled') {
+            actionsHtml = `
+                <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
+                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-1"></i>Cetak Invoice Batal
+                    </button>
+                    ${historyButtonHtml}
                 </div>`;
         }
 
@@ -1656,6 +1796,7 @@ export default {
                         ${status === 'confirmed' && hasPendingPayment ? '<small class="text-warning"><i class="fas fa-lock mr-1"></i>Ada pembayaran online pending. Batalkan link pembayaran terlebih dahulu sebelum mengubah tagihan.</small>' : ''}
                         ${status === 'confirmed' && !hasPendingPayment ? '<small class="text-info"><i class="fas fa-edit mr-1"></i>Tagihan sudah dikonfirmasi. Perubahan akan dicatat di riwayat.</small>' : ''}
                         ${status === 'paid' ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dibayar.</small>' : ''}
+                        ${status === 'cancelled' ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Invoice dibatalkan. Rincian asli hanya dapat dilihat.</small>' : ''}
                     </div>
 
                     <hr>
@@ -1680,7 +1821,7 @@ export default {
                             ${itemsHtml ? `
                             <tr class="table-active font-weight-bold sc-billing-total-row">
                                 <td colspan="3" class="text-right">GRAND TOTAL</td>
-                                <td data-label="Total" class="text-right">${formatRupiahLocal(subtotal)}</td>
+                                <td data-label="Total" class="text-right">${formatRupiahLocal(status === 'cancelled' ? (billing.total ?? subtotal) : subtotal)}</td>
                             </tr>
                             ` : ''}
                         </tbody>
@@ -1690,6 +1831,7 @@ export default {
                     <div class="sc-billing-meta-stack">
                         ${confirmedByHtml}
                         ${lastModifiedHtml}
+                        ${cancellationHtml}
                     </div>
 
                     <div class="mt-3">
@@ -1715,6 +1857,9 @@ export default {
             if (createAdditionalBillingButton) {
                 createAdditionalBillingButton.addEventListener('click', () => openAdditionalBillingEditor());
             }
+            document.getElementById('btn-cancel-billing')?.addEventListener('click', () => {
+                openBillingCancellationModal(this.currentBilling, this.patientName);
+            });
             document.querySelectorAll('[data-additional-billing-action]').forEach(button => {
                 button.addEventListener('click', async () => {
                     const billing = additionalBillingsById.get(Number(button.dataset.additionalBillingId));
@@ -1722,7 +1867,11 @@ export default {
                         window.showError?.('Tagihan tambahan tidak ditemukan. Muat ulang halaman.');
                         return;
                     }
-                    await runAdditionalBillingAction(button.dataset.additionalBillingAction, billing);
+                    if (button.dataset.additionalBillingAction === 'cancel') {
+                        openBillingCancellationModal(billing, this.patientName, true);
+                    } else {
+                        await runAdditionalBillingAction(button.dataset.additionalBillingAction, billing);
+                    }
                 });
             });
 
@@ -2113,6 +2262,7 @@ export default {
                                     billing_created: 'Tagihan dibuat',
                                     billing_saved: 'Tagihan disimpan',
                                     billing_confirmed: 'Tagihan dikonfirmasi',
+                                    billing_cancelled: 'Invoice dibatalkan',
                                     item_added: 'Item ditambahkan',
                                     item_removed: 'Item dihapus',
                                     billing_marked_paid: 'Tagihan lunas'

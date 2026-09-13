@@ -84,6 +84,8 @@ describe('bulk patient deletion feature', () => {
                 if (sql.includes('FROM information_schema.COLUMNS')) {
                     return [[{ table_name: 'patient_activity_log' }]];
                 }
+                if (sql.includes('FROM sunday_clinic_billings') && sql.includes('FOR UPDATE')) return [[]];
+                if (sql.includes('FROM sunday_clinic_additional_billings') && sql.includes('FOR UPDATE')) return [[]];
                 return [{ affectedRows: sql.includes('DELETE FROM patients') ? 1 : 0 }];
             })
         };

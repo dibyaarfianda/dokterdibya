@@ -11,7 +11,7 @@ const logger = require('../utils/logger');
 const { sendSuccess, sendError } = require('../utils/response');
 const { verifyPatientToken } = require('../middleware/auth');
 const xenditPayment = require('../utils/xendit-payment');
-const { handlePaymentSuccess } = require('./billing-payment');
+const { handlePaymentSuccess, reservePaymentAttempt } = require('./billing-payment');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const realtimeSync = require('../realtime-sync');
 const {
@@ -66,15 +66,15 @@ router.get('/my-bills', async (req, res) => {
 
         const [billings] = await db.query(`
             SELECT b.id, b.mr_id, b.patient_id, b.total, b.status,
-                   b.confirmed_at, b.created_at,
+                   b.confirmed_at, b.created_at, b.cancellation_reason, b.cancelled_at, b.cancelled_by_name,
                    p.full_name as patient_name,
                    tp.status as payment_status
             FROM sunday_clinic_billings b
             JOIN patients p ON p.id = b.patient_id
             LEFT JOIN tagihan_payments tp ON tp.billing_id = b.id
-                AND tp.status IN ('pending', 'paid')
+                AND tp.id = (SELECT MAX(tp2.id) FROM tagihan_payments tp2 WHERE tp2.billing_id = b.id)
             WHERE b.patient_id = ?
-              AND b.status IN ('confirmed', 'paid')
+              AND b.status IN ('confirmed', 'paid', 'cancelled')
             ORDER BY b.created_at DESC
         `, [patientId]);
 
@@ -105,7 +105,7 @@ router.get('/:billingId/details', async (req, res) => {
         // Get billing (verify ownership)
         const [[billing]] = await db.query(`
             SELECT b.id, b.mr_id, b.patient_id, b.subtotal, b.total, b.status,
-                   b.confirmed_at, b.created_at,
+                   b.confirmed_at, b.created_at, b.cancellation_reason, b.cancelled_at, b.cancelled_by_name,
                    p.full_name as patient_name
             FROM sunday_clinic_billings b
             JOIN patients p ON p.id = b.patient_id
@@ -196,8 +196,14 @@ router.post('/:billingId/create-payment', requireOpenAccountingDate, async (req,
         const mrId = billing.mr_id;
         let paymentResult;
 
+        const insertResult = await reservePaymentAttempt({
+            billingId: billing.id, patientId, method: payment_method,
+            actor: 'Patient: ' + (billing.patient_name || patientId)
+        });
+
         if (payment_method === 'qris') {
             paymentResult = await xenditPayment.createQRISPayment({
+                referenceId: insertResult.referenceId,
                 amount,
                 mrId,
                 patientName: billing.patient_name
@@ -205,6 +211,7 @@ router.post('/:billingId/create-payment', requireOpenAccountingDate, async (req,
         } else {
             const bankCode = payment_method.replace('va_', '').toUpperCase();
             paymentResult = await xenditPayment.createVAPayment({
+                referenceId: insertResult.referenceId,
                 amount,
                 mrId,
                 bankCode,
@@ -212,29 +219,16 @@ router.post('/:billingId/create-payment', requireOpenAccountingDate, async (req,
             });
         }
 
-        // Save to database
-        const [insertResult] = await db.query(`
-            INSERT INTO tagihan_payments (
-                billing_id, mr_id, patient_id, xendit_id, xendit_reference_id,
-                payment_method, qris_string, qris_url, va_number, va_bank_code,
-                amount, status, expires_at, xendit_response, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
-        `, [
-            billing.id,
-            mrId,
-            patientId,
-            paymentResult.xendit_id,
-            paymentResult.reference_id,
-            payment_method,
-            paymentResult.qris_string || null,
-            paymentResult.qris_url || null,
-            paymentResult.va_number || null,
-            paymentResult.va_bank_code || null,
-            amount,
-            paymentResult.expires_at,
-            JSON.stringify(paymentResult.raw_response),
-            'Patient: ' + (billing.patient_name || patientId)
-        ]);
+        // Complete the durable pending attempt; do not overwrite a concurrent webhook status.
+        await db.query(`
+            UPDATE tagihan_payments SET xendit_id = ?, xendit_reference_id = ?,
+                qris_string = ?, qris_url = ?, va_number = ?, va_bank_code = ?,
+                expires_at = ?, xendit_response = ?
+            WHERE id = ?
+        `, [paymentResult.xendit_id, paymentResult.reference_id,
+            paymentResult.qris_string || null, paymentResult.qris_url || null,
+            paymentResult.va_number || null, paymentResult.va_bank_code || null,
+            paymentResult.expires_at, JSON.stringify(paymentResult.raw_response), insertResult.insertId]);
 
         // Log the event
         await db.query(`
@@ -290,7 +284,7 @@ router.post('/:billingId/create-payment', requireOpenAccountingDate, async (req,
             billingId,
             error: error.message
         });
-        return sendError(res, error.message || 'Gagal membuat pembayaran', 500);
+        return sendError(res, error.message || 'Gagal membuat pembayaran', error.statusCode || 500);
     }
 });
 
@@ -324,6 +318,7 @@ router.get('/:billingId/payment-status/:paymentId', async (req, res) => {
             return sendSuccess(res, {
                 payment_id: payment.id,
                 status: payment.status,
+                reconciliation_required: !!payment.reconciliation_required,
                 amount: parseFloat(payment.amount),
                 paid_at: payment.paid_at,
                 expires_at: payment.expires_at
@@ -333,7 +328,7 @@ router.get('/:billingId/payment-status/:paymentId', async (req, res) => {
         // Check local expiration (skip for insurance - no expiry)
         if (payment.expires_at && new Date(payment.expires_at) < new Date()) {
             await db.query(
-                'UPDATE tagihan_payments SET status = ? WHERE id = ?',
+                "UPDATE tagihan_payments SET status = ? WHERE id = ? AND status = 'pending'",
                 ['expired', paymentId]
             );
             return sendSuccess(res, {
@@ -350,10 +345,12 @@ router.get('/:billingId/payment-status/:paymentId', async (req, res) => {
             const xenditStatus = await xenditPayment.getPaymentStatus(payment.xendit_id, type);
 
             if (xenditStatus.status === 'paid') {
-                await handlePaymentSuccess(payment, xenditStatus);
+                const completion = await handlePaymentSuccess(payment, xenditStatus);
                 return sendSuccess(res, {
                     payment_id: payment.id,
                     status: 'paid',
+                    reconciliation_required: !!completion?.reconciliation_required,
+                    billing_status: completion?.billing_status || 'paid',
                     amount: parseFloat(payment.amount),
                     paid_at: xenditStatus.paid_at || new Date().toISOString()
                 });
@@ -368,6 +365,7 @@ router.get('/:billingId/payment-status/:paymentId', async (req, res) => {
         return sendSuccess(res, {
             payment_id: payment.id,
             status: payment.status,
+                reconciliation_required: !!payment.reconciliation_required,
             amount: parseFloat(payment.amount),
             expires_at: payment.expires_at,
             expires_in_seconds: Math.max(0, Math.floor((new Date(payment.expires_at) - new Date()) / 1000))
@@ -412,7 +410,7 @@ router.get('/:billingId/payment-details', async (req, res) => {
         // Check expiration for pending (skip for insurance - no expiry)
         if (payment.status === 'pending' && payment.expires_at && new Date(payment.expires_at) < new Date()) {
             await db.query(
-                'UPDATE tagihan_payments SET status = ? WHERE id = ?',
+                "UPDATE tagihan_payments SET status = ? WHERE id = ? AND status = 'pending'",
                 ['expired', payment.id]
             );
             return sendSuccess(res, null, 'Pembayaran sudah kadaluarsa');
@@ -423,6 +421,7 @@ router.get('/:billingId/payment-details', async (req, res) => {
             payment_method: payment.payment_method,
             amount: parseFloat(payment.amount),
             status: payment.status,
+                reconciliation_required: !!payment.reconciliation_required,
             created_at: payment.created_at,
             expires_at: payment.expires_at,
             paid_at: payment.paid_at
@@ -512,20 +511,11 @@ router.post('/:billingId/create-insurance-payment', requireOpenAccountingDate, a
             notes: (notes || '').trim() || null
         };
 
-        // Insert insurance payment
-        const [insertResult] = await db.query(`
-            INSERT INTO tagihan_payments (
-                billing_id, mr_id, patient_id,
-                payment_method, amount, status, insurance_info, created_by
-            ) VALUES (?, ?, ?, 'asuransi', ?, 'pending', ?, ?)
-        `, [
-            billing.id,
-            billing.mr_id,
-            patientId,
-            amount,
-            JSON.stringify(insuranceInfo),
-            'Patient: ' + (billing.patient_name || patientId)
-        ]);
+        const insertResult = await reservePaymentAttempt({
+            billingId: billing.id, patientId, method: 'asuransi', actor: 'Patient: ' + (billing.patient_name || patientId)
+        });
+        await db.query('UPDATE tagihan_payments SET insurance_info = ? WHERE id = ?',
+            [JSON.stringify(insuranceInfo), insertResult.insertId]);
 
         // Log the event
         await db.query(`

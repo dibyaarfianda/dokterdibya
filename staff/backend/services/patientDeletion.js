@@ -1,4 +1,5 @@
 const db = require('../db');
+const { assertNoCancelledBillingEvidence } = require('./sunday-clinic/billing-cancellation');
 
 /**
  * Delete a patient along with all related relational data inside a single transaction.
@@ -22,6 +23,7 @@ async function deletePatientWithRelationsOnConnection(connection, patientId) {
     }
 
         const patient = patients[0];
+        await assertNoCancelledBillingEvidence(connection, { patientId });
 
         await deleteChild(connection,
             'DELETE FROM billing_items WHERE billing_id IN (SELECT id FROM billings WHERE patient_id = ?)',
@@ -383,6 +385,9 @@ async function deletePatientByEmail(email) {
         }
 
         const patientId = patients[0].id;
+        if (patientId) {
+            await assertNoCancelledBillingEvidence(connection, { patientId });
+        }
 
         // Delete from users table
         const [userResult] = await connection.query(

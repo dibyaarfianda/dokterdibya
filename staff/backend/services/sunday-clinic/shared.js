@@ -356,27 +356,33 @@ async function insertAdditionalBillingItems(connection, additionalBillingId, ite
 }
 
 async function getAdditionalBillingRecordForUpdate(connection, mrId, additionalBillingId) {
+    const [[parentBilling]] = await connection.query(
+        'SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE',
+        [mrId]
+    );
+    if (!parentBilling) {
+        throw createAdditionalBillingError('Tagihan utama tidak ditemukan.', 404);
+    }
     const [[additionalBilling]] = await connection.query(
-        `SELECT ab.*, parent.status AS parent_billing_status
+        `SELECT ab.*
          FROM sunday_clinic_additional_billings ab
-         JOIN sunday_clinic_billings parent ON parent.id = ab.parent_billing_id
-         WHERE ab.id = ? AND ab.mr_id = ?
+         WHERE ab.id = ? AND ab.mr_id = ? AND ab.parent_billing_id = ?
          FOR UPDATE`,
-        [additionalBillingId, mrId]
+        [additionalBillingId, mrId, parentBilling.id]
     );
 
     if (!additionalBilling) {
         throw createAdditionalBillingError('Tagihan tambahan tidak ditemukan.', 404);
     }
-    if (additionalBilling.parent_billing_status !== 'paid') {
+    if (parentBilling.status !== 'paid') {
         throw createAdditionalBillingError('Tagihan utama harus lunas sebelum tagihan tambahan diproses.');
     }
 
     return additionalBilling;
 }
 
-async function loadAdditionalBillingDocument(mrId, additionalBillingId) {
-    const [[billing]] = await db.query(
+async function loadAdditionalBillingDocument(mrId, additionalBillingId, client = db) {
+    const [[billing]] = await client.query(
         `SELECT ab.*
          FROM sunday_clinic_additional_billings ab
          JOIN sunday_clinic_billings parent ON parent.id = ab.parent_billing_id
@@ -387,11 +393,11 @@ async function loadAdditionalBillingDocument(mrId, additionalBillingId) {
     if (!billing) {
         throw createAdditionalBillingError('Tagihan tambahan tidak ditemukan.', 404);
     }
-    if (!['confirmed', 'paid'].includes(billing.status)) {
+    if (!['confirmed', 'paid', 'cancelled'].includes(billing.status)) {
         throw createAdditionalBillingError('Tagihan tambahan harus dikonfirmasi sebelum dicetak.');
     }
 
-    const [items] = await db.query(
+    const [items] = await client.query(
         `SELECT * FROM sunday_clinic_additional_billing_items
          WHERE additional_billing_id = ?
          ORDER BY id ASC`,
@@ -404,7 +410,7 @@ async function loadAdditionalBillingDocument(mrId, additionalBillingId) {
             : (item.item_data || {})
     }));
 
-    const [[record]] = await db.query(
+    const [[record]] = await client.query(
         `SELECT r.*, p.full_name, p.birth_date, p.phone
          FROM sunday_clinic_records r
          JOIN patients p ON r.patient_id = p.id

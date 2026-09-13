@@ -54,7 +54,8 @@ describe('Sunday Clinic billing audit implementation', () => {
         expect(billingJs).toContain("{ code: 'S04', name: 'Buku Obstetri (Kehamilan)', price: 40000 }");
         expect(billingJs).not.toContain('Buku Kontrol');
         expect(billingJs).not.toContain('Buku Panduan Lengkap & ANC');
-        expect(sundayClinicMain).toContain("const COMPONENT_VERSION = '3.0.18';");
+        expect(sundayClinicMain).toContain('window.STAFF_CACHE_VERSION');
+        expect(sundayClinicMain).toContain('import(path + cacheBuster)');
     });
 
     test('desktop billing layout uses scoped semantic cards, metadata, and actions', () => {

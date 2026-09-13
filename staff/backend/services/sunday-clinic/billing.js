@@ -28,12 +28,15 @@ const {
     parseAuditSnapshot
 } = require('./shared');
 const { updateQueueStatus } = require('./queue');
+const xenditPayment = require('../../utils/xendit-payment');
+const { cancelMainBilling, cancelAdditionalBilling } = require('./billing-cancellation');
 
 const BILLING_COLUMNS = [
     'id', 'mr_id', 'patient_id', 'subtotal', 'total', 'status', 'pending_changes',
     'change_requests', 'last_modified_by', 'last_modified_at', 'billing_data',
     'confirmed_at', 'confirmed_by', 'printed_at', 'printed_by', 'invoice_url',
-    'etiket_url', 'created_at', 'updated_at', 'paid_at', 'paid_by'
+    'etiket_url', 'created_at', 'updated_at', 'paid_at', 'paid_by',
+    'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
 ].join(', ');
 
 const BILLING_ITEM_COLUMNS = [
@@ -43,21 +46,19 @@ const BILLING_ITEM_COLUMNS = [
 
 const BILLING_REVISION_COLUMNS = [
     'id', 'mr_id', 'message', 'requested_by', 'status',
-    'approved_at', 'approved_by', 'created_at', 'updated_at'
+    'approved_at', 'approved_by', 'created_at', 'updated_at',
+    'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
 ].join(', ');
 
 async function getBillingPending(req, res, next) {
     try {
-        // Get recent billings that are either:
-        // 1. Not yet confirmed (is_confirmed = 0)
-        // 2. Confirmed but not paid (is_confirmed = 1 AND payment_status != 'paid')
+        // Open invoices are represented by the current billing status.
         const [billings] = await db.query(
             `SELECT
                 scb.id,
                 scb.mr_id,
-                scb.total_amount,
-                scb.is_confirmed,
-                scb.payment_status,
+                scb.total AS total_amount,
+                scb.status,
                 scb.created_at,
                 scr.patient_id,
                 COALESCE(p.full_name, sa.patient_name, scr.mr_id) as patient_name,
@@ -67,8 +68,8 @@ async function getBillingPending(req, res, next) {
              LEFT JOIN sunday_clinic_records scr ON scr.mr_id = scb.mr_id
              LEFT JOIN patients p ON p.id = scr.patient_id
              LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
-             WHERE (scb.is_confirmed = 0 OR scb.payment_status != 'paid')
-               AND scb.total_amount > 0
+             WHERE scb.status IN ('draft', 'confirmed')
+               AND scb.total > 0
              ORDER BY scb.created_at DESC
              LIMIT 50`
         );
@@ -81,8 +82,9 @@ async function getBillingPending(req, res, next) {
                 patient_name: b.patient_name,
                 patient_phone: b.patient_phone,
                 total_amount: b.total_amount,
-                is_confirmed: !!b.is_confirmed,
-                payment_status: b.payment_status,
+                status: b.status,
+                is_confirmed: b.status === 'confirmed',
+                payment_status: 'unpaid',
                 appointment_date: b.appointment_date,
                 created_at: b.created_at
             }))
@@ -172,6 +174,12 @@ async function postBillingByMrId(req, res, next) {
     }
 
     try {
+        const { items = [], billingData = {} } = req.body;
+        const hasRequestedStatus = Object.prototype.hasOwnProperty.call(req.body, 'status');
+        const requestedStatus = hasRequestedStatus ? req.body.status : 'draft';
+        if (!['draft', 'confirmed'].includes(requestedStatus)) {
+            return res.status(400).json({ success: false, message: 'Status tagihan tidak valid. Gunakan aksi pembayaran atau pembatalan yang sesuai.' });
+        }
         const recordRow = await findRecordByMrId(normalizedMrId);
         if (!recordRow) {
             return res.status(404).json({
@@ -180,17 +188,13 @@ async function postBillingByMrId(req, res, next) {
             });
         }
 
-        const { items = [], billingData = {} } = req.body;
-        const requestedStatus = req.body.status || 'draft';
-        const hasRequestedStatus = Object.prototype.hasOwnProperty.call(req.body, 'status');
-
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
 
             // Check if billing exists
             const [existingRows] = await connection.query(
-                `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ?`,
+                `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
                 [normalizedMrId]
             );
 
@@ -208,6 +212,10 @@ async function postBillingByMrId(req, res, next) {
                 statusToPersist = hasRequestedStatus ? requestedStatus : existingBilling.status;
 
                 // Guard: paid billing cannot be edited
+                if (existingBilling.status === 'cancelled') {
+                    await connection.rollback();
+                    return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat diubah.' });
+                }
                 if (existingBilling.status === 'paid') {
                     await connection.rollback();
                     return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
@@ -448,6 +456,10 @@ async function postBillingByMrIdObat(req, res, next) {
             billingId = existingBilling.id;
 
             // Guard: paid billing cannot be edited
+            if (existingBilling.status === 'cancelled') {
+                await connection.rollback();
+                return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat diubah.' });
+            }
             if (existingBilling.status === 'paid') {
                 await connection.rollback();
                 return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
@@ -644,6 +656,10 @@ async function postBillingByMrIdConfirm(req, res, next) {
             });
         }
 
+        if (billing.status === 'cancelled') {
+            await connection.rollback();
+            return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat dikonfirmasi.' });
+        }
         if (billing.status === 'paid') {
             await connection.rollback();
             return res.status(400).json({
@@ -738,6 +754,8 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
     const { payment_method, notes } = req.body;
     let lockName = null;
     let lockAcquired = false;
+    let lockConnection = null;
+    let markPaidTransactionStarted = false;
 
     try {
         // Get current billing
@@ -755,7 +773,8 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
 
         // Prevent concurrent duplicate processing for the same billing.
         lockName = `sunday_mark_paid_${billing.id}`;
-        const [[lockRow]] = await db.query('SELECT GET_LOCK(?, 5) AS acquired', [lockName]);
+        lockConnection = await db.getConnection();
+        const [[lockRow]] = await lockConnection.query('SELECT GET_LOCK(?, 5) AS acquired', [lockName]);
         lockAcquired = Number(lockRow?.acquired || 0) === 1;
         if (!lockAcquired) {
             return res.status(409).json({
@@ -764,9 +783,11 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
             });
         }
 
-        // Re-check billing after lock to avoid stale state race.
-        const [[billingLocked]] = await db.query(
-            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ?`,
+        // Hold the invoice row through stock deduction and the paid update.
+        await lockConnection.beginTransaction();
+        markPaidTransactionStarted = true;
+        const [[billingLocked]] = await lockConnection.query(
+            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
             [normalizedMrId]
         );
 
@@ -928,16 +949,21 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
 
         // Update status to paid only after stock deduction succeeds.
         const paidBy = req.user.name || req.user.id || 'Staff';
-        await db.query(
+        const [paidResult] = await lockConnection.query(
             `UPDATE sunday_clinic_billings
              SET status = 'paid',
                  paid_at = NOW(),
                  paid_by = ?,
                  last_modified_by = ?,
                  last_modified_at = NOW()
-              WHERE mr_id = ?`,
+              WHERE mr_id = ? AND status = 'confirmed'`,
             [paidBy, paidBy, normalizedMrId]
         );
+        if (paidResult.affectedRows !== 1) {
+            return res.status(409).json({ success: false, message: 'Status tagihan berubah saat pembayaran diproses.' });
+        }
+        await lockConnection.commit();
+        markPaidTransactionStarted = false;
 
         const afterSnapshot = await getBillingSnapshot(db, billingLocked.id);
         await writeBillingAudit(db, req, {
@@ -1004,9 +1030,14 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
         logger.error('Failed to mark billing as paid', { error: error.message });
         next(error);
     } finally {
+        if (markPaidTransactionStarted) {
+            try { await lockConnection.rollback(); } catch (rollbackError) {
+                logger.error('Failed to rollback mark-paid billing lock', { error: rollbackError.message });
+            }
+        }
         if (lockAcquired && lockName) {
             try {
-                await db.query('SELECT RELEASE_LOCK(?)', [lockName]);
+                await lockConnection.query('SELECT RELEASE_LOCK(?)', [lockName]);
             } catch (releaseError) {
                 logger.error('Failed to release mark-paid lock', {
                     mrId: normalizedMrId,
@@ -1015,20 +1046,39 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
                 });
             }
         }
+        if (lockConnection) lockConnection.release();
     }
 }
 
 async function postBillingByMrIdRequestRevision(req, res, next) {
     const normalizedMrId = normalizeMrId(req.params.mrId);
     const { message, requestedBy } = req.body;
+    let connection;
 
     try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        const [[billing]] = await connection.query(
+            'SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE',
+            [normalizedMrId]
+        );
+        if (!billing) {
+            await connection.rollback();
+            return res.status(404).json({ success: false, message: 'Tagihan tidak ditemukan.' });
+        }
+        if (billing.status === 'cancelled') {
+            await connection.rollback();
+            return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat direvisi.' });
+        }
         // Insert revision request
-        const [result] = await db.query(
+        const [result] = await connection.query(
             `INSERT INTO sunday_clinic_billing_revisions (mr_id, message, requested_by, created_at)
              VALUES (?, ?, ?, NOW())`,
             [normalizedMrId, message, requestedBy || req.user.name]
         );
+        await connection.commit();
+        connection.release();
+        connection = null;
 
         // Get patient name for notification
         const [[record]] = await db.query(
@@ -1070,8 +1120,11 @@ async function postBillingByMrIdRequestRevision(req, res, next) {
             revisionId: result.insertId
         });
     } catch (error) {
+        if (connection) await connection.rollback();
         logger.error('Failed to request revision', { error: error.message });
         next(error);
+    } finally {
+        if (connection) connection.release();
     }
 }
 
@@ -1098,6 +1151,7 @@ async function getBillingRevisionsPending(req, res, next) {
 
 async function postBillingRevisionsByIdApprove(req, res, next) {
     const revisionId = req.params.id;
+    let connection;
 
     try {
         const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
@@ -1109,7 +1163,7 @@ async function postBillingRevisionsByIdApprove(req, res, next) {
             });
         }
 
-        // Get revision details
+        // Resolve the MR first, then lock the billing before the revision.
         const [[revision]] = await db.query(
             `SELECT ${BILLING_REVISION_COLUMNS} FROM sunday_clinic_billing_revisions WHERE id = ?`,
             [revisionId]
@@ -1122,18 +1176,35 @@ async function postBillingRevisionsByIdApprove(req, res, next) {
             });
         }
 
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        const [[billing]] = await connection.query(
+            'SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE',
+            [revision.mr_id]
+        );
+        const [[lockedRevision]] = await connection.query(
+            `SELECT ${BILLING_REVISION_COLUMNS} FROM sunday_clinic_billing_revisions WHERE id = ? FOR UPDATE`,
+            [revisionId]
+        );
+        if (!billing || billing.status === 'cancelled' || lockedRevision?.status !== 'pending') {
+            await connection.rollback();
+            return res.status(409).json({ success: false, message: 'Usulan tidak dapat disetujui karena tagihan telah dibatalkan atau usulan sudah ditutup.' });
+        }
         // Update revision status and revert billing to draft
-        await db.query(
+        await connection.query(
             `UPDATE sunday_clinic_billing_revisions SET status = 'approved' WHERE id = ?`,
             [revisionId]
         );
 
-        await db.query(
+        await connection.query(
             `UPDATE sunday_clinic_billings
              SET status = 'draft', confirmed_at = NULL, confirmed_by = NULL
-             WHERE mr_id = ?`,
+             WHERE mr_id = ? AND status <> 'cancelled'`,
             [revision.mr_id]
         );
+        await connection.commit();
+        connection.release();
+        connection = null;
 
         res.json({
             success: true,
@@ -1141,8 +1212,30 @@ async function postBillingRevisionsByIdApprove(req, res, next) {
             mrId: revision.mr_id
         });
     } catch (error) {
+        if (connection) await connection.rollback();
         logger.error('Failed to approve revision', { error: error.message });
         next(error);
+    } finally {
+        if (connection) connection.release();
+    }
+}
+
+async function withBillingPrintLock(mrId, work) {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [[parentBilling]] = await connection.query(
+            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            [mrId]
+        );
+        const payload = await work(connection, parentBilling || null);
+        await connection.commit();
+        return payload;
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
     }
 }
 
@@ -1150,23 +1243,26 @@ async function postBillingByMrIdPrintEtiket(req, res, next) {
     const normalizedMrId = normalizeMrId(req.params.mrId);
 
     try {
-        const pdfGenerator = require('../../utils/pdf-generator');
+        const payload = await withBillingPrintLock(normalizedMrId, async (connection, billing) => {
 
-        // Get billing data
-        const [[billing]] = await db.query(
-            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ?`,
-            [normalizedMrId]
-        );
-
-        if (!billing || !['confirmed', 'paid'].includes(billing.status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Billing belum dikonfirmasi atau dibayar'
-            });
+        if (!billing || !['confirmed', 'paid', 'cancelled'].includes(billing.status)) {
+            throw createAdditionalBillingError('Billing belum dikonfirmasi atau dibayar', 400);
+        }
+        if (billing.status === 'cancelled') {
+            if (!billing.etiket_url) {
+                throw createAdditionalBillingError('Etiket asli tidak tersedia untuk tagihan yang dibatalkan.', 409);
+            }
+            const r2Storage = require('../r2Storage');
+            const signedUrl = await r2Storage.getSignedDownloadUrl(billing.etiket_url, 3600);
+            return {
+                success: true,
+                downloadUrl: signedUrl,
+                filename: billing.etiket_url.split('/').pop()
+            };
         }
 
         // Get billing items from sunday_clinic_billing_items
-        const [items] = await db.query(
+        const [items] = await connection.query(
             `SELECT ${BILLING_ITEM_COLUMNS} FROM sunday_clinic_billing_items WHERE billing_id = ?`,
             [billing.id]
         );
@@ -1178,7 +1274,7 @@ async function postBillingByMrIdPrintEtiket(req, res, next) {
         }));
 
         // Get patient and record data
-        const [[record]] = await db.query(
+        const [[record]] = await connection.query(
             `SELECT r.*, p.full_name, p.birth_date, p.phone
              FROM sunday_clinic_records r
              JOIN patients p ON r.patient_id = p.id
@@ -1186,31 +1282,33 @@ async function postBillingByMrIdPrintEtiket(req, res, next) {
             [normalizedMrId]
         );
 
+        const pdfGenerator = require('../../utils/pdf-generator');
         const result = await pdfGenerator.generateEtiket(
             billing,
             { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
             { mrId: normalizedMrId }
         );
 
-        // Update printed status and store R2 key
-        await db.query(
+        await connection.query(
             `UPDATE sunday_clinic_billings
              SET printed_at = NOW(), printed_by = ?, etiket_url = ?
-             WHERE mr_id = ?`,
+             WHERE mr_id = ? AND status <> 'cancelled'`,
             [req.user.name || req.user.id, result.r2Key, normalizedMrId]
         );
-
         // Get signed URL for download (valid for 1 hour)
         const r2Storage = require('../r2Storage');
         const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
 
         // Return JSON with download URL (frontend will handle the download)
-        res.json({
+        return {
             success: true,
             downloadUrl: signedUrl,
             filename: result.filename
+        };
         });
+        return res.json(payload);
     } catch (error) {
+        if (error.statusCode) return res.status(error.statusCode).json({ success: false, message: error.message });
         logger.error('Failed to print etiket', { error: error.message });
         next(error);
     }
@@ -1220,23 +1318,14 @@ async function postBillingByMrIdPrintInvoice(req, res, next) {
     const normalizedMrId = normalizeMrId(req.params.mrId);
 
     try {
-        const pdfGenerator = require('../../utils/pdf-generator');
+        const payload = await withBillingPrintLock(normalizedMrId, async (connection, billing) => {
 
-        // Get billing data
-        const [[billing]] = await db.query(
-            `SELECT ${BILLING_COLUMNS} FROM sunday_clinic_billings WHERE mr_id = ?`,
-            [normalizedMrId]
-        );
-
-        if (!billing || !['confirmed', 'paid'].includes(billing.status)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Billing belum dikonfirmasi atau dibayar'
-            });
+        if (!billing || !['confirmed', 'paid', 'cancelled'].includes(billing.status)) {
+            throw createAdditionalBillingError('Billing belum dikonfirmasi atau dibayar', 400);
         }
 
         // Get billing items from sunday_clinic_billing_items
-        const [items] = await db.query(
+        const [items] = await connection.query(
             `SELECT ${BILLING_ITEM_COLUMNS} FROM sunday_clinic_billing_items WHERE billing_id = ?`,
             [billing.id]
         );
@@ -1248,7 +1337,7 @@ async function postBillingByMrIdPrintInvoice(req, res, next) {
         }));
 
         // Get patient and record data
-        const [[record]] = await db.query(
+        const [[record]] = await connection.query(
             `SELECT r.*, p.full_name, p.birth_date, p.phone
              FROM sunday_clinic_records r
              JOIN patients p ON r.patient_id = p.id
@@ -1256,35 +1345,42 @@ async function postBillingByMrIdPrintInvoice(req, res, next) {
             [normalizedMrId]
         );
 
+        const pdfGenerator = require('../../utils/pdf-generator');
         const result = await pdfGenerator.generateInvoice(
             billing,
             { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
-            { mrId: normalizedMrId }
+            { mrId: normalizedMrId, status: billing.status,
+                cancellation_reason: billing.cancellation_reason,
+                cancelled_at: billing.cancelled_at,
+                cancelled_by_name: billing.cancelled_by_name }
         );
 
         // Update printed status and store R2 key
-        await db.query(
-            `UPDATE sunday_clinic_billings
-             SET printed_at = NOW(), printed_by = ?, invoice_url = ?
-             WHERE mr_id = ?`,
-            [req.user.name || req.user.id, result.r2Key, normalizedMrId]
-        );
+        if (billing.status !== 'cancelled') {
+            await connection.query(
+                `UPDATE sunday_clinic_billings
+                 SET printed_at = NOW(), printed_by = ?, invoice_url = ?
+                 WHERE mr_id = ? AND status <> 'cancelled'`,
+                [req.user.name || req.user.id, result.r2Key, normalizedMrId]
+            );
+        }
 
         // Get signed URL for download (valid for 1 hour)
         const r2Storage = require('../r2Storage');
         const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
 
-        // Log activity
-        await activityLogger.logFromRequest(req, 'Print Invoice',
-            `Printed invoice for MR: ${normalizedMrId}`);
-
         // Return JSON with download URL (frontend will handle the download)
-        res.json({
+        return {
             success: true,
             downloadUrl: signedUrl,
             filename: result.filename
+        };
         });
+        await activityLogger.logFromRequest(req, 'Print Invoice',
+            `Printed invoice for MR: ${normalizedMrId}`);
+        return res.json(payload);
     } catch (error) {
+        if (error.statusCode) return res.status(error.statusCode).json({ success: false, message: error.message });
         logger.error('Failed to print invoice', { error: error.message });
         next(error);
     }
@@ -1616,6 +1712,8 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
     const normalizedMrId = normalizeMrId(req.params.mrId);
     let lockName = null;
     let lockAcquired = false;
+    let lockConnection = null;
+    let markPaidTransactionStarted = false;
 
     if (!normalizedMrId) {
         return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
@@ -1645,7 +1743,8 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
         }
 
         lockName = `sunday_additional_mark_paid_${additionalBillingId}`;
-        const [[lockRow]] = await db.query('SELECT GET_LOCK(?, 5) AS acquired', [lockName]);
+        lockConnection = await db.getConnection();
+        const [[lockRow]] = await lockConnection.query('SELECT GET_LOCK(?, 5) AS acquired', [lockName]);
         lockAcquired = Number(lockRow?.acquired || 0) === 1;
         if (!lockAcquired) {
             return res.status(409).json({
@@ -1654,11 +1753,14 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
             });
         }
 
-        const [[additionalBilling]] = await db.query(
+        await lockConnection.beginTransaction();
+        markPaidTransactionStarted = true;
+        await lockConnection.query('SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE', [normalizedMrId]);
+        const [[additionalBilling]] = await lockConnection.query(
             `SELECT ab.*, parent.status AS parent_billing_status
              FROM sunday_clinic_additional_billings ab
              JOIN sunday_clinic_billings parent ON parent.id = ab.parent_billing_id
-             WHERE ab.id = ? AND ab.mr_id = ?`,
+             WHERE ab.id = ? AND ab.mr_id = ? FOR UPDATE`,
             [additionalBillingId, normalizedMrId]
         );
         if (!additionalBilling) {
@@ -1772,7 +1874,7 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
         }
 
         const actor = getActorFromRequest(req);
-        const [updateResult] = await db.query(
+        const [updateResult] = await lockConnection.query(
             `UPDATE sunday_clinic_additional_billings
              SET status = 'paid', payment_method = ?, payment_notes = ?, paid_at = NOW(), paid_by = ?,
                  last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
@@ -1782,6 +1884,8 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
         if (!updateResult.affectedRows) {
             throw createAdditionalBillingError('Status tagihan tambahan berubah. Muat ulang halaman dan coba lagi.', 409);
         }
+        await lockConnection.commit();
+        markPaidTransactionStarted = false;
 
         const afterSnapshot = await getAdditionalBillingSnapshot(db, additionalBillingId);
         await writeAdditionalBillingAudit(db, req, {
@@ -1814,9 +1918,14 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
         });
         next(error);
     } finally {
+        if (markPaidTransactionStarted) {
+            try { await lockConnection.rollback(); } catch (rollbackError) {
+                logger.error('Failed to rollback additional mark-paid lock', { error: rollbackError.message });
+            }
+        }
         if (lockAcquired && lockName) {
             try {
-                await db.query('SELECT RELEASE_LOCK(?)', [lockName]);
+                await lockConnection.query('SELECT RELEASE_LOCK(?)', [lockName]);
             } catch (releaseError) {
                 logger.error('Failed to release additional billing payment lock', {
                     mrId: normalizedMrId,
@@ -1825,6 +1934,7 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid(req, res
                 });
             }
         }
+        if (lockConnection) lockConnection.release();
     }
 }
 
@@ -1840,7 +1950,9 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdPrintInvoice(req,
 
     try {
         const additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
-        const { billing, record } = await loadAdditionalBillingDocument(normalizedMrId, additionalBillingId);
+        const payload = await withBillingPrintLock(normalizedMrId, async (connection, parentBilling) => {
+        if (!parentBilling) throw createAdditionalBillingError('Tagihan utama tidak ditemukan.', 404);
+        const { billing, record } = await loadAdditionalBillingDocument(normalizedMrId, additionalBillingId, connection);
         const pdfGenerator = require('../../utils/pdf-generator');
         const result = await pdfGenerator.generateInvoice(
             billing,
@@ -1848,27 +1960,35 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdPrintInvoice(req,
             {
                 mrId: normalizedMrId,
                 invoiceReference: billing.reference_number,
-                invoiceTitle: 'Invoice Tagihan Tambahan'
+                invoiceTitle: 'Invoice Tagihan Tambahan',
+                status: billing.status,
+                cancellation_reason: billing.cancellation_reason,
+                cancelled_at: billing.cancelled_at,
+                cancelled_by_name: billing.cancelled_by_name
             }
         );
 
         const actor = getActorFromRequest(req);
-        await db.query(
-            `UPDATE sunday_clinic_additional_billings
-             SET invoice_printed_at = NOW(), invoice_printed_by = ?, invoice_url = ?
-             WHERE id = ?`,
-            [actor.actorName, result.r2Key, additionalBillingId]
-        );
+        if (billing.status !== 'cancelled') {
+            await connection.query(
+                `UPDATE sunday_clinic_additional_billings
+                 SET invoice_printed_at = NOW(), invoice_printed_by = ?, invoice_url = ?
+                 WHERE id = ? AND status <> 'cancelled'`,
+                [actor.actorName, result.r2Key, additionalBillingId]
+            );
+        }
 
         const r2Storage = require('../r2Storage');
         const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+        return { success: true, downloadUrl: signedUrl, filename: result.filename, referenceNumber: billing.reference_number };
+        });
         await activityLogger.logFromRequest(
             req,
             'Print Additional Billing Invoice',
-            `Printed additional billing invoice ${billing.reference_number} for MR: ${normalizedMrId}`
+            `Printed additional billing invoice ${payload.referenceNumber} for MR: ${normalizedMrId}`
         );
 
-        res.json({ success: true, downloadUrl: signedUrl, filename: result.filename });
+        res.json({ success: true, downloadUrl: payload.downloadUrl, filename: payload.filename });
     } catch (error) {
         if (error.statusCode) {
             return res.status(error.statusCode).json({ success: false, message: error.message });
@@ -1893,7 +2013,22 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdPrintEtiket(req, 
 
     try {
         const additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
-        const { billing, record } = await loadAdditionalBillingDocument(normalizedMrId, additionalBillingId);
+        const payload = await withBillingPrintLock(normalizedMrId, async (connection, parentBilling) => {
+        if (!parentBilling) throw createAdditionalBillingError('Tagihan utama tidak ditemukan.', 404);
+        const { billing, record } = await loadAdditionalBillingDocument(normalizedMrId, additionalBillingId, connection);
+        if (billing.status === 'cancelled') {
+            if (!billing.etiket_url) {
+                throw createAdditionalBillingError('Etiket asli tidak tersedia untuk tagihan yang dibatalkan.', 409);
+            }
+            const r2Storage = require('../r2Storage');
+            const signedUrl = await r2Storage.getSignedDownloadUrl(billing.etiket_url, 3600);
+            return {
+                success: true,
+                downloadUrl: signedUrl,
+                filename: billing.etiket_url.split('/').pop(),
+                original: true
+            };
+        }
         if (!billing.items.some(item => item.item_type === 'obat' && Number(item.quantity) > 0)) {
             throw createAdditionalBillingError('Tagihan tambahan ini tidak memiliki item obat untuk dicetak etikelnya.');
         }
@@ -1906,22 +2041,27 @@ async function postBillingByMrIdAdditionalByAdditionalBillingIdPrintEtiket(req, 
         );
 
         const actor = getActorFromRequest(req);
-        await db.query(
+        await connection.query(
             `UPDATE sunday_clinic_additional_billings
              SET etiket_printed_at = NOW(), etiket_printed_by = ?, etiket_url = ?
-             WHERE id = ?`,
+             WHERE id = ? AND status <> 'cancelled'`,
             [actor.actorName, result.r2Key, additionalBillingId]
         );
 
         const r2Storage = require('../r2Storage');
         const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+        return { success: true, downloadUrl: signedUrl, filename: result.filename, referenceNumber: billing.reference_number };
+        });
+        if (payload.original) {
+            return res.json({ success: true, downloadUrl: payload.downloadUrl, filename: payload.filename });
+        }
         await activityLogger.logFromRequest(
             req,
             'Print Additional Billing Etiket',
-            `Printed additional billing etiket ${billing.reference_number} for MR: ${normalizedMrId}`
+            `Printed additional billing etiket ${payload.referenceNumber} for MR: ${normalizedMrId}`
         );
 
-        res.json({ success: true, downloadUrl: signedUrl, filename: result.filename });
+        res.json({ success: true, downloadUrl: payload.downloadUrl, filename: payload.filename });
     } catch (error) {
         if (error.statusCode) {
             return res.status(error.statusCode).json({ success: false, message: error.message });
@@ -1941,7 +2081,7 @@ async function postBillingByMrIdPrint(req, res, next) {
         await db.query(
             `UPDATE sunday_clinic_billings
              SET printed_at = NOW(), printed_by = ?
-             WHERE mr_id = ?`,
+             WHERE mr_id = ? AND status <> 'cancelled'`,
             [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 
@@ -1999,6 +2139,10 @@ async function deleteBillingByMrIdItemsByItemType(req, res, next) {
         const billing = billingRows[0];
         const billingId = billing.id;
 
+        if (billing.status === 'cancelled') {
+            await connection.rollback();
+            return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat diubah.' });
+        }
         // Paid billing cannot be edited
         if (billing.status === 'paid') {
             await connection.rollback();
@@ -2117,6 +2261,10 @@ async function deleteBillingByMrIdItemsCodeByCode(req, res, next) {
         const billing = billingRows[0];
         const billingId = billing.id;
 
+        if (billing.status === 'cancelled') {
+            await connection.rollback();
+            return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat diubah.' });
+        }
         // Paid billing cannot be edited
         if (billing.status === 'paid') {
             await connection.rollback();
@@ -2242,6 +2390,10 @@ async function deleteBillingByMrIdItemsIdByItemId(req, res, next) {
 
         const billing = billingRows[0];
 
+        if (billing.status === 'cancelled') {
+            await connection.rollback();
+            return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat diubah.' });
+        }
         // Paid billing cannot be edited by anyone
         if (billing.status === 'paid') {
             await connection.rollback();
@@ -2404,34 +2556,31 @@ async function postBillingByMrIdRequestChange(req, res, next) {
             });
         }
 
-        // Get existing billing
-        const [billingRows] = await db.query(
-            `SELECT id, change_requests FROM sunday_clinic_billings WHERE mr_id = ?`,
-            [normalizedMrId]
-        );
-
-        if (billingRows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Billing tidak ditemukan'
-            });
-        }
-
-        const billing = billingRows[0];
-        const changeRequests = billing.change_requests ? JSON.parse(billing.change_requests) : [];
-
-        // Add new change request
-        changeRequests.push({
-            requestedBy: req.user.name || req.user.id || 'Staff',
-            requestedAt: new Date().toISOString(),
-            note: changeNote || 'Perubahan item tagihan',
-            items: items
-        });
-
         // Update billing with new items and set pending_changes flag
         const connection = await db.getConnection();
         try {
             await connection.beginTransaction();
+            const [[billing]] = await connection.query(
+                'SELECT id, status, change_requests FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE',
+                [normalizedMrId]
+            );
+            if (!billing) {
+                await connection.rollback();
+                return res.status(404).json({ success: false, message: 'Billing tidak ditemukan' });
+            }
+            if (billing.status === 'cancelled') {
+                await connection.rollback();
+                return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat diubah.' });
+            }
+            const changeRequests = Array.isArray(billing.change_requests)
+                ? billing.change_requests
+                : (billing.change_requests ? JSON.parse(billing.change_requests) : []);
+            changeRequests.push({
+                requestedBy: req.user.name || req.user.id || 'Staff',
+                requestedAt: new Date().toISOString(),
+                note: changeNote || 'Perubahan item tagihan',
+                items
+            });
 
             // Delete existing items
             await connection.query(
@@ -2590,7 +2739,7 @@ async function postBillingByMrIdApproveChanges(req, res, next) {
             `UPDATE sunday_clinic_billings
              SET pending_changes = FALSE, status = 'confirmed',
                  confirmed_at = NOW(), confirmed_by = ?
-             WHERE mr_id = ? AND pending_changes = TRUE`,
+             WHERE mr_id = ? AND pending_changes = TRUE AND status <> 'cancelled'`,
             [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 
@@ -2647,9 +2796,48 @@ async function getBillingByMrIdChanges(req, res, next) {
         next(error);
     }
 }
+
+const cancellationDependencies = {
+    db, getPaymentStatus: xenditPayment.getPaymentStatus,
+    getCreditCardChargeStatus: xenditPayment.getCreditCardChargeStatus,
+    getBillingSnapshot, getAdditionalBillingSnapshot,
+    writeBillingAudit, writeAdditionalBillingAudit
+};
+
+async function postBillingByMrIdCancel(req, res, next) {
+    const mrId = normalizeMrId(req.params.mrId);
+    if (!mrId) return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    try {
+        const result = await cancelMainBilling(cancellationDependencies, {
+            mrId, reason: req.body?.reason, req
+        });
+        return res.json({ success: true, data: result.billing, already_cancelled: result.already_cancelled });
+    } catch (error) {
+        if (error.statusCode) return res.status(error.statusCode).json({ success: false, message: error.message });
+        next(error);
+    }
+}
+
+async function postBillingByMrIdAdditionalByAdditionalBillingIdCancel(req, res, next) {
+    const mrId = normalizeMrId(req.params.mrId);
+    if (!mrId) return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    let additionalBillingId;
+    try {
+        additionalBillingId = parseAdditionalBillingId(req.params.additionalBillingId);
+        const result = await cancelAdditionalBilling(cancellationDependencies, {
+            mrId, additionalBillingId, reason: req.body?.reason, req
+        });
+        return res.json({ success: true, data: result.billing, already_cancelled: result.already_cancelled });
+    } catch (error) {
+        if (error.statusCode) return res.status(error.statusCode).json({ success: false, message: error.message });
+        next(error);
+    }
+}
 module.exports = {
     getBillingPending,
     getBillingByMrId,
+    postBillingByMrIdCancel,
+    postBillingByMrIdAdditionalByAdditionalBillingIdCancel,
     postBillingByMrId,
     postBillingByMrIdObat,
     postBillingByMrIdConfirm,

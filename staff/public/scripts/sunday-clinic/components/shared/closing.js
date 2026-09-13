@@ -246,6 +246,39 @@ function renderTransactions(transactions) {
     `;
 }
 
+function renderCancelledBillings(billings) {
+    if (!Array.isArray(billings) || billings.length === 0) return '';
+    return `
+        <section class="sc-closing-cancelled mt-3">
+            <h6><i class="fas fa-ban mr-1"></i>Tagihan Dibatalkan</h6>
+            <div class="table-responsive sc-closing-table-wrap">
+                <table class="table table-sm table-bordered mb-0 sc-closing-table">
+                    <thead class="thead-light"><tr>
+                        <th>Pasien / DRD</th><th>Jenis Tagihan</th><th>Dibatalkan</th>
+                        <th>Petugas</th><th>Alasan</th><th class="text-right">Nominal Asli</th>
+                    </tr></thead>
+                    <tbody>${billings.map((billing, index) => `
+                        <tr class="sc-closing-cancelled-row">
+                            <td data-label="Pasien / DRD"><strong>${escapeHtml(billing.patient_name || '-')}</strong>
+                                <div class="text-muted small">${escapeHtml(billing.patient_id || '-')} · ${escapeHtml(billing.mr_id || '-')}</div></td>
+                            <td data-label="Jenis Tagihan">${billing.source_type === 'additional' ? 'Tagihan Tambahan' : 'Tagihan Utama'}
+                                <div class="text-muted small">${escapeHtml(billing.reference_number || billing.mr_id || '-')}</div></td>
+                            <td data-label="Dibatalkan">${escapeHtml(formatDate(billing.cancelled_at, true))}</td>
+                            <td data-label="Petugas">${escapeHtml(billing.cancelled_by_name || billing.cancelled_by || '-')}</td>
+                            <td data-label="Alasan">${escapeHtml(billing.cancellation_reason || '-')}</td>
+                            <td data-label="Nominal Asli" class="text-right font-weight-bold">${formatCurrency(billing.total)}</td>
+                        </tr>
+                        <tr class="sc-closing-items-row"><td colspan="6"><details>
+                            <summary>Rincian item tagihan batal ${index + 1}</summary>
+                            ${renderTransactionItems(billing)}
+                        </details></td></tr>
+                    `).join('')}</tbody>
+                </table>
+            </div>
+        </section>
+    `;
+}
+
 function renderPreview(data) {
     state.preview = data || null;
     resetConfirmation();
@@ -260,6 +293,7 @@ function renderPreview(data) {
     const summary = data.summary || {};
     const breakdown = data.breakdown || {};
     const transactions = data.transactions || data.entries || [];
+    const cancelledBillings = data.cancelled_billings || [];
     const mainCount = summary.main_count
         ?? transactions.filter(transaction => transaction.source_type !== 'additional').length;
     const additionalCount = summary.additional_count
@@ -284,6 +318,12 @@ function renderPreview(data) {
             <div class="sc-closing-summary-card"><span>Tagihan Tambahan</span><strong>${formatCurrency(summary.additional_total)}</strong><small>${Number(additionalCount)} transaksi</small></div>
             <div class="sc-closing-summary-card sc-closing-summary-total"><span>Total Pendapatan</span><strong>${formatCurrency(summary.grand_total)}</strong><small>${Number(summary.patient_count || 0)} pasien · ${Number(summary.transaction_count || 0)} transaksi</small></div>
         </div>
+        ${(Number(summary.cancelled_count || 0) || cancelledBillings.length) ? `
+            <div class="alert alert-secondary mt-3 mb-0 sc-closing-cancelled-summary">
+                <strong>Tagihan Dibatalkan:</strong> ${Number(summary.cancelled_count ?? cancelledBillings.length)} tagihan · nominal asli ${formatCurrency(summary.cancelled_total)}.
+                Nominal ini tidak dihitung sebagai pendapatan.
+            </div>
+        ` : ''}
         <div class="sc-closing-breakdown-grid">
             <div><span>Tindakan</span><strong>${formatCurrency(breakdown.tindakan)}</strong></div>
             <div><span>Obat</span><strong>${formatCurrency(breakdown.obat)}</strong></div>
@@ -295,6 +335,7 @@ function renderPreview(data) {
             <h6><i class="fas fa-receipt mr-1"></i>Rincian Transaksi</h6>
             ${renderTransactions(transactions)}
         </section>
+        ${renderCancelledBillings(cancelledBillings)}
     `;
 
     const submit = byId(DOM_IDS.submit);
@@ -363,7 +404,9 @@ async function loadHistory() {
         container.innerHTML = rows.length ? rows.map(row => `
             <button type="button" class="sc-closing-history-row" data-closing-id="${escapeHtml(row.id)}">
                 <span><strong>${escapeHtml(formatDate(row.clinic_date || row.date))}</strong><small>${escapeHtml(row.closed_by_name || '-')} · ${escapeHtml(formatDate(row.closed_at, true))}</small></span>
-                <strong>${formatCurrency(row.grand_total ?? row.summary?.grand_total)}</strong>
+                <span><strong>${formatCurrency(row.grand_total ?? row.summary?.grand_total)}</strong>
+                    ${Number(row.cancelled_count || 0) ? `<small>${Number(row.cancelled_count)} batal · ${formatCurrency(row.cancelled_total)}</small>` : ''}
+                </span>
             </button>
         `).join('') : '<div class="sc-empty py-2">Belum ada riwayat closing.</div>';
     } catch (error) {

@@ -32,7 +32,9 @@ async function getBillingSnapshot(client, billingId) {
 
     const [[billing]] = await client.query(
         `SELECT id, mr_id, patient_id, subtotal, total, status, billing_data,
+                pending_changes, change_requests, invoice_url, etiket_url,
                 confirmed_at, confirmed_by, paid_at, paid_by, printed_at, printed_by,
+                cancellation_reason, cancelled_at, cancelled_by, cancelled_by_name,
                 last_modified_by, last_modified_at, created_at, updated_at
          FROM sunday_clinic_billings
          WHERE id = ?`,
@@ -77,6 +79,7 @@ async function getAdditionalBillingSnapshot(client, additionalBillingId) {
         `SELECT id, parent_billing_id, mr_id, patient_id, sequence_number, reference_number,
                 subtotal, total, status, payment_method, payment_notes,
                 confirmed_at, confirmed_by, paid_at, paid_by,
+                cancellation_reason, cancelled_at, cancelled_by, cancelled_by_name,
                 invoice_printed_at, invoice_printed_by, invoice_url,
                 etiket_printed_at, etiket_printed_by, etiket_url,
                 created_by, last_modified_by, last_modified_at, metadata, created_at, updated_at

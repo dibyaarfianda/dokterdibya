@@ -88,9 +88,9 @@ function buildDescription(mrId, patientName) {
  * @param {number} [params.expiryMinutes] - Expiry in minutes
  * @returns {Promise<Object>} Payment request result mapped to standard shape
  */
-async function createPaymentRequestV3({ amount, mrId, patientName, expiryMinutes }) {
+async function createPaymentRequestV3({ amount, mrId, patientName, expiryMinutes , referenceId: suppliedReferenceId }) {
     const api = getAxiosInstance();
-    const referenceId = generateReferenceId(mrId);
+    const referenceId = suppliedReferenceId || generateReferenceId(mrId);
     const expiry = expiryMinutes || XENDIT_CONFIG.qrisExpiryMinutes;
 
     const expiresAt = new Date();
@@ -178,7 +178,7 @@ async function createPaymentRequestV3({ amount, mrId, patientName, expiryMinutes
  * @param {number} [params.expiryMinutes] - Expiry in minutes (default from config)
  * @returns {Promise<Object>} QRIS payment details
  */
-async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
+async function createQRISPayment({ amount, mrId, patientName, expiryMinutes , referenceId: suppliedReferenceId }) {
     if (!isConfigured()) {
         throw new Error('Xendit tidak dikonfigurasi. Silakan set XENDIT_SECRET_KEY di .env');
     }
@@ -186,11 +186,11 @@ async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
     // Use v3 Payment Requests API if enabled
     if (XENDIT_CONFIG.useV3PaymentRequests) {
         logger.info('[Xendit] Using v3 Payment Requests API for QRIS');
-        return createPaymentRequestV3({ amount, mrId, patientName, expiryMinutes });
+        return createPaymentRequestV3({ amount, mrId, patientName, expiryMinutes, referenceId: suppliedReferenceId });
     }
 
     const api = getAxiosInstance();
-    const referenceId = generateReferenceId(mrId);
+    const referenceId = suppliedReferenceId || generateReferenceId(mrId);
     const expiry = expiryMinutes || XENDIT_CONFIG.qrisExpiryMinutes;
 
     // Calculate expiry time
@@ -265,13 +265,13 @@ async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
  * @param {number} [params.expiryHours] - Expiry in hours (default from config)
  * @returns {Promise<Object>} VA payment details
  */
-async function createVAPayment({ amount, mrId, bankCode, customerName, expiryHours }) {
+async function createVAPayment({ amount, mrId, bankCode, customerName, expiryHours , referenceId: suppliedReferenceId }) {
     if (!isConfigured()) {
         throw new Error('Xendit tidak dikonfigurasi. Silakan set XENDIT_SECRET_KEY di .env');
     }
 
     const api = getAxiosInstance();
-    const referenceId = generateReferenceId(mrId);
+    const referenceId = suppliedReferenceId || generateReferenceId(mrId);
     const expiry = expiryHours || XENDIT_CONFIG.vaExpiryHours;
 
     // Calculate expiry time
@@ -382,7 +382,7 @@ async function getPaymentStatus(xenditId, type = 'qris') {
                 status: status,
                 amount: data.amount,
                 paid_amount: status === 'paid' ? data.amount : 0,
-                paid_at: data.updated || null,
+                paid_at: status === 'paid' ? (data.updated || null) : null,
                 api_version: 'v3',
                 raw_response: data
             };
@@ -616,13 +616,13 @@ function getPublicKey() {
  * @param {string} params.patientName - Patient name
  * @returns {Promise<Object>} Charge result
  */
-async function createCreditCardCharge({ tokenId, authId, amount, mrId, patientName }) {
+async function createCreditCardCharge({ tokenId, authId, amount, mrId, patientName , referenceId: suppliedReferenceId }) {
     if (!isConfigured()) {
         throw new Error('Xendit tidak dikonfigurasi');
     }
 
     const api = getAxiosInstance();
-    const referenceId = generateReferenceId(mrId);
+    const referenceId = suppliedReferenceId || generateReferenceId(mrId);
 
     try {
         logger.info('[Xendit] Creating credit card charge', { mrId, amount, referenceId });

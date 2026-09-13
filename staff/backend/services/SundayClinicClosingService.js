@@ -200,6 +200,7 @@ function buildClosingPreview({
     }
 
     const transactions = [];
+    const cancelledBillings = [];
     const sources = [];
     const breakdown = { tindakan: 0, obat: 0, administratif: 0 };
 
@@ -212,7 +213,7 @@ function buildClosingPreview({
         const record = recordByMrId.get(String(billing.mr_id)) || {};
         const label = sourceType === 'additional' ? 'tagihan tambahan' : 'tagihan utama';
 
-        if (status !== 'paid') {
+        if (status !== 'paid' && status !== 'cancelled') {
             blockers.push(createIssue(
                 'BILLING_NOT_PAID',
                 `${label} ${billing.reference_number || billing.mr_id || sourceId} belum lunas.`,
@@ -283,6 +284,13 @@ function buildClosingPreview({
             paid_by: billing.paid_by || null,
             items: normalizedItems
         };
+        if (status === 'cancelled') {
+            source.cancellation_reason = billing.cancellation_reason || null;
+            source.cancelled_at = billing.cancelled_at || null;
+            source.cancelled_by = billing.cancelled_by || null;
+            source.cancelled_by_name = billing.cancelled_by_name || null;
+            cancelledBillings.push(source);
+        }
         sources.push(source);
 
         if (status !== 'paid') return;
@@ -300,10 +308,24 @@ function buildClosingPreview({
     }
 
     for (const payment of pendingPayments) {
+        const requiresReconciliation = payment.reconciliation_required === true
+            || Number(payment.reconciliation_required) === 1;
+        const isPaidCancelledPayment = payment.status === 'paid'
+            && mainBillings.some(billing => String(billing.id) === String(payment.billing_id)
+                && String(billing.status).toLowerCase() === 'cancelled');
+        const code = requiresReconciliation
+            ? 'PAYMENT_RECONCILIATION_REQUIRED'
+            : isPaidCancelledPayment
+                ? 'CANCELLED_BILLING_PAID_PAYMENT'
+                : 'ONLINE_PAYMENT_PENDING';
+        const message = requiresReconciliation || isPaidCancelledPayment
+            ? `Pembayaran ${payment.id} untuk tagihan batal ${payment.mr_id || payment.billing_id} memerlukan rekonsiliasi.`
+            : `Pembayaran online ${payment.payment_method || ''} untuk ${payment.mr_id || payment.billing_id} masih diproses.`.replace(/\s+/g, ' ').trim();
         blockers.push(createIssue(
-            'ONLINE_PAYMENT_PENDING',
-            `Pembayaran online ${payment.payment_method || ''} untuk ${payment.mr_id || payment.billing_id} masih diproses.`.replace(/\s+/g, ' ').trim(),
-            { payment_id: payment.id, billing_id: payment.billing_id, mr_id: payment.mr_id }
+            code,
+            message,
+            { payment_id: payment.id, billing_id: payment.billing_id, mr_id: payment.mr_id,
+                payment_status: payment.status || 'pending', reconciliation_reason: payment.reconciliation_reason || null }
         ));
     }
 
@@ -327,7 +349,9 @@ function buildClosingPreview({
         additional_total: additionalTotal,
         grand_total: normalizeMoney(mainTotal + additionalTotal),
         patient_count: patientIds.size,
-        transaction_count: transactions.length
+        transaction_count: transactions.length,
+        cancelled_count: cancelledBillings.length,
+        cancelled_total: normalizeMoney(cancelledBillings.reduce((sum, billing) => sum + billing.total, 0))
     };
 
     const fingerprint = buildSourceFingerprint({
@@ -337,12 +361,17 @@ function buildClosingPreview({
             patient_id: record.patient_id,
             billing_id: record.billing_id || null
         })),
-        sources: sources.map(({ patient_name: _patientName, ...source }) => source),
+        sources: sources.map(({ patient_name, ...source }) =>
+            source.status === 'cancelled' ? { ...source, patient_name } : source),
         pendingPayments: pendingPayments.map(payment => ({
             id: payment.id,
             billing_id: payment.billing_id,
             status: payment.status,
-            amount: normalizeMoney(payment.amount)
+            amount: normalizeMoney(payment.amount),
+            ...(payment.reconciliation_required ? {
+                reconciliation_required: true,
+                reconciliation_reason: payment.reconciliation_reason || null
+            } : {})
         })),
         pendingRevisions: pendingRevisions.map(revision => ({
             id: revision.id,
@@ -357,6 +386,7 @@ function buildClosingPreview({
         summary,
         breakdown,
         transactions,
+        cancelled_billings: cancelledBillings,
         blockers,
         anomalies,
         can_close: blockers.length === 0 && anomalies.length === 0,
@@ -400,6 +430,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
                b.pending_changes,
                b.confirmed_at, b.confirmed_by, b.paid_at, b.paid_by,
                b.last_modified_at, b.updated_at,
+               b.cancellation_reason, b.cancelled_at, b.cancelled_by, b.cancelled_by_name,
                COALESCE(NULLIF(p.full_name, ''), NULLIF(sa.patient_name, ''), b.patient_id) AS patient_name,
                (
                    SELECT tp.payment_method
@@ -423,6 +454,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
                ab.reference_number, ab.subtotal, ab.total, ab.status,
                ab.payment_method, ab.confirmed_at, ab.confirmed_by,
                ab.paid_at, ab.paid_by, ab.last_modified_at, ab.updated_at,
+               ab.cancellation_reason, ab.cancelled_at, ab.cancelled_by, ab.cancelled_by_name,
                COALESCE(NULLIF(p.full_name, ''), NULLIF(sa.patient_name, ''), ab.patient_id) AS patient_name
         FROM sunday_clinic_additional_billings ab
         JOIN sunday_clinic_records scr
@@ -454,10 +486,15 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         : [];
     const pendingPayments = mainIds.length
         ? await queryRows(client, `
-            SELECT id, billing_id, mr_id, payment_method, amount, status, expires_at, updated_at
-            FROM tagihan_payments
-            WHERE billing_id IN (?) AND status = 'pending'
-            ORDER BY billing_id, id${lockClause}
+            SELECT tp.id, tp.billing_id, tp.mr_id, tp.payment_method, tp.amount,
+                   tp.status, tp.expires_at, tp.updated_at,
+                   tp.reconciliation_required, tp.reconciliation_reason
+            FROM tagihan_payments tp
+            JOIN sunday_clinic_billings b ON b.id = tp.billing_id
+            WHERE tp.billing_id IN (?)
+              AND (tp.status = 'pending' OR tp.reconciliation_required = 1
+                   OR (tp.status = 'paid' AND b.status = 'cancelled'))
+            ORDER BY tp.billing_id, tp.id${lockClause}
         `, [mainIds])
         : [];
 
@@ -494,7 +531,7 @@ function normalizeClosingHeader(row) {
         grand_total: normalizeMoney(row.grand_total),
         patient_count: Number(row.patient_count || 0),
         transaction_count: Number(row.transaction_count || 0),
-        summary: parseJson(row.summary_json, {}),
+        summary: { cancelled_count: 0, cancelled_total: 0, ...parseJson(row.summary_json, {}) },
         breakdown: parseJson(row.breakdown_json, {}),
         source_fingerprint: row.source_fingerprint,
         closed_by_user_id: row.closed_by_user_id,
@@ -538,7 +575,7 @@ async function getClosingDetail(client, idOrHeader) {
         WHERE closing_id = ?
         ORDER BY source_type, source_id
     `, [header.id]);
-    const transactions = entryRows.map(row => ({
+    const entries = entryRows.map(row => ({
         id: Number(row.id),
         closing_id: Number(row.closing_id),
         source_type: row.source_type,
@@ -556,6 +593,18 @@ async function getClosingDetail(client, idOrHeader) {
         items: parseJson(row.item_snapshot, []),
         source_snapshot: parseJson(row.source_snapshot, {})
     }));
+    const cancelledBillings = entries
+        .filter(entry => entry.source_snapshot.status === 'cancelled')
+        .map(entry => ({
+            ...entry,
+            status: 'cancelled',
+            cancellation_reason: entry.source_snapshot.cancellation_reason || null,
+            cancelled_at: entry.source_snapshot.cancelled_at || null,
+            cancelled_by: entry.source_snapshot.cancelled_by || null,
+            cancelled_by_name: entry.source_snapshot.cancelled_by_name || null
+        }));
+    // Older snapshots only contain paid entries and may lack an explicit status.
+    const transactions = entries.filter(entry => entry.source_snapshot.status !== 'cancelled');
 
     const closedRecord = {
         id: header.id,
@@ -574,6 +623,7 @@ async function getClosingDetail(client, idOrHeader) {
         breakdown: header.breakdown,
         transactions,
         entries: transactions,
+        cancelled_billings: cancelledBillings,
         blockers: [],
         anomalies: [],
         can_close: false,
@@ -750,8 +800,8 @@ function getClosingActor(actor = {}) {
     };
 }
 
-async function insertClosingEntries(connection, closingId, transactions) {
-    for (const transaction of transactions) {
+async function insertClosingEntries(connection, closingId, entries) {
+    for (const transaction of entries) {
         const sourceSnapshot = {
             source_type: transaction.source_type,
             source_id: transaction.source_id,
@@ -762,6 +812,12 @@ async function insertClosingEntries(connection, closingId, transactions) {
             paid_at: transaction.paid_at,
             paid_by: transaction.paid_by
         };
+        if (transaction.status === 'cancelled') {
+            sourceSnapshot.cancellation_reason = transaction.cancellation_reason || null;
+            sourceSnapshot.cancelled_at = transaction.cancelled_at || null;
+            sourceSnapshot.cancelled_by = transaction.cancelled_by || null;
+            sourceSnapshot.cancelled_by_name = transaction.cancelled_by_name || null;
+        }
         await connection.query(`
             INSERT INTO sunday_clinic_closing_entries
             (closing_id, source_type, source_id, parent_billing_id,
@@ -866,7 +922,10 @@ async function createClosing(client = db, { clinicDate: rawClinicDate, date, fin
             closingActor.role
         ]);
         const closingId = insertResult.insertId;
-        await insertClosingEntries(connection, closingId, preview.transactions);
+        await insertClosingEntries(connection, closingId, [
+            ...preview.transactions,
+            ...preview.cancelled_billings
+        ]);
         const header = await findClosingHeader(connection, { id: closingId });
         const detail = await getClosingDetail(connection, header);
 
@@ -900,7 +959,7 @@ async function listClosings(client = db, options = {}) {
     const rows = await queryRows(client, `
         SELECT id, DATE_FORMAT(clinic_date, '%Y-%m-%d') AS clinic_date,
                main_total, additional_total, grand_total,
-               patient_count, transaction_count, source_fingerprint,
+               patient_count, transaction_count, summary_json, source_fingerprint,
                closed_by_user_id, closed_by_name, closed_by_role, closed_at
         FROM sunday_clinic_closings
         ORDER BY clinic_date DESC, id DESC
@@ -915,6 +974,8 @@ async function listClosings(client = db, options = {}) {
             grand_total: normalizeMoney(row.grand_total),
             patient_count: Number(row.patient_count || 0),
             transaction_count: Number(row.transaction_count || 0),
+            cancelled_count: Number(parseJson(row.summary_json, {}).cancelled_count || 0),
+            cancelled_total: normalizeMoney(parseJson(row.summary_json, {}).cancelled_total),
             fingerprint: row.source_fingerprint,
             closed_by_user_id: row.closed_by_user_id,
             closed_by_name: row.closed_by_name,

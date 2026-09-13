@@ -79,7 +79,9 @@ describe('SundayClinicClosingService', () => {
             additional_total: 25000,
             grand_total: 160000,
             patient_count: 1,
-            transaction_count: 2
+            transaction_count: 2,
+            cancelled_count: 0,
+            cancelled_total: 0
         });
         expect(preview.breakdown).toEqual({ tindakan: 100000, obat: 30000, administratif: 30000 });
         expect(preview.transactions).toHaveLength(2);
@@ -152,7 +154,9 @@ describe('SundayClinicClosingService', () => {
             additional_total: 0,
             grand_total: 181500,
             patient_count: 1,
-            transaction_count: 1
+            transaction_count: 1,
+            cancelled_count: 0,
+            cancelled_total: 0
         });
         expect(preview.fingerprint).toBe(buildClosingPreview({
             clinicDate: '2026-08-23',

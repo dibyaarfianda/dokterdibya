@@ -1,4 +1,4 @@
-import { createPageRequestScope } from '../staff-api.js';
+import { createPageRequestScope, staffApiRequest } from '../staff-api.js';
 import { escapeHtml, escapeAttribute, sanitizeUrl } from '../safe-render.js';
 
 let invoiceRawData = [];
@@ -93,7 +93,7 @@ function renderInvoiceRows(invoices) {
         paid: '<span class="badge badge-success">Lunas</span>',
         confirmed: '<span class="badge badge-info">Dikonfirmasi</span>',
         draft: '<span class="badge badge-warning">Draft</span>',
-        cancelled: '<span class="badge badge-danger">Dibatalkan</span>'
+        cancelled: '<span class="badge badge-danger">Batal</span>'
     };
     const locationMap = {
         klinik_private: 'Klinik Privat',
@@ -117,20 +117,29 @@ function renderInvoiceRows(invoices) {
         const paidBy = invoice.paid_by_display
             || invoice.paid_by
             || (statusValue === 'paid' ? invoice.last_modified_by : '');
-        const statusBy = statusValue === 'paid'
+        const cancelledDate = invoice.cancelled_at ? new Date(invoice.cancelled_at) : null;
+        const cancelledAt = cancelledDate && !Number.isNaN(cancelledDate.getTime())
+            ? cancelledDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : '';
+        const statusBy = statusValue === 'cancelled'
+            ? `<small class="text-danger d-block">Alasan: ${escapeHtml(invoice.cancellation_reason || '-')}</small>
+               <small class="text-muted d-block">${escapeHtml(invoice.cancelled_by_name || invoice.cancelled_by || '-')}${cancelledAt ? ` · ${escapeHtml(cancelledAt)}` : ''}</small>`
+            : statusValue === 'paid'
             ? (paidBy ? `<small class="text-muted d-block"><i class="fas fa-money-check-alt mr-1"></i>${escapeHtml(paidBy)}</small>` : '')
             : (invoice.confirmed_by ? `<small class="text-muted d-block"><i class="fas fa-user-check mr-1"></i>${escapeHtml(invoice.confirmed_by)}</small>` : '');
 
+        const mrId = String(invoice.mr_id || invoice.invoice_number || '');
         const invoiceUrl = sanitizeUrl(invoice.invoice_signed_url);
         const etiketUrl = sanitizeUrl(invoice.etiket_signed_url);
-        const invoiceButton = invoiceUrl
+        const invoiceButton = statusValue === 'cancelled' && mrId
+            ? `<button type="button" class="btn btn-xs btn-info" data-action="invoice-print-cancelled" data-mr-id="${escapeAttribute(mrId)}" title="Cetak invoice dengan tanda batal"><i class="fas fa-file-pdf"></i> Cetak Invoice Batal</button>`
+            : invoiceUrl
             ? `<a href="${escapeAttribute(invoiceUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-info" title="Lihat Invoice PDF"><i class="fas fa-file-pdf"></i> Invoice</a>`
             : '';
         const etiketButton = etiketUrl
             ? `<a href="${escapeAttribute(etiketUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-secondary ml-1" title="Lihat Etiket PDF"><i class="fas fa-tag"></i> Etiket</a>`
             : '';
 
-        const mrId = String(invoice.mr_id || invoice.invoice_number || '');
         const rawMrUrl = mrId && typeof window.buildSundayClinicAppUrl === 'function'
             ? window.buildSundayClinicAppUrl(mrId, 'billing')
             : '';
@@ -156,6 +165,23 @@ function renderInvoiceRows(invoices) {
                 </td>
             </tr>`;
     }).join('');
+}
+
+async function printCancelledInvoice(mrId, button) {
+    if (!mrId || !button) return;
+    button.disabled = true;
+    try {
+        const result = await staffApiRequest(`/api/sunday-clinic/billing/${encodeURIComponent(mrId)}/print-invoice`, {
+            method: 'POST'
+        });
+        const downloadUrl = sanitizeUrl(result?.downloadUrl);
+        if (!result?.success || !downloadUrl) throw new Error(result?.message || 'Gagal mencetak invoice batal.');
+        window.open(downloadUrl, '_blank', 'noopener');
+    } catch (error) {
+        window.showToast?.('error', error.message || 'Gagal mencetak invoice batal.');
+    } finally {
+        button.disabled = false;
+    }
 }
 
 export function sortInvoiceTable(column) {
@@ -209,6 +235,10 @@ document.addEventListener('click', event => {
     if (target.dataset.action === 'invoice-sort') {
         event.preventDefault();
         sortInvoiceTable(target.dataset.sort);
+    }
+    if (target.dataset.action === 'invoice-print-cancelled') {
+        event.preventDefault();
+        printCancelledInvoice(target.dataset.mrId, target);
     }
 });
 

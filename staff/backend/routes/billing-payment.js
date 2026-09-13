@@ -5,6 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { randomUUID } = require('crypto');
 const db = require('../db');
 const logger = require('../utils/logger');
 const { sendSuccess, sendError } = require('../utils/response');
@@ -27,6 +28,46 @@ try {
  */
 function normalizeMrId(mrId) {
     return mrId ? mrId.toUpperCase().trim() : null;
+}
+
+// Commit the pending attempt before contacting the provider. A timeout or a
+// database failure afterwards must leave evidence that blocks cancellation.
+async function reservePaymentAttempt({ billingId, patientId, method, actor }) {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+        const [[billing]] = await connection.query(
+            'SELECT id, mr_id, patient_id, status, total FROM sunday_clinic_billings WHERE id = ? FOR UPDATE',
+            [billingId]
+        );
+        if (!billing || (patientId && String(patientId) !== String(billing.patient_id))) {
+            throw Object.assign(new Error('Tagihan tidak ditemukan'), { statusCode: 404 });
+        }
+        if (billing.status !== 'confirmed') {
+            throw Object.assign(new Error('Tagihan harus aktif dan dikonfirmasi untuk dibayar'), { statusCode: 409 });
+        }
+        const [active] = await connection.query(`
+            SELECT id FROM tagihan_payments
+            WHERE billing_id = ? AND (status IN ('pending', 'paid') OR reconciliation_required = 1)
+            FOR UPDATE
+        `, [billingId]);
+        if (active.length) {
+            throw Object.assign(new Error('Pembayaran sebelumnya masih diproses atau perlu diperiksa'), { statusCode: 409 });
+        }
+        const referenceId = `DD-${randomUUID()}`;
+        const [attempt] = await connection.query(`
+            INSERT INTO tagihan_payments
+                (billing_id, mr_id, patient_id, payment_method, amount, status, created_by, xendit_reference_id)
+            VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)
+        `, [billing.id, billing.mr_id, billing.patient_id, method, Number(billing.total), actor || 'System', referenceId]);
+        await connection.commit();
+        return { ...attempt, referenceId };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
 }
 
 function broadcastAccountingRefresh(mrId, reason, paymentId = null) {
@@ -120,8 +161,14 @@ router.post('/:mrId/create-payment', verifyToken, requireOpenAccountingDate, asy
         let paymentResult;
         const amount = parseFloat(billing.total);
 
+        const insertResult = await reservePaymentAttempt({
+            billingId: billing.id, method: payment_method,
+            actor: req.user?.name || req.user?.id || 'System'
+        });
+
         if (payment_method === 'qris') {
             paymentResult = await xenditPayment.createQRISPayment({
+                referenceId: insertResult.referenceId,
                 amount,
                 mrId,
                 patientName: billing.patient_name
@@ -130,6 +177,7 @@ router.post('/:mrId/create-payment', verifyToken, requireOpenAccountingDate, asy
             // Virtual Account
             const bankCode = payment_method.replace('va_', '').toUpperCase();
             paymentResult = await xenditPayment.createVAPayment({
+                referenceId: insertResult.referenceId,
                 amount,
                 mrId,
                 bankCode,
@@ -137,29 +185,16 @@ router.post('/:mrId/create-payment', verifyToken, requireOpenAccountingDate, asy
             });
         }
 
-        // Save to database
-        const [insertResult] = await db.query(`
-            INSERT INTO tagihan_payments (
-                billing_id, mr_id, patient_id, xendit_id, xendit_reference_id,
-                payment_method, qris_string, qris_url, va_number, va_bank_code,
-                amount, status, expires_at, xendit_response, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
-        `, [
-            billing.id,
-            mrId,
-            billing.patient_id,
-            paymentResult.xendit_id,
-            paymentResult.reference_id,
-            payment_method,
-            paymentResult.qris_string || null,
-            paymentResult.qris_url || null,
-            paymentResult.va_number || null,
-            paymentResult.va_bank_code || null,
-            amount,
-            paymentResult.expires_at,
-            JSON.stringify(paymentResult.raw_response),
-            req.user?.name || req.user?.id || 'System'
-        ]);
+        // Complete the durable pending attempt; do not overwrite a concurrent webhook status.
+        await db.query(`
+            UPDATE tagihan_payments SET xendit_id = ?, xendit_reference_id = ?,
+                qris_string = ?, qris_url = ?, va_number = ?, va_bank_code = ?,
+                expires_at = ?, xendit_response = ?
+            WHERE id = ?
+        `, [paymentResult.xendit_id, paymentResult.reference_id,
+            paymentResult.qris_string || null, paymentResult.qris_url || null,
+            paymentResult.va_number || null, paymentResult.va_bank_code || null,
+            paymentResult.expires_at, JSON.stringify(paymentResult.raw_response), insertResult.insertId]);
 
         // Log the event
         await db.query(`
@@ -210,7 +245,7 @@ router.post('/:mrId/create-payment', verifyToken, requireOpenAccountingDate, asy
             mrId,
             error: error.message
         });
-        return sendError(res, error.message || 'Gagal membuat pembayaran', 500);
+        return sendError(res, error.message || 'Gagal membuat pembayaran', error.statusCode || 500);
     }
 });
 
@@ -238,6 +273,8 @@ router.get('/:mrId/payment-status/:paymentId', verifyToken, async (req, res) => 
             return sendSuccess(res, {
                 payment_id: payment.id,
                 status: payment.status,
+                reconciliation_required: !!payment.reconciliation_required,
+                reconciliation_reason: payment.reconciliation_reason || null,
                 amount: parseFloat(payment.amount),
                 paid_at: payment.paid_at,
                 expires_at: payment.expires_at
@@ -248,7 +285,7 @@ router.get('/:mrId/payment-status/:paymentId', verifyToken, async (req, res) => 
         if (payment.expires_at && new Date(payment.expires_at) < new Date()) {
             // Update status to expired
             await db.query(
-                'UPDATE tagihan_payments SET status = ? WHERE id = ?',
+                "UPDATE tagihan_payments SET status = ? WHERE id = ? AND status = 'pending'",
                 ['expired', paymentId]
             );
 
@@ -267,11 +304,12 @@ router.get('/:mrId/payment-status/:paymentId', verifyToken, async (req, res) => 
 
             // If paid, update our DB
             if (xenditStatus.status === 'paid') {
-                await handlePaymentSuccess(payment, xenditStatus);
+                const completion = await handlePaymentSuccess(payment, xenditStatus);
 
                 return sendSuccess(res, {
                     payment_id: payment.id,
                     status: 'paid',
+                    reconciliation_required: !!completion?.reconciliation_required,
                     amount: parseFloat(payment.amount),
                     paid_at: xenditStatus.paid_at || new Date().toISOString()
                 });
@@ -287,6 +325,8 @@ router.get('/:mrId/payment-status/:paymentId', verifyToken, async (req, res) => 
         return sendSuccess(res, {
             payment_id: payment.id,
             status: payment.status,
+                reconciliation_required: !!payment.reconciliation_required,
+                reconciliation_reason: payment.reconciliation_reason || null,
             amount: parseFloat(payment.amount),
             expires_at: payment.expires_at,
             expires_in_seconds: Math.max(0, Math.floor((new Date(payment.expires_at) - new Date()) / 1000))
@@ -324,7 +364,7 @@ router.get('/:mrId/payment-details', verifyToken, async (req, res) => {
         // Check expiration for pending (skip for insurance - no expiry)
         if (payment.status === 'pending' && payment.expires_at && new Date(payment.expires_at) < new Date()) {
             await db.query(
-                'UPDATE tagihan_payments SET status = ? WHERE id = ?',
+                "UPDATE tagihan_payments SET status = ? WHERE id = ? AND status = 'pending'",
                 ['expired', payment.id]
             );
             return sendSuccess(res, null, 'Pembayaran sudah kadaluarsa');
@@ -335,6 +375,8 @@ router.get('/:mrId/payment-details', verifyToken, async (req, res) => {
             payment_method: payment.payment_method,
             amount: parseFloat(payment.amount),
             status: payment.status,
+                reconciliation_required: !!payment.reconciliation_required,
+                reconciliation_reason: payment.reconciliation_reason || null,
             created_at: payment.created_at,
             expires_at: payment.expires_at,
             paid_at: payment.paid_at
@@ -408,7 +450,7 @@ router.post('/:mrId/cancel-payment/:paymentId', verifyToken, requireOpenAccounti
 
         // Update status to cancelled
         await db.query(
-            'UPDATE tagihan_payments SET status = ? WHERE id = ?',
+            "UPDATE tagihan_payments SET status = ? WHERE id = ? AND status = 'pending'",
             ['cancelled', paymentId]
         );
 
@@ -476,20 +518,11 @@ router.post('/:mrId/create-insurance-payment', verifyToken, requireOpenAccountin
             notes: (notes || '').trim()
         };
 
-        // Insert payment record with status 'pending'
-        const [insertResult] = await db.query(`
-            INSERT INTO tagihan_payments (
-                billing_id, mr_id, patient_id,
-                payment_method, amount, status, insurance_info, created_by
-            ) VALUES (?, ?, ?, 'asuransi', ?, 'pending', ?, ?)
-        `, [
-            billing.id,
-            mrId,
-            billing.patient_id,
-            amount,
-            JSON.stringify(insuranceInfo),
-            req.user?.name || req.user?.id || 'System'
-        ]);
+        const insertResult = await reservePaymentAttempt({
+            billingId: billing.id, method: 'asuransi', actor: req.user?.name || req.user?.id || 'System'
+        });
+        await db.query('UPDATE tagihan_payments SET insurance_info = ? WHERE id = ?',
+            [JSON.stringify(insuranceInfo), insertResult.insertId]);
 
         // Log the event
         await db.query(`
@@ -526,7 +559,7 @@ router.post('/:mrId/create-insurance-payment', verifyToken, requireOpenAccountin
             mrId,
             error: error.message
         });
-        return sendError(res, error.message || 'Gagal membuat pembayaran asuransi', 500);
+        return sendError(res, error.message || 'Gagal membuat pembayaran asuransi', error.statusCode || 500);
     }
 });
 
@@ -568,7 +601,7 @@ router.post('/:mrId/confirm-insurance/:paymentId', verifyToken, requireOpenAccou
             paymentId,
             error: error.message
         });
-        return sendError(res, 'Gagal mengkonfirmasi pembayaran asuransi', 500);
+        return sendError(res, error.message || 'Gagal mengkonfirmasi pembayaran asuransi', error.statusCode || 500);
     }
 });
 
@@ -632,8 +665,13 @@ router.post('/:mrId/create-card-charge', verifyToken, requireOpenAccountingDate,
 
         const amount = parseFloat(billing.total);
 
+        const insertResult = await reservePaymentAttempt({
+            billingId: billing.id, method: 'credit_card', actor: req.user?.name || req.user?.id || 'System'
+        });
+
         // Create credit card charge
         const chargeResult = await xenditPayment.createCreditCardCharge({
+                referenceId: insertResult.referenceId,
             tokenId: token_id,
             authId: authentication_id,
             amount,
@@ -641,24 +679,13 @@ router.post('/:mrId/create-card-charge', verifyToken, requireOpenAccountingDate,
             patientName: billing.patient_name
         });
 
-        // Save to database
-        const [insertResult] = await db.query(`
-            INSERT INTO tagihan_payments (
-                billing_id, mr_id, patient_id, xendit_id, xendit_reference_id,
-                payment_method, amount, status, paid_at, xendit_response, created_by
-            ) VALUES (?, ?, ?, ?, ?, 'credit_card', ?, ?, ?, ?, ?)
-        `, [
-            billing.id,
-            mrId,
-            billing.patient_id,
-            chargeResult.xendit_id,
-            chargeResult.reference_id,
-            amount,
-            chargeResult.status === 'captured' ? 'paid' : 'pending',
-            chargeResult.paid_at,
-            JSON.stringify(chargeResult.raw_response),
-            req.user?.name || req.user?.id || 'System'
-        ]);
+        await db.query(`
+            UPDATE tagihan_payments SET xendit_id = ?, xendit_reference_id = ?,
+                xendit_response = ?, card_brand = ?, masked_card_number = ?
+            WHERE id = ?
+        `, [chargeResult.xendit_id, chargeResult.reference_id,
+            JSON.stringify(chargeResult.raw_response), chargeResult.card_brand || null,
+            chargeResult.masked_card_number || null, insertResult.insertId]);
 
         // Log the event
         await db.query(`
@@ -714,7 +741,7 @@ router.post('/:mrId/create-card-charge', verifyToken, requireOpenAccountingDate,
             mrId,
             error: error.message
         });
-        return sendError(res, error.message || 'Gagal memproses pembayaran kartu', 500);
+        return sendError(res, error.message || 'Gagal memproses pembayaran kartu', error.statusCode || 500);
     }
 });
 
@@ -733,13 +760,16 @@ router.post('/:mrId/create-3ds-auth', verifyToken, requireOpenAccountingDate, as
 
         // Get billing amount
         const [[billing]] = await db.query(`
-            SELECT total FROM sunday_clinic_billings WHERE mr_id = ?
+            SELECT total, status FROM sunday_clinic_billings WHERE mr_id = ?
         `, [mrId]);
 
         if (!billing) {
             return sendError(res, 'Billing tidak ditemukan', 404);
         }
 
+        if (billing.status !== 'confirmed') {
+            return sendError(res, 'Tagihan tidak aktif untuk pembayaran', 409);
+        }
         const amount = parseFloat(billing.total);
 
         // Create 3DS authentication
@@ -790,8 +820,23 @@ async function handlePaymentSuccess(payment, webhookData) {
         }
         const paidBy = webhookData.confirmed_by || 'Xendit';
 
-        // Persist the provider truth even when another callback already marked the
-        // payment paid. The billing row lock below keeps stock deduction idempotent.
+        // All billing mutations lock the invoice before its payment rows.
+        const [[billingRow]] = await connection.query(`
+            SELECT id, status
+            FROM sunday_clinic_billings
+            WHERE id = ?
+            FOR UPDATE
+        `, [payment.billing_id]);
+        if (!billingRow) {
+            throw new Error('Billing tidak ditemukan saat memproses pembayaran');
+        }
+        if (billingRow.status === 'cancelled' && webhookData.confirmation_type === 'insurance_claim_approved') {
+            const error = new Error('Tagihan batal tidak dapat dilunasi');
+            error.statusCode = 409;
+            throw error;
+        }
+
+        // Persist provider truth even for an invoice that was cancelled earlier.
         await connection.query(`
             UPDATE tagihan_payments
             SET status = 'paid',
@@ -804,15 +849,24 @@ async function handlePaymentSuccess(payment, webhookData) {
             payment.id
         ]);
 
-        const [[billingRow]] = await connection.query(`
-            SELECT id, status
-            FROM sunday_clinic_billings
-            WHERE id = ?
-            FOR UPDATE
-        `, [payment.billing_id]);
-
-        if (!billingRow) {
-            throw new Error('Billing tidak ditemukan saat memproses pembayaran');
+        if (billingRow.status === 'cancelled') {
+            const [flagged] = await connection.query(`
+                UPDATE tagihan_payments
+                SET reconciliation_required = 1,
+                    reconciliation_reason = 'late_provider_payment_after_cancellation'
+                WHERE id = ? AND COALESCE(reconciliation_required, 0) = 0
+            `, [payment.id]);
+            if (flagged.affectedRows) {
+                await connection.query(`
+                    INSERT INTO tagihan_payment_logs
+                        (payment_id, billing_id, mr_id, event_type, event_source,
+                         status_before, status_after, response_data)
+                    VALUES (?, ?, ?, 'payment.reconciliation_required', 'webhook', ?, 'paid', ?)
+                `, [payment.id, payment.billing_id, mrId, payment.status || null, JSON.stringify(webhookData)]);
+            }
+            await connection.commit();
+            broadcastAccountingRefresh(mrId, 'payment_reconciliation_required', payment.id);
+            return { reconciliation_required: true, billing_status: 'cancelled' };
         }
 
         if (billingRow.status === 'paid') {
@@ -948,3 +1002,4 @@ async function handlePaymentSuccess(payment, webhookData) {
 
 module.exports = router;
 module.exports.handlePaymentSuccess = handlePaymentSuccess;
+module.exports.reservePaymentAttempt = reservePaymentAttempt;

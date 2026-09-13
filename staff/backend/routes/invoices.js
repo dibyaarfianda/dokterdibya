@@ -18,6 +18,7 @@ router.get('/history', verifyToken, async (req, res) => {
                 b.mr_id,
                 b.patient_id,
                 b.status,
+                b.cancellation_reason, b.cancelled_at, b.cancelled_by_name,
                 b.total,
                 b.invoice_url,
                 b.etiket_url,
@@ -35,7 +36,7 @@ router.get('/history', verifyToken, async (req, res) => {
             FROM sunday_clinic_billings b
             LEFT JOIN patients p ON p.id COLLATE utf8mb4_unicode_ci = b.patient_id COLLATE utf8mb4_unicode_ci
             LEFT JOIN sunday_clinic_records r ON r.mr_id COLLATE utf8mb4_unicode_ci = b.mr_id COLLATE utf8mb4_unicode_ci AND r.id = (SELECT MIN(id) FROM sunday_clinic_records WHERE mr_id COLLATE utf8mb4_unicode_ci = b.mr_id COLLATE utf8mb4_unicode_ci)
-            WHERE b.invoice_url IS NOT NULL
+            WHERE (b.invoice_url IS NOT NULL OR b.status = 'cancelled')
         `;
         const params = [];
 

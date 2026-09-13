@@ -29,6 +29,7 @@ const {
     buildAggregateSummary
 } = require('./shared');
 const { updateQueueStatus } = require('./queue');
+const { assertNoCancelledBillingEvidence } = require('./billing-cancellation');
 
 function isPlainObject(value) {
     return Boolean(value) &&
@@ -1172,6 +1173,7 @@ async function deleteRecordsByMrId(req, res, next) {
         await connection.beginTransaction();
 
         try {
+            await assertNoCancelledBillingEvidence(connection, { mrId });
             // Delete additional billing items before their parent bills for explicit cleanup.
             await connection.query(
                 `DELETE FROM sunday_clinic_additional_billing_items
@@ -1239,6 +1241,9 @@ async function deleteRecordsByMrId(req, res, next) {
 
     } catch (error) {
         logger.error(`[DELETE MR] Error deleting ${mrId}:`, error);
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({ success: false, message: error.message });
+        }
         next(error);
     }
 }

@@ -169,6 +169,10 @@
             color: #f97316;
             border: 1px solid rgba(249, 115, 22, 0.3);
         }
+        .badge-cancelled {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fca5a5;
+        }
 
         .btn-pay-small {
             background: linear-gradient(135deg, #28a7e9, #1d8bd1);
@@ -829,6 +833,12 @@
             return 'Rp ' + Number(num).toLocaleString('id-ID');
         }
 
+        function escapeHtml(value) {
+            return String(value == null ? '' : value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
         function formatDate(dateStr) {
             const d = new Date(dateStr);
             const day = d.getDate();
@@ -871,19 +881,20 @@
 
                 let html = '';
                 billings.forEach(function(b) {
-                    const isPaid = b.status === 'paid' || b.payment_status === 'paid';
-                    const badgeClass = isPaid ? 'badge-paid' : 'badge-confirmed';
-                    const badgeText = isPaid ? 'LUNAS' : 'BELUM BAYAR';
+                    const isCancelled = b.status === 'cancelled';
+                    const isPaid = !isCancelled && (b.status === 'paid' || b.payment_status === 'paid');
+                    const badgeClass = isCancelled ? 'badge-cancelled' : (isPaid ? 'badge-paid' : 'badge-confirmed');
+                    const badgeText = isCancelled ? 'DIBATALKAN' : (isPaid ? 'LUNAS' : 'BELUM BAYAR');
 
                     html += '<div class="billing-card" onclick="openBilling(' + b.id + ')">' +
                         '<div class="billing-header">' +
-                            '<div class="billing-mr">' + b.mr_id + '</div>' +
+                            '<div class="billing-mr">' + escapeHtml(b.mr_id) + '</div>' +
                             '<div class="billing-date">' + formatDate(b.created_at) + '</div>' +
                         '</div>' +
                         '<div class="billing-amount">' + formatRupiah(b.total) + '</div>' +
                         '<div class="billing-footer">' +
                             '<span class="badge ' + badgeClass + '">' + badgeText + '</span>' +
-                            (!isPaid ? '<button class="btn-pay-small" onclick="event.stopPropagation(); openBilling(' + b.id + ')">Bayar <i class="fa fa-arrow-right"></i></button>' : '') +
+                            (!isPaid && !isCancelled ? '<button class="btn-pay-small" onclick="event.stopPropagation(); openBilling(' + b.id + ')">Bayar <i class="fa fa-arrow-right"></i></button>' : '') +
                         '</div>' +
                     '</div>';
                 });
@@ -918,12 +929,13 @@
                 currentBilling = data.data.billing;
                 const items = data.data.items || [];
                 const isPaid = currentBilling.status === 'paid';
+                const isCancelled = currentBilling.status === 'cancelled';
 
                 let html = '<div class="detail-header">' +
-                    '<div class="detail-patient">' + currentBilling.patient_name + '</div>' +
-                    '<div class="detail-meta">' + currentBilling.mr_id + ' &bull; ' + formatDate(currentBilling.created_at) + '</div>' +
-                    '<div style="margin-top:8px;"><span class="badge ' + (isPaid ? 'badge-paid' : 'badge-confirmed') + '">' +
-                    (isPaid ? 'LUNAS' : 'BELUM BAYAR') + '</span></div>' +
+                    '<div class="detail-patient">' + escapeHtml(currentBilling.patient_name) + '</div>' +
+                    '<div class="detail-meta">' + escapeHtml(currentBilling.mr_id) + ' &bull; ' + formatDate(currentBilling.created_at) + '</div>' +
+                    '<div style="margin-top:8px;"><span class="badge ' + (isCancelled ? 'badge-cancelled' : (isPaid ? 'badge-paid' : 'badge-confirmed')) + '">' +
+                    (isCancelled ? 'DIBATALKAN' : (isPaid ? 'LUNAS' : 'BELUM BAYAR')) + '</span></div>' +
                 '</div>';
 
                 html += '<div class="items-table">';
@@ -933,7 +945,7 @@
 
                     html += '<div class="item-row">' +
                         '<div class="item-info">' +
-                            '<div class="item-name">' + item.item_name + '<span class="item-type-badge ' + typeClass + '">' + typeLabel + '</span></div>' +
+                            '<div class="item-name">' + escapeHtml(item.item_name) + '<span class="item-type-badge ' + typeClass + '">' + typeLabel + '</span></div>' +
                             '<div class="item-qty">' + item.quantity + ' x ' + formatRupiah(item.price) + '</div>' +
                         '</div>' +
                         '<div class="item-total">' + formatRupiah(item.total) + '</div>' +
@@ -946,7 +958,15 @@
                     '<div class="total-amount">' + formatRupiah(currentBilling.total) + '</div>' +
                 '</div>';
 
-                if (!isPaid) {
+                if (isCancelled) {
+                    html += '<div class="billing-cancellation-detail" style="margin:16px 0; padding:14px; border:1px solid rgba(239,68,68,0.35); border-radius:12px; color:#fca5a5;">' +
+                        '<strong>Invoice dibatalkan</strong>' +
+                        '<div>Alasan: ' + escapeHtml(currentBilling.cancellation_reason || '-') + '</div>' +
+                        (currentBilling.cancelled_by_name ? '<div>Oleh: ' + escapeHtml(currentBilling.cancelled_by_name) + '</div>' : '') +
+                    '</div>';
+                }
+
+                if (!isPaid && !isCancelled) {
                     // Check for existing payment first
                     try {
                         const payResp = await fetch(API_BASE + '/' + billingId + '/payment-details?_t=' + Date.now(), {
@@ -993,6 +1013,7 @@
 
         // ==================== PAYMENT METHODS ====================
         function showPaymentMethods() {
+            if (currentBilling?.status !== 'confirmed') return;
             selectedMethod = null;
             document.getElementById('method-total').textContent = formatRupiah(currentBilling.total);
             document.querySelectorAll('.method-card').forEach(function(c) { c.classList.remove('selected'); });
@@ -1012,7 +1033,7 @@
 
         // ==================== CREATE PAYMENT ====================
         async function createPayment() {
-            if (!selectedMethod || !currentBilling) return;
+            if (!selectedMethod || currentBilling?.status !== 'confirmed') return;
 
             // Insurance has its own form flow
             if (selectedMethod === 'asuransi') {
@@ -1089,6 +1110,7 @@
         }
 
         async function submitInsurance() {
+            if (currentBilling?.status !== 'confirmed') return;
             var provider = (document.getElementById('ins-provider')?.value || '').trim();
             var number = (document.getElementById('ins-number')?.value || '').trim();
             var notes = (document.getElementById('ins-notes')?.value || '').trim();

@@ -98,7 +98,7 @@ router.post('/payment', async (req, res) => {
         }
 
         // Check if already processed (idempotency)
-        if (payment.status === 'paid') {
+        if (payment.status === 'paid' && webhookData.status !== 'paid') {
             logger.info('[XenditWebhook] Payment already processed', {
                 paymentId: payment.id,
                 mrId: payment.mr_id
@@ -112,7 +112,7 @@ router.post('/payment', async (req, res) => {
 
         // Handle payment based on webhook status
         if (webhookData.status === 'paid') {
-            await handlePaymentSuccess(payment, webhookData);
+            const completion = await handlePaymentSuccess(payment, webhookData);
 
             logger.info('[XenditWebhook] Payment success processed', {
                 paymentId: payment.id,
@@ -121,7 +121,7 @@ router.post('/payment', async (req, res) => {
             });
 
             // Broadcast notification to all clients
-            if (realtimeSync && realtimeSync.broadcast) {
+            if (!completion?.reconciliation_required && payment.status !== 'paid' && realtimeSync && realtimeSync.broadcast) {
                 // Get patient name for notification
                 const [[record]] = await db.query(`
                     SELECT p.full_name as patient_name
@@ -142,7 +142,7 @@ router.post('/payment', async (req, res) => {
 
         } else if (webhookData.status === 'expired') {
             await db.query(
-                'UPDATE tagihan_payments SET status = ? WHERE id = ?',
+                "UPDATE tagihan_payments SET status = ? WHERE id = ? AND status = 'pending'",
                 ['expired', payment.id]
             );
 
@@ -160,7 +160,7 @@ router.post('/payment', async (req, res) => {
 
         } else if (webhookData.status === 'failed') {
             await db.query(
-                'UPDATE tagihan_payments SET status = ? WHERE id = ?',
+                "UPDATE tagihan_payments SET status = ? WHERE id = ? AND status = 'pending'",
                 ['failed', payment.id]
             );
 

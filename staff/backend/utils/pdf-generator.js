@@ -52,7 +52,8 @@ class PDFGenerator {
         return new Promise((resolve, reject) => {
             try {
                 const invoiceReference = recordData.invoiceReference || recordData.mrId;
-                const invoiceTitle = recordData.invoiceTitle || 'Invoice Pembayaran';
+                const cancelled = billingData.status === 'cancelled';
+                const invoiceTitle = cancelled ? 'INVOICE BATAL' : (recordData.invoiceTitle || 'Invoice Pembayaran');
                 // A6 format: 105mm x 148mm = 297.6 x 419.5 points
                 const doc = new PDFDocument({
                     size: 'A6',
@@ -69,7 +70,8 @@ class PDFGenerator {
                 const chunks = [];
                 doc.on('data', chunk => chunks.push(chunk));
 
-                const filename = `${invoiceReference}inv.pdf`;
+                // A cancelled copy must never overwrite the original object in R2.
+                const filename = `${invoiceReference}inv${cancelled ? '-cancelled' : ''}.pdf`;
 
                 const pageWidth = doc.page.width;
                 const leftMargin = 15;
@@ -202,6 +204,24 @@ class PDFGenerator {
                 doc.fontSize(11).font('Helvetica-Bold');
                 doc.text('GRAND TOTAL', leftMargin + 50, y);
                 doc.text(this.formatRupiah(tindakanTotal + obatTotal), leftMargin, y, { width: contentWidth, align: 'right' });
+
+                if (cancelled) {
+                    // Dedicated audit page gives long reasons room without overlapping line items.
+                    doc.addPage();
+                    doc.fontSize(13).font('Helvetica-Bold').text('TAGIHAN BATAL', { align: 'center' });
+                    doc.moveDown().fontSize(9).font('Helvetica');
+                    doc.text(`Nomor: ${invoiceReference}`);
+                    doc.text(`Pasien: ${patientData.fullName || patientData.full_name || '-'}`);
+                    doc.text(`Nilai awal: ${this.formatRupiah(billingData.total ?? tindakanTotal + obatTotal)}`);
+                    doc.moveDown();
+                    doc.text('Tidak untuk dibayar. Bukan bukti penerimaan atau pengembalian uang.');
+                    doc.moveDown();
+                    doc.text(`Dibatalkan oleh: ${billingData.cancelled_by_name || billingData.cancelled_by || '-'}`);
+                    const cancellationDate = billingData.cancelled_at ? new Date(billingData.cancelled_at) : null;
+                    doc.text(`Waktu: ${cancellationDate && !Number.isNaN(cancellationDate.valueOf())
+                        ? cancellationDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : '-'}`);
+                    doc.moveDown().text(`Alasan: ${billingData.cancellation_reason || '-'}`);
+                }
 
                 // Upload to R2 when PDF is complete
                 doc.on('end', async () => {

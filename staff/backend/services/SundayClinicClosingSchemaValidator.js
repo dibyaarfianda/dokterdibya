@@ -42,6 +42,15 @@ const CLOSING_REQUIRED_SCHEMA = Object.freeze({
         'message',
         'requested_by',
         'created_at'
+    ],
+    sunday_clinic_billings: [
+        'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
+    ],
+    sunday_clinic_additional_billings: [
+        'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
+    ],
+    tagihan_payments: [
+        'reconciliation_required', 'reconciliation_reason'
     ]
 });
 
@@ -86,7 +95,7 @@ async function validateSundayClinicClosingSchema() {
         const missing = collectMissingClosingSchema(rows);
         if (missing.length > 0) {
             const error = new AppError(
-                `Sunday Clinic closing schema is incomplete. Run staff/backend/migrations/${CLOSING_MIGRATION_NAME} and add_billing_revisions.sql. Missing: ${missing.join(', ')}`,
+                `Sunday Clinic closing schema is incomplete. Run staff/backend/migrations/${CLOSING_MIGRATION_NAME}, add_billing_revisions.sql, and the invoice cancellation migration. Missing: ${missing.join(', ')}`,
                 503,
                 true,
                 'SUNDAY_CLINIC_CLOSING_SCHEMA_MISSING'

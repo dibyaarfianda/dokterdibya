@@ -117,4 +117,36 @@ describe('Sunday Clinic online payment completion', () => {
         expect(connection.commit).toHaveBeenCalledTimes(1);
         expect(realtimeSync.broadcast).not.toHaveBeenCalled();
     });
+
+    test('retains late provider payment as reconciliation evidence without reviving a cancelled invoice', async () => {
+        connection.query.mockImplementation(async sql => {
+            const query = normalizedSql(sql);
+            if (query.startsWith('SELECT id, status FROM sunday_clinic_billings')) {
+                return [[{ id: 44, status: 'cancelled' }]];
+            }
+            if (query.startsWith('SELECT') && query.includes('FROM tagihan_payments')) {
+                return [[{ id: 93, status: 'expired', reconciliation_required: 0 }]];
+            }
+            if (query.startsWith('SELECT bi.item_code')) return [[]];
+            return [{ affectedRows: 1 }];
+        });
+        const result = await handlePaymentSuccess({
+            id: 93, billing_id: 44, mr_id: 'DRD0044', payment_method: 'qris', amount: 250000
+        }, { paid_at: '2026-09-13T01:00:00Z' });
+        expect(result).toEqual(expect.objectContaining({ reconciliation_required: true }));
+        const writes = connection.query.mock.calls.map(([sql]) => normalizedSql(sql));
+        expect(writes.some(sql => sql.startsWith('UPDATE tagihan_payments') && sql.includes('reconciliation_required = 1'))).toBe(true);
+        expect(writes.some(sql => sql.startsWith('UPDATE sunday_clinic_billings'))).toBe(false);
+        expect(writes.some(sql => sql.startsWith('UPDATE sunday_clinic_records'))).toBe(false);
+        expect(require('../../services/InventoryService').deductStockFIFO).not.toHaveBeenCalled();
+        expect(connection.commit).toHaveBeenCalledTimes(1);
+        expect(realtimeSync.broadcast).toHaveBeenCalledWith(expect.objectContaining({ reason: 'payment_reconciliation_required' }));
+    });
+
+    test('locks the invoice before writing payment evidence so cancellation and callback use the same lock order', async () => {
+        await handlePaymentSuccess({ id: 94, billing_id: 44, mr_id: 'DRD0044', amount: 100 }, {});
+        const calls = connection.query.mock.calls.map(([sql]) => normalizedSql(sql));
+        expect(calls.findIndex(sql => sql.includes('FROM sunday_clinic_billings') && sql.includes('FOR UPDATE')))
+            .toBeLessThan(calls.findIndex(sql => sql.startsWith('UPDATE tagihan_payments')));
+    });
 });
