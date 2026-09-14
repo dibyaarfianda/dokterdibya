@@ -9,7 +9,7 @@ Worktree: D:/DAF-PROJECT/DOKTERDIBYA-order-worktree. Preserve unrelated local/VP
 - [x] Recommendation engine and behavior tests (root).
 - [x] Draft persistence, routes, settings, export and tests (draft agent).
 - [x] Frontend tabs, editable selection, draft workflow and tests (frontend agent).
-- [ ] Review, regression, live migration/deploy and browser verification (root).
+- [x] Review, regression, live migration/deploy and browser verification (root).
 
 ## Audit 2026-09-14 WIB
 55 active medications, 26 batch/stock mismatches including 10 legacy-stock medications. 12 external-sale movements have missing parent records. Movement history starts 2025-11-30; one remaining expired batch contains one unit. Four additional-billing movements total 44 units. No return movements currently. Preserve uncertainty; no data corrections. Production HEAD d1a85a05, unrelated modified main.js must be preserved.
@@ -41,3 +41,12 @@ Ruling: demand only counts valid negative sale movements matching source totals 
 50 tests in six suites passed, including unchanged Sunday Clinic billing/payment regression tests; staff static check passed with cache v400. Browser fixture proved actual tab/selection/save events, escaping, preserved inventory form and unsaved edits. Independent review findings (stale duplicate badges and inactive-supplier error status) fixed and re-reviewed without further actionable findings.
 
 Actual MariaDB tests on isolated schema codex_order_qa_20260914 passed concurrent idempotency, divergent replay rejection, saved detail/audit, concurrent edit/settings conflicts, changed-analysis rejection, Excel roundtrip, archive and unchanged inventory hash. Sanitized snapshot yielded 55 items: 7 urgent, 4 order, 9 enough, 35 manual, 9 fast moving; valid 90-day units: external 8805, clinic 11040. These are audit-time values, not fixed product defaults.
+
+## Production verification 2026-09-14
+Implementation commit 2b573735 pushed to main and deployed at /var/www/dokterdibya. Migration succeeded and PM2 dibyaklinik-backend reloaded healthy. Full database gzip backup verified at /root/backups/order-recommendations-20260914-143130/dibyaklinik.sql.gz; previous commit and unrelated working-tree patch saved beside it. main.js hash preserved exactly. Rollback application through a revert of the implementation commit followed by PM2 reload; retain additive order tables/audit data.
+
+Current live staff entrypoint verified as https://dokterdibya.com/staff/public/index-adminlte.html (HTTP 200). The same staff path at sisiwanita.id currently returns 404, although its health API is healthy; do not assume that domain serves the staff UI. Delivered order-obat.js SHA-256 matches deployed file and staff cache is v400.
+
+Actual Chrome staff session verified three tabs, existing inventory form, search, priority filter, seven urgent rows, selection with edited amount, create, reopen and edit. One explicit QA draft 2e154d03-66e8-4514-8c62-b6201959df0b was created, changed from quantity 1 to 2, print content verified (Astar-C, 2 pcs, estimated Rp13210), then archived at version 3 with three audit events. No active QA draft remains. Before/after full stock/batch/movement checksum unchanged.
+
+Production HTTP checks: anonymous 401, patient 403, staff without permission 403, inactive supplier 400, authenticated recommendations 200/no-store with 55 items and no patient identity fields. Saved draft Excel endpoint 200 yielded a valid 6916-byte XLSX; ExcelJS roundtrip verified D7=2 and G7=13210. Browser download-event observation timed out; file content was independently verified through the actual authenticated export endpoint, without accessing browser download history. Printer output was not sent to a physical device.
