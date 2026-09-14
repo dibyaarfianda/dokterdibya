@@ -1,4 +1,15 @@
 const fs = require('fs');
+test('order action precedes table and reflects selection',()=>{
+ const code=fs.readFileSync(path.resolve(__dirname,'../../../public/scripts/order-obat.js'),'utf8').replace(/^import .*;$/gm,'').replace(/export /g,'');
+ const panel={innerHTML:''};const ctx={crypto:{randomUUID:()=> 'test'},escapeHtml:String,Map,console,panel};vm.createContext(ctx);
+ vm.runInContext(code+';controller=new OrderController();root={querySelector:()=>panel};renderRecommendations();',ctx);
+ expect(panel.innerHTML.indexOf('data-order-action="create"')).toBeGreaterThan(-1);
+ expect(panel.innerHTML.indexOf('data-order-action="create"')).toBeLessThan(panel.innerHTML.indexOf('<table'));
+ expect(panel.innerHTML).toMatch(/data-order-action="create"[^>]*disabled/);
+ vm.runInContext('controller.items=[{obat_id:1,name:"Obat",supplier_id:1,recommended_quantity:2}];controller.select(1,true);renderRecommendations();',ctx);
+ expect(panel.innerHTML).toContain('Buat Draft Order (1 obat)');
+ expect(panel.innerHTML).not.toMatch(/data-order-action="create"[^>]*disabled/);
+});
 const vm = require('vm');
 const path = require('path');
 function load() {

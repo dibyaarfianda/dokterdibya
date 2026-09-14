@@ -142,11 +142,22 @@ function evidence(item) {
 function table(headers, rows) {
     return `<div class="table-responsive"><table class="table table-sm table-bordered table-hover mb-2"><thead class="bg-light"><tr>${headers.map(th).join('')}</tr></thead><tbody>${rows || `<tr><td colspan="${headers.length}" class="text-center text-muted">Tidak ada data</td></tr>`}</tbody></table></div>`;
 }
+function createOrderButton() {
+    return '<button type="button" class="btn btn-primary mr-2" data-order-action="create" ' + (controller.selection.size ? '' : 'disabled') + '>' + (controller.analysisChanged ? 'Saya sudah meninjau · coba simpan lagi' : 'Buat Draft Order (' + controller.selection.size + ' obat)') + '</button>';
+}
+function updateSelectionActions() {
+    root.querySelectorAll('[data-order-action="create"]').forEach(el => {
+        el.disabled = working || !controller.selection.size;
+        el.textContent = controller.analysisChanged ? 'Saya sudah meninjau · coba simpan lagi' : 'Buat Draft Order (' + controller.selection.size + ' obat)';
+    });
+    root.querySelectorAll('[data-order-count]').forEach(el => { el.textContent = controller.selection.size + ' dipilih'; });
+}
 function renderRecommendations() {
     const visible = controller.items.filter(x => `${x.name} ${x.code}`.toLowerCase().includes(search.toLowerCase()) && (!priority || x.priority === priority) && (!supplierFilter || String(x.supplier_id) === supplierFilter) && (!fastOnly || x.fast_moving));
-    pane('recommendations').innerHTML = `<div class="card"><div class="card-body p-3"><div class="d-flex flex-wrap align-items-center mb-2">
+    pane('recommendations').innerHTML = `<div class="card"><div class="card-body p-3"><div class="d-flex flex-wrap align-items-center mb-2 p-2 bg-white border rounded" style="position: sticky !important; top: 60px !important; z-index: 1010 !important; gap: 6px !important;">
+    ${createOrderButton()}<small class="text-muted">Disimpan sebagai draft per supplier.</small>
     ${button('refresh', 'Perbarui analisis')}${button('select-urgent', 'Pilih segera + perlu order')}${button('clear', 'Kosongkan pilihan')}
-    <small class="text-muted ml-2">Analisis ${e(controller.asOf || '—')} · Target 30 hari · ${controller.selection.size} dipilih</small></div>
+    <small class="text-muted ml-2">Analisis ${e(controller.asOf || '—')} · Target 30 hari · <span data-order-count>${controller.selection.size} dipilih</span></small></div>
     <div class="row mb-2"><div class="col-md-4"><input class="form-control form-control-sm" id="order-search" aria-label="Cari obat" placeholder="Cari nama / kode obat" value="${e(search)}"></div>
     <div class="col-md-3"><select class="form-control form-control-sm" id="order-priority" aria-label="Prioritas"><option value="">Semua prioritas</option>${Object.entries(labels).map(([k,v])=>`<option value="${k}" ${priority===k?'selected':''}>${v}</option>`).join('')}</select></div>
     <div class="col-md-3"><select class="form-control form-control-sm" id="order-supplier-filter" aria-label="Filter supplier"><option value="">Semua supplier</option>${controller.suppliers.map(s=>`<option value="${e(s.id)}" ${supplierFilter===String(s.id)?'selected':''}>${e(s.name)}</option>`).join('')}</select></div>
@@ -163,7 +174,7 @@ function renderRecommendations() {
         <td><details><summary>Detail</summary>${evidence(x)}</details></td></tr>`;
     }).join(''))}
     <label for="order-notes">Catatan draft</label><textarea id="order-notes" class="form-control form-control-sm mb-2" rows="2">${e(controller.notes)}</textarea>
-    ${button('create', controller.analysisChanged ? 'Saya sudah meninjau · coba simpan lagi' : 'Simpan draft per supplier')}
+    ${createOrderButton()}
     <small class="text-muted">Pilihan tetap tersimpan saat mengganti filter. Jumlah dan supplier dapat diubah sebelum disimpan.</small>
     <details class="mt-3"><summary>Pengaturan lead time & safety stock per supplier</summary><div class="mt-2">${table(['Supplier','Lead (hari)','Safety (hari)','Simpan'],controller.suppliers.map(s=>`<tr><td>${e(s.name)}</td><td><input class="form-control form-control-sm" aria-label="Lead ${e(s.name)}" type="number" min="0" max="365" step="1" data-lead="${e(s.id)}" value="${e(s.lead_days)}"></td><td><input class="form-control form-control-sm" aria-label="Safety ${e(s.name)}" type="number" min="0" max="365" step="1" data-safety="${e(s.id)}" value="${e(s.safety_days)}"></td><td>${button('settings','Simpan',s.id)}</td></tr>`).join(''))}</div></details></div></div>`;
 }
@@ -284,7 +295,7 @@ export function initOrderObat() {
         if(t.id==='order-search'){search=t.value;const position=t.selectionStart;renderRecommendations();const next=root.querySelector('#order-search');next.focus();next.setSelectionRange(position,position);}
         if(t.id==='order-notes')controller.notes=t.value;
         if(t.id==='order-draft-notes'&&draft){draft.notes=t.value;draftDirty=true;}
-        if(t.dataset.quantity){controller.select(t.dataset.quantity,true);controller.selection.get(t.dataset.quantity).quantity=Number(t.value);const checkbox=root.querySelector(`[data-select="${t.dataset.quantity}"]`);if(checkbox)checkbox.checked=true;}
+        if(t.dataset.quantity){controller.select(t.dataset.quantity,true);controller.selection.get(t.dataset.quantity).quantity=Number(t.value);const checkbox=root.querySelector(`[data-select="${t.dataset.quantity}"]`);if(checkbox)checkbox.checked=true;updateSelectionActions();}
         if(t.dataset.draftQuantity&&draft){const x=draft.items.find(x=>String(x.obat_id)===t.dataset.draftQuantity);if(x){x.quantity=Number(t.value);draftDirty=true;}}
     });
     host.addEventListener('change',async event=>{
