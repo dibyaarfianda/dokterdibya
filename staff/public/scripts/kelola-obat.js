@@ -3,6 +3,7 @@
 
 import { showSuccess, showError, showWarning } from './toast.js';
 import { getIdToken } from './vps-auth-v2.js';
+import { initOrderObat } from './order-obat.js';
 
 console.log('🔄 kelola-obat.js LOADED - Version: 2025-11-08-11:40 - Using AUTH');
 
@@ -22,6 +23,7 @@ let initialized = false;
 
 // Initialize the module
 export function initKelolaObat() {
+    initOrderObat();
     console.log('🚀 [KELOLA-OBAT] initKelolaObat() called');
     console.log('📊 [KELOLA-OBAT] Initialized status:', initialized);
 

@@ -682,6 +682,7 @@ app.use('/api/suppliers', suppliersRoutes);
 // Inventory routes (stock batches, movements, FIFO)
 const inventoryRoutes = require('./routes/inventory');
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/inventory', require('./routes/inventory-orders'));
 
 // Obat Sales routes (medication sales for hospital patients)
 const obatSalesRoutes = require('./routes/obat-sales');
