@@ -1,3 +1,4 @@
+import { createPortalNicknameStore } from './patient-shell/portal-nickname.js?v=20260917nickname1';
 import {
     getPatientToken as getToken,
     getPatientUser,
@@ -21,7 +22,7 @@ import { createPatientSheetController } from './patient-shell/sheet-controller.j
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';
 import { createPatientNotificationController } from './patient-shell/features/notification-controller.js';
-import { createPatientPwaInstallController } from './patient-shell/pwa-install-controller.js';
+import { createPatientPwaInstallController } from './patient-shell/pwa-install-controller.js?v=20260917nickname1';
 import { createPatientExitController } from './patient-shell/exit-controller.js';
 
 (function initPatientMenuShell() {
@@ -43,6 +44,9 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             nickname: null,
             notification_sound: 'default'
         };
+        const portalNickname = createPortalNicknameStore({
+            getPatient: getPatientUser, storage: () => localStorage, warn: message => showToast(message, 'warning')
+        });
         const guestSession = createGuestSession({ clearPatientAuth });
         const clearGuestMode = guestSession.clear;
         const trackGuestActivity = guestSession.track;
@@ -100,6 +104,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             getToken,
             isGuestMode
         });
+        const isIntakeCompleted = patientPwaInstall.isIntakeCompleted;
         const autoShowPatientInstallPrompt = patientPwaInstall.autoShow;
         const dismissPatientInstallPrompt = patientPwaInstall.dismiss;
         const installPatientPWA = patientPwaInstall.install;
@@ -220,14 +225,16 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             return String(sourceName).split(' ')[0] || 'Pasien';
         }
 
-        function applyPortalSettings(settings) {
-            portalSettings = Object.assign({}, portalSettings, settings || {});
+        function applyPortalSettings(settings, options) {
+            portalSettings = Object.assign({}, portalSettings, portalNickname.merge(settings || {}, options));
             try { localStorage.setItem('patient_portal_settings', JSON.stringify(portalSettings)); } catch (error) {}
             const heroTitle = document.getElementById('hero-title');
             if (heroTitle) heroTitle.textContent = getPortalDisplayName(currentProfile || getStoredProfile()) + ', ini ruang Anda.';
         }
 
         async function fetchPortalSettings() {
+            if (window.PatientSession?.isDemoMode()) return portalNickname.merge(portalSettings, { cached: true });
+            const patientId = getPatientUser().id;
             const response = await fetch('/api/patients/portal-settings?_t=' + Date.now(), {
                 headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
                 cache: 'no-store'
@@ -235,6 +242,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             if (response.status === 401) throw new Error('unauthorized');
             if (!response.ok) throw new Error('portal settings failed');
             const data = await response.json().catch(() => ({}));
+            if (getPatientUser().id !== patientId) throw new Error('Akun berubah.');
             return data.success && data.settings ? data.settings : portalSettings;
         }
 
@@ -242,7 +250,8 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             try {
                 let cached = null;
                 try { cached = JSON.parse(localStorage.getItem('patient_portal_settings') || 'null'); } catch (error) {}
-                if (cached) applyPortalSettings(cached);
+                applyPortalSettings(cached || {}, { cached: true });
+                if (window.PatientSession?.isDemoMode()) return portalSettings;
                 const settings = await fetchPortalSettings();
                 applyPortalSettings(settings);
                 return settings;
@@ -429,44 +438,31 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             const nickname = document.getElementById('portal-nickname')?.value || '';
             const notificationSound = document.getElementById('portal-notification-sound')?.value || 'default';
             try {
-                const response = await fetch('/api/patients/portal-settings', {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': 'Bearer ' + getToken(),
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        nickname: nickname,
-                        notification_sound: notificationSound
-                    })
-                });
-                if (response.status === 401) { logout(); return; }
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan gagal disimpan');
-                applyPortalSettings(data.settings);
+                const result = await savePortalNicknameOnly(nickname, notificationSound);
+                applyPortalSettings(result.settings);
                 openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
-                showToast('Pengaturan portal disimpan');
+                if (result.persisted) showToast('Pengaturan portal disimpan');
             } catch (error) {
+                if (error.message === 'unauthorized') { logout(); return; }
                 showToast(error.message || 'Pengaturan gagal disimpan');
             }
         }
 
         async function savePortalNicknameOnly(nickname, notificationSound) {
-            const response = await fetch('/api/patients/portal-settings', {
-                method: 'PUT',
-                headers: {
-                    'Authorization': 'Bearer ' + getToken(),
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    nickname: nickname,
-                    notification_sound: notificationSound || 'default'
-                })
+            return portalNickname.save({ nickname, notification_sound: notificationSound || 'default' }, {
+                demo: Boolean(window.PatientSession?.isDemoMode()),
+                request: async payload => {
+                    const response = await fetch('/api/patients/portal-settings', {
+                        method: 'PUT',
+                        headers: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.status === 401) throw new Error('unauthorized');
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.success) throw new Error(data.message || 'Gagal menyimpan nickname');
+                    return data.settings;
+                }
             });
-            if (response.status === 401) throw new Error('unauthorized');
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok || !data.success) throw new Error(data.message || 'Gagal menyimpan nickname');
-            return data.settings || {};
         }
 
         async function ensurePortalNicknameOnLogin() {
@@ -484,9 +480,9 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                 }
 
                 try {
-                    const settings = await savePortalNicknameOnly(candidate, portalSettings.notification_sound || 'default');
-                    applyPortalSettings(settings);
-                    showToast('Nickname berhasil disimpan');
+                    const result = await savePortalNicknameOnly(candidate, portalSettings.notification_sound || 'default');
+                    applyPortalSettings(result.settings);
+                    if (result.persisted) showToast('Nickname berhasil disimpan');
                     return true;
                 } catch (error) {
                     if (error.message === 'unauthorized') {
@@ -3061,6 +3057,8 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
             try {
                 await loadProfile();
+            } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
+            try {
                 await loadPortalSettings();
             } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
 

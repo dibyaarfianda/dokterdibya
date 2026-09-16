@@ -66,7 +66,18 @@
         return div.innerHTML;
     }
 
+    var portalNicknamePromise;
+    function getPortalNicknameStore() {
+        if (!portalNicknamePromise) {
+            portalNicknamePromise = import('/scripts/patient-shell/portal-nickname.js?v=20260917nickname1').then(function (module) {
+                return module.createPortalNicknameStore({ getPatient: getStoredPatient, storage: function () { return localStorage; }, warn: showShellToast });
+            }).catch(function (error) { portalNicknamePromise = null; throw error; });
+        }
+        return portalNicknamePromise;
+    }
+
     function getStoredPatient() {
+        if (window.PatientSession) return window.PatientSession.getUser() || {};
         try { return JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) { return {}; }
     }
 
@@ -320,10 +331,12 @@
 
     async function fetchPortalSettings() {
         var token = getToken();
+        var nicknameStore = await getPortalNicknameStore();
+        var patientId = getStoredPatient().id;
         var cached;
         try { cached = JSON.parse(localStorage.getItem('patient_portal_settings') || 'null'); } catch (error) {}
-        if (cached) state.portalSettings = Object.assign({}, state.portalSettings, cached);
-        if (isMockToken(token)) return state.portalSettings;
+        state.portalSettings = Object.assign({}, state.portalSettings, nicknameStore.merge(cached || {}, { cached: true }));
+        if (window.PatientSession?.isDemoMode() || isMockToken(token)) return state.portalSettings;
 
         var response = await fetch('/api/patients/portal-settings?_t=' + Date.now(), {
             headers: {
@@ -334,8 +347,9 @@
         });
         if (!response.ok) throw new Error('portal settings failed');
         var data = await response.json().catch(function () { return {}; });
+        if (getStoredPatient().id !== patientId) throw new Error('Akun berubah.');
         if (data && data.success && data.settings) {
-            state.portalSettings = Object.assign({}, state.portalSettings, data.settings);
+            state.portalSettings = Object.assign({}, state.portalSettings, nicknameStore.merge(data.settings));
             try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
         }
         return state.portalSettings;
@@ -403,28 +417,26 @@
             nickname: nicknameEl ? nicknameEl.value : '',
             notification_sound: soundEl ? soundEl.value : 'default'
         };
-        if (isMockToken(token)) {
-            state.portalSettings = Object.assign({}, state.portalSettings, payload);
-            try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
-            openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
-            showShellToast('Pengaturan portal disimpan');
-            return;
-        }
         try {
-            var response = await fetch('/api/patients/portal-settings', {
-                method: 'PUT',
-                headers: {
-                    Authorization: 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
+            var nicknameStore = await getPortalNicknameStore();
+            var result = await nicknameStore.save(payload, {
+                demo: Boolean(window.PatientSession?.isDemoMode()) || isMockToken(token),
+                request: async function (normalized) {
+                    var response = await fetch('/api/patients/portal-settings', {
+                        method: 'PUT',
+                        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+                        body: JSON.stringify(normalized)
+                    });
+                    if (response.status === 401) throw new Error('Sesi berakhir. Silakan masuk kembali.');
+                    var data = await response.json().catch(function () { return {}; });
+                    if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan gagal disimpan');
+                    return data.settings;
+                }
             });
-            var data = await response.json().catch(function () { return {}; });
-            if (!response.ok || !data.success) throw new Error(data.message || 'Pengaturan gagal disimpan');
-            state.portalSettings = Object.assign({}, state.portalSettings, data.settings);
+            state.portalSettings = Object.assign({}, state.portalSettings, result.settings);
             try { localStorage.setItem('patient_portal_settings', JSON.stringify(state.portalSettings)); } catch (error) {}
             openTopbarModal('Pengaturan', 'Portal SISIwanita', renderSettingsModal());
-            showShellToast('Pengaturan portal disimpan');
+            if (result.persisted) showShellToast('Pengaturan portal disimpan');
         } catch (error) {
             showShellToast(error.message || 'Pengaturan gagal disimpan');
         }

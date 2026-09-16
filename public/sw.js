@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260913billingcancel1';
+const CACHE_VERSION = '20260917nickname1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -41,6 +41,7 @@ const PRECACHE_FILES = [
   '/scripts/patient-menu-shell.js',
   '/scripts/patient-session.js',
   '/scripts/patient-shell/session-bootstrap.js',
+  '/scripts/patient-shell/portal-nickname.js',
   '/scripts/patient-shell/guest-session.js',
   '/scripts/patient-shell/router.js',
   '/scripts/patient-shell/routes.js',

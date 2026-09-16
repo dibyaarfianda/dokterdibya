@@ -147,6 +147,7 @@ export function createPatientPwaInstallController(options = {}) {
     }
 
     return Object.freeze({
+        isIntakeCompleted,
         autoShow,
         dismiss,
         init,
