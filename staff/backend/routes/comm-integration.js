@@ -9,6 +9,7 @@ const commScheduleIntent = new CommScheduleIntentService();
 
 // All routes require API key authentication
 router.use(apiKeyAuth);
+router.use(require('./clinic-monitor').createRouter());
 
 /**
  * GET /patients/search?q=&limit=10

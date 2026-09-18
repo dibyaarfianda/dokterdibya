@@ -208,7 +208,7 @@ const uploadBuffer = async (key, fileBuffer, mimeType = 'application/octet-strea
             CacheControl: options.cacheControl || 'private, no-store',
             ContentDisposition: options.contentDisposition,
             Metadata: options.metadata,
-        }));
+        }), { abortSignal: options.abortSignal });
         logger.info('Buffer uploaded to R2', { key: cleanKey, bucket, bytes: body.length });
         return { success: true, key: cleanKey, bucket, bytes: body.length };
     } catch (error) {

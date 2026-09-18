@@ -121,6 +121,14 @@ app.use(compression());
 app.use(metricsMiddleware);
 
 // Request logging
+// Binary monitor metadata may contain original filenames. Preserve req.url/query
+// for routing but remove query data from existing access/performance logs.
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/integration/comm/clinic-monitor') || req.path === '/api/integration/comm/hospital-observations' || req.path.startsWith('/api/clinic-monitor/')) {
+        req.originalUrl = req.path;
+    }
+    next();
+});
 app.use(requestLogger);
 app.use(performanceLogger);
 
@@ -774,6 +782,8 @@ app.use('/api/app-version', appVersionRoutes);
 // COMM Integration endpoints (API key authenticated)
 const commIntegrationRoutes = require('./routes/comm-integration');
 app.use('/api/integration/comm', commIntegrationRoutes);
+// Telegram uses its own secret header, never the COMM API key or patient auth.
+app.use('/api/clinic-monitor/telegram/webhook', require('./routes/clinic-monitor').createWebhookRouter());
 
 const operationDataIntegrationRoutes = require('./routes/operation-data-integration');
 app.use('/api/integration/operation-data', operationDataIntegrationRoutes);
@@ -1154,6 +1164,7 @@ io.on('connection', (socket) => {
 
 // Start server
 server.listen(PORT, () => {
+    require('./services/clinicMonitorRuntime').startWorker();
     logger.info(`Backend server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     logger.info('Socket.io real-time enabled');
@@ -1176,6 +1187,7 @@ server.listen(PORT, () => {
 
 // Graceful shutdown — handles both SIGTERM (PM2 reload) and SIGINT (Ctrl+C)
 function gracefulShutdown(signal) {
+    require('./services/clinicMonitorRuntime').stopWorker();
     logger.info(`${signal} received, closing server...`);
     server.close(async () => {
         logger.info('HTTP server closed');
