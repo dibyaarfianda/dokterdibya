@@ -86,6 +86,31 @@ test('pairing is private, expires, single use; forged secret blocked', async () 
 
 module.exports = { MemoryStore };
 
+test('skipped hospital does not block verified hospitals or send its alerts', async () => {
+    const config = { ownerId: 'owner', botToken: 'test', botUsername: 'test_bot', webhookSecret: 'secret', commUrl: 'https://comm.example', enabled: true, skippedFacilities: ['bhayangkara'] };
+    const { service, store } = setup({ config });
+    for (const facility of ['gambiran', 'melinda']) for (const unit of ['IGD', 'RI']) await service.verifySource(facility, unit, { verified_by: 'operator', evidence_ref: 'test' });
+    store.records['connection:owner'] = { chat_id: 123, owner_id: 'owner' };
+    expect((await service.dashboard()).activation.enabled).toBe(true);
+    expect((await service.dashboard()).sources.filter(s => s.facility === 'bhayangkara').every(s => !s.verified)).toBe(true);
+    await service.ingest(observation({ facility: 'bhayangkara' }));
+    await service.tick();
+    expect(service.sendTelegram.mock.calls[0][1].text).toContain('0 episode');
+    service.sendTelegram.mockClear();
+    await service.ingest(observation({ facility: 'bhayangkara', unit: 'RI' }));
+    await service.ingest(observation());
+    await service.tick();
+    expect(service.sendTelegram).toHaveBeenCalledTimes(1);
+    expect(service.sendTelegram.mock.calls[0][1].text).toContain('Gambiran');
+    delete store.records['source:melinda:RI'];
+    expect((await service.dashboard()).activation.enabled).toBe(false);
+});
+
+test('skipping every hospital cannot enable notifications', async () => {
+    const { service } = setup({ config: { skippedFacilities: ['gambiran', 'melinda', 'bhayangkara'] } });
+    expect((await service.dashboard()).activation.blockers).toContain('no_active_hospitals');
+});
+
 test('Telegram Start confirms pairing and reports connected status without activating patient alerts', async () => {
     const { service } = setup({ config: { ownerId: 'owner', botToken: 'test', botUsername: 'test_bot', webhookSecret: 'secret' } });
     const pair = await service.pair();

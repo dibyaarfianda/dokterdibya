@@ -19,6 +19,7 @@ function getService() {
         config: {
             ownerId: env.CLINIC_MONITOR_OWNER_ID,
             enabled: env.CLINIC_MONITOR_NOTIFICATIONS_ENABLED === 'true',
+            skippedFacilities: (env.CLINIC_MONITOR_SKIPPED_FACILITIES || '').split(',').map(value => value.trim()).filter(Boolean),
             botToken: env.CLINIC_MONITOR_TELEGRAM_BOT_TOKEN,
             botUsername: env.CLINIC_MONITOR_TELEGRAM_BOT_USERNAME,
             webhookSecret: env.CLINIC_MONITOR_TELEGRAM_WEBHOOK_SECRET,

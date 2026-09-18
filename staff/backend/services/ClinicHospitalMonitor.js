@@ -101,20 +101,25 @@ class ClinicHospitalMonitor {
         try { const url = new URL(this.config.commUrl); validUrl = url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash; } catch (_) { /* Unconfigured. */ }
         return !!(this.config.ownerId && this.config.botToken && /^[A-Za-z0-9_]{5,32}$/.test(this.config.botUsername || '') && this.config.webhookSecret && validUrl);
     }
+    activeFacilities() {
+        return FACILITIES.filter(f => !(this.config.skippedFacilities || []).includes(f));
+    }
     activation(r) {
         const blockers = [];
-        for (const facility of FACILITIES) for (const unit of ['IGD', 'RI']) if (!r[`source:${facility}:${unit}`]?.verified) blockers.push(`unverified:${facility}:${unit}`);
+        const activeFacilities = this.activeFacilities();
+        if (!activeFacilities.length) blockers.push('no_active_hospitals');
+        for (const facility of activeFacilities) for (const unit of ['IGD', 'RI']) if (!r[`source:${facility}:${unit}`]?.verified) blockers.push(`unverified:${facility}:${unit}`);
         if (!this.config.ownerId) blockers.push('owner_not_configured');
         if (!this.configured()) blockers.push('telegram_not_configured');
         if (!r['connection:owner']?.chat_id || r['connection:owner'].owner_id !== this.config.ownerId) blockers.push('telegram_not_connected');
-        return { ready: blockers.length === 0, enabled: this.config.enabled === true && blockers.length === 0, blockers };
+        return { ready: blockers.length === 0, enabled: this.config.enabled === true && blockers.length === 0, blockers, active_facilities: activeFacilities, skipped_facilities: FACILITIES.filter(f => !activeFacilities.includes(f)) };
     }
     emit(r, episode, type, time) {
         const key = `event:${episode.id}:${type}`;
         if (r[key]) return;
         const event = { id: id(), episode_id: episode.id, patient_id: episode.patient_id, event_type: type, occurred_at: time, facility: episode.facility, ward: episode.ward, patient_name: episode.patient_name };
         r[key] = event; episode.latest_event_id = event.id;
-        if (this.activation(r).enabled && r['activation:baseline']) r[`outbox:${event.id}`] = { id: event.id, event_id: event.id, status: 'pending', attempts: 0, next_attempt_at: this.now().toISOString() };
+        if (this.activeFacilities().includes(episode.facility) && this.activation(r).enabled && r['activation:baseline']) r[`outbox:${event.id}`] = { id: event.id, event_id: event.id, status: 'pending', attempts: 0, next_attempt_at: this.now().toISOString() };
     }
     upsert(r, row, observation, patientId, reason) {
         const key = `episode:${hash(`${observation.facility}\0${row.case_id}`)}`;
@@ -370,7 +375,7 @@ class ClinicHospitalMonitor {
             if (!this.activation(r).enabled) return [];
             if (!r['activation:baseline']) {
                 r['activation:baseline'] = { at: this.now().toISOString() };
-                r['outbox:baseline'] = { id: 'baseline', status: 'pending', attempts: 0, count: values(r, 'episode').filter(e => e.active && !e.discharge_at).length, next_attempt_at: this.now().toISOString() };
+                r['outbox:baseline'] = { id: 'baseline', status: 'pending', attempts: 0, count: values(r, 'episode').filter(e => this.activeFacilities().includes(e.facility) && e.active && !e.discharge_at).length, next_attempt_at: this.now().toISOString() };
             }
             return values(r, 'outbox').filter(j => j.status !== 'sent' && Date.parse(j.next_attempt_at) <= this.now().getTime() && (!j.lease_until || Date.parse(j.lease_until) <= this.now().getTime())).slice(0, 10).map(j => {
                 // Ten sequential sends, each bounded at 15 seconds, fit this lease.
@@ -381,10 +386,10 @@ class ClinicHospitalMonitor {
         for (const job of jobs) {
             try {
                 // Recheck destination and activation immediately before network send.
-                const allowed = await this.store.transact(r => this.activation(r).enabled && r['connection:owner']?.chat_id === job.chat && (!job.event || !values(r, 'episode').find(e => e.id === job.event.episode_id)?.identity_conflict));
+                const allowed = await this.store.transact(r => this.activation(r).enabled && r['connection:owner']?.chat_id === job.chat && (!job.event || (this.activeFacilities().includes(job.event.facility) && !values(r, 'episode').find(e => e.id === job.event.episode_id)?.identity_conflict)));
                 if (!allowed) continue;
                 const e = job.event;
-                const body = e ? { text: `${e.patient_name}\n${HOSPITAL_LABELS[e.facility]} — ${e.ward || '-'}\n${EVENT_LABELS[e.event_type]}\n${new Date(e.occurred_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`, reply_markup: { inline_keyboard: [[{ text: 'Buka di COMM', url: `${this.config.commUrl.replace(/\/$/, '')}/?clinicAlert=${e.id}` }]] } } : { text: `Pemantauan Klinik Privat aktif. ${job.count} episode terpantau saat aktivasi.` };
+                const body = e ? { text: `${e.patient_name}\n${HOSPITAL_LABELS[e.facility]} — ${e.ward || '-'}\n${EVENT_LABELS[e.event_type]}\n${new Date(e.occurred_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`, reply_markup: { inline_keyboard: [[{ text: 'Buka di COMM', url: `${this.config.commUrl.replace(/\/$/, '')}/?clinicAlert=${e.id}` }]] } } : { text: `Pemantauan Klinik Privat aktif untuk ${this.activeFacilities().map(f => HOSPITAL_LABELS[f]).join(' dan ')}. ${job.count} episode terpantau saat aktivasi.` };
                 await this.sendTelegram(job.chat, body);
                 await this.store.transact(r => { const stored = r[`outbox:${job.id}`]; stored.status = 'sent'; stored.sent_at = this.now().toISOString(); stored.lease_until = null; });
             } catch (_) {
