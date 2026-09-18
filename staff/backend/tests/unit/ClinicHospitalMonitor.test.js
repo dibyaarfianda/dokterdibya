@@ -19,7 +19,7 @@ const observation = (extra = {}) => ({ facility: 'gambiran', unit: 'IGD', status
     observed_at: '2026-09-18T10:00:00+07:00', patients: [{ case_id: 'case1', patient_name: ' SITI  AMINAH ', birth_date: '1990-02-01', hospital_mr_id: 'RM1' }], ...extra });
 function setup(extra = {}) {
     const store = new MemoryStore();
-    const service = new ClinicHospitalMonitor({ store, identity: async () => ({ cohort, external: [] }), now: () => new Date('2026-09-18T03:00:00Z'), config: {}, ...extra });
+    const service = new ClinicHospitalMonitor({ store, identity: async () => ({ cohort, external: [] }), now: () => new Date('2026-09-18T03:00:00Z'), config: {}, sendTelegram: jest.fn().mockResolvedValue(undefined), ...extra });
     return { service, store };
 }
 test('exact full name and DOB only; no name-only match or ambiguous positive', () => {
@@ -85,6 +85,28 @@ test('pairing is private, expires, single use; forged secret blocked', async () 
 });
 
 module.exports = { MemoryStore };
+
+test('Telegram Start confirms pairing and reports connected status without activating patient alerts', async () => {
+    const { service } = setup({ config: { ownerId: 'owner', botToken: 'test', botUsername: 'test_bot', webhookSecret: 'secret' } });
+    const pair = await service.pair();
+    const token = new URL(pair.url).searchParams.get('start');
+    await service.webhook({ message: { text: `/start ${token}`, chat: { id: 123, type: 'private' } } }, 'secret');
+    expect(service.sendTelegram).toHaveBeenCalledWith(123, expect.objectContaining({ text: expect.stringContaining('tersambung') }));
+    service.sendTelegram.mockClear();
+    await service.webhook({ message: { text: '/start', chat: { id: 123, type: 'private' } } }, 'secret');
+    expect(service.sendTelegram).toHaveBeenCalledWith(123, expect.objectContaining({ text: expect.stringContaining('belum aktif') }));
+    expect((await service.dashboard()).activation.enabled).toBe(false);
+    await service.webhook({ message: { text: '/start', chat: { id: 456, type: 'private' } } }, 'secret');
+    expect(service.sendTelegram).toHaveBeenLastCalledWith(456, expect.objectContaining({ text: expect.stringContaining('COMM') }));
+});
+
+test('Telegram reply failure does not undo successful pairing', async () => {
+    const { service } = setup({ config: { ownerId: 'owner', botToken: 'test', botUsername: 'test_bot', webhookSecret: 'secret' }, sendTelegram: jest.fn().mockRejectedValue(new Error('offline')) });
+    const pair = await service.pair();
+    await service.webhook({ message: { text: `/start ${new URL(pair.url).searchParams.get('start')}`, chat: { id: 123, type: 'private' } } }, 'secret');
+    expect(service.sendTelegram).toHaveBeenCalled();
+    expect((await service.dashboard()).telegram.connected).toBe(true);
+});
 
 test('owner confirmation has a stable episode identity and survives later observations', async () => {
     const { service } = setup(); const input = observation(); delete input.patients[0].birth_date;

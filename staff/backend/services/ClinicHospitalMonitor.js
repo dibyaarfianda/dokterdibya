@@ -203,13 +203,29 @@ class ClinicHospitalMonitor {
         if (!expected || typeof secret !== 'string' || !crypto.timingSafeEqual(hashBuffer(secret), hashBuffer(expected))) fail('FORBIDDEN', 403);
         const message = update?.message;
         const token = message?.text?.match(/^\/start ([A-Za-z0-9_-]{32})$/)?.[1];
-        if (!token || message.chat?.type !== 'private' || !Number.isSafeInteger(message.chat.id) || message.chat.id <= 0) fail('INVALID_PAIRING');
-        return this.store.transact(r => {
+        const plainStart = /^\/start(?:@[A-Za-z0-9_]+)?\s*$/.test(message?.text || '');
+        if ((!token && !plainStart) || message.chat?.type !== 'private' || !Number.isSafeInteger(message.chat.id) || message.chat.id <= 0) fail('INVALID_PAIRING');
+        if (plainStart) return this.replyTelegramStatus(message.chat.id);
+        const result = await this.store.transact(r => {
             const key = `pair:${hash(token)}`; const pair = r[key];
             if (!pair || Date.parse(pair.expires_at) <= this.now().getTime()) fail('PAIRING_EXPIRED');
             r['connection:owner'] = { chat_id: message.chat.id, paired_at: this.now().toISOString(), owner_id: this.config.ownerId };
             delete r[key]; return { connected: true };
         });
+        await this.replyTelegramStatus(message.chat.id);
+        return result;
+    }
+    async replyTelegramStatus(chatId) {
+        const status = await this.store.transact(r => ({
+            connected: r['connection:owner']?.chat_id === chatId && r['connection:owner']?.owner_id === this.config.ownerId,
+            enabled: this.activation(r).enabled
+        }));
+        const message = status.connected
+            ? `Telegram pribadi sudah tersambung ke COMM. ${status.enabled ? 'Notifikasi pasien aktif.' : 'Notifikasi pasien belum aktif; cakupan sumber RS dan pengaturan aktivasi masih perlu diselesaikan.'}`
+            : 'Untuk menghubungkan Telegram pribadi, buka COMM mode Spesialis lalu pilih sambungkan Telegram pada Monitor Klinik Privat.';
+        try { await this.sendTelegram(chatId, { text: message }); }
+        catch (_) { /* Pairing remains saved; another Start can retry the confirmation. */ }
+        return { connected: status.connected };
     }
     async disconnect() { return this.store.transact(r => { delete r['connection:owner']; for (const key of Object.keys(r)) if (key.startsWith('pair:')) delete r[key]; return { connected: false }; }); }
     async archiveJobs() {
