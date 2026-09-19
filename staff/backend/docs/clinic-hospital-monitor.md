@@ -10,8 +10,27 @@ Configuration uses existing database/R2/COMM API credentials, plus:
 - `CLINIC_MONITOR_TELEGRAM_BOT_USERNAME`: bot username without `@`.
 - `CLINIC_MONITOR_TELEGRAM_WEBHOOK_SECRET`: independent random secret configured for Telegram webhook header.
 - `CLINIC_MONITOR_COMM_URL`: established HTTPS COMM base URL, without credentials/query/hash.
+- `CLINIC_MONITOR_SKIPPED_FACILITIES`: optional comma separated subset of `gambiran,melinda,bhayangkara` deliberately left out. A skipped hospital stops blocking activation through its two unverified sources, and is also never monitored or notified. Skipping every hospital keeps activation closed through `no_active_hospitals`.
 
-Telegram webhook: POST `/api/clinic-monitor/telegram/webhook`, authenticated only by `X-Telegram-Bot-Api-Secret-Token`. Pairing via owner-authenticated COMM creates a ten-minute single-use token and requires a private chat. Do not register or send messages until the owner has configured their bot. Webhook registration is an operational setup step, not automatically performed during application startup.
+`staff/backend/.env.example` carries this block with empty values; copy it rather than inventing names.
+
+Telegram webhook: POST `/api/clinic-monitor/telegram/webhook`, authenticated only by `X-Telegram-Bot-Api-Secret-Token`. Pairing via owner-authenticated COMM creates a ten-minute single-use token and requires a private chat. Do not register or send messages until the owner has configured their bot. Webhook registration is an operational setup step, not automatically performed during application startup. Register it explicitly from `staff/backend`, passing this deployment's public base URL:
+
+```
+node scripts/clinic-monitor-webhook.js set https://dokterdibya.com
+node scripts/clinic-monitor-webhook.js info
+node scripts/clinic-monitor-webhook.js delete
+```
+
+Registration restricts Telegram to `message` updates and drops pending updates, so an expired pairing token cannot be redeemed from a backlog. The command refuses a non-HTTPS base or one carrying credentials, query or hash, and never prints the bot token or secret. Deleting the webhook stops pairing and all alerts until it is registered again.
+
+Read activation state on the server without going through COMM:
+
+```
+node scripts/clinic-monitor-status.js
+```
+
+It prints configuration, per-source verification and the exact remaining blockers only. Patients, events and pending identity rows are never printed, so the output holds no PHI. `Monitor schema not ready` means the migration above has not been applied.
 
 Review actual full-source coverage and case identifiers before marking each source verified. Never treat an empty response or successful HTTP as proof. The local command, run from `staff/backend`, is:
 
@@ -30,3 +49,18 @@ Partial/error archives recheck at discharge +24h, +72h and +7d, with a minimum o
 Durability is per-entity MySQL JSON records, serialized using an InnoDB singleton row. Each transaction reads the monitor metadata catalog and writes changed entities only; no document bytes are loaded into MySQL. This intentionally favors correctness at the initial clinic cohort size, but metadata memory/read cost grows with accumulated archive versions. Measure catalog size/latency before expanding to a substantially larger population; partition/index entity reads before that growth becomes material.
 
 Telegram has no sendMessage idempotency key. Persistent unique events/outbox prevent routine replay, and leases prevent concurrent sends. A process crash after Telegram accepts a message but before MySQL records acknowledgement can still deliver that message again after lease expiry (at-least-once external delivery); exactly-once external delivery is not claimed.
+
+## Activation checklist
+
+Work in this order and stop at the first step that fails. Nothing here sends a patient alert until the last step.
+
+1. Back up the database, apply `database/clinic-hospital-monitor-migration.sql`, then confirm `clinic_monitor_lock` holds row `id=1`.
+2. Set the `CLINIC_MONITOR_*` variables on the server, leaving `CLINIC_MONITOR_NOTIFICATIONS_ENABLED=false`, and restart the backend.
+3. Run `node scripts/clinic-monitor-status.js`; expect `telegram configured=true` and one unverified blocker per monitored source (six when no hospital is skipped).
+4. Register the webhook with `node scripts/clinic-monitor-webhook.js set <public https base>`, then confirm with `info`.
+5. Pair privately from COMM specialist mode; `/start` in the bot must answer that Telegram is connected but alerts are not active yet. Status now drops `telegram_not_connected`.
+6. Confirm COMM actually collects each hospital and unit, review real all-DPJP coverage and case identifiers, then record each verification with `clinic-monitor-verify-source.js`. Successful HTTP or an empty list is not verification.
+7. Re-run the status command; only when it reports no blockers, set `CLINIC_MONITOR_NOTIFICATIONS_ENABLED=true` and restart.
+8. Expect exactly one baseline summary message. Existing episodes are not replayed as admissions.
+
+To pause alerts, set `CLINIC_MONITOR_NOTIFICATIONS_ENABLED=false` and restart. Episodes and archives keep accruing and no new outbox entries are queued while paused, but entries queued before the pause are only held, not dropped: re-enabling delivers them immediately, so a long pause can surface an admission alert well after the event. Clear `clinic_monitor_records` rows with key prefix `outbox:` before re-enabling if stale alerts are unwanted. Re-enabling does not resend the baseline summary, because `activation:baseline` persists.
