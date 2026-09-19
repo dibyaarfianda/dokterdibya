@@ -83,7 +83,12 @@ async function postStartWalkIn(req, res, next) {
             try {
                 await conn.beginTransaction();
 
-                // Generate MR ID (only if no existing record)
+                // Generate MR ID. This endpoint ALWAYS creates a new DRD: it never
+                // checks whether the patient already has one today, because one
+                // patient legitimately has several DRDs per day across locations.
+                // The "only PERIKSA may create a DRD" rule is enforced by the
+                // callers in the UI, not here, so removing a caller's guard
+                // silently allows duplicate DRDs from that path.
                 const result = await generateCategoryBasedMrId(finalCategory, conn);
                 mrId = result.mrId;
                 sequence = result.sequence;
