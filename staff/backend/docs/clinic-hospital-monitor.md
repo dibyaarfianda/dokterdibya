@@ -30,7 +30,9 @@ Read activation state on the server without going through COMM:
 node scripts/clinic-monitor-status.js
 ```
 
-It prints configuration, per-source verification and the exact remaining blockers only. Patients, events and pending identity rows are never printed, so the output holds no PHI. `Monitor schema not ready` means the migration above has not been applied.
+It prints configuration, per-source verification, the exact remaining blockers, and tallies of episodes, events by type and unmatched patients by reason. Only counts and reason labels: names, birth dates, wards and hospital MR numbers are never printed, so the output holds no PHI. `Monitor schema not ready` means the migration above has not been applied.
+
+Read the tallies, not just the blockers. An empty blocker list means the configuration is complete; it does not mean patients are reaching Telegram. A source can report `ok` for days while every patient it returns fails identity matching, which shows up as a growing `unmatched patients by reason` tally with no new events. `missing_exact_identity` there means the name matched a clinic patient but the birth dates differ, and neither owner confirmation nor an external ID mapping can override that, by design: the underlying record has to be corrected before the next census can match it.
 
 Review actual full-source coverage and case identifiers before marking each source verified. Never treat an empty response or successful HTTP as proof. The local command, run from `staff/backend`, is:
 

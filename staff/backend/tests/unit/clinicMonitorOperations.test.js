@@ -45,9 +45,21 @@ describe('clinic monitor webhook registration command', () => {
 
 describe('clinic monitor status command', () => {
     const dashboard = {
-        patients: [{ patient_name: 'Siti Rahayu', ward: 'Melati 3', birth_date: '1991-04-02' }],
-        events: [{ patient_name: 'Siti Rahayu', event_type: 'IGD' }],
-        pending_matches: [{ patient_name: 'Dewi Lestari', hospital_mr_id: '0012345' }],
+        patients: [
+            { patient_name: 'Siti Rahayu', ward: 'Melati 3', birth_date: '1991-04-02', active: true, discharge_at: null },
+            { patient_name: 'Rina Hartati', ward: 'Anggrek 1', birth_date: '1988-11-30', active: false, discharge_at: '2026-09-18T02:00:00.000Z' },
+            { patient_name: 'Ayu Pratiwi', ward: 'Dahlia 2', birth_date: '1995-01-09', active: false, identity_conflict: true }
+        ],
+        events: [
+            { patient_name: 'Siti Rahayu', event_type: 'IGD' },
+            { patient_name: 'Rina Hartati', event_type: 'IGD' },
+            { patient_name: 'Rina Hartati', event_type: 'discharged' }
+        ],
+        pending_matches: [
+            { patient_name: 'Dewi Lestari', hospital_mr_id: '0012345', reason: 'missing_exact_identity' },
+            { patient_name: 'Nina Mujiati', hospital_mr_id: '0032751', reason: 'missing_exact_identity' },
+            { patient_name: 'Lia Kusuma', hospital_mr_id: '0032752', reason: 'ambiguous' }
+        ],
         sources: [
             { facility: 'gambiran', unit: 'IGD', status: 'ok', verified: true, last_success_at: '2026-09-19T03:00:00.000Z' },
             { facility: 'melinda', unit: 'RI', status: 'error', verified: false, last_success_at: null }
@@ -58,7 +70,29 @@ describe('clinic monitor status command', () => {
 
     test('status output carries no patient identity', () => {
         const output = status.format(dashboard);
-        for (const secret of ['Siti Rahayu', 'Dewi Lestari', 'Melati 3', '1991-04-02', '0012345']) expect(output).not.toContain(secret);
+        for (const secret of ['Siti Rahayu', 'Rina Hartati', 'Ayu Pratiwi', 'Dewi Lestari', 'Nina Mujiati', 'Lia Kusuma',
+            'Melati 3', 'Anggrek 1', 'Dahlia 2', '1991-04-02', '1988-11-30', '1995-01-09', '0012345', '0032751', '0032752']) {
+            expect(output).not.toContain(secret);
+        }
+    });
+
+    test('status counts matching outcomes so a clear configuration cannot look like a working pipeline', () => {
+        const output = status.format(dashboard);
+        expect(output).toContain('episodes: 3 total, 1 active, 1 discharged, 1 identity conflict');
+        expect(output).toContain('events by type: IGD=2, discharged=1');
+        expect(output).toContain('unmatched patients by reason: ambiguous=1, missing_exact_identity=2');
+    });
+
+    test('no blockers never claims patients are being matched', () => {
+        const output = status.format({ ...dashboard, activation: { ...dashboard.activation, ready: true, enabled: true, blockers: [] } });
+        expect(output).toContain('this does not prove patients are being matched');
+    });
+
+    test('an empty monitor reports every tally as none instead of failing', () => {
+        const output = status.format({ ...dashboard, patients: [], events: [], pending_matches: [] });
+        expect(output).toContain('episodes: 0 total, 0 active, 0 discharged, 0 identity conflict');
+        expect(output).toContain('events by type: (none)');
+        expect(output).toContain('unmatched patients by reason: (none)');
     });
 
     test('status output names every blocker, source state and skipped hospital', () => {
@@ -73,6 +107,6 @@ describe('clinic monitor status command', () => {
 
     test('a fully cleared monitor reports no blockers', () => {
         const output = status.format({ ...dashboard, activation: { ...dashboard.activation, ready: true, enabled: true, blockers: [] } });
-        expect(output).toContain('no blockers; activation conditions are met');
+        expect(output).toContain('no activation blockers');
     });
 });
