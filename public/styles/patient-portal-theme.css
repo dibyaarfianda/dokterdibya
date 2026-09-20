@@ -666,7 +666,7 @@ body :where(button, a, input, textarea, select):not(#pmc-root *) {
     font-family: inherit !important;
 }
 
-body :where(h1, h2, h3, h4, .brand-title, .topbar-title, .section-title, .portal-card-title, .page-title, .hero-title, .hero-greeting, .visit-title, .corner-name, .tracker-panel .big):not(#pmc-root *) {
+body :where(h1, h2, h3, h4, .brand-title, .topbar-title, .section-title, .portal-card-title, .page-title, .hero-title, .hero-greeting, .visit-title, .corner-name, .tracker-panel .big):not(#pmc-root *):not(.category-card.selected *) {
     font-family: var(--font-display) !important;
     font-weight: 800 !important;
     letter-spacing: -0.035em !important;
@@ -715,7 +715,7 @@ body :where(.portal-card-title, .card-title, .status-body h3, .tracker-panel h3,
     letter-spacing: -0.01em !important;
 }
 
-body :where(p, .subtitle, .description, .step-desc, .empty-text, .card-desc, .portal-card-desc, .hero-copy, .corner-desc, .tracker-panel p, .announcement-panel p, .tap-card p):not(#pmc-root *) {
+body :where(p, .subtitle, .description, .step-desc, .empty-text, .card-desc, .portal-card-desc, .hero-copy, .corner-desc, .tracker-panel p, .announcement-panel p, .tap-card p):not(#pmc-root *):not(.category-card.selected *) {
     color: var(--text-body) !important;
     font-size: 12px !important;
     line-height: 1.45 !important;
