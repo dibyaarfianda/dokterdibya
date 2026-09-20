@@ -16,6 +16,7 @@ const {
     MEDIFY_SOAP_SYNC_SECTIONS,
     parseJson,
     getPatient,
+    getSessionSettings,
     getSessionLabel,
     getSlotTime,
     getGmt7DayWindow,
@@ -218,6 +219,7 @@ async function getDirectory(req, res, next) {
         );
 
         const patientsMap = new Map();
+        const sessionSettings = await getSessionSettings();
 
         rows.forEach((row) => {
             const patientId = row.patient_id || `unknown:${row.mr_id}`;
@@ -240,9 +242,9 @@ async function getDirectory(req, res, next) {
                 appointmentId: row.appointment_id,
                 appointmentDate: row.appointment_date,
                 session: row.session,
-                sessionLabel: getSessionLabel(row.session) || null,
+                sessionLabel: getSessionLabel(sessionSettings, row.session) || null,
                 slotNumber: row.slot_number,
-                slotTime: getSlotTime(row.session, row.slot_number),
+                slotTime: getSlotTime(sessionSettings, row.session, row.slot_number),
                 recordStatus: row.record_status,
                 recordCreatedAt: row.record_created_at,
                 recordUpdatedAt: row.record_updated_at,

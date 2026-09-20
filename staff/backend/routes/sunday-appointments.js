@@ -10,8 +10,16 @@ const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
 const patientActivityLogger = require('../services/patientActivityLogger');
+const {
+    getDayName,
+    getSessionSettings,
+    getCachedSessionSettings,
+    invalidateSessionSettingsCache,
+    getSessionLabelFromSettings: getSessionLabelFromSettingsBase,
+    getSlotTimeFromSettings
+} = require('../services/booking-session-settings');
 
-const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const AUTO_NO_CONFIRMATION_REASON = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB';
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -52,10 +60,6 @@ async function requireOpenSundayClinicAccountingDate(req, res, next) {
     } catch (error) {
         return next(error);
     }
-}
-
-function getDayName(dayOfWeek) {
-    return DAY_NAMES[dayOfWeek] || 'Tidak diketahui';
 }
 
 // Helper function to get next available practice dates based on configured days
@@ -111,87 +115,8 @@ function getNextPracticeDates(availableDays, count = 8) {
     return practiceDates;
 }
 
-// Cache for session settings
-let sessionSettingsCache = null;
-let sessionSettingsCacheTime = 0;
-const CACHE_TTL = 60000; // 1 minute cache
-
-function invalidateSessionSettingsCache() {
-    sessionSettingsCache = null;
-    sessionSettingsCacheTime = 0;
-}
-
-// Helper function to get session settings from database
-async function getSessionSettings() {
-    const now = Date.now();
-    if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
-        return sessionSettingsCache;
-    }
-
-    try {
-        const [settings] = await db.query(
-            `SELECT session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time, slot_duration, max_slots
-             FROM booking_settings WHERE is_active = 1 ORDER BY session_number ASC`
-        );
-
-        sessionSettingsCache = settings.map(s => ({
-            session: s.session_number,
-            name: s.session_name,
-            dayOfWeek: Number.parseInt(s.day_of_week, 10) || 0,
-            dayName: getDayName(Number.parseInt(s.day_of_week, 10) || 0),
-            startTime: s.start_time.substring(0, 5),
-            endTime: s.end_time.substring(0, 5),
-            slotDuration: s.slot_duration,
-            maxSlots: s.max_slots,
-            label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
-        }));
-        sessionSettingsCacheTime = now;
-        return sessionSettingsCache;
-    } catch (error) {
-        console.error('Error fetching session settings:', error);
-        // Fallback to default if DB fails
-        return [
-            { session: 1, name: 'Pagi', dayOfWeek: 0, dayName: 'Minggu', startTime: '09:00', endTime: '11:30', slotDuration: 15, maxSlots: 10, label: '09:00 - 11:30 (Pagi)' },
-            { session: 2, name: 'Siang', dayOfWeek: 0, dayName: 'Minggu', startTime: '12:00', endTime: '14:30', slotDuration: 15, maxSlots: 10, label: '12:00 - 14:30 (Siang)' },
-            { session: 3, name: 'Sore', dayOfWeek: 0, dayName: 'Minggu', startTime: '15:00', endTime: '17:30', slotDuration: 15, maxSlots: 10, label: '15:00 - 17:30 (Sore)' }
-        ];
-    }
-}
-
-function findSessionSetting(settings, session) {
-    return (settings || []).find(s => s.session === parseInt(session));
-}
-
 function getSessionLabelFromSettings(settings, session) {
-    const found = findSessionSetting(settings, session);
-    if (found) {
-        return found.label;
-    }
-
-    const labels = {
-        1: '09:00 - 11:30 (Pagi)',
-        2: '12:00 - 14:30 (Siang)',
-        3: '15:00 - 17:30 (Sore)'
-    };
-    return labels[session] || 'Unknown';
-}
-
-function getSlotTimeFromSettings(settings, session, slotNumber) {
-    const found = findSessionSetting(settings, session);
-    if (found) {
-        const [hours, mins] = found.startTime.split(':').map(Number);
-        const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
-        const hour = Math.floor(totalMinutes / 60);
-        const minute = totalMinutes % 60;
-        return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-    }
-
-    const startHours = { 1: 9, 2: 12, 3: 15 };
-    const startHour = startHours[session] || 9;
-    const minutes = (slotNumber - 1) * 15;
-    const hour = startHour + Math.floor(minutes / 60);
-    const minute = minutes % 60;
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return getSessionLabelFromSettingsBase(settings, session) || 'Unknown';
 }
 
 async function getConfiguredPracticeDays() {
@@ -208,7 +133,7 @@ async function getSessionLabelAsync(session) {
 
 // Sync version for backward compatibility (uses cache)
 function getSessionLabel(session) {
-    return getSessionLabelFromSettings(sessionSettingsCache, session);
+    return getSessionLabelFromSettings(getCachedSessionSettings(), session);
 }
 
 // Helper function to calculate slot time (async version)
@@ -219,7 +144,7 @@ async function getSlotTimeAsync(session, slotNumber) {
 
 // Sync version for backward compatibility
 function getSlotTime(session, slotNumber) {
-    return getSlotTimeFromSettings(sessionSettingsCache, session, slotNumber);
+    return getSlotTimeFromSettings(getCachedSessionSettings(), session, slotNumber);
 }
 
 // Helper function to get category label
@@ -782,6 +707,78 @@ router.post('/:id/trigger-confirmation-popup', verifyToken, async (req, res) => 
 });
 
 /**
+ * POST /api/sunday-appointments/:id/manual-confirm (STAFF ONLY)
+ * Confirm attendance when the patient has arrived but did not confirm in the portal.
+ */
+router.post('/:id/manual-confirm', verifyToken, async (req, res) => {
+    try {
+        if (req.user && req.user.user_type === 'patient') {
+            return res.status(403).json({ success: false, message: 'Akses hanya untuk staff' });
+        }
+
+        const { id } = req.params;
+        const [rows] = await db.query(
+            `SELECT id, patient_id, patient_name, session, slot_number, status,
+                    cancellation_reason, cancelled_by
+             FROM sunday_appointments
+             WHERE id = ?
+             LIMIT 1`,
+            [id]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Appointment tidak ditemukan' });
+        }
+
+        const appointment = rows[0];
+        const expiredByNoConfirmation = appointment.status === 'cancelled'
+            && appointment.cancelled_by === 'system'
+            && appointment.cancellation_reason === AUTO_NO_CONFIRMATION_REASON;
+        if (!['pending', 'pending_confirmation'].includes(appointment.status) && !expiredByNoConfirmation) {
+            return res.status(400).json({
+                success: false,
+                message: 'Hanya appointment yang belum dikonfirmasi yang dapat dikonfirmasi manual'
+            });
+        }
+
+        await db.query(
+            `UPDATE sunday_appointments
+             SET status = 'confirmed',
+                 confirmed_at = NOW(),
+                 cancellation_reason = NULL,
+                 cancelled_by = NULL,
+                 cancelled_at = NULL,
+                 updated_at = NOW()
+             WHERE id = ?`,
+            [id]
+        );
+
+        try {
+            const sessionSettings = await getSessionSettings();
+            realtimeSync.broadcastNewBooking({
+                id: Number(id),
+                patient_name: appointment.patient_name,
+                session: appointment.session,
+                session_label: getSessionLabelFromSettings(sessionSettings, appointment.session),
+                slot_number: appointment.slot_number,
+                status: 'confirmed',
+                _event: 'attendance_confirmed_by_staff'
+            });
+        } catch (rtErr) {
+            console.error('Realtime broadcast error:', rtErr.message);
+        }
+
+        res.json({
+            success: true,
+            message: `Kehadiran ${appointment.patient_name} berhasil dikonfirmasi oleh staff`
+        });
+    } catch (error) {
+        console.error('Error manually confirming attendance:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
  * POST /api/sunday-appointments/:id/confirm-attendance
  * Confirm attendance via patient portal (authenticated)
  */
@@ -1260,8 +1257,16 @@ router.get('/list', verifyToken, async (req, res) => {
             query += ' AND a.status = ?';
             params.push(status);
         } else {
-            query += ' AND a.status != ?';
-            params.push('cancelled');
+            // Keep automatic no-confirmation expirations visible so staff can
+            // restore attendance when the patient has actually arrived.
+            query += ` AND (
+                a.status != ? OR (
+                    a.status = ?
+                    AND a.cancelled_by = ?
+                    AND a.cancellation_reason = ?
+                )
+            )`;
+            params.push('cancelled', 'cancelled', 'system', AUTO_NO_CONFIRMATION_REASON);
         }
         
         if (session) {

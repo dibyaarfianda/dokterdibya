@@ -5,6 +5,7 @@ const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
 const sundayAppointmentsRoutes = require('./sunday-appointments');
+const { invalidateSessionSettingsCache } = require('../services/booking-session-settings');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -15,6 +16,10 @@ function normalizeDayOfWeek(value) {
 
 function clearBookingSettingCaches() {
     cache.delPattern('booking-settings:');
+    // Shared by booking, Antrian Online, and the patient live queue. Bumping the
+    // settings version here also invalidates the cached today-queue payload,
+    // which stores slot_time already computed from these settings.
+    invalidateSessionSettingsCache();
     if (typeof sundayAppointmentsRoutes.invalidateSessionSettingsCache === 'function') {
         sundayAppointmentsRoutes.invalidateSessionSettingsCache();
     }

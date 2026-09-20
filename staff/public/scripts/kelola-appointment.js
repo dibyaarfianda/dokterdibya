@@ -1,6 +1,7 @@
 // Kelola Appointment Script
 (function() {
 const API_BASE = '/api/sunday-appointments';
+const AUTO_NO_CONFIRMATION_REASON = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB';
 let appointmentsTable;
 let allAppointments = [];
 
@@ -19,18 +20,14 @@ function escapeHtml(value) {
 function formatDateLocal(dateValue) {
     const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
     if (isNaN(date.getTime())) return '';
-    try {
-        const parts = new Intl.DateTimeFormat('en-US', {
-            timeZone: 'Asia/Jakarta',
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        }).formatToParts(date);
-        const byType = Object.fromEntries(parts.map(part => [part.type, part.value]));
-        return `${byType.year}-${byType.month}-${byType.day}`;
-    } catch (error) {
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    }
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function isManuallyConfirmable(appointment) {
+    return ['pending', 'pending_confirmation'].includes(appointment.status)
+        || (appointment.status === 'cancelled'
+            && appointment.cancelled_by === 'system'
+            && appointment.cancellation_reason === AUTO_NO_CONFIRMATION_REASON);
 }
 
 function initKelolaAppointment() {
@@ -81,19 +78,17 @@ function initKelolaAppointment() {
         }
     });
 
-    // Load appointments
-    loadAppointments();
-
-    // Set filter date to upcoming Sunday (or today if it's Sunday)
+    // Set the visible date before fetching so initial and subsequent loads show
+    // the same clinic-day roster.
     function getNextSunday() {
         const today = new Date();
-        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+        const daysUntilSunday = today.getDay() === 0 ? 0 : 7 - today.getDay();
         const nextSunday = new Date(today);
         nextSunday.setDate(today.getDate() + daysUntilSunday);
         return formatDateLocal(nextSunday);
     }
     $('#filter-date').val(getNextSunday());
+    loadAppointments();
 
     $('#status-select').off('change.kelola').on('change.kelola', function() {
         toggleCancellationReasonField(this.value);
@@ -187,6 +182,11 @@ function renderAppointments(appointments) {
                     <i class="fas fa-${confirmationAlreadySent ? 'bell-slash' : 'bell'}"></i> Popup
                 </button>
                 ` : '';
+        const manualConfirmationButton = isManuallyConfirmable(apt) ? `
+                <button class="btn btn-xs btn-success" onclick="manualConfirmAppointment(${apt.id})" title="Konfirmasi pasien sudah hadir">
+                    <i class="fas fa-user-check"></i> Konfirmasi Hadir
+                </button>
+                ` : '';
         
         appointmentsTable.row.add([
             apt.id,
@@ -205,6 +205,7 @@ function renderAppointments(appointments) {
                     <i class="fas fa-edit"></i>
                 </button>
                 ${confirmationButton}
+                ${manualConfirmationButton}
                 ${['cancelled', 'completed', 'no_show'].includes(apt.status) ? `
                 <button class="btn btn-xs btn-secondary" onclick="archiveAppointment(${apt.id})" title="Arsipkan">
                     <i class="fas fa-archive"></i>
@@ -215,6 +216,47 @@ function renderAppointments(appointments) {
     });
 
     appointmentsTable.draw();
+}
+
+async function manualConfirmAppointment(appointmentId) {
+    const apt = allAppointments.find(item => item.id === appointmentId);
+    if (!apt) return;
+
+    if (!isManuallyConfirmable(apt)) {
+        showToast('Appointment ini sudah diproses', 'error');
+        return;
+    }
+
+    if (!confirm(`Konfirmasi bahwa ${apt.patient_name} sudah hadir?\n\nStatus appointment akan diubah menjadi Confirmed.`)) {
+        return;
+    }
+
+    try {
+        const token = typeof window.getAuthToken === 'function' ? window.getAuthToken() : '';
+        const response = await fetch(`${API_BASE}/${appointmentId}/manual-confirm`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Gagal mengonfirmasi kehadiran');
+        }
+
+        showToast(data.message, 'success');
+        // The old status filter no longer matches the confirmed appointment. Show
+        // all statuses instead of replacing the complete list with only confirmed rows.
+        if ($('#filter-status').val() === apt.status) {
+            $('#filter-status').val('');
+        }
+        await loadAppointments();
+    } catch (error) {
+        console.error('Error manually confirming attendance:', error);
+        showToast(error.message || 'Gagal mengonfirmasi kehadiran', 'error');
+    }
 }
 
 function getStatusBadge(status, cancellationReason) {
@@ -480,6 +522,7 @@ window.logout = logout;
 window.loadAppointments = loadAppointments;
 window.archiveAppointment = archiveAppointment;
 window.triggerConfirmationPopup = triggerConfirmationPopup;
+window.manualConfirmAppointment = manualConfirmAppointment;
 
 
 })(); // End IIFE

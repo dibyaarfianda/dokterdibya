@@ -21,6 +21,11 @@ const {
     logBillingAudit,
     logAdditionalBillingAudit
 } = require('../SundayClinicBillingAuditService');
+const {
+    getSessionSettings,
+    getSessionLabelFromSettings,
+    getSlotTimeFromSettings
+} = require('../booking-session-settings');
 
 const createPatientNotification = patientNotifications.createPatientNotification;
 const listActiveQueueReminderSettings = patientNotifications.listActiveQueueReminderSettings;
@@ -451,25 +456,17 @@ async function getPatient(patientId) {
     return rows[0] || null;
 }
 
-function getSessionLabel(session) {
-    const map = {
-        1: '09:00 - 11:30 (Pagi)',
-        2: '12:00 - 14:30 (Siang)',
-        3: '15:00 - 17:30 (Sore)'
-    };
-    return map[session] || null;
+/**
+ * Session label / slot time are derived from booking_settings (Pengaturan
+ * Booking), so callers must load the settings first with getSessionSettings()
+ * and pass them in. Do not hardcode session start hours here.
+ */
+function getSessionLabel(settings, session) {
+    return getSessionLabelFromSettings(settings, session);
 }
 
-function getSlotTime(session, slotNumber) {
-    const startHours = { 1: 9, 2: 12, 3: 15 };
-    const baseHour = startHours[session];
-    if (!baseHour || !Number.isFinite(Number(slotNumber))) {
-        return null;
-    }
-    const minutesOffset = (Number(slotNumber) - 1) * 15;
-    const hour = baseHour + Math.floor(minutesOffset / 60);
-    const minute = minutesOffset % 60;
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+function getSlotTime(settings, session, slotNumber) {
+    return getSlotTimeFromSettings(settings, session, slotNumber);
 }
 
 function formatUtcYmd(date) {
@@ -552,7 +549,8 @@ const QUEUE_CACHE_TTL_MS = 10000;
 const queueTodayCache = {
     key: null,
     expiresAt: 0,
-    payload: null
+    payload: null,
+    settingsVersion: null
 };
 
 async function getAppointment(appointmentId) {
@@ -573,6 +571,7 @@ async function getAppointment(appointmentId) {
     }
 
     const row = rows[0];
+    const sessionSettings = await getSessionSettings();
     return {
         id: row.id,
         patientId: row.patient_id,
@@ -580,9 +579,9 @@ async function getAppointment(appointmentId) {
         patientPhone: row.patient_phone,
         appointmentDate: row.appointment_date,
         session: row.session,
-        sessionLabel: getSessionLabel(row.session),
+        sessionLabel: getSessionLabel(sessionSettings, row.session),
         slotNumber: row.slot_number,
-        slotTime: getSlotTime(row.session, row.slot_number),
+        slotTime: getSlotTime(sessionSettings, row.session, row.slot_number),
         chiefComplaint: row.chief_complaint,
         status: row.status,
         notes: row.notes,
@@ -943,6 +942,7 @@ module.exports = {
     loadAdditionalBillingDocument,
     parseAuditSnapshot,
     getPatient,
+    getSessionSettings,
     getSessionLabel,
     getSlotTime,
     formatUtcYmd,

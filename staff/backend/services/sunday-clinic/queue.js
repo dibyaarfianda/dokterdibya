@@ -8,6 +8,7 @@ const {
     listActiveQueueReminderSettings,
     markQueueReminderTriggered,
     realtimeSync,
+    getSessionSettings,
     getSessionLabel,
     getSlotTime,
     getGmt7DayWindow,
@@ -15,6 +16,18 @@ const {
     QUEUE_CACHE_TTL_MS,
     queueTodayCache
 } = require('./shared');
+const { getSessionSettingsVersion } = require('../booking-session-settings');
+
+/**
+ * The cached payload stores slot_time already computed from booking_settings,
+ * so it must also be dropped when those settings change.
+ */
+function isQueueTodayCacheFresh(todayStr) {
+    return queueTodayCache.key === todayStr
+        && queueTodayCache.expiresAt > Date.now()
+        && !!queueTodayCache.payload
+        && queueTodayCache.settingsVersion === getSessionSettingsVersion();
+}
 
 // ==================== CHECK EXISTING RECORD ====================
 
@@ -225,7 +238,7 @@ async function getQueueToday(req, res, next) {
         const { dateStr: todayStr, startDateTime: todayStart, endDateTime: tomorrowStart } = getGmt7DayWindow();
         const forceRefresh = req.query.refresh === '1';
 
-        if (!forceRefresh && queueTodayCache.key === todayStr && queueTodayCache.expiresAt > Date.now() && queueTodayCache.payload) {
+        if (!forceRefresh && isQueueTodayCacheFresh(todayStr)) {
             return res.json(queueTodayCache.payload);
         }
 
@@ -314,7 +327,8 @@ async function getQueueToday(req, res, next) {
             }
         }
 
-        // Enrich with session labels and slot times
+        // Enrich with session labels and slot times from Pengaturan Booking
+        const sessionSettings = await getSessionSettings();
         const enriched = appointments.map(apt => ({
             id: apt.id,
             patient_id: apt.patient_id,
@@ -322,9 +336,9 @@ async function getQueueToday(req, res, next) {
             patient_phone: apt.patient_phone,
             appointment_date: apt.appointment_date,
             session: apt.session,
-            session_label: getSessionLabel(apt.session),
+            session_label: getSessionLabel(sessionSettings, apt.session),
             slot_number: apt.slot_number,
-            slot_time: getSlotTime(apt.session, apt.slot_number),
+            slot_time: getSlotTime(sessionSettings, apt.session, apt.slot_number),
             chief_complaint: apt.chief_complaint,
             consultation_category: apt.consultation_category,
             status: apt.status,
@@ -350,6 +364,7 @@ async function getQueueToday(req, res, next) {
         queueTodayCache.key = todayStr;
         queueTodayCache.expiresAt = Date.now() + QUEUE_CACHE_TTL_MS;
         queueTodayCache.payload = payload;
+        queueTodayCache.settingsVersion = getSessionSettingsVersion();
 
         res.json(payload);
 
@@ -496,7 +511,7 @@ async function getQueuePublic(req, res, next) {
         }
 
         // Reuse existing staff queue cache if available (same data, just masked)
-        if (queueTodayCache.key === todayStr && queueTodayCache.expiresAt > Date.now() && queueTodayCache.payload) {
+        if (isQueueTodayCacheFresh(todayStr)) {
             const publicData = queueTodayCache.payload.data.map((apt, index) => ({
                 queue_position: index + 1,
                 session: apt.session,
@@ -541,12 +556,13 @@ async function getQueuePublic(req, res, next) {
             [todayStart, tomorrowStart, todayStr]
         );
 
+        const sessionSettings = await getSessionSettings();
         const publicData = rows.map((apt, index) => ({
             queue_position: index + 1,
             session: apt.session,
-            session_label: getSessionLabel(apt.session),
+            session_label: getSessionLabel(sessionSettings, apt.session),
             slot_number: apt.slot_number,
-            slot_time: getSlotTime(apt.session, apt.slot_number),
+            slot_time: getSlotTime(sessionSettings, apt.session, apt.slot_number),
             masked_name: maskPatientName(apt.patient_name),
             queue_status: computeQueueStatus(apt),
             appointment_date: todayStr
