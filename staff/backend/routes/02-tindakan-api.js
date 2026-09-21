@@ -9,8 +9,26 @@ const cache = require('../utils/cache');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { validateTindakan } = require('../middleware/validation');
 
+function withPriceChange(row) {
+    const changedAt = row.price_changed_at instanceof Date ? row.price_changed_at.getTime() : NaN;
+    const previous = Number(row.previous_price);
+    const current = Number(row.price);
+    const hasChange = row.previous_price != null && Number.isFinite(changedAt)
+        && Number.isFinite(previous) && Number.isFinite(current) && previous !== current;
+    return {
+        ...row,
+        price_change: hasChange ? {
+            direction: current > previous ? 'up' : 'down',
+            previous_price: previous,
+            changed_at: changedAt,
+            expires_at: changedAt + 72 * 60 * 60 * 1000
+        } : null
+    };
+}
+
 // ==================== GET ALL TINDAKAN ====================
 router.get('/api/tindakan', verifyToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
     try {
         const { category, active } = req.query;
         
@@ -45,7 +63,8 @@ router.get('/api/tindakan', verifyToken, async (req, res) => {
         
         res.json({
             success: true,
-            data: rows,
+            data: rows.map(withPriceChange),
+            server_time: Date.now(),
             count: rows.length
         });
     } catch (error) {
@@ -60,6 +79,7 @@ router.get('/api/tindakan', verifyToken, async (req, res) => {
 
 // ==================== GET ONE TINDAKAN ====================
 router.get('/api/tindakan/:id', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
     try {
         const { id } = req.params;
         const [rows] = await db.query('SELECT * FROM tindakan WHERE id = ?', [id]);
@@ -73,7 +93,8 @@ router.get('/api/tindakan/:id', async (req, res) => {
         
         res.json({
             success: true,
-            data: rows[0]
+            data: withPriceChange(rows[0]),
+            server_time: Date.now()
         });
     } catch (error) {
         console.error('Error fetching tindakan:', error);
@@ -159,13 +180,17 @@ router.post('/api/tindakan', verifyToken, validateTindakan, async (req, res) => 
 
 // ==================== UPDATE TINDAKAN ====================
 router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) => {
+    let connection;
     try {
         const { id } = req.params;
         const { name, category, price, is_active, updated_by } = req.body;
         
         // Check if tindakan exists
-        const [existing] = await db.query('SELECT id FROM tindakan WHERE id = ?', [id]);
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        const [existing] = await connection.query('SELECT id, price FROM tindakan WHERE id = ? FOR UPDATE', [id]);
         if (existing.length === 0) {
+            await connection.rollback();
             return res.status(404).json({
                 success: false,
                 message: 'Tindakan not found'
@@ -185,8 +210,14 @@ router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) 
             params.push(category);
         }
         if (price !== undefined) {
+            // Compare the DECIMAL(10,2) value that will actually be stored.
+            const storedPrice = Number(Number(price).toFixed(2));
+            if (storedPrice !== Number(existing[0].price)) {
+                updates.push('previous_price = ?', 'price_changed_at = NOW(3)');
+                params.push(Number(existing[0].price));
+            }
             updates.push('price = ?');
-            params.push(price);
+            params.push(storedPrice);
         }
         if (is_active !== undefined) {
             updates.push('is_active = ?');
@@ -198,6 +229,7 @@ router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) 
         }
         
         if (updates.length === 0) {
+            await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: 'No fields to update'
@@ -207,19 +239,24 @@ router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) 
         params.push(id);
         const query = `UPDATE tindakan SET ${updates.join(', ')} WHERE id = ?`;
         
-        await db.query(query, params);
+        await connection.query(query, params);
+        await connection.commit();
+        cache.delPattern('tindakan:');
         
         res.json({
             success: true,
             message: 'Tindakan updated successfully'
         });
     } catch (error) {
+        if (connection) await connection.rollback();
         console.error('Error updating tindakan:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update tindakan',
             error: error.message
         });
+    } finally {
+        if (connection) connection.release();
     }
 });
 

@@ -15,6 +15,40 @@ let allServices = [];
 let isEditMode = false;
 let editingServiceId = null;
 let isInitialized = false;
+let serverTime = null;
+let serverTimeReceivedAt = 0;
+let priceBadgeTimer = null;
+
+function currentServerTime() {
+    return serverTime === null ? NaN : serverTime + performance.now() - serverTimeReceivedAt;
+}
+
+function renderPriceBadge(service) {
+    const change = service.price_change;
+    if (!change || !Number.isFinite(currentServerTime())
+        || !Number.isFinite(change.expires_at) || change.expires_at <= currentServerTime()) return '';
+    const rising = change.direction === 'up';
+    const label = rising ? '↑ Naik' : '↓ Turun';
+    const tooltip = `Rp ${Number(change.previous_price).toLocaleString('id-ID')} → Rp ${Number(service.price).toLocaleString('id-ID')}`;
+    return `<span class="badge ml-1 tindakan-price-badge" data-price-expires-at="${change.expires_at}"
+        style="background-color: ${rising ? '#b42318' : '#157347'} !important; color: #fff !important; white-space: nowrap !important;"
+        title="${tooltip}" aria-label="Harga ${rising ? 'naik' : 'turun'}: ${tooltip}">${label}</span>`;
+}
+
+function schedulePriceBadgeExpiry(services) {
+    clearTimeout(priceBadgeTimer);
+    const now = currentServerTime();
+    const expiry = Math.min(...services.map(service => service.price_change?.expires_at)
+        .filter(time => Number.isFinite(time) && time > now));
+    if (!Number.isFinite(expiry)) return;
+    priceBadgeTimer = setTimeout(() => {
+        const body = document.getElementById('tindakan-list-body');
+        body?.querySelectorAll('[data-price-expires-at]').forEach(badge => {
+            if (Number(badge.dataset.priceExpiresAt) <= currentServerTime()) badge.remove();
+        });
+        schedulePriceBadgeExpiry(services);
+    }, Math.max(1, Math.ceil(expiry - now)));
+}
 
 // Initialize the module
 export function initKelolaTindakan() {
@@ -24,6 +58,9 @@ export function initKelolaTindakan() {
     if (!isInitialized) {
         bindFormSubmit();
         bindSearchFilter();
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') loadServices();
+        });
         isInitialized = true;
     }
     
@@ -141,6 +178,7 @@ async function loadServices() {
         console.log('📡 Fetching from:', url);
         
         const response = await fetch(url, {
+            cache: 'no-store',
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -151,12 +189,15 @@ async function loadServices() {
         if (response.ok) {
             const result = await response.json();
             if (result.success && result.data) {
+                serverTime = Number.isFinite(result.server_time) ? result.server_time : null;
+                serverTimeReceivedAt = performance.now();
                 allServices = result.data.map(item => ({
                     id: item.id,  // Use numeric ID for API calls
                     code: item.code,
                     name: item.name,
                     category: item.category,
-                    price: parseFloat(item.price) || 0
+                    price: parseFloat(item.price) || 0,
+                    price_change: item.price_change || null
                 }));
             } else {
                 allServices = [];
@@ -177,7 +218,8 @@ async function loadServices() {
             return (a.name || '').localeCompare(b.name || '');
         });
 
-        renderServiceTable(allServices);
+        filterServices(document.getElementById('tindakan-search')?.value.toLowerCase().trim() || '',
+            document.getElementById('tindakan-filter-category')?.value || '');
     } catch (error) {
         console.error('Error loading services:', error);
         showError('Gagal memuat data tindakan: ' + error.message);
@@ -228,6 +270,7 @@ function filterServices(searchTerm = '', category = '') {
 function renderServiceTable(services) {
     const tbody = document.getElementById('tindakan-list-body');
     if (!tbody) return;
+    schedulePriceBadgeExpiry(services);
 
     if (services.length === 0) {
         tbody.innerHTML = `
@@ -248,7 +291,7 @@ function renderServiceTable(services) {
             <td>
                 <span class="badge badge-info">${service.category || '-'}</span>
             </td>
-            <td>Rp ${(service.price || 0).toLocaleString('id-ID')}</td>
+            <td>Rp ${(service.price || 0).toLocaleString('id-ID')} ${renderPriceBadge(service)}</td>
             <td class="text-center">
                 <button class="btn btn-sm btn-warning mr-1" onclick="window.editService('${service.id}')">
                     <i class="fas fa-edit"></i> Edit
