@@ -35,8 +35,45 @@ class WhatsAppService {
             whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER
         };
 
+        // Approved Meta template names. Outside the 24 hour customer service
+        // window Meta accepts template messages only, so a business initiated
+        // notification without one is rejected. Names are configured per
+        // deployment because they must match what Meta actually approved; an
+        // empty name means that notification still sends as free text, which
+        // only reaches patients who messaged the clinic within the last 24h.
+        this.templates = {
+            documentReady: process.env.WA_TEMPLATE_DOCUMENT_READY || '',
+            surgeryConfirmation: process.env.WA_TEMPLATE_SURGERY_CONFIRMATION || '',
+            surgeryReminder: process.env.WA_TEMPLATE_SURGERY_REMINDER || '',
+            language: process.env.WA_TEMPLATE_LANGUAGE || 'id'
+        };
+
         this.clinicName = process.env.CLINIC_NAME || 'Klinik Dr. Dibya';
         this.baseUrl = process.env.FRONTEND_URL || 'https://dokterdibya.com';
+    }
+
+    /**
+     * Build Meta body parameters in the order the approved template expects.
+     * Positions are fixed, so an absent value becomes a dash rather than being
+     * dropped: dropping one would shift every later {{n}} onto the wrong field,
+     * and Meta rejects empty parameters outright.
+     */
+    templateBody(...values) {
+        if (!values.length) return undefined;
+        return [{
+            type: 'body',
+            parameters: values.map(value => ({ type: 'text', text: String(value ?? '').trim().replace(/\s+/g, ' ') || '-' }))
+        }];
+    }
+
+    /**
+     * Template options for sendAuto, or an empty object when no template name is
+     * configured yet, so the caller keeps working as free text until approval.
+     */
+    templateOptions(key, ...values) {
+        const name = this.templates[key];
+        if (!name) return {};
+        return { templateName: name, templateLanguage: this.templates.language, templateComponents: this.templateBody(...values) };
     }
 
     /**
@@ -207,22 +244,31 @@ ${this.clinicName}`;
             ? ['meta', 'fonnte']
             : ['fonnte', 'meta'];
 
+        const errors = [];
+
         for (const method of attempts) {
             const result = method === 'meta'
                 ? await this.sendViaMetaCloud(phone, message, options)
                 : await this.sendViaFonnte(phone, message);
 
             if (result.success) {
-                return result;
+                logger.info('WhatsApp delivered', { method, messageId: result.messageId || null, template: options.templateName || null });
+                return { ...result, delivered: true };
             }
+            errors.push(`${method}: ${result.error}`);
         }
 
-        const waLink = this.generateWaLink(phone, message);
+        // Nothing was delivered. A wa.me link is something a staff member still
+        // has to click and send by hand, so reporting success here would tell
+        // the caller the patient was notified when nobody was.
+        logger.warn('WhatsApp not delivered, manual link only', { errors, template: options.templateName || null });
         return {
-            success: true,
+            success: false,
+            delivered: false,
             method: 'manual',
-            waLink,
-            note: 'Klik link untuk membuka WhatsApp dan kirim pesan'
+            waLink: this.generateWaLink(phone, message),
+            errors,
+            note: 'Belum terkirim. Klik link untuk membuka WhatsApp dan kirim manual.'
         };
     }
 
@@ -242,21 +288,24 @@ ${this.clinicName}`;
         // Generate message
         const message = this.generateDocumentMessage(patientName, documents, portalUrl);
 
-        // Try automatic sending first (Meta/Fonnte based on provider)
-        const autoResult = await this.sendAuto(phone, message);
-        if (autoResult.success && autoResult.method !== 'manual') {
+        // Try automatic sending first (Meta/Fonnte based on provider).
+        // Template parameters: {{1}} patient name, {{2}} document count, {{3}} portal URL.
+        const autoResult = await this.sendAuto(phone, message,
+            this.templateOptions('documentReady', patientName, documents.length, portalUrl));
+        if (autoResult.delivered) {
             return autoResult;
         }
 
-        // Fallback to wa.me link (manual)
-        const waLink = this.generateWaLink(phone, message);
-
+        // Fallback to wa.me link (manual). Nothing reached the patient yet, so
+        // this reports not delivered for the same reason sendAuto does.
         return {
-            success: true,
+            success: false,
+            delivered: false,
             method: 'manual',
-            waLink,
+            waLink: this.generateWaLink(phone, message),
             message,
-            note: 'Klik link untuk membuka WhatsApp dan kirim pesan'
+            errors: autoResult.errors || [],
+            note: 'Belum terkirim. Klik link untuk membuka WhatsApp dan kirim manual.'
         };
     }
 
@@ -278,6 +327,12 @@ ${this.clinicName}`;
             twilio: {
                 enabled: this.twilio.enabled,
                 configured: !!this.twilio.accountSid
+            },
+            templates: {
+                documentReady: this.templates.documentReady || null,
+                surgeryConfirmation: this.templates.surgeryConfirmation || null,
+                surgeryReminder: this.templates.surgeryReminder || null,
+                language: this.templates.language
             },
             fallback: 'wa.me links always available'
         };
@@ -313,7 +368,9 @@ ${this.clinicName}`;
             `Mohon hadir 1 jam sebelum jadwal operasi.\n\n` +
             `_${this.clinicName}_`;
 
-        return this.sendAuto(phone, message);
+        // Template parameters: {{1}} patient name, {{2}} date, {{3}} time, {{4}} location, {{5}} fasting note.
+        return this.sendAuto(phone, message,
+            this.templateOptions('surgeryConfirmation', surgery.patient_name, dateStr, timeStr, locName, surgery.npo_status));
     }
 
     /**
@@ -331,7 +388,9 @@ ${this.clinicName}`;
             `Mohon hadir 1 jam sebelum jadwal.\n\n` +
             `_${this.clinicName}_`;
 
-        return this.sendAuto(phone, message);
+        // Template parameters: {{1}} patient name, {{2}} time, {{3}} location, {{4}} fasting note.
+        return this.sendAuto(phone, message,
+            this.templateOptions('surgeryReminder', surgery.patient_name, timeStr, locName, surgery.npo_status));
     }
 }
 

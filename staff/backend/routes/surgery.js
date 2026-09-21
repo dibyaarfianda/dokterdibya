@@ -686,7 +686,14 @@ router.patch('/:id/status', async (req, res) => {
         .then(([rows]) => {
           const p = rows[0];
           const phone = p?.whatsapp || p?.phone;
-          if (phone) whatsapp.sendSurgeryConfirmation(surgery, phone).catch(() => {});
+          // Fire and forget, but never silently: an undelivered confirmation
+          // has to be visible somewhere or nobody learns the patient was missed.
+          if (phone) whatsapp.sendSurgeryConfirmation(surgery, phone)
+            .then(result => {
+              if (result?.delivered) logger.info('Surgery confirmation delivered', { surgeryId: surgery.id, method: result.method, messageId: result.messageId || null });
+              else logger.warn('Surgery confirmation NOT delivered, manual send needed', { surgeryId: surgery.id, errors: result?.errors || null });
+            })
+            .catch(error => logger.error('Surgery confirmation send failed', { surgeryId: surgery.id, error: error.message }));
         }).catch(() => {});
     }
 

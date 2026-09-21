@@ -1214,8 +1214,10 @@ router.post('/notify-whatsapp', verifyToken, async (req, res) => {
             shareToken: token
         });
 
-        // Update document whatsapp_status
-        const whatsappStatus = notificationResult.method === 'fonnte' ? 'sent' : 'pending';
+        // Update document whatsapp_status. Keyed on actual delivery, not on the
+        // provider name: hardcoding 'fonnte' marked every message delivered
+        // through Meta as still pending.
+        const whatsappStatus = notificationResult.delivered ? 'sent' : 'pending';
         await db.query(`
             UPDATE patient_documents
             SET whatsapp_sent_at = NOW(),
@@ -1224,7 +1226,7 @@ router.post('/notify-whatsapp', verifyToken, async (req, res) => {
         `, [whatsappStatus, documentIds]);
 
         // Update share status
-        if (notificationResult.success && notificationResult.method === 'fonnte') {
+        if (notificationResult.delivered) {
             await db.query(`
                 UPDATE patient_document_shares
                 SET status = 'sent', sent_at = NOW()
