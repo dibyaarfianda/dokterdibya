@@ -17,20 +17,26 @@
             const source = data.trimesters[key];
             const active = selected === 'all' || selected === key;
             const repeat = Object.prototype.hasOwnProperty.call(scenario.repeats || {}, key) ? scenario.repeats[key] : source.repeats;
-            let valid = source.ready !== false && validRepeat(repeat);
+            // A blocked group must not hide the other group's valid subtotal.
+            let medicationValid = (source.medication_ready ?? (source.ready !== false)) && validRepeat(repeat);
+            let serviceValid = source.service_ready ?? (source.ready !== false);
             let medicationTotal = 0, serviceTotal = 0;
             const items = source.items.map(item => {
                 const count = item.kind === 'medication' ? repeat : (Object.prototype.hasOwnProperty.call(scenario.services || {}, item.key) ? scenario.services[item.key] : item.repeats);
                 const subtotal = validRepeat(count) ? Math.round(item.quantity * item.price * Number(count) * 100) / 100 : null;
-                if (subtotal === null || !Number.isFinite(subtotal) || subtotal > Number.MAX_SAFE_INTEGER) valid = false;
+                if (subtotal === null || !Number.isFinite(subtotal) || subtotal > Number.MAX_SAFE_INTEGER) {
+                    if (item.kind === 'medication') medicationValid = false; else serviceValid = false;
+                }
                 if (item.kind === 'medication') medicationTotal += subtotal || 0;
                 else serviceTotal += subtotal || 0;
                 return { ...item, repeats: validRepeat(count) ? Number(count) : null, subtotal };
             });
             const trimesterTotal = medicationTotal + serviceTotal;
-            if (!Number.isFinite(trimesterTotal) || trimesterTotal > Number.MAX_SAFE_INTEGER) valid = false;
+            medicationValid = medicationValid && Number.isFinite(medicationTotal) && medicationTotal <= Number.MAX_SAFE_INTEGER;
+            serviceValid = serviceValid && Number.isFinite(serviceTotal) && serviceTotal <= Number.MAX_SAFE_INTEGER;
+            const valid = medicationValid && serviceValid && Number.isFinite(trimesterTotal) && trimesterTotal <= Number.MAX_SAFE_INTEGER;
             trimesters[key] = { ...source, repeats: validRepeat(repeat) ? Number(repeat) : null, items, ready: valid,
-                medication_total: valid ? medicationTotal : null, service_total: valid ? serviceTotal : null,
+                medication_total: medicationValid ? medicationTotal : null, service_total: serviceValid ? serviceTotal : null,
                 total: valid ? trimesterTotal : null };
             if (active) { ready = ready && valid; total += trimesterTotal; }
         });

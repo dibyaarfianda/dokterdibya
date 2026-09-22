@@ -53,6 +53,14 @@ app.use(express.static(path.join(root, 'public')));
         await frame.click('#estimate-help-done');
         assert.match(await frame.$eval('#estimate-app', n => n.textContent), /Data Dummy — bukan tarif klinik/);
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 840.000');
+        const contrast = await frame.$eval('.estimate-grand', panel => {
+            const rgb = value => value.match(/[\d.]+/g).slice(0,3).map(Number);
+            const luminance = c => c.map(v => { const s=v/255; return s<=.04045?s/12.92:Math.pow((s+.055)/1.055,2.4); }).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0);
+            const background = luminance(rgb(getComputedStyle(panel).backgroundColor));
+            return ['p','strong'].map(selector => {const foreground=luminance(rgb(getComputedStyle(panel.querySelector(selector)).color));return (Math.max(foreground,background)+.05)/(Math.min(foreground,background)+.05);});
+        });
+        assert.ok(contrast.every(ratio => ratio >= 4.5), 'Total caption and amount need readable contrast: ' + contrast);
+
         await (await page.$('#estimate-patient-frame')).screenshot({ path: path.join(output, 'dummy-phone.png') });
         // Shared portal typography and header geometry, compared at identical width.
         const reference = await browser.newPage(); await reference.setViewport({ width: 390, height: 780 });
@@ -91,6 +99,14 @@ app.use(express.static(path.join(root, 'public')));
         await page.click('[data-action="estimate-desktop"]');
         await (await page.$('#estimate-patient-frame')).screenshot({ path: path.join(output, 'draft-desktop.png') });
         await page.click('[data-action="estimate-settings"]');
+        await page.$eval('[data-field="med-unit"][data-key="t1"]', n => { n.value = 'strip'; n.dispatchEvent(new Event('input', { bubbles: true })); });
+        await page.click('[data-action="estimate-preview"]');
+        await frame.waitForSelector('.estimate-warning');
+        await frame.select('[data-estimate="trimester"]', 't1');
+        assert.match(await frame.$eval('.estimate-summary', n => n.textContent), /Subtotal layananRp 100.000/);
+        assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum lengkap');
+        await page.click('[data-action="estimate-settings"]');
+        await page.$eval('[data-field="med-unit"][data-key="t1"]', n => { n.value = 'tablet'; n.dispatchEvent(new Event('input', { bubbles: true })); });
         await page.$eval('[data-field="repeat"][data-key="t1"]', n => { n.value = '3'; n.dispatchEvent(new Event('input', { bubbles: true })); });
         saveDelay = 400;
         await page.click('[data-action="save-estimasi-biaya"]');

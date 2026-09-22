@@ -21,8 +21,8 @@
 .estimate-summary > div { display:flex; justify-content:space-between; gap:12px; }
 .estimate-summary .estimate-phase-total { border-top:1px solid var(--line); padding-top:12px; font-weight:800; }
 .estimate-grand { background:var(--ink); color:white; padding:24px; border-radius:var(--radius); margin-top:22px; }
-.estimate-grand p { color:rgba(255,255,255,.7); margin:0 0 8px; font-size:12px; }
-.estimate-grand strong { font-family:var(--display); font-size:28px; }
+body.patient-tool-shell #estimate-app .estimate-grand p { color:#ffffff !important; margin:0 0 8px; font-size:12px; }
+body.patient-tool-shell #estimate-app .estimate-grand strong { color:#ffffff !important; font-family:var(--display); font-size:28px; }
 .estimate-help ol { padding-left:22px; margin:0; }
 .estimate-help li { margin-bottom:16px; line-height:1.6; }
 .estimate-help p { font-size:13px; line-height:1.65; }

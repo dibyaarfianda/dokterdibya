@@ -71,4 +71,28 @@ describe('draft estimasi pasien', () => {
         expect(calculateEstimate(result, { trimester: 't1' }).total).toBe(190000);
         expect(calculateEstimate(result, { trimester: 't1', repeats: { t1: 0 }, services: { 't1-service-0': 0 } }).total).toBe(0);
     });
+    test('valid service subtotal survives medication unit mismatch and missing alias', () => {
+        const draft = config(); draft.aliases = {}; draft.trimesters.t1.medications[0].unit = 'strip';
+        const result = api.buildPreview(draft, catalog());
+        expect(result.trimesters.t1.service_total).toBe(100000);
+        expect(result.trimesters.t1.medication_total).toBeNull();
+        expect(result.trimesters.t1.total).toBeNull();
+        expect(result.total).toBeNull();
+    });
+    test('valid medication subtotal survives incomplete service', () => {
+        const prices = catalog(); prices.services[0].price = null;
+        const result = api.buildPreview(config(), prices);
+        expect(result.trimesters.t1.medication_total).toBe(90000);
+        expect(result.trimesters.t1.service_total).toBeNull();
+        expect(result.total).toBeNull();
+    });
+    test('invalid simulated service repeat affects only services and can be corrected', () => {
+        const { calculateEstimate } = require('../../../../public/scripts/cost-estimate-engine');
+        const source = api.buildPreview(config(), catalog());
+        const invalid = calculateEstimate(source, {services: {'t1-service-0': -1}});
+        expect(invalid.trimesters.t1.medication_total).toBe(90000);
+        expect(invalid.trimesters.t1.service_total).toBeNull();
+        expect(calculateEstimate(source, {services: {'t1-service-0': 1}}).total).toBe(190000);
+    });
+
 });

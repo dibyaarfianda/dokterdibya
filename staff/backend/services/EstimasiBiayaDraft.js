@@ -33,9 +33,11 @@ function buildPreview(input, catalog, now = new Date()) {
     const trimesters = {};
     TRIMESTERS.forEach(key => {
         const phase = draft.trimesters[key], issues = [], items = [];
+        let medicationReady = true, serviceReady = true;
         if (phase.template_id && !templateIds.has(phase.template_id)) issues.push('Template sumber tidak tersedia. Pilih ulang di pengaturan staff.');
         if (phase.medications.length && !phase.template_id) issues.push('Template sumber belum dipilih.');
         if (!validRepeat(phase.repeats)) issues.push('Jumlah pengulangan resep harus bilangan bulat nol atau lebih.');
+        if (issues.length) medicationReady = false;
         const validateItem = (row, master, index, kind) => {
             const prefix = (kind === 'medication' ? 'Obat ' : 'Layanan ') + (index + 1);
             const problems = [];
@@ -51,15 +53,21 @@ function buildPreview(input, catalog, now = new Date()) {
                 if (!['LAYANAN', 'TINDAKAN MEDIS'].includes(master?.category)) problems.push('kategori layanan tidak sesuai');
                 if (!validRepeat(row.repeats)) problems.push('pengulangan tidak valid');
             }
-            if (problems.length) { issues.push(prefix + ': ' + problems.join('; ') + '.'); return; }
+            if (problems.length) {
+                if (kind === 'medication') medicationReady = false; else serviceReady = false;
+                issues.push(prefix + ': ' + problems.join('; ') + '.'); return;
+            }
             items.push({ key: key + '-' + kind + '-' + index, kind, label, quantity: row.quantity,
                 unit: kind === 'medication' ? row.unit : 'kali', price: Number(master.price),
                 repeats: kind === 'medication' ? phase.repeats : row.repeats });
         };
         phase.medications.forEach((row, i) => validateItem(row, medications.get(row.obat_id), i, 'medication'));
         phase.services.forEach((row, i) => validateItem(row, services.get(row.tindakan_id), i, 'service'));
-        if (!phase.medications.length && !phase.services.length) issues.push('Trimester ini belum dikonfigurasi.');
-        trimesters[key] = { repeats: phase.repeats, ready: issues.length === 0, issues, items };
+        if (!phase.medications.length && !phase.services.length) {
+            issues.push('Trimester ini belum dikonfigurasi.');
+            medicationReady = false; serviceReady = false;
+        }
+        trimesters[key] = { repeats: phase.repeats, ready: issues.length === 0, medication_ready: medicationReady, service_ready: serviceReady, issues, items };
     });
     return calculateEstimate({ version: 2, is_dummy: false, prices_loaded_at: now.toISOString(), trimesters });
 }
