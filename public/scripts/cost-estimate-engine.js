@@ -31,17 +31,36 @@
                 else serviceTotal += subtotal || 0;
                 return { ...item, repeats: validRepeat(count) ? Number(count) : null, subtotal };
             });
-            const trimesterTotal = medicationTotal + serviceTotal;
+            const fees = data.mandatory_costs;
+            const visits = scenario.visits?.[key];
+            const activeItems = items.some(item => item.repeats > 0);
+            const visitIssue = fees && validRepeat(visits) && Number(visits) === 0 && activeItems
+                ? 'Jumlah kunjungan minimal 1 bila ada resep atau layanan yang dihitung.' : null;
+            const adminTotal = !fees ? 0 : validRepeat(visits) && !visitIssue && fees.admin.ready
+                ? Math.round(Number(visits) * fees.admin.price * 100) / 100 : null;
+            const adminValid = adminTotal != null && Number.isFinite(adminTotal) && adminTotal <= Number.MAX_SAFE_INTEGER;
+            const trimesterTotal = medicationTotal + serviceTotal + (adminTotal || 0);
             medicationValid = medicationValid && Number.isFinite(medicationTotal) && medicationTotal <= Number.MAX_SAFE_INTEGER;
             serviceValid = serviceValid && Number.isFinite(serviceTotal) && serviceTotal <= Number.MAX_SAFE_INTEGER;
-            const valid = medicationValid && serviceValid && Number.isFinite(trimesterTotal) && trimesterTotal <= Number.MAX_SAFE_INTEGER;
+            const valid = medicationValid && serviceValid && adminValid && Number.isFinite(trimesterTotal) && trimesterTotal <= Number.MAX_SAFE_INTEGER;
             trimesters[key] = { ...source, repeats: validRepeat(repeat) ? Number(repeat) : null, items, ready: valid,
                 medication_total: medicationValid ? medicationTotal : null, service_total: serviceValid ? serviceTotal : null,
+                admin_total: adminValid ? adminTotal : null, visits: validRepeat(visits) ? Number(visits) : null, visit_issue: visitIssue,
                 total: valid ? trimesterTotal : null };
             if (active) { ready = ready && valid; total += trimesterTotal; }
         });
+        let bookTotal = 0, bookPending = false;
+        if (data.mandatory_costs) {
+            const phases = TRIMESTERS.filter(key => selected === 'all' || selected === key).map(key => trimesters[key]);
+            bookPending = phases.some(phase => phase.visits == null);
+            const book = data.mandatory_costs.books[scenario.book];
+            bookTotal = bookPending ? null : phases.every(phase => phase.visits === 0) ? 0
+                : book?.ready ? book.price : null;
+            if (bookTotal == null || !Number.isFinite(bookTotal) || bookTotal < 0) ready = false;
+            else total += bookTotal;
+        }
         if (!['all', ...TRIMESTERS].includes(selected) || !Number.isSafeInteger(Math.round(total))) ready = false;
-        return { ...data, ready, trimesters, total: ready ? total : null };
+        return { ...data, ready, trimesters, book_total: bookTotal, book_pending: bookPending, total: ready ? total : null };
     }
     return { TRIMESTERS, validRepeat, calculateEstimate };
 });

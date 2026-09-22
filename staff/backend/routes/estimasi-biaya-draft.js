@@ -2,7 +2,7 @@
 const express = require('express');
 const db = require('../db');
 const { verifyStaffToken, requirePermission } = require('../middleware/auth');
-const { DRAFT_KEY, normalizeDraft, buildPreview } = require('../services/EstimasiBiayaDraft');
+const { DRAFT_KEY, MANDATORY_SERVICE_IDS, normalizeDraft, buildPreview } = require('../services/EstimasiBiayaDraft');
 const router = express.Router();
 router.use((req, res, next) => ['/draft', '/preview'].includes(req.path.replace(/\/$/, '')) ? next() : next('router'));
 router.use(verifyStaffToken);
@@ -20,7 +20,7 @@ async function catalogFor(draft) {
     };
     const [medications, services, templates] = await Promise.all([
         read('obat', 'id, name, price, unit, is_active', phases.flatMap(p => p.medications.map(i => i.obat_id))),
-        read('tindakan', 'id, name, price, category, is_active', phases.flatMap(p => p.services.map(i => i.tindakan_id))),
+        read('tindakan', 'id, name, price, category, is_active', [...Object.values(MANDATORY_SERVICE_IDS), ...phases.flatMap(p => p.services.map(i => i.tindakan_id))]),
         read('sunday_clinic_prescription_templates', 'id, is_active', phases.map(p => p.template_id))
     ]);
     return { medications, services, templates: templates.filter(t => Number(t.is_active) === 1) };

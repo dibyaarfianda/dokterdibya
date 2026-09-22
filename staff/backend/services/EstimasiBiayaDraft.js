@@ -1,5 +1,6 @@
 'use strict';
 const { TRIMESTERS, validRepeat, calculateEstimate } = require('../../../public/scripts/cost-estimate-engine');
+const MANDATORY_SERVICE_IDS = { admin: 1, obstetri: 3, ginekologi: 59 };
 const DRAFT_KEY = 'pregnancy_cost_estimate_staff_draft_v2';
 const text = value => typeof value === 'string' ? value.trim().slice(0, 160) : '';
 const number = value => value === '' || value == null ? null : Number(value);
@@ -29,6 +30,18 @@ function buildPreview(input, catalog, now = new Date()) {
     const draft = normalizeDraft(input);
     const medications = new Map(catalog.medications.map(item => [Number(item.id), item]));
     const services = new Map(catalog.services.map(item => [Number(item.id), item]));
+    const mandatoryPrice = (id, label) => {
+        const row = services.get(id);
+        const ready = !!row && Number(row.is_active) === 1 && row.price != null && row.price !== '' && Number.isFinite(Number(row.price)) && Number(row.price) >= 0;
+        return { label, price: ready ? Number(row.price) : null, ready };
+    };
+    const mandatoryCosts = {
+        admin: mandatoryPrice(MANDATORY_SERVICE_IDS.admin, 'Biaya Admin'),
+        books: {
+            obstetri: mandatoryPrice(MANDATORY_SERVICE_IDS.obstetri, 'Buku Kontrol Obstetri'),
+            ginekologi: mandatoryPrice(MANDATORY_SERVICE_IDS.ginekologi, 'Buku Kontrol Ginekologi')
+        }
+    };
     const templateIds = new Set(catalog.templates.map(item => Number(item.id)));
     const trimesters = {};
     TRIMESTERS.forEach(key => {
@@ -62,13 +75,16 @@ function buildPreview(input, catalog, now = new Date()) {
                 repeats: kind === 'medication' ? phase.repeats : row.repeats });
         };
         phase.medications.forEach((row, i) => validateItem(row, medications.get(row.obat_id), i, 'medication'));
-        phase.services.forEach((row, i) => validateItem(row, services.get(row.tindakan_id), i, 'service'));
+        // These charges are calculated once through the mandatory-cost section.
+        phase.services.filter(row => !Object.values(MANDATORY_SERVICE_IDS).includes(row.tindakan_id))
+            .forEach((row, i) => validateItem(row, services.get(row.tindakan_id), i, 'service'));
         if (!phase.medications.length && !phase.services.length) {
             issues.push('Trimester ini belum dikonfigurasi.');
             medicationReady = false; serviceReady = false;
         }
         trimesters[key] = { repeats: phase.repeats, ready: issues.length === 0, medication_ready: medicationReady, service_ready: serviceReady, issues, items };
     });
-    return calculateEstimate({ version: 2, is_dummy: false, prices_loaded_at: now.toISOString(), trimesters });
+    return calculateEstimate({ version: 2, is_dummy: false, prices_loaded_at: now.toISOString(), mandatory_costs: mandatoryCosts,
+        configuration_ready: TRIMESTERS.every(key => trimesters[key].ready) && mandatoryCosts.admin.ready && Object.values(mandatoryCosts.books).every(book => book.ready), trimesters });
 }
-module.exports = { DRAFT_KEY, normalizeDraft, buildPreview };
+module.exports = { DRAFT_KEY, MANDATORY_SERVICE_IDS, normalizeDraft, buildPreview };

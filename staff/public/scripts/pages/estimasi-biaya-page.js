@@ -111,7 +111,8 @@ export async function updateEstimasiBiaya() {
         if (scope.signal.aborted || currentRevision !== revision) return;
         if (!result.success) throw new Error();
         previewData = result.preview; send({ type: 'estimate-data', preview: previewData });
-        status((dirty ? 'Pratinjau perubahan yang belum disimpan. ' : '') + (previewData.ready ? 'Rincian siap disimulasikan.' : 'Ada trimester belum lengkap. Periksa peringatan di pratinjau.'), previewData.ready ? 'success' : 'warning');
+        const configurationReady = previewData.configuration_ready ?? previewData.ready;
+        status((dirty ? 'Pratinjau perubahan yang belum disimpan. ' : '') + (configurationReady ? 'Rincian siap disimulasikan.' : 'Ada trimester belum lengkap. Periksa peringatan di pratinjau.'), configurationReady ? 'success' : 'warning');
     } catch (error) {
         if (error.name !== 'AbortError') {
             send({ type: 'estimate-unavailable', message: 'Harga gagal dimuat. Klik Perbarui Harga & Pratinjau untuk mencoba lagi.' });

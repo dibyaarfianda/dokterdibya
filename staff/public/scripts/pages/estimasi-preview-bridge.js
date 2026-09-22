@@ -10,7 +10,7 @@
                 { key: key + '-service-1', kind: 'service', label: 'Pemeriksaan Contoh', quantity: 1, unit: 'kali', price: 150000, repeats: 1 }
             ] };
         });
-        view.setData({ version: 2, is_dummy: true, prices_loaded_at: new Date().toISOString(), trimesters });
+        view.setData({ version: 2, is_dummy: true, prices_loaded_at: new Date().toISOString(), mandatory_costs: { admin: {label:'Biaya Admin Contoh',price:5000,ready:true}, books: {obstetri:{label:'Buku Kontrol Obstetri Contoh',price:10000,ready:true},ginekologi:{label:'Buku Kontrol Ginekologi Contoh',price:10000,ready:true}} }, trimesters });
     }
     // Only the staff parent window can supply sanitized view data. No auth/session is read here.
     window.addEventListener('message', event => {

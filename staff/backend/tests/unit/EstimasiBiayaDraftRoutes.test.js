@@ -46,9 +46,12 @@ describe('staff estimate draft routes', () => {
         const result = await request(app).get('/api/estimasi-biaya/draft').set('Authorization', 'viewer');
         expect(result.status).toBe(500); expect(JSON.stringify(result.body)).not.toContain('SECRET');
     });
-    test('empty preview makes no writes and reports incomplete totals', async () => {
+    test('empty preview reads mandatory master prices without writes and reports incomplete totals', async () => {
+        db.query.mockResolvedValueOnce([[]]);
         const result = await request(app).post('/api/estimasi-biaya/preview').set('Authorization', 'viewer').send({});
         expect(result.status).toBe(200); expect(result.body.preview.total).toBeNull();
-        expect(db.query).not.toHaveBeenCalled();
+        expect(db.query.mock.calls).toHaveLength(1);
+        expect(db.query.mock.calls[0][0]).toMatch(/^SELECT .* FROM tindakan WHERE id IN/);
+        expect(db.query.mock.calls[0][1]).toEqual([1, 3, 59]);
     });
 });
