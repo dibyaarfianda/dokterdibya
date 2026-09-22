@@ -94,6 +94,7 @@ function openMobileMenu() {
     var menuData = [
         {icon: 'fa-user-cog', text: 'Profil', fn: 'showProfileSettings', color: '#0d6efd'},
         {icon: 'fa-capsules', text: 'Obat/Alkes', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
+        {icon: 'fa-prescription', text: 'Template Resep', fn: 'showTemplateResepPage', color: '#0d6efd', doctorOnly: true},
         {icon: 'fa-hand-holding-medical', text: 'Layanan', fn: 'showKelolaTindakanPage', color: '#0d6efd'},
         {icon: 'fa-calendar-day', text: 'Pengaturan Sesi', fn: 'showBookingSettingsPage', color: '#0d6efd'},
         {icon: 'fa-pills', text: 'Penjualan', fn: 'showPenjualanObatPage', color: '#0d6efd'},
@@ -104,6 +105,7 @@ function openMobileMenu() {
     ];
 
     menuData.forEach(function(item) {
+        if (item.doctorOnly && Number((window.currentStaffUser || window.auth?.currentUser)?.role_id) !== window.staffRoleConstants?.ROLE_IDS.DOKTER) return;
         if (item.icon === 'divider') {
             var divider = document.createElement('div');
             divider.style.height = '1px';

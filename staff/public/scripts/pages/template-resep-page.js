@@ -135,8 +135,8 @@ document.addEventListener('input', event => {
 document.addEventListener('click', event => {
     if (el('template-resep-page')?.classList.contains('d-none') || (!dirty && !busy)) return;
     if (event.target.closest?.('#template-resep-page')) return;
-    const navigation = event.target.closest?.('a[href], [data-staff-call]');
-    if (!navigation || navigation.matches('[data-widget], [data-toggle], [data-bs-toggle]')) return;
+    const navigation = event.target.closest?.('a[href], [data-staff-call], [data-shell-action]');
+    if (!navigation || navigation.matches('[data-widget], [data-toggle], [data-bs-toggle], [data-shell-action="open-mobile-menu"], [data-shell-action="close-mobile-menu"], [data-mobile-nav="more"]')) return;
     if (busy || !discard()) { event.preventDefault(); event.stopImmediatePropagation(); if (busy) status('Tunggu penyimpanan selesai sebelum meninggalkan editor.', 'warning'); }
     else { dirty = false; editor = null; el('rx-editor').hidden = true; }
 }, true);
