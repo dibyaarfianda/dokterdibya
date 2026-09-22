@@ -68,7 +68,7 @@ describe('booking slot setting freshness', () => {
                 return [[{ exists: 1 }]];
             }
 
-            if (sql.includes('FROM booking_settings WHERE is_active = 1')) {
+            if (sql.includes('FROM booking_settings ORDER BY')) {
                 return [[[bookingSetting][0]]];
             }
 
@@ -123,11 +123,11 @@ describe('booking slot setting freshness', () => {
                 return [[]];
             }
 
-            if (sql.includes('SELECT session_number') && sql.includes('FROM booking_settings WHERE is_active = 1')) {
+            if (sql.includes('SELECT session_number') && sql.includes('FROM booking_settings ORDER BY')) {
                 return [[bookingSetting]];
             }
 
-            if (sql.includes('SELECT id FROM booking_settings WHERE id = ?')) {
+            if (sql.includes('FROM booking_settings WHERE id = ?')) {
                 return [[{ id: 1, session_number: 1 }]];
             }
 
