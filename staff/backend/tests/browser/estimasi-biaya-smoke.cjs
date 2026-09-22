@@ -52,6 +52,14 @@ app.use(express.static(path.join(root, 'public')));
         await (await page.$('#estimate-patient-frame')).screenshot({ path: path.join(output, 'guide.png') });
         await frame.click('#estimate-help-done');
         assert.match(await frame.$eval('#estimate-app', n => n.textContent), /Data Dummy — bukan tarif klinik/);
+        assert.equal(await frame.$eval('[data-estimate="trimester"]', n => n.value), 't1');
+        assert.deepEqual(await frame.$$eval('[data-estimate="trimester"] option', ns => ns.map(n => n.textContent)), ['Trimester 1','Trimester 2','Trimester 3','Seluruh semester']);
+        assert.equal(await frame.$eval('[data-estimate="repeat"]', n => n.value), '');
+        assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung');
+        assert.match(await frame.$eval('.estimate-repeat-hint', n => n.textContent), /Acuan: 1 kali/);
+        await frame.select('[data-estimate="trimester"]', 'all');
+        for (const key of ['t1','t2','t3']) await change('[data-estimate="repeat"][data-key="'+key+'"]', '1');
+
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 840.000');
         const contrast = await frame.$eval('.estimate-grand', panel => {
             const rgb = value => value.match(/[\d.]+/g).slice(0,3).map(Number);
@@ -83,12 +91,18 @@ app.use(express.static(path.join(root, 'public')));
         await frame.waitForFunction(() => document.getElementById('estimate-app').textContent.includes('Paket A'));
         assert.doesNotMatch(await frame.$eval('body', n => n.innerHTML), /SECRET/);
         await frame.select('[data-estimate="trimester"]', 't1');
+        assert.equal(await frame.$eval('[data-estimate="repeat"]', n => n.value), '');
+        assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung');
+        await change('[data-estimate="repeat"]', '1');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 145.000');
         async function change(selector, value) {
             await frame.$eval(selector, (n, v) => { n.value = v; n.dispatchEvent(new Event('change', { bubbles: true })); }, value);
         }
         await change('[data-estimate="repeat"]', '2');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 190.000');
+        await change('[data-estimate="repeat"]', '');
+        assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung');
+        assert.match(await frame.$eval('.estimate-repeat-hint', n => n.textContent), /Acuan: 1 kali/);
         await change('[data-estimate="repeat"]', '0');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 100.000');
         await change('[data-estimate="service"]', '0');
@@ -105,6 +119,7 @@ app.use(express.static(path.join(root, 'public')));
         await frame.waitForSelector('.estimate-warning');
         await frame.select('[data-estimate="trimester"]', 't1');
         assert.match(await frame.$eval('.estimate-summary', n => n.textContent), /Subtotal layananRp 100.000/);
+        await change('[data-estimate="repeat"]', '1');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum lengkap');
         await page.click('[data-action="estimate-settings"]');
         await page.$eval('[data-field="med-unit"][data-key="t1"]', n => { n.value = 'tablet'; n.dispatchEvent(new Event('input', { bubbles: true })); });

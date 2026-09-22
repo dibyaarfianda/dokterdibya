@@ -11,6 +11,8 @@
 .estimate-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
 .estimate-heading h3 { margin:0; font-family:var(--display); font-size:20px; }
 .estimate-repeat { display:flex; align-items:center; gap:8px; color:var(--ink-soft); font-size:12px; }
+.estimate-prescription-control { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.estimate-repeat-hint { font-size:12px; color:var(--ink-soft); white-space:nowrap; }
 .estimate-repeat input { width:76px; margin:0; }
 .estimate-item { padding:16px 0; border-bottom:1px solid var(--line); }
 .estimate-item-top { display:flex; justify-content:space-between; align-items:start; gap:12px; font-size:14px; }
