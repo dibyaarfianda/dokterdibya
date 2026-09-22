@@ -57,9 +57,13 @@ app.use(express.static(path.join(root, 'public')));
         assert.equal(await frame.$eval('[data-estimate="repeat"]', n => n.value), '');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung');
         assert.match(await frame.$eval('.estimate-repeat-hint', n => n.textContent), /Acuan: 1 kali/);
+        assert.ok(await frame.$$eval('[data-estimate="service"]', ns => ns.length > 0 && ns.every(n => n.value === '')));
+        assert.match(await frame.$eval('.estimate-summary', n => n.textContent), /Subtotal layananBelum dihitung/);
         await frame.select('[data-estimate="trimester"]', 'all');
         for (const key of ['t1','t2','t3']) await change('[data-estimate="repeat"][data-key="'+key+'"]', '1');
 
+        assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung', 'services must be entered too');
+        for (const key of await frame.$$eval('[data-estimate="service"]', ns => ns.map(n => n.dataset.key))) await change('[data-estimate="service"][data-key="'+key+'"]', '1');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 840.000');
         const contrast = await frame.$eval('.estimate-grand', panel => {
             const rgb = value => value.match(/[\d.]+/g).slice(0,3).map(Number);
@@ -94,10 +98,16 @@ app.use(express.static(path.join(root, 'public')));
         assert.equal(await frame.$eval('[data-estimate="repeat"]', n => n.value), '');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung');
         await change('[data-estimate="repeat"]', '1');
+        assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung');
+        await change('[data-estimate="service"]', '1');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 145.000');
         async function change(selector, value) {
             await frame.$eval(selector, (n, v) => { n.value = v; n.dispatchEvent(new Event('change', { bubbles: true })); }, value);
         }
+        await change('[data-estimate="service"]', '');
+        assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum dihitung');
+        assert.match(await frame.$eval('.estimate-summary', n => n.textContent), /Subtotal obat \/ suplemenRp 45.000/);
+        await change('[data-estimate="service"]', '1');
         await change('[data-estimate="repeat"]', '2');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Rp 190.000');
         await change('[data-estimate="repeat"]', '');
@@ -118,6 +128,8 @@ app.use(express.static(path.join(root, 'public')));
         await frame.waitForSelector('[data-estimate="trimester"]');
         await frame.waitForSelector('.estimate-warning');
         await frame.select('[data-estimate="trimester"]', 't1');
+        assert.equal(await frame.$eval('[data-estimate="service"]', n => n.value), '', 'refresh resets service simulation');
+        await change('[data-estimate="service"]', '1');
         assert.match(await frame.$eval('.estimate-summary', n => n.textContent), /Subtotal layananRp 100.000/);
         await change('[data-estimate="repeat"]', '1');
         assert.equal(await frame.$eval('#estimate-total', n => n.textContent), 'Belum lengkap');
