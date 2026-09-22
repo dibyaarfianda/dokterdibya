@@ -1,0 +1,30 @@
+.estimate-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin-bottom:18px; }
+.estimate-toolbar label { flex:1; min-width:150px; }
+.estimate-input { display:block; width:100%; margin-top:6px; border:1px solid var(--line-strong); border-radius:12px; padding:11px 12px; background:var(--surface-solid); color:var(--ink); font:inherit; }
+.estimate-button { border:1px solid var(--line-strong); border-radius:12px; padding:11px 15px; background:var(--surface-solid); color:var(--ink); font:inherit; cursor:pointer; }
+.estimate-button.primary { background:var(--ink); color:#fff; }
+.estimate-note { color:var(--muted); font-size:12px; line-height:1.65; margin:12px 0; }
+.estimate-banner { padding:12px 15px; border-radius:12px; background:var(--green-soft); margin-bottom:16px; font-size:13px; font-weight:700; }
+.estimate-warning { padding:14px; background:rgba(183,121,46,.1); border:1px solid rgba(183,121,46,.25); border-radius:12px; font-size:13px; line-height:1.6; margin:12px 0; }
+.estimate-phase { margin-bottom:20px; }
+.estimate-phase .tool-panel { padding:20px; }
+.estimate-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.estimate-heading h3 { margin:0; font-family:var(--display); font-size:20px; }
+.estimate-repeat { display:flex; align-items:center; gap:8px; color:var(--ink-soft); font-size:12px; }
+.estimate-repeat input { width:76px; margin:0; }
+.estimate-item { padding:16px 0; border-bottom:1px solid var(--line); }
+.estimate-item-top { display:flex; justify-content:space-between; align-items:start; gap:12px; font-size:14px; }
+.estimate-item-top strong { overflow-wrap:anywhere; }
+.estimate-item-top .estimate-price { white-space:nowrap; }
+.estimate-item-detail { display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; margin-top:8px; font-size:12px; color:var(--muted); line-height:1.65; }
+.estimate-summary { display:grid; gap:10px; margin-top:18px; font-size:13px; }
+.estimate-summary > div { display:flex; justify-content:space-between; gap:12px; }
+.estimate-summary .estimate-phase-total { border-top:1px solid var(--line); padding-top:12px; font-weight:800; }
+.estimate-grand { background:var(--ink); color:white; padding:24px; border-radius:var(--radius); margin-top:22px; }
+.estimate-grand p { color:rgba(255,255,255,.7); margin:0 0 8px; font-size:12px; }
+.estimate-grand strong { font-family:var(--display); font-size:28px; }
+.estimate-help ol { padding-left:22px; margin:0; }
+.estimate-help li { margin-bottom:16px; line-height:1.6; }
+.estimate-help p { font-size:13px; line-height:1.65; }
+.estimate-help .estimate-button { width:100%; margin-top:12px; }
+@media(max-width:420px) { .estimate-phase .tool-panel { padding:16px; } .estimate-item-top { font-size:13px; } }

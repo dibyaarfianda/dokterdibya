@@ -77,11 +77,13 @@
     }
 
     function getStoredPatient() {
+        if (state.preview) return { name: 'Pasien Contoh', id: 'preview' };
         if (window.PatientSession) return window.PatientSession.getUser() || {};
         try { return JSON.parse(localStorage.getItem('patient_user') || '{}'); } catch (error) { return {}; }
     }
 
     function getToken() {
+        if (state.preview) return '';
         return window.PatientSession?.getToken() || localStorage.getItem('patient_token') || '';
     }
 
@@ -135,6 +137,7 @@
     }
 
     function go(url) {
+        if (state.preview) { showShellToast('Navigasi contoh. Anda tetap berada di pratinjau.'); return; }
         if (!url) return;
         window.location.href = url;
     }
@@ -639,6 +642,10 @@
         if (!action) return;
         event.preventDefault();
         var actionName = action.getAttribute('data-shell-action');
+        if (state.preview && !['close-modal', 'close-sheet', 'open-sheet', 'scroll-top-home', 'go'].includes(actionName)) {
+            openTopbarModal('Pratinjau pasien', 'Data contoh', '<p>Identitas dan menu akun ini hanya contoh. Tidak ada data pasien yang dibuka.</p>');
+            return;
+        }
         if (actionName === 'read-all-notifications') markAllNotificationsRead();
         if (actionName === 'open-settings') openSettingsModal(event);
         if (actionName === 'open-profile') openProfileModal(event);
@@ -664,6 +671,7 @@
     }
 
     function hasOpenedRuangBaca() {
+        if (state.preview) return false;
         try { return localStorage.getItem(RUANG_BACA_BADGE_KEY) === '1'; } catch (error) { return false; }
     }
 
@@ -675,6 +683,7 @@
     }
 
     function markRuangBacaOpened() {
+        if (state.preview) return;
         try { localStorage.setItem(RUANG_BACA_BADGE_KEY, '1'); } catch (error) {}
         updateRuangBacaBadges();
     }
@@ -777,6 +786,7 @@
 
     function init(options) {
         options = options || {};
+        state.preview = options.preview === true;
         state.homeUrl = options.homeUrl || state.homeUrl || DEFAULT_HOME_URL;
         state.activeNav = options.activeNav || document.body.getAttribute('data-tool-shell-active') || state.activeNav || DEFAULT_ACTIVE_NAV;
         state.menuData = options.menuData || state.menuData || defaultMenuData;
@@ -809,6 +819,7 @@
         openProfileModal: openProfileModal,
         openProfilePhotoPicker: openProfilePhotoPicker,
         closeModal: closeTopbarModal,
+        openModal: openTopbarModal,
         markNotificationRead: markNotificationRead,
         markAllNotificationsRead: markAllNotificationsRead,
         scrollTopHome: scrollTopHome,

@@ -1,405 +1,172 @@
 import { createPageRequestScope } from '../staff-api.js';
 import { escapeHtml } from '../safe-render.js';
-
-const TRIMESTERS = ['t1', 't2', 't3'];
-const ALLOWED_SERVICE_CATEGORIES = new Set(['LAYANAN', 'TINDAKAN MEDIS']);
-
-let medicationCatalog = [];
-let medicationMap = new Map();
-let serviceCatalog = [];
-let serviceMap = new Map();
-let config = createDefaultEstimasiBiayaConfig();
-let loaded = false;
-let loadingPromise = null;
-let loadScope = null;
-let saveScope = null;
-
-function createDefaultEstimasiBiayaConfig() {
-    return {
-        version: 1,
-        updated_at: null,
-        trimester_configs: { t1: [], t2: [], t3: [] },
-        trimester_tindakan_configs: { t1: [], t2: [], t3: [] }
-    };
+const KEYS = ['t1', 't2', 't3'];
+let draft, templates = [], medications = [], services = [];
+let loadScope, previewScope, saveScope;
+let dirty = false, ready = false, previewData = null, revision = 0;
+const el = id => document.getElementById(id);
+const esc = value => escapeHtml(String(value ?? ''));
+const money = value => value == null ? 'Harga belum tersedia' : 'Rp ' + Number(value).toLocaleString('id-ID');
+const num = value => value === '' ? null : Number(value);
+function status(message, tone = 'muted') {
+    const node = el('estimasi-config-status');
+    if (node) { node.textContent = message; node.className = 'small mb-3 text-' + tone; }
 }
-
-function normalizeItems(items, idKeys, idName, fallbackQuantity) {
-    if (!Array.isArray(items)) return [];
-    const seen = new Set();
-    return items.map(item => {
-        const rawId = idKeys.map(key => key.split('.').reduce((value, part) => value?.[part], item))
-            .find(value => value != null);
-        const id = Number(rawId);
-        const quantity = Number(item?.quantity ?? item?.qty ?? fallbackQuantity);
-        return {
-            [idName]: Number.isInteger(id) && id > 0 ? id : null,
-            quantity: Number.isInteger(quantity) && quantity > 0 ? quantity : fallbackQuantity
-        };
-    }).filter(item => item[idName]).filter(item => {
-        const key = String(item[idName]);
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-    });
-}
-
-function normalizeEstimasiBiayaConfig(rawConfig) {
-    const source = rawConfig && typeof rawConfig === 'object' ? rawConfig : {};
-    const medications = source.trimester_configs && typeof source.trimester_configs === 'object'
-        ? source.trimester_configs
-        : {};
-    const services = source.trimester_tindakan_configs && typeof source.trimester_tindakan_configs === 'object'
-        ? source.trimester_tindakan_configs
-        : {};
-    return {
-        version: 1,
-        updated_at: source.updated_at || null,
-        trimester_configs: Object.fromEntries(TRIMESTERS.map(trimester => [
-            trimester,
-            normalizeItems(medications[trimester], ['obat_id', 'obatId', 'medication.id'], 'obat_id', 3)
-        ])),
-        trimester_tindakan_configs: Object.fromEntries(TRIMESTERS.map(trimester => [
-            trimester,
-            normalizeItems(services[trimester], ['tindakan_id', 'tindakanId', 'tindakan.id'], 'tindakan_id', 1)
-        ]))
-    };
-}
-
-function formatRupiah(amount) {
-    return 'Rp ' + (Number(amount) || 0).toLocaleString('id-ID');
-}
-
-function formatUpdatedAt(value) {
-    if (!value) return 'Belum pernah disimpan';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Belum pernah disimpan';
-    return date.toLocaleString('id-ID', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-        timeZone: 'Asia/Jakarta'
-    }) + ' WIB';
-}
-
-function setStatus(message, tone = 'muted') {
-    const element = document.getElementById('estimasi-config-status');
-    if (!element) return;
-    element.textContent = message;
-    element.className = `small text-${tone}`;
-}
-
-function selectedMap(type, trimester) {
-    const source = type === 'medication'
-        ? config.trimester_configs?.[trimester]
-        : config.trimester_tindakan_configs?.[trimester];
-    const idName = type === 'medication' ? 'obat_id' : 'tindakan_id';
-    return new Map((source || []).map(item => [String(item[idName]), item]));
-}
-
-function renderMedicationSelectors() {
-    TRIMESTERS.forEach(trimester => {
-        const container = document.getElementById(`estimasi-obat-selector-${trimester}`);
-        if (!container) return;
-        if (!medicationCatalog.length) {
-            container.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-pills fa-lg mb-2"></i><p class="small mb-0">Belum ada obat aktif di master obat.</p></div>';
-            return;
-        }
-        const selected = selectedMap('medication', trimester);
-        container.innerHTML = medicationCatalog.map(medication => {
-            const item = selected.get(String(medication.id));
-            const quantity = item?.quantity || 3;
-            const id = Number(medication.id);
-            return `
-                <div class="border rounded p-2 mb-2 bg-white estimasi-obat-row" data-trimester="${trimester}" data-obat-id="${id}">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="custom-control custom-checkbox pr-2 flex-grow-1">
-                            <input type="checkbox" class="custom-control-input estimasi-obat-toggle" id="estimasi-${trimester}-${id}" data-trimester="${trimester}" data-obat-id="${id}" ${item ? 'checked' : ''}>
-                            <label class="custom-control-label small font-weight-bold" for="estimasi-${trimester}-${id}">${escapeHtml(medication.name)}</label>
-                            <div class="small text-muted mt-1">${formatRupiah(medication.price)}${medication.unit ? ` / ${escapeHtml(medication.unit)}` : ''}</div>
-                        </div>
-                        <div class="ml-2 text-right" style="width:74px"><label class="small text-muted d-block mb-1">Qty</label><input type="number" min="1" max="12" class="form-control form-control-sm estimasi-obat-qty" data-trimester="${trimester}" data-obat-id="${id}" value="${quantity}" ${item ? '' : 'disabled'}></div>
-                    </div>
-                </div>`;
-        }).join('');
-    });
-}
-
-function renderServiceSelectors() {
-    TRIMESTERS.forEach(trimester => {
-        const container = document.getElementById(`estimasi-tindakan-selector-${trimester}`);
-        if (!container) return;
-        if (!serviceCatalog.length) {
-            container.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-stethoscope fa-lg mb-2"></i><p class="small mb-0">Belum ada layanan/tindakan aktif di master tindakan.</p></div>';
-            return;
-        }
-        const selected = selectedMap('service', trimester);
-        container.innerHTML = serviceCatalog.map(service => {
-            const item = selected.get(String(service.id));
-            const quantity = item?.quantity || 1;
-            const id = Number(service.id);
-            return `
-                <div class="border rounded p-2 mb-2 bg-white estimasi-tindakan-row" data-trimester="${trimester}" data-tindakan-id="${id}">
-                    <div class="d-flex align-items-start justify-content-between">
-                        <div class="custom-control custom-checkbox pr-2 flex-grow-1">
-                            <input type="checkbox" class="custom-control-input estimasi-tindakan-toggle" id="estimasi-tindakan-${trimester}-${id}" data-trimester="${trimester}" data-tindakan-id="${id}" ${item ? 'checked' : ''}>
-                            <label class="custom-control-label small font-weight-bold" for="estimasi-tindakan-${trimester}-${id}">${escapeHtml(service.name)}</label>
-                            <div class="small text-muted mt-1">${formatRupiah(service.price)}${service.category ? ` &bull; ${escapeHtml(service.category)}` : ''}</div>
-                        </div>
-                        <div class="ml-2 text-right" style="width:74px"><label class="small text-muted d-block mb-1">Qty</label><input type="number" min="1" max="12" class="form-control form-control-sm estimasi-tindakan-qty" data-trimester="${trimester}" data-tindakan-id="${id}" value="${quantity}" ${item ? '' : 'disabled'}></div>
-                    </div>
-                </div>`;
-        }).join('');
-    });
-}
-
-function syncMedication(trimester) {
-    const container = document.getElementById(`estimasi-obat-selector-${trimester}`);
-    if (!container) return;
-    config.trimester_configs[trimester] = Array.from(container.querySelectorAll('.estimasi-obat-toggle:checked'))
-        .map(checkbox => {
-            const id = Number(checkbox.dataset.obatId);
-            const quantityInput = container.querySelector(`.estimasi-obat-qty[data-obat-id="${checkbox.dataset.obatId}"]`);
-            return { obat_id: id, quantity: Math.max(1, Math.min(12, Number(quantityInput?.value) || 3)) };
-        }).filter(item => Number.isInteger(item.obat_id) && item.obat_id > 0);
-}
-
-function syncService(trimester) {
-    const container = document.getElementById(`estimasi-tindakan-selector-${trimester}`);
-    if (!container) return;
-    config.trimester_tindakan_configs[trimester] = Array.from(container.querySelectorAll('.estimasi-tindakan-toggle:checked'))
-        .map(checkbox => {
-            const id = Number(checkbox.dataset.tindakanId);
-            const quantityInput = container.querySelector(`.estimasi-tindakan-qty[data-tindakan-id="${checkbox.dataset.tindakanId}"]`);
-            return { tindakan_id: id, quantity: Math.max(1, Math.min(12, Number(quantityInput?.value) || 1)) };
-        }).filter(item => Number.isInteger(item.tindakan_id) && item.tindakan_id > 0);
-}
-
-function syncAll() {
-    TRIMESTERS.forEach(trimester => {
-        syncMedication(trimester);
-        syncService(trimester);
-    });
-}
-
+function send(data) { el('estimate-patient-frame')?.contentWindow?.postMessage(data, window.location.origin); }
 function markDirty() {
-    setStatus('Perubahan obat dan layanan portal pasien belum disimpan.', 'warning');
+    dirty = true; revision++; previewData = null;
+    status('Perubahan draft belum disimpan.', 'warning');
+    send({ type: 'estimate-unavailable', message: 'Pengaturan berubah. Perbarui pratinjau untuk melihat hasil terbaru.' });
 }
-
-function replaceScope(current, reason) {
-    current?.abort(reason);
-    return createPageRequestScope();
-}
-
-async function ensureData(forceReload = false) {
-    if (loadingPromise && !forceReload) return loadingPromise;
-    if (loaded && !forceReload) {
-        renderMedicationSelectors();
-        renderServiceSelectors();
-        setStatus(`Tersimpan terakhir: ${formatUpdatedAt(config.updated_at)}`);
-        return;
-    }
-
-    const scope = replaceScope(loadScope, 'Estimator data request replaced');
-    loadScope = scope;
-    setStatus('Memuat daftar obat, layanan, dan konfigurasi estimasi...', 'muted');
-    const requestPromise = Promise.all([
-        scope.request(`/api/obat?active=true&category=${encodeURIComponent('Obat-obatan')}&_t=${Date.now()}`),
-        scope.request(`/api/tindakan?active=true&_t=${Date.now()}`),
-        scope.request(`/api/estimasi-biaya?_t=${Date.now()}`)
-    ]).then(([medications, services, savedConfig]) => {
-        if (scope.signal.aborted || scope !== loadScope) return;
-        if (!medications?.success) throw new Error(medications?.message || 'Gagal memuat master obat');
-        if (!services?.success) throw new Error(services?.message || 'Gagal memuat master layanan/tindakan');
-        if (!savedConfig?.success) throw new Error(savedConfig?.message || 'Gagal memuat konfigurasi estimasi biaya');
-
-        medicationCatalog = Array.isArray(medications.data) ? medications.data : [];
-        medicationMap = new Map(medicationCatalog.map(item => [Number(item.id), item]));
-        serviceCatalog = Array.isArray(services.data)
-            ? services.data.filter(item => ALLOWED_SERVICE_CATEGORIES.has(String(item.category || '').toUpperCase()))
-            : [];
-        serviceMap = new Map(serviceCatalog.map(item => [Number(item.id), item]));
-        config = normalizeEstimasiBiayaConfig(savedConfig.config);
-        loaded = true;
-        renderMedicationSelectors();
-        renderServiceSelectors();
-        setStatus(`Tersimpan terakhir: ${formatUpdatedAt(config.updated_at)}`);
-    }).catch(error => {
-        if (error?.name === 'AbortError') return;
-        loaded = false;
-        setStatus(error?.message || 'Gagal memuat estimasi biaya.', 'danger');
-        throw error;
-    }).finally(() => {
-        if (loadScope === scope) loadScope = null;
-        if (loadingPromise === requestPromise) loadingPromise = null;
+function showTab(preview) {
+    el('estimate-settings-panel').hidden = preview; el('estimate-preview-panel').hidden = !preview;
+    document.querySelectorAll('#estimasi-biaya-page [role="tab"]').forEach(button => {
+        const selected = (button.dataset.action === 'estimate-preview') === preview;
+        button.className = 'btn ' + (selected ? 'btn-primary' : 'btn-outline-primary');
+        button.setAttribute('aria-selected', String(selected));
     });
-    loadingPromise = requestPromise;
-    return requestPromise;
 }
-
-function buildEstimatorItems(trimester) {
-    const services = (config.trimester_tindakan_configs?.[trimester] || []).map(selection => {
-        const service = serviceMap.get(Number(selection.tindakan_id));
-        return service ? { name: `${service.name} (Layanan)`, price: Number(service.price) || 0, quantity: Number(selection.quantity) || 1 } : null;
-    }).filter(Boolean);
-    const medications = (config.trimester_configs?.[trimester] || []).map(selection => {
-        const medication = medicationMap.get(Number(selection.obat_id));
-        return medication ? { name: medication.name, price: Number(medication.price) || 0, quantity: Number(selection.quantity) || 3 } : null;
-    }).filter(Boolean);
-    return [...services, ...medications];
+function options(list, selected, placeholder) {
+    return '<option value="">' + placeholder + '</option>' +
+        (selected && !list.some(t => Number(t.id) === selected) ? '<option selected value="' + selected + '">Item tidak tersedia — pilih ulang</option>' : '') +
+        list.map(t => '<option value="' + Number(t.id) + '"' + (Number(t.id) === selected ? ' selected' : '') + '>' + esc(t.name) + '</option>').join('');
 }
-
-function renderEstimateTable(items, tableId) {
-    const table = document.getElementById(tableId);
-    if (!table) return 0;
-    if (!items.length) {
-        table.innerHTML = '<tr><td colspan="2" class="text-muted" style="font-size:11px">Belum ada item dipilih.</td></tr>';
-        return 0;
-    }
-    let subtotal = 0;
-    table.innerHTML = items.map(item => {
-        const total = item.price * item.quantity;
-        subtotal += total;
-        return `<tr><td style="font-size:11px">${escapeHtml(item.name)}</td><td class="text-right text-nowrap" style="font-size:10px">${formatRupiah(item.price)}${item.quantity > 1 ? ` x${item.quantity}` : ''}</td></tr>`;
+function field(label, control, width = 4) { return '<label class="col-md-' + width + ' small">' + label + control + '</label>'; }
+function attrs(type, key, index) { return ' class="form-control form-control-sm" data-field="' + type + '" data-key="' + key + '" data-index="' + index + '"'; }
+function input(type, key, index, value, extra = '') { return '<input' + attrs(type, key, index) + ' value="' + esc(value) + '" ' + extra + '>'; }
+function render() {
+    el('estimate-draft-editor').innerHTML = KEYS.map((key, phaseIndex) => {
+        const phase = draft.trimesters[key];
+        const meds = phase.medications.map((row, i) => {
+            const master = medications.find(m => Number(m.id) === row.obat_id);
+            return '<div class="border rounded p-3 mb-2"><div class="font-weight-bold mb-2">' + esc(row.name || master?.name || 'Obat belum dipetakan') + '</div><div class="row">' +
+                field('Pasangan master obat', '<select' + attrs('med-id', key, i) + '>' + options(medications, row.obat_id, 'Pilih master obat') + '</select>') +
+                field('Nama tampilan pasien', input('alias', key, i, draft.aliases[String(row.obat_id)] || '', 'maxlength="160" data-alias-id="' + row.obat_id + '" placeholder="Isi nama khusus"')) +
+                field('Jumlah / resep', input('med-qty', key, i, row.quantity, 'type="number" min="0.01" step="any"'), 2) +
+                field('Satuan resep', input('med-unit', key, i, row.unit, 'maxlength="160"'), 2) + '</div>' +
+                '<div class="small text-muted">Master: ' + (master ? money(master.price) + ' / ' + esc(master.unit || 'belum ada satuan') : 'Belum cocok — periksa pasangan master') +
+                '. Jika berbeda satuan, periksa lalu sesuaikan jumlah dan satuan resep.</div></div>';
+        }).join('');
+        const acts = phase.services.map((row, i) => '<div class="row align-items-end mb-2">' +
+            field('Layanan', '<select' + attrs('service-id', key, i) + '>' + options(services.map(s => ({ ...s, name: s.name + ' — ' + money(s.price) })), row.tindakan_id, 'Pilih layanan') + '</select>', 6) +
+            field('Jumlah / pelaksanaan', input('service-qty', key, i, row.quantity, 'type="number" min="0.01" step="any"'), 2) +
+            field('Pengulangan', input('service-repeat', key, i, row.repeats, 'type="number" min="0" step="1"'), 2) +
+            '<div class="col-md-2 mb-2"><button type="button" class="btn btn-outline-danger btn-sm" data-action="estimate-remove-service" data-key="' + key + '" data-index="' + i + '">Hapus</button></div></div>').join('');
+        return '<section class="card card-outline card-secondary"><div class="card-header"><h4 class="card-title">Trimester ' + (phaseIndex + 1) + '</h4></div><div class="card-body"><div class="row">' +
+            field('Template peresepan', '<select' + attrs('template', key, 0) + '>' + options(templates, phase.template_id, 'Belum dipilih') + '</select>', 8) +
+            field('Pengulangan resep', input('repeat', key, 0, phase.repeats, 'type="number" min="0" step="1"')) + '</div>' +
+            '<p class="small text-muted">Isi template disalin saat dipilih. Perubahan di peresepan tidak otomatis mengubah draft ini.</p>' +
+            (meds || '<p class="text-muted">Belum ada template obat dipilih.</p>') + '<hr><h5>Layanan &amp; pemeriksaan</h5>' + acts +
+            '<button type="button" class="btn btn-outline-secondary btn-sm" data-action="estimate-add-service" data-key="' + key + '">Tambah Layanan</button></div></section>';
     }).join('');
-    return subtotal;
 }
-
-export function updateEstimasiBiaya() {
-    const selectedTrimester = document.getElementById('estimasi-fase')?.value || 'semua';
-    let total = 0;
-    TRIMESTERS.forEach(trimester => {
-        const card = document.getElementById(`estimasi-card-${trimester}`);
-        const visible = selectedTrimester === trimester || selectedTrimester === 'semua';
-        card?.classList.toggle('d-none', !visible);
-        if (!visible) return;
-        const subtotal = renderEstimateTable(buildEstimatorItems(trimester), `tabel-estimasi-${trimester}`);
-        const subtotalElement = document.getElementById(`subtotal-${trimester}`);
-        if (subtotalElement) subtotalElement.textContent = formatRupiah(subtotal);
-        total += subtotal;
-    });
-    const totalElement = document.getElementById('total-estimasi');
-    if (totalElement) totalElement.textContent = formatRupiah(total);
+async function load() {
+    loadScope?.abort(); const scope = createPageRequestScope(); loadScope = scope;
+    ready = false; el('estimasi-biaya-page')?.querySelector('[data-action="save-estimasi-biaya"]')?.setAttribute('disabled', '');
+    status('Memuat draft, template, dan harga...');
+    try {
+        const [saved, meds, acts, rx] = await Promise.all([
+            scope.request('/api/estimasi-biaya/draft?_t=' + Date.now()), scope.request('/api/obat?active=true'),
+            scope.request('/api/tindakan?active=true'), scope.request('/api/sunday-clinic/prescription-templates')
+        ]);
+        if (scope.signal.aborted) return;
+        if (![saved, meds, acts, rx].every(result => result?.success)) throw new Error('Data belum dimuat');
+        draft = saved.draft; medications = meds.data; templates = rx.data;
+        services = acts.data.filter(s => ['LAYANAN', 'TINDAKAN MEDIS'].includes(s.category));
+        dirty = false; ready = true; revision++; previewData = null; render();
+        el('estimasi-biaya-page').querySelector('[data-action="save-estimasi-biaya"]').disabled = false;
+        status(draft.updated_at ? 'Draft tersimpan: ' + new Date(draft.updated_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB.' : 'Belum ada draft tersimpan. Template belum dipilih.');
+        send({ type: 'estimate-unavailable', message: 'Perbarui pratinjau untuk memuat draft ini.' });
+    } catch (error) { if (error.name !== 'AbortError') status('Gagal memuat data. Klik Muat Ulang untuk mencoba lagi.', 'danger'); }
 }
-
 export async function showEstimasiBiayaPage() {
     await window.activateRegisteredStaffPage?.('estimasi-biaya');
-    try {
-        await ensureData();
-    } catch (error) {
-        if (error?.name !== 'AbortError') {
-            console.error('Error loading estimasi biaya page:', error);
-            window.showError?.(error?.message || 'Gagal memuat data estimasi biaya');
-        }
-    }
-    updateEstimasiBiaya();
+    if (!ready) await load();
 }
-
 export async function saveEstimasiBiayaPortalConfig() {
-    syncAll();
-    const scope = replaceScope(saveScope, 'Estimator save request replaced');
-    saveScope = scope;
+    if (!ready || saveScope) return;
+    const scope = createPageRequestScope(); saveScope = scope; const currentRevision = revision;
+    status('Menyimpan draft...');
     try {
-        const result = await scope.request('/api/estimasi-biaya', {
-            method: 'PUT',
-            body: JSON.stringify({
-                version: 1,
-                trimester_configs: config.trimester_configs,
-                trimester_tindakan_configs: config.trimester_tindakan_configs
-            })
-        });
-        if (!result?.success) throw new Error(result?.message || 'Gagal menyimpan konfigurasi estimasi biaya');
-        config = normalizeEstimasiBiayaConfig(result.config);
-        renderMedicationSelectors();
-        renderServiceSelectors();
-        updateEstimasiBiaya();
-        setStatus(`Tersimpan terakhir: ${formatUpdatedAt(config.updated_at)}`, 'success');
-        window.showSuccess?.(result.message || 'Konfigurasi estimasi biaya berhasil disimpan');
-    } catch (error) {
-        if (error?.name === 'AbortError') return;
-        console.error('Save estimasi biaya config error:', error);
-        setStatus(error?.message || 'Gagal menyimpan konfigurasi estimasi biaya.', 'danger');
-        window.showError?.(error?.message || 'Gagal menyimpan konfigurasi estimasi biaya');
-    } finally {
-        if (saveScope === scope) saveScope = null;
-    }
+        const result = await scope.request('/api/estimasi-biaya/draft', { method: 'PUT', body: JSON.stringify(draft) });
+        if (!result.success) throw new Error();
+        if (currentRevision === revision) { draft = result.draft; dirty = false; }
+        status(dirty ? 'Versi sebelumnya tersimpan; perubahan terbaru belum disimpan.' : result.message, dirty ? 'warning' : 'success');
+    } catch (error) { if (error.name !== 'AbortError') status('Draft gagal disimpan. Perubahan tetap ada; coba Simpan Draft lagi.', 'danger'); }
+    finally { if (saveScope === scope) saveScope = null; }
 }
-
 export async function reloadEstimasiBiayaConfig() {
+    if (saveScope) { status('Penyimpanan sedang berlangsung. Tunggu hingga selesai sebelum memuat ulang.', 'warning'); return; }
+    if (dirty && !window.confirm('Buang perubahan draft yang belum disimpan dan muat ulang?')) return;
+    await load();
+}
+export async function updateEstimasiBiaya() {
+    if (!ready) { status('Muat konfigurasi terlebih dahulu.', 'warning'); return; }
+    showTab(true); previewScope?.abort(); const scope = createPageRequestScope(); previewScope = scope;
+    const currentRevision = revision; previewData = null; send({ type: 'estimate-unavailable', message: 'Memuat harga terbaru...' });
+    const configured = KEYS.some(key => draft.trimesters[key].template_id || draft.trimesters[key].services.length || draft.trimesters[key].medications.length);
+    if (!configured) { send({ type: 'estimate-dummy' }); status('Data Dummy — bukan tarif klinik. Pilih template untuk memakai draft.'); return; }
     try {
-        await ensureData(true);
-        updateEstimasiBiaya();
-        window.showSuccess?.('Konfigurasi estimasi biaya dimuat ulang dari server');
+        const result = await scope.request('/api/estimasi-biaya/preview', { method: 'POST', body: JSON.stringify(draft) });
+        if (scope.signal.aborted || currentRevision !== revision) return;
+        if (!result.success) throw new Error();
+        previewData = result.preview; send({ type: 'estimate-data', preview: previewData });
+        status((dirty ? 'Pratinjau perubahan yang belum disimpan. ' : '') + (previewData.ready ? 'Rincian siap disimulasikan.' : 'Ada trimester belum lengkap. Periksa peringatan di pratinjau.'), previewData.ready ? 'success' : 'warning');
     } catch (error) {
-        if (error?.name !== 'AbortError') {
-            console.error('Reload estimasi biaya config error:', error);
-            window.showError?.(error?.message || 'Gagal memuat ulang konfigurasi estimasi biaya');
+        if (error.name !== 'AbortError') {
+            send({ type: 'estimate-unavailable', message: 'Harga gagal dimuat. Klik Perbarui Harga & Pratinjau untuk mencoba lagi.' });
+            status('Pratinjau gagal dimuat. Silakan coba lagi.', 'danger');
         }
     }
 }
-
+window.addEventListener('message', event => {
+    if (event.origin !== window.location.origin || event.source !== el('estimate-patient-frame')?.contentWindow) return;
+    if (event.data?.type === 'estimate-ready') {
+        if (previewData) send({ type: 'estimate-data', preview: previewData });
+        else if (ready && !el('estimate-preview-panel').hidden) void updateEstimasiBiaya();
+    }
+});
 document.addEventListener('click', event => {
-    const action = event.target?.closest?.('[data-action]');
-    if (!action || !action.closest('#estimasi-biaya-page')) return;
-    if (action.dataset.action === 'reload-estimasi-biaya') {
-        event.preventDefault();
-        void reloadEstimasiBiayaConfig();
-    }
-    if (action.dataset.action === 'save-estimasi-biaya') {
-        event.preventDefault();
-        void saveEstimasiBiayaPortalConfig();
-    }
+    const button = event.target.closest?.('[data-action]');
+    if (!button?.closest('#estimasi-biaya-page')) return;
+    const action = button.dataset.action, key = button.dataset.key;
+    if (action === 'estimate-settings') showTab(false);
+    if (action === 'estimate-preview' || action === 'estimate-refresh') void updateEstimasiBiaya();
+    if (action === 'reload-estimasi-biaya') void reloadEstimasiBiayaConfig();
+    if (action === 'save-estimasi-biaya') void saveEstimasiBiayaPortalConfig();
+    if (action === 'estimate-phone') el('estimate-patient-frame').style.width = '390px';
+    if (action === 'estimate-desktop') el('estimate-patient-frame').style.width = '100%';
+    if (action === 'estimate-dummy') { previewScope?.abort(); previewData = null; send({ type: 'estimate-dummy' }); status('Data Dummy — bukan tarif klinik. Draft tetap terpisah.'); }
+    if (ready && action === 'estimate-add-service') { draft.trimesters[key].services.push({ tindakan_id: null, quantity: 1, repeats: 1 }); markDirty(); render(); }
+    if (ready && action === 'estimate-remove-service') { draft.trimesters[key].services.splice(Number(button.dataset.index), 1); markDirty(); render(); }
 });
-
-document.addEventListener('change', event => {
-    const target = event.target;
-    if (!target?.closest?.('#estimasi-biaya-page')) return;
-    if (target.id === 'estimasi-fase') {
-        updateEstimasiBiaya();
-        return;
+function edit(target) {
+    if (!ready || !target.closest?.('#estimasi-biaya-page') || !target.dataset.field) return;
+    const { field: type, key, index } = target.dataset; const phase = draft.trimesters[key];
+    const row = phase.medications[Number(index)], service = phase.services[Number(index)];
+    if (type === 'template') {
+        if (phase.medications.length && !window.confirm('Ganti isi obat trimester ini dengan template pilihan? Penyesuaian jumlah dan satuan akan diganti.')) { render(); return; }
+        const template = templates.find(t => Number(t.id) === Number(target.value));
+        phase.template_id = template ? Number(template.id) : null; phase.template_name = template?.name || '';
+        phase.medications = (template?.items || []).map(item => ({ obat_id: Number(item.obatId || item.id) || null, name: item.name || '', quantity: Number(item.quantity), unit: item.unit || '' }));
+        markDirty(); render(); return;
     }
-    if (target.matches('.estimasi-obat-toggle')) {
-        const quantity = document.querySelector(`.estimasi-obat-qty[data-trimester="${target.dataset.trimester}"][data-obat-id="${target.dataset.obatId}"]`);
-        if (quantity) {
-            quantity.disabled = !target.checked;
-            if (target.checked && Number(quantity.value) < 1) quantity.value = '3';
-        }
-        syncMedication(target.dataset.trimester);
-    } else if (target.matches('.estimasi-tindakan-toggle')) {
-        const quantity = document.querySelector(`.estimasi-tindakan-qty[data-trimester="${target.dataset.trimester}"][data-tindakan-id="${target.dataset.tindakanId}"]`);
-        if (quantity) {
-            quantity.disabled = !target.checked;
-            if (target.checked && Number(quantity.value) < 1) quantity.value = '1';
-        }
-        syncService(target.dataset.trimester);
-    } else {
-        return;
+    if (type === 'alias' && row.obat_id) {
+        draft.aliases[String(row.obat_id)] = target.value;
+        document.querySelectorAll('#estimasi-biaya-page [data-alias-id="' + row.obat_id + '"]').forEach(input => { if (input !== target) input.value = target.value; });
     }
+    if (type === 'repeat') phase.repeats = num(target.value);
+    if (type === 'med-qty') row.quantity = num(target.value);
+    if (type === 'med-unit') row.unit = target.value;
+    if (type === 'med-id') { row.obat_id = num(target.value); markDirty(); render(); return; }
+    if (type === 'service-id') service.tindakan_id = num(target.value);
+    if (type === 'service-qty') service.quantity = num(target.value);
+    if (type === 'service-repeat') service.repeats = num(target.value);
     markDirty();
-    updateEstimasiBiaya();
-});
-
-document.addEventListener('input', event => {
-    const target = event.target;
-    if (!target?.closest?.('#estimasi-biaya-page')) return;
-    if (!target.matches('.estimasi-obat-qty, .estimasi-tindakan-qty')) return;
-    target.value = String(Math.max(1, Math.min(12, Number(target.value) || 1)));
-    if (target.matches('.estimasi-obat-qty')) syncMedication(target.dataset.trimester);
-    else syncService(target.dataset.trimester);
-    markDirty();
-    updateEstimasiBiaya();
-});
-
+}
+document.addEventListener('change', event => { if (event.target.tagName === 'SELECT') edit(event.target); });
+document.addEventListener('input', event => { if (event.target.tagName === 'INPUT') edit(event.target); });
 document.addEventListener('page:changed', event => {
-    if (event.detail?.page !== 'estimasi-biaya') {
-        loadScope?.abort('Page deactivated');
-        saveScope?.abort('Page deactivated');
-        loadScope = null;
-        saveScope = null;
-    }
+    if (event.detail?.page !== 'estimasi-biaya') { loadScope?.abort('Page deactivated'); previewScope?.abort('Page deactivated'); }
 });
-
-Object.assign(window, {
-    showEstimasiBiayaPage,
-    updateEstimasiBiaya,
-    saveEstimasiBiayaPortalConfig,
-    reloadEstimasiBiayaConfig
-});
+Object.assign(window, { showEstimasiBiayaPage, updateEstimasiBiaya, saveEstimasiBiayaPortalConfig, reloadEstimasiBiayaConfig });
