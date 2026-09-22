@@ -101,6 +101,7 @@ app.use(express.static(path.join(root, 'public')));
         await page.click('[data-action="estimate-settings"]');
         await page.$eval('[data-field="med-unit"][data-key="t1"]', n => { n.value = 'strip'; n.dispatchEvent(new Event('input', { bubbles: true })); });
         await page.click('[data-action="estimate-preview"]');
+        await frame.waitForSelector('[data-estimate="trimester"]');
         await frame.waitForSelector('.estimate-warning');
         await frame.select('[data-estimate="trimester"]', 't1');
         assert.match(await frame.$eval('.estimate-summary', n => n.textContent), /Subtotal layananRp 100.000/);

@@ -14,10 +14,12 @@
                 ['all', ...TRIMESTERS].map((key, i) => '<option value="' + key + '"' + (scenario.trimester === key ? ' selected' : '') + '>' + (i ? 'Trimester ' + i : 'Semua trimester') + '</option>').join('') +
                 '</select></label><button type="button" class="estimate-button" data-estimate="help"><i class="fa-regular fa-circle-question"></i> Cara Menggunakan</button></div>' +
                 '<p class="estimate-note">Harga dimuat: ' + esc(new Date(data.prices_loaded_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })) + ' WIB. Pengulangan dapat diubah untuk simulasi.</p>' +
+                '<p class="estimate-note"><strong>USG Transvaginal</strong> hanya dilakukan 1 kali bila usia kehamilan di bawah 8 minggu.</p>' +
                 TRIMESTERS.filter(key => scenario.trimester === 'all' || key === scenario.trimester).map(key => {
                     const phase = result.trimesters[key];
                     return '<section class="section estimate-phase"><div class="tool-panel"><div class="estimate-heading"><h3>Trimester ' + (TRIMESTERS.indexOf(key) + 1) + '</h3>' +
                         '<label class="estimate-repeat">Pengulangan resep<input class="estimate-input" type="number" min="0" step="1" data-estimate="repeat" data-key="' + key + '" value="' + esc(phase.repeats) + '"></label></div>' +
+                        '<p class="estimate-note estimate-control-schedule"><strong>Jadwal kontrol:</strong> ' + (key === 't3' ? 'setiap 2 minggu sekali.' : 'setiap 1 bulan sekali.') + '</p>' +
                         (phase.issues.length ? '<div class="estimate-warning" role="status">' + phase.issues.map(esc).join('<br>') + '</div>' : '') +
                         phase.items.map(item => '<div class="estimate-item"><div class="estimate-item-top"><strong>' + esc(item.label) + '</strong><strong class="estimate-price">' + money(item.subtotal) + '</strong></div>' +
                             '<div class="estimate-item-detail"><span>' + (item.kind === 'medication' ? 'Obat / suplemen' : 'Layanan / pemeriksaan') + '<br>' +
