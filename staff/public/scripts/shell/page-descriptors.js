@@ -3,6 +3,7 @@ const fragmentPages = [
     ['anamnesa', 'anamnesa-page', 'nav-anamnesa', 'Anamnesa'],
     ['usg', 'usg-exam-page', 'nav-usg', 'Pemeriksaan USG'],
     ['kelola-roles', 'kelola-roles-page', 'management-nav-kelola-roles', 'Roles Manajemen'],
+    ['template-resep', 'template-resep-page', 'nav-template-resep', 'Template Resep'],
     ['estimasi-biaya', 'estimasi-biaya-page', 'nav-estimasi-biaya', 'Estimasi Biaya Kehamilan'],
     ['finance-analysis', 'finance-analysis-page', 'nav-finance-analysis', 'Finance Analysis'],
     ['profile-settings', 'profile-settings-page', 'nav-profile-settings', 'Profile Settings'],

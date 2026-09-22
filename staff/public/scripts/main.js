@@ -270,6 +270,7 @@ function initPages() {
     pages.kelolaJadwal = grab('kelola-jadwal-page');
     pages.kelolaTindakan = grab('kelola-tindakan-page');
     pages.kelolaObatManagement = grab('kelola-obat-management-page');
+    pages.templateResep = grab('template-resep-page');
     pages.estimasiBiaya = grab('estimasi-biaya-page');
     pages.financeAnalysis = grab('finance-analysis-page');
     pages.birthCongrats = grab('birth-congrats-page');
@@ -3460,6 +3461,7 @@ function resumeSavedPageIfRequested(params) {
         'management-nav-kelola-appointment':    () => showKelolaAppointmentPage(),
         'nav-jadwal':                           () => showKelolaJadwalPage(),
         'management-nav-kelola-tindakan':       () => showKelolaTindakanPage(),
+        'nav-template-resep':                   () => window.showTemplateResepPage?.(),
         'nav-estimasi-biaya':                   () => window.showEstimasiBiayaPage?.(),
         'nav-pengumuman':                       () => showKelolaPengumumanPage(),
         'nav-voting':                           () => showVotingPage(),

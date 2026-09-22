@@ -59,15 +59,15 @@ function parsePrescriptionTemplateItems(rawItems) {
 }
 
 function normalizePrescriptionTemplateItems(items) {
-    if (!Array.isArray(items)) return null;
+    if (!Array.isArray(items) || !items.length || items.some(item => !item || typeof item.name !== 'string' || !item.name.trim() || !Number.isFinite(Number(item.quantity)) || Number(item.quantity) <= 0 || typeof item.unit !== 'string' || !item.unit.trim())) return null;
 
     const normalized = items
         .map((item) => {
             const name = typeof item.name === 'string' ? item.name.trim() : '';
             if (!name) return null;
 
-            const quantity = Number(item.quantity) > 0 ? Number(item.quantity) : 1;
-            const unit = typeof item.unit === 'string' && item.unit.trim() ? item.unit.trim() : 'tablet';
+            const quantity = Number(item.quantity);
+            const unit = item.unit.trim();
             const caraPakai = typeof item.caraPakai === 'string' ? item.caraPakai.trim() : '';
             const latinSig = typeof item.latinSig === 'string' ? item.latinSig.trim() : '';
             const obatId = item.obatId || item.id || null;

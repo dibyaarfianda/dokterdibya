@@ -48,6 +48,7 @@ async function bootstrapStaffShell() {
     installLazyFeatureShim('showStaffActivityPage', 'staffActivity', 'staff-activity');
     installLazyFeatureShim('loadStaffActivityLogs', 'staffActivity', 'staff-activity');
     installLazyFeatureShim('loadStaffActivityFilters', 'staffActivity', 'staff-activity');
+    installLazyFeatureShim('showTemplateResepPage', 'templateResep', 'template-resep');
     installLazyFeatureShim('showEstimasiBiayaPage', 'estimasiBiaya', 'estimasi-biaya');
     installLazyFeatureShim('updateEstimasiBiaya', 'estimasiBiaya', 'estimasi-biaya');
     installLazyFeatureShim('saveEstimasiBiayaPortalConfig', 'estimasiBiaya', 'estimasi-biaya');

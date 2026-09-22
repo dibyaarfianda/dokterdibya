@@ -62,6 +62,7 @@ const featureLoaders = {
     xendit: () => loadScript('https://js.xendit.co/v1/xendit.min.js'),
     sundayClinic: async () => {
         await Promise.all([ensureFeature('qrcode'), ensureFeature('xendit')]);
+        await loadScript('/staff/public/scripts/prescription-sig.js');
         await loadScript('/staff/public/scripts/sunday-clinic/utils/planning-helpers.js');
         await loadScript('/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js');
     },
@@ -73,6 +74,10 @@ const featureLoaders = {
     staffActivity: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/staff-activity-page.js?v=${version}`);
+    },
+    templateResep: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/template-resep-page.js?v=${version}`);
     },
     estimasiBiaya: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');

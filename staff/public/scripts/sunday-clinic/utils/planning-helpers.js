@@ -1045,6 +1045,7 @@ function showBatchCaraPakaiModal(selectedObat, options = {}) {
     if (!modalBody) return;
 
     window.editingPrescriptionTemplate = options.template || null;
+    document.querySelectorAll('[data-template-doctor-save]').forEach(button => { button.hidden = !canManagePrescriptionTemplates(); });
 
     // Build compact form for each selected obat
     let formHtml = '';
@@ -1069,11 +1070,12 @@ function showBatchCaraPakaiModal(selectedObat, options = {}) {
                         <i class="fas fa-pills text-success mr-1"></i>${escapeHtml(obat.name)}
                     </span>
                     <input type="number" class="form-control form-control-sm draft-terapi-field mr-1 sc-medication-quantity"
-                           id="jumlah-${index}" min="1" value="${escapeHtml(String(quantityValue))}"
+                           id="jumlah-${index}" min="0.000001" step="any" value="${escapeHtml(String(quantityValue))}"
                            data-next="satuan-${index}">
                     <select class="form-control form-control-sm draft-terapi-field mr-2 sc-medication-unit"
                             id="satuan-${index}"
                             data-next="carapakai-${index}">
+                        ${!['tablet', 'kapsul', 'box', 'botol', 'tube', 'sachet'].includes(selectedUnit) ? `<option value="${escapeHtml(selectedUnit)}" selected>${escapeHtml(selectedUnit)}</option>` : ''}
                         <option value="tablet" ${selectedUnit === 'tablet' ? 'selected' : ''}>tab</option>
                         <option value="kapsul" ${selectedUnit === 'kapsul' ? 'selected' : ''}>kap</option>
                         <option value="box" ${selectedUnit === 'box' ? 'selected' : ''}>box</option>
@@ -1162,7 +1164,7 @@ function collectCurrentPrescriptionItems() {
 
     return selectedObat.map((obat, index) => {
         const jumlahValue = document.getElementById(`jumlah-${index}`)?.value || '1';
-        const jumlah = parseInt(jumlahValue, 10);
+        const jumlah = Number(jumlahValue);
         const satuan = document.getElementById(`satuan-${index}`)?.value || 'tablet';
         const caraPakai = document.getElementById(`carapakai-${index}`)?.value.trim() || '';
 
@@ -1308,6 +1310,10 @@ async function openPrescriptionTemplateModal() {
     }
 }
 
+function canManagePrescriptionTemplates() {
+    return Number((window.currentStaffUser || window.auth?.currentUser)?.role_id) === window.staffRoleConstants?.ROLE_IDS.DOKTER;
+}
+
 function renderPrescriptionTemplateList() {
     const container = document.getElementById('prescription-template-list');
     if (!container) return;
@@ -1345,12 +1351,12 @@ function renderPrescriptionTemplateList() {
                         <button type="button" class="btn btn-success" onclick="applyPrescriptionTemplate(${template.id})" title="Pakai template">
                             <i class="fas fa-check"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-primary" onclick="editPrescriptionTemplate(${template.id})" title="Edit template">
+                        ${canManagePrescriptionTemplates() ? `<button type="button" class="btn btn-outline-primary" onclick="editPrescriptionTemplate(${template.id})" title="Edit template">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button type="button" class="btn btn-outline-danger" onclick="deletePrescriptionTemplate(${template.id})" title="Hapus template">
                             <i class="fas fa-trash"></i>
-                        </button>
+                        </button>` : ''}
                     </div>
                 </div>
             </div>
@@ -1390,6 +1396,7 @@ async function applyPrescriptionTemplate(templateId) {
 }
 
 function editPrescriptionTemplate(templateId) {
+    if (!canManagePrescriptionTemplates()) { window.showError?.('Hanya dokter yang dapat mengubah template resep.'); return; }
     const template = findPrescriptionTemplate(templateId);
     if (!template || !Array.isArray(template.items) || template.items.length === 0) {
         window.showToast && window.showToast('warning', 'Template obat tidak valid');
@@ -1413,6 +1420,7 @@ function editPrescriptionTemplate(templateId) {
 }
 
 async function saveCurrentPrescriptionAsTemplate() {
+    if (!canManagePrescriptionTemplates()) { window.showError?.('Hanya dokter yang dapat mengubah template resep.'); return; }
     const items = collectCurrentPrescriptionItems();
     if (items.length === 0) {
         window.showToast && window.showToast('warning', 'Isi minimal satu obat sebelum menyimpan template');
@@ -1463,6 +1471,7 @@ async function saveCurrentPrescriptionAsTemplate() {
 }
 
 async function deletePrescriptionTemplate(templateId) {
+    if (!canManagePrescriptionTemplates()) { window.showError?.('Hanya dokter yang dapat mengubah template resep.'); return; }
     const template = findPrescriptionTemplate(templateId);
     if (!template) return;
 
@@ -1871,108 +1880,8 @@ async function renderTerapiItemsList() {
 // ============================================================================
 
 // Convert Arabic number to Roman numerals
-function toRoman(num) {
-    const romanNumerals = [
-        { value: 1000, numeral: 'M' },
-        { value: 900, numeral: 'CM' },
-        { value: 500, numeral: 'D' },
-        { value: 400, numeral: 'CD' },
-        { value: 100, numeral: 'C' },
-        { value: 90, numeral: 'XC' },
-        { value: 50, numeral: 'L' },
-        { value: 40, numeral: 'XL' },
-        { value: 10, numeral: 'X' },
-        { value: 9, numeral: 'IX' },
-        { value: 5, numeral: 'V' },
-        { value: 4, numeral: 'IV' },
-        { value: 1, numeral: 'I' }
-    ];
-
-    let result = '';
-    let remaining = parseInt(num);
-
-    for (const { value, numeral } of romanNumerals) {
-        while (remaining >= value) {
-            result += numeral;
-            remaining -= value;
-        }
-    }
-
-    return result;
-}
-
-// Convert Indonesian usage instructions to Latin abbreviations
-function convertToLatinSig(caraPakai) {
-    if (!caraPakai) return '';
-
-    let latinSig = caraPakai.toLowerCase();
-    let result = '';
-
-    // Extract frequency pattern (e.g., "3x1", "2x2", "1x1")
-    const frequencyMatch = latinSig.match(/(\d+)\s*x\s*(\d+)/);
-
-    if (frequencyMatch) {
-        const timesPerDay = frequencyMatch[1];
-        const doseAmount = frequencyMatch[2];
-        const doseRoman = toRoman(parseInt(doseAmount));
-
-        // Frequency mapping
-        const frequencyMap = {
-            '1': 'd.d',           // tiap hari (daily)
-            '2': 'b.d.d',         // dua kali sehari (twice daily)
-            '3': 'ter.d.d',       // tiga kali sehari (three times daily)
-            '4': 'q.d.d'          // empat kali sehari (four times daily)
-        };
-
-        const freqLatin = frequencyMap[timesPerDay] || `${timesPerDay} dd`;
-        result = `${freqLatin} ${doseRoman}`;
-    }
-
-    // Timing/meal-related conversions
-    const timingConversions = {
-        'sebelum makan': 'a.c',
-        'setelah makan': 'p.c',
-        'pada saat makan': 'd.c',
-        'saat makan': 'd.c',
-        'dengan makan': 'd.c',
-        'bila diperlukan': 'p.r.n',
-        'bila perlu': 'p.r.n',
-        'jika perlu': 'p.r.n',
-        'pagi hari': 'h.m',
-        'pagi': 'h.m',
-        'malam hari': 'h.v',
-        'malam': 'h.v',
-        'sore': 'p.m',
-        'sebelum tidur': 'h.v',
-        'tiap jam': 'o.h',
-        'tiap 2 jam': 'o.b.h',
-        'tiap pagi': 'o.m',
-        'tiap malam': 'o.n',
-        'segera': 'cito',
-        'diminum sekaligus': 'haust'
-    };
-
-    // Find timing conversion
-    let timing = '';
-    for (const [indonesian, latin] of Object.entries(timingConversions)) {
-        if (latinSig.includes(indonesian)) {
-            timing = latin;
-            break;
-        }
-    }
-
-    // Build final Latin Sig
-    if (timing) {
-        result = result ? `${result} ${timing}` : timing;
-    }
-
-    // If no conversion happened, preserve original
-    if (!result) {
-        result = caraPakai;
-    }
-
-    return result;
-}
+function toRoman(num) { return window.PrescriptionSig.toRoman(num); }
+function convertToLatinSig(value) { return window.PrescriptionSig.convertToLatinSig(value); }
 
 // Update draft terapi preview in sessionStorage as user types
 function updateDraftTerapiPreview() {
@@ -1982,7 +1891,7 @@ function updateDraftTerapiPreview() {
     const structuredItems = [];
     selectedObat.forEach((obat, index) => {
         const jumlahValue = document.getElementById(`jumlah-${index}`)?.value || '1';
-        const jumlah = parseInt(jumlahValue, 10);
+        const jumlah = Number(jumlahValue);
         const satuan = document.getElementById(`satuan-${index}`)?.value || 'tablet';
         const caraPakai = document.getElementById(`carapakai-${index}`)?.value.trim() || '';
 

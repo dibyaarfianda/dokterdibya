@@ -1,0 +1,28 @@
+<div class="card card-outline card-primary">
+  <div class="card-header"><h3 class="card-title"><i class="fas fa-prescription mr-2"></i>Template Resep</h3></div>
+  <div class="card-body">
+    <p class="text-muted">Kelola template peresepan tanpa membuka kunjungan pasien. Perubahan hanya dapat dilakukan oleh dokter.</p>
+    <div class="d-flex flex-wrap mb-3" style="gap:8px">
+      <button class="btn btn-primary" type="button" data-rx-action="new">Buat Template</button>
+      <button class="btn btn-outline-secondary" type="button" data-rx-action="reload">Muat Ulang</button>
+    </div>
+    <div id="rx-status" role="status" aria-live="polite" class="small mb-3"></div>
+    <label for="rx-search">Cari template atau obat</label><input id="rx-search" type="search" class="form-control mb-3" placeholder="Nama template atau obat">
+    <div id="rx-list"></div>
+  </div>
+</div>
+<section id="rx-editor" class="card card-outline card-success" hidden>
+  <div class="card-header"><h3 id="rx-editor-title" class="card-title">Editor Template</h3></div>
+  <div class="card-body">
+    <div class="alert alert-info">Perubahan template tersedia saat daftar peresepan dan estimasi dimuat ulang. Salinan dalam draft estimasi biaya tidak berubah otomatis.</div>
+    <fieldset id="rx-fields">
+      <label for="rx-name">Nama template</label><input id="rx-name" class="form-control mb-3" maxlength="150" required>
+      <div id="rx-items"></div>
+      <label for="rx-master-search">Cari master obat</label><input id="rx-master-search" class="form-control mb-2" type="search" placeholder="Ketik nama obat">
+      <label for="rx-master">Obat yang akan ditambahkan</label><select id="rx-master" class="form-control mb-2"></select>
+      <button type="button" class="btn btn-outline-primary mb-3" data-rx-action="add">Tambah Obat</button>
+      <datalist id="rx-units"><option value="tablet"><option value="kapsul"><option value="pcs"><option value="box"><option value="botol"><option value="tube"><option value="sachet"></datalist>
+    </fieldset>
+    <div class="d-flex flex-wrap" style="gap:8px"><button type="button" class="btn btn-success" data-rx-action="save">Simpan Template</button><button type="button" class="btn btn-outline-secondary" data-rx-action="cancel">Tutup Editor</button></div>
+  </div>
+</section>

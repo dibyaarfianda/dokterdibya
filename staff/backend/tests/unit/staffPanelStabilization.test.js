@@ -394,9 +394,9 @@ describe('staff panel stabilization sources', () => {
         expect(migration).toContain('items JSON NOT NULL');
         expect(sundayClinicService).not.toContain('CREATE TABLE IF NOT EXISTS sunday_clinic_prescription_templates');
         expect(sundayClinicRoute).toContain("router.get('/prescription-templates', verifyToken");
-        expect(sundayClinicRoute).toContain("router.post('/prescription-templates', verifyToken");
-        expect(sundayClinicRoute).toContain("router.put('/prescription-templates/:id', verifyToken");
-        expect(sundayClinicRoute).toContain("router.delete('/prescription-templates/:id', verifyToken");
+        expect(sundayClinicRoute).toContain("router.post('/prescription-templates', verifyStaffToken, requireDoctorRole");
+        expect(sundayClinicRoute).toContain("router.put('/prescription-templates/:id', verifyStaffToken, requireDoctorRole");
+        expect(sundayClinicRoute).toContain("router.delete('/prescription-templates/:id', verifyStaffToken, requireDoctorRole");
         expect(sundayClinicService).toContain('normalizePrescriptionTemplateItems');
         expect(sundayClinicService).toContain('is_active = 0');
 

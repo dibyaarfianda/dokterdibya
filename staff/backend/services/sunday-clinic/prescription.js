@@ -8,6 +8,7 @@ const {
 } = require('./shared');
 
 async function getPrescriptionTemplates(req, res, next) {
+    res.set('Cache-Control', 'no-store');
     try {
         const [rows] = await db.query(
             `SELECT id, name, items, created_by, updated_by, created_at, updated_at
@@ -32,12 +33,12 @@ async function postPrescriptionTemplates(req, res, next) {
     const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
     const items = normalizePrescriptionTemplateItems(req.body.items);
 
-    if (!name) {
-        return res.status(400).json({ success: false, message: 'Nama template wajib diisi.' });
+    if (!name || name.length > 150) {
+        return res.status(400).json({ success: false, message: 'Nama template wajib diisi, maksimal 150 karakter.' });
     }
 
     if (!items) {
-        return res.status(400).json({ success: false, message: 'Template harus berisi minimal satu obat.' });
+        return res.status(400).json({ success: false, message: 'Isi minimal satu obat dengan nama, jumlah positif, dan satuan yang lengkap.' });
     }
 
     try {
@@ -72,12 +73,12 @@ async function putPrescriptionTemplatesById(req, res, next) {
         return res.status(400).json({ success: false, message: 'ID template tidak valid.' });
     }
 
-    if (!name) {
-        return res.status(400).json({ success: false, message: 'Nama template wajib diisi.' });
+    if (!name || name.length > 150) {
+        return res.status(400).json({ success: false, message: 'Nama template wajib diisi, maksimal 150 karakter.' });
     }
 
     if (!items) {
-        return res.status(400).json({ success: false, message: 'Template harus berisi minimal satu obat.' });
+        return res.status(400).json({ success: false, message: 'Isi minimal satu obat dengan nama, jumlah positif, dan satuan yang lengkap.' });
     }
 
     try {
@@ -125,7 +126,7 @@ async function deletePrescriptionTemplatesById(req, res, next) {
             return res.status(404).json({ success: false, message: 'Template obat tidak ditemukan.' });
         }
 
-        res.json({ success: true, message: 'Template obat berhasil dihapus' });
+        res.json({ success: true, message: 'Template resep berhasil dinonaktifkan' });
     } catch (error) {
         next(error);
     }
