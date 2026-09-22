@@ -1,9 +1,12 @@
+import './booking-slot-utils.js?v=20260922-1';
+
 // Kelola Booking Settings Module
 // Manages booking session times for Sunday Clinic appointments
 
 (function() {
     'use strict';
 
+    const { schedule, slotTime } = window.BookingSlotUtils;
     const API_BASE = '/api/booking-settings';
     const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     let settings = [];
@@ -28,13 +31,15 @@
         // Add new session button
         const btnAdd = document.getElementById('btn-add-session');
         if (btnAdd) {
-            btnAdd.addEventListener('click', () => openModal());
+            btnAdd.onclick = () => openModal();
         }
 
         // Form submit
         const form = document.getElementById('session-form');
         if (form) {
-            form.addEventListener('submit', handleFormSubmit);
+            form.onsubmit = handleFormSubmit;
+            form.oninput = updateFormPreview;
+            form.onchange = updateFormPreview;
         }
 
         // Close modal buttons
@@ -111,37 +116,22 @@
                 .replace(/'/g, '&#039;');
         }
 
-        function timeToMinutes(value) {
-            const parts = String(value || '').split(':').map(Number);
-            if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) {
-                return null;
-            }
-            return (parts[0] * 60) + parts[1];
-        }
-
-        function formatMinutes(totalMinutes) {
-            const normalized = ((totalMinutes % 1440) + 1440) % 1440;
-            const hours = Math.floor(normalized / 60);
-            const minutes = normalized % 60;
-            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        }
-
         function renderSlotPreview(session) {
-            const startMinutes = timeToMinutes(session.start_time);
+
             const duration = Number.parseInt(session.slot_duration, 10) || 15;
             const maxSlots = Number.parseInt(session.max_slots, 10) || 0;
 
-            if (startMinutes === null || maxSlots <= 0) {
+            if (!session.start_time || maxSlots <= 0) {
                 return '<div class="text-muted small">Preview slot belum tersedia.</div>';
             }
 
             const slots = Array.from({ length: maxSlots }, (_, index) => {
                 const slotNumber = index + 1;
-                const slotTime = formatMinutes(startMinutes + (index * duration));
+                const time = slotTime(session, slotNumber);
                 return `
                     <span class="badge badge-light border text-dark mr-1 mb-1 px-2 py-1">
                         <span class="text-primary font-weight-bold">Slot ${slotNumber}</span>
-                        <span class="ml-1">${slotTime}</span>
+                        <span class="ml-1">${time || "-"}</span>
                     </span>
                 `;
             }).join('');
@@ -198,6 +188,7 @@
                             </div>
                         </div>
 
+                        ${s.break_start_time ? `<p class="text-center mt-3 mb-0"><i class="fas fa-coffee mr-1"></i>Istirahat ${escapeHtml(s.break_start_time)} (${Number(s.break_duration_minutes)} menit)</p>` : ''}
                         ${renderSlotPreview(s)}
                     </div>
                     <div class="card-footer text-center">
@@ -256,6 +247,12 @@
             document.getElementById('session-number').value = maxSession + 1;
         }
 
+        document.getElementById('session-break-enabled').checked = !!session?.break_start_time;
+        document.getElementById('session-break-start-time').value = session?.break_start_time || '';
+        document.getElementById('session-break-duration').value = session?.break_duration_minutes ?? '';
+        document.getElementById('session-break-warning').classList.toggle('d-none', !session);
+        updateFormPreview();
+
         // Show modal using Bootstrap 4
         $(modal).modal('show');
     }
@@ -268,6 +265,47 @@
         }
     }
 
+    function readScheduleForm() {
+        const enabled = document.getElementById('session-break-enabled').checked;
+        return {
+            start_time: document.getElementById('session-start-time').value,
+            end_time: document.getElementById('session-end-time').value,
+            slot_duration: Number(document.getElementById('session-slot-duration').value),
+            max_slots: Number(document.getElementById('session-max-slots').value),
+            break_start_time: enabled ? document.getElementById('session-break-start-time').value : null,
+            break_duration_minutes: enabled ? document.getElementById('session-break-duration').value : null
+        };
+    }
+
+    function updateFormPreview() {
+        const enabled = document.getElementById('session-break-enabled').checked;
+        for (const id of ['session-break-start-time', 'session-break-duration']) {
+            const input = document.getElementById(id);
+            input.disabled = !enabled;
+            input.required = enabled;
+        }
+        const preview = document.getElementById('session-slot-preview');
+        const summary = document.getElementById('session-schedule-summary');
+        const save = document.getElementById('btn-save-session');
+        preview.replaceChildren();
+        try {
+            const result = schedule(readScheduleForm());
+            summary.className = 'small text-info mb-2';
+            summary.textContent = `${result.break_end_time ? 'Istirahat selesai ' + result.break_end_time + '. ' : ''}Jam selesai sesi: ${result.end_time} WIB (menyesuaikan seluruh slot).`;
+            for (const slot of result.slots) {
+                const badge = document.createElement('span');
+                badge.className = 'badge badge-light border text-dark mr-1 mb-1 px-2 py-1';
+                badge.textContent = `Slot ${slot.number} ${slot.time}`;
+                preview.appendChild(badge);
+            }
+            save.disabled = false;
+        } catch (error) {
+            summary.className = 'small text-danger mb-2';
+            summary.textContent = error.message;
+            save.disabled = true;
+        }
+    }
+
     // Handle form submit
     async function handleFormSubmit(e) {
         e.preventDefault();
@@ -277,10 +315,7 @@
             session_number: parseInt(document.getElementById('session-number').value),
             session_name: document.getElementById('session-name').value.trim(),
             day_of_week: parseInt(document.getElementById('session-day-of-week').value),
-            start_time: document.getElementById('session-start-time').value,
-            end_time: document.getElementById('session-end-time').value,
-            slot_duration: parseInt(document.getElementById('session-slot-duration').value),
-            max_slots: parseInt(document.getElementById('session-max-slots').value),
+            ...readScheduleForm(),
             is_active: document.getElementById('session-is-active').checked
         };
 
@@ -291,6 +326,15 @@
         }
 
         try {
+            const preview = schedule(data);
+            data.end_time = preview.end_time;
+            const previous = settings.find(s => String(s.id) === id);
+            if (previous) {
+                const count = Math.max(Number(previous.max_slots), data.max_slots);
+                const timesChanged = Array.from({ length: count }, (_, i) => i + 1)
+                    .some(number => slotTime(previous, number) !== slotTime(data, number));
+                if (timesChanged && !window.confirm('Jam booking yang sudah ada akan ikut berubah sesuai nomor slot. Notifikasi massal tidak dikirim otomatis. Simpan perubahan?')) return;
+            }
             const url = id ? `${API_BASE}/${id}` : API_BASE;
             const method = id ? 'PUT' : 'POST';
 
@@ -312,6 +356,7 @@
             showToast(result.message || 'Berhasil disimpan', 'success');
             closeModal();
             loadSettings();
+            loadBookings();
         } catch (error) {
             console.error('Error saving session:', error);
             showToast(error.message || 'Gagal menyimpan pengaturan', 'error');

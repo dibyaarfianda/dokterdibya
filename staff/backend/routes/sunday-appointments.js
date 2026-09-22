@@ -16,7 +16,8 @@ const {
     getCachedSessionSettings,
     invalidateSessionSettingsCache,
     getSessionLabelFromSettings: getSessionLabelFromSettingsBase,
-    getSlotTimeFromSettings
+    getSlotTimeFromSettings,
+    getSlotTimeFromBookingRow
 } = require('../services/booking-session-settings');
 
 const AUTO_NO_CONFIRMATION_REASON = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB';
@@ -1409,7 +1410,7 @@ router.put('/:id/status', verifyToken, async (req, res) => {
 
         // Get appointment details first for notification
         const [appointments] = await db.query(
-            `SELECT sa.*, bs.session_name, bs.start_time
+            `SELECT sa.*, bs.session_name, bs.start_time, bs.slot_duration, bs.break_start_time, bs.break_duration_minutes
              FROM sunday_appointments sa
              LEFT JOIN booking_settings bs ON sa.session = bs.session_number
              WHERE sa.id = ?`,
@@ -1445,12 +1446,7 @@ router.put('/:id/status', verifyToken, async (req, res) => {
             });
 
             // Calculate slot time
-            const startTime = appointment.start_time ? appointment.start_time.substring(0, 5) : '09:00';
-            const [hours, mins] = startTime.split(':').map(Number);
-            const totalMinutes = (hours * 60 + mins) + (appointment.slot_number - 1) * 15;
-            const slotHour = Math.floor(totalMinutes / 60);
-            const slotMinute = totalMinutes % 60;
-            const slotTime = `${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}`;
+            const slotTime = getSlotTimeFromBookingRow(appointment);
 
             const statusMessages = {
                 'confirmed': {

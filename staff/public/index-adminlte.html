@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v403';
+        window.STAFF_CACHE_VERSION = 'v404';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v403">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v403">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v403">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v403">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v404">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v404">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v404">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v404">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v403">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v404">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v403">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v404">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -54,7 +54,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v403"></script>
+    <script src="scripts/error-handler.js?v=v404"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -69,10 +69,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v403">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v404">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v403">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v404">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -2253,6 +2253,32 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <fieldset class="border rounded p-3 mb-3">
+                                        <legend class="w-auto px-2" style="font-size: 1rem;">Istirahat opsional</legend>
+                                        <div class="custom-control custom-switch mb-3">
+                                            <input type="checkbox" class="custom-control-input" id="session-break-enabled">
+                                            <label class="custom-control-label" for="session-break-enabled">Aktifkan istirahat</label>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-sm-6 form-group">
+                                                <label for="session-break-start-time">Jam mulai istirahat</label>
+                                                <input type="time" class="form-control" id="session-break-start-time" disabled>
+                                            </div>
+                                            <div class="col-sm-6 form-group">
+                                                <label for="session-break-duration">Durasi (menit)</label>
+                                                <input type="number" class="form-control" id="session-break-duration" min="1" step="1" disabled>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Slot yang bertabrakan dipindahkan setelah istirahat. Jumlah slot tetap.</small>
+                                    </fieldset>
+                                    <div class="mb-3">
+                                        <strong class="d-block mb-2">Pratinjau slot</strong>
+                                        <p id="session-schedule-summary" aria-live="polite"></p>
+                                        <div id="session-slot-preview" class="booking-slot-preview"></div>
+                                    </div>
+                                    <div id="session-break-warning" class="alert alert-warning d-none" role="note">
+                                        Perubahan waktu akan menggeser jam booking yang sudah ada sesuai nomor slot. Notifikasi massal tidak dikirim otomatis.
+                                    </div>
                                     <div class="form-group">
                                         <div class="custom-control custom-switch">
                                             <input type="checkbox" class="custom-control-input" id="session-is-active" checked>
@@ -3742,8 +3768,8 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/actions.js?v=v403"></script>
-<script defer src="scripts/patient-demo-manager.js?v=v403"></script>
+<script defer src="scripts/shell/actions.js?v=v404"></script>
+<script defer src="scripts/patient-demo-manager.js?v=v404"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3823,8 +3849,8 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v403" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v403" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v404" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v404" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3836,7 +3862,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v403"></script>
+<script defer src="scripts/rum.js?v=v404"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4061,7 +4087,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v403"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v404"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4214,7 +4240,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v403"></script>
+ <script src="scripts/mobile-helper.js?v=v404"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4226,8 +4252,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v403"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v403"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v404"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v404"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

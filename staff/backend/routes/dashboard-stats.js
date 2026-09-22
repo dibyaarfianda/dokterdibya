@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const cache = require('../utils/cache');
+const { getSessionSettings, getSlotTimeFromSettings } = require('../services/booking-session-settings');
 const { verifyToken } = require('../middleware/auth');
 
 /**
@@ -83,14 +84,10 @@ router.get('/', verifyToken, async (req, res) => {
             [nextSundayStr]
         );
 
+        const sessionSettings = await getSessionSettings();
         // Format appointments with slot time
         const formattedAppointments = appointments.map(apt => {
-            const startHours = { 1: 9, 2: 12, 3: 15 };
-            const startHour = startHours[apt.session];
-            const minutes = (apt.slot_number - 1) * 15;
-            const hour = startHour + Math.floor(minutes / 60);
-            const minute = minutes % 60;
-            const slotTime = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+            const slotTime = getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number);
 
             return {
                 id: apt.id,

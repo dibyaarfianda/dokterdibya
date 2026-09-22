@@ -10,6 +10,7 @@
  */
 
 const db = require('../db');
+const { slotTime } = require('../../public/scripts/booking-slot-utils');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const CACHE_TTL = 60000; // 1 minute cache
@@ -53,22 +54,23 @@ function getSessionSettingsVersion() {
 }
 
 /**
- * Active session settings from the database, cached for CACHE_TTL.
+ * Return active settings for booking; cache inactive settings too for existing-booking time resolution.
  */
 async function getSessionSettings() {
     const now = Date.now();
     if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
-        return sessionSettingsCache;
+        return sessionSettingsCache.filter(s => s.isActive);
     }
 
     try {
         const [settings] = await db.query(
-            `SELECT session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time, slot_duration, max_slots
-             FROM booking_settings WHERE is_active = 1 ORDER BY session_number ASC`
+            `SELECT session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time, slot_duration, max_slots, break_start_time, break_duration_minutes, is_active
+             FROM booking_settings ORDER BY session_number ASC`
         );
 
         sessionSettingsCache = settings.map(s => ({
             session: s.session_number,
+            isActive: s.is_active === undefined || Number(s.is_active) === 1,
             name: s.session_name,
             dayOfWeek: Number.parseInt(s.day_of_week, 10) || 0,
             dayName: getDayName(Number.parseInt(s.day_of_week, 10) || 0),
@@ -76,10 +78,12 @@ async function getSessionSettings() {
             endTime: s.end_time.substring(0, 5),
             slotDuration: s.slot_duration,
             maxSlots: s.max_slots,
+            breakStartTime: s.break_start_time ? s.break_start_time.substring(0, 5) : null,
+            breakDurationMinutes: s.break_duration_minutes ?? null,
             label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
         }));
         sessionSettingsCacheTime = now;
-        return sessionSettingsCache;
+        return sessionSettingsCache.filter(s => s.isActive);
     } catch (error) {
         console.error('Error fetching session settings:', error);
         // Fallback to default if DB fails
@@ -96,7 +100,8 @@ function getCachedSessionSettings() {
 }
 
 function findSessionSetting(settings, session) {
-    return (settings || []).find(s => s.session === parseInt(session));
+    return (settings || []).find(s => s.session === parseInt(session))
+        || (sessionSettingsCache || []).find(s => s.session === parseInt(session));
 }
 
 /**
@@ -130,10 +135,18 @@ function getSlotTimeFromSettings(settings, session, slotNumber) {
     }
 
     const slotDuration = Number(found?.slotDuration) || LEGACY_SLOT_DURATION;
-    const totalMinutes = (startHour * 60 + (startMinute || 0)) + (slot - 1) * slotDuration;
-    const hour = Math.floor(totalMinutes / 60);
-    const minute = totalMinutes % 60;
-    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    return slotTime({
+        start_time: `${startHour}:${String(startMinute || 0).padStart(2, '0')}`,
+        slot_duration: slotDuration,
+        break_start_time: found?.breakStartTime,
+        break_duration_minutes: found?.breakDurationMinutes
+    }, slot);
+}
+
+// Joined booking rows also include inactive sessions, which still need accurate notification times.
+function getSlotTimeFromBookingRow(row) {
+    if (!row.start_time) return getSlotTimeFromSettings([], row.session, row.slot_number);
+    return slotTime({ ...row, slot_duration: Number(row.slot_duration) || LEGACY_SLOT_DURATION }, row.slot_number);
 }
 
 module.exports = {
@@ -145,5 +158,6 @@ module.exports = {
     getSessionSettingsVersion,
     findSessionSetting,
     getSessionLabelFromSettings,
-    getSlotTimeFromSettings
+    getSlotTimeFromSettings,
+    getSlotTimeFromBookingRow
 };

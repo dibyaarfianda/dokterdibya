@@ -5,7 +5,8 @@ const cache = require('../utils/cache');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
 const sundayAppointmentsRoutes = require('./sunday-appointments');
-const { invalidateSessionSettingsCache } = require('../services/booking-session-settings');
+const { invalidateSessionSettingsCache, getSlotTimeFromBookingRow } = require('../services/booking-session-settings');
+const { schedule } = require('../../public/scripts/booking-slot-utils');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
@@ -16,6 +17,7 @@ function normalizeDayOfWeek(value) {
 
 function clearBookingSettingCaches() {
     cache.delPattern('booking-settings:');
+    cache.del('dashboard-stats', 'short');
     // Shared by booking, Antrian Online, and the patient live queue. Bumping the
     // settings version here also invalidates the cached today-queue payload,
     // which stores slot_time already computed from these settings.
@@ -23,6 +25,27 @@ function clearBookingSettingCaches() {
     if (typeof sundayAppointmentsRoutes.invalidateSessionSettingsCache === 'function') {
         sundayAppointmentsRoutes.invalidateSessionSettingsCache();
     }
+}
+
+function normalizeSchedule(body, previous = {}) {
+    const value = {
+        ...body,
+        slot_duration: body.slot_duration ?? 15,
+        max_slots: body.max_slots ?? 10,
+        break_start_time: body.break_start_time === undefined ? previous.break_start_time ?? null : body.break_start_time,
+        break_duration_minutes: body.break_duration_minutes === undefined ? previous.break_duration_minutes ?? null : body.break_duration_minutes
+    };
+    let result;
+    try { result = schedule(value); }
+    catch (error) { error.status = 400; throw error; }
+    return {
+        ...value,
+        slot_duration: Number(value.slot_duration),
+        max_slots: Number(value.max_slots),
+        end_time: result.end_time,
+        break_start_time: value.break_start_time ? value.break_start_time.substring(0, 5) : null,
+        break_duration_minutes: value.break_start_time ? Number(value.break_duration_minutes) : null
+    };
 }
 
 /**
@@ -36,7 +59,7 @@ router.get('/', verifyToken, async (req, res) => {
 
         const [settings] = await db.query(
             `SELECT id, session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time,
-                    slot_duration, max_slots, is_active, created_at, updated_at
+                    slot_duration, max_slots, break_start_time, break_duration_minutes, is_active, created_at, updated_at
              FROM booking_settings
              ORDER BY session_number ASC`
         );
@@ -48,6 +71,7 @@ router.get('/', verifyToken, async (req, res) => {
             day_name: DAY_NAMES[normalizeDayOfWeek(s.day_of_week)],
             start_time: s.start_time.substring(0, 5), // HH:MM
             end_time: s.end_time.substring(0, 5),
+            break_start_time: s.break_start_time ? s.break_start_time.substring(0, 5) : null,
             label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
         }));
 
@@ -65,13 +89,16 @@ router.get('/', verifyToken, async (req, res) => {
  * Get active booking settings for patient-facing booking page (no auth required)
  */
 router.get('/public', async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     try {
         const cached = cache.get('booking-settings:public', 'long');
         if (cached) return res.json(cached);
 
         const [settings] = await db.query(
             `SELECT session_number, session_name, COALESCE(day_of_week, 0) AS day_of_week, start_time, end_time,
-                    slot_duration, max_slots
+                    slot_duration, max_slots, break_start_time, break_duration_minutes
              FROM booking_settings
              WHERE is_active = 1
              ORDER BY session_number ASC`
@@ -87,7 +114,9 @@ router.get('/public', async (req, res) => {
             endTime: s.end_time.substring(0, 5),
             label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`,
             slotDuration: s.slot_duration,
-            maxSlots: s.max_slots
+            maxSlots: s.max_slots,
+            breakStartTime: s.break_start_time ? s.break_start_time.substring(0, 5) : null,
+            breakDurationMinutes: s.break_duration_minutes ?? null
         }));
 
         const response = { success: true, sessions };
@@ -125,33 +154,27 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Format waktu tidak valid (gunakan HH:MM)' });
         }
 
-        // Validate slot_duration and max_slots
-        const duration = parseInt(slot_duration) || 15;
-        const slots = parseInt(max_slots) || 10;
-
-        if (duration < 5 || duration > 60) {
-            return res.status(400).json({ success: false, message: 'Durasi slot harus antara 5-60 menit' });
-        }
-
-        if (slots < 1 || slots > 50) {
-            return res.status(400).json({ success: false, message: 'Jumlah slot harus antara 1-50' });
-        }
+        const [existing] = await db.query('SELECT id, break_start_time, break_duration_minutes FROM booking_settings WHERE id = ?', [id]);
+        if (!existing.length) return res.status(404).json({ success: false, message: 'Sesi tidak ditemukan' });
+        const normalized = normalizeSchedule(req.body, existing[0]);
+        const duration = normalized.slot_duration;
+        const slots = normalized.max_slots;
 
         // Update the setting
         await db.query(
             `UPDATE booking_settings
              SET session_name = ?, day_of_week = ?, start_time = ?, end_time = ?,
-                 slot_duration = ?, max_slots = ?, is_active = ?,
+                 slot_duration = ?, max_slots = ?, is_active = ?, break_start_time = ?, break_duration_minutes = ?,
                  updated_at = NOW()
              WHERE id = ?`,
-            [session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0, id]
+            [session_name, normalizedDay, start_time + ':00', normalized.end_time + ':00', duration, slots, is_active ? 1 : 0, normalized.break_start_time, normalized.break_duration_minutes, id]
         );
 
         clearBookingSettingCaches();
         res.json({ success: true, message: 'Pengaturan sesi berhasil diupdate' });
     } catch (error) {
         console.error('Error updating booking setting:', error);
-        res.status(500).json({ success: false, message: 'Gagal mengupdate pengaturan' });
+        res.status(error.status || 500).json({ success: false, message: error.status === 400 ? error.message : 'Gagal mengupdate pengaturan' });
     }
 });
 
@@ -180,28 +203,21 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Nomor sesi sudah ada' });
         }
 
-        const duration = parseInt(slot_duration) || 15;
-        const slots = parseInt(max_slots) || 10;
-
-        if (duration < 5 || duration > 60) {
-            return res.status(400).json({ success: false, message: 'Durasi slot harus antara 5-60 menit' });
-        }
-
-        if (slots < 1 || slots > 50) {
-            return res.status(400).json({ success: false, message: 'Jumlah slot harus antara 1-50' });
-        }
+        const normalized = normalizeSchedule(req.body);
+        const duration = normalized.slot_duration;
+        const slots = normalized.max_slots;
 
         await db.query(
-            `INSERT INTO booking_settings (session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [session_number, session_name, normalizedDay, start_time + ':00', end_time + ':00', duration, slots, is_active ? 1 : 0]
+            `INSERT INTO booking_settings (session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active, break_start_time, break_duration_minutes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [session_number, session_name, normalizedDay, start_time + ':00', normalized.end_time + ':00', duration, slots, is_active ? 1 : 0, normalized.break_start_time, normalized.break_duration_minutes]
         );
 
         clearBookingSettingCaches();
         res.status(201).json({ success: true, message: 'Sesi baru berhasil ditambahkan' });
     } catch (error) {
         console.error('Error creating booking setting:', error);
-        res.status(500).json({ success: false, message: 'Gagal membuat sesi baru' });
+        res.status(error.status || 500).json({ success: false, message: error.status === 400 ? error.message : 'Gagal membuat sesi baru' });
     }
 });
 
@@ -266,7 +282,7 @@ router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
                 bs.session_name,
                 bs.start_time,
                 bs.end_time,
-                bs.slot_duration
+                bs.slot_duration, bs.break_start_time, bs.break_duration_minutes
             FROM sunday_appointments sa
             LEFT JOIN booking_settings bs ON sa.session = bs.session_number
             WHERE sa.appointment_date >= CURDATE()
@@ -296,12 +312,7 @@ router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
         // Calculate slot times
         const enrichedBookings = bookings.map(b => {
             const startTime = b.start_time ? b.start_time.substring(0, 5) : '09:00';
-            const [hours, mins] = startTime.split(':').map(Number);
-            const slotDuration = parseInt(b.slot_duration, 10) || 15;
-            const totalMinutes = (hours * 60 + mins) + (b.slot_number - 1) * slotDuration;
-            const slotHour = Math.floor(totalMinutes / 60);
-            const slotMinute = totalMinutes % 60;
-            const slotTime = `${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}`;
+            const slotTime = getSlotTimeFromBookingRow(b);
 
             return {
                 ...b,
@@ -332,7 +343,7 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res
 
         // Get booking details first
         const [bookings] = await db.query(
-            `SELECT sa.*, p.email as patient_email, bs.session_name, bs.start_time, bs.slot_duration
+            `SELECT sa.*, p.email as patient_email, bs.session_name, bs.start_time, bs.slot_duration, bs.break_start_time, bs.break_duration_minutes
              FROM sunday_appointments sa
              LEFT JOIN patients p ON sa.patient_id = p.id
              LEFT JOIN booking_settings bs ON sa.session = bs.session_number
@@ -351,13 +362,7 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res
         }
 
         // Calculate slot time
-        const startTime = booking.start_time ? booking.start_time.substring(0, 5) : '09:00';
-        const [hours, mins] = startTime.split(':').map(Number);
-        const slotDuration = parseInt(booking.slot_duration, 10) || 15;
-        const totalMinutes = (hours * 60 + mins) + (booking.slot_number - 1) * slotDuration;
-        const slotHour = Math.floor(totalMinutes / 60);
-        const slotMinute = totalMinutes % 60;
-        const slotTime = `${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}`;
+        const slotTime = getSlotTimeFromBookingRow(booking);
 
         // Update booking status
         await db.query(
