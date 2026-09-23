@@ -48,10 +48,10 @@ const fixture={...buildPreview({aliases:{7:'Suplemen contoh'},trimesters:Object.
  if(liveAnnouncements){
   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.announcement-mini-btn')).some(n=>n.textContent.includes('Aplikasi Baru: Estimasi Biaya Kontrol Kehamilan')));
   await page.evaluate(()=>Array.from(document.querySelectorAll('.announcement-mini-btn')).find(n=>n.textContent.includes('Aplikasi Baru: Estimasi Biaya Kontrol Kehamilan')).click());
-  await page.waitForFunction(()=>document.querySelector('#shell-modal-body')?.textContent.includes('Sudah punya buku'));
-  assert.ok(await page.$eval('#shell-modal-body',n=>n.textContent.includes('trimester 2 atau 3')));
+  await page.waitForFunction(()=>document.querySelector('#topbar-modal-body')?.textContent.includes('Sudah punya buku'));
+  assert.ok(await page.$eval('#topbar-modal-body',n=>n.textContent.includes('trimester 2 atau 3')));
   await page.screenshot({path:path.join(out,'live-announcement.png')});
-  await page.click('#shell-modal-close');
+  await page.click('[data-shell-action="close-topbar-modal"]');
  }
  await page.$eval('.tap-card[data-shell-sheet="aplikasi"]',n=>n.scrollIntoView({block:'center'}));
  await page.waitForFunction(()=>document.body.classList.contains('home-actions-settled')&&getComputedStyle(document.querySelector('.tap-card[data-shell-sheet="aplikasi"]')).opacity==='1');
