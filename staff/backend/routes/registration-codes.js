@@ -8,7 +8,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
+const { verifyStaffToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
 const { generatePublicCodeNow } = require('../services/appointmentScheduler');
 
 /**
@@ -27,7 +27,7 @@ function generateCode() {
  * GET /api/registration-codes/public
  * Get current active public code (Staff only)
  */
-router.get('/public', verifyToken, requirePermission('registration_codes.view'), async (req, res) => {
+router.get('/public', verifyStaffToken, requirePermission('registration_codes.view'), async (req, res) => {
     try {
         const [codes] = await db.query(
             `SELECT * FROM registration_codes
@@ -130,17 +130,17 @@ async function generatePublicCode(req, res) {
 }
 
 // POST /api/registration-codes/generate - Main endpoint
-router.post('/generate', verifyToken, requirePermission('registration_codes.create'), generatePublicCode);
+router.post('/generate', verifyStaffToken, requirePermission('registration_codes.create'), generatePublicCode);
 
 // POST /api/registration-codes/generate-public - Alias for backward compatibility
-router.post('/generate-public', verifyToken, requirePermission('registration_codes.create'), generatePublicCode);
+router.post('/generate-public', verifyStaffToken, requirePermission('registration_codes.create'), generatePublicCode);
 
 /**
  * POST /api/registration-codes/generate-now
  * Manually trigger scheduler code generation (Superadmin only)
  * Used when midnight scheduler was missed
  */
-router.post('/generate-now', verifyToken, requireSuperadmin, async (req, res) => {
+router.post('/generate-now', verifyStaffToken, requireSuperadmin, async (req, res) => {
     try {
         const result = await generatePublicCodeNow();
         res.json({
@@ -275,7 +275,7 @@ router.post('/use', async (req, res) => {
  * GET /api/registration-codes
  * Get all registration codes (Staff only)
  */
-router.get('/', verifyToken, requirePermission('registration_codes.view'), async (req, res) => {
+router.get('/', verifyStaffToken, requirePermission('registration_codes.view'), async (req, res) => {
     try {
         const { status, page = 1, limit = 20 } = req.query;
         const offset = (page - 1) * limit;
@@ -329,7 +329,7 @@ router.get('/', verifyToken, requirePermission('registration_codes.view'), async
  * DELETE /api/registration-codes/:id
  * Delete/revoke a registration code (Superadmin/Dokter only)
  */
-router.delete('/:id', verifyToken, requirePermission('registration_codes.delete'), async (req, res) => {
+router.delete('/:id', verifyStaffToken, requirePermission('registration_codes.delete'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -391,7 +391,7 @@ router.get('/settings', async (req, res) => {
  * PUT /api/registration-codes/settings
  * Update registration code settings (Staff only)
  */
-router.put('/settings', verifyToken, async (req, res) => {
+router.put('/settings', verifyStaffToken, async (req, res) => {
     try {
         // Only superadmin can change this setting
         if (!req.user.is_superadmin) {

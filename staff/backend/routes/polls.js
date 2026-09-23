@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const logger = require('../utils/logger');
-const { verifyToken, verifyPatientToken } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken } = require('../middleware/auth');
 
 let tablesReady = false;
 let tableSetupPromise = null;
@@ -255,7 +255,7 @@ async function notifyPatientsForPoll(poll, mode = 'new') {
     }
 }
 
-router.get('/staff/list', verifyToken, async (req, res) => {
+router.get('/staff/list', verifyStaffToken, async (req, res) => {
     try {
         await ensureVotingTables();
 
@@ -333,7 +333,7 @@ router.get('/staff/list', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/staff/create', verifyToken, async (req, res) => {
+router.post('/staff/create', verifyStaffToken, async (req, res) => {
     try {
         await ensureVotingTables();
 
@@ -393,7 +393,7 @@ router.post('/staff/create', verifyToken, async (req, res) => {
     }
 });
 
-router.put('/staff/:id/update', verifyToken, async (req, res) => {
+router.put('/staff/:id/update', verifyStaffToken, async (req, res) => {
     let connection;
 
     try {
@@ -540,7 +540,7 @@ router.put('/staff/:id/update', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/staff/:id/notify', verifyToken, async (req, res) => {
+router.post('/staff/:id/notify', verifyStaffToken, async (req, res) => {
     try {
         await ensureVotingTables();
 
@@ -567,7 +567,7 @@ router.post('/staff/:id/notify', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/staff/:id/close', verifyToken, async (req, res) => {
+router.post('/staff/:id/close', verifyStaffToken, async (req, res) => {
     try {
         await ensureVotingTables();
 

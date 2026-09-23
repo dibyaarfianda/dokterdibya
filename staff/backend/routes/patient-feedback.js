@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyPatientToken, verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
 
 // Rate limit: max 10 feedback per patient per hari
 const DAILY_LIMIT = 10;
@@ -147,7 +147,7 @@ router.post('/', verifyPatientToken, async (req, res) => {
  * GET /api/patient-feedback (admin only)
  * Lihat semua feedback
  */
-router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/', verifyStaffToken, requireSuperadmin, async (req, res) => {
     setNoCacheHeaders(res);
     try {
         const { category, limit = 50, offset = 0 } = req.query;

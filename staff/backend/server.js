@@ -25,6 +25,10 @@ const activityLogger = require('./services/activityLogger');
 const { validateAllOperationalSchemas } = require('./services/OperationalSchemaValidator');
 const createSystemRoutes = require('./routes/system');
 const rumRoutes = require('./routes/rum');
+const {
+    isPatientAllowedRoute,
+    isPatientAuthBootstrapRoute
+} = require('./security/patientRouteAccess');
 
 const app = express();
 const server = http.createServer(app);
@@ -377,63 +381,15 @@ app.use('/api', patientDemoGuard);
 
 // ==================== PATIENT ACCESS BLOCKER ====================
 // Block patients from accessing staff-only API routes
-// Whitelist: routes that patients CAN access
-const PATIENT_ALLOWED_ROUTES = [
-    '/api/patients',           // Patient auth & profile
-    '/api/patient/',           // Patient-specific endpoints (birth-congratulations, etc)
-    '/api/birth-classes',      // Kelas Dr. Dibya public schedule & registration
-    '/api/patient-intake',     // Patient intake form submission
-    '/api/patient-documents',  // Patient documents (USG, lab results, uploads)
-    '/api/patient-questions',  // Tanya Dokter - Q&A with doctor
-    '/api/sunday-appointments', // Sunday clinic booking
-    '/api/hospital-appointments', // Hospital booking
-    '/api/articles',           // Public articles
-    '/api/patient-notifications', // Patient notifications
-    '/api/polls',              // Patient voting
-    '/api/announcements',      // Public announcements
-    '/api/greeting-cards/active', // Greeting cards (active only)
-    '/api/fertility-calendar', // Fertility cycle tracking
-    '/api/app',                // Mobile app version check
-    '/api/app-version',        // App version check for updates
-    '/api/billings/my-billings', // Patient visit history (my own billings)
-    '/api/billings/',          // Billing details (with id path)
-    '/api/usg-photos',         // USG photos access
-    '/api/practice-schedules', // Practice schedules for all locations
-    '/api/tanya-subscriptions', // Tanya Dokter - Subscription & payments
-    '/api/registration-codes', // Registration code validation (for new patients)
-    '/api/kick-counter',       // Kick counter for fetal movement tracking
-    '/api/contraction-timer',   // Contraction timing for patient labor education
-    '/api/doctors',            // List available doctors for Q&A
-    '/api/patient-billing',    // Patient billing & online payment
-    '/api/community-chat',     // Community profile + chat rooms
-    '/api/sunday-clinic/queue/public', // Live queue for patient portal (names masked)
-    '/api/sunday-clinic/queue/settings', // Queue visibility toggle (patients need to check)
-    '/api/sunday-clinic/patient-visits/', // Patient visit history
-    '/api/patient-feedback',   // Patient feedback / masukan untuk pengembang
-    '/api/patient-stories',    // Ruang Cerita patient stories
-    '/api/patient-workdesk',   // Patient My Corner / workdesk sync
-    '/api/support-chat',       // Support chat (bot + staff escalation)
-    '/api/guest-activity',     // Guest/demo portal activity tracking
-];
-
-const PATIENT_AUTH_BOOTSTRAP_ROUTES = [
-    '/api/auth/patient-login',
-    '/api/registration-codes',
-    '/api/patients/register',
-    '/api/patients/login',
-    '/api/patients/auth/google',
-    '/api/patients/google-auth-code',
-];
-
 const PATIENT_AUTH_BLOCKLIST_ENABLED = process.env.PATIENT_AUTH_BLOCKLIST_ENABLED === 'true';
 
 app.use('/api', async (req, res, next) => {
     const fullPath = req.originalUrl || req.url;
-    const isPatientAuthBootstrapRoute = PATIENT_AUTH_BOOTSTRAP_ROUTES.some(route => fullPath.startsWith(route));
-    const isPatientFacingRoute = fullPath.startsWith('/api/auth/patient-login')
-        || PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
+    const isAuthBootstrapRoute = isPatientAuthBootstrapRoute(req.method, fullPath);
+    const isPatientFacingRoute = isAuthBootstrapRoute
+        || isPatientAllowedRoute(req.method, fullPath);
 
-    if (PATIENT_AUTH_BLOCKLIST_ENABLED && !isPatientAuthBootstrapRoute && isPatientFacingRoute && await isPatientRequestIpBlocked(req)) {
+    if (PATIENT_AUTH_BLOCKLIST_ENABLED && !isAuthBootstrapRoute && isPatientFacingRoute && await isPatientRequestIpBlocked(req)) {
         logger.warn('Patient API request blocked by IP blocklist', {
             path: fullPath,
             ip: req.ip
@@ -473,7 +429,7 @@ app.use('/api', async (req, res, next) => {
             }
 
             // Check if route is whitelisted for patients
-            const isAllowed = PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
+            const isAllowed = isPatientAllowedRoute(req.method, fullPath);
 
             if (!isAllowed) {
                 // Log blocked path for debugging

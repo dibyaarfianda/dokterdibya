@@ -3,14 +3,19 @@ jest.mock('../../db', () => ({
     query: jest.fn()
 }));
 
-jest.mock('../../middleware/auth', () => ({
-    verifyToken: (req, res, next) => {
+jest.mock('../../middleware/auth', () => {
+    const authenticate = (req, res, next) => {
         req.user = { id: 'staff-1', role: 'dokter', role_id: 1 };
         next();
-    },
-    requirePermission: () => (req, res, next) => next(),
-    requireSuperadmin: (req, res, next) => next()
-}));
+    };
+    return {
+        verifyToken: authenticate,
+        verifyPatientToken: authenticate,
+        verifyStaffToken: authenticate,
+        requirePermission: () => (req, res, next) => next(),
+        requireSuperadmin: (req, res, next) => next()
+    };
+});
 
 jest.mock('../../routes/patient-notifications', () => ({
     createPatientNotification: jest.fn()

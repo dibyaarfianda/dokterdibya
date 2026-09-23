@@ -10,6 +10,7 @@ const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
 const patientActivityLogger = require('../services/patientActivityLogger');
+const { verifyPatientToken, verifyStaffToken } = require('../middleware/auth');
 const {
     getSessionBreak,
     getDayName,
@@ -22,28 +23,6 @@ const {
 } = require('../services/booking-session-settings');
 
 const AUTO_NO_CONFIRMATION_REASON = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB';
-
-// Middleware to verify JWT token
-const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ message: 'Token tidak ditemukan' });
-    }
-
-    try {
-        const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET;
-        if (!JWT_SECRET) {
-            return res.status(500).json({ message: 'Server configuration error' });
-        }
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({ message: 'Token tidak valid' });
-    }
-};
 
 async function requireOpenSundayClinicAccountingDate(req, res, next) {
     try {
@@ -176,7 +155,7 @@ function calculateAge(birthDate) {
  * GET /api/sunday-appointments/available
  * Get available slots for a specific date
  */
-router.get('/available', verifyToken, async (req, res) => {
+router.get('/available', verifyPatientToken, async (req, res) => {
     try {
         const { date } = req.query;
         
@@ -260,7 +239,7 @@ router.get('/available', verifyToken, async (req, res) => {
  * GET /api/sunday-appointments/sundays
  * Get list of next available practice dates (excluding disabled dates)
  */
-router.get('/sundays', verifyToken, async (req, res) => {
+router.get('/sundays', verifyPatientToken, async (req, res) => {
     try {
         const configuredDays = await getConfiguredPracticeDays();
         const practiceDates = getNextPracticeDates(configuredDays, 8);
@@ -309,7 +288,7 @@ router.get('/sundays', verifyToken, async (req, res) => {
  * POST /api/sunday-appointments/book
  * Book an appointment
  */
-router.post('/book', verifyToken, async (req, res) => {
+router.post('/book', verifyPatientToken, async (req, res) => {
     try {
         const { appointment_date, session, slot_number, chief_complaint, consultation_category } = req.body;
         
@@ -476,7 +455,7 @@ router.post('/book', verifyToken, async (req, res) => {
  * Get patient's bookings (used by patient portal)
  * Supports ?status=confirmed,pending filter
  */
-router.get('/my-bookings', verifyToken, async (req, res) => {
+router.get('/my-bookings', verifyPatientToken, async (req, res) => {
     try {
         let query = `SELECT id, appointment_date, session, slot_number, chief_complaint,
                             consultation_category, status, notes, created_at
@@ -519,7 +498,7 @@ router.get('/my-bookings', verifyToken, async (req, res) => {
  * GET /api/sunday-appointments/patient
  * Get patient's appointments
  */
-router.get('/patient', verifyToken, async (req, res) => {
+router.get('/patient', verifyPatientToken, async (req, res) => {
     try {
         const [appointments] = await db.query(
             `SELECT id, appointment_date, session, slot_number, chief_complaint, consultation_category, status, notes,
@@ -586,7 +565,7 @@ router.get('/patient', verifyToken, async (req, res) => {
  * GET /api/sunday-appointments/my-pending-confirmation
  * Returns the next pending_confirmation appointment for the logged-in patient.
  */
-router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
+router.get('/my-pending-confirmation', verifyPatientToken, async (req, res) => {
     try {
 
         res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -633,7 +612,7 @@ router.get('/my-pending-confirmation', verifyToken, async (req, res) => {
  * POST /api/sunday-appointments/:id/trigger-confirmation-popup (STAFF ONLY)
  * Enable the patient portal attendance confirmation popup for one pending booking.
  */
-router.post('/:id/trigger-confirmation-popup', verifyToken, async (req, res) => {
+router.post('/:id/trigger-confirmation-popup', verifyStaffToken, async (req, res) => {
     try {
         if (req.user && req.user.user_type === 'patient') {
             return res.status(403).json({ success: false, message: 'Akses hanya untuk staff' });
@@ -713,7 +692,7 @@ router.post('/:id/trigger-confirmation-popup', verifyToken, async (req, res) => 
  * POST /api/sunday-appointments/:id/manual-confirm (STAFF ONLY)
  * Confirm attendance when the patient has arrived but did not confirm in the portal.
  */
-router.post('/:id/manual-confirm', verifyToken, async (req, res) => {
+router.post('/:id/manual-confirm', verifyStaffToken, async (req, res) => {
     try {
         if (req.user && req.user.user_type === 'patient') {
             return res.status(403).json({ success: false, message: 'Akses hanya untuk staff' });
@@ -785,7 +764,7 @@ router.post('/:id/manual-confirm', verifyToken, async (req, res) => {
  * POST /api/sunday-appointments/:id/confirm-attendance
  * Confirm attendance via patient portal (authenticated)
  */
-router.post('/:id/confirm-attendance', verifyToken, async (req, res) => {
+router.post('/:id/confirm-attendance', verifyPatientToken, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -834,7 +813,7 @@ router.post('/:id/confirm-attendance', verifyToken, async (req, res) => {
  * POST /api/sunday-appointments/:id/cancel-attendance
  * Cancel attendance via patient portal (authenticated, no reason required)
  */
-router.post('/:id/cancel-attendance', verifyToken, async (req, res) => {
+router.post('/:id/cancel-attendance', verifyPatientToken, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -1082,7 +1061,7 @@ router.post('/by-token/:token/cancel', async (req, res) => {
  * PUT /api/sunday-appointments/:id/cancel
  * Cancel an appointment
  */
-router.put('/:id/cancel', verifyToken, async (req, res) => {
+router.put('/:id/cancel', verifyPatientToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { reason } = req.body;
@@ -1151,7 +1130,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
  * POST /api/sunday-appointments/:id/start-clinic-record
  * Ensure Sunday Clinic medical record exists for the appointment and return MR info
  */
-router.post('/:id/start-clinic-record', verifyToken, requireOpenSundayClinicAccountingDate, async (req, res) => {
+router.post('/:id/start-clinic-record', verifyStaffToken, requireOpenSundayClinicAccountingDate, async (req, res) => {
     try {
         const { id } = req.params;
         const { category: requestCategory } = req.body || {};
@@ -1239,7 +1218,7 @@ router.post('/:id/start-clinic-record', verifyToken, requireOpenSundayClinicAcco
  * GET /api/sunday-appointments/list (STAFF ONLY)
  * Get all appointments with filters
  */
-router.get('/list', verifyToken, async (req, res) => {
+router.get('/list', verifyStaffToken, async (req, res) => {
     try {
         const { date, status, session } = req.query;
         
@@ -1316,7 +1295,7 @@ router.get('/list', verifyToken, async (req, res) => {
  * GET /api/sunday-appointments/patient-by-id (STAFF ONLY)
  * Get patient's appointments by patient ID (for staff use)
  */
-router.get('/patient-by-id', verifyToken, async (req, res) => {
+router.get('/patient-by-id', verifyStaffToken, async (req, res) => {
     try {
         const { patientId } = req.query;
         
@@ -1385,7 +1364,7 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
  * PUT /api/sunday-appointments/:id/status (STAFF ONLY)
  * Update appointment status
  */
-router.put('/:id/status', verifyToken, async (req, res) => {
+router.put('/:id/status', verifyStaffToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { status, notes, cancellationReason } = req.body;

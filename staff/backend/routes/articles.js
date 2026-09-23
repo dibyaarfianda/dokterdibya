@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requireRoles } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireRoles } = require('../middleware/auth');
 const { ROLE_NAMES } = require('../constants/roles');
 const logger = require('../utils/logger');
 
@@ -166,7 +166,7 @@ router.get('/:id', async (req, res) => {
 /**
  * GET /api/articles/admin/all - Get all articles including unpublished (admin only)
  */
-router.get('/admin/all', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.get('/admin/all', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { category, status, limit = 50, offset = 0 } = req.query;
 
@@ -207,7 +207,7 @@ router.get('/admin/all', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (re
 /**
  * POST /api/articles - Create new article
  */
-router.post('/', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.post('/', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
         const normalizedIcon = typeof icon === 'string' ? icon.trim() : null;
@@ -249,7 +249,7 @@ router.post('/', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) 
 /**
  * PUT /api/articles/:id - Update article
  */
-router.put('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.put('/:id', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { id } = req.params;
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
@@ -295,7 +295,7 @@ router.put('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res
 /**
  * DELETE /api/articles/:id - Delete article
  */
-router.delete('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.delete('/:id', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -320,7 +320,7 @@ router.delete('/:id', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, 
 /**
  * PATCH /api/articles/:id/publish - Toggle publish status
  */
-router.patch('/:id/publish', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.patch('/:id/publish', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { id } = req.params;
         const { is_published } = req.body;
@@ -347,7 +347,7 @@ router.patch('/:id/publish', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async
 /**
  * POST /api/articles/:id/like - Like an article (requires authentication)
  */
-router.post('/:id/like', verifyToken, async (req, res) => {
+router.post('/:id/like', verifyPatientToken, async (req, res) => {
     try {
         const { id } = req.params;
         const patientId = req.user.id; // Firebase UID
@@ -397,7 +397,7 @@ router.post('/:id/like', verifyToken, async (req, res) => {
 /**
  * GET /api/articles/:id/liked - Check if user has liked an article
  */
-router.get('/:id/liked', verifyToken, async (req, res) => {
+router.get('/:id/liked', verifyPatientToken, async (req, res) => {
     try {
         const { id } = req.params;
         const patientId = req.user.id;

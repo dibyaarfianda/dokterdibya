@@ -158,7 +158,8 @@ function markAnnouncementsAsSeen() {
 // Toggle like on announcement
 async function toggleLike(announcementId, buttonEl) {
     const patientId = window.currentProfile?.id;
-    if (!patientId) {
+    const token = typeof getAuthToken === 'function' ? getAuthToken() : null;
+    if (!patientId || !token) {
         alert('Silakan login untuk menyukai pengumuman');
         return;
     }
@@ -167,8 +168,11 @@ async function toggleLike(announcementId, buttonEl) {
         buttonEl.disabled = true;
         const response = await fetch(`${API_URL}/announcements/${announcementId}/like`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ patient_id: patientId })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({})
         });
 
         if (!response.ok) throw new Error('Failed to toggle like');

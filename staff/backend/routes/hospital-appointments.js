@@ -7,28 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { getGMT7Date } = require('../utils/idGenerator');
-
-// Middleware to verify JWT token
-const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ message: 'Token tidak ditemukan' });
-    }
-
-    try {
-        const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET;
-        if (!JWT_SECRET) {
-            return res.status(500).json({ message: 'Server configuration error' });
-        }
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({ message: 'Token tidak valid' });
-    }
-};
+const { verifyPatientToken } = require('../middleware/auth');
 
 // Hospital info for display
 const hospitalInfo = {
@@ -88,7 +67,7 @@ function shouldShowHospitalBooking() {
  * GET /api/hospital-appointments/schedules
  * Get available hospital schedules for the week
  */
-router.get('/schedules', verifyToken, async (req, res) => {
+router.get('/schedules', verifyPatientToken, async (req, res) => {
     try {
         // Check if hospital booking should be shown
         if (!shouldShowHospitalBooking()) {
@@ -221,7 +200,7 @@ router.get('/schedules', verifyToken, async (req, res) => {
  * POST /api/hospital-appointments/book
  * Book a hospital appointment (auto-confirmed)
  */
-router.post('/book', verifyToken, async (req, res) => {
+router.post('/book', verifyPatientToken, async (req, res) => {
     try {
         const { date, location, complaint, consultation_category } = req.body;
         const patientId = req.user.id;
@@ -320,7 +299,7 @@ router.post('/book', verifyToken, async (req, res) => {
  * GET /api/hospital-appointments/patient
  * Get patient's hospital appointments
  */
-router.get('/patient', verifyToken, async (req, res) => {
+router.get('/patient', verifyPatientToken, async (req, res) => {
     try {
         const patientId = req.user.id;
 

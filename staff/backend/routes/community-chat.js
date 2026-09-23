@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
-const { verifyToken, JWT_SECRET } = require('../middleware/auth');
+const { verifyToken, verifyStaffToken, JWT_SECRET } = require('../middleware/auth');
 const attention = require('../services/CommunityChatAttention');
 
 const router = express.Router();
@@ -548,7 +548,7 @@ router.post('/rooms', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/rooms/direct', verifyToken, async (req, res) => {
+router.post('/rooms/direct', verifyStaffToken, async (req, res) => {
     try {
         if (!isStaffUser(req.user)) {
             return res.status(403).json({ success: false, message: 'Hanya staff yang bisa memulai chat pasien' });
@@ -926,7 +926,7 @@ router.get('/profiles/:userType/:userId', verifyToken, async (req, res) => {
     }
 });
 
-router.get('/rooms/:slug/moderators', verifyToken, async (req, res) => {
+router.get('/rooms/:slug/moderators', verifyStaffToken, async (req, res) => {
     try {
         const room = await getRoomBySlug(req.params.slug);
         if (!room) {
@@ -954,7 +954,7 @@ router.get('/rooms/:slug/moderators', verifyToken, async (req, res) => {
     }
 });
 
-router.get('/admin/staff-users', verifyToken, async (req, res) => {
+router.get('/admin/staff-users', verifyStaffToken, async (req, res) => {
     try {
         if (!isStaffUser(req.user)) {
             return res.status(403).json({ success: false, message: 'Hanya staff yang bisa mengelola moderator' });
@@ -975,7 +975,7 @@ router.get('/admin/staff-users', verifyToken, async (req, res) => {
     }
 });
 
-router.get('/admin/patient-users', verifyToken, async (req, res) => {
+router.get('/admin/patient-users', verifyStaffToken, async (req, res) => {
     try {
         if (!isStaffUser(req.user)) {
             return res.status(403).json({ success: false, message: 'Hanya staff yang bisa memulai chat pasien' });
@@ -998,7 +998,7 @@ router.get('/admin/patient-users', verifyToken, async (req, res) => {
     }
 });
 
-router.put('/rooms/:slug/moderators', verifyToken, async (req, res) => {
+router.put('/rooms/:slug/moderators', verifyStaffToken, async (req, res) => {
     try {
         if (!isStaffUser(req.user)) {
             return res.status(403).json({ success: false, message: 'Hanya staff yang bisa mengatur moderator' });
@@ -1047,7 +1047,7 @@ router.put('/rooms/:slug/moderators', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/rooms/:slug/archive', verifyToken, async (req, res) => {
+router.post('/rooms/:slug/archive', verifyStaffToken, async (req, res) => {
     try {
         const room = await getRoomBySlug(req.params.slug);
         if (!room) {

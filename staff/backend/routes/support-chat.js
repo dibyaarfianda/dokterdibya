@@ -7,7 +7,7 @@
 const express = require('express');
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
-const { verifyToken, verifyPatientToken } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -754,7 +754,7 @@ router.post('/sessions/:id/rating', verifyPatientToken, ensureSupportChatAllowed
 // ===================== STAFF ROUTES =====================
 
 // GET /api/support-chat/staff/pending — list escalated sessions
-router.get('/staff/pending', verifyToken, async (req, res) => {
+router.get('/staff/pending', verifyStaffToken, async (req, res) => {
     try {
         await ensureSchema();
 
@@ -788,7 +788,7 @@ router.get('/staff/pending', verifyToken, async (req, res) => {
 });
 
 // GET /api/support-chat/staff/session/:id — get full session for staff
-router.get('/staff/session/:id', verifyToken, async (req, res) => {
+router.get('/staff/session/:id', verifyStaffToken, async (req, res) => {
     try {
         await ensureSchema();
 
@@ -823,7 +823,7 @@ router.get('/staff/session/:id', verifyToken, async (req, res) => {
 });
 
 // POST /api/support-chat/staff/:id/reply — staff sends reply
-router.post('/staff/:id/reply', verifyToken, async (req, res) => {
+router.post('/staff/:id/reply', verifyStaffToken, async (req, res) => {
     let conn = null;
     try {
         await ensureSchema();
@@ -972,7 +972,7 @@ router.post('/staff/:id/reply', verifyToken, async (req, res) => {
 });
 
 // PUT /api/support-chat/staff/:id/resolve — mark session resolved
-router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
+router.put('/staff/:id/resolve', verifyStaffToken, async (req, res) => {
     let conn = null;
     try {
         await ensureSchema();
@@ -1091,7 +1091,7 @@ router.put('/staff/:id/resolve', verifyToken, async (req, res) => {
 });
 
 // GET /api/support-chat/staff/count — pending count for badge
-router.get('/staff/count', verifyToken, async (req, res) => {
+router.get('/staff/count', verifyStaffToken, async (req, res) => {
     try {
         await ensureSchema();
 

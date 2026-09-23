@@ -5,7 +5,8 @@ jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/OperationalSchemaValidator', () => ({ validateOperationalSchemaScope: jest.fn() }));
 jest.mock('../../middleware/auth', () => ({
     JWT_SECRET: 'community-test',
-    verifyToken: (req, res, next) => { req.user = { id: 'P1', user_type: 'patient' }; next(); }
+    verifyToken: (req, res, next) => { req.user = { id: 'P1', user_type: 'patient' }; next(); },
+    verifyStaffToken: (req, res, next) => { req.user = { id: 'S1', user_type: 'staff' }; next(); }
 }));
 const db = require('../../db');
 const router = require('../../routes/community-chat');

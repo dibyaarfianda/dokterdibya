@@ -2,7 +2,7 @@ const express = require('express');
 const { formatDateCompact } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, verifyPatientToken, requireMenuAccess } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireMenuAccess } = require('../middleware/auth');
 
 // Helper function to generate billing number
 // Uses SELECT FOR UPDATE inside a transaction to prevent duplicate numbers under concurrent requests
@@ -39,7 +39,7 @@ async function generateBillingNumber(conn) {
 }
 
 // POST /api/billings - Create new billing from patient record
-router.post('/', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
+router.post('/', verifyStaffToken, requireMenuAccess('keuangan'), async (req, res) => {
   const connection = await db.getConnection();
   
   try {
@@ -283,7 +283,7 @@ router.get('/:id/details', verifyPatientToken, async (req, res) => {
 });
 
 // GET /api/billings/:id - Get billing by ID
-router.get('/:id', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
+router.get('/:id', verifyStaffToken, requireMenuAccess('keuangan'), async (req, res) => {
   try {
     const [billings] = await db.query(
       `SELECT b.*, p.full_name as patient_name, p.whatsapp, p.email,
@@ -326,7 +326,7 @@ router.get('/:id', verifyToken, requireMenuAccess('keuangan'), async (req, res) 
 });
 
 // GET /api/billings/patient/:patientId - Get all billings for a patient
-router.get('/patient/:patientId', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
+router.get('/patient/:patientId', verifyStaffToken, requireMenuAccess('keuangan'), async (req, res) => {
   try {
     const [billings] = await db.query(
       `SELECT b.*, p.full_name as patient_name
@@ -354,7 +354,7 @@ router.get('/patient/:patientId', verifyToken, requireMenuAccess('keuangan'), as
 });
 
 // POST /api/billings/:id/payment - Record payment for billing
-router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
+router.post('/:id/payment', verifyStaffToken, requireMenuAccess('keuangan'), async (req, res) => {
   const connection = await db.getConnection();
   
   try {

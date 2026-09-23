@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { verifyStaffToken } = require('../middleware/auth');
 const db = require('../db');
 
 /**
@@ -58,7 +59,7 @@ router.get('/version', async (req, res) => {
  * POST /api/app/version (Admin only)
  * Update app version info
  */
-router.post('/version', async (req, res) => {
+router.post('/version', verifyStaffToken, async (req, res) => {
     try {
         const { versionCode, versionName, downloadUrl, releaseNotes, forceUpdate, minVersionCode } = req.body;
 

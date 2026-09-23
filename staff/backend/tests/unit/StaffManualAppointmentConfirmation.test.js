@@ -10,7 +10,7 @@ describe('staff manual appointment confirmation', () => {
             'utf8'
         );
 
-        expect(routeSource).toMatch(/router\.post\('\/:id\/manual-confirm', verifyToken/);
+        expect(routeSource).toMatch(/router\.post\('\/:id\/manual-confirm', verifyStaffToken/);
         expect(routeSource).toMatch(/user_type === 'patient'/);
         expect(routeSource).toMatch(/status = 'confirmed',\s*confirmed_at = NOW\(\)/);
         expect(routeSource).toContain("appointment.cancelled_by === 'system'");

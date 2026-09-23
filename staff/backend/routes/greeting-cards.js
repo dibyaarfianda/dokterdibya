@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyStaffToken } = require('../middleware/auth');
 
 /**
  * GET /api/greeting-cards/active
@@ -37,7 +37,7 @@ router.get('/active', async (req, res) => {
  * GET /api/greeting-cards
  * List all greeting cards (staff only)
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyStaffToken, async (req, res) => {
     try {
         const [cards] = await db.query(
             `SELECT * FROM greeting_cards ORDER BY created_at DESC`
@@ -53,7 +53,7 @@ router.get('/', verifyToken, async (req, res) => {
  * POST /api/greeting-cards
  * Create new greeting card (staff only)
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyStaffToken, async (req, res) => {
     try {
         const { title, subtitle, subtitle2, message, sender, theme, icon_type, start_date, end_date, dismiss_hours } = req.body;
 
@@ -79,7 +79,7 @@ router.post('/', verifyToken, async (req, res) => {
  * PUT /api/greeting-cards/:id
  * Update greeting card (staff only)
  */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyStaffToken, async (req, res) => {
     try {
         const { title, subtitle, subtitle2, message, sender, theme, icon_type, start_date, end_date, is_active, dismiss_hours } = req.body;
 
@@ -111,7 +111,7 @@ router.put('/:id', verifyToken, async (req, res) => {
  * DELETE /api/greeting-cards/:id
  * Delete greeting card (staff only)
  */
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyStaffToken, async (req, res) => {
     try {
         await db.query('DELETE FROM greeting_cards WHERE id = ?', [req.params.id]);
         res.json({ success: true, message: 'Greeting card deleted' });

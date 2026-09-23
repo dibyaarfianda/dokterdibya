@@ -9,7 +9,7 @@ const cache = require('../utils/cache');
 const multer = require('multer');
 const sharp = require('sharp');
 const r2Storage = require('../services/r2Storage');
-const { verifyToken, verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
 const { validatePatient } = require('../middleware/validation');
 const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
@@ -319,7 +319,7 @@ router.get('/api/patients/vapid-key', (req, res) => {
 // ==================== PROTECTED ENDPOINTS (READ) ====================
 
 // GET ALL PATIENTS (Protected - requires authentication and permission)
-router.get('/api/patients', verifyToken, async (req, res) => {
+router.get('/api/patients', verifyStaffToken, async (req, res) => {
     try {
         const { search, limit, hospital, sort, page, _, last_visit_location, cursor, view, fresh } = req.query;
         const clientCacheControl = (req.headers['cache-control'] || '').toLowerCase();
@@ -845,7 +845,7 @@ router.get('/api/patients', verifyToken, async (req, res) => {
 });
 
 // ADVANCED SEARCH - Search by specific fields
-router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
+router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) => {
     try {
         const {
             name,       // Nama pasien
@@ -1084,7 +1084,7 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
 });
 
 // AUTO-FIX PATIENT NAMES - Title Case capitalization
-router.post('/api/patients/fix-names', verifyToken, async (req, res) => {
+router.post('/api/patients/fix-names', verifyStaffToken, async (req, res) => {
     try {
         // Only allow admin/dokter roles
         if (!['dokter', 'admin', 'managerial'].includes(req.user.role)) {
@@ -1153,7 +1153,7 @@ router.post('/api/patients/fix-names', verifyToken, async (req, res) => {
 
 // GET near-due pregnancies (37-40 weeks from HPHT, 3 weeks before due)
 // Returns unique patients (by patient_id), showing most recent obstetri record
-router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) => {
+router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, res) => {
     try {
         // Get the latest obstetri record per patient with valid HPHT
         const query = `
@@ -1248,7 +1248,7 @@ router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) =
 
 // GET overdue pregnancies (>40 weeks from HPHT, not yet delivered)
 // Returns unique patients (by patient_id), showing most recent obstetri record
-router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) => {
+router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, res) => {
     try {
         // Get the latest obstetri record per patient with valid HPHT
         const query = `
@@ -1541,7 +1541,7 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
 });
 
 // GET PATIENT BY ID (Protected)
-router.get('/api/patients/:id', verifyToken, async (req, res) => {
+router.get('/api/patients/:id', verifyStaffToken, async (req, res) => {
     try {
         const [rows] = await db.query(`
             SELECT *
@@ -1562,7 +1562,7 @@ router.get('/api/patients/:id', verifyToken, async (req, res) => {
 // ==================== PROTECTED ENDPOINTS (WRITE) ====================
 
 // ADD NEW PATIENT
-router.post('/api/patients', verifyToken, validatePatient, async (req, res) => {
+router.post('/api/patients', verifyStaffToken, validatePatient, async (req, res) => {
     try {
         const { id, full_name, whatsapp, birth_date } = req.body;
         
@@ -1631,7 +1631,7 @@ router.post('/api/patients', verifyToken, validatePatient, async (req, res) => {
 });
 
 // GET OWN PROFILE (Patient can view their own profile)
-router.get('/api/patients/profile', verifyToken, async (req, res) => {
+router.get('/api/patients/profile', verifyPatientToken, async (req, res) => {
     try {
         const userId = req.user.id; // From JWT token
 
@@ -1687,7 +1687,7 @@ router.get('/api/patients/profile', verifyToken, async (req, res) => {
 });
 
 // UPDATE OWN PROFILE (Patient can update their own profile)
-router.put('/api/patients/profile/me', verifyToken, async (req, res) => {
+router.put('/api/patients/profile/me', verifyPatientToken, async (req, res) => {
     try {
         const userId = req.user.id; // From JWT token
         const {
@@ -1756,7 +1756,7 @@ router.put('/api/patients/profile/me', verifyToken, async (req, res) => {
 });
 
 // UPDATE PATIENT
-router.put('/api/patients/:id', verifyToken, validatePatient, async (req, res) => {
+router.put('/api/patients/:id', verifyStaffToken, validatePatient, async (req, res) => {
     try {
         const { full_name, whatsapp, birth_date, allergy, medical_history } = req.body;
         
@@ -1800,7 +1800,7 @@ router.put('/api/patients/:id', verifyToken, validatePatient, async (req, res) =
 });
 
 // UPDATE LAST VISIT
-router.patch('/api/patients/:id/visit', verifyToken, async (req, res) => {
+router.patch('/api/patients/:id/visit', verifyStaffToken, async (req, res) => {
     try {
         const [result] = await db.query(
             'UPDATE patients SET last_visit = NOW(), visit_count = visit_count + 1 WHERE id = ?',
@@ -1823,7 +1823,7 @@ router.patch('/api/patients/:id/visit', verifyToken, async (req, res) => {
 });
 
 // UPDATE PATIENT STATUS
-router.patch('/api/patients/:id/status', verifyToken, async (req, res) => {
+router.patch('/api/patients/:id/status', verifyStaffToken, async (req, res) => {
     try {
         const { status } = req.body;
         
@@ -1862,7 +1862,7 @@ router.patch('/api/patients/:id/status', verifyToken, async (req, res) => {
 });
 
 // MARK PATIENT AS DELIVERED (creates birth_congratulations entry, supports multiple children)
-router.post('/api/patients/:id/mark-delivered', verifyToken, async (req, res) => {
+router.post('/api/patients/:id/mark-delivered', verifyStaffToken, async (req, res) => {
     try {
         const patientId = req.params.id;
 
@@ -1908,7 +1908,7 @@ router.post('/api/patients/:id/mark-delivered', verifyToken, async (req, res) =>
 // (All /api/patients CRUD is routed through patients-auth.js)
 
 // GENERATE UNIQUE PATIENT ID
-router.get('/api/patients/generate-id', async (req, res) => {
+router.get('/api/patients/generate-id', verifyStaffToken, async (req, res) => {
     try {
         // Get last patient ID
         const [rows] = await db.query('SELECT id FROM patients ORDER BY id DESC LIMIT 1');
@@ -2339,7 +2339,7 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
 });
 
 // POST/PUT birth congratulations (Staff only)
-router.post('/api/patients/:patientId/birth-congratulations', verifyToken, async (req, res) => {
+router.post('/api/patients/:patientId/birth-congratulations', verifyStaffToken, async (req, res) => {
     try {
         const { patientId } = req.params;
         const { baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color } = req.body;
@@ -2389,7 +2389,7 @@ router.post('/api/patients/:patientId/birth-congratulations', verifyToken, async
 });
 
 // Upload birth photo (Staff only)
-router.post('/api/patients/:patientId/birth-congratulations/photo', verifyToken, birthPhotoUpload.single('photo'), async (req, res) => {
+router.post('/api/patients/:patientId/birth-congratulations/photo', verifyStaffToken, birthPhotoUpload.single('photo'), async (req, res) => {
     try {
         const { patientId } = req.params;
 
@@ -2514,7 +2514,7 @@ router.post('/api/patient/birth-photo/:id', verifyPatientToken, birthPhotoUpload
 });
 
 // GET all birth congratulations (Staff only - for admin panel)
-router.get('/api/patients/birth-congratulations/all', verifyToken, async (req, res) => {
+router.get('/api/patients/birth-congratulations/all', verifyStaffToken, async (req, res) => {
     try {
         await ensureBirthTestimonialColumns();
 
@@ -2549,7 +2549,7 @@ router.get('/api/patients/birth-congratulations/all', verifyToken, async (req, r
 });
 
 // GET patient testimonials from birth cards (Staff only)
-router.get('/api/birth-testimonials', verifyToken, async (req, res) => {
+router.get('/api/birth-testimonials', verifyStaffToken, async (req, res) => {
     try {
         await ensureBirthTestimonialColumns();
 
@@ -2598,7 +2598,7 @@ router.get('/api/birth-testimonials', verifyToken, async (req, res) => {
 });
 
 // DELETE birth congratulations (Staff only)
-router.delete('/api/patients/:patientId/birth-congratulations', verifyToken, async (req, res) => {
+router.delete('/api/patients/:patientId/birth-congratulations', verifyStaffToken, async (req, res) => {
     try {
         const { patientId } = req.params;
 

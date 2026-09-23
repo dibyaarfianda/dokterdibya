@@ -18,6 +18,7 @@ const PatientPortalSettingsService = require('../services/PatientPortalSettingsS
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
+const { verifyStaffToken } = require('../middleware/auth');
 const {
     BLOCKED_PATIENT_MESSAGE,
     isPatientIdentityBlocked,
@@ -1844,7 +1845,7 @@ router.post('/complete-profile-full', verifyToken, async (req, res) => {
 });
 
 // Get all web patients (Admin/Superadmin only)
-router.get('/all', verifyToken, async (req, res) => {
+router.get('/all', verifyStaffToken, async (req, res) => {
     try {
         // Check if user has permission (you may want to add role check here)
         const [patients] = await db.query(
@@ -1863,7 +1864,7 @@ router.get('/all', verifyToken, async (req, res) => {
 });
 
 // Delete web patient (Superadmin/Dokter only)
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyStaffToken, async (req, res) => {
     try {
         if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
             return res.status(403).json({ message: 'Unauthorized. Superadmin access required.' });
@@ -1895,7 +1896,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 });
 
 // PATCH /api/patients/:id/status - Update patient status (Admin only)
-router.patch('/:id/status', verifyToken, async (req, res) => {
+router.patch('/:id/status', verifyStaffToken, async (req, res) => {
     try {
         const { status } = req.body;
         const patientId = req.params.id;

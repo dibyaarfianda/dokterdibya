@@ -496,9 +496,9 @@ describe('staff panel stabilization sources', () => {
         expect(labResults).toContain("router.post('/interpret', verifyToken");
         expect(labResults).toContain("router.delete('/:key(*)', verifyToken");
 
-        expect(usgPhotos).toContain("const { verifyToken } = require('../middleware/auth');");
-        expect(usgPhotos).toContain("router.post('/upload', verifyToken, upload.array('files', 20)");
-        expect(usgPhotos).toContain("router.delete('/:key(*)', verifyToken");
+        expect(usgPhotos).toContain("const { verifyStaffToken } = require('../middleware/auth');");
+        expect(usgPhotos).toContain("router.post('/upload', verifyStaffToken, upload.array('files', 20)");
+        expect(usgPhotos).toContain("router.delete('/:key(*)', verifyStaffToken");
     });
 
     test('public medical exam bundle does not expose provider API keys', () => {

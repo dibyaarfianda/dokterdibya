@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../../middleware/auth');
+const { verifyStaffToken } = require('../../middleware/auth');
 const db = require('../../db');
 const handlers = require('../../services/sunday-clinic/visit-walk-in');
 const {
@@ -32,8 +32,8 @@ async function requireOpenAccountingDate(req, res, next) {
     }
 }
 
-router.post('/start-walk-in', verifyToken, requireOpenAccountingDate, handlers.postStartWalkIn);
-router.get('/patient-visits/:patientId', verifyToken, handlers.getPatientVisitsByPatientId);
-router.get('/last-anthropometry/:patientId', verifyToken, handlers.getLastAnthropometryByPatientId);
+router.post('/start-walk-in', verifyStaffToken, requireOpenAccountingDate, handlers.postStartWalkIn);
+router.get('/patient-visits/:patientId', verifyStaffToken, handlers.getPatientVisitsByPatientId);
+router.get('/last-anthropometry/:patientId', verifyStaffToken, handlers.getLastAnthropometryByPatientId);
 
 module.exports = router;

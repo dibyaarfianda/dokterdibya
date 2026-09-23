@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requirePermission } = require('../middleware/auth');
 const multer = require('multer');
 const r2Storage = require('../services/r2Storage');
 const firebase = require('../services/firebase');
@@ -80,7 +80,7 @@ function resolveUserName(payload) {
 }
 
 // Upload image for announcement (staff only)
-router.post('/upload-image', verifyToken, requirePermission('announcements.create'), upload.single('image'), async (req, res) => {
+router.post('/upload-image', verifyStaffToken, requirePermission('announcements.create'), upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No image file provided' });
@@ -175,10 +175,10 @@ router.get('/active', async (req, res) => {
 });
 
 // Toggle like on announcement (patient)
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', verifyPatientToken, async (req, res) => {
     try {
         const announcementId = req.params.id;
-        const { patient_id } = req.body;
+        const patient_id = req.patient?.patientId || req.patient?.id;
 
         if (!patient_id) {
             return res.status(400).json({ success: false, message: 'Patient ID required' });
@@ -232,7 +232,7 @@ router.post('/:id/like', async (req, res) => {
 });
 
 // Get all announcements (staff only)
-router.get('/', verifyToken, requirePermission('announcements.view'), async (req, res) => {
+router.get('/', verifyStaffToken, requirePermission('announcements.view'), async (req, res) => {
     try {
         const [announcements] = await db.query(
             `SELECT * FROM announcements 
@@ -266,7 +266,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create announcement (staff only)
-router.post('/', verifyToken, requirePermission('announcements.create'), async (req, res) => {
+router.post('/', verifyStaffToken, requirePermission('announcements.create'), async (req, res) => {
     try {
         const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
         const userId = resolveUserId(req.user)
@@ -379,7 +379,7 @@ router.post('/', verifyToken, requirePermission('announcements.create'), async (
 });
 
 // Update announcement (staff only)
-router.put('/:id', verifyToken, requirePermission('announcements.edit'), async (req, res) => {
+router.put('/:id', verifyStaffToken, requirePermission('announcements.edit'), async (req, res) => {
     try {
         const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
         const { id } = req.params;
@@ -469,7 +469,7 @@ router.put('/:id', verifyToken, requirePermission('announcements.edit'), async (
 });
 
 // Delete announcement (staff only)
-router.delete('/:id', verifyToken, requirePermission('announcements.delete'), async (req, res) => {
+router.delete('/:id', verifyStaffToken, requirePermission('announcements.delete'), async (req, res) => {
     try {
         const [result] = await db.query(
             'DELETE FROM announcements WHERE id = ?',

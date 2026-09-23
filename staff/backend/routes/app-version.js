@@ -9,7 +9,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyStaffToken } = require('../middleware/auth');
 
 // Path to version config file
 const VERSION_CONFIG_PATH = path.join(__dirname, '../../../public/app-version.json');
@@ -141,7 +141,7 @@ router.get('/download/:platform', async (req, res) => {
  * GET /api/app-version/stats
  * Get download statistics (staff only)
  */
-router.get('/stats', verifyToken, async (req, res) => {
+router.get('/stats', verifyStaffToken, async (req, res) => {
     try {
         // Total downloads
         const [totalResult] = await db.query(`
@@ -222,7 +222,7 @@ router.get('/stats', verifyToken, async (req, res) => {
  * GET /api/app-version/logs
  * Get download logs (staff only)
  */
-router.get('/logs', verifyToken, async (req, res) => {
+router.get('/logs', verifyStaffToken, async (req, res) => {
     try {
         const { limit = 50, offset = 0, platform, date } = req.query;
 
@@ -285,7 +285,7 @@ router.get('/logs', verifyToken, async (req, res) => {
  * POST /api/app-version/update
  * Update app version config (admin only)
  */
-router.post('/update', verifyToken, async (req, res) => {
+router.post('/update', verifyStaffToken, async (req, res) => {
     try {
         const { platform, version, version_code, min_version_code, download_url, release_notes, force_update } = req.body;
 

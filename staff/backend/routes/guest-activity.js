@@ -9,7 +9,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const VALID_EVENTS = new Set([
@@ -91,7 +91,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.get('/', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/', verifyStaffToken, requireSuperadmin, async (req, res) => {
     try {
         await ensureTable();
 

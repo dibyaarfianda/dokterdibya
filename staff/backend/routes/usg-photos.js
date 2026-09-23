@@ -10,7 +10,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
-const { verifyToken } = require('../middleware/auth');
+const { verifyStaffToken } = require('../middleware/auth');
 const r2Storage = require('../services/r2Storage');
 
 function safeLocalPath(key) {
@@ -69,7 +69,7 @@ const upload = multer({
  * POST /api/usg-photos/upload
  * Upload USG photos to R2 or local storage
  */
-router.post('/upload', verifyToken, upload.array('files', 20), async (req, res) => {
+router.post('/upload', verifyStaffToken, upload.array('files', 20), async (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files uploaded' });
@@ -154,7 +154,7 @@ router.post('/upload', verifyToken, upload.array('files', 20), async (req, res) 
  * DELETE /api/usg-photos/:key
  * Delete a USG photo
  */
-router.delete('/:key(*)', verifyToken, async (req, res) => {
+router.delete('/:key(*)', verifyStaffToken, async (req, res) => {
     try {
         const { key } = req.params;
 

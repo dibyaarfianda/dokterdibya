@@ -18,10 +18,42 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
 const r2Storage = require('../services/r2Storage');
 const whatsappService = require('../services/whatsappService');
 const { createPatientNotification } = require('./patient-notifications');
+
+function extractR2Key(candidate) {
+    if (!candidate || typeof candidate !== 'string') return null;
+    const value = candidate.trim();
+    const proxyPrefix = '/api/patient-documents/file/';
+    if (value.startsWith(proxyPrefix)) {
+        try {
+            return decodeURIComponent(value.slice(proxyPrefix.length));
+        } catch (_error) {
+            return null;
+        }
+    }
+    if (!value.startsWith('http://') && !value.startsWith('https://') && !value.startsWith('/')) {
+        return value;
+    }
+    return null;
+}
+
+async function resolveSecureDocumentUrl(filePath, fileUrl, expiresInSeconds = 3600) {
+    const r2Key = extractR2Key(filePath) || extractR2Key(fileUrl);
+    if (r2Key && r2Storage.isR2Configured()) {
+        const boundedExpiry = Math.max(1, Math.min(3600, Math.floor(Number(expiresInSeconds) || 3600)));
+        return r2Storage.getSignedDownloadUrl(r2Key, boundedExpiry);
+    }
+    if (typeof fileUrl === 'string' && /^https:\/\//i.test(fileUrl)) {
+        return fileUrl;
+    }
+    if (typeof fileUrl === 'string' && fileUrl.startsWith('/uploads/')) {
+        return fileUrl;
+    }
+    return null;
+}
 
 // =====================================================
 // MULTER CONFIGURATION
@@ -107,14 +139,14 @@ function detectDeviceType(userAgent) {
 }
 
 // =====================================================
-// STAFF ROUTES (Protected with verifyToken)
+// STAFF ROUTES (Protected with verifyStaffToken)
 // =====================================================
 
 /**
  * GET /api/patient-documents/check-sent/:mrId
  * Check if documents have been sent for a specific MR/visit
  */
-router.get('/check-sent/:mrId', verifyToken, async (req, res) => {
+router.get('/check-sent/:mrId', verifyStaffToken, async (req, res) => {
     try {
         const { mrId } = req.params;
 
@@ -174,7 +206,7 @@ router.get('/check-sent/:mrId', verifyToken, async (req, res) => {
  * POST /api/patient-documents/upload
  * Upload a document for a patient
  */
-router.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
+router.post('/upload', verifyStaffToken, upload.single('file'), async (req, res) => {
     try {
         const { patientId, mrId, documentType, title, description } = req.body;
         const file = req.file;
@@ -262,7 +294,7 @@ router.post('/upload', verifyToken, upload.single('file'), async (req, res) => {
  * POST /api/patient-documents/publish
  * Publish documents to patient portal
  */
-router.post('/publish', verifyToken, async (req, res) => {
+router.post('/publish', verifyStaffToken, async (req, res) => {
     try {
         const { documentIds, notifyChannels } = req.body;
 
@@ -367,7 +399,7 @@ router.post('/publish', verifyToken, async (req, res) => {
  * POST /api/patient-documents/publish-from-mr
  * Publish documents directly from a medical record (Resume Medis, Lab Results, etc.)
  */
-router.post('/publish-from-mr', verifyToken, async (req, res) => {
+router.post('/publish-from-mr', verifyStaffToken, async (req, res) => {
     try {
         const { patientId, mrId, documents, notifyChannels } = req.body;
 
@@ -582,7 +614,7 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
  * GET /api/patient-documents/by-patient/:patientId
  * Get all documents for a patient (staff view)
  */
-router.get('/by-patient/:patientId', verifyToken, async (req, res) => {
+router.get('/by-patient/:patientId', verifyStaffToken, async (req, res) => {
     try {
         const { patientId } = req.params;
         const { status, type } = req.query;
@@ -609,10 +641,26 @@ router.get('/by-patient/:patientId', verifyToken, async (req, res) => {
         query += ' ORDER BY pd.created_at DESC';
 
         const [documents] = await db.query(query, params);
+        const secureDocuments = await Promise.all(documents.map(async doc => {
+            let fileUrl = null;
+            try {
+                fileUrl = await resolveSecureDocumentUrl(doc.file_path, doc.file_url);
+            } catch (error) {
+                logger.warn('Error generating signed URL for staff document list', {
+                    id: doc.id,
+                    error: error.message
+                });
+            }
+            return {
+                ...doc,
+                file_path: undefined,
+                file_url: fileUrl
+            };
+        }));
 
         res.json({
             success: true,
-            documents
+            documents: secureDocuments
         });
 
     } catch (error) {
@@ -625,7 +673,7 @@ router.get('/by-patient/:patientId', verifyToken, async (req, res) => {
  * DELETE /api/patient-documents/:id
  * Delete a document (superadmin/dokter only)
  */
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/:id', verifyStaffToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -796,7 +844,7 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
         let query = `
             SELECT
                 pd.id, pd.document_type, pd.title, pd.description,
-                pd.file_url, pd.file_name, pd.file_type, pd.file_size,
+                pd.file_path, pd.file_url, pd.file_name, pd.file_type, pd.file_size,
                 pd.published_at, pd.first_viewed_at, pd.view_count, pd.download_count,
                 pd.created_at, pd.mr_id,
                 COALESCE(scr.visit_location, 'klinik_private') as visit_location
@@ -832,29 +880,20 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
 
         // Generate signed URLs for R2 files (with graceful fallback)
         const enrichedDocuments = await Promise.all(documents.map(async (doc) => {
-            let fileUrl = doc.file_url;
-
-            // If file_url looks like an R2 key (not a full URL), try to generate signed URL
-            if (fileUrl && !fileUrl.startsWith('http') && !fileUrl.startsWith('/')) {
-                try {
-                    fileUrl = await r2Storage.getSignedDownloadUrl(fileUrl, 3600); // 1 hour expiry
-                } catch (e) {
-                    // R2 error - log but don't fail endpoint
-                    logger.warn('Error generating signed URL for document', {
-                        id: doc.id,
-                        error: e.message,
-                        r2_configured: r2Storage.isR2Configured()
-                    });
-                    // Return R2 public URL as fallback
-                    if (r2Storage.R2_PUBLIC_URL && doc.file_url) {
-                        fileUrl = `${r2Storage.R2_PUBLIC_URL}/${doc.file_url}`;
-                    }
-                    // If all else fails, keep original fileUrl
-                }
+            let fileUrl = null;
+            try {
+                fileUrl = await resolveSecureDocumentUrl(doc.file_path, doc.file_url);
+            } catch (e) {
+                logger.warn('Error generating signed URL for document', {
+                    id: doc.id,
+                    error: e.message,
+                    r2_configured: r2Storage.isR2Configured()
+                });
             }
 
             return {
                 ...doc,
+                file_path: undefined,
                 file_url: fileUrl,
                 location_name: locationConfig[doc.visit_location]?.name || 'Klinik Privat',
                 location_logo: locationConfig[doc.visit_location]?.logo || '/images/dibyablacklogo.svg',
@@ -917,7 +956,7 @@ router.get('/:id/content', verifyPatientToken, async (req, res) => {
         }
 
         const [documents] = await db.query(`
-            SELECT id, document_type, title, description, source_data, file_url, file_name
+            SELECT id, document_type, title, description, source_data, file_path, file_url, file_name
             FROM patient_documents
             WHERE id = ? AND patient_id = ? AND status = 'published'
         `, [id, patientId]);
@@ -958,6 +997,10 @@ router.get('/:id/content', verifyPatientToken, async (req, res) => {
             }
         }
 
+        const secureFileUrl = content
+            ? null
+            : await resolveSecureDocumentUrl(doc.file_path, doc.file_url);
+
         res.json({
             success: true,
             document: {
@@ -965,8 +1008,8 @@ router.get('/:id/content', verifyPatientToken, async (req, res) => {
                 title: doc.title,
                 description: doc.description,
                 documentType: doc.document_type,
-                content: content,
-                fileUrl: content ? null : doc.file_url, // Don't send file_url if we have content
+                content,
+                fileUrl: secureFileUrl,
                 fileName: doc.file_name
             }
         });
@@ -981,29 +1024,24 @@ router.get('/:id/content', verifyPatientToken, async (req, res) => {
  * POST /api/patient-documents/:id/track
  * Track document access (view/download)
  */
-router.post('/:id/track', async (req, res) => {
+router.post('/:id/track', verifyPatientToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const { action, patientId } = req.body;
+        const { action } = req.body;
+        const patientId = req.patient?.patientId || req.patient?.id;
 
         if (!['view', 'download', 'print', 'share'].includes(action)) {
             return res.status(400).json({ success: false, message: 'Invalid action' });
         }
 
-        // Get patient_id from document if not provided
-        let resolvedPatientId = patientId;
-        if (!resolvedPatientId) {
-            const [docs] = await db.query(
-                'SELECT patient_id FROM patient_documents WHERE id = ?',
-                [id]
-            );
-            if (docs.length > 0) {
-                resolvedPatientId = docs[0].patient_id;
-            }
-        }
-
-        if (!resolvedPatientId) {
-            return res.status(400).json({ success: false, message: 'Could not determine patient ID' });
+        const [docs] = await db.query(
+            `SELECT patient_id FROM patient_documents
+             WHERE id = ? AND patient_id = ? AND status = 'published'
+             LIMIT 1`,
+            [id, patientId]
+        );
+        if (docs.length === 0) {
+            return res.status(404).json({ success: false, message: 'Document not found' });
         }
 
         const ipAddress = req.ip || req.connection?.remoteAddress;
@@ -1015,7 +1053,7 @@ router.post('/:id/track', async (req, res) => {
             INSERT INTO patient_document_access_logs
             (document_id, patient_id, action, ip_address, user_agent, device_type, accessed_at)
             VALUES (?, ?, ?, ?, ?, ?, NOW())
-        `, [id, resolvedPatientId, action, ipAddress, userAgent, deviceType]);
+        `, [id, patientId, action, ipAddress, userAgent, deviceType]);
 
         // Update document counters
         if (action === 'view') {
@@ -1024,15 +1062,15 @@ router.post('/:id/track', async (req, res) => {
                 SET view_count = view_count + 1,
                     last_viewed_at = NOW(),
                     first_viewed_at = COALESCE(first_viewed_at, NOW())
-                WHERE id = ?
-            `, [id]);
+                WHERE id = ? AND patient_id = ?
+            `, [id, patientId]);
         } else if (action === 'download') {
             await db.query(`
                 UPDATE patient_documents
                 SET download_count = download_count + 1,
                     last_downloaded_at = NOW()
-                WHERE id = ?
-            `, [id]);
+                WHERE id = ? AND patient_id = ?
+            `, [id, patientId]);
         }
 
         res.json({ success: true });
@@ -1053,7 +1091,7 @@ router.get('/share/:token', async (req, res) => {
 
         // Find share record
         const [shares] = await db.query(`
-            SELECT s.*, d.file_url, d.file_name, d.file_type, d.title, d.patient_id
+            SELECT s.*, d.file_path, d.file_url, d.file_name, d.file_type, d.title, d.patient_id
             FROM patient_document_shares s
             JOIN patient_documents d ON s.document_id = d.id
             WHERE s.share_token = ? AND s.status != 'failed'
@@ -1090,11 +1128,23 @@ router.get('/share/:token', async (req, res) => {
             detectDeviceType(req.headers['user-agent'])
         ]);
 
+        const remainingShareSeconds = share.expires_at
+            ? Math.max(1, Math.floor((new Date(share.expires_at).getTime() - Date.now()) / 1000))
+            : 3600;
+        const signedFileUrl = await resolveSecureDocumentUrl(
+            share.file_path,
+            share.file_url,
+            remainingShareSeconds
+        );
+        if (!signedFileUrl) {
+            return res.status(503).json({ success: false, message: 'Document is temporarily unavailable' });
+        }
+
         res.json({
             success: true,
             document: {
                 title: share.title,
-                fileUrl: share.file_url,
+                fileUrl: signedFileUrl,
                 fileName: share.file_name,
                 fileType: share.file_type
             }
@@ -1110,7 +1160,7 @@ router.get('/share/:token', async (req, res) => {
  * POST /api/patient-documents/:id/create-share-link
  * Create a shareable link for a document
  */
-router.post('/:id/create-share-link', verifyToken, async (req, res) => {
+router.post('/:id/create-share-link', verifyStaffToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { expiresInHours = 72, channel = 'link' } = req.body;
@@ -1149,7 +1199,7 @@ router.post('/:id/create-share-link', verifyToken, async (req, res) => {
  * POST /api/patient-documents/notify-whatsapp
  * Send WhatsApp notification to patient about their documents
  */
-router.post('/notify-whatsapp', verifyToken, async (req, res) => {
+router.post('/notify-whatsapp', verifyStaffToken, async (req, res) => {
     try {
         const { patientId, documentIds, phone } = req.body;
 
@@ -1261,7 +1311,7 @@ router.post('/notify-whatsapp', verifyToken, async (req, res) => {
  * GET /api/patient-documents/file/*
  * Serve document files (proxy for R2 or local)
  */
-router.get('/file/*', async (req, res) => {
+router.get('/file/*', verifyStaffToken, async (req, res) => {
     try {
         const key = req.params[0];
 
@@ -1305,7 +1355,7 @@ router.get('/file/*', async (req, res) => {
  * POST /api/patient-documents/generate-resume-pdf
  * Generate Resume Medis as PDF and save as document
  */
-router.post('/generate-resume-pdf', verifyToken, async (req, res) => {
+router.post('/generate-resume-pdf', verifyStaffToken, async (req, res) => {
     try {
         const { patientId, mrId, resumeContent, patientData } = req.body;
 
@@ -1500,7 +1550,7 @@ router.get('/my-uploads', verifyPatientToken, async (req, res) => {
         const [documents] = await db.query(`
             SELECT
                 id, document_type, title, description,
-                file_url, file_name, file_type, file_size,
+                file_path, file_url, file_name, file_type, file_size,
                 source, original_date, status,
                 first_viewed_at, view_count,
                 created_at
@@ -1511,9 +1561,15 @@ router.get('/my-uploads', verifyPatientToken, async (req, res) => {
             ORDER BY COALESCE(original_date, created_at) DESC
         `, [patientId]);
 
+        const secureDocuments = await Promise.all(documents.map(async doc => ({
+            ...doc,
+            file_path: undefined,
+            file_url: await resolveSecureDocumentUrl(doc.file_path, doc.file_url)
+        })));
+
         res.json({
             success: true,
-            documents
+            documents: secureDocuments
         });
 
     } catch (error) {

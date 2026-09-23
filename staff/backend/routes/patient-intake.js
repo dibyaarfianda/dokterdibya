@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
 const db = require('../db');
 const { getGMT7Timestamp } = require('../utils/idGenerator');
 const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
@@ -795,7 +795,7 @@ router.post('/api/patient-intake', async (req, res, next) => {
     }
 });
 
-router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
+router.get('/api/patient-intake', verifyStaffToken, async (req, res, next) => {
     try {
         const statusFilter = req.query.status ? req.query.status.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : null;
         const riskFilter = req.query.risk ? String(req.query.risk).toLowerCase() : null;
@@ -895,7 +895,7 @@ router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
  * GET /api/patient-intake/my-intake
  * Get patient's own intake data (for patient self-service)
  */
-router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
+router.get('/api/patient-intake/my-intake', verifyPatientToken, async (req, res, next) => {
     try {
         const patientId = req.user.id; // P2025001 format
         const patientEmail = req.user.email;
@@ -980,7 +980,7 @@ router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
  * PUT /api/patient-intake/my-intake
  * Update patient's own intake data
  */
-router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
+router.put('/api/patient-intake/my-intake', verifyPatientToken, async (req, res, next) => {
     try {
         const patientId = req.user.id;
         const payload = req.body;
@@ -1149,7 +1149,7 @@ router.get('/api/patient-intake/status', async (req, res, next) => {
     }
 });
 
-router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
+router.get('/api/patient-intake/:submissionId', verifyStaffToken, async (req, res, next) => {
     const { submissionId } = req.params;
 
     if (!submissionId || typeof submissionId !== 'string') {
@@ -1172,7 +1172,7 @@ router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, ne
 });
 
 // GET all intakes for a specific patient by patient ID
-router.get('/api/patient-intake/by-patient/:patientId', verifyToken, async (req, res, next) => {
+router.get('/api/patient-intake/by-patient/:patientId', verifyStaffToken, async (req, res, next) => {
     const { patientId } = req.params;
 
     if (!patientId || typeof patientId !== 'string') {
@@ -1262,7 +1262,7 @@ router.get('/api/patient-intake/by-patient/:patientId', verifyToken, async (req,
 });
 
 // GET latest intake for a specific patient by phone number/patient ID
-router.get('/api/patient-intake/patient/:patientId/latest', verifyToken, async (req, res, next) => {
+router.get('/api/patient-intake/patient/:patientId/latest', verifyStaffToken, async (req, res, next) => {
     const { patientId } = req.params;
 
     if (!patientId || typeof patientId !== 'string') {
@@ -1331,7 +1331,7 @@ router.get('/api/patient-intake/patient/:patientId/latest', verifyToken, async (
     }
 });
 
-router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, res, next) => {
+router.put('/api/patient-intake/:submissionId/review', verifyStaffToken, async (req, res, next) => {
     const { submissionId } = req.params;
 
     if (!submissionId || typeof submissionId !== 'string') {
@@ -1428,7 +1428,7 @@ router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, 
     }
 });
 
-router.delete('/api/patient-intake/:submissionId', verifyToken, requireSuperadmin, async (req, res, next) => {
+router.delete('/api/patient-intake/:submissionId', verifyStaffToken, requireSuperadmin, async (req, res, next) => {
     const { submissionId } = req.params;
 
     if (!submissionId || typeof submissionId !== 'string') {

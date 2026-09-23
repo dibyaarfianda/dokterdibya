@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const NodeCache = require('node-cache');
-const { verifyToken, verifyPatientToken } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken } = require('../middleware/auth');
 
 // Short-lived cache for badge count (polled every ~10s by staff panel)
 const pqCountCache = new NodeCache({ stdTTL: 30, checkperiod: 10, useClones: false });
@@ -432,7 +432,7 @@ router.get('/:id', verifyPatientToken, async (req, res) => {
  * Get all questions (staff view)
  * Dokter users only see their assigned questions
  */
-router.get('/staff/all', verifyToken, async (req, res) => {
+router.get('/staff/all', verifyStaffToken, async (req, res) => {
     try {
         const { status, search, doctor_id, page = 1, limit } = req.query;
         const parsedPage = Math.max(1, parseInt(page, 10) || 1);
@@ -529,7 +529,7 @@ router.get('/staff/all', verifyToken, async (req, res) => {
  * GET /api/patient-questions/staff/count
  * Get unanswered questions count (for badge)
  */
-router.get('/staff/count', verifyToken, async (req, res) => {
+router.get('/staff/count', verifyStaffToken, async (req, res) => {
     try {
         const cached = pqCountCache.get('open-count');
         if (cached !== undefined) return res.json(cached);
@@ -550,7 +550,7 @@ router.get('/staff/count', verifyToken, async (req, res) => {
  * GET /api/patient-questions/staff/:id
  * Get question detail with patient info (staff view)
  */
-router.get('/staff/:id', verifyToken, async (req, res) => {
+router.get('/staff/:id', verifyStaffToken, async (req, res) => {
     try {
         const questionId = req.params.id;
 
@@ -640,7 +640,7 @@ router.get('/staff/:id', verifyToken, async (req, res) => {
  * Doctor sends reply (DOKTER ONLY)
  * Only assigned doctor (or superadmin) can reply
  */
-router.post('/staff/:id/reply', verifyToken, requireDokter, upload.single('image'), async (req, res) => {
+router.post('/staff/:id/reply', verifyStaffToken, requireDokter, upload.single('image'), async (req, res) => {
     try {
         const questionId = req.params.id;
         const currentUser = req.user;
@@ -744,7 +744,7 @@ router.post('/staff/:id/reply', verifyToken, requireDokter, upload.single('image
  * Close thread (DOKTER ONLY)
  * Only assigned doctor (or superadmin) can close
  */
-router.post('/staff/:id/close', verifyToken, requireDokter, async (req, res) => {
+router.post('/staff/:id/close', verifyStaffToken, requireDokter, async (req, res) => {
     try {
         const questionId = req.params.id;
         const currentUser = req.user;
