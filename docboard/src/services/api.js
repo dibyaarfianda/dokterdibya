@@ -1,3 +1,4 @@
+import { docboardSession } from '../../../public/scripts/docboard-session.js';
 import { API_BASE } from '../utils/constants';
 import { enqueue, replayQueue, queueCount, syncState } from '../utils/offlineQueue';
 
@@ -95,8 +96,8 @@ function saveSpaceSchedules(schedules) {
   localStorage.setItem(DOCBOARD_SPACE_SCHEDULES_KEY, JSON.stringify(schedules));
 }
 
-function getToken() {
-  return localStorage.getItem('docboard_token');
+export function getToken() {
+  return docboardSession.getToken();
 }
 
 function getTokenPayload() {
@@ -115,11 +116,11 @@ function getCurrentUserDisplayName() {
 }
 
 export function setToken(token) {
-  localStorage.setItem('docboard_token', token);
+  docboardSession.setToken(token);
 }
 
 export function clearToken() {
-  localStorage.removeItem('docboard_token');
+  docboardSession.clearToken();
 }
 
 export { queueCount, syncState };

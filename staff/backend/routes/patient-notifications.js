@@ -456,6 +456,7 @@ async function createPatientNotification({
                 type,
                 title,
                 message,
+                link,
                 icon,
                 icon_color
             });
@@ -471,6 +472,8 @@ async function createPatientNotification({
                 type: type,
                 link: link || '',
                 url: link || '/patient-menu.html'
+            }).then(function(delivery) {
+                if (!delivery.success || delivery.failed) console.warn('Push notification delivery incomplete:', { notification_id: result.insertId, sent: delivery.sent, failed: delivery.failed });
             }).catch(function(err) {
                 console.warn('Push notification send failed:', err.message);
             });

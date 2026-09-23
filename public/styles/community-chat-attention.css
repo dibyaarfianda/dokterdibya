@@ -1,0 +1,35 @@
+.mention-list {
+    position: absolute; bottom: calc(100% + 6px); left: 10px; right: 10px;
+    max-height: 240px; overflow-y: auto; overscroll-behavior: contain;
+    background: #fff; color: #16372b; border: 1px solid #d3e4da; border-radius: 14px;
+    box-shadow: 0 8px 28px #18372a22; z-index: 25;
+}
+.mention-list[hidden], .chat-new-messages[hidden] { display: none !important; }
+.mention-list button {
+    display: flex; align-items: center; gap: 10px; width: 100%; border: 0; border-radius: 0;
+    padding: 10px 12px; min-height: 52px; background: transparent; color: inherit; text-align: left; font-size: 14px;
+}
+.mention-list button[aria-selected="true"] { background: #e5f5eb; }
+.mention-list img, .mention-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.mention-avatar { display: grid; place-items: center; background: #cfe6d8; }
+.mention-list small { display: block; opacity: .7; font-size: 11px; }
+.mention-empty { padding: 14px; font-size: 13px; }
+.msg-mention { color: #087f56; background: #c6ecd56b; border-radius: 4px; font-weight: 600; }
+.chat-new-messages {
+    position: absolute; bottom: calc(100% + 10px); right: 14px; z-index: 20;
+    background: #278258; color: white; border: 0; border-radius: 22px; padding: 8px 14px;
+    box-shadow: 0 3px 12px #16372b22; font-size: 13px;
+}
+.msg-quote[data-message-id] { cursor: pointer; }
+.msg-quote-action { border: 0; background: transparent; color: inherit; padding: 2px 5px; font-size: 12px; opacity: .65; }
+.msg { touch-action: pan-y; }
+.msg-row.chat-highlight .msg { outline: 2px solid #39ad79; outline-offset: 2px; }
+.messages { overflow-anchor: none; overscroll-behavior-y: contain; }
+.typing { min-height: 22px; flex-shrink: 0; }
+#send-btn:disabled { opacity: .55; cursor: progress; }
+body.theme-dark .mention-list { background: #182b26; color: #e9f4ee; border-color: #335346; }
+body.theme-dark .mention-list button[aria-selected="true"] { background: #2c493c; }
+body.theme-dark .msg-mention { color: #8de3b8; }
+@media (prefers-reduced-motion: reduce) {
+    .msg, .quote-preview, .mention-list, .messages { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}

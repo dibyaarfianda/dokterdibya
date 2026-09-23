@@ -106,6 +106,12 @@ export function createPatientNotificationController(options = {}) {
                 headers: { 'Authorization': 'Bearer ' + getToken() }
             });
         } catch (_error) {}
+        if (item?.link) {
+            const destination = new URL(item.link, window.location.origin);
+            if (destination.origin === window.location.origin && destination.pathname === '/community-chat.html') {
+                window.location.assign(destination.href);
+            }
+        }
     }
 
     async function markAllRead(event) {

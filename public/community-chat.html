@@ -1970,6 +1970,7 @@
             }
         }
     </style>
+<link rel="stylesheet" href="/styles/community-chat-attention.css?v=20260923chat1">
 </head>
 <body>
 <div class="page">
@@ -2019,6 +2020,8 @@
             <div id="messages" class="messages"></div>
 
             <div class="composer">
+                <button type="button" id="chat-new-messages" class="chat-new-messages" hidden>Pesan baru <i class="fa fa-arrow-down"></i></button>
+                <div id="mention-list" class="mention-list" hidden aria-label="Pilih anggota room"></div>
                 <div class="quote-preview" id="quote-preview">
                     <div>
                         <div class="quote-preview-meta" id="quote-preview-meta"></div>
@@ -2155,9 +2158,10 @@
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script type="module">
+    import { docboardSession } from '/scripts/docboard-session.js?v=20260923chat1';
     import { showToast } from '/scripts/patient-utils.js';
+    import { createMentionComposer, communityName, animateChatNode } from '/scripts/community-chat-ui.js?v=20260923chat1';
 
-    const TOKEN_KEYS = ['vps_auth_token', 'token', 'idToken', 'patient_token'];
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
     const UI_SETTINGS_KEY = 'community_chat_ui_settings_v1';
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
@@ -2188,6 +2192,18 @@
     let selectedDirectPatient = null;
     let renderedMessageIds = new Set();
     let quotedMessage = null;
+    let mentionComposer = null;
+    let sending = false;
+    let roomRequest = 0;
+    let contextMode = false;
+    let contextRequestPending = false;
+    let pendingDeepLink = !!(urlParams.get('room') && urlParams.get('message'));
+    let readTimer = null;
+    const readAcknowledged = new Map();
+    const readingRooms = new Set();
+    let queuedMessages = [];
+    let messageFrame = null;
+    const typingUsers = new Map();
     let messagePollTimer = null;
     let roomsPollTimer = null;
     let isPollingMessages = false;
@@ -2909,13 +2925,14 @@
     }
 
     function getToken() {
-        for (const key of TOKEN_KEYS) {
-            const fromLocal = localStorage.getItem(key);
-            const fromSession = sessionStorage.getItem(key);
-            if (fromLocal) return fromLocal;
-            if (fromSession) return fromSession;
+        if (useStaffTokenBridge) {
+            const candidates = [docboardSession.getToken(), window.PatientSession?.getToken()];
+            return candidates.find(value => {
+                const user = decodeToken(value || '');
+                return user && user.user_type !== 'patient' && user.role !== 'patient' && (!user.exp || user.exp * 1000 > Date.now());
+            }) || null;
         }
-        return null;
+        return window.PatientSession?.getToken() || null;
     }
 
     function requestStaffTokenFromParent() {
@@ -3100,20 +3117,34 @@
         }
     }
 
-    function buildQuotedMessage(rawMessage) {
+    function buildQuotedMessage(rawMessage, messageMeta = {}) {
         const payload = parseMessagePayload(rawMessage);
+        if (messageMeta.reply) payload.quote = messageMeta.reply;
         const quoteHtml = payload.quote
-            ? `<div class="msg-quote"><div class="msg-quote-user">${escapeHtml(payload.quote.sender)}</div><div class="msg-quote-text">${escapeHtml(payload.quote.text)}</div></div>`
+            ? `<div class="msg-quote" ${payload.quote.id ? 'data-message-id="' + escapeHtml(payload.quote.id) + '"' : ''}><div class="msg-quote-user">${escapeHtml(payload.quote.sender)}</div><div class="msg-quote-text">${escapeHtml(payload.quote.text)}</div></div>`
             : '';
 
         return {
             bodyText: payload.body,
-            html: `${quoteHtml}<span class="msg-body-text">${escapeHtml(payload.body)}</span>`
+            html: `${quoteHtml}<span class="msg-body-text">${renderMentionText(payload.body, messageMeta.mentions || [])}</span>`
         };
+    }
+
+    function renderMentionText(text, mentions) {
+        let html = '', position = 0;
+        for (const mention of [...mentions].sort((a, b) => a.start - b.start)) {
+            if (!Number.isInteger(mention.start) || !Number.isInteger(mention.end) ||
+                mention.start < position || mention.end > text.length || mention.end <= mention.start) continue;
+            html += escapeHtml(text.slice(position, mention.start));
+            html += '<span class="msg-mention">' + escapeHtml(text.slice(mention.start, mention.end)) + '</span>';
+            position = mention.end;
+        }
+        return html + escapeHtml(text.slice(position));
     }
 
     function setQuotedMessage(data) {
         quotedMessage = {
+            id: data.id,
             sender: String(data.sender || 'User').slice(0, 40),
             text: String(data.text || '').trim().slice(0, 180)
         };
@@ -3121,6 +3152,8 @@
         el.quotePreviewMeta.textContent = `Quote: ${quotedMessage.sender}`;
         el.quotePreviewText.textContent = quotedMessage.text;
         el.quotePreview.classList.add('show');
+        animateChatNode(el.quotePreview);
+        el.messageInput.focus({ preventScroll: true });
     }
 
     function clearQuotedMessage() {
@@ -3136,12 +3169,15 @@
         let triggered = false;
         let tracking = false;
         let dragX = 0;
+        let swipeFrame = null;
 
         const resetSwipeState = () => {
             tracking = false;
+            if (swipeFrame) cancelAnimationFrame(swipeFrame);
+            swipeFrame = null;
             dragX = 0;
             node.classList.remove('quote-active');
-            node.style.transition = 'transform 0.18s ease';
+            node.style.transition = 'transform 0.2s cubic-bezier(.22,.61,.36,1)';
             node.style.transform = 'translateX(0px)';
         };
 
@@ -3176,7 +3212,10 @@
 
             if (dx < 0 && Math.abs(dy) < 44) {
                 dragX = Math.max(dx, -64);
-                node.style.transform = `translateX(${dragX}px)`;
+                if (!swipeFrame) swipeFrame = requestAnimationFrame(() => {
+                    node.style.transform = 'translateX(' + dragX + 'px)';
+                    swipeFrame = null;
+                });
             }
 
             if (dragX < -16) {
@@ -3241,9 +3280,9 @@
     }
 
     function buildMessageNode(msg) {
-        const mine = String(msg.sender_id) === String(currentUser.id);
-        const displayName = msg.sender_nickname || msg.sender_name || 'User';
-        const builtMessage = buildQuotedMessage(msg.message);
+        const mine = String(msg.sender_id) === String(currentUser.id) && msg.sender_type === (isStaff ? 'staff' : 'patient');
+        const displayName = communityName(msg);
+        const builtMessage = buildQuotedMessage(msg.message, msg);
         const row = document.createElement('div');
         row.className = `msg-row ${mine ? 'me' : ''}`;
         row.dataset.id = msg.id;
@@ -3259,17 +3298,20 @@
             ${avatarHtml}
             <div class="msg ${mine ? 'me' : ''}">
                 <div class="msg-head">
-                    <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${displayName}</a>
+                    <a class="msg-user" href="/community-profile.html?userType=${encodeURIComponent(msg.sender_type)}&userId=${encodeURIComponent(msg.sender_id)}">${escapeHtml(displayName)}</a>
                     <span class="msg-time">${formatTime(msg.created_at)}</span>
+                    <button class="msg-quote-action" type="button" aria-label="Quote pesan"><i class="fa fa-reply"></i></button>
                 </div>
                 <div class="msg-body">${builtMessage.html}</div>
             </div>
         `;
 
         const bubble = row.querySelector('.msg');
-        attachQuoteGesture(bubble, {
-            sender: displayName,
-            text: builtMessage.bodyText
+        const quoteMeta = { id: msg.id, sender: displayName, text: builtMessage.bodyText };
+        attachQuoteGesture(bubble, quoteMeta);
+        row.querySelector('.msg-quote-action').addEventListener('click', () => setQuotedMessage(quoteMeta));
+        row.querySelector('.msg-quote[data-message-id]')?.addEventListener('click', event => {
+            openMessageContext(event.currentTarget.dataset.messageId).catch(error => showToast(error.message, 'warning'));
         });
 
         return row;
@@ -3330,6 +3372,7 @@
         });
 
         el.messages.scrollTop = el.messages.scrollHeight;
+        scheduleRead();
     }
 
     function escapeHtml(text) {
@@ -3342,8 +3385,18 @@
     }
 
     async function openRoom(slug) {
-        const data = await api(`/rooms/${encodeURIComponent(slug)}/messages?limit=120`);
+        const requestId = ++roomRequest;
+        contextRequestPending = false;
+        const data = await api('/rooms/' + encodeURIComponent(slug) + '/messages?limit=120');
+        if (requestId !== roomRequest) return;
+        if (socket && activeRoom) socket.emit('community:leave', { room: activeRoom.slug });
         activeRoom = data.room;
+        contextMode = false;
+        queuedMessages = [];
+        mentionComposer?.reset();
+        typingUsers.clear();
+        el.typingIndicator.textContent = '';
+        document.getElementById('chat-new-messages').hidden = true;
         syncRoomListEntry(data.room);
         clearQuotedMessage();
 
@@ -3367,38 +3420,119 @@
         }
     }
 
-    function appendMessage(message) {
+    function nearBottom() {
+        return el.messages.scrollHeight - el.messages.clientHeight - el.messages.scrollTop < 72;
+    }
+
+    function scheduleRead() {
+        clearTimeout(readTimer);
+        readTimer = setTimeout(async () => {
+            if (!activeRoom || document.hidden || !document.hasFocus() || contextMode || contextRequestPending || pendingDeepLink || !nearBottom()) return;
+            const slug = activeRoom.slug;
+            const last = el.messages.querySelector('.msg-row:last-child');
+            const id = Number(last?.dataset.id || 0);
+            if (!id || (readAcknowledged.get(slug) || 0) >= id || readingRooms.has(slug)) return;
+            readingRooms.add(slug);
+            try {
+                await api('/rooms/' + encodeURIComponent(slug) + '/read', { method: 'POST', body: JSON.stringify({ message_id: id }) });
+                readAcknowledged.set(slug, Math.max(readAcknowledged.get(slug) || 0, id));
+                window.dispatchEvent(new Event('community:read'));
+            } catch (_) { /* Retry after the next visible sync. */ }
+            finally { readingRooms.delete(slug); }
+        }, 200);
+    }
+
+    function scrollLatest(smooth = true) {
+        el.messages.scrollTo({ top: el.messages.scrollHeight,
+            behavior: smooth && !window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'instant' });
+        document.getElementById('chat-new-messages').hidden = true;
+        scheduleRead();
+    }
+
+    async function openMessageContext(id) {
         if (!activeRoom) return;
-        const messageId = String(message.id);
-        if (renderedMessageIds.has(messageId)) return;
-
-        renderedMessageIds.add(messageId);
-
-        const emptyState = el.messages.querySelector('.chat-empty-state');
-        if (emptyState) emptyState.remove();
-
-        const lastDateNode = el.messages.querySelector('.date-divider:last-of-type');
-        const lastDateKey = lastDateNode ? lastDateNode.dataset.dateKey : null;
-        const messageDateKey = getDateKey(message.created_at);
-        if (lastDateKey !== messageDateKey) {
-            el.messages.appendChild(buildDateDivider(message.created_at));
+        const slug = activeRoom.slug, requestId = ++roomRequest;
+        contextRequestPending = true;
+        try {
+            const data = await api('/rooms/' + encodeURIComponent(slug) + '/messages/' + encodeURIComponent(id) + '/context');
+            if (activeRoom?.slug !== slug || requestId !== roomRequest) return;
+            queuedMessages = [];
+            renderMessages(data.messages || []);
+            contextMode = Number(data.messages?.at(-1)?.id) !== Number(data.latest_message_id);
+            const node = el.messages.querySelector('.msg-row[data-id="' + CSS.escape(String(id)) + '"]');
+            if (node) {
+                node.scrollIntoView({ block: 'center', behavior: 'instant' });
+                node.classList.add('chat-highlight');
+                setTimeout(() => node.classList.remove('chat-highlight'), 2400);
+            }
+            document.getElementById('chat-new-messages').hidden = !contextMode;
+        } catch (error) {
+            if (activeRoom?.slug === slug && requestId === roomRequest) {
+                throw error;
+            }
+        } finally {
+            if (requestId === roomRequest) {
+                contextRequestPending = false;
+                scheduleRead();
+            }
         }
+    }
 
-        const node = buildMessageNode(message);
-
-        el.messages.appendChild(node);
-        el.messages.scrollTop = el.messages.scrollHeight;
+    function appendMessage(message, fromPoll = false) {
+        if (fromPoll && Number(message.id) < Number(el.messages.querySelector('.msg-row')?.dataset.id || 0)) return;
+        if (!activeRoom || renderedMessageIds.has(String(message.id))) return;
+        if (contextMode || contextRequestPending) {
+            document.getElementById('chat-new-messages').hidden = false;
+            return;
+        }
+        queuedMessages.push({ message, room: activeRoom.slug });
+        if (messageFrame) return;
+        messageFrame = requestAnimationFrame(() => {
+            messageFrame = null;
+            const follow = nearBottom();
+            const viewportTop = el.messages.getBoundingClientRect().top;
+            const anchor = [...el.messages.querySelectorAll('.msg-row')].find(node => node.getBoundingClientRect().bottom > viewportTop);
+            const anchorTop = anchor?.getBoundingClientRect().top;
+            let own = false;
+            const fragment = document.createDocumentFragment();
+            let lastDateKey = el.messages.querySelector('.msg-row:last-child')?.dataset.dateKey;
+            for (const item of queuedMessages.splice(0).sort((a, b) => Number(a.message.id) - Number(b.message.id))) {
+                const msg = item.message;
+                if (item.room !== activeRoom?.slug || renderedMessageIds.has(String(msg.id))) continue;
+                renderedMessageIds.add(String(msg.id));
+                const newer = [...el.messages.querySelectorAll('.msg-row')].find(node => Number(node.dataset.id) > Number(msg.id));
+                if (newer) {
+                    const node = buildMessageNode(msg);
+                    el.messages.insertBefore(node, newer);
+                    animateChatNode(node);
+                    continue;
+                }
+                const dateKey = getDateKey(msg.created_at);
+                if (dateKey !== lastDateKey) { fragment.appendChild(buildDateDivider(msg.created_at)); lastDateKey = dateKey; }
+                const node = buildMessageNode(msg);
+                fragment.appendChild(node);
+                animateChatNode(node);
+                own ||= String(msg.sender_id) === String(currentUser.id) && msg.sender_type === (isStaff ? 'staff' : 'patient');
+            }
+            if (!follow && anchor?.isConnected) el.messages.scrollTop += anchor.getBoundingClientRect().top - anchorTop;
+            if (!fragment.childNodes.length) return;
+            el.messages.querySelector('.chat-empty-state')?.remove();
+            el.messages.appendChild(fragment);
+            if (follow || own) scrollLatest();
+            else document.getElementById('chat-new-messages').hidden = false;
+        });
     }
 
     async function pollActiveRoomMessages() {
-        if (!activeRoom || isPollingMessages) return;
+        if (!activeRoom || isPollingMessages || document.hidden) return;
         isPollingMessages = true;
         try {
             const data = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/messages?limit=120`);
             if (!activeRoom || data.room.slug !== activeRoom.slug) return;
             syncRoomListEntry(data.room);
-            (data.messages || []).forEach((message) => appendMessage(message));
+            (data.messages || []).forEach((message) => appendMessage(message, true));
             renderRooms();
+            scheduleRead();
         } catch (error) {
             console.warn('[CommunityChat] message sync failed:', error.message);
         } finally {
@@ -3428,36 +3562,34 @@
     }
 
     async function sendMessage() {
-        if (!activeRoom) {
-            showToast('Pilih room dulu', 'warning');
-            return;
-        }
-
-        const message = el.messageInput.value.trim();
-        if (!message) return;
-
+        if (!activeRoom || sending) return;
+        const outgoing = mentionComposer.payload();
+        if (!outgoing.message) return;
+        const slug = activeRoom.slug, draft = el.messageInput.value, quote = quotedMessage;
+        if (quote?.id) outgoing.reply_to_message_id = quote.id;
+        sending = true;
+        el.sendBtn.disabled = true;
         try {
-            const payload = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/messages`, {
-                method: 'POST',
-                body: JSON.stringify({ message: packOutgoingMessage(message) })
+            const payload = await api('/rooms/' + encodeURIComponent(slug) + '/messages', {
+                method: 'POST', body: JSON.stringify(outgoing)
             });
-
-            el.messageInput.value = '';
-            autoResizeMessageInput(true);
-            clearQuotedMessage();
-            appendMessage(payload.message);
-            if (el.membersModal.classList.contains('show')) {
-                loadRoomMembers(false).catch(() => {});
+            if (activeRoom?.slug === slug) {
+                if (el.messageInput.value === draft) {
+                    el.messageInput.value = '';
+                    mentionComposer.reset();
+                    autoResizeMessageInput(true);
+                }
+                if (quotedMessage === quote) clearQuotedMessage();
+                if (contextMode) await openRoom(slug);
+                appendMessage(payload.message);
+                scrollLatest();
             }
-
-            if (socket) {
-                socket.emit('community:stop-typing', {
-                    room: activeRoom.slug,
-                    user_id: currentUser.id
-                });
-            }
+            socket?.emit('community:stop-typing', { room: slug });
         } catch (error) {
             showToast(error.message, 'error');
+        } finally {
+            sending = false;
+            el.sendBtn.disabled = false;
         }
     }
 
@@ -3515,8 +3647,16 @@
         }
 
         if (forceLobby) {
+            const requested = rooms.find(r => r.slug === urlParams.get('room'));
             const lobbyForced = rooms.find((r) => r.slug === 'lobby');
-            await openRoom((lobbyForced || rooms[0]).slug);
+            if (urlParams.get('room') && !requested) showToast('Room tidak tersedia atau tidak dapat diakses.', 'warning');
+            await openRoom((requested || lobbyForced || rooms[0]).slug);
+            if (requested && urlParams.get('message')) {
+                try { await openMessageContext(urlParams.get('message')); }
+                catch (error) { contextMode = false; showToast(error.message, 'warning'); }
+            }
+            pendingDeepLink = false;
+            scheduleRead();
             return;
         }
 
@@ -3570,15 +3710,23 @@
             renderedMessageIds.delete(String(payload.message_id));
         });
 
+        function refreshTyping() {
+            for (const [key, item] of typingUsers) if (item.until < Date.now()) typingUsers.delete(key);
+            el.typingIndicator.textContent = [...typingUsers.values()].map(item => item.name).slice(0, 3).join(', ') +
+                (typingUsers.size ? ' sedang mengetik...' : '');
+        }
+        setInterval(refreshTyping, 1000);
         socket.on('community:typing', (payload) => {
             if (!activeRoom || payload.room !== activeRoom.slug) return;
-            if (String(payload.user_id) === String(currentUser.id)) return;
-            el.typingIndicator.textContent = `${payload.user_name || 'User'} sedang mengetik...`;
+            if (String(payload.user_id) === String(currentUser.id) && payload.user_type === (isStaff ? 'staff' : 'patient')) return;
+            const name = String(payload.user_name || 'Anggota');
+            typingUsers.set(payload.user_type + ':' + payload.user_id, { name: name.includes('@') ? 'Anggota' : name, until: Date.now() + 3500 });
+            refreshTyping();
         });
-
         socket.on('community:stop-typing', (payload) => {
             if (!activeRoom || payload.room !== activeRoom.slug) return;
-            el.typingIndicator.textContent = '';
+            typingUsers.delete(payload.user_type + ':' + payload.user_id);
+            refreshTyping();
         });
 
         socket.on('community:rooms:changed', async () => {
@@ -3587,6 +3735,7 @@
 
         socket.on('community:user:joined', (payload) => {
             if (!activeRoom || payload.room !== activeRoom.slug) return;
+            mentionComposer?.invalidateMembers();
             if (!el.membersModal.classList.contains('show')) return;
             loadRoomMembers(false).catch(() => {});
         });
@@ -3636,71 +3785,56 @@
 
     function initTypingHandler() {
         el.messageInput.addEventListener('input', () => {
+            const follow = nearBottom();
             autoResizeMessageInput();
+            if (follow && !contextMode && !contextRequestPending) requestAnimationFrame(() => scrollLatest(false));
             if (!socket || !activeRoom) return;
 
             socket.emit('community:typing', {
-                room: activeRoom.slug,
-                user_id: currentUser.id,
-                user_name: currentUser.name || currentUser.email || 'User'
+                room: activeRoom.slug
             });
 
+            const typingRoom = activeRoom.slug;
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => {
-                socket.emit('community:stop-typing', {
-                    room: activeRoom.slug,
-                    user_id: currentUser.id
-                });
+                socket.emit('community:stop-typing', { room: typingRoom });
             }, 800);
         });
     }
 
     function updateMobileBottomOffset() {
-        const baseHeight = Math.round(window.innerHeight || document.documentElement.clientHeight || 0);
         const viewport = window.visualViewport;
-        const visualHeight = viewport ? Math.round(viewport.height + viewport.offsetTop) : baseHeight;
-        const candidateHeight = Math.max(baseHeight, visualHeight);
-        if (candidateHeight > 0) {
-            if (!stableAppHeight || candidateHeight > stableAppHeight) {
-                stableAppHeight = candidateHeight;
-            }
-            document.documentElement.style.setProperty('--app-height', `${stableAppHeight}px`);
-        }
-
-        if (!window.matchMedia('(max-width: 1000px)').matches) {
-            document.documentElement.style.setProperty('--mobile-bottom-offset', '0px');
-            return;
-        }
-
-        if (!viewport) {
-            const fallbackInset = useAndroidBottomNavFallback ? 52 : 0;
-            document.documentElement.style.setProperty('--mobile-bottom-offset', `${fallbackInset}px`);
-            return;
-        }
-
-        const viewportInset = Math.max(0, Math.round(window.innerHeight - (viewport.height + viewport.offsetTop)));
-        const keyboardLikelyOpen = viewport.height < (window.innerHeight * 0.78);
-        const fallbackInset = useAndroidBottomNavFallback && !keyboardLikelyOpen ? 52 : 0;
-        const nextInset = Math.max(viewportInset, fallbackInset);
-
-        document.documentElement.style.setProperty('--mobile-bottom-offset', `${nextInset}px`);
+        const height = Math.round(viewport?.height || window.innerHeight);
+        if (height > 0) document.documentElement.style.setProperty('--app-height', height + 'px');
+        const keyboardOpen = viewport && viewport.height < window.innerHeight * .78;
+        document.documentElement.style.setProperty('--mobile-bottom-offset',
+            (useAndroidBottomNavFallback && !keyboardOpen ? 52 : 0) + 'px');
     }
 
     function initMobileViewportGuard() {
+        let frame = null;
+        const update = () => {
+            if (frame) return;
+            const follow = nearBottom();
+            frame = requestAnimationFrame(() => {
+                frame = null;
+                updateMobileBottomOffset();
+                if (follow && !contextMode) scrollLatest(false);
+            });
+        };
         updateMobileBottomOffset();
-        window.addEventListener('resize', updateMobileBottomOffset);
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', updateMobileBottomOffset);
-            window.visualViewport.addEventListener('scroll', updateMobileBottomOffset);
-        }
-        el.messageInput.addEventListener('focus', updateMobileBottomOffset);
-        el.messageInput.addEventListener('blur', updateMobileBottomOffset);
+        window.addEventListener('resize', update);
+        window.visualViewport?.addEventListener('resize', update);
+        window.visualViewport?.addEventListener('scroll', update);
+        el.messageInput.addEventListener('focus', update);
+        el.messageInput.addEventListener('blur', update);
     }
 
     async function init() {
         applyEmbedMode();
 
-        token = getToken();
+        const hasStaffParent = useStaffTokenBridge && (window.parent !== window || window.opener);
+        token = hasStaffParent ? await waitForStaffTokenBridge() : getToken();
         if (!token) {
             if (useStaffTokenBridge) {
                 if (el.statusBadge) el.statusBadge.textContent = 'Menghubungkan ke Staff Panel...';
@@ -3729,6 +3863,7 @@
             return;
         }
 
+        isStaff = currentUser.user_type !== 'patient' && currentUser.role !== 'patient';
         const nicknameReady = await ensureNicknameOnLogin();
         if (!nicknameReady) {
             return;
@@ -3743,7 +3878,19 @@
 
         initEmojiPicker();
         initSocket();
+        mentionComposer = createMentionComposer({
+            input: el.messageInput, menu: document.getElementById('mention-list'), escapeHtml,
+            getRoom: () => activeRoom?.slug,
+            getMembers: async slug => (await api('/rooms/' + encodeURIComponent(slug) + '/members')).members || []
+        });
         initTypingHandler();
+        el.messages.addEventListener('scroll', scheduleRead, { passive: true });
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollActiveRoomMessages(); scheduleRead(); } });
+        window.addEventListener('focus', scheduleRead);
+        document.getElementById('chat-new-messages').addEventListener('click', async () => {
+            if (contextMode) await openRoom(activeRoom.slug);
+            scrollLatest();
+        });
         initChatMenu();
         initModeratorPanel();
         initMobileViewportGuard();
@@ -3751,7 +3898,7 @@
 
         el.sendBtn.addEventListener('click', sendMessage);
         el.messageInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
+            if (!event.defaultPrevented && !event.isComposing && event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 sendMessage();
             }

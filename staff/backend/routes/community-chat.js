@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyToken, JWT_SECRET } = require('../middleware/auth');
+const attention = require('../services/CommunityChatAttention');
 
 const router = express.Router();
 
@@ -305,7 +306,7 @@ async function touchRoomMember(room, user, identity = null) {
     if (!room || !user?.id) return null;
 
     const resolved = identity || await resolveUserIdentity(user);
-    const displayName = resolved.nickname || resolved.defaultName || 'User';
+    const displayName = attention.displayName(resolved);
 
     await db.query(
         `INSERT INTO community_chat_room_members
@@ -416,6 +417,9 @@ function mapRoom(row, currentUserType, currentUserId) {
 }
 
 router.use(async (req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     try {
         await ensureSchema();
         next();
@@ -423,6 +427,8 @@ router.use(async (req, res, next) => {
         next(error);
     }
 });
+
+require('./community-chat-attention')(router, { db, verifyToken, getRoomBySlug, canAccessRoom, touchRoomMember, isPatientUser });
 
 router.get('/rooms', verifyToken, async (req, res) => {
     try {
@@ -646,7 +652,7 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
                     WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(p.photo_url, ''), NULLIF(m.sender_avatar, ''))
                     ELSE COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(m.sender_avatar, ''))
                 END AS sender_avatar,
-                m.message,
+                m.message, m.mentions_json, m.reply_to_message_id, m.reply_snapshot,
                 m.created_at
              FROM community_chat_messages m
              LEFT JOIN community_chat_profiles cp
@@ -656,7 +662,7 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
              LEFT JOIN patients p
                 ON p.id = m.sender_id AND m.sender_type = 'patient'
              WHERE m.room_id = ?
-             ORDER BY m.created_at DESC
+             ORDER BY m.id DESC
              LIMIT ?`,
             [room.id, limit]
         );
@@ -664,7 +670,7 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
         res.json({
             success: true,
             room: mapRoom(roomForResponse || room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
-            messages: rows.reverse()
+            messages: rows.reverse().map(attention.messageDto)
         });
     } catch (error) {
         console.error('community messages error:', error);
@@ -689,13 +695,18 @@ router.get('/rooms/:slug/members', verifyToken, async (req, res) => {
             `SELECT
                 member.user_id,
                 member.user_type,
-                member.display_name,
+                CASE WHEN member.user_type = 'patient'
+                    THEN COALESCE(NULLIF(profile.nickname, ''), NULLIF(settings.nickname, ''), 'Anggota')
+                    ELSE COALESCE(NULLIF(profile.nickname, ''), NULLIF(staff.name, ''), 'Staf') END AS display_name,
                 member.avatar_url,
                 member.first_joined_at,
                 member.last_seen_at,
                 COALESCE(stats.message_count, 0) AS message_count,
                 stats.last_message_at
              FROM community_chat_room_members member
+             LEFT JOIN community_chat_profiles profile ON profile.user_id = member.user_id AND profile.user_type = member.user_type
+             LEFT JOIN patient_portal_settings settings ON settings.patient_id = member.user_id AND member.user_type = 'patient'
+             LEFT JOIN users staff ON staff.new_id = member.user_id AND member.user_type = 'staff'
              LEFT JOIN (
                 SELECT sender_id, sender_type, COUNT(*) AS message_count, MAX(created_at) AS last_message_at
                 FROM community_chat_messages
@@ -710,7 +721,7 @@ router.get('/rooms/:slug/members', verifyToken, async (req, res) => {
         res.json({
             success: true,
             room: mapRoom(await getRoomBySlug(req.params.slug) || room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
-            members: rows,
+            members: rows.map(member => ({ ...member, display_name: attention.displayName({ nickname: member.display_name, userType: member.user_type }) })),
             summary: {
                 total_members: rows.length,
                 staff_count: rows.filter((member) => member.user_type === 'staff').length,
@@ -739,23 +750,32 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Pesan tidak boleh kosong' });
         }
 
-        const messageText = mapEmoticonToEmoji(rawMessage).slice(0, MAX_MESSAGE_LENGTH);
+        const metadata = await attention.validateMetadata(db, room, req.body, rawMessage);
+        const converted = attention.convertText(rawMessage, metadata.mentions, mapEmoticonToEmoji);
+        if (converted.message.length > MAX_MESSAGE_LENGTH) {
+            return res.status(400).json({ success: false, message: 'Pesan maksimal 2000 karakter.' });
+        }
+        const messageText = converted.message;
+        metadata.mentions = converted.mentions;
         const identity = await resolveUserIdentity(req.user);
         const senderName = identity.defaultName;
         await touchRoomMember(room, req.user, identity);
 
         const [result] = await db.query(
             `INSERT INTO community_chat_messages
-                (room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                (room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message, mentions_json, reply_to_message_id, reply_snapshot)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 room.id,
                 identity.userId,
                 identity.userType,
                 senderName,
-                identity.nickname,
+                attention.displayName(identity),
                 identity.avatarUrl,
-                messageText
+                messageText,
+                JSON.stringify(metadata.mentions),
+                metadata.reply?.id || null,
+                metadata.reply ? JSON.stringify(metadata.reply) : null
             ]
         );
 
@@ -774,7 +794,7 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
                     WHEN m.sender_type = 'patient' THEN COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(p.photo_url, ''), NULLIF(m.sender_avatar, ''))
                     ELSE COALESCE(NULLIF(cp.avatar_url, ''), NULLIF(m.sender_avatar, ''))
                 END AS sender_avatar,
-                m.message,
+                m.message, m.mentions_json, m.reply_to_message_id, m.reply_snapshot,
                 m.created_at
              FROM community_chat_messages m
              LEFT JOIN community_chat_profiles cp
@@ -788,7 +808,8 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
             [result.insertId]
         );
 
-        const message = rows[0];
+        const message = attention.messageDto(rows[0]);
+        await attention.notify(room, message, identity, attention.recipients(metadata.mentions, metadata.reply, identity));
 
         if (ioRef) {
             ioRef.to(`community:${room.slug}`).emit('community:message:new', {
@@ -801,7 +822,7 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
         res.json({ success: true, message });
     } catch (error) {
         console.error('community send message error:', error);
-        res.status(500).json({ success: false, message: 'Gagal mengirim pesan' });
+        res.status(error.status || 500).json({ success: false, message: error.status ? error.message : 'Gagal mengirim pesan' });
     }
 });
 
@@ -1077,7 +1098,10 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
                 socket.data.communityRooms = socket.data.communityRooms || new Set();
                 socket.data.communityRooms.add(room.slug);
                 socket.join(roomKey);
-                await touchRoomMember(room, user);
+                const identity = await resolveUserIdentity(user);
+                socket.data.communityIdentity = { user_id: identity.userId, user_type: identity.userType, user_name: attention.displayName(identity) };
+                socket.data.communityTokenExpiry = user.exp ? user.exp * 1000 : 0;
+                await touchRoomMember(room, user, identity);
                 socket.emit('community:joined', { room: room.slug });
 
                 socket.to(roomKey).emit('community:user:joined', {
@@ -1103,10 +1127,10 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
             if (!socket.data.communityRooms || !socket.data.communityRooms.has(roomSlug)) return;
+            if (!socket.data.communityIdentity || socket.data.communityTokenExpiry && Date.now() >= socket.data.communityTokenExpiry) return;
             socket.to(`community:${roomSlug}`).emit('community:typing', {
                 room: roomSlug,
-                user_name: payload?.user_name || 'User',
-                user_id: payload?.user_id || ''
+                ...socket.data.communityIdentity
             });
         });
 
@@ -1114,9 +1138,11 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
             if (!socket.data.communityRooms || !socket.data.communityRooms.has(roomSlug)) return;
+            if (!socket.data.communityIdentity || socket.data.communityTokenExpiry && Date.now() >= socket.data.communityTokenExpiry) return;
             socket.to(`community:${roomSlug}`).emit('community:stop-typing', {
                 room: roomSlug,
-                user_id: payload?.user_id || ''
+                user_id: socket.data.communityIdentity.user_id,
+                user_type: socket.data.communityIdentity.user_type
             });
         });
     });

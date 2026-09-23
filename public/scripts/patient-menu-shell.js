@@ -1,3 +1,4 @@
+import { startCommunityBadge } from './community-chat-badge.js?v=20260923chat1';
 import { createPortalNicknameStore } from './patient-shell/portal-nickname.js?v=20260917nickname1';
 import {
     getPatientToken as getToken,
@@ -34,6 +35,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         let audioContext = null;
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
+        let stopCommunityBadge = null;
         let currentBirthCongratsId = '';
         let currentBirthCongratsData = null;
         let currentBirthPending = null;
@@ -3087,6 +3089,12 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             loadHomeAnnouncements();
             loadUnreadDocCounts();
             initializeLiveQueueHome();
+            stopCommunityBadge?.();
+            stopCommunityBadge = startCommunityBadge({
+                getToken,
+                enabled: () => !isGuestMode() && !window.PatientSession?.isDemoMode(),
+                badge: document.getElementById('community-chat-badge')
+            });
             updateRuangBacaBadges();
             checkActiveBooking();
             loadBirthClassHomeCard();

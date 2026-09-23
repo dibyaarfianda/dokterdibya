@@ -651,6 +651,15 @@
                 console.error('Error marking read:', e);
             }
 
+            const chatLink = allNotifications.find(n => String(n.id) === String(id))?.link;
+            if (chatLink) {
+                const destination = new URL(chatLink, window.location.origin);
+                if (destination.origin === window.location.origin && destination.pathname === '/community-chat.html') {
+                    window.location.assign(destination.href);
+                    return;
+                }
+            }
+
             // Navigate based on type
             let data = {};
             try { data = JSON.parse(dataStr); } catch (e) {}

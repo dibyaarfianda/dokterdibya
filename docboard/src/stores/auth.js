@@ -1,5 +1,5 @@
 import { signal, computed } from '@preact/signals';
-import { setToken, clearToken } from '../services/api';
+import { getToken, setToken, clearToken } from '../services/api';
 
 export const user = signal(null);
 export const isLoading = signal(true);
@@ -9,7 +9,7 @@ export const userName = computed(() => user.value?.name || '');
 export const userRole = computed(() => user.value?.role || '');
 
 export function initAuth() {
-  const token = localStorage.getItem('docboard_token');
+  const token = getToken();
   if (token) {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));

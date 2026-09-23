@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260923estimate9';
+const CACHE_VERSION = '20260923chat1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -249,23 +249,20 @@ self.addEventListener('push', (event) => {
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/patient-menu.html';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then((clientList) => {
-        // If app is already open, focus it
-        for (const client of clientList) {
-          if (client.url.includes('dokterdibya') & 'focus' in client) {
-            return client.focus();
-          }
-        }
-        // Otherwise open new window
-        if (clients.openWindow) {
-          return clients.openWindow(url);
-        }
-      })
-  );
+  let target;
+  try { target = new URL(event.notification.data?.url || '/patient-menu.html', self.location.origin); }
+  catch (_) { target = new URL('/patient-menu.html', self.location.origin); }
+  if (target.origin !== self.location.origin) target = new URL('/patient-menu.html', self.location.origin);
+  event.waitUntil((async () => {
+    const windows = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of windows) {
+      if (new URL(client.url).origin !== self.location.origin) continue;
+      if ('navigate' in client) await client.navigate(target.href);
+      await client.focus();
+      return;
+    }
+    return clients.openWindow(target.href);
+  })());
 });
 
 // Allow clients to trigger immediate activation of an updated SW.

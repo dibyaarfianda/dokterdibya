@@ -12,9 +12,10 @@ const OPERATIONAL_SCHEMA_SCOPES = Object.freeze({
     communityChat: {
         community_chat_rooms: ['id', 'is_direct', 'direct_patient_id', 'direct_staff_id', 'is_archived'],
         community_chat_profiles: ['id', 'user_id', 'user_type'],
-        community_chat_messages: ['id', 'room_id', 'sender_id'],
+        community_chat_messages: ['id', 'room_id', 'sender_id', 'mentions_json', 'reply_to_message_id', 'reply_snapshot'],
         community_chat_room_moderators: ['room_id', 'staff_user_id'],
-        community_chat_room_members: ['room_id', 'user_id', 'user_type']
+        community_chat_room_members: ['room_id', 'user_id', 'user_type', 'last_read_message_id'],
+        community_chat_attention_baseline: ['id', 'message_id']
     },
     contractionTimer: {
         contraction_sessions: ['id', 'patient_id', 'started_at', 'status'],
