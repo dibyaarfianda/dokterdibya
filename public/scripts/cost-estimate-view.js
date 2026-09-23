@@ -11,10 +11,10 @@
     };
     const initialScenario = data => ({
         trimester: 't1', book: 'obstetri',
-        visits: Object.fromEntries(TRIMESTERS.map(key => [key, null])),
-        repeats: Object.fromEntries(TRIMESTERS.map(key => [key, null])),
+        visits: Object.fromEntries(TRIMESTERS.map(key => [key, 0])),
+        repeats: Object.fromEntries(TRIMESTERS.map(key => [key, 0])),
         services: Object.fromEntries(TRIMESTERS.flatMap(key => (data?.trimesters[key]?.items || [])
-            .filter(item => item.kind === 'service').map(item => [item.key, null])))
+            .filter(item => item.kind === 'service').map(item => [item.key, 0])))
     });
     function create(container, shell) {
         let data = null, scenario = initialScenario(), helpShown = false;
@@ -57,7 +57,7 @@
             const previous = document.activeElement;
             shell.openModal('Cara Menggunakan', 'Estimasi biaya', '<div class="estimate-help"><ol>' +
                 '<li><strong>Pilih trimester.</strong><br>Lihat satu trimester atau seluruh periode yang sudah dikonfigurasi.</li>' +
-                '<li><strong>Atur pengulangan.</strong><br>Isi kolom pengulangan resep dan layanan yang masih kosong. Lihat angka acuan resep di samping kolom dan acuan pemeriksaan setelah informasi harga dimuat. Total dihitung setelah angka diisi. Resep dan setiap layanan memiliki pengulangan terpisah. Isi 0 untuk tidak memasukkannya dalam simulasi.</li>' +
+                '<li><strong>Atur pengulangan.</strong><br>Nilai awal jumlah kunjungan serta pengulangan resep dan layanan adalah 0. Ubah sesuai skenario pemeriksaan Anda. Lihat angka acuan resep di samping kolom dan acuan pemeriksaan setelah informasi harga dimuat. Total mengikuti angka yang Anda masukkan. Resep dan setiap layanan memiliki pengulangan terpisah. Isi 0 untuk tidak memasukkannya dalam simulasi.</li>' +
                 '<li><strong>Biaya wajib.</strong><br>Isi jumlah kunjungan untuk menghitung admin per pemeriksaan. Beberapa layanan pada kunjungan yang sama hanya dikenai satu biaya admin. Buku kontrol obstetri atau ginekologi wajib dimiliki; satu buku dihitung sekali untuk kedatangan pertama.</li><li><strong>Baca rincian.</strong><br>Jumlah × harga satuan × pengulangan menghasilkan subtotal. Nama item merupakan label yang ditentukan klinik.</li>' +
                 '<li><strong>Pahami batasnya.</strong><br>Ini perkiraan biaya, bukan tagihan atau petunjuk minum obat. Nilai akhir mengikuti pelayanan dan harga yang berlaku.</li></ol>' +
                 '<button class="estimate-button primary" id="estimate-help-done" type="button">Mengerti</button></div>');
