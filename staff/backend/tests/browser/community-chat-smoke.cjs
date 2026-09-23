@@ -71,7 +71,7 @@ const socketScript = 'window.__chatHandlers = {}; window.__emitted = []; window.
                     return req.respond({ status: 404, body: '' });
                 }
                 // External fonts are immaterial to behavior and must not make the smoke flaky.
-                if (url.origin !== origin) return req.abort();
+                if (url.origin !== origin && !(live && url.origin === 'https://dokterdibya.com')) return req.abort();
                 req.continue();
             });
             await page.goto(origin + '/community-chat.html', { waitUntil: 'networkidle2' });
@@ -158,11 +158,14 @@ const socketScript = 'window.__chatHandlers = {}; window.__emitted = []; window.
             await page.evaluate(() => window.__chatHandlers['community:rooms:changed'].forEach(fn => fn({})));
             await page.waitForFunction(() => document.getElementById('community-chat-badge').textContent === '2');
             const staffToken = 'synthetic.' + Buffer.from(JSON.stringify({ id: 'QA-S1', user_type: 'staff', role: 'dokter', name: 'Staf Uji' })).toString('base64url') + '.test';
+            const staffOrigin = live ? 'https://dokterdibya.com' : origin;
+            if (live) await page.goto(staffOrigin + '/scripts/docboard-session.js', { waitUntil: 'networkidle2' });
             await page.evaluate(async value => {
                 const { docboardSession } = await import('/scripts/docboard-session.js?v=20260923chat1');
                 docboardSession.setToken(value);
             }, staffToken);
-            await page.goto(origin + '/community-chat.html?staffBridge=1&room=lobby', { waitUntil: 'networkidle2' });
+            await page.goto(staffOrigin + '/community-chat.html?staffBridge=1&room=lobby', { waitUntil: 'networkidle2' });
+            assert.equal(new URL(page.url()).origin, staffOrigin, 'Staff push must retain its authenticated origin');
             await page.waitForFunction(() => document.getElementById('status-badge').textContent === 'Admin');
             assert.equal(authHeaders.at(-1), 'Bearer ' + staffToken, 'Staff push selects DocBoard session, never the concurrent patient account');
             assert.deepEqual(errors, []);

@@ -150,6 +150,18 @@ location = /patient-login-trial.html {
     return 301 https://sisiwanita.id/patient-login.html$is_args$args;
 }
 
+# Keep the existing staff/DocBoard login on its own origin for chat push links.
+# This only serves the public shell; all chat APIs still require authorization.
+location = /community-chat.html {
+    if ($arg_staffBridge != "1") {
+        return 301 https://sisiwanita.id/community-chat.html$is_args$args;
+    }
+    try_files $uri =404;
+    add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
 location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|bantuan|booking-klinik|community-chat|community-profile|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|info-terbaru|jadwal-rs|jadwal-vitamin|kelas-persalinan|kick-counter|konfirmasi-hadir|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|subscription|subscription-success|tanya-dokter)\.html$ {
     return 301 https://sisiwanita.id/$1.html$is_args$args;
 }

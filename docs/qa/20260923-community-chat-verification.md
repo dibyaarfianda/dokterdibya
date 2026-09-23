@@ -31,6 +31,15 @@ Full suite: 138 suites passed, 13 failed; 940 tests passed, 16 failed (before th
 
 The original baseline also intermittently failed integration/sloAuth.test.js. Two unrelated DocBoard source-text tests were sensitive to CRLF in the new Windows worktree; both passed with LF without source changes. Original file bytes were restored afterward. The suite leaves a pre-existing worker timer open, so the complete comparison used --forceExit.
 
+## Deployment verification
+
+- Feature commit `b3557cad` was pushed to main and deployed at `/var/www/dokterdibya` on 23 September 2026, about 11:49 WIB. Migration completed with baseline message ID 20, so existing history was excluded from new unread counts.
+- `dibyaklinik-backend` is online; public `/api/health` reports healthy with the database connected. All operational schemas validate. Unauthenticated unread requests return 401 with no-cache headers.
+- SHA-256 of the served chat page, Home page, mention/badge/session scripts, motion CSS and service worker matches the deployed files. DocBoard production assets `index-hHzkt6uv.js` and `index-BUeAnSKc.css` are served on its established `dokterdibya.com/docboard/` route.
+- Both 390px and 1280px browser runs passed against the real deployed assets with isolated API fixtures. This proves rendered UI behavior without writing to patient rooms; it is not an authenticated patient end-to-end test.
+- Live verification exposed an existing redirect that moved staff chat links to the patient domain and lost the DocBoard session. The regression first failed against that redirect. The versioned Nginx snippet now keeps `staffBridge=1` chat links on the staff origin; ordinary patient links still redirect to SISIwanita. Nginx validation passed, live staff chat returns 200, patient redirect returns 301, and the browser regression passes with a DocBoard token and concurrent synthetic patient session.
+- DocBoard build initially hit an existing non-executable esbuild binary (mode 644). Restoring that binary to mode 755 resolved the build; only new source files and the built dist received ownership/permission updates.
+
 ## Device verification boundary
 
 Browser fixtures verify deployed assets and interaction without posting synthetic chat to real rooms. The database integration mocks only push delivery, not notification persistence. Actual push arrival on a recipient device is a separate acceptance step and requires a designated test account/device; the user has been asked for this missing recipient. Do not describe device delivery as verified from these tests.
