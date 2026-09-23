@@ -2,11 +2,9 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken, verifyStaffToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
-const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
-const activityLogger = require('../services/activityLogger');
-const PatientDocumentSyncService = require('../services/PatientDocumentSyncService');
+const medicalRecordService = require('../services/MedicalRecordService');
 
 // Create medical_records table if not exists
 async function ensureMedicalRecordsTable() {
@@ -14,160 +12,34 @@ async function ensureMedicalRecordsTable() {
 }
 
 
-// Save medical record
-router.post('/api/medical-records', verifyToken, requirePermission('medical_records.create'), async (req, res) => {
+// Routine writes use one service; client actor fields and timestamps are ignored.
+function mutationFailure(res, error) {
+    const known = error instanceof medicalRecordService.MedicalRecordError;
+    if (!known) logger.error('Medical record mutation failed', { code: 'MEDICAL_RECORD_MUTATION_FAILED' });
+    return res.status(known ? error.statusCode : 500).json({
+        success: false,
+        code: known ? error.code : 'MEDICAL_RECORD_MUTATION_FAILED',
+        message: known ? error.message : 'Medical record mutation failed'
+    });
+}
+
+function versionResponse(res, result, status = 200) {
+    res.set('ETag', `"${result.version}"`);
+    res.set('Cache-Control', 'no-store');
+    return res.status(status).json({
+        success: true,
+        message: result.action === 'reset' ? 'Section reset successfully' : 'Medical record saved successfully',
+        version: result.version,
+        ...(result.data ? { data: result.data } : { deletedCount: result.deletedCount })
+    });
+}
+
+router.post('/api/medical-records', verifyStaffToken, requirePermission('medical_records.create'), async (req, res) => {
     try {
-        const { patientId, visitId, type, data, anamnesa, physical_exam, usg, lab, diagnosis, doctorId, doctorName, timestamp } = req.body;
-        
-        logger.info('Received medical record save request:', { patientId, visitId, type, doctorId, doctorName });
-        
-        if (!patientId) {
-            return res.status(400).json({ success: false, message: 'Patient ID is required' });
-        }
-        
-        let recordType = type || 'complete';
-        let recordData = {};
-        
-        // Organize data based on type
-        if (type === 'complete') {
-            recordData = {
-                anamnesa: anamnesa || {},
-                physical_exam: physical_exam || {},
-                usg: usg || {},
-                lab: lab || {},
-                diagnosis: diagnosis || {}
-            };
-        } else {
-            recordData = data || {};
-        }
-        
-        // Get doctor info from token or request body
-        const finalDoctorId = doctorId || (req.user ? req.user.id : null);
-        const finalDoctorName = doctorName || (req.user ? (req.user.name || req.user.email) : 'Unknown');
-        
-        // Convert ISO timestamp to MySQL datetime format (preserve GMT+7)
-        const mysqlTimestamp = toMySQLTimestamp(timestamp);
-        
-        // Determine if visitId is numeric (legacy visit_id) or string MR ID (Sunday Clinic)
-        let numericVisitId = null;
-        let mrId = null;
-        
-        if (visitId) {
-            if (typeof visitId === 'string' && visitId.match(/^[A-Za-z]+\d+$/i)) {
-                // String MR ID format (e.g., "DRD0001" or "drd0001")
-                mrId = visitId.toUpperCase(); // Normalize to uppercase
-            } else if (!isNaN(visitId)) {
-                // Numeric visit_id
-                numericVisitId = visitId;
-            } else {
-                // If not matching either pattern, treat as string MR ID
-                mrId = visitId.toUpperCase();
-            }
-        }
-
-        // Check if record already exists for this patient, mr_id, and type
-        let existingRecordId = null;
-        if (mrId) {
-            const [existing] = await db.query(
-                `SELECT id FROM medical_records
-                 WHERE patient_id = ? AND mr_id = ? AND record_type = ?
-                 ORDER BY created_at DESC LIMIT 1`,
-                [patientId, mrId, recordType]
-            );
-            if (existing.length > 0) {
-                existingRecordId = existing[0].id;
-            }
-        }
-
-        let result;
-        let persistedRecordData = recordData;
-        if (existingRecordId) {
-            // Update existing record (merge data to preserve existing fields)
-            const [currentRecord] = await db.query(
-                `SELECT record_data FROM medical_records WHERE id = ?`,
-                [existingRecordId]
-            );
-
-            let mergedData = recordData;
-            if (currentRecord.length > 0 && currentRecord[0].record_data) {
-                try {
-                    const existingData = typeof currentRecord[0].record_data === 'string'
-                        ? JSON.parse(currentRecord[0].record_data)
-                        : currentRecord[0].record_data;
-                    mergedData = { ...existingData, ...recordData };
-                } catch (e) {
-                    // If parsing fails, just use new data
-                    mergedData = recordData;
-                }
-            }
-
-            await db.query(
-                `UPDATE medical_records
-                 SET record_data = ?, doctor_id = ?, doctor_name = ?, updated_at = ?
-                 WHERE id = ?`,
-                [JSON.stringify(mergedData), finalDoctorId, finalDoctorName, mysqlTimestamp, existingRecordId]
-            );
-            persistedRecordData = mergedData;
-            result = { insertId: existingRecordId, updated: true };
-            logger.info(`Medical record updated: ID ${existingRecordId}, Patient ${patientId}, Visit ${mrId}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
-        } else {
-            // Insert new record
-            const [insertResult] = await db.query(
-                `INSERT INTO medical_records (patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
-                    patientId,
-                    numericVisitId,
-                    mrId,
-                    finalDoctorId,
-                    finalDoctorName,
-                    recordType,
-                    JSON.stringify(recordData),
-                    mysqlTimestamp
-                ]
-                );
-                result = insertResult;
-                persistedRecordData = recordData;
-                logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${numericVisitId || mrId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
-        }
-
-        if (recordType === 'penunjang' && mrId) {
-            try {
-                await PatientDocumentSyncService.syncPenunjangLabResults({
-                    patientId,
-                    mrId,
-                    files: persistedRecordData.files || [],
-                    actorUserId: finalDoctorId
-                });
-            } catch (syncError) {
-                logger.warn('Penunjang portal sync warning:', syncError.message);
-            }
-        }
-
-        // Log activity
-        await activityLogger.logFromRequest(req,
-            existingRecordId ? activityLogger.ACTIONS.UPDATE_MR : activityLogger.ACTIONS.CREATE_MR,
-            `${existingRecordId ? 'Updated' : 'Created'} ${recordType} for MR: ${mrId || numericVisitId || 'N/A'}`);
-
-        res.json({
-            success: true,
-            message: 'Medical record saved successfully',
-            data: {
-                id: result.insertId,
-                patientId,
-                visitId,
-                recordType
-            }
-        });
-        
-    } catch (error) {
-        logger.error('Error saving medical record:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to save medical record',
-            error: error.message 
-        });
-    }
+        const { patientId, mrId, type, data } = req.body;
+        const result = await medicalRecordService.create({ patientId, mrId, recordType: type, data, actor: req.user });
+        return versionResponse(res, result, 201);
+    } catch (error) { return mutationFailure(res, error); }
 });
 
 // Get medical records for a patient
@@ -384,151 +256,41 @@ router.get('/api/medical-records/resume/:mrId', verifyToken, async (req, res) =>
 
 // ==================== CRUD OPERATIONS ====================
 
-// Update medical record
-router.put('/api/medical-records/:id', verifyToken, requirePermission('medical_records.edit'), async (req, res) => {
+// Whole-document PUT and arbitrary numeric DELETE would bypass versions/tombstones.
+const retiredMutation = (req, res) => res.status(410).json({
+    success: false, code: 'MEDICAL_RECORD_MUTATION_RETIRED',
+    message: 'Use versioned PATCH or the exact section reset endpoint'
+});
+router.put('/api/medical-records/:id', verifyStaffToken, retiredMutation);
+router.delete('/api/medical-records/:id', verifyStaffToken, retiredMutation);
+
+router.patch('/api/medical-records/:id', verifyStaffToken, requirePermission('medical_records.edit'), async (req, res) => {
     try {
-        const { id } = req.params;
-        const { data, type } = req.body;
-        
-        await db.query(
-            `UPDATE medical_records
-             SET record_data = ?, record_type = ?, updated_at = NOW()
-             WHERE id = ?`,
-            [JSON.stringify(data), type, id]
-        );
-
-        logger.info(`Medical record updated: ID ${id}`);
-
-        // Log activity
-        await activityLogger.logFromRequest(req, activityLogger.ACTIONS.UPDATE_MR,
-            `Updated medical record ID: ${id}, Type: ${type}`);
-
-        res.json({
-            success: true,
-            message: 'Medical record updated successfully'
+        const result = await medicalRecordService.patch({
+            id: req.params.id, mrId: req.body.mrId, patientId: req.body.patientId,
+            changes: req.body.changes, ifMatch: req.get('If-Match'), actor: req.user
         });
-
-    } catch (error) {
-        logger.error('Error updating medical record:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to update medical record',
-            error: error.message 
-        });
-    }
+        return versionResponse(res, result);
+    } catch (error) { return mutationFailure(res, error); }
 });
 
-// Delete medical record
-// Delete all medical records by type
-router.delete('/api/medical-records/by-type/:recordType', verifyToken, async (req, res) => {
+async function resetSection(req, res) {
     try {
-        const { recordType } = req.params;
-        const { patientId, mrId } = req.query;
-        
-        if (!patientId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Patient ID is required'
-            });
-        }
-        
-        // Build query - if mrId provided, use it; otherwise delete all for patient+type
-        let query = 'DELETE FROM medical_records WHERE patient_id = ? AND record_type = ?';
-        let params = [patientId, recordType];
-        
-        if (mrId && mrId !== 'null' && mrId !== 'undefined') {
-            query += ' AND (mr_id = ? OR mr_id IS NULL)';
-            params.push(mrId);
-        }
-        
-        console.log('DELETE Query:', query);
-        console.log('DELETE Params:', params);
-        
-        const [result] = await db.query(query, params);
-        
-        console.log('DELETE Result:', result.affectedRows, 'rows deleted');
-        logger.info(`Medical records deleted: Type ${recordType}, Patient ${patientId}, MR ${mrId || 'none'}, Count: ${result.affectedRows}`);
-
-        // Log activity
-        if (result.affectedRows > 0) {
-            await activityLogger.logFromRequest(req, activityLogger.ACTIONS.DELETE_MR,
-                `Deleted ${result.affectedRows} ${recordType} record(s) for MR: ${mrId || 'N/A'}`);
-        }
-
-        // Clean up patient_documents when USG records are deleted (Reset All USG)
-        if (recordType === 'usg' && result.affectedRows > 0) {
-            try {
-                let cleanupQuery = `DELETE FROM patient_documents WHERE patient_id = ? AND document_type IN ('usg_photo', 'usg_2d', 'usg_4d', 'patient_usg')`;
-                let cleanupParams = [patientId];
-
-                if (mrId && mrId !== 'null' && mrId !== 'undefined') {
-                    cleanupQuery += ' AND mr_id = ?';
-                    cleanupParams.push(mrId);
-                }
-
-                const [cleanupResult] = await db.query(cleanupQuery, cleanupParams);
-                logger.info(`USG patient_documents cleaned up: Patient ${patientId}, MR ${mrId || 'all'}, Deleted: ${cleanupResult.affectedRows}`);
-
-                // Broadcast Socket.IO event for real-time refresh on patient side
-                try {
-                    const realtimeSync = require('../realtime-sync');
-                    realtimeSync.broadcast({
-                        type: 'usg:patient_updated',
-                        patient_id: patientId,
-                        mr_id: mrId || null,
-                        added: 0,
-                        removed: cleanupResult.affectedRows
-                    });
-                } catch (socketErr) {
-                    logger.warn('Socket broadcast error during USG cleanup:', socketErr.message);
-                }
-            } catch (cleanupError) {
-                logger.warn('USG patient_documents cleanup warning:', cleanupError);
-            }
-        }
-
-        res.json({
-            success: true,
-            message: `${result.affectedRows} record(s) deleted successfully`,
-            deletedCount: result.affectedRows
+        const legacy = req.method === 'DELETE';
+        const result = await medicalRecordService.reset({
+            mrId: legacy ? req.query.mrId : req.params.mrId,
+            patientId: legacy ? req.query.patientId : req.body.patientId,
+            recordType: req.params.recordType, ifMatch: req.get('If-Match'), actor: req.user
         });
+        return versionResponse(res, result);
+    } catch (error) { return mutationFailure(res, error); }
+}
 
-    } catch (error) {
-        logger.error('Error deleting medical records by type:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete medical records',
-            error: error.message
-        });
-    }
-});
-
-router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        await db.query('DELETE FROM medical_records WHERE id = ?', [id]);
-
-        logger.info(`Medical record deleted: ID ${id}`);
-
-        // Log activity
-        await activityLogger.logFromRequest(req, activityLogger.ACTIONS.DELETE_MR,
-            `Deleted medical record ID: ${id}`);
-
-        res.json({
-            success: true,
-            message: 'Medical record deleted successfully'
-        });
-
-    } catch (error) {
-        logger.error('Error deleting medical record:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to delete medical record',
-            error: error.message 
-        });
-    }
-});
+router.post('/api/medical-records/:mrId/sections/:recordType/reset',
+    verifyStaffToken, requirePermission('medical_records.reset_section'), resetSection);
+// Safe adapter for cached clients: missing MR, patient or version cannot broaden scope.
+router.delete('/api/medical-records/by-type/:recordType',
+    verifyStaffToken, requirePermission('medical_records.reset_section'), resetSection);
 
 // Generate AI Resume Medis (export function)
 router.post('/api/medical-records/generate-resume', verifyToken, requirePermission('medical_records.export'), async (req, res) => {

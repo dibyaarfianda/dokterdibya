@@ -195,12 +195,20 @@ describe('PatientDocumentSyncService', () => {
 });
 
 describe('DRD penunjang portal sync wiring', () => {
-    test('medical-records route invokes the penunjang portal sync service', () => {
-        const route = readRepoFile('staff', 'backend', 'routes', 'medical-records.js');
-
-        expect(route).toContain("require('../services/PatientDocumentSyncService')");
-        expect(route).toContain('await PatientDocumentSyncService.syncPenunjangLabResults({');
-        expect(route).toContain("if (recordType === 'penunjang' && mrId)");
+    test('versioned penunjang service rolls back clinical data when its transactional document adapter fails', async () => {
+        const database = require('../helpers/medicalRecordDatabase')();
+        const { MedicalRecordService } = require('../../services/MedicalRecordService');
+        const service = new MedicalRecordService(database);
+        await expect(service.create({
+            mrId: 'TEST001', patientId: 'fixture-a', recordType: 'penunjang', data: { files: [] },
+            actor: { id: 'verified-actor' },
+            mutateDocuments: async connection => {
+                await connection.query('DELETE FROM patient_documents WHERE patient_id = ? AND mr_id = ? AND document_type IN (?)', ['fixture-a', 'TEST001', ['lab_result']]);
+                throw new Error('Document adapter failed');
+            }
+        })).rejects.toThrow('Document adapter failed');
+        expect(database.state().records).toHaveLength(0);
+        expect(database.state().revisions).toHaveLength(0);
     });
 
     test('send-to-patient modal no longer offers manual lab sending', () => {
