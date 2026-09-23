@@ -1,4 +1,5 @@
 import { badgeLabel } from './community-chat-ui.js?v=20260923chat1';
+import '/scripts/socket-credentials.js';
 
 export function startCommunityBadge({ getToken, enabled, badge }) {
     if (!badge) return;
@@ -9,12 +10,12 @@ export function startCommunityBadge({ getToken, enabled, badge }) {
         const token = getToken();
         if (!enabled() || !token) {
             previousToken = null; badge.hidden = true; badge.textContent = '';
-            socket?.disconnect(); socket = null;
+            socket?.stopCredentialTracking?.(); socket?.disconnect(); socket = null;
             return;
         }
         if (token !== previousToken) {
             badge.hidden = true; badge.textContent = ''; previousToken = token;
-            socket?.disconnect(); socket = null;
+            socket?.stopCredentialTracking?.(); socket?.disconnect(); socket = null;
             connect();
         }
         if (document.hidden || busy) return;
@@ -50,8 +51,9 @@ export function startCommunityBadge({ getToken, enabled, badge }) {
             await window.__communitySocketLoader;
         }
         if (stopped || !enabled() || !getToken() || !window.io || socket) return;
-        socket = window.io(window.location.origin, { transports: ['polling'], upgrade: false, autoConnect: true,
+        socket = window.io(window.location.origin, { transports: ['polling'], upgrade: false, autoConnect: false,
             auth: callback => callback({ token: getToken() }) });
+        window.bindSocketCredentials(socket, getToken);
         socket.on('community:rooms:changed', schedule);
         socket.on('connect', schedule);
     }
@@ -64,7 +66,7 @@ export function startCommunityBadge({ getToken, enabled, badge }) {
     timer = setInterval(refresh, 15000);
     resume();
     return () => {
-        stopped = true; clearInterval(timer); clearTimeout(refreshTimer); socket?.disconnect();
+        stopped = true; clearInterval(timer); clearTimeout(refreshTimer); socket?.stopCredentialTracking?.(); socket?.disconnect();
         document.removeEventListener('visibilitychange', resume);
         for (const event of ['pageshow', 'focus', 'storage']) window.removeEventListener(event, resume);
         window.removeEventListener('community:read', schedule);

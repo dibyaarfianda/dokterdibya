@@ -545,7 +545,7 @@
     }
 
     function setupSocket() {
-        if (socket || !getToken() || typeof io === 'undefined') {
+        if (socket || !getToken() || typeof io === 'undefined' || typeof window.bindSocketCredentials !== 'function') {
             return;
         }
 
@@ -554,10 +554,12 @@
             : window.location.origin;
 
         socket = io(socketUrl, {
+            autoConnect: false,
             auth: callback => callback({ token: getToken() }),
             transports: ['polling'],
             upgrade: false
         });
+        window.bindSocketCredentials(socket, getToken);
 
         socket.on('poll:created', () => loadActivePoll(true));
         socket.on('poll:voted', () => {

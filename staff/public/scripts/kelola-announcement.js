@@ -1,4 +1,5 @@
 import { auth, initAuth, getIdToken, signOut } from './vps-auth-v2.js';
+import '/scripts/socket-credentials.js';
 
 const API_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3000/api' 
@@ -23,8 +24,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const socketUrl = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000' 
             : 'https://dokterdibya.com';
-        socket = io(socketUrl, { transports: ['polling'], upgrade: false,
+        socket = io(socketUrl, { autoConnect: false, transports: ['polling'], upgrade: false,
             auth: async callback => callback({ token: await getIdToken() }) });
+        window.bindSocketCredentials(socket, getIdToken);
 
         socket.on('connect', () => {
             console.log('Socket connected for announcements');
@@ -675,8 +677,9 @@ window.initKelolaAnnouncement = async function() {
             const socketUrl = window.location.hostname === 'localhost' 
                 ? 'http://localhost:3000' 
                 : 'https://dokterdibya.com';
-            window.socket = io(socketUrl, { transports: ['polling'], upgrade: false,
+            window.socket = io(socketUrl, { autoConnect: false, transports: ['polling'], upgrade: false,
                 auth: async callback => callback({ token: await getIdToken() }) });
+            window.bindSocketCredentials(window.socket, getIdToken);
         }
         socket = window.socket;
 

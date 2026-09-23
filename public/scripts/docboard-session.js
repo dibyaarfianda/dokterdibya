@@ -5,6 +5,12 @@ export const docboardSession = Object.freeze({
         try { return localStorage.getItem(DOCBOARD_TOKEN_KEY); }
         catch (_) { return null; }
     },
-    setToken(token) { localStorage.setItem(DOCBOARD_TOKEN_KEY, token); },
-    clearToken() { localStorage.removeItem(DOCBOARD_TOKEN_KEY); }
+    setToken(token) {
+        localStorage.setItem(DOCBOARD_TOKEN_KEY, token);
+        window.dispatchEvent?.(new CustomEvent('auth:credentials-changed'));
+    },
+    clearToken() {
+        localStorage.removeItem(DOCBOARD_TOKEN_KEY);
+        window.dispatchEvent?.(new CustomEvent('auth:credentials-changed'));
+    }
 });

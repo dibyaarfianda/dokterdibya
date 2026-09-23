@@ -3,6 +3,26 @@ const request = require('supertest');
 const { coalesce } = require('../../middleware/rateLimiter');
 
 describe('coalesced HTTP response contract', () => {
+    it.each([
+        ['Cache-Control', 'no-cache'], ['Cache-Control', 'private, no-store'],
+        ['Cache-Control', 'max-age=0'], ['Pragma', 'no-cache'],
+        ['If-Match', '"v1"'], ['If-Unmodified-Since', 'Wed, 23 Sep 2026 12:00:00 GMT'],
+        ['If-None-Match', '"v1"'], ['If-Modified-Since', 'Wed, 23 Sep 2026 12:00:00 GMT'],
+        ['If-Range', '"v1"'], ['Range', 'bytes=0-9']
+    ])('preserves independent freshness/preconditions for %s: %s', async (header, value) => {
+        let calls = 0;
+        const app = express();
+        app.use(coalesce);
+        app.get('/api/patients', (req, res) => {
+            const call = ++calls;
+            setTimeout(() => res.json({ call }), 30);
+        });
+        const responses = await Promise.all([1, 2].map(() => request(app).get('/api/patients')
+            .set('Authorization', 'Bearer synthetic').set(header, value)));
+        expect(responses.map(response => response.status)).toEqual([200, 200]);
+        expect(calls).toBe(2);
+        expect(responses.map(response => response.body.call).sort()).toEqual([1, 2]);
+    });
     beforeEach(() => {
         coalesce._internals.inflightRequests.clear();
         coalesce._internals.config.enabled = true;

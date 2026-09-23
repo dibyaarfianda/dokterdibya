@@ -5,7 +5,7 @@
     const USER_KEY = 'patient_user';
     const DEMO_MODE_KEY = 'patient_demo_mode';
     const LEGACY_TOKEN_KEYS = ['patient_token', 'auth_token', 'token'];
-    const PAGE_TRACKER_SRC = '/js/patient-tracker.js?v=20260924realtime1';
+    const PAGE_TRACKER_SRC = '/js/patient-tracker.js?v=20260924realtime2';
     const PAGE_TRACKING_EXCLUDED_PATHS = new Set([
         '/',
         '/index.html',
@@ -70,10 +70,11 @@
     function setToken(token, options = {}) {
         clearTokenKeys();
         if (!options.demoMode) remove(global.sessionStorage, DEMO_MODE_KEY);
-        if (!token) return null;
+        if (!token) { notifyCredentialChange(); return null; }
 
         const storage = options.persistent ? global.localStorage : global.sessionStorage;
         write(storage, TOKEN_KEY, String(token));
+        notifyCredentialChange();
         return String(token);
     }
 
@@ -100,6 +101,11 @@
         remove(global.localStorage, USER_KEY);
         remove(global.sessionStorage, USER_KEY);
         remove(global.sessionStorage, DEMO_MODE_KEY);
+        notifyCredentialChange();
+    }
+
+    function notifyCredentialChange() {
+        if (typeof global.dispatchEvent === 'function') global.dispatchEvent(new CustomEvent('auth:credentials-changed'));
     }
 
     function isDemoMode() {

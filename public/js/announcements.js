@@ -14,16 +14,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function initializeSocket() {
     if (!announcementRefreshTimer) announcementRefreshTimer = setInterval(loadAnnouncements, 30000);
-    if (!window.PatientSession?.getToken() || typeof io !== 'function' || socket) return;
+    if (!window.PatientSession?.getToken() || typeof io !== 'function' || typeof window.bindSocketCredentials !== 'function' || socket) return;
     const socketUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3000' 
         : 'https://dibyaklinik.com';
     
     socket = io(socketUrl, {
+        autoConnect: false,
         auth: callback => callback({ token: window.PatientSession?.getToken() }),
         transports: ['polling'],
         upgrade: false
     });
+    window.bindSocketCredentials(socket, () => window.PatientSession?.getToken());
 
     socket.on('connect', () => {});
 

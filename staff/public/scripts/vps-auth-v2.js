@@ -37,6 +37,7 @@ export function onAuthStateChanged(cb) {
 }
 
 function notifyAuthChange() {
+    window.dispatchEvent(new CustomEvent('auth:credentials-changed'));
     console.log('[AUTH] notifyAuthChange called, user:', auth.currentUser?.id || 'null', 'listeners:', listeners.length);
     listeners.forEach(cb => {
         try { cb(auth.currentUser); } catch (e) { console.error('[AUTH] Listener error:', e); }

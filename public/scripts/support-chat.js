@@ -97,16 +97,19 @@
 
     // ==================== SOCKET ====================
     function getSocket() {
+        if (typeof window.bindSocketCredentials !== 'function') return null;
         // Reuse existing Socket.IO instance from realtime-sync or window
         if (window.__realtimeSyncState && window.__realtimeSyncState.socket) {
             return window.__realtimeSyncState.socket;
         }
         if (!window._supportChatSocket && getToken() && typeof window.io === 'function') {
             window._supportChatSocket = window.io(window.location.origin, {
+                autoConnect: false,
                 transports: ['polling'], upgrade: false,
                 auth: callback => callback({ token: getToken() }),
                 reconnectionDelay: SOCKET_RECONNECT_DELAY
             });
+            window.bindSocketCredentials(window._supportChatSocket, getToken);
         }
         return window._supportChatSocket || null;
     }

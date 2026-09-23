@@ -9,18 +9,21 @@ function context(extra = {}) {
     const timers = [];
     const io = (url, options) => {
         const handlers = {};
-        const socket = { options, handlers, on: (e, fn) => { handlers[e] = fn; }, emit() {}, off() {}, close() {}, disconnect() {} };
+        const socket = { options, handlers, on: (e, fn) => { handlers[e] = fn; }, emit() {}, off() {}, close() {}, disconnect() {}, connect() {} };
         sockets.push(socket);
         return socket;
     };
     const window = { location: { hostname: 'test.invalid', origin: 'https://test.invalid' },
         PatientSession: { getToken: () => 'patient-jwt' }, getAuthToken: () => 'staff-jwt',
-        addEventListener() {}, dispatchEvent() {}, io };
-    return vm.createContext({ window, location: window.location, io, sockets, timers,
+        addEventListener() {}, removeEventListener() {}, dispatchEvent() {}, io };
+    const ctx = vm.createContext({ window, location: window.location, io, sockets, timers,
         console: { log() {}, warn() {}, error() {} },
         document: { addEventListener() {}, getElementById() { return null; }, createElement() { return {}; }, head: { appendChild() {} } },
         CustomEvent: function() {}, setInterval: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
         setTimeout() {}, clearTimeout() {}, clearInterval() {}, ...extra });
+    window.setInterval = ctx.setInterval; window.clearInterval = ctx.clearInterval;
+    vm.runInContext(read('public/scripts/socket-credentials.js'), ctx);
+    return ctx;
 }
 
 async function tokenOf(socket) {

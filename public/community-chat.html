@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/patient-session.js?v=20260924realtime1"></script>
+    <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
+    <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Community Chat - SISIwanita</title>
@@ -2159,6 +2160,7 @@
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script type="module">
     import { docboardSession } from '/scripts/docboard-session.js?v=20260923chat1';
+    import '/scripts/socket-credentials.js';
     import { showToast } from '/scripts/patient-utils.js';
     import { createMentionComposer, communityName, animateChatNode } from '/scripts/community-chat-ui.js?v=20260923chat1';
 
@@ -2926,6 +2928,11 @@
 
     function getToken() {
         if (useStaffTokenBridge) {
+            // Same-origin staff parent is authoritative even when logged out.
+            try {
+                const owner = window.parent !== window ? window.parent : window.opener;
+                if (owner && typeof owner.getAuthToken === 'function') return owner.getAuthToken() || null;
+            } catch (_) { return null; }
             const candidates = [docboardSession.getToken(), window.PatientSession?.getToken()];
             return candidates.find(value => {
                 const user = decodeToken(value || '');
@@ -2996,6 +3003,7 @@
     }
 
     async function api(path, options = {}) {
+        token = getToken();
         const response = await fetch(`${API_BASE}/api/community-chat${path}`, {
             ...options,
             headers: {
@@ -3427,7 +3435,9 @@
         renderRooms();
 
         if (socket) {
-            socket.emit('community:join', { room: data.room.slug, token });
+            const currentToken = getToken();
+            if (currentToken) socket.emit('community:join', { room: data.room.slug, token: currentToken });
+            else socket.refreshCredentials?.();
         }
         startCommunitySyncPolling();
 
@@ -3710,9 +3720,18 @@
     function initSocket() {
         const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin;
         socket = window.io(socketUrl, { transports: ['polling'], upgrade: false,
-            auth: callback => callback({ token }) });
+            autoConnect: false, auth: callback => callback({ token: getToken() }) });
+        window.bindSocketCredentials(socket, getToken);
+        if (useStaffTokenBridge) {
+            try {
+                const owner = window.parent !== window ? window.parent : window.opener;
+                owner?.addEventListener('auth:credentials-changed', () => socket.invalidateCredentials());
+            } catch (_) { socket.invalidateCredentials(); }
+        }
 
         socket.on('connect', () => {
+            token = getToken();
+            if (!token) { socket.refreshCredentials?.(); return; }
             if (activeRoom) {
                 socket.emit('community:join', { room: activeRoom.slug, token });
             }

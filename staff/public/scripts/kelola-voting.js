@@ -443,10 +443,12 @@
             : 'https://dokterdibya.com';
 
         socket = io(socketUrl, {
+            autoConnect: false,
             auth: callback => callback({ token: getToken() }),
             transports: ['polling'],
             upgrade: false
         });
+        window.bindSocketCredentials(socket, getToken);
 
         socket.on('poll:created', () => loadVotingList());
         socket.on('poll:voted', () => loadVotingList());

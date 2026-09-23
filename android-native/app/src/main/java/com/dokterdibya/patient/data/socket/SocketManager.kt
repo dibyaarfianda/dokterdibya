@@ -43,6 +43,7 @@ class SocketManager @Inject constructor(private val tokenRepository: TokenReposi
     private var currentPatientId: String? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var tokenJob: Job? = null
+    private val lifecycle = SocketLifecycle()
 
     private val _notifications = MutableSharedFlow<PatientNotification>(replay = 0)
     val notifications: SharedFlow<PatientNotification> = _notifications.asSharedFlow()
@@ -91,14 +92,18 @@ class SocketManager @Inject constructor(private val tokenRepository: TokenReposi
     }
 
     fun connect(patientId: String) {
-        if (tokenJob?.isActive == true && currentPatientId == patientId) return
-        disconnect()
-        currentPatientId = patientId
-        // Observe the repository so cold-start loading, rotation and logout change the handshake.
-        tokenJob = scope.launch {
-            tokenRepository.getToken().distinctUntilChanged().collect { token ->
-                closeSocket()
-                if (!token.isNullOrBlank()) connectAuthenticated(token)
+        lifecycle.replace { generation ->
+            tokenJob?.cancel()
+            closeSocket()
+            currentPatientId = patientId
+            // Cancellation alone does not stop a collector already in synchronous code.
+            tokenJob = scope.launch {
+                tokenRepository.getToken().distinctUntilChanged().collect { token ->
+                    lifecycle.runIfCurrent(generation) {
+                        closeSocket()
+                        if (!token.isNullOrBlank()) connectAuthenticated(token)
+                    }
+                }
             }
         }
     }
@@ -123,10 +128,12 @@ class SocketManager @Inject constructor(private val tokenRepository: TokenReposi
     }
 
     fun disconnect() {
-        tokenJob?.cancel()
-        tokenJob = null
-        currentPatientId = null
-        closeSocket()
+        lifecycle.replace {
+            tokenJob?.cancel()
+            tokenJob = null
+            currentPatientId = null
+            closeSocket()
+        }
     }
 
     private fun closeSocket() {

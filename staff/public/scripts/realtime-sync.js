@@ -1,6 +1,7 @@
 // Real-time synchronization module using Socket.io
 // Allows users to see what others are doing in real-time
 import { getIdToken } from './vps-auth-v2.js';
+import '/scripts/socket-credentials.js';
 
 const REALTIME_API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3001'
@@ -82,6 +83,7 @@ export function initRealtimeSync(user) {
 
     // Retire cached clients that predate authenticated handshakes, including pending connections.
     if (state.socket && (!state.authenticatedHandshake || state.currentUser?.id !== user.id)) {
+        state.socket.stopCredentialTracking?.();
         state.socket.close();
         state.socket = null;
         state.isInitializing = false;
@@ -96,6 +98,7 @@ export function initRealtimeSync(user) {
 
     // If already initialized with the same user, skip
     if (state.initialized && state.socket && state.socket.connected && state.currentUser?.id === user.id) {
+        state.socket.refreshCredentials?.();
         requestOnlineUsersList();
         console.log('🔄 [REALTIME] Already initialized and connected as same user, skipping');
         return;
@@ -106,11 +109,13 @@ export function initRealtimeSync(user) {
         // Socket exists - check state
         if (state.socket.connected) {
             if (state.currentUser && state.currentUser.id === user.id) {
+                state.socket.refreshCredentials?.();
                 requestOnlineUsersList();
                 console.log('🔄 [REALTIME] Already connected as same user, skipping');
                 return;
             }
             // Identity is immutable on the server: changing accounts needs a new handshake.
+            state.socket.stopCredentialTracking?.();
             state.socket.close();
             state.socket = null;
         } else if (state.socket.connecting) {
@@ -121,6 +126,7 @@ export function initRealtimeSync(user) {
         } else {
             // Socket exists but disconnected - close and recreate
             console.log('🔄 [REALTIME] Socket exists but disconnected, recreating...');
+            state.socket.stopCredentialTracking?.();
             state.socket.close();
             state.socket = null;
         }
@@ -133,6 +139,7 @@ export function initRealtimeSync(user) {
     // Connect to Socket.io server
     console.log('🔄 [REALTIME] Connecting to:', REALTIME_API_BASE);
     state.socket = io(REALTIME_API_BASE, {
+        autoConnect: false,
         auth: async (callback) => {
             try { callback({ token: await getIdToken() }); }
             catch (_) { callback({ token: null }); }
@@ -149,6 +156,7 @@ export function initRealtimeSync(user) {
         forceNew: false
     });
     state.authenticatedHandshake = true;
+    window.bindSocketCredentials(state.socket, getIdToken);
 
     // Make socket globally available for other modules
     window.socket = state.socket;
@@ -206,7 +214,7 @@ export function initRealtimeSync(user) {
         state.lifecycleBound = true;
         const reconnectIfNeeded = () => {
             const socket = state.socket;
-            if (socket && socket.disconnected) socket.connect();
+            socket?.refreshCredentials?.();
         };
         window.addEventListener('online', reconnectIfNeeded);
         window.addEventListener('pageshow', reconnectIfNeeded);
@@ -758,6 +766,7 @@ function refreshCurrentView() {
 // Disconnect from real-time sync
 export function disconnectRealtimeSync() {
     if (state.socket) {
+        state.socket.stopCredentialTracking?.();
         state.socket.disconnect();
         state.socket = null;
         state.initialized = false;

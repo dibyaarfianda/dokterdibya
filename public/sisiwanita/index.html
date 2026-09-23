@@ -18,8 +18,9 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20260924realtime1">
-    <script src="/scripts/patient-session.js?v=20260924realtime1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20260924realtime2">
+    <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
+    <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -5784,7 +5785,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20260924realtime1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20260924realtime2', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -8095,6 +8096,6 @@
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20260924realtime1"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20260924realtime2"></script>
 </body>
 </html>

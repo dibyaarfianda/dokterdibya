@@ -33,6 +33,7 @@ function createRealtimeClientHarness() {
             this.detail = options?.detail;
         },
         window: {
+            setInterval: jest.fn(), clearInterval: jest.fn(), removeEventListener: jest.fn(),
             location: {
                 hostname: 'dokterdibya.com',
                 origin: 'https://dokterdibya.com'
@@ -56,6 +57,7 @@ function createRealtimeClientHarness() {
         .replace(/^export\s+/gm, '');
 
     vm.createContext(context);
+    vm.runInContext(readRepoFile('public', 'scripts', 'socket-credentials.js'), context);
     vm.runInContext(
         `${source}\n;globalThis.__realtimePresenceTestApi = { initRealtimeSync };`,
         context

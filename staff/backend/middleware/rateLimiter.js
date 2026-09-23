@@ -176,7 +176,10 @@ function coalesce(req, res, next) {
     // Authentication endpoints and cookie/conditional requests must execute independently.
     const path = req.originalUrl.split('?')[0];
     if (/(?:^|\/)(?:auth|login|logout|register|refresh|token|password|verify|me)(?:\/|$)/i.test(path) ||
-        req.headers.cookie || req.headers.range || req.headers['if-none-match'] || req.headers['if-modified-since']) return next();
+        req.headers.cookie || ['range', 'if-range', 'if-match', 'if-none-match', 'if-modified-since', 'if-unmodified-since']
+            .some(header => req.headers[header] !== undefined) ||
+        /(?:^|,)\s*(?:no-cache|no-store|max-age\s*=\s*0)(?:\s*(?:,|$|=))/i.test(req.headers['cache-control'] || '') ||
+        /(?:^|,)\s*no-cache\s*(?:,|$)/i.test(req.headers.pragma || '')) return next();
 
     // Check master switch and failsafe
     if (!config.enabled || failsafe.tripped) {
