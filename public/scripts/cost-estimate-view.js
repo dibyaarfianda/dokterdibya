@@ -3,7 +3,6 @@
     const { TRIMESTERS, calculateEstimate } = window.CostEstimateEngine;
     const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
     const money = (value, pending = false) => value == null ? (pending ? 'Belum dihitung' : 'Belum lengkap') : 'Rp ' + Number(value).toLocaleString('id-ID');
-    const seenKey = 'cost-estimate-preview-guide-v1';
     const serviceGuidance = {
         t1: 'Trimester 1 pemeriksaan 1 kali USG bawah (TVS) dan 2 kali USG perut',
         t2: 'Trimester 2 pemeriksaan 1 kali Skrining Kelainan Janin, 2 kali USG perut',
@@ -16,7 +15,8 @@
         services: Object.fromEntries(TRIMESTERS.flatMap(key => (data?.trimesters[key]?.items || [])
             .filter(item => item.kind === 'service').map(item => [item.key, 0])))
     });
-    function create(container, shell) {
+    function create(container, shell, options = {}) {
+        const seenKey = options.preview ? 'cost-estimate-preview-guide-v1' : 'cost-estimate-guide-v1';
         let data = null, scenario = initialScenario(), helpShown = false;
         function render() {
             if (!data) return;
@@ -26,7 +26,7 @@
             const selectedKeys = TRIMESTERS.filter(key => scenario.trimester === 'all' || key === scenario.trimester);
             const missingVisits = key => !!data.mandatory_costs && scenario.visits[key] == null;
             const pending = selectedKeys.some(key => missingRepeat(key) || missingServices(key) || missingVisits(key));
-            container.innerHTML = '<div class="estimate-banner">' + (data.is_dummy ? 'Data Dummy — bukan tarif klinik' : 'Pratinjau pasien — belum diterbitkan') + '</div>' +
+            container.innerHTML = '<div class="estimate-banner">' + (data.is_dummy ? 'Data Dummy — bukan tarif klinik' : data.is_published ? 'Estimasi biaya kontrol kehamilan' : 'Pratinjau pasien — belum diterbitkan') + '</div>' +
                 '<div class="estimate-toolbar"><label>Periode estimasi<select class="estimate-input" data-estimate="trimester">' +
                 [...TRIMESTERS, 'all'].map((key, i) => '<option value="' + key + '"' + (scenario.trimester === key ? ' selected' : '') + '>' + (key === 'all' ? 'Seluruh semester' : 'Trimester ' + (i + 1)) + '</option>').join('') +
                 '</select></label><button type="button" class="estimate-button" data-estimate="help"><i class="fa-regular fa-circle-question"></i> Cara Menggunakan</button></div>' +

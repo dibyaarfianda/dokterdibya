@@ -608,7 +608,7 @@ app.use('/api/billings', billingsRoutes);
 const patientBillingRoutes = require('./routes/patient-billing');
 app.use('/api/patient-billing', patientBillingRoutes);
 
-// Patient estimasi biaya (pregnancy cost estimate) — tester only
+// Published patient pregnancy cost estimate
 const patientEstimasiBiayaRoutes = require('./routes/patient-estimasi-biaya');
 app.use('/api/patient/estimasi-biaya', patientEstimasiBiayaRoutes);
 

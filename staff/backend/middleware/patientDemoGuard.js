@@ -152,7 +152,7 @@ async function handleGet(req, res, state, pathname) {
     if (pathname.startsWith('/api/contraction-timer')) return res.json({ success: true, data: state.trackers.contraction_timer, ...state.trackers.contraction_timer });
     if (pathname.startsWith('/api/fertility-calendar')) return res.json({ success: true, data: state.trackers.fertility_calendar, ...state.trackers.fertility_calendar });
     if (pathname.startsWith('/api/patient/birth-')) return res.json({ success: true, data: [], items: [], congratulations: null, pending: null });
-    if (pathname === '/api/patient/estimasi-biaya') return res.json({ success: true, data: { low: 5000000, high: 12000000, currency: 'IDR', is_demo: true } });
+    if (pathname === '/api/patient/estimasi-biaya') return res.json({ success: true, preview: require('../../../public/scripts/cost-estimate-dummy')() });
     if (pathname === '/api/patient-intake/my-intake') return res.json({ success: true, data: null, intake: null, is_demo: true });
     if (pathname === '/api/patient-questions/can-ask') return res.json({ success: true, canAsk: false, reason: 'Pertanyaan nyata dinonaktifkan pada mode dummy.' });
     if (SAFE_PUBLIC_GET_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return null;

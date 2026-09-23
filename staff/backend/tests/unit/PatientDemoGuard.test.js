@@ -64,6 +64,17 @@ describe('patientDemoGuard', () => {
         expect(service.getState).not.toHaveBeenCalled();
     });
 
+    test('estimate demo uses a complete isolated fixture compatible with the shared calculator', async () => {
+        const res = response(), next = jest.fn();
+        await guard(request('/api/patient/estimasi-biaya'), res, next);
+        expect(next).not.toHaveBeenCalled();
+        expect(res.body.preview.is_dummy).toBe(true);
+        const { calculateEstimate } = require('../../../../public/scripts/cost-estimate-engine');
+        const result = calculateEstimate(res.body.preview, { trimester: 't1', visits: {t1:1}, book:'obstetri' });
+        expect(result.total).toBe(295000);
+        expect(res.headers['Cache-Control']).toContain('no-store');
+    });
+
     test('revoked or expired demo session is rejected', async () => {
         service.assertActiveSession.mockResolvedValue(false);
         const res = response();

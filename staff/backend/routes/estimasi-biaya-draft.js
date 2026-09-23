@@ -2,7 +2,8 @@
 const express = require('express');
 const db = require('../db');
 const { verifyStaffToken, requirePermission } = require('../middleware/auth');
-const { DRAFT_KEY, MANDATORY_SERVICE_IDS, normalizeDraft, buildPreview } = require('../services/EstimasiBiayaDraft');
+const { DRAFT_KEY, normalizeDraft, buildPreview } = require('../services/EstimasiBiayaDraft');
+const { catalogFor } = require('../services/EstimasiBiayaCatalog');
 const router = express.Router();
 router.use((req, res, next) => ['/draft', '/preview'].includes(req.path.replace(/\/$/, '')) ? next() : next('router'));
 router.use(verifyStaffToken);
@@ -10,21 +11,6 @@ router.use((req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.set('Pragma', 'no-cache'); res.set('Expires', '0'); next();
 });
-async function catalogFor(draft) {
-    const phases = Object.values(draft.trimesters);
-    const read = async (table, fields, ids) => {
-        const unique = [...new Set(ids.filter(id => Number.isSafeInteger(id) && id > 0))];
-        if (!unique.length) return [];
-        const [rows] = await db.query('SELECT ' + fields + ' FROM ' + table + ' WHERE id IN (' + unique.map(() => '?').join(',') + ')', unique);
-        return rows;
-    };
-    const [medications, services, templates] = await Promise.all([
-        read('obat', 'id, name, price, unit, is_active', phases.flatMap(p => p.medications.map(i => i.obat_id))),
-        read('tindakan', 'id, name, price, category, is_active', [...Object.values(MANDATORY_SERVICE_IDS), ...phases.flatMap(p => p.services.map(i => i.tindakan_id))]),
-        read('sunday_clinic_prescription_templates', 'id, is_active', phases.map(p => p.template_id))
-    ]);
-    return { medications, services, templates: templates.filter(t => Number(t.is_active) === 1) };
-}
 router.get('/draft', requirePermission('obat_alkes.view'), async (req, res) => {
     try {
         const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1', [DRAFT_KEY]);

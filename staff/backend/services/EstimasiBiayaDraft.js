@@ -1,6 +1,7 @@
 'use strict';
 const { TRIMESTERS, validRepeat, calculateEstimate } = require('../../../public/scripts/cost-estimate-engine');
 const MANDATORY_SERVICE_IDS = { admin: 1, obstetri: 3, ginekologi: 59 };
+const PUBLISHED_KEY = 'pregnancy_cost_estimate_published_v2';
 const DRAFT_KEY = 'pregnancy_cost_estimate_staff_draft_v2';
 const text = value => typeof value === 'string' ? value.trim().slice(0, 160) : '';
 const number = value => value === '' || value == null ? null : Number(value);
@@ -87,4 +88,4 @@ function buildPreview(input, catalog, now = new Date()) {
     return calculateEstimate({ version: 2, is_dummy: false, prices_loaded_at: now.toISOString(), mandatory_costs: mandatoryCosts,
         configuration_ready: TRIMESTERS.every(key => trimesters[key].ready) && mandatoryCosts.admin.ready && Object.values(mandatoryCosts.books).every(book => book.ready), trimesters });
 }
-module.exports = { DRAFT_KEY, MANDATORY_SERVICE_IDS, normalizeDraft, buildPreview };
+module.exports = { PUBLISHED_KEY, DRAFT_KEY, MANDATORY_SERVICE_IDS, normalizeDraft, buildPreview };

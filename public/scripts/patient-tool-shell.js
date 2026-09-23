@@ -37,7 +37,8 @@
             ['fa-solid fa-chart-line', 'Monitoring Kehamilan', '/pregnancy-tracker.html'],
             ['fa-solid fa-wave-square', 'Hitung Kontraksi', '/contraction-timer.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
-            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html']
+            ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html'],
+            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html']
         ]},
         jadwal: { title: 'Jadwal', items: [
             ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
