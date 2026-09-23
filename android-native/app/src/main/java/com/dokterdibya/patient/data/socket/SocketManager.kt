@@ -1,12 +1,20 @@
 package com.dokterdibya.patient.data.socket
 
 import android.util.Log
+import com.dokterdibya.patient.data.repository.TokenRepository
 import io.socket.client.IO
 import io.socket.client.Socket
 import io.socket.emitter.Emitter
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.net.URI
 import javax.inject.Inject
@@ -24,7 +32,7 @@ data class PatientNotification(
 )
 
 @Singleton
-class SocketManager @Inject constructor() {
+class SocketManager @Inject constructor(private val tokenRepository: TokenRepository) {
 
     companion object {
         private const val TAG = "SocketManager"
@@ -33,6 +41,8 @@ class SocketManager @Inject constructor() {
 
     private var socket: Socket? = null
     private var currentPatientId: String? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var tokenJob: Job? = null
 
     private val _notifications = MutableSharedFlow<PatientNotification>(replay = 0)
     val notifications: SharedFlow<PatientNotification> = _notifications.asSharedFlow()
@@ -50,15 +60,14 @@ class SocketManager @Inject constructor() {
         _connectionState.tryEmit(false)
     }
 
-    private val onConnectError = Emitter.Listener { args ->
-        Log.e(TAG, "Socket connection error: ${args.getOrNull(0)}")
+    private val onConnectError = Emitter.Listener {
+        Log.e(TAG, "Socket connection error")
         _connectionState.tryEmit(false)
     }
 
     private val onNotification = Emitter.Listener { args ->
         try {
             val data = args[0] as JSONObject
-            Log.d(TAG, "Received notification event: $data")
 
             val notificationObj = data.getJSONObject("notification")
             val notification = PatientNotification(
@@ -74,10 +83,7 @@ class SocketManager @Inject constructor() {
 
             // Only emit if this notification is for our patient
             if (notification.patientId == currentPatientId) {
-                Log.d(TAG, "Notification for current patient: ${notification.title}")
                 _notifications.tryEmit(notification)
-            } else {
-                Log.d(TAG, "Notification for different patient: ${notification.patientId} (current: $currentPatientId)")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing notification", e)
@@ -85,24 +91,21 @@ class SocketManager @Inject constructor() {
     }
 
     fun connect(patientId: String) {
-        if (socket?.connected() == true && currentPatientId == patientId) {
-            Log.d(TAG, "Already connected for patient: $patientId")
-            return
-        }
-
-        currentPatientId = patientId
+        if (tokenJob?.isActive == true && currentPatientId == patientId) return
         disconnect()
-
-        try {
-            val options = IO.Options().apply {
-                // Use polling only - WebSocket often fails on Indonesian mobile ISPs
-                transports = arrayOf("polling")
-                upgrade = false
-                reconnection = true
-                reconnectionDelay = 2000
-                reconnectionDelayMax = 10000
-                reconnectionAttempts = 10
+        currentPatientId = patientId
+        // Observe the repository so cold-start loading, rotation and logout change the handshake.
+        tokenJob = scope.launch {
+            tokenRepository.getToken().distinctUntilChanged().collect { token ->
+                closeSocket()
+                if (!token.isNullOrBlank()) connectAuthenticated(token)
             }
+        }
+    }
+
+    private fun connectAuthenticated(token: String) {
+        try {
+            val options = authenticatedSocketOptions(token)
 
             socket = IO.socket(URI.create(SOCKET_URL), options).apply {
                 on(Socket.EVENT_CONNECT, onConnect)
@@ -112,7 +115,7 @@ class SocketManager @Inject constructor() {
             }
 
             socket?.connect()
-            Log.d(TAG, "Connecting to socket for patient: $patientId")
+            Log.d(TAG, "Connecting authenticated socket")
 
         } catch (e: Exception) {
             Log.e(TAG, "Error creating socket", e)
@@ -120,6 +123,13 @@ class SocketManager @Inject constructor() {
     }
 
     fun disconnect() {
+        tokenJob?.cancel()
+        tokenJob = null
+        currentPatientId = null
+        closeSocket()
+    }
+
+    private fun closeSocket() {
         socket?.apply {
             off(Socket.EVENT_CONNECT, onConnect)
             off(Socket.EVENT_DISCONNECT, onDisconnect)
@@ -133,4 +143,17 @@ class SocketManager @Inject constructor() {
     }
 
     fun isConnected(): Boolean = socket?.connected() == true
+}
+
+internal fun authenticatedSocketOptions(token: String): IO.Options {
+    require(token.isNotBlank()) { "Socket credentials are required" }
+    return IO.Options().apply {
+        auth = mapOf("token" to token)
+        transports = arrayOf("polling")
+        upgrade = false
+        reconnection = true
+        reconnectionDelay = 2000
+        reconnectionDelayMax = 10000
+        reconnectionAttempts = 10
+    }
 }

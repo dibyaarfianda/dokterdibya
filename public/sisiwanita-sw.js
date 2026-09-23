@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20260923activity1');
+importScripts('/sw.js?v=20260924realtime1');

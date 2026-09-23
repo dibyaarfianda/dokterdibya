@@ -41,9 +41,11 @@ describe('patient page tracking coverage', () => {
         expect(appendedScripts).toHaveLength(1);
         expect(appendedScripts[0]).toMatchObject({
             tagName: 'script',
-            src: '/js/patient-tracker.js?v=20260923activity1',
             async: true
         });
+        const trackerUrl = new URL(appendedScripts[0].src, 'https://patient.example');
+        expect(trackerUrl.pathname).toBe('/js/patient-tracker.js');
+        expect(trackerUrl.searchParams.get('v')).toBeTruthy();
     });
 
     test('loading the shared tracker more than once records only one page view', () => {

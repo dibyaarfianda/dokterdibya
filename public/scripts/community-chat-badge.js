@@ -12,7 +12,11 @@ export function startCommunityBadge({ getToken, enabled, badge }) {
             socket?.disconnect(); socket = null;
             return;
         }
-        if (token !== previousToken) { badge.hidden = true; badge.textContent = ''; previousToken = token; }
+        if (token !== previousToken) {
+            badge.hidden = true; badge.textContent = ''; previousToken = token;
+            socket?.disconnect(); socket = null;
+            connect();
+        }
         if (document.hidden || busy) return;
         busy = true;
         try {
@@ -46,7 +50,8 @@ export function startCommunityBadge({ getToken, enabled, badge }) {
             await window.__communitySocketLoader;
         }
         if (stopped || !enabled() || !getToken() || !window.io || socket) return;
-        socket = window.io(window.location.origin, { transports: ['polling'], autoConnect: true });
+        socket = window.io(window.location.origin, { transports: ['polling'], upgrade: false, autoConnect: true,
+            auth: callback => callback({ token: getToken() }) });
         socket.on('community:rooms:changed', schedule);
         socket.on('connect', schedule);
     }

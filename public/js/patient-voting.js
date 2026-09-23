@@ -14,9 +14,7 @@
     const pendingLikeCommentIds = new Set();
 
     function getToken() {
-        return window.PatientSession?.getToken() ||
-            window.PatientSession?.getToken() ||
-            localStorage.getItem('patient_token');
+        return window.PatientSession?.getToken() || null;
     }
 
     function escapeHtml(text) {
@@ -547,7 +545,7 @@
     }
 
     function setupSocket() {
-        if (socket || typeof io === 'undefined') {
+        if (socket || !getToken() || typeof io === 'undefined') {
             return;
         }
 
@@ -556,6 +554,7 @@
             : window.location.origin;
 
         socket = io(socketUrl, {
+            auth: callback => callback({ token: getToken() }),
             transports: ['polling'],
             upgrade: false
         });

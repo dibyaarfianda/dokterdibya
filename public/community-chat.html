@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/patient-session.js?v=20260923activity1"></script>
+    <script src="/scripts/patient-session.js?v=20260924realtime1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Community Chat - SISIwanita</title>
@@ -3709,7 +3709,8 @@
 
     function initSocket() {
         const socketUrl = window.location.hostname === 'localhost' ? 'http://localhost:3000' : window.location.origin;
-        socket = window.io(socketUrl, { transports: ['polling'] });
+        socket = window.io(socketUrl, { transports: ['polling'], upgrade: false,
+            auth: callback => callback({ token }) });
 
         socket.on('connect', () => {
             if (activeRoom) {

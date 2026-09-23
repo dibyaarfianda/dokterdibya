@@ -86,7 +86,7 @@ class NotificationService : Service() {
     }
 
     private fun connectSocket(patientId: String) {
-        Log.d(TAG, "Connecting socket for patient: $patientId")
+        Log.d(TAG, "Connecting authenticated notification socket")
         socketManager.connect(patientId)
     }
 
@@ -94,7 +94,6 @@ class NotificationService : Service() {
         // Listen for incoming notifications
         socketManager.notifications
             .onEach { notification ->
-                Log.d(TAG, "Received notification: ${notification.title}")
                 notificationHelper.showPatientNotification(notification)
             }
             .launchIn(serviceScope)

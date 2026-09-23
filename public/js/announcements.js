@@ -4,6 +4,7 @@ const API_URL = window.location.hostname === 'localhost'
     : 'https://dibyaklinik.com/api';
 
 let socket = null;
+let announcementRefreshTimer = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,11 +13,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeSocket() {
+    if (!announcementRefreshTimer) announcementRefreshTimer = setInterval(loadAnnouncements, 30000);
+    if (!window.PatientSession?.getToken() || typeof io !== 'function' || socket) return;
     const socketUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3000' 
         : 'https://dibyaklinik.com';
     
     socket = io(socketUrl, {
+        auth: callback => callback({ token: window.PatientSession?.getToken() }),
         transports: ['polling'],
         upgrade: false
     });
@@ -25,7 +29,6 @@ function initializeSocket() {
 
     // Listen for new announcements
     socket.on('announcement:new', (announcement) => {
-        console.log('New announcement received:', announcement);
         // Reload announcements to show the new one
         loadAnnouncements();
         

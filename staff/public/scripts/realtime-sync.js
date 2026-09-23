@@ -1,5 +1,6 @@
 // Real-time synchronization module using Socket.io
 // Allows users to see what others are doing in real-time
+import { getIdToken } from './vps-auth-v2.js';
 
 const REALTIME_API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3001'
@@ -68,7 +69,6 @@ function notifyRealtimeSocketReady(eventName) {
 
 // Initialize Socket.io connection
 export function initRealtimeSync(user) {
-    console.log('🔄 [REALTIME] initRealtimeSync called with:', JSON.stringify(user));
 
     if (!user) {
         console.warn('🔄 [REALTIME] No user provided, skipping initialization');
@@ -76,8 +76,16 @@ export function initRealtimeSync(user) {
     }
 
     if (!user.id || !user.name) {
-        console.error('🔄 [REALTIME] Invalid user object - missing id or name:', JSON.stringify(user));
+        console.error('🔄 [REALTIME] Invalid user object - missing id or name');
         return;
+    }
+
+    // Retire cached clients that predate authenticated handshakes, including pending connections.
+    if (state.socket && (!state.authenticatedHandshake || state.currentUser?.id !== user.id)) {
+        state.socket.close();
+        state.socket = null;
+        state.isInitializing = false;
+        state.initialized = false;
     }
 
     // Use global state to check for existing initialization
@@ -102,11 +110,9 @@ export function initRealtimeSync(user) {
                 console.log('🔄 [REALTIME] Already connected as same user, skipping');
                 return;
             }
-            // Different user - re-register
-            console.log('🔄 [REALTIME] User changed, re-registering:', user.id, user.name);
-            state.currentUser = user;
-            registerCurrentUser();
-            return;
+            // Identity is immutable on the server: changing accounts needs a new handshake.
+            state.socket.close();
+            state.socket = null;
         } else if (state.socket.connecting) {
             // Socket is still connecting - wait for it
             console.log('🔄 [REALTIME] Socket is connecting, will register when connected');
@@ -120,7 +126,6 @@ export function initRealtimeSync(user) {
         }
     }
 
-    console.log('🔄 [REALTIME] Initializing with user:', user.id, user.name, user.role);
 
     state.isInitializing = true;
     state.currentUser = user;
@@ -128,6 +133,10 @@ export function initRealtimeSync(user) {
     // Connect to Socket.io server
     console.log('🔄 [REALTIME] Connecting to:', REALTIME_API_BASE);
     state.socket = io(REALTIME_API_BASE, {
+        auth: async (callback) => {
+            try { callback({ token: await getIdToken() }); }
+            catch (_) { callback({ token: null }); }
+        },
         transports: ['polling'], // POLLING ONLY - some mobile ISPs kill WebSocket connections
         upgrade: false, // Disable upgrade to WebSocket
         reconnection: true,
@@ -139,6 +148,7 @@ export function initRealtimeSync(user) {
         timeout: 30000,
         forceNew: false
     });
+    state.authenticatedHandshake = true;
 
     // Make socket globally available for other modules
     window.socket = state.socket;
@@ -152,12 +162,11 @@ export function initRealtimeSync(user) {
 
         // Validate currentUser before registration
         if (!state.currentUser || !state.currentUser.id || !state.currentUser.name) {
-            console.error('🔄 [REALTIME] Cannot register - currentUser is invalid:', JSON.stringify(state.currentUser));
+            console.error('🔄 [REALTIME] Cannot register - currentUser is invalid');
             return;
         }
 
         // Register immediately - no delay (mobile networks drop connections quickly)
-        console.log('🔄 [REALTIME] Registering user:', state.currentUser.id, state.currentUser.name);
 
         registerCurrentUser();
 
@@ -208,7 +217,6 @@ export function initRealtimeSync(user) {
 
     // Listen for online users list updates
     state.socket.on('users:list', (users) => {
-        console.log('👥 [REALTIME] Received online users list:', users);
         state.onlineUsers.clear();
         users.forEach(user => {
             const userId = normalizePresenceUserId(user.userId);
@@ -227,7 +235,6 @@ export function initRealtimeSync(user) {
     state.socket.on('user:connected', (data) => {
         const userId = normalizePresenceUserId(data.userId);
         if (userId && userId !== normalizePresenceUserId(state.currentUser.id)) {
-            console.log(`✅ [REALTIME] ${data.name} joined`);
             state.onlineUsers.set(userId, {
                 name: data.name,
                 role: data.role,
@@ -242,7 +249,6 @@ export function initRealtimeSync(user) {
     state.socket.on('user:disconnected', (data) => {
         const userId = normalizePresenceUserId(data.userId);
         if (userId && userId !== normalizePresenceUserId(state.currentUser.id)) {
-            console.log(`❌ [REALTIME] ${data.name} left`);
             state.onlineUsers.delete(userId);
             renderOnlineUsers();
         }
@@ -263,9 +269,6 @@ export function initRealtimeSync(user) {
 
     // Listen for patient selection events from other users
     state.socket.on('patient:selected', async (data) => {
-        console.log(`👤 [REALTIME] Patient selected event received:`, data);
-        console.log(`👤 [REALTIME] Current user ID: ${state.currentUser.id}`);
-        console.log(`👤 [REALTIME] Event user ID: ${data.userId}`);
 
         // Skip if this user is the one who selected the patient
         // (they already have the patient selected from their own action)
@@ -289,7 +292,6 @@ export function initRealtimeSync(user) {
     // Listen for anamnesa updates
     state.socket.on('anamnesa:updated', async (data) => {
         if (data.userId !== state.currentUser.id) {
-            console.log(`📝 [REALTIME] ${data.userName} updated anamnesa for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate anamnesa untuk: ${data.patientName}`, 'info');
 
             // Auto-reload anamnesa data if same patient, but only if no unsaved changes
@@ -308,7 +310,6 @@ export function initRealtimeSync(user) {
     // Listen for physical exam updates
     state.socket.on('physical:updated', async (data) => {
         if (data.userId !== state.currentUser.id) {
-            console.log(`🩺 [REALTIME] ${data.userName} updated physical exam for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate pemeriksaan fisik untuk: ${data.patientName}`, 'info');
 
             // Auto-reload physical exam data if same patient, but only if no unsaved changes
@@ -326,7 +327,6 @@ export function initRealtimeSync(user) {
     // Listen for USG exam updates
     state.socket.on('usg:updated', async (data) => {
         if (data.userId !== state.currentUser.id) {
-            console.log(`👶 [REALTIME] ${data.userName} updated USG exam for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate USG untuk: ${data.patientName}`, 'info');
 
             // Auto-reload USG data if same patient, but only if no unsaved changes
@@ -344,7 +344,6 @@ export function initRealtimeSync(user) {
     // Listen for lab exam updates
     state.socket.on('lab:updated', async (data) => {
         if (data.userId !== state.currentUser.id) {
-            console.log(`🔬 [REALTIME] ${data.userName} updated lab exam for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate pemeriksaan penunjang untuk: ${data.patientName}`, 'info');
 
             // Auto-reload lab data if same patient, but only if no unsaved changes
@@ -362,7 +361,6 @@ export function initRealtimeSync(user) {
     // Listen for billing updates
     state.socket.on('billing:updated', (data) => {
         if (data.userId !== state.currentUser.id) {
-            console.log(`💰 [REALTIME] ${data.userName} updated billing for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} memperbarui billing untuk: ${data.patientName}`, 'info');
         }
     });
@@ -370,7 +368,6 @@ export function initRealtimeSync(user) {
     // Listen for visit completion
     state.socket.on('visit:completed', (data) => {
         if (data.userId !== state.currentUser.id) {
-            console.log(`✅ [REALTIME] ${data.userName} completed visit for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} menyelesaikan kunjungan: ${data.patientName}`, 'success');
         }
     });
@@ -397,7 +394,6 @@ export function broadcastPatientSelection(patientId, patientName) {
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted patient selection:', patientName);
 }
 
 // Broadcast anamnesa update
@@ -420,7 +416,6 @@ export function broadcastAnamnesaUpdate(patientId, patientName) {
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted anamnesa update:', patientName);
 }
 
 // Broadcast intake verification
@@ -445,7 +440,6 @@ export function broadcastIntakeVerification(patientId, patientName, submissionId
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted intake verification:', patientName);
 }
 
 // Broadcast physical exam update
@@ -469,7 +463,6 @@ export function broadcastPhysicalExamUpdate(patientId, patientName) {
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted physical exam update:', patientName);
 }
 
 // Broadcast USG exam update
@@ -493,7 +486,6 @@ export function broadcastUSGExamUpdate(patientId, patientName) {
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted USG exam update:', patientName);
 }
 
 // Broadcast lab exam update
@@ -517,7 +509,6 @@ export function broadcastLabExamUpdate(patientId, patientName) {
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted lab exam update:', patientName);
 }
 
 // Broadcast billing update
@@ -541,7 +532,6 @@ export function broadcastBillingUpdate(patientId, patientName) {
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted billing update:', patientName);
 }
 
 // Broadcast visit completion
@@ -565,7 +555,6 @@ export function broadcastVisitCompleted(patientId, patientName) {
         timestamp: new Date().toISOString()
     });
 
-    console.log('📤 [REALTIME] Broadcasted visit completion:', patientName);
 }
 
 // Show real-time notification
@@ -659,7 +648,6 @@ export function clearRealtimeNotifications() {
 // Auto-select patient for all users
 async function autoSelectPatient(patientId, patientName) {
     try {
-        console.log(`[REALTIME] Auto-selecting patient: ${patientName} (ID: ${patientId})`);
         
         // Fetch patient data from API
         const token = await (await import('./vps-auth-v2.js')).getIdToken();

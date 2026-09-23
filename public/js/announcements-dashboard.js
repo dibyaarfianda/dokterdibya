@@ -4,6 +4,7 @@ const API_URL = window.location.hostname === 'localhost'
     : window.location.origin + '/api';
 
 let socket = null;
+let announcementRefreshTimer = null;
 let infoTerbaruAllAnnouncements = [];
 let infoTerbaruExpanded = false;
 let infoTerbaruObserver = null;
@@ -18,11 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeSocket() {
+    if (!announcementRefreshTimer) announcementRefreshTimer = setInterval(loadAnnouncements, 30000);
+    if (!window.PatientSession?.getToken() || typeof io !== 'function' || socket) return;
     const socketUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3000' 
         : window.location.origin;
     
     socket = io(socketUrl, {
+        auth: callback => callback({ token: window.PatientSession?.getToken() }),
         transports: ['polling'],
         upgrade: false
     });

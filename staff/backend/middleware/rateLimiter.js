@@ -173,6 +173,10 @@ function hashIdentity(authHeader) {
  */
 function coalesce(req, res, next) {
     if (req.method !== 'GET') return next();
+    // Authentication endpoints and cookie/conditional requests must execute independently.
+    const path = req.originalUrl.split('?')[0];
+    if (/(?:^|\/)(?:auth|login|logout|register|refresh|token|password|verify|me)(?:\/|$)/i.test(path) ||
+        req.headers.cookie || req.headers.range || req.headers['if-none-match'] || req.headers['if-modified-since']) return next();
 
     // Check master switch and failsafe
     if (!config.enabled || failsafe.tripped) {
@@ -190,13 +194,18 @@ function coalesce(req, res, next) {
         return next();
     }
 
-    const key = `${req.originalUrl}|${hashIdentity(authHeader)}`;
+    const key = `${req.originalUrl}|${hashIdentity(JSON.stringify([authHeader, req.headers.accept, req.headers['accept-language']]))}`;
     const pending = inflightRequests.get(key);
 
     if (pending && (Date.now() - pending.ts < config.ttlMs)) {
         // Piggyback — wait for the in-flight request's result
         counters.coalescedWaiters++;
-        pending.waiters.push(res);
+        const waiter = { res, next };
+        pending.waiters.push(waiter);
+        res.on('close', () => {
+            const index = pending.waiters.indexOf(waiter);
+            if (index !== -1) pending.waiters.splice(index, 1);
+        });
         return;
     }
 
@@ -210,35 +219,48 @@ function coalesce(req, res, next) {
         tripFailsafe();
     }
 
-    // Intercept res.json to replay to waiters
+    let settled = false;
+    let cleanupTimer;
+    function settle(snapshot) {
+        if (settled) return;
+        settled = true;
+        clearTimeout(cleanupTimer);
+        if (inflightRequests.get(key) === entry) inflightRequests.delete(key);
+        counters.coalesceMapSize = inflightRequests.size;
+        for (const waiter of entry.waiters.splice(0)) {
+            if (waiter.res.destroyed || waiter.res.writableEnded) continue;
+            if (!snapshot) {
+                // Errors, streams and auth responses run each waiter's own route/auth stack.
+                waiter.next();
+                continue;
+            }
+            waiter.res.status(snapshot.status);
+            for (const [name, value] of Object.entries(snapshot.headers)) waiter.res.set(name, value);
+            waiter.res.json(snapshot.body);
+        }
+    }
+
+    // Only successful JSON reads are shareable. Preserve their HTTP contract.
     const originalJson = res.json.bind(res);
     res.json = function (body) {
-        // Deep-clone before replay so downstream mutation cannot affect waiters
-        const frozen = JSON.parse(JSON.stringify(body));
-        for (const waiter of entry.waiters) {
-            try { waiter.json(frozen); } catch (_) {}
+        let snapshot = null;
+        if (res.statusCode >= 200 && res.statusCode < 300 &&
+            !res.getHeader('set-cookie') && !res.getHeader('www-authenticate') && body?.success !== false) {
+            const headers = {};
+            for (const name of ['cache-control', 'content-type', 'content-language', 'etag', 'last-modified', 'expires', 'pragma', 'vary']) {
+                const value = res.getHeader(name);
+                if (value !== undefined) headers[name] = value;
+            }
+            try { snapshot = { status: res.statusCode, headers, body: JSON.parse(JSON.stringify(body)) }; } catch (_) {}
         }
-        inflightRequests.delete(key);
-        counters.coalesceMapSize = inflightRequests.size;
+        settle(snapshot);
         return originalJson(body);
     };
 
-    // Safety net: drain waiters if response ends without calling .json()
-    res.on('close', () => {
-        const stale = inflightRequests.get(key);
-        if (stale === entry) {
-            inflightRequests.delete(key);
-            counters.coalesceMapSize = inflightRequests.size;
-        }
-    });
-
-    // Hard cleanup timeout
-    setTimeout(() => {
-        if (inflightRequests.has(key)) {
-            inflightRequests.delete(key);
-            counters.coalesceMapSize = inflightRequests.size;
-        }
-    }, 5000);
+    res.on('finish', () => settle(null));
+    res.on('close', () => settle(null));
+    cleanupTimer = setTimeout(() => settle(null), 5000);
+    cleanupTimer.unref?.();
 
     next();
 }

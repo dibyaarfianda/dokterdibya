@@ -56,13 +56,7 @@
         if (typeof window.getPatientToken === 'function') {
             return window.getPatientToken();
         }
-        // Fallback: common patient token storage keys
-        var keys = ['vps_auth_token', 'patient_token', 'patientToken', 'auth_token', 'token'];
-        for (var i = 0; i < keys.length; i++) {
-            var t = localStorage.getItem(keys[i]);
-            if (t) return t;
-        }
-        return null;
+        return window.PatientSession?.getToken() || null;
     }
 
     function getPatientProfile() {
@@ -106,6 +100,13 @@
         // Reuse existing Socket.IO instance from realtime-sync or window
         if (window.__realtimeSyncState && window.__realtimeSyncState.socket) {
             return window.__realtimeSyncState.socket;
+        }
+        if (!window._supportChatSocket && getToken() && typeof window.io === 'function') {
+            window._supportChatSocket = window.io(window.location.origin, {
+                transports: ['polling'], upgrade: false,
+                auth: callback => callback({ token: getToken() }),
+                reconnectionDelay: SOCKET_RECONNECT_DELAY
+            });
         }
         return window._supportChatSocket || null;
     }

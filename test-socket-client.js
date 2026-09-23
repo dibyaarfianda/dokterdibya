@@ -4,7 +4,11 @@
 const io = require('socket.io-client');
 
 // Connect to server
-const socket = io('http://localhost:3000');
+if (!process.env.SOCKET_TEST_TOKEN) throw new Error('Provide SOCKET_TEST_TOKEN for an authenticated local test');
+const socket = io('http://localhost:3000', {
+    transports: ['polling'], upgrade: false,
+    auth: { token: process.env.SOCKET_TEST_TOKEN }
+});
 
 socket.on('connect', () => {
     console.log('Test client connected:', socket.id);
@@ -14,11 +18,11 @@ socket.on('connect', () => {
 });
 
 socket.on('test_event', (data) => {
-    console.log('Test event received:', data);
+    console.log('Test event received');
 });
 
 socket.on('revision_requested', (data) => {
-    console.log('revision_requested received:', data);
+    console.log('revision_requested received');
 });
 
 socket.on('disconnect', () => {

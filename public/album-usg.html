@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
-    <script src="/scripts/patient-session.js?v=20260923activity1"></script>
+    <script src="/scripts/patient-session.js?v=20260924realtime1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -517,8 +517,8 @@
         }
     </style>
     <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
-    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260923activity1">
-    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260923activity1">
+    <link rel="stylesheet" href="/styles/patient-tool-shell.css?v=20260924realtime1">
+    <link rel="stylesheet" href="/styles/patient-tool-retrofit.css?v=20260924realtime1">
     <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit album-usg-page" data-tool-shell-active="dokumen" data-tool-kicker="Album USG" data-tool-title="Album USG." data-tool-copy="Galeri privat untuk foto USG dari kunjungan Anda, termasuk penanda foto baru dan pilihan thumbnail." data-tool-meta-label="Status" data-tool-meta-value="Galeri USG">
@@ -620,7 +620,9 @@
             var socketUrl = location.hostname === 'localhost'
                 ? 'http://localhost:3000'
                 : location.origin;
-            var socket = io(socketUrl, { transports: ['polling'] });
+            if (!window.PatientSession?.getToken()) return;
+            var socket = io(socketUrl, { transports: ['polling'], upgrade: false,
+                auth: callback => callback({ token: window.PatientSession?.getToken() }) });
 
             socket.on('usg:patient_updated', function(data) {
                 if (window.refreshUsgGallery) {
@@ -867,7 +869,7 @@
     </script>
 <script src="/js/patient-tracker.js?v=20260209"></script>
 <script src="/js/push-subscribe.js?v=20260209"></script>
-<script src="/scripts/patient-tool-shell.js?v=20260923activity1"></script>
-<script src="/scripts/patient-tool-retrofit.js?v=20260923activity1"></script>
+<script src="/scripts/patient-tool-shell.js?v=20260924realtime1"></script>
+<script src="/scripts/patient-tool-retrofit.js?v=20260924realtime1"></script>
 </body>
 </html>

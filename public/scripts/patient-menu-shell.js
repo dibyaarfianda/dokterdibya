@@ -1,4 +1,4 @@
-import { startCommunityBadge } from './community-chat-badge.js?v=20260923chat1';
+import { startCommunityBadge } from './community-chat-badge.js?v=20260924realtime1';
 import { createPortalNicknameStore } from './patient-shell/portal-nickname.js?v=20260917nickname1';
 import {
     getPatientToken as getToken,
@@ -2961,7 +2961,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
         function refreshPatientServiceWorker() {
             if ('serviceWorker' in navigator) {
-                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260923activity1';
+                const swUrl = window.PATIENT_SERVICE_WORKER_URL || '/sw.js?v=20260924realtime1';
                 navigator.serviceWorker.register(swUrl, { scope: '/' })
                     .then(registration => registration.update().catch(() => {}))
                     .catch(() => {});

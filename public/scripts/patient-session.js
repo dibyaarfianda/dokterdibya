@@ -5,7 +5,7 @@
     const USER_KEY = 'patient_user';
     const DEMO_MODE_KEY = 'patient_demo_mode';
     const LEGACY_TOKEN_KEYS = ['patient_token', 'auth_token', 'token'];
-    const PAGE_TRACKER_SRC = '/js/patient-tracker.js?v=20260923activity1';
+    const PAGE_TRACKER_SRC = '/js/patient-tracker.js?v=20260924realtime1';
     const PAGE_TRACKING_EXCLUDED_PATHS = new Set([
         '/',
         '/index.html',

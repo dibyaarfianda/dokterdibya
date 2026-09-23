@@ -443,6 +443,7 @@
             : 'https://dokterdibya.com';
 
         socket = io(socketUrl, {
+            auth: callback => callback({ token: getToken() }),
             transports: ['polling'],
             upgrade: false
         });

@@ -22,6 +22,7 @@ function createRealtimeClientHarness() {
         disconnect: jest.fn()
     };
     const context = {
+        getIdToken: async () => 'synthetic-staff-jwt',
         console,
         Map,
         Date,
@@ -51,6 +52,7 @@ function createRealtimeClientHarness() {
         io: jest.fn(() => socket)
     };
     const source = readRepoFile('staff', 'public', 'scripts', 'realtime-sync.js')
+        .replace(/^import .*;\r?\n/gm, '')
         .replace(/^export\s+/gm, '');
 
     vm.createContext(context);

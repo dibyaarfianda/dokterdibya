@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const socketUrl = window.location.hostname === 'localhost' 
             ? 'http://localhost:3000' 
             : 'https://dokterdibya.com';
-        socket = io(socketUrl);
+        socket = io(socketUrl, { transports: ['polling'], upgrade: false,
+            auth: async callback => callback({ token: await getIdToken() }) });
 
         socket.on('connect', () => {
             console.log('Socket connected for announcements');
@@ -674,7 +675,8 @@ window.initKelolaAnnouncement = async function() {
             const socketUrl = window.location.hostname === 'localhost' 
                 ? 'http://localhost:3000' 
                 : 'https://dokterdibya.com';
-            window.socket = io(socketUrl);
+            window.socket = io(socketUrl, { transports: ['polling'], upgrade: false,
+                auth: async callback => callback({ token: await getIdToken() }) });
         }
         socket = window.socket;
 
