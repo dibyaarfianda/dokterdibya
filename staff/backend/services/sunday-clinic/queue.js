@@ -16,7 +16,7 @@ const {
     QUEUE_CACHE_TTL_MS,
     queueTodayCache
 } = require('./shared');
-const { getSessionSettingsVersion } = require('../booking-session-settings');
+const { getSessionSettingsVersion, getSessionBreak, getCachedSessionSettings } = require('../booking-session-settings');
 
 /**
  * The cached payload stores slot_time already computed from booking_settings,
@@ -374,76 +374,52 @@ async function getQueueToday(req, res, next) {
     }
 }
 
+function queueFlags(row) {
+    return { is_queue_visible: Boolean(Number(row?.is_queue_visible)),
+        doctor_arrived: Boolean(Number(row?.doctor_arrived)), is_on_break: Boolean(Number(row?.is_on_break)) };
+}
+
 async function getQueueSettings(req, res, next) {
     try {
-        const [[row]] = await db.query(
-            'SELECT is_queue_visible, doctor_arrived, queue_label FROM clinic_queue_settings WHERE id = 1'
-        );
-        res.json({
-            success: true,
-            is_queue_visible: row ? Boolean(row.is_queue_visible) : false,
-            doctor_arrived: row ? Boolean(row.doctor_arrived) : false,
-            queue_label: row?.queue_label || 'Klinik Privat Dr. Dibya'
-        });
-    } catch (error) {
-        logger.error('Error fetching queue settings:', error);
-        next(error);
-    }
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+        const [[row]] = await db.query('SELECT is_queue_visible, doctor_arrived, is_on_break, queue_label FROM clinic_queue_settings WHERE id = 1');
+        const { dateStr } = getGmt7DayWindow();
+        const day = new Date(dateStr + 'T00:00:00Z').getUTCDay();
+        const settings = await getSessionSettings();
+        const [bookedSessions] = await db.query("SELECT DISTINCT session FROM sunday_appointments WHERE appointment_date = ? AND status IN ('pending_confirmation', 'confirmed', 'completed')", [dateStr]);
+        const booked = new Set(bookedSessions.map(row => Number(row.session)));
+        const breaks = (getCachedSessionSettings() || settings).filter(setting =>
+            (setting.isActive && Number(setting.dayOfWeek) === day) || booked.has(Number(setting.session)))
+            .map(setting => ({ session: setting.session, ...getSessionBreak(setting) }))
+            .filter(rest => rest.startTime);
+        res.json({ success: true, ...queueFlags(row), breaks,
+            queue_label: row?.queue_label || 'Klinik Privat Dr. Dibya' });
+    } catch (error) { logger.error('Error fetching queue settings:', error); next(error); }
 }
 
 async function putQueueSettings(req, res, next) {
     try {
-        const { is_queue_visible, doctor_arrived } = req.body;
-
-        // Always read current values first so each toggle is independent
-        const [[currentSettings]] = await db.query(
-            'SELECT is_queue_visible, doctor_arrived FROM clinic_queue_settings WHERE id = 1 LIMIT 1'
-        );
-        const curVisible = currentSettings ? Number(currentSettings.is_queue_visible) : 0;
-        const curArrived = currentSettings ? Number(currentSettings.doctor_arrived) : 0;
-
-        let visible;
-        let doctorArrived;
-
-        if (typeof is_queue_visible === 'boolean' || is_queue_visible === 0 || is_queue_visible === 1) {
-            // Explicit value provided for queue visibility
-            visible = is_queue_visible ? 1 : 0;
-        } else if (typeof doctor_arrived !== 'undefined') {
-            // Only doctor_arrived is being updated — preserve queue visibility as-is
-            visible = curVisible;
+        const fields = ['is_queue_visible', 'doctor_arrived', 'is_on_break'];
+        const provided = fields.filter(key => Object.prototype.hasOwnProperty.call(req.body, key));
+        if (provided.some(key => ![true, false, 0, 1].includes(req.body[key]))) {
+            return res.status(400).json({ success: false, message: 'Status harus bernilai aktif atau nonaktif' });
+        }
+        // Update only supplied flags, so concurrent independent controls cannot overwrite each other.
+        if (provided.length) {
+            await db.query('UPDATE clinic_queue_settings SET ' + provided.map(key => key + ' = ?').join(', ') + ' WHERE id = 1',
+                provided.map(key => req.body[key] ? 1 : 0));
+        } else if (Object.keys(req.body).length === 0) {
+            await db.query('UPDATE clinic_queue_settings SET is_queue_visible = 1 - is_queue_visible WHERE id = 1');
         } else {
-            // Empty body: toggle queue visibility
-            visible = curVisible === 1 ? 0 : 1;
+            return res.status(400).json({ success: false, message: 'Pengaturan tidak dikenal' });
         }
-
-        if (typeof doctor_arrived === 'boolean' || doctor_arrived === 0 || doctor_arrived === 1) {
-            doctorArrived = doctor_arrived ? 1 : 0;
-        } else {
-            // Preserve current doctor_arrived when not explicitly provided
-            doctorArrived = curArrived;
-        }
-
-        await db.query(
-            'UPDATE clinic_queue_settings SET is_queue_visible = ?, doctor_arrived = ? WHERE id = 1',
-            [visible, doctorArrived]
-        );
-        // Broadcast setting change to patient portal
-        if (realtimeSync && realtimeSync.broadcast) {
-            realtimeSync.broadcast({
-                type: 'queue:settings_changed',
-                is_queue_visible: Boolean(visible),
-                doctor_arrived: Boolean(doctorArrived)
-            });
-        }
-        res.json({
-            success: true,
-            is_queue_visible: Boolean(visible),
-            doctor_arrived: Boolean(doctorArrived)
-        });
-    } catch (error) {
-        logger.error('Error updating queue settings:', error);
-        next(error);
-    }
+        const [[row]] = await db.query('SELECT is_queue_visible, doctor_arrived, is_on_break FROM clinic_queue_settings WHERE id = 1');
+        const flags = queueFlags(row);
+        if (realtimeSync?.broadcast) realtimeSync.broadcast({ type: 'queue:settings_changed', ...flags });
+        res.json({ success: true, ...flags });
+    } catch (error) { logger.error('Error updating queue settings:', error); next(error); }
 }
 
 async function putRecordsByMrIdQueueStatus(req, res, next) {

@@ -68,7 +68,9 @@ async function loadQueueSettings(signal) {
         if (result && result.success) {
             lastSettings = {
                 is_queue_visible: Boolean(result.is_queue_visible),
-                doctor_arrived: Boolean(result.doctor_arrived)
+                doctor_arrived: Boolean(result.doctor_arrived),
+                is_on_break: Boolean(result.is_on_break),
+                breaks: result.breaks || []
             };
         }
     } catch (error) {
@@ -128,7 +130,9 @@ async function loadAntrianOnlineQueue(forceRefresh = false, signal) {
             dateLabel: formatDateLabel(result.date),
             updatedAt: new Date(),
             isQueueVisible: settings.is_queue_visible,
-            doctorArrived: settings.doctor_arrived
+            doctorArrived: settings.doctor_arrived,
+            isOnBreak: settings.is_on_break,
+            breaks: settings.breaks
         });
     } catch (error) {
         if (error?.name === 'AbortError') throw error;
@@ -143,6 +147,7 @@ async function loadAntrianOnlineQueue(forceRefresh = false, signal) {
 function bindPageActions() {
     if (pageBound) return;
     pageBound = true;
+    window.addEventListener('queue:settings_changed', () => loadAntrianOnlineQueue(true));
 
     const page = document.getElementById('antrian-online-page');
     if (!page) return;
@@ -162,6 +167,15 @@ function bindPageActions() {
                 await window.toggleStaffQueueVisibility();
             }
             await loadAntrianOnlineQueue(true);
+            return;
+        }
+
+        const breakButton = event.target.closest('#antrian-online-break-btn');
+        if (breakButton) {
+            event.preventDefault();
+            breakButton.disabled = true;
+            try { await window.setQueueBreakStatus(!lastSettings.is_on_break); }
+            finally { await loadAntrianOnlineQueue(true); breakButton.disabled = false; }
             return;
         }
 

@@ -989,6 +989,7 @@
         }
     </style>
     <script>window.__patientPortalHeaderInstalled = true;</script>
+<script src="/scripts/booking-break-display.js?v=20260923-1"></script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit booking-klinik-page" data-tool-shell-active="jadwal" data-tool-kicker="Booking Klinik" data-tool-title="Atur janji klinik." data-tool-copy="Pilih tanggal praktik, slot waktu, jenis konsultasi, lalu kirim permintaan booking ke staff klinik." data-tool-meta-label="Alur" data-tool-meta-value="4 langkah">
     <!-- Top Bar -->
@@ -1323,7 +1324,7 @@
                     badgeText = `${availableCount} slot tersisa`;
                 }
 
-                const slotsHtml = session.slots.map(slot => `
+                const slotsHtml = BookingBreakDisplay.timeline(session.slots, session.break).map(slot => slot.isBreak ? BookingBreakDisplay.block(slot) : `
                     <button class="slot-btn ${slot.available ? '' : 'disabled'}"
                             data-session="${session.session}"
                             data-session-label="${session.label}"

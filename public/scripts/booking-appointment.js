@@ -158,7 +158,7 @@ function renderSessions(sessions) {
             badgeText = `Hanya ${availableCount} slot`;
         }
         
-        const slotsHtml = session.slots.map(slot => `
+        const slotsHtml = BookingBreakDisplay.timeline(session.slots, session.break).map(slot => slot.isBreak ? BookingBreakDisplay.block(slot) : `
             <button class="slot-btn ${slot.available ? '' : 'disabled'}" 
                     data-session="${session.session}"
                     data-session-label="${session.label}"

@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v407';
+        window.STAFF_CACHE_VERSION = 'v408';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v407">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v407">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v407">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v407">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v408">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v408">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v408">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v408">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v407">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v408">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v407">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v408">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -54,7 +54,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v407"></script>
+    <script src="scripts/error-handler.js?v=v408"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -69,10 +69,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v407">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v408">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v407">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v408">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -376,6 +376,11 @@
             <li class="nav-item navbar-doctor-control" style="display: flex; align-items: center; margin-right: 8px;">
                 <button id="btn-doctor-toggle" class="btn btn-sm btn-outline-secondary" onclick="window.toggleDoctorArrivalStatus()" title="Toggle status kehadiran dokter" style="font-size:12px; padding:4px 10px;">
                     <i class="fas fa-user-md mr-1"></i><span id="lbl-doctor-toggle">Belum dimulai</span>
+                </button>
+            </li>
+            <li class="nav-item navbar-break-control" style="display:flex; align-items:center; margin-right:8px;">
+                <button id="btn-break-toggle" class="btn btn-sm btn-outline-secondary" onclick="window.toggleQueueBreakStatus()" aria-pressed="false" title="Mulai atau akhiri istirahat" style="font-size:12px; padding:4px 10px;">
+                    <i class="fas fa-coffee mr-1"></i><span id="lbl-break-toggle">Istirahat</span>
                 </button>
             </li>
             <li class="nav-item dropdown user-menu" style="display: flex; align-items: center; height: 100%;">
@@ -3768,8 +3773,8 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/actions.js?v=v407"></script>
-<script defer src="scripts/patient-demo-manager.js?v=v407"></script>
+<script defer src="scripts/shell/actions.js?v=v408"></script>
+<script defer src="scripts/patient-demo-manager.js?v=v408"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3849,8 +3854,8 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v407" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v407" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v408" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v408" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3862,7 +3867,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v407"></script>
+<script defer src="scripts/rum.js?v=v408"></script>
 
 <!-- Core app modules -->
 <script>
@@ -3997,6 +4002,40 @@
                 if (lbl) lbl.textContent = 'Belum dimulai';
             }
         }
+        var _breakBusy = false;
+        function _updateBreakBtn(active) {
+            var btn = document.getElementById('btn-break-toggle');
+            if (!btn) return;
+            btn.className = 'btn btn-sm ' + (active ? 'btn-success' : 'btn-outline-secondary');
+            btn.setAttribute('aria-pressed', String(!!active));
+            document.getElementById('lbl-break-toggle').textContent = active ? 'Sedang istirahat' : 'Istirahat';
+        }
+        window.toggleQueueBreakStatus = function() {
+            return window.setQueueBreakStatus(document.getElementById('btn-break-toggle').getAttribute('aria-pressed') !== 'true');
+        };
+        window.setQueueBreakStatus = async function(active) {
+            if (_breakBusy) return;
+            var token = _queueToken();
+            if (!token) return;
+            var btn = document.getElementById('btn-break-toggle');
+            _breakBusy = true;
+            btn.disabled = true;
+            try {
+                var response = await fetch('/api/sunday-clinic/queue/settings', {
+                    method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({ is_on_break: !!active })
+                });
+                var data = await response.json();
+                if (!response.ok || !data.success) throw new Error(data.message || 'Gagal mengubah status istirahat');
+                _updateBreakBtn(data.is_on_break);
+                _updateBtn(data.is_queue_visible);
+                _updateDoctorArrivedBtn(data.doctor_arrived);
+                window.dispatchEvent(new Event('queue:settings_changed'));
+                if (window.showToast) window.showToast(active ? 'success' : 'info', active ? 'Istirahat dimulai' : 'Istirahat selesai');
+            } catch (error) {
+                if (window.showToast) window.showToast('error', error.message);
+            } finally { _breakBusy = false; btn.disabled = false; }
+        };
         window.toggleDoctorArrivalStatus = function() {
             var btn = document.getElementById('btn-doctor-toggle');
             var isCurrentlyArrived = btn && btn.classList.contains('btn-success');
@@ -4009,6 +4048,7 @@
                 if (d.success) {
                     _updateBtn(d.is_queue_visible);
                     _updateDoctorArrivedBtn(Boolean(d.doctor_arrived));
+                    _updateBreakBtn(Boolean(d.is_on_break));
                 }
             } catch(e) {}
         }
@@ -4052,6 +4092,7 @@
                 if (d.success) {
                     _updateBtn(Boolean(d.is_queue_visible));
                     _updateDoctorArrivedBtn(Boolean(d.doctor_arrived));
+                    _updateBreakBtn(Boolean(d.is_on_break));
                     if (window.showToast) window.showToast(
                         isArrived ? 'success' : 'info',
                         isArrived ? 'Status: Dokter hadir' : 'Status: Belum dimulai'
@@ -4069,11 +4110,13 @@
         // Listen for real-time queue:settings_changed broadcast from server
         // Socket is initialized later (after auth), so poll until ready
         function _attachQueueSocketListener() {
-            if (window.socket) {
-                window.socket.on('queue:settings_changed', function(data) {
+            var socket = window.socket || window.__realtimeSyncState?.socket;
+            if (socket) {
+                socket.on('queue:settings_changed', function(data) {
                     if (data && typeof data.is_queue_visible !== 'undefined') {
                         _updateBtn(Boolean(data.is_queue_visible));
                     }
+                    if (data && typeof data.is_on_break !== 'undefined') _updateBreakBtn(Boolean(data.is_on_break));
                     if (data && typeof data.doctor_arrived !== 'undefined') {
                         _updateDoctorArrivedBtn(Boolean(data.doctor_arrived));
                     }
@@ -4087,7 +4130,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v407"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v408"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4240,7 +4283,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v407"></script>
+ <script src="scripts/mobile-helper.js?v=v408"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4252,8 +4295,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v407"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v407"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v408"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v408"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

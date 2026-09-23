@@ -1,0 +1,1 @@
+ALTER TABLE clinic_queue_settings ADD COLUMN IF NOT EXISTS is_on_break TINYINT(1) NOT NULL DEFAULT 0;

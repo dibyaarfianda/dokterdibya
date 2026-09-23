@@ -896,13 +896,13 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar > .navbar-nav:first-child,
-    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto > .nav-item:not(.navbar-registration-code):not(.navbar-queue-control):not(.navbar-doctor-control) {
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto > .nav-item:not(.navbar-registration-code):not(.navbar-queue-control):not(.navbar-doctor-control):not(.navbar-break-control) {
         display: none !important;
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .main-header.navbar .navbar-nav.ml-auto {
         display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
         align-items: center !important;
         justify-content: center !important;
         width: 100% !important;
@@ -940,7 +940,8 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-queue-control,
-    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-doctor-control {
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-doctor-control,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-break-control {
         display: flex !important;
         flex: 0 1 auto !important;
         align-items: center !important;
@@ -951,7 +952,8 @@ body.mobile-app-mode .main-header {
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) .navbar-registration-code-value,
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-queue-vis-toggle,
-    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-doctor-toggle {
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-doctor-toggle,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-break-toggle {
         width: 100% !important; /* Equal-size header controls. */
         min-width: 0 !important;
         min-height: 30px !important;
@@ -960,7 +962,8 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-queue-vis-toggle,
-    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-doctor-toggle {
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-doctor-toggle,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #btn-break-toggle {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -972,7 +975,8 @@ body.mobile-app-mode .main-header {
     }
 
     body.mobile-app-mode:not(.sunday-clinic-embedded-active) #lbl-queue-vis,
-    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #lbl-doctor-toggle {
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #lbl-doctor-toggle,
+    body.mobile-app-mode:not(.sunday-clinic-embedded-active) #lbl-break-toggle {
         display: block !important;
         max-width: 72px !important;
         overflow: hidden !important;

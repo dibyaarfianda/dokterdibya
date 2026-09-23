@@ -17,6 +17,7 @@ jest.mock('../../routes/patient-notifications', () => ({
 }));
 
 jest.mock('../../realtime-sync', () => ({
+    broadcast: jest.fn(),
     broadcastNewBooking: jest.fn(),
     broadcastBookingCancel: jest.fn(),
     broadcastBookingUpdate: jest.fn(),
@@ -79,6 +80,7 @@ describe('booking break API', () => {
         const pub = await request(app).get('/api/booking-settings/public').expect(200);
         expect(pub.body.sessions[0]).toMatchObject({ breakStartTime: '09:20', breakDurationMinutes: 30, endTime: '10:35' });
         const available = await request(app).get('/api/sunday-appointments/available?date=2026-09-27').set('Authorization', authHeader()).expect(200);
+        expect(available.body.sessions[0].break).toEqual({ startTime: '09:20', endTime: '09:50', durationMinutes: 30 });
         expect(available.body.sessions[0].slots.map(s => s.time)).toEqual(['09:00','09:50','10:05','10:20']);
         const mine = await request(app).get('/api/sunday-appointments/my-bookings').set('Authorization', authHeader()).expect(200);
         expect(mine.body.bookings[0]).toMatchObject({ id: 202, slot_number: 2, status: 'confirmed', slot_time: '09:50' });
@@ -103,6 +105,36 @@ describe('booking break API', () => {
         app.get('/test-queue', require('../../services/sunday-clinic/queue').getQueuePublic);
         const queue = await request(app).get('/test-queue').expect(200);
         expect(queue.body.data[0].slot_time).toBe('09:50');
+    });
+    test('manual break updates independently and is returned after refresh with no cache', async () => {
+        const state = { is_queue_visible: 1, doctor_arrived: 1, is_on_break: 0 };
+        const original = db.query.getMockImplementation();
+        db.query.mockImplementation(async (sql, params) => {
+            if (sql.includes('UPDATE clinic_queue_settings')) {
+                [...sql.matchAll(/(\w+)\s*=\s*\?/g)].forEach((match, i) => { state[match[1]] = params[i]; });
+                return [{affectedRows:1}];
+            }
+            if (sql.includes('FROM clinic_queue_settings')) return [[{...state}]];
+            return original(sql, params);
+        });
+        const handlers = require('../../services/sunday-clinic/queue');
+        app.put('/test-settings', handlers.putQueueSettings);
+        app.get('/test-settings', handlers.getQueueSettings);
+        const result = await request(app).put('/test-settings').send({is_on_break:true}).expect(200);
+        expect(result.body).toMatchObject({is_on_break:true,is_queue_visible:true,doctor_arrived:true});
+        const fresh = await request(app).get('/test-settings').expect(200);
+        expect(fresh.body.is_on_break).toBe(true);
+        expect(fresh.headers['cache-control']).toContain('no-store');
+        await request(app).put('/test-settings').send({is_on_break:'yes'}).expect(400);
+        await request(app).put('/test-settings').send({is_on_break:false}).expect(200);
+        expect(state).toEqual({is_queue_visible:1,doctor_arrived:1,is_on_break:0});
+    });
+    test('inactive session with existing appointments still exposes its break in queue settings', async () => {
+        setting.break_start_time = '09:20'; setting.break_duration_minutes = 30; setting.is_active = false;
+        const handlers = require('../../services/sunday-clinic/queue');
+        app.get('/test-settings', handlers.getQueueSettings);
+        const response = await request(app).get('/test-settings').expect(200);
+        expect(response.body.breaks).toContainEqual({session:1,startTime:'09:20',endTime:'09:50',durationMinutes:30});
     });
     test('new sessions persist their break and extended end', async () => {
         db.query.mockImplementationOnce(async () => [[]]);

@@ -87,6 +87,7 @@ export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
     : '';
   const isQueueVisible = Boolean(options.isQueueVisible);
   const doctorArrived = Boolean(options.doctorArrived);
+  const isOnBreak = Boolean(options.isOnBreak);
 
   return `
     <div class="card card-success card-outline">
@@ -105,16 +106,20 @@ export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
           <button type="button" class="btn btn-${doctorArrived ? 'success' : 'outline-secondary'} btn-sm" id="antrian-online-doctor-btn" title="Status dokter untuk portal pasien">
             <i class="fas fa-user-md mr-1"></i>${doctorArrived ? 'Dokter hadir' : 'Belum dimulai'}
           </button>
+          <button type="button" class="btn btn-${isOnBreak ? 'success' : 'outline-secondary'} btn-sm" id="antrian-online-break-btn" aria-pressed="${isOnBreak}">
+            <i class="fas fa-coffee mr-1"></i>${isOnBreak ? 'Sedang istirahat' : 'Istirahat'}
+          </button>
         </div>
       </div>
       <div class="card-body">
+        ${isOnBreak ? '<div class="alert alert-success" role="status">Sedang istirahat</div>' : ''}
         <div class="row">
           ${renderSummaryBox('Total', summary.total, 'primary', 'fa-users')}
           ${renderSummaryBox('Menunggu', summary.waiting, 'warning', 'fa-hourglass-half')}
           ${renderSummaryBox('Proses', summary.inProgress, 'info', 'fa-stethoscope')}
           ${renderSummaryBox('Selesai', summary.completed, 'success', 'fa-check-circle')}
         </div>
-        ${items.length ? renderOnlineQueueTable(items) : renderOnlineQueueEmptyState()}
+        ${items.length || options.breaks?.length ? renderOnlineQueueTable(items, options) : renderOnlineQueueEmptyState()}
       </div>
     </div>
   `;
@@ -134,7 +139,13 @@ function renderSummaryBox(label, value, color, icon) {
   `;
 }
 
-function renderOnlineQueueTable(items) {
+function renderOnlineQueueTable(items, options) {
+  const rows = items.map((item, index) => ({time: item.slot_time || '', html: renderOnlineQueueRow(item, index)}));
+  for (const rest of [...(options.breaks || [])].sort((a,b) => a.startTime.localeCompare(b.startTime))) {
+    const html = `<tr class="booking-break-row ${options.isOnBreak ? 'bg-success' : 'bg-light'}"><td colspan="6" style="text-align:center !important; padding:16px !important;"><i class="fas fa-coffee mr-2"></i>Istirahat &middot; ${escapeHtml(rest.startTime)} - ${escapeHtml(rest.endTime)} WIB &middot; Sesi ${escapeHtml(rest.session)}${options.isOnBreak ? '  -  Sedang istirahat' : ''}</td></tr>`;
+    const index = rows.findIndex(row => row.time >= rest.startTime);
+    rows.splice(index < 0 ? rows.length : index, 0, {time: rest.startTime, html});
+  }
   return `
     <div class="table-responsive">
       <table class="table table-hover table-sm mb-0">
@@ -149,7 +160,7 @@ function renderOnlineQueueTable(items) {
           </tr>
         </thead>
         <tbody>
-          ${items.map((item, index) => renderOnlineQueueRow(item, index)).join('')}
+          ${rows.map(row => row.html).join('')}
         </tbody>
       </table>
     </div>

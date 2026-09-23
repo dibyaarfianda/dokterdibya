@@ -10,7 +10,7 @@
  */
 
 const db = require('../db');
-const { slotTime } = require('../../public/scripts/booking-slot-utils');
+const { slotTime, schedule } = require('../../public/scripts/booking-slot-utils');
 
 const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const CACHE_TTL = 60000; // 1 minute cache
@@ -149,7 +149,17 @@ function getSlotTimeFromBookingRow(row) {
     return slotTime({ ...row, slot_duration: Number(row.slot_duration) || LEGACY_SLOT_DURATION }, row.slot_number);
 }
 
+function getSessionBreak(setting) {
+    if (!setting?.breakStartTime || !setting.breakDurationMinutes) return null;
+    const result = schedule({ start_time: setting.startTime, end_time: setting.endTime,
+        slot_duration: setting.slotDuration, max_slots: setting.maxSlots,
+        break_start_time: setting.breakStartTime, break_duration_minutes: setting.breakDurationMinutes });
+    return { startTime: setting.breakStartTime, endTime: result.break_end_time,
+        durationMinutes: Number(setting.breakDurationMinutes) };
+}
+
 module.exports = {
+    getSessionBreak,
     DAY_NAMES,
     getDayName,
     getSessionSettings,

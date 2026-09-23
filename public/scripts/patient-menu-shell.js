@@ -1792,7 +1792,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             return labels[status] || 'Menunggu';
         }
 
-        function renderLiveQueueHome(queueItems) {
+        function renderLiveQueueHome(queueItems, settings = {}) {
             const list = document.getElementById('live-queue-home-list');
             const empty = document.getElementById('live-queue-empty');
             const total = document.getElementById('live-queue-total');
@@ -1805,13 +1805,21 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             current.textContent = active ? '#' + (active.queue_position || active.slot_number || '-') : '-';
 
             if (items.length === 0) {
-                list.innerHTML = '';
+                list.innerHTML = (settings.breaks || []).map(rest => BookingBreakDisplay.block(rest, settings.is_on_break)).join('');
                 empty.style.display = 'block';
                 return;
             }
 
             empty.style.display = 'none';
-            list.innerHTML = items.slice(0, 4).map(function(item, index) {
+            const rows = items.slice(0, 4).map(item => ({...item, time: item.slot_time}));
+            for (const rest of [...(settings.breaks || [])].sort((a,b) => a.startTime.localeCompare(b.startTime))) {
+                const index = rows.findIndex(item => item.time >= rest.startTime);
+                rows.splice(index < 0 ? rows.length : index, 0, {isBreak: true, ...rest});
+            }
+            let patientIndex = 0;
+            list.innerHTML = rows.map(function(item) {
+                if (item.isBreak) return BookingBreakDisplay.block(item, settings.is_on_break);
+                const index = patientIndex++;
                 const position = item.queue_position || item.slot_number || (index + 1);
                 return '<div class="live-queue-item">' +
                     '<div class="live-queue-number">' + escapeHtml(position) + '</div>' +
@@ -1854,10 +1862,10 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                 }
 
                 if (queue.success) {
-                    document.getElementById('live-queue-doctor-status').textContent = settings.doctor_arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang';
+                    document.getElementById('live-queue-doctor-status').textContent = settings.is_on_break ? 'Sedang istirahat' : (settings.doctor_arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang');
                     section.classList.add('show');
                     requestAnimationFrame(updateHomeActionGap);
-                    renderLiveQueueHome(queue.data);
+                    renderLiveQueueHome(queue.data, settings);
                 }
             } catch (error) {
                 section.classList.remove('show');

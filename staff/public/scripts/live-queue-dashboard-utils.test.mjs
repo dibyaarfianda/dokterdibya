@@ -68,3 +68,16 @@ test('renderOnlineQueuePageHtml renders a full staff queue page with actions', (
   assert.match(html, /Anamnesa/);
   assert.match(html, /openSundayClinicWithMrId\('DRD0042', 'identitas'\)/);
 });
+
+test('rest row is chronological, green only when active, and never counted as patient', () => {
+ const items = [{patient_name:'Before',slot_time:'12:45'}, {patient_name:'After',slot_time:'13:45'}];
+ const options = {breaks:[{session:1,startTime:'13:00',endTime:'13:45'}],isOnBreak:true};
+ const html = renderOnlineQueuePageHtml(items, options);
+ assert.ok(html.indexOf('Before') < html.indexOf('Istirahat &middot;'));
+ assert.ok(html.indexOf('Istirahat &middot;') < html.indexOf('After'));
+ assert.match(html, /aria-label="Total 2"/);
+ assert.match(html, /booking-break-row bg-success/);
+ assert.match(html, /id="antrian-online-break-btn"/);
+ assert.doesNotMatch(renderOnlineQueuePageHtml(items, {...options,isOnBreak:false}), /booking-break-row bg-success/);
+ assert.match(renderOnlineQueuePageHtml([], options), /13:00/);
+});

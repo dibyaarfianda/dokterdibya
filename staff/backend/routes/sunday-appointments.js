@@ -11,6 +11,7 @@ const { createPatientNotification } = require('./patient-notifications');
 const realtimeSync = require('../realtime-sync');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const {
+    getSessionBreak,
     getDayName,
     getSessionSettings,
     getCachedSessionSettings,
@@ -221,6 +222,7 @@ router.get('/available', verifyToken, async (req, res) => {
         const sessions = availableSessions.map(setting => ({
             session: setting.session,
             label: setting.label,
+            break: getSessionBreak(setting),
             slots: []
         }));
 

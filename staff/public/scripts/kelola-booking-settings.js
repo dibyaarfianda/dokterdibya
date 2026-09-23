@@ -125,8 +125,15 @@ import './booking-slot-utils.js?v=20260922-1';
                 return '<div class="text-muted small">Preview slot belum tersedia.</div>';
             }
 
-            const slots = Array.from({ length: maxSlots }, (_, index) => {
-                const slotNumber = index + 1;
+            const previewRows = schedule(session).slots;
+            const restEnd = schedule(session).break_end_time;
+            if (restEnd) {
+                const index = previewRows.findIndex(slot => slot.time >= session.break_start_time.slice(0, 5));
+                previewRows.splice(index < 0 ? previewRows.length : index, 0, {isBreak: true});
+            }
+            const slots = previewRows.map(slot => {
+                if (slot.isBreak) return `<div class="booking-break-block bg-light border rounded text-center p-2 mb-2" style="width:100%;">Istirahat &middot; ${escapeHtml(session.break_start_time.slice(0,5))} - ${restEnd} WIB</div>`;
+                const slotNumber = slot.number;
                 const time = slotTime(session, slotNumber);
                 return `
                     <span class="badge badge-light border text-dark mr-1 mb-1 px-2 py-1">
@@ -292,7 +299,21 @@ import './booking-slot-utils.js?v=20260922-1';
             const result = schedule(readScheduleForm());
             summary.className = 'small text-info mb-2';
             summary.textContent = `${result.break_end_time ? 'Istirahat selesai ' + result.break_end_time + '. ' : ''}Jam selesai sesi: ${result.end_time} WIB (menyesuaikan seluruh slot).`;
-            for (const slot of result.slots) {
+            const rows = result.slots;
+            const restStart = readScheduleForm().break_start_time;
+            if (result.break_end_time) {
+                const index = rows.findIndex(slot => slot.time >= restStart);
+                rows.splice(index < 0 ? rows.length : index, 0, {isBreak: true});
+            }
+            for (const slot of rows) {
+                if (slot.isBreak) {
+                    const block = document.createElement('div');
+                    block.className = 'booking-break-block bg-light border rounded text-center p-2 mb-2';
+                    block.style.width = '100%';
+                    block.textContent = `Istirahat  |  ${restStart} - ${result.break_end_time} WIB`;
+                    preview.appendChild(block);
+                    continue;
+                }
                 const badge = document.createElement('span');
                 badge.className = 'badge badge-light border text-dark mr-1 mb-1 px-2 py-1';
                 badge.textContent = `Slot ${slot.number} ${slot.time}`;
