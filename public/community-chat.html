@@ -3307,6 +3307,25 @@
         `;
 
         const bubble = row.querySelector('.msg');
+        const profileLink = row.querySelector('.msg-user');
+        if (isStaff) {
+            profileLink.href += '&staffBridge=1' + (isStaffEmbed ? '&embed=staff' : '');
+            profileLink.addEventListener('click', async event => {
+                if (msg.sender_type !== 'patient') return;
+                // Use the existing staff detail view, including intake and visit history.
+                // The parent keeps its own staff token and existing API permissions.
+                try {
+                    const panel = window.parent !== window ? window.parent : window.opener;
+                    if (panel && panel.location.origin === window.location.origin && typeof panel.showPatientDetail === 'function') {
+                        event.preventDefault();
+                        await panel.showPatientDetail(String(msg.sender_id));
+                    }
+                } catch (error) {
+                    event.preventDefault();
+                    showToast('Tidak dapat membuka detail pasien dari Staff Panel.', 'error');
+                }
+            });
+        }
         const quoteMeta = { id: msg.id, sender: displayName, text: builtMessage.bodyText };
         attachQuoteGesture(bubble, quoteMeta);
         row.querySelector('.msg-quote-action').addEventListener('click', () => setQuotedMessage(quoteMeta));

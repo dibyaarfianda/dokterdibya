@@ -2,6 +2,7 @@
 <html lang="id">
 <head>
     <script src="/scripts/patient-session.js?v=20260814demo1"></script>
+    <script src="/scripts/patient-session.js?v=20260814demo1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Community Profile - SISIwanita</title>
@@ -237,7 +238,9 @@
 </div>
 
 <script type="module">
-    const TOKEN_KEYS = ['vps_auth_token', 'token', 'idToken', 'patient_token'];
+    import { docboardSession } from '/scripts/docboard-session.js?v=20260923chat1';
+    const params = new URLSearchParams(window.location.search);
+    const staffContext = params.get('staffBridge') === '1' || params.get('embed') === 'staff';
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
 
     const avatar = document.getElementById('avatar');
@@ -248,14 +251,28 @@
     const nicknameEl = document.getElementById('nickname');
     const statusEl = document.getElementById('status');
 
-    function getToken() {
-        for (const key of TOKEN_KEYS) {
-            const local = localStorage.getItem(key);
-            const session = sessionStorage.getItem(key);
-            if (local) return local;
-            if (session) return session;
+    async function getToken() {
+        if (!staffContext) return window.PatientSession?.getToken() || null;
+        const host = window.parent !== window ? window.parent : window.opener;
+        if (host) {
+            const bridged = await new Promise(resolve => {
+                const finish = token => { clearTimeout(timer); window.removeEventListener('message', receive); resolve(token); };
+                const receive = event => {
+                    if (event.origin !== window.location.origin || event.source !== host) return;
+                    if (event.data?.type === 'STAFF_COMMUNITY_CHAT_AUTH' && typeof event.data.token === 'string') finish(event.data.token);
+                };
+                const timer = setTimeout(() => finish(null), 5000);
+                window.addEventListener('message', receive);
+                host.postMessage({ type: 'COMMUNITY_CHAT_READY_FOR_STAFF_AUTH' }, window.location.origin);
+            });
+            if (bridged) return bridged;
         }
-        return null;
+        return [docboardSession.getToken(), window.PatientSession?.getToken()].find(value => {
+            try {
+                const user = JSON.parse(atob(value.split('.')[1]));
+                return user.id && user.user_type !== 'patient' && user.role !== 'patient' && (!user.exp || user.exp * 1000 > Date.now());
+            } catch (_) { return false; }
+        }) || null;
     }
 
     function initials(name) {
@@ -295,8 +312,17 @@
             return;
         }
 
-        const token = getToken();
+        if (staffContext) {
+            document.querySelector('.back-btn').href = '/community-chat.html?staffBridge=1' + (params.get('embed') === 'staff' ? '&embed=staff' : '');
+            document.querySelector('.brand-link').hidden = true;
+        }
+        const token = await getToken();
         if (!token) {
+            if (staffContext) {
+                statusEl.textContent = 'Sesi staf tidak tersedia. Buka kembali dari Staff Panel.';
+                nameEl.textContent = 'Profil tidak dapat dimuat';
+                return;
+            }
             window.location.href = '/patient-login.html';
             return;
         }
@@ -304,7 +330,9 @@
         statusEl.textContent = 'Memuat...';
 
         const response = await fetch(`${API_BASE}/api/community-chat/profiles/${encodeURIComponent(userType)}/${encodeURIComponent(userId)}`, {
+            cache: 'no-store',
             headers: {
+                'Cache-Control': 'no-cache',
                 'Authorization': `Bearer ${token}`
             }
         });

@@ -165,6 +165,19 @@ location = /community-chat.html {
     add_header Expires "0" always;
 }
 
+location = /community-profile.html {
+    set $community_profile_staff 0;
+    if ($arg_staffBridge = "1") { set $community_profile_staff 1; }
+    if ($arg_embed = "staff") { set $community_profile_staff 1; }
+    if ($community_profile_staff = 0) {
+        return 301 https://sisiwanita.id/community-profile.html$is_args$args;
+    }
+    try_files $uri =404;
+    add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
 location ~ ^/(album-usg|antrian|artikel-kesehatan|artikel|bantuan|booking-klinik|community-chat|community-profile|dokumen-medis|estimasi-biaya-kehamilan|feedback|fertility-calendar|hasil-lab|info-terbaru|jadwal-rs|jadwal-vitamin|kelas-persalinan|kick-counter|konfirmasi-hadir|my-corner-visit|notifikasi|perjalanan-ibu|pregnancy-tracker|profil|riwayat-kunjungan|subscription|subscription-success|tanya-dokter)\.html$ {
     return 301 https://sisiwanita.id/$1.html$is_args$args;
 }
