@@ -4,6 +4,7 @@
  */
 
 const logger = require('../utils/logger');
+const { requestAuditFields, safeAuditPath } = require('../utils/requestAudit');
 
 // Error tracking (in production, use error tracking service like Sentry)
 const errorMetrics = {
@@ -36,10 +37,14 @@ const asyncHandler = (fn) => {
 /**
  * Track error metrics
  */
-const trackError = (err) => {
+const trackError = (err, req) => {
     errorMetrics.total++;
+    const sensitiveReset = req && safeAuditPath(req);
     
-    const errorCode = err.code || err.name || 'UNKNOWN';
+    // A raw exception may embed clinical identity in its message, name or code.
+    // Use fixed diagnostics for reset paths before populating either metric keys
+    // or recent entries; unrelated endpoints keep their existing diagnostics.
+    const errorCode = sensitiveReset ? 'RESET_REQUEST_ERROR' : (err.code || err.name || 'UNKNOWN');
     errorMetrics.byCode[errorCode] = (errorMetrics.byCode[errorCode] || 0) + 1;
     
     const errorType = err.isOperational ? 'operational' : 'programming';
@@ -48,9 +53,9 @@ const trackError = (err) => {
     // Keep last 100 errors
     errorMetrics.recent.push({
         timestamp: new Date(),
-        message: err.message,
+        message: sensitiveReset ? 'Reset request failed' : err.message,
         code: errorCode,
-        statusCode: err.statusCode,
+        statusCode: sensitiveReset ? (Number.isInteger(err.statusCode) ? err.statusCode : 500) : err.statusCode,
         type: errorType
     });
     
@@ -83,7 +88,7 @@ const errorHandler = (err, req, res, next) => {
     err.status = err.status || 'error';
     
     // Track error
-    trackError(err);
+    trackError(err, req);
     
     // Add request context to error
     if (req.context) {
@@ -106,11 +111,11 @@ const errorHandler = (err, req, res, next) => {
 
     if (process.env.NODE_ENV === 'development') {
         // Development: Send detailed error
-        logger.error('ERROR (Development)', {
+        logger.error('ERROR (Development)', requestAuditFields(req, {
             ...errorLog,
             stack: err.stack,
             code: err.code
-        });
+        }));
         
         res.status(err.statusCode).json({
             success: false,
@@ -125,7 +130,7 @@ const errorHandler = (err, req, res, next) => {
         // Production: Send sanitized error
         if (err.isOperational) {
             // Operational, trusted error: send message to client
-            logger.warn('Operational error', errorLog);
+            logger.warn('Operational error', requestAuditFields(req, errorLog));
             
             res.status(err.statusCode).json({
                 success: false,
@@ -135,11 +140,11 @@ const errorHandler = (err, req, res, next) => {
             });
         } else {
             // Programming or unknown error: don't leak error details
-            logger.error('Programming error', {
+            logger.error('Programming error', requestAuditFields(req, {
                 ...errorLog,
                 stack: err.stack,
                 code: err.code
-            });
+            }));
             
             res.status(500).json({
                 success: false,
