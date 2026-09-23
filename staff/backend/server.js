@@ -9,6 +9,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const logger = require('./utils/logger');
+const { requestAuditFields, requestAuditUrl } = require('./utils/requestAudit');
 const {
     BLOCKED_PATIENT_MESSAGE,
     isPatientIdentityBlocked,
@@ -421,12 +422,12 @@ app.use('/api', async (req, res, next) => {
         if (payload.user_type === 'patient' || payload.role === 'patient') {
             if (PATIENT_AUTH_BLOCKLIST_ENABLED && isPatientIdentityBlocked(payload)) {
                 rememberBlockedPatientRequestIp(req);
-                logger.warn('Blocked patient token rejected', {
+                logger.warn('Blocked patient token rejected', requestAuditFields(req, {
                     userId: payload.id,
                     email: payload.email,
                     path: req.originalUrl || req.url,
                     ip: req.ip
-                });
+                }));
                 return res.status(403).json({
                     success: false,
                     message: BLOCKED_PATIENT_MESSAGE
@@ -438,13 +439,13 @@ app.use('/api', async (req, res, next) => {
 
             if (!isAllowed) {
                 // Log blocked path for debugging
-                console.log('[BLOCKED]', fullPath);
-                logger.warn('Patient attempted staff route access', {
+                console.log('[BLOCKED]', requestAuditUrl(req));
+                logger.warn('Patient attempted staff route access', requestAuditFields(req, {
                     userId: payload.id,
                     email: payload.email,
                     path: fullPath,
                     ip: req.ip
-                });
+                }));
                 return res.status(403).json({
                     success: false,
                     message: 'Akses ditolak. Anda tidak memiliki izin untuk mengakses halaman ini.'

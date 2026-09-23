@@ -5,6 +5,7 @@ const { validateOperationalSchemaScope } = require('../services/OperationalSchem
 const { verifyToken, verifyStaffToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const medicalRecordService = require('../services/MedicalRecordService');
+const { withSafeAuditPath } = require('../utils/requestAudit');
 
 // Create medical_records table if not exists
 async function ensureMedicalRecordsTable() {
@@ -286,11 +287,20 @@ async function resetSection(req, res) {
     } catch (error) { return mutationFailure(res, error); }
 }
 
+function requireSectionResetRole(req, res, next) {
+    try {
+        medicalRecordService.assertResetRole(req.user);
+        return next();
+    } catch (error) { return mutationFailure(res, error); }
+}
+
 router.post('/api/medical-records/:mrId/sections/:recordType/reset',
-    verifyStaffToken, requirePermission('medical_records.reset_section'), resetSection);
+    withSafeAuditPath('/api/medical-records/:mrId/sections/:recordType/reset'),
+    verifyStaffToken, requireSectionResetRole, requirePermission('medical_records.reset_section'), resetSection);
 // Safe adapter for cached clients: missing MR, patient or version cannot broaden scope.
 router.delete('/api/medical-records/by-type/:recordType',
-    verifyStaffToken, requirePermission('medical_records.reset_section'), resetSection);
+    withSafeAuditPath('/api/medical-records/by-type/:recordType'),
+    verifyStaffToken, requireSectionResetRole, requirePermission('medical_records.reset_section'), resetSection);
 
 // Generate AI Resume Medis (export function)
 router.post('/api/medical-records/generate-resume', verifyToken, requirePermission('medical_records.export'), async (req, res) => {

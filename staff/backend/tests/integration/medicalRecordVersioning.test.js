@@ -5,7 +5,7 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const mockDb = require('../helpers/medicalRecordDatabase')();
 jest.mock('../../db', () => mockDb);
-jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }));
+jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(), http: jest.fn() }));
 jest.mock('../../services/activityLogger', () => ({ logFromRequest: jest.fn(), ACTIONS: {} }));
 jest.mock('../../services/PatientDocumentSyncService', () => ({ syncPenunjangLabResults: jest.fn() }));
 jest.mock('../../realtime-sync', () => ({ broadcast: jest.fn(event => { mockDb.events.push({ kind: 'broadcast', event }); }) }));
@@ -266,4 +266,159 @@ test('nonlocking locator cannot authorize a record whose patient changed before 
         expect((await patch(1, [{ path: '/notes', before: 'old', after: 'new' }])).status).toBe(404);
         expect(record().version).toBe(1);
     } finally { mockDb.getConnection = original; }
+});
+
+describe('review round 1 fixed reset role boundary and request privacy', () => {
+    const mrMarker = 'PRIVATERESET999';
+    const patientMarker = 'PRIVATE_PATIENT_SENTINEL';
+    const principal = (role, extra = {}) => ({ id: 'verified-actor', name: 'Synthetic Staff', role: ROLE_NAMES[role], role_id: ROLE_IDS[role], ...extra });
+    const resetRequest = (legacy, actor, mrId = 'TEST001', patientId = 'fixture-a', target = app) => {
+        let req = legacy
+            ? request(target).delete('/api/medical-records/by-type/usg').query({ mrId, patientId })
+            : request(target).post(`/api/medical-records/${mrId}/sections/usg/reset`).send({ patientId });
+        if (actor) req = req.set('Authorization', `Bearer ${jwt.sign(actor, process.env.JWT_SECRET)}`);
+        return req.set('If-Match', '"1"');
+    };
+
+    test.each([false, true])('canonical/legacy=%s denies nonclinical overrides and unexpected permission before any transaction', async legacy => {
+        await create();
+        mockDb.state().documents.push({ id: 1, patient_id: 'fixture-a', mr_id: 'TEST001', document_type: 'usg_photo' });
+        const cases = [
+            principal('ADMIN', { is_superadmin: true, role: ROLE_NAMES.DOKTER }),
+            principal('ADMIN', { role: ROLE_NAMES.DOKTER }),
+            principal('FRONT_OFFICE', { is_superadmin: true }),
+            principal('MANAGERIAL'),
+            principal('DOKTER', { role_id: undefined, is_superadmin: true }),
+            principal('DOKTER', { role_id: String(ROLE_IDS.DOKTER) })
+        ];
+        const query = mockDb.query;
+        // Simulate an accidental policy grant: fixed clinical role policy must
+        // deny these principals even if the configurable permission grants access.
+        mockDb.query = async (sql, params) => sql.includes('FROM role_permissions')
+            ? [[{ name: 'medical_records.reset_section' }]] : query(sql, params);
+        try {
+            for (const actor of cases) {
+                const before = JSON.stringify(mockDb.state());
+                mockDb.events.length = 0;
+                expect((await resetRequest(legacy, actor)).status).toBe(403);
+                expect(mockDb.events.some(e => ['begin', 'commit', 'broadcast'].includes(e.kind))).toBe(false);
+                expect(JSON.stringify(mockDb.state())).toBe(before);
+            }
+        } finally { mockDb.query = query; }
+    });
+
+    test.each(['ADMIN', 'MANAGERIAL', 'FRONT_OFFICE'])('direct service reset rejects %s with superadmin and rewritten role', async role => {
+        await create();
+        mockDb.events.length = 0;
+        const service = require('../../services/MedicalRecordService');
+        const before = JSON.stringify(mockDb.state());
+        await expect(service.reset({ mrId: 'TEST001', patientId: 'fixture-a', recordType: 'usg', ifMatch: '"1"',
+            actor: principal(role, { role: ROLE_NAMES.DOKTER, is_superadmin: true }) })).rejects.toMatchObject({ statusCode: 403 });
+        expect(mockDb.events.some(e => e.kind === 'begin')).toBe(false);
+        expect(JSON.stringify(mockDb.state())).toBe(before);
+    });
+
+    test.each(['DOKTER', 'BIDAN'])('legacy reset retains permitted %s success and safe grant logs', async role => {
+        mockDb.state().visits[0] = { id: 1, mr_id: mrMarker, patient_id: patientMarker };
+        expect((await create({ mrId: mrMarker, patientId: patientMarker })).status).toBe(201);
+        Object.values(logger).forEach(fn => fn.mockClear());
+        expect((await resetRequest(true, principal(role, { id: patientMarker, name: mrMarker }), mrMarker, patientMarker)).status).toBe(200);
+        const output = JSON.stringify(Object.values(logger).flatMap(fn => fn.mock.calls));
+        expect(output).not.toContain(mrMarker);
+        expect(output).not.toContain(patientMarker);
+    });
+
+    test.each([false, true])('canonical/legacy=%s reset keeps MR/patient markers out of every logger level', async legacy => {
+        mockDb.state().visits[0] = { id: 1, mr_id: mrMarker, patient_id: patientMarker };
+        expect((await create({ mrId: mrMarker, patientId: patientMarker })).status).toBe(201);
+        const query = mockDb.query;
+        mockDb.query = async (sql, params) => sql.includes('FROM role_permissions') ? [[]] : query(sql, params);
+        const attempts = [
+            [undefined, 401],
+            [{ id: patientMarker, role: 'patient', user_type: 'patient' }, 403],
+            [principal('ADMIN', { id: patientMarker, name: mrMarker }), 403],
+            // A genuine clinical role without its configured permission exercises
+            // requirePermission's denial logger after the fixed-role guard.
+            [principal('BIDAN', { id: patientMarker, name: mrMarker }), 403],
+            [principal('DOKTER', { id: patientMarker, name: mrMarker }), 200]
+        ];
+        try {
+            for (const [actor, status] of attempts) {
+                Object.values(logger).forEach(fn => fn.mockClear());
+                mockDb.events.length = 0;
+                expect((await resetRequest(legacy, actor, mrMarker, patientMarker)).status).toBe(status);
+                const calls = Object.entries(logger).flatMap(([level, fn]) => fn.mock.calls.map(args => ({ level, args })));
+                expect(calls.length).toBeGreaterThan(0);
+                expect(JSON.stringify(calls)).not.toContain(mrMarker);
+                expect(JSON.stringify(calls)).not.toContain(patientMarker);
+                if (status !== 200) expect(mockDb.events.some(e => ['begin', 'commit', 'broadcast'].includes(e.kind))).toBe(false);
+            }
+        } finally { mockDb.query = query; }
+    });
+
+    test('unmarked auth endpoints retain their useful nonidentifier log path', async () => {
+        const other = express();
+        const { verifyStaffToken, requirePermission } = require('../../middleware/auth');
+        other.get('/api/operational-status', verifyStaffToken, (req, res) => res.sendStatus(204));
+        other.get('/api/operational-permission', verifyStaffToken, requirePermission('operations.manage'), (req, res) => res.sendStatus(204));
+        expect((await request(other).get('/api/operational-status')).status).toBe(401);
+        expect(logger.warn).toHaveBeenCalledWith('Missing authorization header (staff)', expect.objectContaining({ path: '/api/operational-status' }));
+        expect((await auth(request(other).get('/api/operational-permission'), 'ADMIN')).status).toBe(403);
+        expect(logger.warn).toHaveBeenCalledWith('Permission denied', expect.objectContaining({ path: '/api/operational-permission', requiredPermissions: ['operations.manage'] }));
+    });
+
+    test.each([false, true])('canonical/legacy=%s upstream access/performance and actual server patient guard logs are also private', async legacy => {
+        const fs = require('fs');
+        const path = require('path');
+        const vm = require('vm');
+        const server = fs.readFileSync(path.join(__dirname, '../../server.js'), 'utf8');
+        const guardSource = server.split('// ==================== PATIENT ACCESS BLOCKER ====================')[1]
+            .split('// ==================== END PATIENT ACCESS BLOCKER ====================')[0];
+        const target = express();
+        const { requestLogger, performanceLogger } = require('../../middleware/requestLogger');
+        const savedEnv = { slow: process.env.METRICS_LOG_SLOW_REQUESTS, threshold: process.env.METRICS_SLOW_REQUEST_MS, summary: process.env.ENABLE_METRICS_SUMMARY_LOG };
+        process.env.METRICS_LOG_SLOW_REQUESTS = 'true';
+        process.env.METRICS_SLOW_REQUEST_MS = '0';
+        process.env.ENABLE_METRICS_SUMMARY_LOG = 'false';
+        const { metricsMiddleware, getMetrics } = require('../../middleware/metrics');
+        for (const [key, value] of Object.entries({ METRICS_LOG_SLOW_REQUESTS: savedEnv.slow, METRICS_SLOW_REQUEST_MS: savedEnv.threshold, ENABLE_METRICS_SUMMARY_LOG: savedEnv.summary })) {
+            if (value === undefined) delete process.env[key]; else process.env[key] = value;
+        }
+        target.use(metricsMiddleware, requestLogger, performanceLogger, express.json());
+        let blocked = false;
+        vm.runInNewContext(guardSource, {
+            app: target, require, logger,
+            process: { env: { ...process.env, PATIENT_AUTH_BLOCKLIST_ENABLED: 'true' } },
+            ...require('../../security/patientRouteAccess'),
+            ...require('../../utils/requestAudit'),
+            isPatientIdentityBlocked: () => blocked,
+            isPatientRequestIpBlocked: async () => false,
+            rememberBlockedPatientRequestIp: () => {},
+            BLOCKED_PATIENT_MESSAGE: 'Access blocked',
+            console: { log: (...args) => logger.info(...args) }
+        });
+        target.use(router);
+        mockDb.state().visits[0] = { id: 1, mr_id: mrMarker, patient_id: patientMarker };
+        expect((await create({ mrId: mrMarker, patientId: patientMarker })).status).toBe(201);
+        const attempts = [
+            [undefined, 401, false],
+            [{ id: patientMarker, email: `${patientMarker}@example.test`, role: 'patient', user_type: 'patient' }, 403, false],
+            [{ id: patientMarker, email: `${patientMarker}@example.test`, role: 'patient', user_type: 'patient' }, 403, true],
+            [principal('ADMIN', { id: patientMarker }), 403, false],
+            [principal('DOKTER', { id: patientMarker }), 200, false]
+        ];
+        for (const [actor, status, blocklisted] of attempts) {
+            blocked = blocklisted;
+            Object.values(logger).forEach(fn => fn.mockClear());
+            mockDb.events.length = 0;
+            expect((await resetRequest(legacy, actor, mrMarker, patientMarker, target)).status).toBe(status);
+            const output = JSON.stringify(Object.values(logger).flatMap(fn => fn.mock.calls));
+            expect(logger.http).toHaveBeenCalled();
+            expect(output).not.toContain(mrMarker);
+            expect(output).not.toContain(patientMarker);
+            if (status !== 200) expect(mockDb.events.some(e => e.kind === 'begin')).toBe(false);
+        }
+        expect(JSON.stringify(getMetrics())).not.toContain(mrMarker);
+        expect(JSON.stringify(getMetrics())).not.toContain(patientMarker);
+    });
 });

@@ -4,6 +4,7 @@
 
 const morgan = require('morgan');
 const logger = require('../utils/logger');
+const { safeAuditPath, requestAuditUrl, requestAuditFields } = require('../utils/requestAudit');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -29,8 +30,10 @@ const ERROR_LOG_STATUS_MIN = Number.parseInt(
 
 // Custom token for user ID
 morgan.token('user-id', (req) => {
+    if (safeAuditPath(req)) return 'redacted';
     return req.user?.id || 'anonymous';
 });
+morgan.token('audit-url', requestAuditUrl);
 
 // Custom token for response time in ms
 morgan.token('response-time-ms', (req, res) => {
@@ -45,7 +48,7 @@ morgan.token('response-time-ms', (req, res) => {
 });
 
 // Custom format
-const customFormat = ':remote-addr - :user-id ":method :url" :status :res[content-length] - :response-time-ms ms';
+const customFormat = ':remote-addr - :user-id ":method :audit-url" :status :res[content-length] - :response-time-ms ms';
 
 // Create stream object with write function
 const stream = {
@@ -98,23 +101,23 @@ const performanceLogger = (req, res, next) => {
         
         // Log slow requests (> 1 second)
         if (duration > SLOW_REQUEST_THRESHOLD_MS) {
-            logger.warn('Slow request detected', {
+            logger.warn('Slow request detected', requestAuditFields(req, {
                 method: req.method,
                 url: req.originalUrl,
                 duration: `${duration}ms`,
                 userId: req.user?.id,
                 statusCode: res.statusCode
-            });
+            }));
         }
         
         // Keep 4xx out of error logs in production by default.
         if (res.statusCode >= ERROR_LOG_STATUS_MIN) {
-            logger.error('Request error', {
+            logger.error('Request error', requestAuditFields(req, {
                 method: req.method,
                 url: req.originalUrl,
                 statusCode: res.statusCode,
                 userId: req.user?.id
-            });
+            }));
         }
     });
     

@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const { ROLE_IDS, ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
+const { requestAuditFields } = require('../utils/requestAudit');
 
 // Ensure JWT_SECRET is set - fail fast if not
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -278,11 +279,11 @@ function verifyStaffToken(req, res, next) {
     const requestId = req.context?.requestId || 'unknown';
 
     if (!authHeader) {
-        logger.warn('Missing authorization header (staff)', {
+        logger.warn('Missing authorization header (staff)', requestAuditFields(req, {
             requestId,
             ip: req.ip,
             path: req.path
-        });
+        }));
         return res.status(401).json({
             success: false,
             message: 'Missing authorization header'
@@ -305,13 +306,13 @@ function verifyStaffToken(req, res, next) {
 
         // Block patient tokens from accessing staff routes
         if (payload.user_type === 'patient' || payload.role === 'patient') {
-            logger.warn('Patient token used on staff endpoint', {
+            logger.warn('Patient token used on staff endpoint', requestAuditFields(req, {
                 requestId,
                 userId: payload.id,
                 userType: payload.user_type,
                 role: payload.role,
                 path: req.path
-            });
+            }));
             return res.status(403).json({
                 success: false,
                 message: 'Akses ditolak. Endpoint ini hanya untuk staff.'
@@ -320,20 +321,20 @@ function verifyStaffToken(req, res, next) {
 
         req.user = payload;
 
-        logger.debug('Staff token verified', {
+        logger.debug('Staff token verified', requestAuditFields(req, {
             requestId,
             userId: payload.id,
             role: payload.role
-        });
+        }));
 
         next();
     } catch (err) {
-        logger.warn('Staff token verification failed', {
+        logger.warn('Staff token verification failed', requestAuditFields(req, {
             requestId,
             errorName: err.name,
             message: err.message,
             ip: req.ip
-        });
+        }));
 
         if (err.name === 'TokenExpiredError') {
             return res.status(401).json({
@@ -544,11 +545,11 @@ function requirePermission(...requiredPermissions) {
         const requestId = req.context?.requestId || 'unknown';
 
         if (!req.user) {
-            logger.warn('Missing user in requirePermission middleware', {
+            logger.warn('Missing user in requirePermission middleware', requestAuditFields(req, {
                 requestId,
                 ip: req.ip,
                 path: req.path
-            });
+            }));
             return res.status(401).json({
                 success: false,
                 message: 'Authentication required'
@@ -557,11 +558,11 @@ function requirePermission(...requiredPermissions) {
 
         // Superadmin/dokter always has access
         if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
-            logger.debug('Superadmin/dokter permission granted', {
+            logger.debug('Superadmin/dokter permission granted', requestAuditFields(req, {
                 requestId,
                 userId: req.user.id,
                 permissions: requiredPermissions
-            });
+            }));
             return next();
         }
 
@@ -573,11 +574,11 @@ function requirePermission(...requiredPermissions) {
 
             const roleId = req.user.role_id;
             if (!roleId) {
-                logger.warn('User has no role_id', {
+                logger.warn('User has no role_id', requestAuditFields(req, {
                     requestId,
                     userId: req.user.id,
                     path: req.path
-                });
+                }));
                 return res.status(403).json({
                     success: false,
                     message: 'User role not configured'
@@ -595,27 +596,29 @@ function requirePermission(...requiredPermissions) {
             );
 
             if (rows.length === 0) {
-                logger.warn(`Permission denied: user=${req.user.id} role_id=${roleId} needs=[${requiredPermissions.join(',')}] path=${req.path}`);
+                logger.warn('Permission denied', requestAuditFields(req, {
+                    userId: req.user.id, roleId, requiredPermissions, path: req.path
+                }));
                 return res.status(403).json({
                     success: false,
                     message: 'Anda tidak memiliki izin untuk aksi ini'
                 });
             }
 
-            logger.debug('Permission granted', {
+            logger.debug('Permission granted', requestAuditFields(req, {
                 requestId,
                 userId: req.user.id,
                 roleId,
                 grantedPermissions: rows.map(r => r.name)
-            });
+            }));
 
             next();
         } catch (error) {
-            logger.error('Error checking permissions', {
+            logger.error('Error checking permissions', requestAuditFields(req, {
                 requestId,
                 error: error.message,
                 requiredPermissions
-            });
+            }));
             return res.status(500).json({
                 success: false,
                 message: 'Error checking permissions'

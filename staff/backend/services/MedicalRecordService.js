@@ -4,6 +4,7 @@ const { isDeepStrictEqual } = require('node:util');
 const db = require('../db');
 const logger = require('../utils/logger');
 const realtimeSync = require('../realtime-sync');
+const { ROLE_IDS } = require('../constants/roles');
 
 const RECORD_TYPES = new Set(['identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri',
     'pemeriksaan_ginekologi', 'usg', 'lab', 'penunjang', 'diagnosis', 'planning', 'resume_medis']);
@@ -146,6 +147,15 @@ class MedicalRecordService {
         return { id: String(actor.id), name: actor.name || null };
     }
 
+    assertResetRole(principal) {
+        this.actor(principal);
+        // Fixed clinical policy: JWT role_id is authoritative. Neither rewritten
+        // role names, configurable grants nor is_superadmin extend reset access.
+        if (![ROLE_IDS.DOKTER, ROLE_IDS.BIDAN].includes(principal.role_id)) {
+            fail(403, 'CLINICAL_RESET_ROLE_REQUIRED', 'Section reset requires a doctor or midwife role');
+        }
+    }
+
     async lockVisit(connection, mrId, suppliedPatient) {
         const [visits] = await connection.query('SELECT * FROM sunday_clinic_records WHERE mr_id = ? ORDER BY id FOR UPDATE', [mrId]);
         if (!visits.length) fail(404, 'VISIT_NOT_FOUND', 'Visit not found');
@@ -281,6 +291,7 @@ class MedicalRecordService {
     }
 
     async reset({ mrId, patientId, recordType, ifMatch, actor: principal }) {
+        this.assertResetRole(principal);
         mrId = normalizeMrId(mrId);
         if (typeof patientId !== 'string' || !patientId.trim()) fail(400, 'PATIENT_REQUIRED', 'Exact patient scope required');
         if (!owns(RESET_DOCUMENT_TYPES, recordType)) fail(400, 'INVALID_RESET_TYPE', 'Only USG and resume may be reset');

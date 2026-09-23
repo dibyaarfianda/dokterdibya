@@ -5,6 +5,7 @@
 
 const os = require('os');
 const logger = require('../utils/logger');
+const { safeAuditPath, requestAuditFields } = require('../utils/requestAudit');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -78,7 +79,7 @@ const normalizePath = (routePath) => {
 };
 
 const getEndpointKey = (req) => {
-    const routePath = req.route?.path || req.path || req.originalUrl || 'unknown';
+    const routePath = safeAuditPath(req) || req.route?.path || req.path || req.originalUrl || 'unknown';
     return `${req.method} ${normalizePath(routePath)}`;
 };
 
@@ -196,19 +197,19 @@ const metricsMiddleware = (req, res, next) => {
             }
 
             if (ENABLE_METRICS_SLOW_LOG && responseTime > METRICS_SLOW_REQUEST_MS) {
-                logger.warn('Slow request detected', {
+                logger.warn('Slow request detected', requestAuditFields(req, {
                     endpoint,
                     responseTime: `${Math.round(responseTime)}ms`,
                     statusCode,
                     userId: req.user?.id
-                });
+                }));
             }
         } catch (error) {
-            logger.error('Metrics middleware failed on response finish', {
+            logger.error('Metrics middleware failed on response finish', requestAuditFields(req, {
                 error: error?.message || String(error),
                 method: req.method,
                 path: req.originalUrl || req.url
-            });
+            }));
         }
     });
     
