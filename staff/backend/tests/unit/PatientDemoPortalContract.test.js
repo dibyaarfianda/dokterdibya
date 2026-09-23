@@ -62,6 +62,7 @@ describe('patient demo portal isolation contract', () => {
         const patientSw = read('public', 'sw.js');
         const manager = read('staff', 'public', 'scripts', 'patient-demo-manager.js');
         const staffVersion = staff.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+        const patientVersion = patientSw.match(/const CACHE_VERSION = '([^']+)'/)?.[1];
 
         expect(staff).toContain('Portal Pasien Dummy');
         expect(staff).toContain('Buka Portal Dummy');
@@ -69,8 +70,8 @@ describe('patient demo portal isolation contract', () => {
         expect(manager).toContain('ROLE_IDS.DOKTER');
         expect(staffVersion).toBeTruthy();
         expect(staffSw).toContain(`const STAFF_PWA_VERSION = '${staffVersion}'`);
-        expect(patientMenu).toContain('20260814demo1');
-        expect(patientSw).toMatch(/const CACHE_VERSION = '[^']+';/);
+        expect(patientVersion).toBeTruthy();
+        expect(patientMenu).toContain(`/scripts/patient-session.js?v=${patientVersion}`);
         expect(patientSw).toContain('/scripts/patient-session.js');
     });
 

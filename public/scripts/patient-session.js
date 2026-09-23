@@ -5,6 +5,18 @@
     const USER_KEY = 'patient_user';
     const DEMO_MODE_KEY = 'patient_demo_mode';
     const LEGACY_TOKEN_KEYS = ['patient_token', 'auth_token', 'token'];
+    const PAGE_TRACKER_SRC = '/js/patient-tracker.js?v=20260923activity1';
+    const PAGE_TRACKING_EXCLUDED_PATHS = new Set([
+        '/',
+        '/index.html',
+        '/app-logout.html',
+        '/complete-birthdate.html',
+        '/complete-profile.html',
+        '/mobile-google-callback.html',
+        '/patient-demo-login.html',
+        '/patient-login.html',
+        '/set-password.html'
+    ]);
 
     function safely(operation, fallback = null) {
         try {
@@ -116,6 +128,19 @@
         global.document.body.classList.add('patient-demo-mode');
     }
 
+    function loadPatientPageTracker() {
+        if (!global.document || !getToken()) return;
+        const path = global.location?.pathname || '';
+        if (PAGE_TRACKING_EXCLUDED_PATHS.has(path)) return;
+        if (global.__patientPageTrackerRequested || global.__patientPageTrackerLoaded) return;
+
+        global.__patientPageTrackerRequested = true;
+        const script = global.document.createElement('script');
+        script.src = PAGE_TRACKER_SRC;
+        script.async = true;
+        global.document.head.appendChild(script);
+    }
+
     if (global.document) {
         if (global.document.readyState === 'loading') global.document.addEventListener('DOMContentLoaded', renderDemoBanner, { once: true });
         else renderDemoBanner();
@@ -134,4 +159,12 @@
         setDemoMode,
         renderDemoBanner
     });
+
+    if (global.document) {
+        if (global.document.readyState === 'loading') {
+            global.document.addEventListener('DOMContentLoaded', loadPatientPageTracker, { once: true });
+        } else {
+            loadPatientPageTracker();
+        }
+    }
 })(window);

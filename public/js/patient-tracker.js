@@ -6,6 +6,8 @@
 (function() {
     var token = window.PatientSession?.getToken();
     if (!token) return;
+    if (window.__patientPageTrackerLoaded) return;
+    window.__patientPageTrackerLoaded = true;
 
     var pageLabels = {
         '/patient-menu.html': 'SISIwanita - Dashboard Pasien',
