@@ -120,7 +120,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res, next) => {
 
         // Emit Socket.IO event for real-time update
         if (newAnnouncement.status === 'active' && req.app.get('io')) {
-            req.app.get('io').emit('staff-announcement:new', newAnnouncement);
+            req.app.get('io').to('staff').emit('staff-announcement:new', newAnnouncement);
             logger.info('Emitted staff-announcement:new', { id: newAnnouncement.id });
         }
 
@@ -164,7 +164,7 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res, next) => {
 
         // Emit Socket.IO event
         if (req.app.get('io')) {
-            req.app.get('io').emit('staff-announcement:updated', updated);
+            req.app.get('io').to('staff').emit('staff-announcement:updated', updated);
         }
 
         logger.info('Staff announcement updated', { id, title });
@@ -226,7 +226,7 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res, next) => 
 
         // Emit Socket.IO event
         if (req.app.get('io')) {
-            req.app.get('io').emit('staff-announcement:deleted', { id: req.params.id });
+            req.app.get('io').to('staff').emit('staff-announcement:deleted', { id: req.params.id });
         }
 
         logger.info('Staff announcement deleted', { id: req.params.id });

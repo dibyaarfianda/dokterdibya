@@ -493,7 +493,7 @@ router.post('/sync/:location', requireRoles('dokter', 'admin'), async (req, res)
 
     // Broadcast sync complete via Socket.IO
     if (global.io) {
-      global.io.emit('docboard:sync', { location, date, ...result });
+      global.io.to('staff').emit('docboard:sync', { location, date, ...result });
     }
 
     res.json({ success: true, ...result });

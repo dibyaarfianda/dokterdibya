@@ -90,7 +90,7 @@ async function log(userId, userName, action, details = null, io = null) {
 
         // Broadcast via socket if available
         if (io) {
-            io.emit('newLog', newLog);
+            io.to('staff').emit('newLog', newLog);
         }
 
         logger.info(`Activity: ${action}`, {

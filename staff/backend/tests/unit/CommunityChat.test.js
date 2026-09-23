@@ -10,6 +10,7 @@ jest.mock('../../middleware/auth', () => ({
 }));
 const db = require('../../db');
 const router = require('../../routes/community-chat');
+const { resolveSocketPrincipal } = require('../../security/socketAccess');
 const app = express();
 app.use(express.json(), router);
 const room = { id: 1, slug: 'lobby', name: 'Lobby', is_direct: 0 };
@@ -26,9 +27,10 @@ beforeEach(() => {
 test('typing uses authenticated community nickname, never client email or identity', async () => {
     const handlers = {};
     const emit = jest.fn();
-    const socket = { data: {}, on: (name, fn) => { handlers[name] = fn; }, join: jest.fn(), emit: jest.fn(), to: () => ({ emit }) };
+    const principal = resolveSocketPrincipal(jwt.sign({ id: 'P1', user_type: 'patient' }, 'community-test', { expiresIn: 60 }));
+    const socket = { connected: true, data: { principal }, on: (name, fn) => { handlers[name] = fn; }, join: jest.fn(), emit: jest.fn(), to: () => ({ emit }) };
     router.setupSocketHandlers({ on: (_, fn) => fn(socket) });
-    await handlers['community:join']({ room: 'lobby', token: jwt.sign({ id: 'P1', user_type: 'patient' }, 'community-test') });
+    await handlers['community:join']({ room: 'lobby' });
     await handlers['community:typing']({ room: 'lobby', user_id: 'victim', user_name: 'private@example.test' });
     const event = emit.mock.calls.find(call => call[0] === 'community:typing');
     expect(event[1]).toMatchObject({ user_id: 'P1', user_name: 'Bunda Anggrek', user_type: 'patient' });

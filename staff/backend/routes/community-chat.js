@@ -1,8 +1,8 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
-const { verifyToken, verifyStaffToken, JWT_SECRET } = require('../middleware/auth');
+const { verifyToken, verifyStaffToken } = require('../middleware/auth');
+const { requireSocketPrincipal } = require('../security/socketAccess');
 const attention = require('../services/CommunityChatAttention');
 
 const router = express.Router();
@@ -391,7 +391,7 @@ async function isRoomModerator(roomId, user) {
 
 function emitRoomListChanged() {
     if (!ioRef) return;
-    ioRef.emit('community:rooms:changed', { at: new Date().toISOString() });
+    ioRef.to('authenticated').emit('community:rooms:changed', { at: new Date().toISOString() });
 }
 
 function mapRoom(row, currentUserType, currentUserId) {
@@ -1081,27 +1081,30 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
     io.on('connection', (socket) => {
         socket.on('community:join', async (payload) => {
             try {
-                const token = payload?.token;
+                const user = requireSocketPrincipal(socket, { errorEvent: 'community:error' });
+                if (!user) return;
                 const roomSlug = normalizeText(payload?.room) || DEFAULT_LOBBY_SLUG;
-                if (!token) return;
 
                 await ensureSchema();
-                const user = jwt.verify(token, JWT_SECRET);
                 if (user.demo_mode === true) {
                     socket.emit('community:error', { code: 'DEMO_SOCKET_BLOCKED', message: 'Chat nyata dinonaktifkan pada mode dummy.' });
                     return;
                 }
                 const room = await getRoomBySlug(roomSlug);
-                if (!room || !canAccessRoom(room, user)) return;
+                if (!room || !canAccessRoom(room, user)) {
+                    socket.emit('community:error', { code: 'FORBIDDEN' });
+                    return;
+                }
 
                 const roomKey = `community:${room.slug}`;
+                const identity = await resolveUserIdentity(user);
+                await touchRoomMember(room, user, identity);
+                if (!requireSocketPrincipal(socket, { errorEvent: 'community:error' })) return;
                 socket.data.communityRooms = socket.data.communityRooms || new Set();
                 socket.data.communityRooms.add(room.slug);
-                socket.join(roomKey);
-                const identity = await resolveUserIdentity(user);
+                await socket.join(roomKey);
                 socket.data.communityIdentity = { user_id: identity.userId, user_type: identity.userType, user_name: attention.displayName(identity) };
                 socket.data.communityTokenExpiry = user.exp ? user.exp * 1000 : 0;
-                await touchRoomMember(room, user, identity);
                 socket.emit('community:joined', { room: room.slug });
 
                 socket.to(roomKey).emit('community:user:joined', {
@@ -1110,11 +1113,13 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
                     user_type: isPatientUser(user) ? 'patient' : 'staff'
                 });
             } catch (error) {
-                socket.emit('community:error', { message: 'Gagal bergabung room' });
+                socket.emit('community:error', { code: 'FORBIDDEN', message: 'Gagal bergabung room' });
             }
         });
 
         socket.on('community:leave', (payload) => {
+            if (!requireSocketPrincipal(socket, { errorEvent: 'community:error' })) return;
+            if (typeof payload?.room !== 'string') return;
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
             if (socket.data.communityRooms) {
@@ -1124,6 +1129,8 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
         });
 
         socket.on('community:typing', (payload) => {
+            if (!requireSocketPrincipal(socket, { errorEvent: 'community:error' })) return;
+            if (typeof payload?.room !== 'string') return;
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
             if (!socket.data.communityRooms || !socket.data.communityRooms.has(roomSlug)) return;
@@ -1135,6 +1142,8 @@ router.setupSocketHandlers = function setupSocketHandlers(io) {
         });
 
         socket.on('community:stop-typing', (payload) => {
+            if (!requireSocketPrincipal(socket, { errorEvent: 'community:error' })) return;
+            if (typeof payload?.room !== 'string') return;
             const roomSlug = normalizeText(payload?.room);
             if (!roomSlug) return;
             if (!socket.data.communityRooms || !socket.data.communityRooms.has(roomSlug)) return;

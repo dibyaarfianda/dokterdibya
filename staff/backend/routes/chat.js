@@ -121,7 +121,7 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
 
         // Emit to all connected clients via Socket.io
         if (router.io) {
-            router.io.emit('chat:message', newMessage[0]);
+            router.io.to('staff').emit('chat:message', newMessage[0]);
         }
         
         res.json({

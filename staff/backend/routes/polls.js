@@ -226,7 +226,7 @@ async function notifyPatientsForPoll(poll, mode = 'new') {
         `, values.flat());
 
         if (global.io) {
-            global.io.emit('notification:new', {
+            global.io.to(patients.map(patient => `patient:${patient.id}`)).emit('notification:new', {
                 type: 'poll',
                 poll_id: poll.id
             });
@@ -369,12 +369,12 @@ router.post('/staff/create', verifyStaffToken, async (req, res) => {
         const poll = await getPollResultById(pollId);
 
         if (global.io) {
-            global.io.emit('poll:created', {
+            global.io.to('authenticated').emit('poll:created', {
                 poll_id: poll.id,
                 title: poll.title,
                 created_at: poll.created_at
             });
-            global.io.emit('poll:updated', {
+            global.io.to('authenticated').emit('poll:updated', {
                 poll_id: poll.id,
                 total_votes: poll.total_votes
             });
@@ -510,7 +510,7 @@ router.put('/staff/:id/update', verifyStaffToken, async (req, res) => {
         const poll = await getPollResultById(pollId);
 
         if (global.io) {
-            global.io.emit('poll:updated', {
+            global.io.to('authenticated').emit('poll:updated', {
                 poll_id: poll.id,
                 total_votes: poll.total_votes,
                 title: poll.title
@@ -590,8 +590,8 @@ router.post('/staff/:id/close', verifyStaffToken, async (req, res) => {
         const poll = await getPollResultById(pollId);
 
         if (global.io) {
-            global.io.emit('poll:closed', { poll_id: pollId });
-            global.io.emit('poll:updated', {
+            global.io.to('authenticated').emit('poll:closed', { poll_id: pollId });
+            global.io.to('authenticated').emit('poll:updated', {
                 poll_id: poll.id,
                 total_votes: poll.total_votes
             });
@@ -701,12 +701,12 @@ router.post('/patient/:id/vote', verifyPatientToken, async (req, res) => {
         const comments = await getPollComments(pollId, patientId, 30);
 
         if (global.io) {
-            global.io.emit('poll:voted', {
+            global.io.to('authenticated').emit('poll:voted', {
                 poll_id: pollId,
                 option_id: optionId,
                 total_votes: resultData.total_votes
             });
-            global.io.emit('poll:updated', {
+            global.io.to('authenticated').emit('poll:updated', {
                 poll_id: pollId,
                 total_votes: resultData.total_votes
             });
@@ -769,7 +769,7 @@ router.post('/patient/:id/comment', verifyPatientToken, async (req, res) => {
         const comments = await getPollComments(pollId, patientId, 30);
 
         if (global.io) {
-            global.io.emit('poll:comment', { poll_id: pollId });
+            global.io.to('authenticated').emit('poll:comment', { poll_id: pollId });
         }
 
         res.json({
@@ -831,7 +831,7 @@ router.post('/patient/:id/comments/:commentId/like', verifyPatientToken, async (
         const comments = await getPollComments(pollId, patientId, 30);
 
         if (global.io) {
-            global.io.emit('poll:comment-like', {
+            global.io.to('authenticated').emit('poll:comment-like', {
                 poll_id: pollId,
                 comment_id: commentId
             });

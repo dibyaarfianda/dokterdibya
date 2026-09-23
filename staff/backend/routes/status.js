@@ -55,7 +55,7 @@ router.post('/api/status/heartbeat', verifyToken, async (req, res) => {
             const [users] = await db.query(
                 'SELECT * FROM user_status WHERE is_online = TRUE'
             );
-            router.io.emit('statusUpdate', users);
+            router.io.to('staff').emit('statusUpdate', users);
         }
         
         res.json({
@@ -94,7 +94,7 @@ router.post('/api/status/offline', verifyToken, async (req, res) => {
             const [users] = await db.query(
                 'SELECT * FROM user_status WHERE is_online = TRUE'
             );
-            router.io.emit('statusUpdate', users);
+            router.io.to('staff').emit('statusUpdate', users);
         }
         
         res.json({

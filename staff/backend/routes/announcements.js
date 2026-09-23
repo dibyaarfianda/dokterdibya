@@ -356,7 +356,7 @@ router.post('/', verifyStaffToken, requirePermission('announcements.create'), as
 
         // Emit Socket.IO event if announcement is active
         if (newAnnouncement.status === 'active' && req.app.get('io')) {
-            req.app.get('io').emit('announcement:new', newAnnouncement);
+            req.app.get('io').to('authenticated').emit('announcement:new', newAnnouncement);
             logger.info('Emitted announcement:new event', { id: newAnnouncement.id, title: newAnnouncement.title });
         }
 
@@ -453,7 +453,7 @@ router.put('/:id', verifyStaffToken, requirePermission('announcements.edit'), as
 
         // Emit Socket.IO event if announcement is active
         if (updatedAnnouncement.status === 'active' && req.app.get('io')) {
-            req.app.get('io').emit('announcement:updated', updatedAnnouncement);
+            req.app.get('io').to('authenticated').emit('announcement:updated', updatedAnnouncement);
             logger.info('Emitted announcement:updated event', { id: updatedAnnouncement.id, title: updatedAnnouncement.title });
         }
 

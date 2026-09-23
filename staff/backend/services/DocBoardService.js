@@ -557,7 +557,7 @@ class DocBoardService {
 
       // Broadcast via Socket.IO
       if (global.io) {
-        global.io.emit('docboard:sync', { location, date, patientCount: patients.length });
+        global.io.to('staff').emit('docboard:sync', { location, date, patientCount: patients.length });
       }
 
       return { success: true, patientCount: patients.length };

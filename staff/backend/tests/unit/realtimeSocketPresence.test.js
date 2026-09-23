@@ -77,19 +77,7 @@ function connectCurrentStaff(harness, user = { id: 7, name: 'Staf Saat Ini', rol
 }
 
 describe('staff realtime socket presence', () => {
-    test('debounces transient polling disconnects before marking staff offline', () => {
-        const server = readRepoFile('staff', 'backend', 'server.js');
-
-        expect(server).toContain('const USER_DISCONNECT_GRACE_MS');
-        expect(server).toContain('const userSocketIds = new Map();');
-        expect(server).toContain('const userDisconnectTimers = new Map();');
-        expect(server).toContain('function getOnlineUsersList()');
-        expect(server).toContain('clearTimeout(existingDisconnectTimer);');
-        expect(server).toContain('socketIds.delete(socket.id);');
-        expect(server).toContain('if (socketIds.size > 0) {');
-        expect(server).toContain('setTimeout(() => {');
-        expect(server).toContain('io.emit(\'user:disconnected\'');
-    });
+    // Server disconnect grace is exercised behaviorally in realtimeSecurityBoundary.
 
     test('requests the authoritative online list immediately after staff registration', () => {
         const harness = createRealtimeClientHarness();

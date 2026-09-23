@@ -8,6 +8,7 @@ const express = require('express');
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken, verifyStaffToken } = require('../middleware/auth');
+const { requireSocketPrincipal } = require('../security/socketAccess');
 
 const router = express.Router();
 
@@ -549,7 +550,7 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
         // If already escalated to staff, just notify staff of new message
         if (session.status === 'escalated') {
             if (global.io) {
-                global.io.emit('support:escalated_message', {
+                global.io.to('staff').emit('support:escalated_message', {
                     sessionId,
                     patientName: session.patient_name,
                     preview: msgContent.slice(0, 100)
@@ -655,7 +656,7 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
             if (global.io) {
                 global.io.to(`support:${sessionId}`).emit('support:new_message', botReply);
                 // Broadcast to all staff online
-                global.io.emit('support:escalated', {
+                global.io.to('staff').emit('support:escalated', {
                     sessionId,
                     patientId,
                     patientName: session.patient_name,
@@ -732,7 +733,7 @@ router.post('/sessions/:id/rating', verifyPatientToken, ensureSupportChatAllowed
 
         if (global.io) {
             global.io.to(`support:${sessionId}`).emit('support:session_rated', { sessionId, rating });
-            global.io.emit('support:session_rated', { sessionId, rating });
+            global.io.to('staff').emit('support:session_rated', { sessionId, rating });
         }
 
         return res.json({
@@ -948,9 +949,9 @@ router.post('/staff/:id/reply', verifyStaffToken, async (req, res) => {
             // Deliver to patient's open widget
             global.io.to(`support:${sessionId}`).emit('support:new_message', staffMsg);
             // Notify other staff that session is being handled
-            global.io.emit('support:staff_replied', { sessionId, staffName });
+            global.io.to('staff').emit('support:staff_replied', { sessionId, staffName });
             if (justClaimed) {
-                global.io.emit('support:session_locked', {
+                global.io.to('staff').emit('support:session_locked', {
                     sessionId,
                     owner_staff_id: staffId,
                     owner_staff_name: staffName
@@ -1067,7 +1068,7 @@ router.put('/staff/:id/resolve', verifyStaffToken, async (req, res) => {
                 closingSenderName: closingMessagePayload.sender_name,
                 closingCreatedAt: closingMessagePayload.created_at
             });
-            global.io.emit('support:session_resolved', {
+            global.io.to('staff').emit('support:session_resolved', {
                 sessionId,
                 closingMessageId: closingMessagePayload.id
             });
@@ -1111,17 +1112,38 @@ router.get('/staff/count', verifyStaffToken, async (req, res) => {
 function setupSocketHandlers(io) {
     io.on('connection', (socket) => {
         // Patient or staff joins a support chat room to receive real-time messages
-        socket.on('support:join', (data) => {
-            if (!data || !data.sessionId) return;
+        socket.on('support:join', async (data) => {
+            const principal = requireSocketPrincipal(socket, { errorEvent: 'support:error' });
+            if (!principal) return;
+            if (!data || !['string', 'number'].includes(typeof data.sessionId) || !String(data.sessionId).trim()) {
+                socket.emit('support:error', { code: 'FORBIDDEN' });
+                return;
+            }
             if (String(data.sessionId).startsWith('DEMO-')) {
                 socket.emit('support:error', { code: 'DEMO_SOCKET_BLOCKED', message: 'Support chat nyata dinonaktifkan pada mode dummy.' });
                 return;
             }
-            socket.join(`support:${data.sessionId}`);
+            try {
+                const [sessions] = await db.query(
+                    'SELECT id, patient_id FROM support_chat_sessions WHERE id = ? LIMIT 1',
+                    [data.sessionId]
+                );
+                const session = sessions[0];
+                if (!session || (principal.user_type === 'patient' &&
+                    (String(session.patient_id) !== principal.id || !SUPPORT_CHAT_ALLOWED_PATIENT_IDS.has(principal.id)))) {
+                    socket.emit('support:error', { code: 'FORBIDDEN' });
+                    return;
+                }
+                if (!requireSocketPrincipal(socket, { errorEvent: 'support:error' })) return;
+                await socket.join(`support:${session.id}`);
+            } catch (_) {
+                socket.emit('support:error', { code: 'FORBIDDEN' });
+            }
         });
 
         socket.on('support:leave', (data) => {
-            if (!data || !data.sessionId) return;
+            if (!requireSocketPrincipal(socket, { errorEvent: 'support:error' })) return;
+            if (!data || !['string', 'number'].includes(typeof data.sessionId)) return;
             socket.leave(`support:${data.sessionId}`);
         });
     });

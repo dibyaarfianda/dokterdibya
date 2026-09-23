@@ -4,6 +4,9 @@
  */
 
 let io = null;
+const PATIENT_REFRESH_EVENTS = new Set([
+    'usg:patient_updated', 'document:patient_updated', 'appointment:confirmation_popup_triggered'
+]);
 
 /**
  * Initialize with Socket.IO instance
@@ -14,7 +17,7 @@ function init(socketIO) {
 }
 
 /**
- * Broadcast event to all connected clients
+ * Broadcast staff domain events to verified staff only
  */
 function broadcast(event) {
     if (!io) {
@@ -23,28 +26,12 @@ function broadcast(event) {
     }
 
     try {
-        // Get all connected socket IDs
-        const sockets = Array.from(io.sockets.sockets.keys());
-        const clientCount = sockets.length;
-
-        console.log(`[RealTimeSync] Broadcasting ${event.type} to ${clientCount} clients:`, {
-            socketIds: sockets,
-            eventData: {
-                type: event.type,
-                mrId: event.mrId,
-                patientName: event.patientName,
-                revisionId: event.revisionId,
-                message: event.message?.substring(0, 50)
-            }
-        });
-
-        // Emit to all connected clients (only once!)
-        io.emit(event.type, event);
-
-        console.log(`[RealTimeSync] ✅ Successfully emitted to ${clientCount} sockets`);
+        const rooms = ['staff'];
+        if (PATIENT_REFRESH_EVENTS.has(event.type) && event.patient_id) rooms.push(`patient:${event.patient_id}`);
+        io.to(rooms).emit(event.type, event);
         return true;
     } catch (error) {
-        console.error('[RealTimeSync] Broadcast failed:', error);
+        console.error('[RealTimeSync] Broadcast failed');
         return false;
     }
 }
@@ -60,10 +47,9 @@ function broadcastToRoom(room, event) {
 
     try {
         io.to(room).emit(event.type, event);
-        console.log(`[RealTimeSync] Broadcasted to room ${room}:`, event.type);
         return true;
     } catch (error) {
-        console.error('[RealTimeSync] Room broadcast failed:', error);
+        console.error('[RealTimeSync] Room broadcast failed');
         return false;
     }
 }
@@ -91,8 +77,7 @@ function broadcastNewBooking(booking) {
         timestamp: new Date().toISOString()
     };
 
-    console.log('[RealTimeSync] Broadcasting new booking:', event.booking.patient_name);
-    io.emit('booking:new', event);
+    io.to('staff').emit('booking:new', event);
     return true;
 }
 
@@ -118,8 +103,7 @@ function broadcastBookingUpdate(booking) {
         timestamp: new Date().toISOString()
     };
 
-    console.log('[RealTimeSync] Broadcasting booking update:', booking.id, booking.status);
-    io.emit('booking:update', event);
+    io.to('staff').emit('booking:update', event);
     return true;
 }
 
@@ -142,8 +126,7 @@ function broadcastBookingCancel(booking) {
         timestamp: new Date().toISOString()
     };
 
-    console.log('[RealTimeSync] Broadcasting booking cancellation:', booking.id);
-    io.emit('booking:cancel', event);
+    io.to('staff').emit('booking:cancel', event);
     return true;
 }
 
@@ -171,8 +154,8 @@ function broadcastPatientNotification(notification) {
         timestamp: new Date().toISOString()
     };
 
-    console.log('[RealTimeSync] Broadcasting patient notification:', notification.patient_id, notification.title);
-    io.emit('notification:new', event);
+    if (!notification.patient_id) return false;
+    io.to(`patient:${notification.patient_id}`).emit('notification:new', event);
     return true;
 }
 

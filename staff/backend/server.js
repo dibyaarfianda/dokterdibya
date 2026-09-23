@@ -73,6 +73,9 @@ const io = new Server(server, {
     httpCompression: true // Compress polling data
 });
 
+const { installSocketAccess, onStaffEvent } = require('./security/socketAccess');
+installSocketAccess(io);
+
 // Make io globally available for routes to emit events
 global.io = io;
 app.set('io', io);
@@ -830,11 +833,13 @@ const usgBulkUploadBotScheduler = require('./services/UsgBulkUploadBotScheduler'
 usgBulkUploadBotScheduler.initScheduler();
 
 // Track socket emission volume for cost observability
-const _origIoEmit = io.emit.bind(io);
+// The adapter sees both namespace and room broadcasts without reading payloads.
+const socketAdapter = io.of('/').adapter;
+const _origBroadcast = socketAdapter.broadcast.bind(socketAdapter);
 let _socketEmitCount = 0;
-io.emit = function (...args) {
+socketAdapter.broadcast = function (...args) {
     _socketEmitCount++;
-    return _origIoEmit(...args);
+    return _origBroadcast(...args);
 };
 
 const USER_DISCONNECT_GRACE_MS = Number.parseInt(process.env.SOCKET_DISCONNECT_GRACE_MS || '30000', 10);
@@ -871,7 +876,7 @@ function broadcastUsersList() {
     if (_usersListTimer) return; // already scheduled
     _usersListTimer = setTimeout(() => {
         _usersListTimer = null;
-        io.emit('users:list', getOnlineUsersList());
+        io.to('staff').emit('users:list', getOnlineUsersList());
     }, 500);
 }
 
@@ -882,9 +887,9 @@ io.on('connection', (socket) => {
     logger.info(`Client connected: ${socket.id} from ${clientIp} via ${transport}`);
 
     // User registration
-    socket.on('user:register', (data) => {
+    onStaffEvent(socket, 'user:register', (data) => {
         if (!data || !data.userId || !data.name) {
-            logger.warn(`Invalid user:register data received: ${JSON.stringify(data)}`);
+            logger.warn('Invalid user:register data received');
             return;
         }
 
@@ -924,7 +929,7 @@ io.on('connection', (socket) => {
 
         // Broadcast to others that a new user connected
         if (wasOffline) {
-            socket.broadcast.emit('user:connected', userProfile);
+            socket.to('staff').emit('user:connected', userProfile);
         }
         
         // Debounced broadcast of online users list
@@ -937,7 +942,7 @@ io.on('connection', (socket) => {
     });
     
     // Activity update — throttled to max 1 broadcast per 2 seconds per socket
-    socket.on('activity:update', (data) => {
+    onStaffEvent(socket, 'activity:update', (data) => {
         socket.userActivity = data.activity;
         socket.activityTimestamp = data.timestamp;
         const userKey = String(data.userId || socket.userId || '');
@@ -952,7 +957,7 @@ io.on('connection', (socket) => {
         const now = Date.now();
         if (!socket._lastActivityBroadcast || now - socket._lastActivityBroadcast > 2000) {
             socket._lastActivityBroadcast = now;
-            socket.broadcast.emit('user:activity', {
+            socket.to('staff').emit('user:activity', {
                 userId: data.userId,
                 activity: data.activity,
                 timestamp: data.timestamp
@@ -961,13 +966,13 @@ io.on('connection', (socket) => {
     });
     
     // Patient selection broadcast
-    socket.on('patient:select', async (data) => {
+    onStaffEvent(socket, 'patient:select', async (data) => {
         // Log activity to database
         await activityLogger.log(
             data.userId,
             data.userName,
             activityLogger.ACTIONS.VIEW_PATIENT,
-            `Memilih pasien: ${data.patientName}`,
+            'Memilih pasien',
             io
         );
 
@@ -975,111 +980,108 @@ io.on('connection', (socket) => {
         currentSelectedPatient = data;
 
         // Broadcast to all other clients
-        socket.broadcast.emit('patient:selected', data);
+        socket.to('staff').emit('patient:selected', data);
     });
     
     // Anamnesa update broadcast
-    socket.on('anamnesa:update', async (data) => {
+    onStaffEvent(socket, 'anamnesa:update', async (data) => {
 
         // Log activity to database
         await activityLogger.log(
             data.userId,
             data.userName,
             activityLogger.ACTIONS.UPDATE_MR,
-            `Update anamnesa: ${data.patientName}`,
+            'Update anamnesa',
             io
         );
 
-        socket.broadcast.emit('anamnesa:updated', data);
+        socket.to('staff').emit('anamnesa:updated', data);
     });
 
     // Physical exam update broadcast
-    socket.on('physical:update', async (data) => {
+    onStaffEvent(socket, 'physical:update', async (data) => {
 
         // Log activity to database
         await activityLogger.log(
             data.userId,
             data.userName,
             activityLogger.ACTIONS.UPDATE_MR,
-            `Update pemeriksaan fisik: ${data.patientName}`,
+            'Update pemeriksaan fisik',
             io
         );
 
-        socket.broadcast.emit('physical:updated', data);
+        socket.to('staff').emit('physical:updated', data);
     });
 
     // USG exam update broadcast
-    socket.on('usg:update', async (data) => {
+    onStaffEvent(socket, 'usg:update', async (data) => {
 
         // Log activity to database
         await activityLogger.log(
             data.userId,
             data.userName,
             activityLogger.ACTIONS.UPDATE_MR,
-            `Update USG: ${data.patientName}`,
+            'Update USG',
             io
         );
 
-        socket.broadcast.emit('usg:updated', data);
+        socket.to('staff').emit('usg:updated', data);
     });
 
     // Lab exam update broadcast
-    socket.on('lab:update', async (data) => {
+    onStaffEvent(socket, 'lab:update', async (data) => {
 
         // Log activity to database
         await activityLogger.log(
             data.userId,
             data.userName,
             activityLogger.ACTIONS.UPDATE_MR,
-            `Update pemeriksaan penunjang: ${data.patientName}`,
+            'Update pemeriksaan penunjang',
             io
         );
 
-        socket.broadcast.emit('lab:updated', data);
+        socket.to('staff').emit('lab:updated', data);
     });
     
     // Billing update broadcast
-    socket.on('billing:update', async (data) => {
+    onStaffEvent(socket, 'billing:update', async (data) => {
 
         // Log activity to database
         await activityLogger.log(
             data.userId,
             data.userName,
             activityLogger.ACTIONS.UPDATE_INVOICE,
-            `Update billing: ${data.patientName}`,
+            'Update billing',
             io
         );
 
-        socket.broadcast.emit('billing:updated', data);
+        socket.to('staff').emit('billing:updated', data);
     });
 
     // Visit completion broadcast
-    socket.on('visit:complete', async (data) => {
+    onStaffEvent(socket, 'visit:complete', async (data) => {
 
         // Log activity to database
         await activityLogger.log(
             data.userId,
             data.userName,
             activityLogger.ACTIONS.FINALIZE_VISIT,
-            `Menyelesaikan kunjungan: ${data.patientName}`,
+            'Menyelesaikan kunjungan',
             io
         );
 
-        socket.broadcast.emit('visit:completed', data);
+        socket.to('staff').emit('visit:completed', data);
     });
     
-    // Announcement broadcast (to all clients including patients)
-    socket.on('announcement:new', (data) => {
-        io.emit('announcement:new', data);
-    });
+    // Announcements are emitted only after persistence by the HTTP route.
     
     // Get online users list
-    socket.on('users:get-list', () => {
+    onStaffEvent(socket, 'users:get-list', () => {
         socket.emit('users:list', getOnlineUsersList());
     });
     
     socket.on('disconnect', (reason) => {
-        logger.info(`Client disconnected: ${socket.id} (${socket.userName || 'unknown'}) reason: ${reason}`);
+        logger.info(`Client disconnected: ${socket.id} reason: ${reason}`);
 
         if (socket.userId) {
             const userKey = socket.userKey || String(socket.userId);
@@ -1107,7 +1109,7 @@ io.on('connection', (socket) => {
                 userSocketIds.delete(userKey);
                 userProfiles.delete(userKey);
                 userDisconnectTimers.delete(userKey);
-                io.emit('user:disconnected', {
+                io.to('staff').emit('user:disconnected', {
                     userId,
                     name: userName
                 });

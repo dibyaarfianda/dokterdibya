@@ -102,7 +102,7 @@ async function processSync(batchId, source, targetDate, userId) {
     // Helper to emit progress
     const emitProgress = (phase, data) => {
         if (global.io) {
-            global.io.emit('medify_progress', {
+            global.io.to('staff').emit('medify_progress', {
                 batchId,
                 phase,
                 ...data
@@ -274,7 +274,7 @@ async function processSync(batchId, source, targetDate, userId) {
         `, [batchId]);
 
         if (global.io) {
-            global.io.emit('medify_sync_complete', {
+            global.io.to('staff').emit('medify_sync_complete', {
                 batchId,
                 stats: stats[0] || { total: 0, success: 0, failed: 0, skipped: 0 }
             });
@@ -294,7 +294,7 @@ async function processSync(batchId, source, targetDate, userId) {
 
         // Emit error
         if (global.io) {
-            global.io.emit('medify_sync_complete', {
+            global.io.to('staff').emit('medify_sync_complete', {
                 batchId,
                 error: error.message,
                 stats: { total: 0, success: 0, failed: 0, skipped: 0 }
@@ -319,7 +319,7 @@ async function processSyncJobs(batchId, source, page) {
     // Emit progress helper for this phase
     const emitExtractProgress = (data) => {
         if (global.io) {
-            global.io.emit('medify_progress', {
+            global.io.to('staff').emit('medify_progress', {
                 batchId,
                 phase: 'extract',
                 ...data
@@ -404,7 +404,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
 
     const emitProgress = (phase, data) => {
         if (global.io) {
-            global.io.emit('medify_progress', { batchId, phase, ...data });
+            global.io.to('staff').emit('medify_progress', { batchId, phase, ...data });
         }
     };
 
@@ -568,7 +568,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
         `, [batchId]);
 
         if (global.io) {
-            global.io.emit('medify_sync_complete', {
+            global.io.to('staff').emit('medify_sync_complete', {
                 batchId,
                 stats: stats[0] || { total: 0, success: 0, failed: 0, skipped: 0 }
             });
@@ -586,7 +586,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
         );
 
         if (global.io) {
-            global.io.emit('medify_sync_complete', {
+            global.io.to('staff').emit('medify_sync_complete', {
                 batchId,
                 error: error.message,
                 stats: { total: 0, success: 0, failed: 0, skipped: 0 }
@@ -610,7 +610,7 @@ async function processSyncJobsHttp(batchId, source, session) {
 
     const emitExtractProgress = (data) => {
         if (global.io) {
-            global.io.emit('medify_progress', { batchId, phase: 'extract', ...data });
+            global.io.to('staff').emit('medify_progress', { batchId, phase: 'extract', ...data });
         }
     };
 
