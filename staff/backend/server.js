@@ -74,7 +74,9 @@ const io = new Server(server, {
 });
 
 const { installSocketAccess, onStaffEvent } = require('./security/socketAccess');
-installSocketAccess(io);
+// First deploy quarantines anonymous clients; enable strict auth at the planned
+// cutover by setting exactly "true" and restarting the backend.
+installSocketAccess(io, { allowAnonymous: process.env.SOCKET_AUTH_REQUIRED !== 'true' });
 
 // Make io globally available for routes to emit events
 global.io = io;
