@@ -150,10 +150,13 @@ location = /patient-login-trial.html {
     return 301 https://sisiwanita.id/patient-login.html$is_args$args;
 }
 
-# Keep the existing staff/DocBoard login on its own origin for chat push links.
+# Keep staff embeds and DocBoard notification links on their authenticated origin.
 # This only serves the public shell; all chat APIs still require authorization.
 location = /community-chat.html {
-    if ($arg_staffBridge != "1") {
+    set $community_chat_staff 0;
+    if ($arg_staffBridge = "1") { set $community_chat_staff 1; }
+    if ($arg_embed = "staff") { set $community_chat_staff 1; }
+    if ($community_chat_staff = 0) {
         return 301 https://sisiwanita.id/community-chat.html$is_args$args;
     }
     try_files $uri =404;

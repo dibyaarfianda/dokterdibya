@@ -647,7 +647,7 @@ function showCommunityChatPage() {
 
     const frame = document.getElementById('staff-community-chat-frame');
     if (frame && !frame.getAttribute('src')) {
-        frame.src = '/community-chat.html?embed=staff';
+        frame.src = '/community-chat.html?embed=staff&staffBridge=1&v=20260923embed1';
     }
     bridgeCommunityChatFrameAuth(frame);
 }
