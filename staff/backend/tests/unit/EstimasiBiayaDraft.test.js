@@ -143,6 +143,14 @@ describe('mandatory first-visit and administration costs', () => {
         expect(result.total).toBe(350000); // 190000 services/meds + 9 visits * 15000 + one book
         expect(calculate(source(),{trimester:'t3',visits:{t3:1},book:'ginekologi'}).total).toBe(40000);
     });
+    test('existing book costs zero in every trimester and across all trimesters', () => {
+        for (const trimester of ['t1','t2','t3','all']) {
+            const scenario={trimester,visits:{t1:1,t2:1,t3:1},book:'owned'};
+            const owned=calculate(source(),scenario), first=calculate(source(),{...scenario,book:'obstetri'});
+            expect(owned.book_total).toBe(0);
+            expect(owned.total).toBe(first.total-25000);
+        }
+    });
     test('book choice and available prices are required; zero visits has no book charge', () => {
         expect(calculate(source(),{trimester:'t1',visits:{t1:1},book:'unknown'}).total).toBeNull();
         const data=source(); data.mandatory_costs.books.obstetri={price:null,ready:false};

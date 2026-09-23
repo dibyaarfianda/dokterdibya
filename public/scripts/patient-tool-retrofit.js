@@ -100,7 +100,7 @@
             ['fa-solid fa-wave-square', 'Hitung Kontraksi', '/contraction-timer.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
             ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html'],
-            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html']
+            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html', 'NEW']
         ]},
         jadwal: { title: 'Jadwal', items: [
             ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
@@ -111,7 +111,7 @@
         edukasi: { title: 'Ruang Baca', items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
             ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
+            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
         ]}
     };
 
@@ -266,9 +266,9 @@
                 '<div class="bottom-inner" id="home-bottom-inner">' +
                     '<button class="nav-item soundable" data-tool-nav="beranda" type="button" data-shell-action="go" data-shell-href="/patient-menu.html" aria-label="Beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></button>' +
                     '<button class="nav-item soundable" data-tool-nav="dokumen" type="button" data-shell-action="open-sheet" data-shell-sheet="dokumen" aria-label="Dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span><span class="nav-badge" id="doc-nav-badge">0</span></button>' +
-                    '<button class="nav-item soundable" data-tool-nav="aplikasi" type="button" data-shell-action="open-sheet" data-shell-sheet="aplikasi" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="aplikasi" type="button" data-shell-action="open-sheet" data-shell-sheet="aplikasi" aria-label="Aplikasi"><i class="fa-solid fa-table-cells-large"></i><span>Aplikasi</span><span class="nav-badge application-new-badge" data-application-new-badge>NEW</span></button>' +
                     '<button class="nav-item soundable" data-tool-nav="jadwal" type="button" data-shell-action="open-sheet" data-shell-sheet="jadwal" aria-label="Jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></button>' +
-                    '<button class="nav-item soundable" data-tool-nav="edukasi" type="button" data-shell-action="open-sheet" data-shell-sheet="edukasi" aria-label="Ruang Baca"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span><span class="nav-badge ruang-baca-red-badge" data-ruang-baca-badge>Baru</span></button>' +
+                    '<button class="nav-item soundable" data-tool-nav="edukasi" type="button" data-shell-action="open-sheet" data-shell-sheet="edukasi" aria-label="Ruang Baca"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span></button>' +
                 '</div>';
             document.body.appendChild(nav);
         }

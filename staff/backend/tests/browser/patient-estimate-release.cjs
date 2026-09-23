@@ -4,6 +4,7 @@ const {buildPreview}=require('../../services/EstimasiBiayaDraft');
 const publicRoot=path.resolve(__dirname,'../../../../public'),origin='https://sisiwanita.id';
 const authIndex=process.argv.indexOf('--live-auth'),liveAuth=authIndex>=0?JSON.parse(fs.readFileSync(process.argv[authIndex+1],'utf8')):null;
 const live=!!liveAuth||process.argv.includes('--live');
+const liveAnnouncements=!!liveAuth&&process.argv.includes('--live-announcements');
 const mime={'.html':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.png':'image/png','.svg':'image/svg+xml','.webp':'image/webp'};
 const fixture={...buildPreview({aliases:{7:'Suplemen contoh'},trimesters:Object.fromEntries(['t1','t2','t3'].map(k=>[k,{template_id:8,repeats:1,medications:[{obat_id:7,name:'SECRET DRUG',quantity:30,unit:'pcs'}],services:[{tindakan_id:9,quantity:1,repeats:1}]}]))},{medications:[{id:7,name:'SECRET DRUG',price:1500,unit:'pcs',is_active:1}],templates:[{id:8}],services:[{id:9,name:'USG',price:100000,category:'LAYANAN',is_active:1},{id:1,price:15000,is_active:1},{id:3,price:25000,is_active:1},{id:59,price:25000,is_active:1}]}),is_published:true};
 (async()=>{
@@ -21,6 +22,7 @@ const fixture={...buildPreview({aliases:{7:'Suplemen contoh'},trimesters:Object.
   const u=new URL(req.url());
   if(u.pathname.startsWith('/api/')){
    if(req.method()!=='GET')mutations.push(u.pathname);
+   if(liveAnnouncements&&req.method()==='GET'&&['/api/announcements/active','/api/patient-notifications/with-announcements'].includes(u.pathname))return req.continue();
    if(u.pathname==='/api/patient/estimasi-biaya'){
     if(fail)return req.respond({status:503,contentType:'application/json',body:'{}'});
     if(liveAuth)return req.continue();
@@ -38,12 +40,36 @@ const fixture={...buildPreview({aliases:{7:'Suplemen contoh'},trimesters:Object.
  });
  await page.goto(origin+'/patient-menu.html',{waitUntil:'networkidle2'});
  await page.waitForFunction(()=>document.body.classList.contains('home-sections-unlocked'));
+ assert.equal(await page.$eval('.tap-card[data-shell-sheet="aplikasi"] .application-new-badge',n=>n.textContent),'NEW');
+ assert.equal(await page.$eval('.bottom-nav [data-shell-sheet="aplikasi"] .application-new-badge',n=>n.textContent),'NEW');
+ assert.equal(await page.$$eval('[data-ruang-baca-badge]',ns=>ns.length),0);
+ assert.ok(await page.$$eval('[data-application-new-badge]',ns=>ns.every(n=>getComputedStyle(n).display!=='none'&&n.getBoundingClientRect().width>0)));
+ const out=path.resolve(publicRoot,'../tmp/estimate-release');fs.mkdirSync(out,{recursive:true});
+ if(liveAnnouncements){
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.announcement-mini-btn')).some(n=>n.textContent.includes('Aplikasi Baru: Estimasi Biaya Kontrol Kehamilan')));
+  await page.evaluate(()=>Array.from(document.querySelectorAll('.announcement-mini-btn')).find(n=>n.textContent.includes('Aplikasi Baru: Estimasi Biaya Kontrol Kehamilan')).click());
+  await page.waitForFunction(()=>document.querySelector('#shell-modal-body')?.textContent.includes('Sudah punya buku'));
+  assert.ok(await page.$eval('#shell-modal-body',n=>n.textContent.includes('trimester 2 atau 3')));
+  await page.screenshot({path:path.join(out,'live-announcement.png')});
+  await page.click('#shell-modal-close');
+ }
+ await page.$eval('.tap-card[data-shell-sheet="aplikasi"]',n=>n.scrollIntoView({block:'center'}));
+ await page.waitForFunction(()=>document.body.classList.contains('home-actions-settled')&&getComputedStyle(document.querySelector('.tap-card[data-shell-sheet="aplikasi"]')).opacity==='1');
+ await page.$eval('.tap-card[data-shell-sheet="aplikasi"]',n=>n.scrollIntoView({block:'center',behavior:'instant'}));
+ await page.screenshot({path:path.join(out,live?'live-home.png':'local-home.png')});
+ await page.click('.bottom-nav [data-shell-sheet="edukasi"]');
+ assert.equal(await page.$$eval('#sheet-menu .feature-new-badge',ns=>ns.length),0);
+ await page.click('#sheet-overlay',{offset:{x:10,y:10}});
  await page.click('.bottom-nav [data-shell-sheet="aplikasi"]');
  await page.waitForSelector('#sheet-menu a[href="/estimasi-biaya-kehamilan.html"]');
+ assert.deepEqual(await page.$$eval('#sheet-menu .feature-new-badge',ns=>ns.map(n=>[n.closest('a').getAttribute('href'),n.textContent])),[['/estimasi-biaya-kehamilan.html','NEW']]);
+ await page.screenshot({path:path.join(out,live?'live-applications.png':'local-applications.png')});
  await Promise.all([page.waitForNavigation({waitUntil:'networkidle2'}),page.click('#sheet-menu a[href="/estimasi-biaya-kehamilan.html"]')]);
  await page.waitForSelector('#estimate-help-done');assert.equal(await page.$eval('#shell-modal-title',n=>n.textContent),'Cara Menggunakan');
  await page.focus('#shell-modal-close');await page.keyboard.press('Escape');
  await page.waitForFunction(()=>!document.getElementById('shell-modal').classList.contains('active'));
+ assert.equal(await page.$eval('[data-tool-nav="aplikasi"] .application-new-badge',n=>n.textContent),'NEW');
+ assert.equal(await page.$$eval('[data-ruang-baca-badge]',ns=>ns.length),0);
  assert.ok(await page.$eval('.estimate-banner',n=>!n.textContent.includes('Pratinjau')));
  assert.equal(await page.$eval('[data-estimate="trimester"]',n=>n.value),'t1');
  assert.ok(await page.$$eval('input[type="number"]',ns=>ns.length>0&&ns.every(n=>n.value==='0')));
@@ -58,8 +84,23 @@ const fixture={...buildPreview({aliases:{7:'Suplemen contoh'},trimesters:Object.
  for(const [i,k] of keys.entries())await change('[data-estimate="service"][data-key="'+k+'"]',liveAuth?[1,2,2,1,1,2][i]:1);
  assert.equal(await page.$eval('#estimate-total',n=>n.textContent),liveAuth?'Rp 4.061.500':'Rp 505.000');
  assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 25.000');
+ await page.select('[data-estimate="book"]','owned');
+ assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 0');
+ assert.equal(await page.$eval('#estimate-total',n=>n.textContent),liveAuth?'Rp 4.036.500':'Rp 480.000');
+ for(const k of ['t1','t2','t3']){
+  await page.select('[data-estimate="trimester"]',k);
+  assert.ok(await page.$('.estimate-book'));
+  assert.equal(await page.$eval('[data-estimate="book"]',n=>n.value),'owned');
+  assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 0');
+  await page.select('[data-estimate="book"]','obstetri');
+  assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 25.000');
+  await page.select('[data-estimate="book"]','owned');
+ }
+ await page.$eval('.estimate-book',n=>n.scrollIntoView({block:'center',behavior:'instant'}));
+ await page.screenshot({path:path.join(out,live?'live-owned-book-t3.png':'local-owned-book-t3.png')});
+ await page.select('[data-estimate="trimester"]','all');
+ await page.select('[data-estimate="book"]','obstetri');
  assert.doesNotMatch(await page.$eval('#estimate-app',n=>n.innerHTML),/SECRET|template_name|obat_id|caraPakai/);
- const out=path.resolve(publicRoot,'../tmp/estimate-release');fs.mkdirSync(out,{recursive:true});
  await page.$eval('.estimate-book',n=>n.scrollIntoView({block:'center'}));await page.screenshot({path:path.join(out,live?'live-phone.png':'local-phone.png')});
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.setViewport({width:1280,height:900});await page.screenshot({path:path.join(out,live?'live-desktop.png':'local-desktop.png')});

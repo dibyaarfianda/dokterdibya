@@ -17,7 +17,7 @@ import {
     getGuestNavigationUrl,
     isGuestLoginRoute,
     PATIENT_MENU_DATA
-} from './patient-shell/routes.js?v=20260923estimate8';
+} from './patient-shell/routes.js?v=20260923estimate9';
 import { createPatientSheetController } from './patient-shell/sheet-controller.js';
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';

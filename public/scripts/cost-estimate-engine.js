@@ -54,7 +54,7 @@
             const phases = TRIMESTERS.filter(key => selected === 'all' || selected === key).map(key => trimesters[key]);
             bookPending = phases.some(phase => phase.visits == null);
             const book = data.mandatory_costs.books[scenario.book];
-            bookTotal = bookPending ? null : phases.every(phase => phase.visits === 0) ? 0
+            bookTotal = scenario.book === 'owned' ? 0 : bookPending ? null : phases.every(phase => phase.visits === 0) ? 0
                 : book?.ready ? book.price : null;
             if (bookTotal == null || !Number.isFinite(bookTotal) || bookTotal < 0) ready = false;
             else total += bookTotal;

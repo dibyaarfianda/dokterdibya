@@ -44,12 +44,12 @@
             ['fa-solid fa-wave-square', 'Hitung Kontraksi', '/contraction-timer.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
             ['fa-solid fa-kit-medical', 'Jadwal Vitamin', '/jadwal-vitamin.html'],
-            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html']
+            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html', 'NEW']
         ],
         edukasi: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
             ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
+            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
         ],
         jadwal: [
             ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
@@ -68,7 +68,7 @@
     function injectStyle() {
         var style = document.createElement('style');
         style.setAttribute('data-portal-bottom-nav', '');
-        style.textContent = '.tbn-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:1002;padding-bottom:env(safe-area-inset-bottom,0);transform:translateY(100%);transition:transform .45s ease;color:#fff}.tbn-bottom-nav.tbn-nav-visible{transform:translateY(0)}.tbn-bottom-inner{max-width:760px;margin:0 auto;padding:8px 12px 10px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}.tbn-nav-item{min-height:48px;display:grid;place-items:center;align-content:center;gap:3px;color:inherit;text-decoration:none;border-radius:10px;position:relative}.tbn-nav-item i{font-size:18px;color:inherit!important}.tbn-nav-item span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}.tbn-nav-item.active{color:#3b82f6}.tbn-ruang-baca-badge{position:absolute;top:2px;right:4px;min-width:28px;height:16px;border-radius:999px;background:#dc2626;color:#fff;border:1px solid rgba(255,255,255,.9);box-shadow:0 7px 15px rgba(220,38,38,.24);font-size:8px;line-height:1;font-style:normal;font-weight:900;text-transform:uppercase;display:none;place-items:center;padding:0 5px}.tbn-bottom-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:none}.tbn-bottom-sheet-overlay.active{display:block}.tbn-bottom-sheet{position:fixed;bottom:70px;left:16px;right:16px;z-index:1001;display:none;max-width:360px;margin:auto}.tbn-bottom-sheet.active{display:block}.tbn-sheet-menu-item{display:flex;align-items:center;gap:14px;padding:14px 18px;color:#fff;text-decoration:none;border-radius:10px}.tbn-sheet-menu-item:hover{background:#fff;color:#0f172a!important}.tbn-feature-new-badge{margin-left:auto;border-radius:999px;background:#e9f8ef;color:#0f6b3d;border:1px solid rgba(15,107,61,.18);padding:3px 8px;font-size:10px;font-style:normal;font-weight:800;text-transform:uppercase;letter-spacing:.05em}';
+        style.textContent = '.tbn-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:1002;padding-bottom:env(safe-area-inset-bottom,0);transform:translateY(100%);transition:transform .45s ease;color:#fff}.tbn-bottom-nav.tbn-nav-visible{transform:translateY(0)}.tbn-bottom-inner{max-width:760px;margin:0 auto;padding:8px 12px 10px;display:grid;grid-template-columns:repeat(5,1fr);gap:2px}.tbn-nav-item{min-height:48px;display:grid;place-items:center;align-content:center;gap:3px;color:inherit;text-decoration:none;border-radius:10px;position:relative}.tbn-nav-item i{font-size:18px;color:inherit!important}.tbn-nav-item span{font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}.tbn-nav-item.active{color:#3b82f6}.tbn-application-new-badge{position:absolute;top:2px;right:4px;min-width:28px;height:16px;border-radius:999px;background:#dc2626;color:#fff;border:1px solid rgba(255,255,255,.9);box-shadow:0 7px 15px rgba(220,38,38,.24);font-size:8px;line-height:1;font-style:normal;font-weight:900;text-transform:uppercase;display:grid;place-items:center;padding:0 5px}.tbn-bottom-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:none}.tbn-bottom-sheet-overlay.active{display:block}.tbn-bottom-sheet{position:fixed;bottom:70px;left:16px;right:16px;z-index:1001;display:none;max-width:360px;margin:auto}.tbn-bottom-sheet.active{display:block}.tbn-sheet-menu-item{display:flex;align-items:center;gap:14px;padding:14px 18px;color:#fff;text-decoration:none;border-radius:10px}.tbn-sheet-menu-item:hover{background:#fff;color:#0f172a!important}.tbn-feature-new-badge{margin-left:auto;border-radius:999px;background:#e9f8ef;color:#0f6b3d;border:1px solid rgba(15,107,61,.18);padding:3px 8px;font-size:10px;font-style:normal;font-weight:800;text-transform:uppercase;letter-spacing:.05em}';
         document.head.appendChild(style);
     }
 
@@ -118,8 +118,8 @@
             '<nav class="tbn-bottom-nav" id="tbn-bottom-nav" aria-label="Navigasi bawah"><div class="tbn-bottom-inner">' +
             '<a href="/patient-menu.html" class="tbn-nav-item" data-tbn-cat="beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></a>' +
             '<a href="#" class="tbn-nav-item" data-tbn-cat="dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span></a>' +
-            '<a href="#" class="tbn-nav-item" data-tbn-cat="aplikasi"><i class="fa-solid fa-th-large"></i><span>Aplikasi</span></a>' +
-            '<a href="#" class="tbn-nav-item" data-tbn-cat="edukasi"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span><em class="tbn-ruang-baca-badge" data-tbn-ruang-baca-badge>Baru</em></a>' +
+            '<a href="#" class="tbn-nav-item" data-tbn-cat="aplikasi"><i class="fa-solid fa-th-large"></i><span>Aplikasi</span><em class="tbn-application-new-badge" data-application-new-badge>NEW</em></a>' +
+            '<a href="#" class="tbn-nav-item" data-tbn-cat="edukasi"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span></a>' +
             '<a href="#" class="tbn-nav-item" data-tbn-cat="jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></a>' +
             '</div></nav>';
         document.body.appendChild(wrap);

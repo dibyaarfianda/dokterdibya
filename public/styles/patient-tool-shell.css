@@ -441,7 +441,8 @@ body.patient-tool-shell #home-bottom-nav .nav-item:not(.active) i { color: #5a5a
 body.patient-tool-shell #home-bottom-nav .nav-item:active i { color: #ffffff !important; }
 body.patient-tool-shell #home-bottom-nav .nav-item i { font-size: 12px !important; color: inherit; }
 body.patient-tool-shell #home-bottom-nav .nav-badge { top: 2px !important; right: 10px !important; min-width: 12px !important; height: 12px !important; border-radius: 6px !important; font-size: 7px !important; padding: 0 3px !important; }
-body.patient-tool-shell #home-bottom-nav .ruang-baca-red-badge {
+body.patient-tool-shell #home-bottom-nav .application-new-badge {
+    display: grid !important;
     min-width: 28px !important;
     height: 16px !important;
     border-radius: 999px !important;

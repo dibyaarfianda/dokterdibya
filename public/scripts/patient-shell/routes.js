@@ -15,7 +15,7 @@ export const PATIENT_MENU_DATA = Object.freeze({
             ['fa-solid fa-wave-square', 'Hitung Kontraksi', '/contraction-timer.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
             ['fa-solid fa-pills', 'Jadwal Vitamin', '/jadwal-vitamin.html'],
-            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html']
+            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html', 'NEW']
         ]
     },
     jadwal: {
@@ -32,7 +32,7 @@ export const PATIENT_MENU_DATA = Object.freeze({
         items: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
             ['fa-solid fa-book-open', 'Ruang Membaca', '/artikel.html'],
-            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html', 'Baru']
+            ['fa-solid fa-comment-medical', 'Ruang Cerita', '/ruang-cerita.html']
         ]
     }
 });
