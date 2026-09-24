@@ -45,7 +45,7 @@ async function resolve(input = {}) {
     if (caseId) {
         const [jobs] = await db.query(
             `SELECT patient_id FROM medify_import_jobs WHERE simrs_source = ? AND simrs_med_id = ? AND patient_id IS NOT NULL`,
-            [facility, caseId]
+            [location, caseId]
         );
         evidence.push(...jobs);
     }

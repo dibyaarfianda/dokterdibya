@@ -45,3 +45,29 @@ test('duplicate section or invalid stored JSON fails closed', async () => {
     fixture({ sections: [{ id: 7, version: 1, record_data: 'broken' }] });
     await expect(resolve(source)).rejects.toBeInstanceOf(ResolutionError);
 });
+
+test.each([
+    ['melinda', 'rsia_melinda'],
+    ['gambiran', 'rsud_gambiran'],
+    ['bhayangkara', 'rs_bhayangkara']
+])('case-only %s evidence binds the mapped Medify location %s', async (facility, location) => {
+    const caseId = 'med0000001234';
+    db.query.mockImplementation(async (sql, params) => {
+        if (sql.includes('FROM medify_import_jobs')) return [params[0] === location && params[1] === caseId ? [{ patient_id: 'P1' }] : []];
+        if (sql.includes('FROM sunday_clinic_records')) return [[{ mr_id: 'DRD123' }]];
+        if (sql.includes('FROM medical_records')) return [[]];
+        throw new Error('Unexpected SQL');
+    });
+    await expect(resolve({ facility, case_id: caseId })).resolves.toEqual({ patientId: 'P1', mrId: 'DRD123', anamnesa: null });
+    expect(db.query.mock.calls.find(([sql]) => sql.includes('FROM medify_import_jobs'))[1]).toEqual([location, caseId]);
+});
+
+test('mapped Medify case patient conflicting with exact external identity is rejected', async () => {
+    db.query.mockImplementation(async (sql, params) => {
+        if (sql.includes('FROM patient_external_ids')) return [[{ patient_id: 'P1' }]];
+        if (sql.includes('FROM medify_import_jobs')) return [params[0] === 'rsia_melinda' ? [{ patient_id: 'P2' }] : []];
+        throw new Error('Visit lookup must not occur for conflicting identity');
+    });
+    await expect(resolve({ facility: 'melinda', no_rm: 'HOSP-1', case_id: 'med0000001234' }))
+        .rejects.toMatchObject({ statusCode: 409, code: 'PATIENT_AMBIGUOUS' });
+});

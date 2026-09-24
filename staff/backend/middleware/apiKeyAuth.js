@@ -5,6 +5,7 @@ const logger = require('../utils/logger');
  * Validates X-API-Key header against configured keys.
  */
 function apiKeyAuth(req, res, next) {
+    res.set('Cache-Control', 'no-store');
     const apiKey = req.headers['x-api-key'];
 
     if (!apiKey) {
@@ -24,10 +25,7 @@ function apiKeyAuth(req, res, next) {
     }
 
     if (apiKey !== commApiKey) {
-        logger.warn('Invalid API key attempt', {
-            ip: req.ip,
-            path: req.originalUrl
-        });
+        logger.warn('Invalid API key attempt', { scope: 'comm-integration' });
         return res.status(403).json({
             success: false,
             message: 'Invalid API key'

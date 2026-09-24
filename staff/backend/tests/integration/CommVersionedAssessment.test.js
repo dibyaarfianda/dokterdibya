@@ -62,3 +62,23 @@ test('resolver ambiguity returns identifier-free status and logs', async () => {
     expect(response.body).toEqual({ success: false, code: 'VISIT_AMBIGUOUS' });
     expect(logger.error).not.toHaveBeenCalled();
 });
+
+test('resolver auth failures are no-store and never log query or body identifiers', async () => {
+    const sentinel = 'NIK-SYNTHETIC-1234567890123456';
+    const url = `/assessments/resolve?nik=${sentinel}`;
+    const body = { facility: 'melinda', nik: sentinel, no_rm: 'HOSP-SYNTHETIC' };
+    const missing = await request(app).post(url).send(body);
+    expect(missing.status).toBe(401);
+    expect(missing.headers['cache-control']).toBe('no-store');
+    const invalid = await request(app).post(url).set('X-API-Key', 'wrong').send(body);
+    expect(invalid.status).toBe(403);
+    expect(invalid.headers['cache-control']).toBe('no-store');
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toContain(sentinel);
+    expect(JSON.stringify(invalid.body)).not.toContain(sentinel);
+    delete process.env.COMM_API_KEY;
+    const unconfigured = await request(app).post(url).set('X-API-Key', 'fixture-key').send(body);
+    expect(unconfigured.status).toBe(500);
+    expect(unconfigured.headers['cache-control']).toBe('no-store');
+    expect(JSON.stringify(logger.error.mock.calls)).not.toContain(sentinel);
+    expect(resolver.resolve).not.toHaveBeenCalled();
+});
