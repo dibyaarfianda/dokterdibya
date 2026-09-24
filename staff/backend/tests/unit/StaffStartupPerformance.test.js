@@ -127,7 +127,8 @@ describe('staff startup performance regressions', () => {
         const realtime = read('staff', 'public', 'scripts', 'realtime-sync.js');
         expect(html).not.toMatch(/<script[^>]+src=["']\/scripts\/socket-credentials\.js/);
         expect(main).toContain("import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js'");
-        expect(realtime).toContain("import '/scripts/socket-credentials.js'");
+        expect(realtime).toContain("import './socket-credentials.js'");
+        expect(realtime).not.toContain("import '/scripts/socket-credentials.js'");
         expect(main.indexOf("import { initRealtimeSync")).toBeLessThan(main.indexOf('function scheduleRealtimeStartup'));
     });
 
