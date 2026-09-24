@@ -67,7 +67,12 @@ test.each(['', 'abc', 'g'.repeat(40)])('rejects invalid source commit %s', async
 const input = () => ({ repositoryRoot: repo, releaseBase, version: 'v413', sourceCommit });
 const finalDir = () => path.join(releaseBase, 'v413');
 const lockFile = () => path.join(releaseBase, '.v413.publish.lock');
-const recoveryFile = () => path.join(releaseBase, '.v413.recover.lock');
+const recoveryClaims = async () => (await fs.promises.readdir(releaseBase)).filter(name => /^\.v413\.recover-[0-9a-f-]{36}\.claim$/.test(name));
+async function stalePublication() {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+}
 
 async function hashTree(directory) {
     const names = [];
@@ -146,180 +151,142 @@ test('an old contained lock can be recovered with injected time', async () => {
     await expect(fs.promises.access(path.join(releaseBase, '.v413.tmp-old'))).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
-test('a dead expired recovery guard is reclaimed and publication proceeds', async () => {
-    await fs.promises.mkdir(releaseBase);
-    await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
-    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
-    await fs.promises.writeFile(recoveryFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', invocationId: 'dead-guard' }));
-    const result = await stageStaffAssetRelease({ ...input(), now: () => 601001 });
-    expect(result.status).toBe('published');
-    await expect(fs.promises.access(recoveryFile())).rejects.toMatchObject({ code: 'ENOENT' });
+test('simultaneous unique recovery claims elect only one publisher', async () => {
+    await stalePublication();
+    const realOpen = fs.promises.open;
+    const openedClaims = [];
+    const spy = jest.spyOn(fs.promises, 'open').mockImplementation(async (target, ...args) => {
+        if (String(target).endsWith('.claim')) openedClaims.push(path.basename(target));
+        return realOpen(target, ...args);
+    });
+    let results;
+    try { results = await Promise.allSettled([stageStaffAssetRelease({ ...input(), now: () => 601001 }), stageStaffAssetRelease({ ...input(), now: () => 601001 })]); }
+    finally { spy.mockRestore(); }
+    expect(openedClaims).toHaveLength(2);
+    expect(new Set(openedClaims).size).toBe(2);
+    expect(results.filter(item => item.status === 'fulfilled' && item.value.status === 'published')).toHaveLength(1);
+    expect(results.filter(item => item.status === 'rejected')).toHaveLength(1);
+    expect(await recoveryClaims()).toEqual([]);
     expect(await fs.promises.access(finalDir())).toBeUndefined();
 });
 
-test('a live recovery guard fails closed and remains untouched', async () => {
-    await fs.promises.mkdir(releaseBase);
-    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
-    const liveBytes = JSON.stringify({ pid: process.pid, startedAt: 1000, version: 'v413', invocationId: 'live-guard' });
-    await fs.promises.writeFile(recoveryFile(), liveBytes);
-    await expect(stageStaffAssetRelease({ ...input(), now: () => 601001 })).rejects.toThrow(/recovery lock/i);
-    expect(await fs.promises.readFile(recoveryFile(), 'utf8')).toBe(liveBytes);
-    expect(await fs.promises.readFile(lockFile(), 'utf8')).toContain('tmp-old');
+test('a later contender cannot delete or replace the winner unique claim', async () => {
+    await stalePublication();
+    const realUnlink = fs.promises.unlink;
+    let releaseUnlink;
+    let reachedUnlink;
+    const paused = new Promise(resolve => { reachedUnlink = resolve; });
+    const gate = new Promise(resolve => { releaseUnlink = resolve; });
+    const spy = jest.spyOn(fs.promises, 'unlink').mockImplementation(async target => {
+        if (target === lockFile()) { reachedUnlink(); await gate; }
+        return realUnlink(target);
+    });
+    const first = stageStaffAssetRelease({ ...input(), now: () => 601001 });
+    let second;
+    let winnerClaim;
+    let winnerBytes;
+    let after;
+    try {
+        await paused;
+        [winnerClaim] = await recoveryClaims();
+        winnerBytes = winnerClaim && await fs.promises.readFile(path.join(releaseBase, winnerClaim), 'utf8');
+        second = await stageStaffAssetRelease({ ...input(), now: () => 601001 }).then(() => 'resolved', () => 'rejected');
+        after = await recoveryClaims();
+        if (winnerClaim) expect(await fs.promises.readFile(path.join(releaseBase, winnerClaim), 'utf8')).toBe(winnerBytes);
+    } finally {
+        releaseUnlink();
+        await Promise.allSettled([first]);
+        spy.mockRestore();
+    }
+    expect(winnerClaim).toMatch(/^\.v413\.recover-[0-9a-f-]{36}\.claim$/);
+    expect(second).toBe('rejected');
+    expect(after).toEqual([winnerClaim]);
 });
 
-test('an expired empty recovery guard from a crash is reclaimed', async () => {
-    await fs.promises.mkdir(releaseBase);
-    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
-    await fs.promises.writeFile(recoveryFile(), '');
-    await fs.promises.utimes(recoveryFile(), new Date(1000), new Date(1000));
-    const result = await stageStaffAssetRelease({ ...input(), now: () => 601001 });
-    expect(result.status).toBe('published');
-    await expect(fs.promises.access(recoveryFile())).rejects.toMatchObject({ code: 'ENOENT' });
-});
-
-test('a fresh empty recovery guard is retained while its owner may be writing', async () => {
-    await fs.promises.mkdir(releaseBase);
-    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
-    await fs.promises.writeFile(recoveryFile(), '');
-    await fs.promises.utimes(recoveryFile(), new Date(601000), new Date(601000));
-    await expect(stageStaffAssetRelease({ ...input(), now: () => 601001 })).rejects.toThrow(/recovery lock/i);
-    expect(await fs.promises.readFile(recoveryFile(), 'utf8')).toBe('');
-});
-
-test('failed recovery-guard record write removes only its opened guard', async () => {
-    await fs.promises.mkdir(releaseBase);
-    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+test('winner claim remains through acquisition of the new publication lock', async () => {
+    await stalePublication();
     const realOpen = fs.promises.open;
+    let claimsAtAcquisition;
     const spy = jest.spyOn(fs.promises, 'open').mockImplementation(async (target, ...args) => {
         const handle = await realOpen(target, ...args);
-        if (target !== recoveryFile()) return handle;
-        return { stat: () => handle.stat(), writeFile: async () => { throw new Error('simulated guard write failure'); }, close: () => handle.close() };
+        if (target === lockFile()) claimsAtAcquisition = await recoveryClaims();
+        return handle;
     });
-    try { await expect(stageStaffAssetRelease({ ...input(), now: () => 601001 })).rejects.toThrow(/simulated guard write failure/); }
+    try { expect((await stageStaffAssetRelease({ ...input(), now: () => 601001 })).status).toBe('published'); }
     finally { spy.mockRestore(); }
-    await expect(fs.promises.access(recoveryFile())).rejects.toMatchObject({ code: 'ENOENT' });
-    expect(await fs.promises.readFile(lockFile(), 'utf8')).toContain('tmp-old');
+    expect(claimsAtAcquisition).toHaveLength(1);
+    expect(await recoveryClaims()).toEqual([]);
 });
 
-test('an outdated guard contender cannot unlink a replacement recovery guard', async () => {
-    await fs.promises.mkdir(releaseBase);
-    await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
-    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
-    await fs.promises.writeFile(recoveryFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', invocationId: 'dead-guard' }));
-    let releaseGuardRead;
-    let reachedGuardRead;
-    const guardReadPaused = new Promise(resolve => { reachedGuardRead = resolve; });
-    const guardReadGate = new Promise(resolve => { releaseGuardRead = resolve; });
-    let releasePublishUnlink;
-    let reachedPublishUnlink;
-    const publishUnlinkPaused = new Promise(resolve => { reachedPublishUnlink = resolve; });
-    const publishUnlinkGate = new Promise(resolve => { releasePublishUnlink = resolve; });
+test('a crashed stale unique claim is pruned without touching the new claim', async () => {
+    await stalePublication();
+    const deadId = '11111111-1111-4111-8111-111111111111';
+    const deadName = `.v413.recover-${deadId}.claim`;
+    await fs.promises.writeFile(path.join(releaseBase, deadName), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', invocationId: deadId, orderNs: '1' }));
+    const realOpen = fs.promises.open;
+    let claimsAtAcquisition;
+    const spy = jest.spyOn(fs.promises, 'open').mockImplementation(async (target, ...args) => {
+        const handle = await realOpen(target, ...args);
+        if (target === lockFile()) claimsAtAcquisition = await recoveryClaims();
+        return handle;
+    });
+    try { expect((await stageStaffAssetRelease({ ...input(), now: () => 601001 })).status).toBe('published'); }
+    finally { spy.mockRestore(); }
+    expect(claimsAtAcquisition).toHaveLength(1);
+    expect(claimsAtAcquisition).not.toContain(deadName);
+    expect(await recoveryClaims()).toEqual([]);
+});
+
+test('a claim changed during stale pruning blocks publication', async () => {
+    await stalePublication();
+    const id = '11111111-1111-4111-8111-111111111111';
+    const claimPath = path.join(releaseBase, `.v413.recover-${id}.claim`);
+    await fs.promises.writeFile(claimPath, JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', invocationId: id, orderNs: '1' }));
+    const liveBytes = JSON.stringify({ pid: process.pid, startedAt: 601001, version: 'v413', invocationId: id, orderNs: '1' });
     const realRead = fs.promises.readFile;
-    const realUnlink = fs.promises.unlink;
-    let pausedRead = false;
-    let pausedUnlink = false;
-    const readSpy = jest.spyOn(fs.promises, 'readFile').mockImplementation(async (...args) => {
+    let changed = false;
+    const spy = jest.spyOn(fs.promises, 'readFile').mockImplementation(async (...args) => {
         const bytes = await realRead(...args);
-        if (args[0] === recoveryFile() && !pausedRead) {
-            pausedRead = true;
-            reachedGuardRead();
-            await guardReadGate;
+        if (args[0] === claimPath && !changed) {
+            changed = true;
+            await fs.promises.writeFile(claimPath, liveBytes);
         }
         return bytes;
     });
-    const unlinkSpy = jest.spyOn(fs.promises, 'unlink').mockImplementation(async target => {
-        if (target === lockFile() && !pausedUnlink) {
-            pausedUnlink = true;
-            reachedPublishUnlink();
-            await publishUnlinkGate;
-        }
-        return realUnlink(target);
-    });
-    const staleInput = { ...input(), now: () => 601001 };
-    const first = stageStaffAssetRelease(staleInput);
-    let second;
-    let observed;
-    let replacementSurvived = false;
-    try {
-        observed = await Promise.race([guardReadPaused.then(() => 'paused'), first.then(() => 'resolved', () => 'rejected')]);
-        if (observed === 'paused') {
-            second = stageStaffAssetRelease(staleInput);
-            await publishUnlinkPaused;
-            const replacement = await fs.promises.readFile(recoveryFile(), 'utf8');
-            releaseGuardRead();
-            const firstResult = await first.then(() => 'resolved', () => 'rejected');
-            replacementSurvived = firstResult === 'rejected' && await fs.promises.readFile(recoveryFile(), 'utf8') === replacement;
-        }
-    } finally {
-        releaseGuardRead();
-        releasePublishUnlink();
-        await Promise.allSettled([first, second].filter(Boolean));
-        readSpy.mockRestore();
-        unlinkSpy.mockRestore();
-    }
-    expect(observed).toBe('paused');
-    expect(replacementSurvived).toBe(true);
-    expect(await fs.promises.access(finalDir())).toBeUndefined();
+    try { await expect(stageStaffAssetRelease({ ...input(), now: () => 601001 })).rejects.toThrow(/claim/i); }
+    finally { spy.mockRestore(); }
+    expect(await fs.promises.readFile(claimPath, 'utf8')).toBe(liveBytes);
+    expect(await fs.promises.readFile(lockFile(), 'utf8')).toContain('tmp-old');
 });
 
-test('a concurrent stale recovery cannot remove the next publisher lock', async () => {
-    await fs.promises.mkdir(releaseBase);
-    await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
-    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
-    let releaseUnlink;
-    let reachedUnlink;
-    const unlinkPaused = new Promise(resolve => { reachedUnlink = resolve; });
-    const unlinkGate = new Promise(resolve => { releaseUnlink = resolve; });
+test('a contender after winner claim removal cannot delete the new live publication lock', async () => {
+    await stalePublication();
+    const realCopy = fs.promises.copyFile;
     let releaseCopy;
     let reachedCopy;
-    const copyStarted = new Promise(resolve => { reachedCopy = resolve; });
-    const copyGate = new Promise(resolve => { releaseCopy = resolve; });
-    const realUnlink = fs.promises.unlink;
-    const realCopy = fs.promises.copyFile;
-    let paused = false;
-    const unlinkSpy = jest.spyOn(fs.promises, 'unlink').mockImplementation(async target => {
-        if (target === lockFile() && !paused) {
-            paused = true;
-            reachedUnlink();
-            await unlinkGate;
-        }
-        return realUnlink(target);
+    const paused = new Promise(resolve => { reachedCopy = resolve; });
+    const gate = new Promise(resolve => { releaseCopy = resolve; });
+    const spy = jest.spyOn(fs.promises, 'copyFile').mockImplementation(async (...args) => {
+        reachedCopy(); await gate; return realCopy(...args);
     });
-    const copySpy = jest.spyOn(fs.promises, 'copyFile').mockImplementation(async (...args) => {
-        reachedCopy();
-        await copyGate;
-        return realCopy(...args);
-    });
-    const staleInput = { ...input(), now: () => 601001 };
-    const first = stageStaffAssetRelease(staleInput);
-    let second;
-    let observed;
-    let liveLockPreserved = false;
+    const publishing = stageStaffAssetRelease({ ...input(), now: () => 601001 });
+    let contender;
+    let sameLock;
+    let claimsAtArrival;
     try {
-        await unlinkPaused;
-        second = stageStaffAssetRelease(staleInput);
-        observed = await Promise.race([
-            second.then(() => 'resolved', () => 'rejected'),
-            copyStarted.then(() => 'second reached copy')
-        ]);
-        if (observed === 'rejected') {
-            releaseUnlink();
-            await copyStarted;
-            const activeLock = await fs.promises.readFile(lockFile(), 'utf8');
-            const third = await stageStaffAssetRelease(staleInput).then(() => 'resolved', () => 'rejected');
-            liveLockPreserved = third === 'rejected' && await fs.promises.readFile(lockFile(), 'utf8') === activeLock;
-        }
+        await paused;
+        claimsAtArrival = await recoveryClaims();
+        const liveBytes = await fs.promises.readFile(lockFile(), 'utf8');
+        contender = await stageStaffAssetRelease({ ...input(), now: () => 601001 }).then(() => 'resolved', () => 'rejected');
+        sameLock = await fs.promises.readFile(lockFile(), 'utf8') === liveBytes;
     } finally {
-        releaseUnlink();
         releaseCopy();
-        await Promise.allSettled([first, second].filter(Boolean));
-        unlinkSpy.mockRestore();
-        copySpy.mockRestore();
+        await publishing;
+        spy.mockRestore();
     }
-    expect(observed).toBe('rejected');
-    expect(liveLockPreserved).toBe(true);
-    expect((await fs.promises.readdir(releaseBase)).filter(name => name.endsWith('.publish.lock'))).toEqual([]);
-    expect(await fs.promises.access(finalDir())).toBeUndefined();
+    expect(claimsAtArrival).toEqual([]);
+    expect(contender).toBe('rejected');
+    expect(sameLock).toBe(true);
 });
 
 test('a stale lock pointing outside its release base fails closed', async () => {

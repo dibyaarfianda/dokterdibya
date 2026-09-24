@@ -111,119 +111,151 @@ function sameFileIdentity(left, right) {
         left.dev === right.dev && left.ino === right.ino;
 }
 
-async function unlinkOwnedGuard(recoveryPath, identity, bytes = null) {
-    const current = await optionalLstat(recoveryPath);
-    if (!sameFileIdentity(identity, current)) return false;
-    if (bytes !== null && await fs.promises.readFile(recoveryPath, 'utf8') !== bytes) return false;
-    if (!sameFileIdentity(identity, await optionalLstat(recoveryPath))) return false;
-    await fs.promises.unlink(recoveryPath);
-    return true;
+const CLAIM_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+function claimIdFromName(version, name) {
+    const prefix = `.${version}.recover-`;
+    if (!name.startsWith(prefix) || !name.endsWith('.claim')) return null;
+    const id = name.slice(prefix.length, -'.claim'.length);
+    return CLAIM_ID.test(id) ? id : null;
 }
 
-async function acquireRecoveryGuard({ recoveryPath, version, now }) {
-    const ownBytes = `${JSON.stringify({ pid: process.pid, startedAt: now(), version, invocationId: randomUUID() })}\n`;
-    for (let attempt = 0; attempt < 2; attempt++) {
-        let handle;
-        try { handle = await fs.promises.open(recoveryPath, 'wx'); }
-        catch (error) {
-            if (error.code !== 'EEXIST') throw error;
-            if (attempt) throw new Error('Staff release recovery lock exists');
-            const staleIdentity = await optionalLstat(recoveryPath);
-            if (!staleIdentity || !staleIdentity.isFile() || staleIdentity.isSymbolicLink()) {
-                throw new Error('Unsafe Staff release recovery lock');
-            }
-            let staleBytes;
-            try { staleBytes = await fs.promises.readFile(recoveryPath, 'utf8'); }
-            catch (_) { throw new Error('Invalid Staff release recovery lock'); }
-            let stale = null;
-            try { stale = JSON.parse(staleBytes); }
-            catch (_) { /* An expired partial write can be reclaimed by file age. */ }
-            if (stale) {
-                if (stale.version !== version || typeof stale.invocationId !== 'string' || !stale.invocationId ||
-                    !Number.isFinite(stale.startedAt) || now() - stale.startedAt <= STALE_LOCK_MS || pidIsLive(stale.pid)) {
-                    throw new Error('Staff release recovery lock is live or invalid');
-                }
-            } else if (now() - staleIdentity.mtimeMs <= STALE_LOCK_MS) {
-                throw new Error('Staff release recovery lock is live or invalid');
-            }
-            if (!await unlinkOwnedGuard(recoveryPath, staleIdentity, staleBytes)) {
-                throw new Error('Staff release recovery lock changed');
-            }
+async function removeExactClaim(claim, expectedBytes = claim.bytes) {
+    const stat = await optionalLstat(claim.path);
+    if (!sameFileIdentity(claim.identity, stat)) return false;
+    let bytes;
+    try { bytes = await fs.promises.readFile(claim.path, 'utf8'); }
+    catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+    if (expectedBytes !== null && bytes !== expectedBytes) return false;
+    if (!sameFileIdentity(claim.identity, await optionalLstat(claim.path))) return false;
+    try { await fs.promises.unlink(claim.path); return true; }
+    catch (error) { if (error.code === 'ENOENT') return false; throw error; }
+}
+
+async function createRecoveryClaim({ releaseBase, version, now }) {
+    const invocationId = randomUUID();
+    const claimPath = path.resolve(releaseBase, `.${version}.recover-${invocationId}.claim`);
+    if (!isInside(releaseBase, claimPath)) throw new Error('Staff recovery claim escapes release base');
+    const handle = await fs.promises.open(claimPath, 'wx');
+    let identity;
+    try {
+        identity = await handle.stat();
+        const bytes = `${JSON.stringify({ pid: process.pid, startedAt: now(), version,
+            invocationId, orderNs: process.hrtime.bigint().toString() })}\n`;
+        await handle.writeFile(bytes);
+        return { path: claimPath, identity, bytes, invocationId };
+    } catch (error) {
+        if (identity) await removeExactClaim({ path: claimPath, identity, bytes: null }, null);
+        throw error;
+    } finally { await handle.close(); }
+}
+
+async function listLiveClaims({ releaseBase, version, now }) {
+    const claims = [];
+    let incomplete = false;
+    for (const entry of await fs.promises.readdir(releaseBase, { withFileTypes: true })) {
+        const id = claimIdFromName(version, entry.name);
+        if (!id) continue;
+        const claimPath = path.resolve(releaseBase, entry.name);
+        if (!isInside(releaseBase, claimPath) || !entry.isFile() || entry.isSymbolicLink()) {
+            throw new Error('Unsafe Staff recovery claim path');
+        }
+        const identity = await optionalLstat(claimPath);
+        if (!identity) { incomplete = true; continue; }
+        if (!identity.isFile() || identity.isSymbolicLink()) throw new Error('Unsafe Staff recovery claim path');
+        let bytes;
+        try { bytes = await fs.promises.readFile(claimPath, 'utf8'); }
+        catch (error) { if (error.code === 'ENOENT') { incomplete = true; continue; } throw error; }
+        let record;
+        try { record = JSON.parse(bytes); }
+        catch (_) { record = null; }
+        const valid = record && record.version === version && record.invocationId === id &&
+            Number.isSafeInteger(record.pid) && record.pid > 0 && Number.isFinite(record.startedAt) &&
+            typeof record.orderNs === 'string' && /^\d+$/.test(record.orderNs);
+        const expired = now() - (valid ? record.startedAt : identity.mtimeMs) > STALE_LOCK_MS;
+        const exactClaim = { path: claimPath, identity, bytes, invocationId: id };
+        if (expired && (!valid || !pidIsLive(record.pid))) {
+            if (!await removeExactClaim(exactClaim)) incomplete = true;
             continue;
         }
-        let identity;
-        try {
-            identity = await handle.stat();
-            await handle.writeFile(ownBytes);
-            return { handle, identity, bytes: ownBytes };
-        } catch (error) {
-            await handle.close();
-            if (identity) await unlinkOwnedGuard(recoveryPath, identity);
-            throw error;
-        }
+        if (!valid) { incomplete = true; continue; }
+        claims.push(record);
     }
-    throw new Error('Staff release recovery lock exists');
+    return { claims, incomplete };
 }
 
-async function recoverStaleLock({ lockPath, recoveryPath, releaseBase, version, finalDir, now, protectedRoots }) {
-    const guard = await acquireRecoveryGuard({ recoveryPath, version, now });
+async function electRecoveryClaim({ claim, releaseBase, version, now }) {
+    for (let attempt = 0; attempt < 6; attempt++) {
+        const { claims, incomplete } = await listLiveClaims({ releaseBase, version, now });
+        claims.sort((a, b) => {
+            const left = BigInt(a.orderNs);
+            const right = BigInt(b.orderNs);
+            return left < right ? -1 : left > right ? 1 : a.invocationId.localeCompare(b.invocationId);
+        });
+        if (!incomplete && claims[0]?.invocationId === claim.invocationId) return;
+        if (attempt < 5) await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    throw new Error('Another Staff recovery claim is active');
+}
+
+async function recoverStaleLock({ lockPath, releaseBase, version, finalDir, now, protectedRoots }) {
+    const stat = await optionalLstat(lockPath);
+    if (!stat || !stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe Staff release publication lock');
+    let oldBytes;
+    let old;
+    try { oldBytes = await fs.promises.readFile(lockPath, 'utf8'); old = JSON.parse(oldBytes); }
+    catch (_) { throw new Error('Invalid Staff release publication lock'); }
+    if (old.version !== version || !Number.isFinite(old.startedAt) ||
+        now() - old.startedAt <= STALE_LOCK_MS || pidIsLive(old.pid) ||
+        !validTempBasename(version, old.tempBasename)) {
+        throw new Error('Staff release publication lock is live or invalid');
+    }
+    const oldTemp = path.resolve(releaseBase, old.tempBasename);
+    const actualTemp = await physicalPath(oldTemp);
+    if (!isInside(releaseBase, actualTemp) ||
+        protectedRoots.some(root => pathsOverlap(actualTemp, root)) ||
+        await optionalLstat(finalDir)) {
+        throw new Error('Staff release publication lock cleanup overlaps a protected path');
+    }
+    if (!sameFileIdentity(stat, await optionalLstat(lockPath)) ||
+        await fs.promises.readFile(lockPath, 'utf8') !== oldBytes) throw new Error('Staff release publication lock changed');
+    const oldTempStat = await optionalLstat(oldTemp);
+    if (oldTempStat) {
+        if (!oldTempStat.isDirectory() || oldTempStat.isSymbolicLink()) throw new Error('Unsafe stale Staff release temp');
+        await fs.promises.rm(oldTemp, { recursive: true });
+    }
+    if (!sameFileIdentity(stat, await optionalLstat(lockPath)) ||
+        await fs.promises.readFile(lockPath, 'utf8') !== oldBytes) throw new Error('Staff release publication lock changed');
+    await fs.promises.unlink(lockPath);
+}
+
+async function createPublicationLock(lockPath, ownBytes) {
+    const handle = await fs.promises.open(lockPath, 'wx');
+    let identity;
     try {
-        const stat = await optionalLstat(lockPath);
-        if (!stat || !stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe Staff release publication lock');
-        let oldBytes;
-        let old;
-        try { oldBytes = await fs.promises.readFile(lockPath, 'utf8'); old = JSON.parse(oldBytes); }
-        catch (_) { throw new Error('Invalid Staff release publication lock'); }
-        if (old.version !== version || !Number.isFinite(old.startedAt) ||
-            now() - old.startedAt <= STALE_LOCK_MS || pidIsLive(old.pid) ||
-            !validTempBasename(version, old.tempBasename)) {
-            throw new Error('Staff release publication lock is live or invalid');
+        identity = await handle.stat();
+        await handle.writeFile(ownBytes);
+        return ownBytes;
+    } catch (error) {
+        if (identity) {
+            const current = await optionalLstat(lockPath);
+            if (sameFileIdentity(identity, current)) await fs.promises.unlink(lockPath);
         }
-        const oldTemp = path.resolve(releaseBase, old.tempBasename);
-        const actualTemp = await physicalPath(oldTemp);
-        if (!isInside(releaseBase, actualTemp) ||
-            protectedRoots.some(root => pathsOverlap(actualTemp, root)) ||
-            await optionalLstat(finalDir)) {
-            throw new Error('Staff release publication lock cleanup overlaps a protected path');
-        }
-        if (await fs.promises.readFile(lockPath, 'utf8') !== oldBytes) throw new Error('Staff release publication lock changed');
-        const oldTempStat = await optionalLstat(oldTemp);
-        if (oldTempStat) {
-            if (!oldTempStat.isDirectory() || oldTempStat.isSymbolicLink()) throw new Error('Unsafe stale Staff release temp');
-            await fs.promises.rm(oldTemp, { recursive: true });
-        }
-        if (await fs.promises.readFile(lockPath, 'utf8') !== oldBytes) throw new Error('Staff release publication lock changed');
-        await fs.promises.unlink(lockPath);
-    } finally {
-        await guard.handle.close();
-        await unlinkOwnedGuard(recoveryPath, guard.identity, guard.bytes);
-    }
+        throw error;
+    } finally { await handle.close(); }
 }
 
-async function acquireLock({ lockPath, recoveryPath, releaseBase, version, finalDir, tempBasename, now, protectedRoots }) {
-    const record = { pid: process.pid, startedAt: now(), version, tempBasename };
-    const ownBytes = `${JSON.stringify(record)}\n`;
-    for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-            const handle = await fs.promises.open(lockPath, 'wx');
-            const openedStat = await handle.stat();
-            try { await handle.writeFile(ownBytes); }
-            catch (error) {
-                const currentStat = await optionalLstat(lockPath);
-                if (currentStat && currentStat.isFile() && !currentStat.isSymbolicLink() &&
-                    currentStat.dev === openedStat.dev && currentStat.ino === openedStat.ino) {
-                    await fs.promises.unlink(lockPath);
-                }
-                throw error;
-            } finally { await handle.close(); }
-            return ownBytes;
-        } catch (error) {
-            if (error.code !== 'EEXIST') throw error;
-            if (attempt) throw new Error('Staff release publication lock exists');
-            await recoverStaleLock({ lockPath, recoveryPath, releaseBase, version, finalDir, now, protectedRoots });
-        }
-    }
-    throw new Error('Staff release publication lock exists');
+async function acquireLock({ lockPath, releaseBase, version, finalDir, tempBasename, now, protectedRoots }) {
+    const ownBytes = `${JSON.stringify({ pid: process.pid, startedAt: now(), version, tempBasename })}\n`;
+    try { return await createPublicationLock(lockPath, ownBytes); }
+    catch (error) { if (error.code !== 'EEXIST') throw error; }
+    const claim = await createRecoveryClaim({ releaseBase, version, now });
+    try {
+        await electRecoveryClaim({ claim, releaseBase, version, now });
+        await recoverStaleLock({ lockPath, releaseBase, version, finalDir, now, protectedRoots });
+        try { return await createPublicationLock(lockPath, ownBytes); }
+        catch (error) { if (error.code === 'EEXIST') throw new Error('Staff release publication lock exists'); throw error; }
+    } finally { await removeExactClaim(claim); }
 }
 
 async function stageStaffAssetRelease({ repositoryRoot, releaseBase, version, sourceCommit, now = () => Date.now() }) {
@@ -241,8 +273,7 @@ async function stageStaffAssetRelease({ repositoryRoot, releaseBase, version, so
     const tempBasename = `.${version}.tmp-${process.pid}-${randomUUID()}`;
     const tempDir = path.resolve(base, tempBasename);
     const lockPath = path.resolve(base, `.${version}.publish.lock`);
-    const recoveryPath = path.resolve(base, `.${version}.recover.lock`);
-    if (!isInside(base, finalDir) || !isInside(base, tempDir) || !isInside(base, lockPath) || !isInside(base, recoveryPath)) {
+    if (!isInside(base, finalDir) || !isInside(base, tempDir) || !isInside(base, lockPath)) {
         throw new Error('Staff release path escapes release base');
     }
     const manifest = await buildStaffReleaseManifest({ publicRoot: sourcePublic, version, sourceCommit });
@@ -251,8 +282,8 @@ async function stageStaffAssetRelease({ repositoryRoot, releaseBase, version, so
     await fs.promises.mkdir(base, { recursive: true });
     const invalid = path.join(base, '.invalid');
     if (await optionalLstat(invalid)) throw new Error('Invalid Staff release base: .invalid path exists');
-    const protectedRoots = [repository, sourcePublic, finalDir, lockPath, recoveryPath];
-    const ownLockBytes = await acquireLock({ lockPath, recoveryPath, releaseBase: base, version, finalDir, tempBasename, now, protectedRoots });
+    const protectedRoots = [repository, sourcePublic, finalDir, lockPath];
+    const ownLockBytes = await acquireLock({ lockPath, releaseBase: base, version, finalDir, tempBasename, now, protectedRoots });
     try {
         if (await optionalLstat(finalDir)) {
             if (!await compareExisting(finalDir, manifest)) throw new Error('Staff release already exists with different content');
