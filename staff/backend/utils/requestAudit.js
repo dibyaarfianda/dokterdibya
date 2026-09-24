@@ -7,8 +7,14 @@ const SAFE_AUDIT_PATH = Symbol('safeAuditPath');
 function safeAuditPath(req) {
     if (req[SAFE_AUDIT_PATH]) return req[SAFE_AUDIT_PATH];
     // Access/performance logs and the global patient guard run before route
-    // middleware. Recognize only these two sensitive contracts at that boundary.
+    // middleware. Recognize sensitive contracts at that boundary.
     const pathname = String(req.originalUrl || req.url || req.path || '').split('?')[0];
+    if (req.method === 'GET' && /^\/api\/patients\/?$/i.test(pathname)) {
+        return '/api/patients';
+    }
+    if (req.method === 'GET' && /^\/api\/patients\/search\/advanced\/?$/i.test(pathname)) {
+        return '/api/patients/search/advanced';
+    }
     if (req.method === 'POST' && /^\/api\/medical-records\/[^/]+\/sections\/[^/]+\/reset\/?$/i.test(pathname)) {
         return '/api/medical-records/:mrId/sections/:recordType/reset';
     }
@@ -35,6 +41,12 @@ function requestAuditFields(req, fields) {
     // Unmarked routes retain their existing useful audit metadata and paths.
     const path = safeAuditPath(req);
     if (!path) return fields;
+    if (path === '/api/patients' || path === '/api/patients/search/advanced') return {
+        path,
+        ...(Number.isInteger(fields.statusCode) ? { statusCode: fields.statusCode } : {}),
+        ...(typeof fields.duration === 'string' && /^\d+(?:\.\d+)?ms$/.test(fields.duration) ? { duration: fields.duration } : {}),
+        ...(typeof fields.responseTime === 'string' && /^\d+(?:\.\d+)?ms$/.test(fields.responseTime) ? { responseTime: fields.responseTime } : {})
+    };
     return {
         path,
         ...(Number.isInteger(fields.statusCode) ? { statusCode: fields.statusCode } : {})

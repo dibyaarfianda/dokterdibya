@@ -16,7 +16,12 @@ function limitOf(raw) {
 }
 
 function scopeOf(options) {
-    return crypto.createHash('sha256').update(JSON.stringify({ v: 1, ...options })).digest('hex');
+    return crypto.createHash('sha256').update(JSON.stringify({ v: 2, ...options })).digest('hex');
+}
+
+function cursorKey() {
+    if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET required for patient cursors');
+    return crypto.createHash('sha256').update('patient-list-cursor-v2\0').update(process.env.JWT_SECRET).digest();
 }
 
 function encodeCursor(row, terms, scope, page) {
@@ -24,7 +29,11 @@ function encodeCursor(row, terms, scope, page) {
         const value = row[term.field];
         return value instanceof Date ? value.toISOString() : value == null ? null : String(value);
     });
-    return Buffer.from(JSON.stringify({ v: 1, scope, keys, page })).toString('base64url');
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', cursorKey(), iv);
+    cipher.setAAD(Buffer.from('patients:list:v2'));
+    const encrypted = Buffer.concat([cipher.update(JSON.stringify({ v: 2, scope, keys, page }), 'utf8'), cipher.final()]);
+    return Buffer.concat([Buffer.from([2]), iv, cipher.getAuthTag(), encrypted]).toString('base64url');
 }
 
 function decodeCursor(token, scope, terms) {
@@ -32,11 +41,14 @@ function decodeCursor(token, scope, terms) {
     if (typeof token !== 'string' || token.length > 2048 || !/^[A-Za-z0-9_-]+$/.test(token)) throw new PatientCursorError();
     let decoded;
     try {
-        const text = Buffer.from(token, 'base64url').toString('utf8');
-        if (Buffer.from(text).toString('base64url') !== token) throw new PatientCursorError();
-        decoded = JSON.parse(text);
+        const bytes = Buffer.from(token, 'base64url');
+        if (bytes.toString('base64url') !== token || bytes.length < 30 || bytes[0] !== 2) throw new PatientCursorError();
+        const decipher = crypto.createDecipheriv('aes-256-gcm', cursorKey(), bytes.subarray(1, 13));
+        decipher.setAAD(Buffer.from('patients:list:v2'));
+        decipher.setAuthTag(bytes.subarray(13, 29));
+        decoded = JSON.parse(Buffer.concat([decipher.update(bytes.subarray(29)), decipher.final()]).toString('utf8'));
     } catch (_) { throw new PatientCursorError(); }
-    if (!decoded || decoded.v !== 1 || decoded.scope !== scope || !Array.isArray(decoded.keys) ||
+    if (!decoded || decoded.v !== 2 || decoded.scope !== scope || !Array.isArray(decoded.keys) ||
         decoded.keys.length !== terms.length || !Number.isSafeInteger(decoded.page) || decoded.page < 1 ||
         decoded.keys.some(value => value !== null && (typeof value !== 'string' || value.length > 255)) ||
         !decoded.keys[terms.length - 1]) throw new PatientCursorError();

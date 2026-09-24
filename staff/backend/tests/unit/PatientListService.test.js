@@ -1,6 +1,20 @@
 const PatientListService = require('../../services/PatientListService');
+const { encodeCursor, decodeCursor, scopeOf } = require('../../services/PatientListCursor');
 
 describe('PatientListService', () => {
+    test('cursor is stateless, tamper-resistant and hides patient name and ID', () => {
+        const terms = [{ column: 'p.full_name', field: 'full_name', direction: 'ASC' },
+            { column: 'p.id', field: 'id', direction: 'ASC' }];
+        const scope = scopeOf({ view: 'basic', sort: 'name', search: '', limit: 50 });
+        const token = encodeCursor({ full_name: 'SYNTHETIC_PATIENT_NAME', id: 'PRIVATE_PATIENT_ID' }, terms, scope, 1);
+        const raw = Buffer.from(token, 'base64url').toString('utf8');
+        expect(raw).not.toContain('SYNTHETIC_PATIENT_NAME');
+        expect(raw).not.toContain('PRIVATE_PATIENT_ID');
+        expect(decodeCursor(token, scope, terms)).toEqual(expect.objectContaining({ keys: ['SYNTHETIC_PATIENT_NAME', 'PRIVATE_PATIENT_ID'], page: 1 }));
+        const altered = Buffer.from(token, 'base64url');
+        altered[altered.length - 1] ^= 1;
+        expect(() => decodeCursor(altered.toString('base64url'), scope, terms)).toThrow();
+    });
     test('view basic uses at most count plus page query and returns a cursor', async () => {
         const db = {
             query: jest.fn()

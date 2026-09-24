@@ -45,7 +45,7 @@ describe('performanceLogger middleware', () => {
         const dateSpy = jest.spyOn(Date, 'now');
         dateSpy.mockReturnValueOnce(0).mockReturnValueOnce(1500);
 
-        const req = { method: 'GET', originalUrl: '/api/patients', user: { id: 1 } };
+        const req = { method: 'GET', originalUrl: '/api/patients?search=PRIVATE_SENTINEL', user: { id: 1 } };
         const res = {
             on: jest.fn(),
             statusCode: 500
@@ -58,13 +58,14 @@ describe('performanceLogger middleware', () => {
         finishHandler();
 
         expect(logger.warn).toHaveBeenCalledWith('Slow request detected', expect.objectContaining({
-            url: '/api/patients',
+            path: '/api/patients',
             duration: expect.stringContaining('ms')
         }));
         expect(logger.error).toHaveBeenCalledWith('Request error', expect.objectContaining({
             statusCode: 500
         }));
         expect(next).toHaveBeenCalled();
+        expect(JSON.stringify([...logger.warn.mock.calls, ...logger.error.mock.calls])).not.toContain('PRIVATE_SENTINEL');
 
         dateSpy.mockRestore();
     });

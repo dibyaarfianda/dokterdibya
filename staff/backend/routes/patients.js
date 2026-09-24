@@ -504,7 +504,7 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                           AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
                     ) ranked WHERE ranked.rn = 1
                 ) latest_anamnesa ON p.id = latest_anamnesa.patient_id`;
-            query = appendVisiblePatientCondition(query);
+            query = appendVisiblePatientCondition(query, 'p', false);
 
             if (normalizedSearch) {
                 query += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';

@@ -101,6 +101,43 @@ describe('GET /api/patients wave 4 additive contract', () => {
         expect(dataCall[1]).toContain(51);
     });
 
+    test('legacy default outer visibility/search/seek returns distinct filtered pages beyond 100', async () => {
+        cache.get.mockReturnValue(null);
+        const visible = Array.from({ length: 103 }, (_, index) => ({
+            id: `P${String(103 - index).padStart(3, '0')}`, full_name: index === 0 ? 'OTHER' : 'KEEP',
+            status: 'active', created_at: '2026-09-24 00:00:00', last_visit: null
+        }));
+        const population = [
+            { id: 'P999', full_name: 'KEEP', status: 'inactive', created_at: '2026-09-24 00:00:00', last_visit: null },
+            { id: 'P998', full_name: 'KEEP', status: 'active', quarantined: true, created_at: '2026-09-24 00:00:00', last_visit: null },
+            ...visible
+        ];
+        db.query.mockImplementation(async (sql, params = []) => {
+            const matching = visible.filter(row => !params.includes('%KEEP%') || row.full_name === 'KEEP');
+            if (sql.includes('COUNT(*)')) return [[{ total: matching.length }]];
+            if (!sql.includes('SELECT p.*')) return [[]];
+            const outerWhere = /latest_anamnesa ON p\.id = latest_anamnesa\.patient_id\s+WHERE\s+p\.status/.test(sql);
+            const outerSearch = !params.includes('%KEEP%') || /latest_anamnesa ON[\s\S]+WHERE[\s\S]+p\.full_name LIKE/.test(sql);
+            const pool = outerWhere && outerSearch ? matching : population;
+            const cursorId = /latest_anamnesa ON[\s\S]+WHERE[\s\S]+p\.id < \?/.test(sql)
+                ? params.find(value => /^P\d{3}$/.test(String(value))) : null;
+            const start = cursorId ? pool.findIndex(row => row.id === cursorId) + 1 : 0;
+            return [pool.slice(start, start + Number(params[params.length - 1]))];
+        });
+        const first = await request(app).get('/api/patients?limit=100&fresh=1').expect(200);
+        expect(first.body.pagination.total).toBe(103);
+        expect(first.body.data).toHaveLength(100);
+        expect(first.body.data.every(row => row.status === 'active' && !row.quarantined)).toBe(true);
+        const second = await request(app).get(`/api/patients?limit=100&fresh=1&cursor=${encodeURIComponent(first.body.pagination.nextCursor)}`).expect(200);
+        expect(second.body.data).toHaveLength(3);
+        expect(second.body.pagination.total).toBe(103);
+        expect(second.body.pagination.nextCursor).toBeNull();
+        expect(new Set([...first.body.data, ...second.body.data].map(row => row.id)).size).toBe(103);
+        const searched = await request(app).get('/api/patients?search=KEEP&limit=100&fresh=1').expect(200);
+        expect(searched.body.pagination.total).toBe(102);
+        expect(searched.body.data.every(row => row.full_name === 'KEEP')).toBe(true);
+    });
+
     test('legacy malformed cursor is rejected instead of silently ignored', async () => {
         const response = await request(app).get('/api/patients?cursor=not-base64!').expect(400);
         expect(response.body.code).toBe('INVALID_PATIENT_CURSOR');

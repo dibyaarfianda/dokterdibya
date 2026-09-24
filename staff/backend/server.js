@@ -236,7 +236,7 @@ app.use('/api', (req, res, next) => {
     if (!isLegacyPatientNativeAppRequest(req)) return next();
 
     logger.warn('Legacy patient native app request blocked', {
-        path: req.originalUrl || req.url,
+        path: requestAuditUrl(req),
         origin: req.headers.origin || 'none',
         userAgent: req.headers['user-agent'] || 'unknown',
         ip: req.ip
