@@ -14,7 +14,9 @@
             this.destroyed = false;
             this.handlePageChanged = event => this.setActivePage(event?.detail?.page || null);
             this.handleVisibilityChanged = () => {
+                const wasVisible = this.visible;
                 this.visible = this.visibilityTarget?.visibilityState !== 'hidden';
+                if (!wasVisible && this.visible) this.jobs.forEach(job => { job.immediate = true; });
                 this.reconcile();
             };
             this.eventTarget?.addEventListener?.('page:changed', this.handlePageChanged);
@@ -48,6 +50,7 @@
         unregister(key) {
             const job = this.jobs.get(key);
             if (!job) return;
+            job.removed = true;
             this.stopJob(job);
             this.jobs.delete(key);
         }
@@ -58,7 +61,7 @@
         }
 
         isEligible(job) {
-            if (this.destroyed || !this.visible) return false;
+            if (this.destroyed || job.removed || !this.visible) return false;
             if (job.page && job.page !== this.activePage) return false;
             return !job.when || Boolean(job.when());
         }
@@ -106,15 +109,19 @@
                 if (job.runToken !== token) return;
                 job.controller = null;
                 job.inFlight = false;
-                if (this.isEligible(job)) this.schedule(job, nextDelay);
+                if (this.isEligible(job)) {
+                    this.schedule(job, job.immediate ? 0 : nextDelay);
+                    job.immediate = false;
+                }
             }
         }
 
         trigger(key) {
             const job = this.jobs.get(key);
             if (!job || !this.isEligible(job)) return false;
+            job.immediate = true;
             this.stopJob(job);
-            this.schedule(job, 0);
+            this.reconcileJob(job);
             return true;
         }
 
@@ -125,8 +132,6 @@
             }
             if (job.controller) job.controller.abort();
             job.controller = null;
-            job.inFlight = false;
-            job.runToken += 1;
         }
 
         destroy() {

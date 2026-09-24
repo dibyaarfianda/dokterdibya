@@ -10,6 +10,9 @@ const LOCATIONS = [
 
 let scheduleHandle = null;
 let refreshInterval = null;
+let badgeRefreshInFlight = false;
+let badgeVisibleRefreshPending = false;
+let badgesWereHidden = document.visibilityState === 'hidden';
 
 function getLastSeenTimestamp(location) {
     return localStorage.getItem(`badge_last_seen_${location}`) || null;
@@ -32,6 +35,12 @@ function updateBadge(badgeId, count) {
 }
 
 async function loadNotificationBadges() {
+    if (document.visibilityState === 'hidden') return;
+    if (badgeRefreshInFlight) {
+        badgeVisibleRefreshPending = true;
+        return;
+    }
+    badgeRefreshInFlight = true;
     try {
         const lastSeen = Object.fromEntries(
             LOCATIONS.map(location => [location, getLastSeenTimestamp(location)])
@@ -51,6 +60,12 @@ async function loadNotificationBadges() {
         updateBadge('badge-artikel-likes', counts.artikel);
     } catch (error) {
         console.error('Error loading notification badges:', error);
+    } finally {
+        badgeRefreshInFlight = false;
+        if (badgeVisibleRefreshPending && document.visibilityState === 'visible') {
+            badgeVisibleRefreshPending = false;
+            loadNotificationBadges();
+        }
     }
 }
 
@@ -69,6 +84,14 @@ function scheduleNotificationBadges(delayMs = 900) {
     }
 
     if (!refreshInterval) {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                badgesWereHidden = true;
+            } else if (badgesWereHidden) {
+                badgesWereHidden = false;
+                loadNotificationBadges();
+            }
+        });
         refreshInterval = window.setInterval(() => {
             if (document.visibilityState === 'visible') loadNotificationBadges();
         }, 120000);

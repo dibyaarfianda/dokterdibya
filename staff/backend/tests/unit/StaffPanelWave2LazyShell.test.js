@@ -175,4 +175,40 @@ describe('staff panel wave 2 lazy shell contracts', () => {
             { type: 'page:changed', detail: { page: 'patients', previousPage: 'patients' } }
         ]);
     });
+
+    test('PageRegistry lets the last navigation win when an earlier fragment resolves late', async () => {
+        const { PageRegistry } = require(path.join(repoRoot, 'staff', 'public', 'scripts', 'shell', 'page-registry.js'));
+        let releaseSlow;
+        const slow = new Promise(resolve => { releaseSlow = resolve; });
+        const containers = { slow: { dataset: {} }, fast: { dataset: {} } };
+        const events = [];
+        const registry = new PageRegistry({ document: {
+            getElementById: id => containers[id],
+            dispatchEvent: event => events.push(event)
+        } });
+        const activateSlow = jest.fn();
+        const activateFast = jest.fn();
+        registry.registerAll([
+            { key: 'slow', containerId: 'slow', load: () => slow, activate: activateSlow },
+            { key: 'fast', containerId: 'fast', activate: activateFast }
+        ]);
+        const first = registry.activate('slow');
+        const second = registry.activate('fast');
+        expect(await second).toBe(containers.fast);
+        releaseSlow();
+        expect(await first).toBeNull();
+        expect(registry.activeKey).toBe('fast');
+        expect(activateSlow).not.toHaveBeenCalled();
+        expect(activateFast).toHaveBeenCalledTimes(1);
+        expect(events.filter(event => event.type === 'page:changed').map(event => event.detail.page)).toEqual(['fast']);
+    });
+
+    test('final staff UI commit is generation guarded and records only cached activation duration', () => {
+        const main = read('staff', 'public', 'scripts', 'main.js');
+        const activation = main.match(/async function activateRegisteredStaffPage\(key\) \{[\s\S]*?\n\}/)?.[0] || '';
+        expect(activation).toContain('navigationGeneration !== registeredPageNavigationGeneration');
+        expect(activation).toContain("window.__rum?.trackCachedActivation?.(");
+        expect(activation).not.toContain('patientId');
+        expect(activation).not.toContain('mrId');
+    });
 });

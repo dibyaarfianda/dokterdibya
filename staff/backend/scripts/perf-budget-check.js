@@ -3,8 +3,8 @@
  * Strict performance budget guardrail.
  *
  * Usage:
- *   node perf-budget-check.js --base-url https://example.test --token JWT
- *     [--page-url https://example.test/] [--allow-unreachable]
+ *   STAFF_PERF_TOKEN=<secret> node perf-budget-check.js --base-url https://example.test
+ *     [--page-url https://example.test/staff/public/index-adminlte.html] [--allow-unreachable]
  */
 
 const http = require('http');
@@ -24,7 +24,8 @@ const BUDGETS = {
     page: {
         maxJsSizeKB: 500,
         maxImageSizeKB: 300,
-        maxRequestCount: 40
+        maxRequestCount: 40,
+        maxCachedActivationP95Ms: 1000
     }
 };
 
@@ -70,6 +71,18 @@ function percentile(values, requestedPercentile) {
     return sorted[index];
 }
 
+function pageBudgetViolations(page) {
+    const checks = [
+        ['Warm requests', page.warm.requestCount, BUDGETS.page.maxRequestCount],
+        ['Warm failed requests', page.warm.failedRequests, 0],
+        ['Cached activation p95 (ms)', page.cachedActivationP95, BUDGETS.page.maxCachedActivationP95Ms],
+        ['First-party JavaScript (KB)', page.firstPartyJsKB, BUDGETS.page.maxJsSizeKB],
+        ['Largest image (KB)', page.largestImageKB, BUDGETS.page.maxImageSizeKB]
+    ];
+    return checks.filter(([, value, budget]) => !Number.isFinite(value) || value > budget)
+        .map(([label, value, budget]) => ({ label, value, budget }));
+}
+
 async function benchEndpoint(baseUrl, endpoint, token) {
     const headers = { Authorization: `Bearer ${token}` };
     for (let index = 0; index < WARMUP_RUNS; index++) {
@@ -105,15 +118,21 @@ async function inspectPage(pageUrl, token) {
         }
 
         const targetOrigin = new URL(pageUrl).origin;
-        let requestCount = 0;
-        let firstPartyJsBytes = 0;
-        let largestImageBytes = 0;
+        let phase = 'cold';
+        const phases = {
+            cold: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0 },
+            warm: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0 }
+        };
         const responseReads = [];
 
         page.on('request', (request) => {
-            if (!request.url().startsWith('data:')) requestCount++;
+            if (phase && !request.url().startsWith('data:')) phases[phase].requestCount++;
         });
+        page.on('requestfailed', () => { if (phase) phases[phase].failedRequests++; });
         page.on('response', (response) => {
+            const responsePhase = phase;
+            if (!responsePhase) return;
+            if (response.status() >= 400) phases[responsePhase].failedRequests++;
             const task = (async () => {
                 const request = response.request();
                 const resourceType = request.resourceType();
@@ -125,25 +144,48 @@ async function inspectPage(pageUrl, token) {
                 }
 
                 if (resourceType === 'script' && new URL(response.url()).origin === targetOrigin) {
-                    firstPartyJsBytes += size;
+                    phases[responsePhase].firstPartyJsBytes += size;
                 }
                 if (resourceType === 'image') {
-                    largestImageBytes = Math.max(largestImageBytes, size);
+                    phases[responsePhase].largestImageBytes = Math.max(phases[responsePhase].largestImageBytes, size);
                 }
             })();
             responseReads.push(task);
         });
 
-        const response = await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-        if (!response || !response.ok()) {
-            throw new Error(`Page returned HTTP ${response?.status() || 'unknown'}`);
+        await page.setCacheEnabled(false);
+        for (const measuredPhase of ['cold', 'warm']) {
+            phase = measuredPhase;
+            if (measuredPhase === 'warm') await page.setCacheEnabled(true);
+            const response = measuredPhase === 'cold'
+                ? await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 })
+                : await page.reload({ waitUntil: 'networkidle2', timeout: 30000 });
+            if (!response || !response.ok()) {
+                throw new Error(`${measuredPhase} staff page returned HTTP ${response?.status() || 'unknown'}`);
+            }
         }
         await Promise.allSettled(responseReads);
+        phase = null;
+
+        // The registered dashboard is already present after shell startup; repeat its cached activation.
+        const cachedActivation = [];
+        for (let index = 0; index < 5; index++) {
+            const duration = await page.evaluate(async () => {
+                if (typeof window.activateRegisteredStaffPage !== 'function') throw new Error('Staff navigation unavailable');
+                const started = performance.now();
+                const container = await window.activateRegisteredStaffPage('dashboard');
+                if (!container) throw new Error('Staff navigation did not commit');
+                return performance.now() - started;
+            });
+            cachedActivation.push(duration);
+        }
 
         return {
-            requestCount,
-            firstPartyJsKB: Math.round(firstPartyJsBytes / 1024),
-            largestImageKB: Math.round(largestImageBytes / 1024)
+            cold: phases.cold,
+            warm: phases.warm,
+            cachedActivationP95: percentile(cachedActivation, 95),
+            firstPartyJsKB: Math.round(phases.warm.firstPartyJsBytes / 1024),
+            largestImageKB: Math.round(phases.warm.largestImageBytes / 1024)
         };
     } finally {
         await browser.close();
@@ -153,13 +195,13 @@ async function inspectPage(pageUrl, token) {
 async function main() {
     const args = process.argv.slice(2);
     const baseUrl = argumentValue(args, '--base-url', 'http://localhost:3000').replace(/\/$/, '');
-    const pageUrl = argumentValue(args, '--page-url', `${baseUrl}/`);
-    const token = argumentValue(args, '--token');
+    const pageUrl = argumentValue(args, '--page-url', `${baseUrl}/staff/public/index-adminlte.html`);
+    const token = process.env.STAFF_PERF_TOKEN;
     const allowUnreachable = args.includes('--allow-unreachable');
     let violations = 0;
 
-    if (!token) {
-        console.error('[CONFIG] --token is required because API, metrics, and SLO checks are protected.');
+    if (!token || args.includes('--token')) {
+        console.error('[CONFIG] STAFF_PERF_TOKEN environment variable is required; --token is not accepted.');
         process.exit(1);
     }
 
@@ -217,13 +259,17 @@ async function main() {
 
     const page = await runRequired(pageUrl, () => inspectPage(pageUrl, token));
     if (page) {
+        console.log(`[INFO] Cold staff load: requests=${page.cold.requestCount} failed=${page.cold.failedRequests}`);
         const checks = [
-            ['Initial requests', page.requestCount, BUDGETS.page.maxRequestCount],
+            ['Warm requests', page.warm.requestCount, BUDGETS.page.maxRequestCount],
+            ['Warm failed requests', page.warm.failedRequests, 0],
+            ['Cached activation p95 (ms)', page.cachedActivationP95, BUDGETS.page.maxCachedActivationP95Ms],
             ['First-party JavaScript (KB)', page.firstPartyJsKB, BUDGETS.page.maxJsSizeKB],
             ['Largest image (KB)', page.largestImageKB, BUDGETS.page.maxImageSizeKB]
         ];
+        const failed = pageBudgetViolations(page);
         for (const [label, value, budget] of checks) {
-            const pass = value <= budget;
+            const pass = !failed.some(item => item.label === label);
             console.log(`[${pass ? 'PASS' : 'FAIL'}] ${label}=${value} budget=${budget}`);
             if (!pass) violations++;
         }
@@ -233,7 +279,11 @@ async function main() {
     process.exit(violations > 0 ? 1 : 0);
 }
 
-main().catch((error) => {
-    console.error('Fatal performance-check error:', error);
-    process.exit(1);
-});
+if (require.main === module) {
+    main().catch((error) => {
+        console.error('Fatal performance-check error:', error);
+        process.exit(1);
+    });
+}
+
+module.exports = { inspectPage, pageBudgetViolations, percentile };

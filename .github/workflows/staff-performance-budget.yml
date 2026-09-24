@@ -22,5 +22,4 @@ jobs:
         with:
           node-version: 22
       - name: Check production performance budgets
-        if: ${{ env.STAFF_PERF_TOKEN != '' }}
-        run: node scripts/perf-budget-check.js --base-url https://dokterdibya.com --token "$STAFF_PERF_TOKEN"
+        run: node scripts/perf-budget-check.js --base-url https://dokterdibya.com --page-url https://dokterdibya.com/staff/public/index-adminlte.html

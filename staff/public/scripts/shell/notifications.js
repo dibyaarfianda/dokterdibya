@@ -5,6 +5,8 @@ import { escapeHtml, escapeAttribute, sanitizeUrl } from '../safe-render.js';
 let notificationPollInterval = null;
 let lastNotificationCount = 0;
 let notificationCountInFlight = false;
+let notificationCountVisiblePending = false;
+let notificationCountWasHidden = document.visibilityState === 'hidden';
 let notificationCountBackoffUntil = 0;
 let notificationSystemInitialized = false;
 const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;
@@ -46,8 +48,11 @@ function initNotificationSystem() {
 
     // Resume immediately when tab becomes visible again
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            loadNotificationCount();
+        if (document.visibilityState === 'hidden') {
+            notificationCountWasHidden = true;
+        } else if (notificationCountWasHidden) {
+            notificationCountWasHidden = false;
+            loadNotificationCount(true);
         }
     });
 
@@ -60,9 +65,13 @@ function initNotificationSystem() {
     }
 }
 
-async function loadNotificationCount() {
-    if (notificationCountInFlight) return;
-    if (Date.now() < notificationCountBackoffUntil) return;
+async function loadNotificationCount(visibleResume = false) {
+    if (document.visibilityState === 'hidden') return;
+    if (notificationCountInFlight) {
+        if (visibleResume) notificationCountVisiblePending = true;
+        return;
+    }
+    if (!visibleResume && Date.now() < notificationCountBackoffUntil) return;
 
     notificationCountInFlight = true;
     try {
@@ -81,6 +90,10 @@ async function loadNotificationCount() {
         console.error('[Notifications] Error loading count:', error);
     } finally {
         notificationCountInFlight = false;
+        if (notificationCountVisiblePending && document.visibilityState === 'visible') {
+            notificationCountVisiblePending = false;
+            loadNotificationCount(true);
+        }
     }
 }
 

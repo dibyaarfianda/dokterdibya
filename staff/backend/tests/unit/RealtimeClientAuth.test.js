@@ -101,6 +101,7 @@ test('cache cutover preserves session-only login credentials', () => {
     function storage(initial) {
         const values = { ...initial };
         return { getItem: key => values[key] || null, setItem: (key, value) => { values[key] = value; },
+            removeItem: key => { delete values[key]; },
             clear: () => { for (const key of Object.keys(values)) delete values[key]; } };
     }
     const html = read('staff/public/index-adminlte.html');
@@ -111,6 +112,33 @@ test('cache cutover preserves session-only login credentials', () => {
     ctx.window.location.reload = () => {};
     vm.runInContext(script, ctx);
     expect(ctx.sessionStorage.getItem('syntheticKey')).toBe('staff-jwt');
+});
+
+test('asset cache cutover removes only registered cache keys and preserves clinical drafts and navigation context', () => {
+    function storage(initial) {
+        const values = { ...initial };
+        return {
+            getItem: key => values[key] ?? null,
+            setItem: (key, value) => { values[key] = value; },
+            removeItem: key => { delete values[key]; },
+            clear: jest.fn(() => { for (const key of Object.keys(values)) delete values[key]; }),
+            snapshot: () => ({ ...values })
+        };
+    }
+    const html = read('staff/public/index-adminlte.html');
+    const script = html.slice(html.indexOf('<!-- Cache Clear Script -->')).match(/<script>([\s\S]*?)<\/script>/)[1];
+    const local = storage({ cache_version: 'old', staff_asset_manifest: 'stale', patient_intake_draft: 'draft', user_role: 'dokter', selectedPatientId: 'patient-context' });
+    const session = storage({ syntheticKey: 'staff-jwt', pendingImportData: 'unsaved', lastStaffNavId: 'nav-kelola-pasien', selectedPatientId: 'patient-context' });
+    const ctx = context({ localStorage: local, sessionStorage: session });
+    ctx.window.TOKEN_KEY = 'syntheticKey';
+    ctx.window.STAFF_CACHE_VERSION = 'new';
+    ctx.window.location.reload = jest.fn();
+    vm.runInContext(script, ctx);
+    expect(local.snapshot()).toMatchObject({ cache_version: 'new', patient_intake_draft: 'draft', user_role: 'dokter', selectedPatientId: 'patient-context' });
+    expect(local.getItem('staff_asset_manifest')).toBeNull();
+    expect(session.snapshot()).toMatchObject({ syntheticKey: 'staff-jwt', pendingImportData: 'unsaved', lastStaffNavId: 'nav-kelola-pasien', selectedPatientId: 'patient-context' });
+    expect(local.clear).not.toHaveBeenCalled();
+    expect(session.clear).not.toHaveBeenCalled();
 });
 
 test('loading fresh realtime module replaces a legacy unauthenticated singleton', () => {

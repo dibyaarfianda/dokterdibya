@@ -35,6 +35,10 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         let audioContext = null;
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
+        let liveQueueHomeInFlight = false;
+        let liveQueueHomeVisibleRefreshPending = false;
+        let liveQueueHomeWasHidden = document.visibilityState === 'hidden';
+        let liveQueueHomeVisibilityBound = false;
         let stopCommunityBadge = null;
         let currentBirthCongratsId = '';
         let currentBirthCongratsData = null;
@@ -1528,7 +1532,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             // GATE: intake form wajib diisi sebelum bisa akses portal
             if (!isIntakeCompleted(currentProfile)) {
                 window.location.replace('/patient-intake.html?required=1');
-                return;
+                return false;
             }
 
             // Set server home photo URL (takes priority over localStorage)
@@ -1546,6 +1550,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             updateHomeHeroPhoto();
             applyMyCorner();
             checkVipSubscription();
+            return true;
         }
 
         async function checkVipSubscription() {
@@ -1832,8 +1837,14 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         }
 
         async function loadLiveQueueHome() {
+            if (document.visibilityState === 'hidden') return;
+            if (liveQueueHomeInFlight) {
+                liveQueueHomeVisibleRefreshPending = true;
+                return;
+            }
             const section = document.getElementById('live-queue-home-section');
             if (!section) return;
+            liveQueueHomeInFlight = true;
             try {
                 const token = getToken();
                 if (!token) {
@@ -1871,11 +1882,28 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                 }
             } catch (error) {
                 section.classList.remove('show');
+            } finally {
+                liveQueueHomeInFlight = false;
+                if (liveQueueHomeVisibleRefreshPending && document.visibilityState === 'visible') {
+                    liveQueueHomeVisibleRefreshPending = false;
+                    loadLiveQueueHome();
+                }
             }
         }
 
         function initializeLiveQueueHome() {
             loadLiveQueueHome();
+            if (!liveQueueHomeVisibilityBound) {
+                liveQueueHomeVisibilityBound = true;
+                document.addEventListener('visibilitychange', function() {
+                    if (document.visibilityState === 'hidden') {
+                        liveQueueHomeWasHidden = true;
+                    } else if (liveQueueHomeWasHidden) {
+                        liveQueueHomeWasHidden = false;
+                        loadLiveQueueHome();
+                    }
+                });
+            }
             window.clearInterval(liveQueueHomeTimer);
             liveQueueHomeTimer = window.setInterval(loadLiveQueueHome, 15000);
         }
@@ -3065,11 +3093,13 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             loadPatientFeature('patientTracking').catch(function() {});
             refreshPatientServiceWorker();
 
+            let profileReady = false;
             try {
-                await loadProfile();
-            } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
+                profileReady = await loadProfile();
+            } catch (error) { if (error.message === 'unauthorized') logout(); return; }
+            if (!profileReady) return;
             try {
-                await loadPortalSettings();
+                await Promise.all([loadPortalSettings(), loadNotificationCount()]);
             } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
 
             const nicknameReady = await ensurePortalNicknameOnLogin();
@@ -3085,7 +3115,6 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             });
             triggerHomeIntroAnimation();
             scheduleHomeAutoUnlock();
-            loadNotificationCount();
             loadHomeAnnouncements();
             loadUnreadDocCounts();
             initializeLiveQueueHome();

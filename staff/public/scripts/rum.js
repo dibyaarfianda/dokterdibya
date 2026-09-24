@@ -99,12 +99,11 @@
   function normalizeApiPath(endpoint) {
     try {
       var parsed = new URL(endpoint, window.location.origin);
-      return parsed.pathname
-        .replace(/\/\d+(?=\/|$)/g, '/:id')
-        .replace(/\/[A-Za-z]{2,}\d+(?=\/|$)/g, '/:id')
-        .replace(/\/[0-9a-fA-F-]{8,}(?=\/|$)/g, '/:id');
+      var segments = parsed.pathname.split('/').filter(Boolean);
+      if (segments[0] !== 'api' || !/^[a-z][a-z0-9-]{0,40}$/i.test(segments[1] || '')) return '/other';
+      return '/api/' + segments[1] + (segments.length > 2 ? '/:path' : '');
     } catch (e) {
-      return String(endpoint || '/unknown').replace(/\?.*$/, '');
+      return '/unknown';
     }
   }
 
@@ -120,6 +119,12 @@
     if (apiCalls.length > API_BUFFER_SIZE) {
       apiCalls.shift();
     }
+    hasPendingData = true;
+  }
+
+  function trackCachedActivation(durationMs) {
+    if (!Number.isFinite(durationMs) || durationMs < 0) return;
+    metrics.cachedActivation = Math.round(durationMs);
     hasPendingData = true;
   }
 
@@ -235,7 +240,8 @@
 
   window.__rum = {
     trackApiCall: trackApiCall,
-    trackError: trackError
+    trackError: trackError,
+    trackCachedActivation: trackCachedActivation
   };
 
 })();

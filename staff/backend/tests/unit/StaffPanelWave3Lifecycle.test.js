@@ -100,4 +100,43 @@ describe('staff panel wave 3 lifecycle contracts', () => {
         expect(eventTarget.removeEventListener).toHaveBeenCalled();
         jest.useRealTimers();
     });
+
+    test('PollingCoordinator resumes once immediately on visible without overlapping an in-flight poll', async () => {
+        jest.useFakeTimers();
+        const { PollingCoordinator } = require(path.join(repoRoot, 'staff', 'public', 'scripts', 'shell', 'polling-coordinator.js'));
+        const listeners = new Map();
+        const visibilityTarget = { visibilityState: 'visible', addEventListener: (name, fn) => listeners.set(name, fn), removeEventListener() {} };
+        let finishFirst;
+        const run = jest.fn().mockImplementationOnce(() => new Promise(resolve => { finishFirst = resolve; })).mockResolvedValue(undefined);
+        const coordinator = new PollingCoordinator({ visibilityTarget, eventTarget: { addEventListener() {}, removeEventListener() {} } });
+        coordinator.register('visible-job', { interval: 30000, run });
+        await jest.advanceTimersByTimeAsync(1);
+        expect(run).toHaveBeenCalledTimes(1);
+        visibilityTarget.visibilityState = 'hidden';
+        listeners.get('visibilitychange')();
+        visibilityTarget.visibilityState = 'visible';
+        listeners.get('visibilitychange')();
+        await jest.advanceTimersByTimeAsync(1);
+        expect(run).toHaveBeenCalledTimes(1);
+        finishFirst();
+        await jest.advanceTimersByTimeAsync(1);
+        expect(run).toHaveBeenCalledTimes(2);
+        await jest.advanceTimersByTimeAsync(1);
+        expect(run).toHaveBeenCalledTimes(2);
+        coordinator.destroy();
+        jest.useRealTimers();
+    });
+
+    test('performance workflow measures the exact staff shell and never exposes credentials on the command line', () => {
+        const workflow = read('.github', 'workflows', 'staff-performance-budget.yml');
+        const script = read('staff', 'backend', 'scripts', 'perf-budget-check.js');
+        expect(workflow).toContain('STAFF_PERF_TOKEN');
+        expect(workflow).not.toContain("if: ${{ env.STAFF_PERF_TOKEN != '' }}");
+        expect(workflow).not.toContain('--token');
+        expect(workflow).toContain('--page-url https://dokterdibya.com/staff/public/index-adminlte.html');
+        expect(script).toContain('process.env.STAFF_PERF_TOKEN');
+        expect(script).toContain('cachedActivation');
+        expect(script).toContain('failedRequests');
+        expect(script).toContain('maxRequestCount: 40');
+    });
 });

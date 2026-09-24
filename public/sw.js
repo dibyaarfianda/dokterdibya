@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260924realtime2';
+const CACHE_VERSION = '20260924wave3';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -89,6 +89,10 @@ const PRECACHE_FILES = [
   'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
 ];
+const IMMUTABLE_STATIC_ASSETS = [...new Set(PRECACHE_FILES)].filter(url => {
+  const parsed = new URL(url, self.location.origin);
+  return parsed.origin === self.location.origin && !parsed.pathname.endsWith('.html') && parsed.pathname !== '/';
+}).map(url => `${url}?v=${CACHE_VERSION}`);
 
 // Install event - cache essential files
 self.addEventListener('install', (event) => {
@@ -97,14 +101,15 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[SW] Caching essential files');
-        return cache.addAll(PRECACHE_FILES);
+        return cache.addAll(IMMUTABLE_STATIC_ASSETS);
       })
       .then(() => {
         console.log('[SW] Skip waiting');
         return self.skipWaiting();
       })
-      .catch((error) => {
-        console.error('[SW] Cache failed:', error);
+      .catch(async (error) => {
+        await caches.delete(CACHE_NAME);
+        throw error;
       })
   );
 });
@@ -117,7 +122,7 @@ self.addEventListener('activate', (event) => {
       .then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
+            if (cacheName.startsWith('sisiwanita-patient-portal-') && cacheName !== CACHE_NAME) {
               console.log('[SW] Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -154,26 +159,10 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For navigation requests (HTML pages)
-  if (request.mode === 'navigate') {
+  if (request.mode === 'navigate' || url.pathname.endsWith('.html') || (request.headers.get('accept') || '').includes('text/html')) {
     event.respondWith(
       fetch(freshRequest)
-        .then((response) => {
-          // Clone and cache successful responses
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Offline - try cache, then offline page
-          return caches.match(request)
-            .then((cachedResponse) => {
-              return cachedResponse || caches.match(OFFLINE_URL);
-            });
-        })
+        .catch(() => new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } }))
     );
     return;
   }
@@ -182,17 +171,8 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css')) {
     event.respondWith(
       fetch(freshRequest)
-        .then((response) => {
-          if (response.ok) {
-            const responseClone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-          return response;
-        })
         .catch(() => {
-          return caches.match(request);
+          return caches.open(CACHE_NAME).then(cache => cache.match(request));
         })
     );
     return;
@@ -200,29 +180,13 @@ self.addEventListener('fetch', (event) => {
 
   // For other assets (images, fonts) - cache first, network fallback
   event.respondWith(
-    caches.match(request)
+    caches.open(CACHE_NAME).then(cache => cache.match(request))
       .then((cachedResponse) => {
         if (cachedResponse) {
-          fetch(request).then((response) => {
-            if (response.ok) {
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, response);
-              });
-            }
-          }).catch(() => {});
           return cachedResponse;
         }
 
-        return fetch(request)
-          .then((response) => {
-            if (response.ok) {
-              const responseClone = response.clone();
-              caches.open(CACHE_NAME).then((cache) => {
-                cache.put(request, responseClone);
-              });
-            }
-            return response;
-          });
+        return fetch(request);
       })
   );
 });
@@ -268,7 +232,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // Allow clients to trigger immediate activation of an updated SW.
 self.addEventListener('message', (event) => {
-  if (event & event.data & event.data.type === 'SKIP_WAITING') {
+  if (event && event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });

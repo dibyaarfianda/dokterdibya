@@ -12,6 +12,7 @@
             this.loadPromises = new Map();
             this.loadedFeatures = new Set();
             this.activeKey = null;
+            this.activationGeneration = 0;
         }
 
         register(descriptor) {
@@ -83,16 +84,21 @@
         async activate(key, context = {}) {
             const descriptor = this.get(key);
             if (!descriptor) throw new Error(`Unknown page: ${key}`);
+            const generation = ++this.activationGeneration;
             const previousPage = this.activeKey;
             if (previousPage && previousPage !== key) {
                 const previous = this.get(previousPage);
                 if (previous?.deactivate) {
                     await previous.deactivate({ key: previousPage, nextPage: key, descriptor: previous, container: this.getContainer(previousPage), registry: this });
+                    if (generation !== this.activationGeneration) return null;
                 }
             }
             const container = await this.ensureLoaded(key);
+            if (generation !== this.activationGeneration) return null;
             this.activeKey = key;
-            if (descriptor.activate) await descriptor.activate({ key, previousPage, descriptor, container, registry: this, ...context });
+            if (descriptor.activate) await descriptor.activate({ key, previousPage, descriptor, container, registry: this,
+                isCurrent: () => generation === this.activationGeneration, ...context });
+            if (generation !== this.activationGeneration) return null;
             const detail = { page: key, previousPage };
             const EventCtor = global.CustomEvent;
             const event = typeof EventCtor === 'function' ? new EventCtor('page:changed', { detail }) : { type: 'page:changed', detail };

@@ -54,6 +54,38 @@ describe('observability authorization integration', () => {
         });
     });
 
+    test('live lowercase vitals and cached activation are accepted and summarized canonically', async () => {
+        const sentinel = 'PRIVATE_PATIENT_SENTINEL';
+        const ingested = await request(app).post('/api/rum').send({
+            page: 'dashboard',
+            metrics: { lcp: 123, inp: 44, cls: 0.02, cachedActivation: 850 },
+            apiCalls: [{ endpoint: `/api/patients?search=${sentinel}`, duration: 12, status: 200 }]
+        });
+        expect(ingested.status).toBe(200);
+        expect(ingested.body.accepted).toBe(5);
+        const summary = await request(app).get('/api/rum/summary')
+            .set('Authorization', 'Bearer valid-staff-token').set('X-Test-Role', 'dokter');
+        expect(summary.body.data.webVitals).toMatchObject({
+            LCP: { overall: { p95: 123 } },
+            INP: { overall: { p95: 44 } },
+            CLS: { overall: { p95: 0.02 } },
+            cachedActivation: { overall: { p95: 850 } }
+        });
+        expect(JSON.stringify(summary.body)).not.toContain(sentinel);
+    });
+
+    test('RUM endpoint path buckets cannot retain patient identifiers in path segments', async () => {
+        const sentinel = 'PRIVATE_PATIENT_SENTINEL';
+        const ingested = await request(app).post('/api/rum').send({
+            page: 'dashboard',
+            apiCalls: [{ endpoint: `/api/patients/${sentinel}/documents`, duration: 10, status: 200 }]
+        });
+        expect(ingested.status).toBe(200);
+        const summary = await request(app).get('/api/rum/summary')
+            .set('Authorization', 'Bearer valid-staff-token').set('X-Test-Role', 'dokter');
+        expect(JSON.stringify(summary.body)).not.toContain(sentinel);
+    });
+
     test('RUM summary rejects anonymous and non-superadmin requests', async () => {
         const anonymous = await request(app).get('/api/rum/summary');
         const staff = await request(app)

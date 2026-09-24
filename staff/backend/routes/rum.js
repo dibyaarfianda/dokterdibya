@@ -26,8 +26,13 @@ const ALLOWED_METRICS = new Set([
     'domContentLoaded',
     'load',
     'firstPaint',
-    'firstContentfulPaint'
+    'firstContentfulPaint',
+    'lcp',
+    'inp',
+    'cls',
+    'cachedActivation'
 ]);
+const METRIC_ALIASES = Object.freeze({ lcp: 'LCP', inp: 'INP', cls: 'CLS' });
 const metricStore = {};
 const clientErrorStore = {};
 
@@ -65,13 +70,11 @@ function normalizeApiPath(endpoint) {
 
     try {
         const parsed = new URL(endpoint, 'https://dokterdibya.local');
-        return parsed.pathname
-            .replace(/\/\d+(?=\/|$)/g, '/:id')
-            .replace(/\/[A-Za-z]{2,}\d+(?=\/|$)/g, '/:id')
-            .replace(/\/[0-9a-fA-F-]{8,}(?=\/|$)/g, '/:id')
-            .slice(0, 100);
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        if (segments[0] !== 'api' || !/^[a-z][a-z0-9-]{0,40}$/i.test(segments[1] || '')) return '/other';
+        return `/api/${segments[1]}${segments.length > 2 ? '/:path' : ''}`;
     } catch (_) {
-        return endpoint.split('?')[0].slice(0, 100) || '/unknown';
+        return '/unknown';
     }
 }
 
@@ -160,7 +163,7 @@ function getCostSummary() {
 
 function getRumSummary() {
     const webVitals = {};
-    for (const vital of ['LCP', 'INP', 'CLS', 'FCP', 'domContentLoaded', 'load', 'firstPaint', 'firstContentfulPaint']) {
+    for (const vital of ['LCP', 'INP', 'CLS', 'FCP', 'domContentLoaded', 'load', 'firstPaint', 'firstContentfulPaint', 'cachedActivation']) {
         const bucket = metricStore[vital];
         if (!bucket || bucket.samples.length === 0) continue;
         const byPage = {};
@@ -219,7 +222,7 @@ router.post('/', (req, res) => {
         }
         for (const [key, value] of metricEntries) {
             if (typeof value !== 'number' || !isFinite(value)) continue;
-            recordMetric(key, value, page);
+            recordMetric(METRIC_ALIASES[key] || key, value, page);
             accepted++;
         }
     }

@@ -549,19 +549,25 @@ async function ensureRegisteredPage(key) {
     return container;
 }
 
+let registeredPageNavigationGeneration = 0;
 async function activateRegisteredStaffPage(key) {
+    const navigationGeneration = ++registeredPageNavigationGeneration;
     const registry = window.staffPageRegistry;
     const descriptor = registry?.get(key);
     if (!registry || !descriptor) {
         throw new Error(`Staff page is not registered: ${key}`);
     }
 
+    const wasCached = registry.getContainer(key)?.dataset.pageLoaded === 'true';
+    const startedAt = performance.now();
     const container = await registry.activate(key);
+    if (!container || navigationGeneration !== registeredPageNavigationGeneration) return null;
     initPages();
     hideAllPages();
     container.classList.remove('d-none');
     setTitleAndActive(descriptor.title, descriptor.navId, null);
     window.__currentPage = key;
+    if (wasCached) window.__rum?.trackCachedActivation?.(performance.now() - startedAt);
     return container;
 }
 window.activateRegisteredStaffPage = activateRegisteredStaffPage;
