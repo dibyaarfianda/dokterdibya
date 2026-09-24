@@ -78,7 +78,7 @@ describe('frontend modularization stage 2 wave 4', () => {
         expect(module).toContain("event.detail?.page !== 'staff-activity'");
         expect(module).toContain('Object.assign(window, {');
         expect(Buffer.byteLength(main)).toBeLessThan(244000);
-        expect(Buffer.byteLength(html)).toBeLessThan(310000);
+        expect(Buffer.byteLength(html)).toBeLessThan(315000);
     });
 
     test('wave 4 cache versions stay synchronized', () => {

@@ -17,7 +17,7 @@ describe('frontend modularization stage 2 wave 2', () => {
 
         const shell = read('public', 'scripts', 'patient-menu-shell.js');
         expect(shell).toContain("from './patient-shell/guest-session.js'");
-        expect(shell).toContain("from './patient-shell/routes.js'");
+        expect(shell).toMatch(/from '\.\/patient-shell\/routes\.js(?:\?v=[^']+)?'/);
         expect(shell).toContain("from './patient-shell/sheet-controller.js'");
         expect(shell).toContain("from './patient-shell/features/my-corner-controller.js'");
         expect(shell).not.toContain('const menuData = {');

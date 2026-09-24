@@ -69,11 +69,21 @@ describe('Patient portal header branding', () => {
         expect(retrofitJs).toContain("document.querySelector('main.story-room')");
         expect(retrofitJs).toContain("document.querySelector('.story-room')");
         expect(sisiwanitaSw.trim()).toBe(`importScripts('/sw.js?v=${shellVersion}');`);
+        expect(sw).toContain('OWNED_STATIC_PATHS.has(url.pathname)');
+        expect(sw).toContain('cache.match(request, { ignoreSearch: true })');
+
+        const expectVersionedOwnedAsset = (page, assetPath) => {
+            const escapedPath = assetPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const matches = [...page.matchAll(new RegExp(`(?:href|src)="${escapedPath}\\?v=([^"]+)"`, 'g'))];
+            expect(matches).toHaveLength(1);
+            expect(matches[0][1]).toMatch(/^[A-Za-z0-9._-]+$/);
+            expect(sw).toContain(`'${assetPath}'`);
+        };
 
         shellPages.forEach(fileName => {
             const page = readRepoFile('public', fileName);
-            expect(page).toContain(`/styles/patient-tool-shell.css?v=${shellVersion}`);
-            expect(page).toContain(`/scripts/patient-tool-shell.js?v=${shellVersion}`);
+            expectVersionedOwnedAsset(page, '/styles/patient-tool-shell.css');
+            expectVersionedOwnedAsset(page, '/scripts/patient-tool-shell.js');
 
             const afterShellLink = page.slice(page.indexOf('/styles/patient-tool-shell.css'));
             expect(afterShellLink).not.toMatch(/#home-brand-title\s*\{[^}]*font-size:\s*16px\s*!important;/);
@@ -83,8 +93,8 @@ describe('Patient portal header branding', () => {
 
         retrofitPages.forEach(fileName => {
             const page = readRepoFile('public', fileName);
-            expect(page).toContain(`/styles/patient-tool-retrofit.css?v=${shellVersion}`);
-            expect(page).toContain(`/scripts/patient-tool-retrofit.js?v=${shellVersion}`);
+            expectVersionedOwnedAsset(page, '/styles/patient-tool-retrofit.css');
+            expectVersionedOwnedAsset(page, '/scripts/patient-tool-retrofit.js');
         });
     });
 });

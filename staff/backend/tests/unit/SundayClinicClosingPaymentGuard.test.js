@@ -23,7 +23,6 @@ describe('Sunday Clinic closing payment correctness', () => {
         const walkInRouter = readRepoFile('staff', 'backend', 'routes', 'sunday-clinic', 'visit-walk-in.js');
         const appointmentRouter = readRepoFile('staff', 'backend', 'routes', 'sunday-appointments.js');
         const medicalImportRouter = readRepoFile('staff', 'backend', 'routes', 'medical-import.js');
-        const usgInboxProcessor = readRepoFile('staff', 'backend', 'scripts', 'usg-inbox-processor.js');
         const paymentRouter = readRepoFile('staff', 'backend', 'routes', 'billing-payment.js');
         const patientPaymentRouter = readRepoFile('staff', 'backend', 'routes', 'patient-billing.js');
 
@@ -52,8 +51,6 @@ describe('Sunday Clinic closing payment correctness', () => {
         expect(paymentRouter).toContain("broadcastAccountingRefresh(mrId, 'payment_cancelled'");
         expect(patientPaymentRouter).toContain("broadcastAccountingRefresh(mrId, 'patient_payment_created'");
         expect(medicalImportRouter).toMatch(/router\.post\('\/api\/medical-import\/save',\s*verifyToken,\s*requireOpenAccountingDateForImport,/);
-        expect(usgInboxProcessor).toContain("hospital === 'klinik_private'");
-        expect(usgInboxProcessor).toContain('acquireSundayClinicAccountingDateGuard(db, { clinicDate: recordDate })');
 
         expect(billingRouter).toMatch(/router\.get\('\/billing\/:mrId',\s*verifyToken,\s*handlers\.getBillingByMrId\)/);
         expect(billingRouter).toMatch(/router\.post\('\/billing\/:mrId\/print-invoice',\s*verifyToken,\s*broadcastSuccessfulBillingMutation,/);

@@ -177,7 +177,9 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(app).toContain("element.classList.add('sc-pwa-form-grid')");
         expect(app).toContain("element.classList.add('sc-pwa-action-row')");
         expect(app).toContain("button.classList.add('sc-pwa-icon-button')");
-        expect(app).toContain("const COMPONENT_VERSION = '3.0.18';");
+        expect(app).toContain("const componentVersion = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');");
+        expect(app).toContain('const cacheBuster = `?v=${componentVersion}`;');
+        expect(app).toContain('import(path + cacheBuster)');
     });
 
     test('Android phone PWA uses a compact two-row navigation without changing iOS defaults', () => {

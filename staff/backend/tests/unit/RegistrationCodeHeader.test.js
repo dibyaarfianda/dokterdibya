@@ -35,13 +35,17 @@ describe('global registration code header', () => {
 
         expect(navbar).toContain('class="nav-item navbar-queue-control"');
         expect(navbar).toContain('class="nav-item navbar-doctor-control"');
+        expect(navbar).toContain('class="nav-item navbar-break-control"');
         expect(navbar.indexOf('navbar-queue-control')).toBeGreaterThan(navbar.indexOf('navbar-registration-code'));
         expect(navbar.indexOf('navbar-doctor-control')).toBeGreaterThan(navbar.indexOf('navbar-queue-control'));
+        expect(navbar.indexOf('navbar-break-control')).toBeGreaterThan(navbar.indexOf('navbar-doctor-control'));
         expect(mobileCss).toContain('.navbar-queue-control');
         expect(mobileCss).toContain('.navbar-doctor-control');
+        expect(mobileCss).toContain('.navbar-break-control');
         expect(mobileCss).toContain('#btn-queue-vis-toggle');
         expect(mobileCss).toContain('#btn-doctor-toggle');
-        expect(mobileCss).toContain('grid-template-columns: repeat(3, minmax(0, 1fr)) !important;');
+        expect(mobileCss).toContain('#btn-break-toggle');
+        expect(mobileCss).toContain('grid-template-columns: repeat(4, minmax(0, 1fr)) !important;');
         expect(mobileCss).toContain('width: 100% !important; /* Equal-size header controls. */');
     });
 

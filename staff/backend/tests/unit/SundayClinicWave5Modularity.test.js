@@ -38,6 +38,7 @@ const EXPECTED_ROUTES = Object.freeze({
     billing: [
         'get /billing/pending',
         'get /billing/:mrId',
+        'post /billing/:mrId/cancel',
         'post /billing/:mrId',
         'post /billing/:mrId/obat',
         'post /billing/:mrId/confirm',
@@ -51,6 +52,7 @@ const EXPECTED_ROUTES = Object.freeze({
         'post /billing/:mrId/additional',
         'put /billing/:mrId/additional/:additionalBillingId',
         'post /billing/:mrId/additional/:additionalBillingId/confirm',
+        'post /billing/:mrId/additional/:additionalBillingId/cancel',
         'post /billing/:mrId/additional/:additionalBillingId/mark-paid',
         'post /billing/:mrId/additional/:additionalBillingId/print-invoice',
         'post /billing/:mrId/additional/:additionalBillingId/print-etiket',
@@ -101,6 +103,10 @@ describe('Wave 5 Sunday Clinic physical domain boundaries', () => {
         expect(routeSource).not.toContain('sunday-clinic-controller');
         expect(routeSource).not.toContain('createRouteSlice');
         expect(declaredRoutes(routeSource)).toEqual(EXPECTED_ROUTES[domain]);
+        if (domain === 'billing') {
+            expect(routeSource).toMatch(/router\.post\('\/billing\/:mrId\/cancel',\s*verifyToken,\s*requireSuperadmin,\s*requireOpenAccountingDate/);
+            expect(routeSource).toMatch(/router\.post\('\/billing\/:mrId\/additional\/:additionalBillingId\/cancel',\s*verifyToken,\s*requireSuperadmin,\s*requireOpenAccountingDate/);
+        }
 
         expect(serviceSource).toMatch(/async function [A-Za-z0-9_]+\(req, res, next\)/);
         expect(serviceSource).toContain('module.exports = {');

@@ -13,7 +13,7 @@ describe('frontend modularization stage 2 wave 3', () => {
         const shell = read('public', 'scripts', 'patient-menu-shell.js');
         const module = read('public', 'scripts', 'patient-shell', 'pwa-install-controller.js');
 
-        expect(shell).toContain("from './patient-shell/pwa-install-controller.js'");
+        expect(shell).toMatch(/from '\.\/patient-shell\/pwa-install-controller\.js(?:\?v=[^']+)?'/);
         expect(shell).toContain('createPatientPwaInstallController({');
         expect(shell).not.toContain('function configurePatientInstallPrompt(');
         expect(shell).not.toContain("window.addEventListener('beforeinstallprompt'");
