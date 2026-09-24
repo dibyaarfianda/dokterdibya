@@ -7,6 +7,7 @@ import { showWarning, showConfirm } from './toast.js';
 import { updateSessionServices, updateSessionObat } from './session-manager.js';
 import { getIdToken, hasPermission } from './vps-auth-v2.js';
 import { broadcastBillingUpdate } from './realtime-sync.js';
+import { loadAllPatientPages } from './patient-list-pages.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -296,25 +297,22 @@ async function loadPatientsToSelect() {
             return;
         }
         
-        const response = await fetch(`${VPS_API_BASE}/api/patients?view=basic&limit=500`, {
+        const result = await loadAllPatientPages(`${VPS_API_BASE}/api/patients?view=basic`, url => fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success && result.data) {
-                const patients = result.data;
-                patients.sort((a, b) => (a.full_name || a.name || '').localeCompare(b.full_name || b.name || ''));
-                patients.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    // Hanya tampilkan nama, tanpa kode unik
-                    opt.textContent = p.full_name || p.name || 'Tanpa Nama';
-                    patientSelect.appendChild(opt);
-                });
-            }
+        }));
+
+        if (result.success && result.data) {
+            const patients = result.data;
+            patients.sort((a, b) => (a.full_name || a.name || '').localeCompare(b.full_name || b.name || ''));
+            patients.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                // Hanya tampilkan nama, tanpa kode unik
+                opt.textContent = p.full_name || p.name || 'Tanpa Nama';
+                patientSelect.appendChild(opt);
+            });
         }
     } catch (e) {
         console.warn('Failed to load patients:', e);

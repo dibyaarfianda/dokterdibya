@@ -4,6 +4,7 @@ import { showSuccess, showError, showConfirm } from './toast.js';
 import { setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
 import { updateSessionPatient } from './session-manager.js';
 import { escapeHtml, escapeAttribute } from './safe-render.js';
+import { loadAllPatientPages } from './patient-list-pages.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -385,30 +386,27 @@ async function loadPatients() {
         }
         
         // Load patients from VPS API with cache-busting
-        const response = await fetch(`${VPS_API_BASE}/api/patients?_=${Date.now()}`, {
+        const result = await loadAllPatientPages(`${VPS_API_BASE}/api/patients?_=${Date.now()}`, url => fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache',
                 'Expires': '0'
             }
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success && result.data) {
-                allPatients = result.data.map(patient => ({
-                    id: patient.id,
-                    patientId: patient.id,  // VPS uses 'id' as the primary key
-                    name: patient.full_name,
-                    whatsapp: patient.whatsapp,
-                    birthDate: patient.birth_date,
-                    age: patient.age,
-                    lastVisit: patient.last_visit ? new Date(patient.last_visit) : null,
-                    visitCount: patient.visit_count || 0,
-                    resume_status: patient.resume_status || null
-                }));
-            }
+        }));
+
+        if (result.success && result.data) {
+            allPatients = result.data.map(patient => ({
+                id: patient.id,
+                patientId: patient.id,  // VPS uses 'id' as the primary key
+                name: patient.full_name,
+                whatsapp: patient.whatsapp,
+                birthDate: patient.birth_date,
+                age: patient.age,
+                lastVisit: patient.last_visit ? new Date(patient.last_visit) : null,
+                visitCount: patient.visit_count || 0,
+                resume_status: patient.resume_status || null
+            }));
         }
     } catch (e) {
         console.warn('Failed to load patients:', e);

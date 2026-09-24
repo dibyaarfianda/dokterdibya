@@ -2,6 +2,7 @@
 import { auth, getIdToken } from './vps-auth-v2.js';
 import { showSuccess, showError, showWarning } from './toast.js';
 import { formatDateLocal } from './date-utils.js';
+import { loadAllPatientPages } from './patient-list-pages.js';
 
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
     ? 'http://localhost:3001'
@@ -58,25 +59,15 @@ async function loadPatients() {
             return;
         }
         
-        console.log('🔧 [DEBUG] Loading patients from:', `${VPS_API_BASE}/api/patients`);
-        const response = await fetch(`${VPS_API_BASE}/api/patients?view=basic&limit=500&fresh=1`, {
+        const result = await loadAllPatientPages(`${VPS_API_BASE}/api/patients?view=basic&fresh=1`, url => fetch(url, {
             headers: { 
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache, no-store, must-revalidate',
                 'Pragma': 'no-cache',
                 'Expires': '0'
             }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log('🔧 [DEBUG] API response:', result);
-        
+        }));
         if (result.success && result.data) {
-            console.log('🔧 [DEBUG] API returned data, processing', result.data.length, 'patients');
             // Normalize patient data to handle different API responses
             allPatients = result.data.map(p => {
                 const normalized = {
@@ -85,13 +76,9 @@ async function loadPatients() {
                     name: p.name || p.full_name, // Use name if available, otherwise use full_name
                     ...p
                 };
-                console.log('🔧 [DEBUG] Normalized patient:', normalized.id, normalized.name);
                 return normalized;
             });
-            console.log('✅ [DEBUG] Loaded', allPatients.length, 'patients:', allPatients.map(p => p.name));
         } else {
-            console.warn('⚠️ [DEBUG] API returned success=false or no data');
-            console.warn('⚠️ [DEBUG] Response:', JSON.stringify(result, null, 2));
             allPatients = [];
         }
     } catch (error) {

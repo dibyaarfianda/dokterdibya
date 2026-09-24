@@ -14,6 +14,7 @@ const { validatePatient } = require('../middleware/validation');
 const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
 const PatientListService = require('../services/PatientListService');
+const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
 const {
     BulkPatientDeletionService,
@@ -34,6 +35,8 @@ const _enrichFailures = {
     usgDocs: 0,
     obstetriHpl: 0,
     birthRecords: 0,
+    blocklist: 0,
+    lastVisitType: 0,
     total: 0,
 };
 function getEnrichmentStats() {
@@ -42,7 +45,11 @@ function getEnrichmentStats() {
 function _enrichFail(key, err) {
     _enrichFailures[key]++;
     _enrichFailures.total++;
-    logger.warn(`Enrichment batch failed: ${key}`, { error: err.message || err });
+    logger.warn(`Enrichment batch failed: ${key}`);
+    const failure = new Error('Patient enrichment unavailable');
+    failure.statusCode = 503;
+    failure.code = 'PATIENT_ENRICHMENT_FAILED';
+    throw failure;
 }
 
 async function getActiveBlockedPatientNames() {
@@ -50,8 +57,7 @@ async function getActiveBlockedPatientNames() {
         const blocklist = await refreshConfiguredBlocklist();
         return blocklist.names || new Set();
     } catch (err) {
-        logger.warn('Patient blocklist status enrichment failed', { error: err.message || err });
-        return new Set();
+        _enrichFail('blocklist', err);
     }
 }
 
@@ -326,17 +332,28 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
         const clientRequestsFresh = clientCacheControl.includes('no-cache') || clientCacheControl.includes('no-store');
         const bypassCache = fresh === '1' || typeof _ !== 'undefined' || clientRequestsFresh;
 
-        // Decode cursor for keyset pagination (optional — falls back to offset)
-        let cursorData = null;
-        if (cursor) {
-            try {
-                cursorData = JSON.parse(Buffer.from(cursor, 'base64url').toString());
-            } catch { /* invalid cursor, ignore */ }
-        }
-
         // Generate cache key and honor bypass flag (frontend sends _=timestamp)
         const effectiveView = view === 'basic' ? 'basic' : 'legacy';
-        const cacheKey = `patients:list:${effectiveView}:${search || 'all'}:${limit || 'all'}:${hospital || 'all'}:${sort || 'default'}:${cursor || page || '1'}:${last_visit_location || 'all'}`;
+        const limitNum = limitOf(limit);
+        const pageNum = Math.max(1, Number.parseInt(page, 10) || 1);
+        const normalizedSearch = String(search || '').trim();
+        const normalizedHospital = String(hospital || '').trim();
+        const normalizedLocation = String(last_visit_location || '').trim();
+        const sortMode = sort === 'name' ? 'name' : 'recent';
+        const terms = sortMode === 'name'
+            ? [{ column: 'p.full_name', field: 'full_name', direction: 'ASC' }, { column: 'p.id', field: 'id', direction: 'ASC' }]
+            : normalizedLocation === 'no_visit'
+                ? [{ column: 'p.registration_date', field: 'registration_date', direction: 'DESC', date: true },
+                    { column: 'p.created_at', field: 'created_at', direction: 'DESC', date: true },
+                    { column: 'p.id', field: 'id', direction: 'DESC' }]
+                : [{ column: 'p.last_visit', field: 'last_visit', direction: 'DESC', date: true },
+                    { column: 'p.created_at', field: 'created_at', direction: 'DESC', date: true },
+                    { column: 'p.id', field: 'id', direction: 'DESC' }];
+        const cursorScope = scopeOf({ view: 'legacy', sort: sortMode, search: normalizedSearch,
+            hospital: normalizedHospital, lastVisitLocation: normalizedLocation, limit: limitNum });
+        const cursorData = effectiveView === 'legacy' ? decodeCursor(cursor, cursorScope, terms) : null;
+        const cacheKey = `patients:list:v2:${effectiveView}:${scopeOf({ search: normalizedSearch, hospital: normalizedHospital,
+            location: normalizedLocation, sort: sortMode, limit: limitNum, cursor: cursor || null, page: pageNum })}`;
 
         if (!bypassCache) {
             const cached = cache.get(cacheKey, 'short');
@@ -348,13 +365,13 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
 
         if (effectiveView === 'basic') {
             const response = await patientListService.listBasic({
-                search,
-                limit,
+                search: normalizedSearch,
+                limit: limitNum,
                 sort,
                 page,
                 cursor,
-                hospital,
-                last_visit_location
+                hospital: normalizedHospital,
+                last_visit_location: normalizedLocation
             });
             if (!bypassCache) {
                 cache.set(cacheKey, response, 'short');
@@ -369,8 +386,8 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
         const params = [];
 
         // Filter by last visit location from sunday_clinic_records
-        if (last_visit_location) {
-            if (last_visit_location === 'no_visit') {
+        if (normalizedLocation) {
+            if (normalizedLocation === 'no_visit') {
                 // Patients with no visits (Pasien Baru) — include intake address
                 query = `
                     SELECT p.*,
@@ -400,14 +417,11 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                         COALESCE(resume.resume_date, latest.last_activity_at) as last_visit_date
                     FROM patients p
                     INNER JOIN (
-                        SELECT scr.patient_id, scr.visit_location, scr.mr_id, scr.mr_category, scr.last_activity_at
-                        FROM sunday_clinic_records scr
-                        INNER JOIN (
-                            SELECT patient_id, MAX(last_activity_at) as max_activity
-                            FROM sunday_clinic_records
-                            GROUP BY patient_id
-                        ) latest_visit ON scr.patient_id = latest_visit.patient_id
-                            AND scr.last_activity_at = latest_visit.max_activity
+                        SELECT ranked.patient_id, ranked.visit_location, ranked.mr_id, ranked.mr_category, ranked.last_activity_at
+                        FROM (
+                            SELECT scr.*, ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC, scr.id DESC) AS rn
+                            FROM sunday_clinic_records scr
+                        ) ranked WHERE ranked.rn = 1
                     ) latest ON p.id = latest.patient_id
                     LEFT JOIN (
                         SELECT mr_id, MAX(created_at) as resume_date
@@ -417,27 +431,19 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                     ) resume ON latest.mr_id = resume.mr_id
                     WHERE latest.visit_location = ?
                 `;
-                params.push(last_visit_location);
+                params.push(normalizedLocation);
                 query = appendVisiblePatientCondition(query);
             }
 
-            if (search) {
+            if (normalizedSearch) {
                 query += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
-                const searchTerm = `%${search}%`;
+                const searchTerm = `%${normalizedSearch}%`;
                 params.push(searchTerm, searchTerm, searchTerm);
             }
 
-            // Apply sorting - default to last_visit DESC (most recent visit first)
-            if (sort === 'name') {
-                query += ' ORDER BY p.full_name ASC';
-            } else if (last_visit_location === 'no_visit') {
-                query += ' ORDER BY p.registration_date DESC, p.created_at DESC';
-            } else {
-                query += ' ORDER BY p.last_visit DESC, p.created_at DESC';
-            }
         }
         // If hospital filter is provided, get patients who have appointments at that hospital
-        else if (hospital) {
+        else if (normalizedHospital) {
             query = `
                 SELECT DISTINCT p.*,
                     latest_scr.mr_id,
@@ -446,31 +452,23 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                 FROM patients p
                 INNER JOIN appointments a ON p.id = a.patient_id
                 LEFT JOIN (
-                    SELECT scr.patient_id, scr.mr_id, scr.visit_location, scr.mr_category
-                    FROM sunday_clinic_records scr
-                    INNER JOIN (
-                        SELECT patient_id, MAX(last_activity_at) as max_activity
-                        FROM sunday_clinic_records
-                        GROUP BY patient_id
-                    ) g ON scr.patient_id = g.patient_id AND scr.last_activity_at = g.max_activity
+                    SELECT ranked.patient_id, ranked.mr_id, ranked.visit_location, ranked.mr_category
+                    FROM (
+                        SELECT scr.*, ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC, scr.id DESC) AS rn
+                        FROM sunday_clinic_records scr
+                    ) ranked WHERE ranked.rn = 1
                 ) latest_scr ON p.id = latest_scr.patient_id
                 WHERE a.hospital_location = ?
             `;
-            params.push(hospital);
+            params.push(normalizedHospital);
             query = appendVisiblePatientCondition(query, 'p', false);
 
-            if (search) {
+            if (normalizedSearch) {
                 query += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
-                const searchTerm = `%${search}%`;
+                const searchTerm = `%${normalizedSearch}%`;
                 params.push(searchTerm, searchTerm, searchTerm);
             }
 
-            // Apply sorting - default to last_visit DESC (most recent visit first)
-            if (sort === 'name') {
-                query += ' ORDER BY p.full_name ASC';
-            } else {
-                query += ' ORDER BY p.last_visit DESC, p.created_at DESC';
-            }
         } else {
             // Default branch: 3 LEFT JOIN derived-tables replace 5 correlated subqueries.
             // Subqueries 2/3/4 (mr_id, visit_location, mr_category) share the same
@@ -489,81 +487,41 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                     GROUP BY patient_id
                 ) sa_agg ON p.id = sa_agg.patient_id
                 LEFT JOIN (
-                    SELECT scr.patient_id, scr.mr_id, scr.visit_location, scr.mr_category
-                    FROM sunday_clinic_records scr
-                    INNER JOIN (
-                        SELECT patient_id, MAX(last_activity_at) AS max_activity
-                        FROM sunday_clinic_records
-                        GROUP BY patient_id
-                    ) g ON scr.patient_id = g.patient_id AND scr.last_activity_at = g.max_activity
+                    SELECT ranked.patient_id, ranked.mr_id, ranked.visit_location, ranked.mr_category
+                    FROM (
+                        SELECT scr.*, ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC, scr.id DESC) AS rn
+                        FROM sunday_clinic_records scr
+                    ) ranked WHERE ranked.rn = 1
                 ) latest_scr ON p.id = latest_scr.patient_id
                 LEFT JOIN (
-                    SELECT mr.patient_id,
-                        JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.record_datetime')) AS anamnesa_datetime
-                    FROM medical_records mr
-                    INNER JOIN (
-                        SELECT patient_id, MAX(created_at) AS max_created
-                        FROM medical_records
-                        WHERE record_type = 'anamnesa'
-                          AND JSON_EXTRACT(record_data, '$.record_datetime') IS NOT NULL
-                        GROUP BY patient_id
-                    ) ga ON mr.patient_id = ga.patient_id AND mr.created_at = ga.max_created
-                    WHERE mr.record_type = 'anamnesa'
-                      AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
+                    SELECT ranked.patient_id, ranked.anamnesa_datetime
+                    FROM (
+                        SELECT mr.patient_id,
+                            JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.record_datetime')) AS anamnesa_datetime,
+                            ROW_NUMBER() OVER (PARTITION BY mr.patient_id ORDER BY mr.created_at DESC, mr.id DESC) AS rn
+                        FROM medical_records mr
+                        WHERE mr.record_type = 'anamnesa'
+                          AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
+                    ) ranked WHERE ranked.rn = 1
                 ) latest_anamnesa ON p.id = latest_anamnesa.patient_id`;
             query = appendVisiblePatientCondition(query);
 
-            if (search) {
+            if (normalizedSearch) {
                 query += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
-                const searchTerm = `%${search}%`;
+                const searchTerm = `%${normalizedSearch}%`;
                 params.push(searchTerm, searchTerm, searchTerm);
             }
 
-            // Apply sorting - default to last_visit DESC (most recent visit first)
-            if (sort === 'name') {
-                query += ' ORDER BY p.full_name ASC';
-            } else {
-                query += ' ORDER BY p.last_visit DESC, p.created_at DESC';
-            }
         }
 
-        // Handle pagination - only apply if limit is explicitly provided
         let total = 0;
-        let pageNum = 1;
-        let limitNum = null;
+        let countQuery;
+        const countParams = [];
 
-        if (limit) {
-            pageNum = parseInt(page) || 1;
-            limitNum = parseInt(limit);
-
-            // Cursor-based keyset pagination: append WHERE clause to seek
-            // past the last-seen row instead of using OFFSET (O(1) vs O(N)).
-            if (cursorData && !last_visit_location && !hospital) {
-                if (sort === 'name' && cursorData.fn) {
-                    query += (query.includes('WHERE') ? ' AND' : ' WHERE') +
-                        ' (p.full_name > ? OR (p.full_name = ? AND p.id > ?))';
-                    params.push(cursorData.fn, cursorData.fn, cursorData.id);
-                } else if (cursorData.lv) {
-                    query += (query.includes('WHERE') ? ' AND' : ' WHERE') +
-                        ' (p.last_visit < ? OR (p.last_visit = ? AND p.id < ?))';
-                    params.push(cursorData.lv, cursorData.lv, cursorData.id);
-                } else if (cursorData.id) {
-                    query += (query.includes('WHERE') ? ' AND' : ' WHERE') +
-                        ' p.id < ?';
-                    params.push(cursorData.id);
-                }
-            }
-
-            const offset = (pageNum - 1) * limitNum;
-
-            // Count total for pagination
-            let countQuery;
-            const countParams = [];
-
-            if (last_visit_location) {
-                if (last_visit_location === 'no_visit') {
+            if (normalizedLocation) {
+                if (normalizedLocation === 'no_visit') {
                     countQuery = `
-                        SELECT COUNT(*) as total FROM patients p
+                        SELECT COUNT(DISTINCT p.id) as total FROM patients p
                         WHERE NOT EXISTS (
                             SELECT 1 FROM sunday_clinic_records scr WHERE scr.patient_id = p.id
                         )
@@ -571,62 +529,63 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                     countQuery = appendVisiblePatientCondition(countQuery);
                 } else {
                     countQuery = `
-                        SELECT COUNT(*) as total FROM patients p
+                        SELECT COUNT(DISTINCT p.id) as total FROM patients p
                         INNER JOIN (
-                            SELECT scr.patient_id, scr.visit_location
-                            FROM sunday_clinic_records scr
-                            INNER JOIN (
-                                SELECT patient_id, MAX(last_activity_at) as max_activity
-                                FROM sunday_clinic_records
-                                GROUP BY patient_id
-                            ) latest_visit ON scr.patient_id = latest_visit.patient_id
-                                AND scr.last_activity_at = latest_visit.max_activity
+                            SELECT ranked.patient_id, ranked.visit_location
+                            FROM (
+                                SELECT scr.*, ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC, scr.id DESC) AS rn
+                                FROM sunday_clinic_records scr
+                            ) ranked WHERE ranked.rn = 1
                         ) latest ON p.id = latest.patient_id
                         WHERE latest.visit_location = ?
                     `;
-                    countParams.push(last_visit_location);
+                    countParams.push(normalizedLocation);
                     countQuery = appendVisiblePatientCondition(countQuery);
                 }
-                if (search) {
+                if (normalizedSearch) {
                     countQuery += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
-                    const searchTerm = `%${search}%`;
+                    const searchTerm = `%${normalizedSearch}%`;
                     countParams.push(searchTerm, searchTerm, searchTerm);
                 }
-            } else if (hospital) {
+            } else if (normalizedHospital) {
                 countQuery = `SELECT COUNT(DISTINCT p.id) as total FROM patients p
                    INNER JOIN appointments a ON p.id = a.patient_id
                    WHERE a.hospital_location = ?`;
-                countParams.push(hospital);
+                countParams.push(normalizedHospital);
                 countQuery = appendVisiblePatientCondition(countQuery);
-                if (search) {
+                if (normalizedSearch) {
                     countQuery += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
-                    const searchTerm = `%${search}%`;
+                    const searchTerm = `%${normalizedSearch}%`;
                     countParams.push(searchTerm, searchTerm, searchTerm);
                 }
             } else {
                 countQuery = 'SELECT COUNT(*) as total FROM patients p';
                 countQuery = appendVisiblePatientCondition(countQuery, 'p', false);
-                if (search) {
+                if (normalizedSearch) {
                     countQuery += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
-                    const searchTerm = `%${search}%`;
+                    const searchTerm = `%${normalizedSearch}%`;
                     countParams.push(searchTerm, searchTerm, searchTerm);
                 }
             }
 
-            const [countResult] = await db.query(countQuery, countParams);
-            total = countResult[0]?.total || 0;
-
-            // Apply limit and offset (cursor mode skips OFFSET — seek is in WHERE)
-            if (cursorData && !last_visit_location && !hospital) {
-                query += ' LIMIT ?';
-                params.push(limitNum);
-            } else {
-                query += ' LIMIT ? OFFSET ?';
-                params.push(limitNum, offset);
-            }
+        const [countResult] = await db.query(countQuery, countParams);
+        total = Number(countResult[0]?.total || 0);
+        const seek = seekAfter(terms, cursorData);
+        if (seek.sql) {
+            query += ` AND ${seek.sql}`;
+            params.push(...seek.params);
+        }
+        query += ` ORDER BY ${terms.map(term => `${term.column} ${term.direction}`).join(', ')}`;
+        query += ' LIMIT ?';
+        params.push(limitNum + 1);
+        if (!cursorData && pageNum > 1) {
+            query += ' OFFSET ?';
+            params.push((pageNum - 1) * limitNum);
         }
 
-        const [rows] = await db.query(query, params);
+        const [fetchedRows] = await db.query(query, params);
+        const hasMore = fetchedRows.length > limitNum;
+        const rows = fetchedRows.slice(0, limitNum);
 
         // Batch-enrich patients (4 queries total instead of N×5)
         const mrIds = rows.map(p => p.mr_id).filter(Boolean);
@@ -802,28 +761,14 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
             count: mappedRows.length
         };
 
-        // Only include pagination if limit was provided
-        if (limitNum) {
-            response.pagination = {
-                total,
-                page: pageNum,
-                totalPages: Math.ceil(total / limitNum),
-                limit: limitNum
-            };
-
-            // Cursor-based pagination hint — allows clients to switch to
-            // keyset pagination for large datasets. The cursor encodes the
-            // last row's sort key so the DB can seek instead of offset-skip.
-            if (mappedRows.length > 0) {
-                const lastRow = mappedRows[mappedRows.length - 1];
-                const cursorPayload = {
-                    id: lastRow.id,
-                    lv: lastRow.last_visit || lastRow.created_at || null,
-                    fn: lastRow.full_name || null,
-                };
-                response.pagination.nextCursor = Buffer.from(JSON.stringify(cursorPayload)).toString('base64url');
-            }
-        }
+        const currentPage = cursorData ? cursorData.page + 1 : pageNum;
+        response.pagination = {
+            total,
+            page: currentPage,
+            totalPages: Math.ceil(total / limitNum),
+            limit: limitNum,
+            nextCursor: hasMore && rows.length ? encodeCursor(rows[rows.length - 1], terms, cursorScope, currentPage) : null
+        };
 
         // Cache the result unless caller explicitly requested a fresh fetch
         if (!bypassCache) {
@@ -835,11 +780,11 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
         applyCacheHeaders(res, { bypassCache, cacheKey, hit: false });
         res.json(response);
     } catch (error) {
-        console.error('Error fetching patients:', error);
-        res.status(500).json({
+        logger.error('Error fetching patients', { code: error.code || 'PATIENT_LIST_FAILED' });
+        res.status(error instanceof PatientCursorError ? 400 : error.statusCode || 500).json({
             success: false,
             message: 'Failed to fetch patients',
-            error: error.message
+            code: error.code || 'PATIENT_LIST_FAILED'
         });
     }
 });
@@ -862,15 +807,27 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
             page
         } = req.query;
 
-        // Debug logging
-        console.log('[ADVANCED SEARCH] Received params:', { name, id, mr_id, email, age_min, age_max, phone, whatsapp, husband, visit_date });
+        const visitFilters = [];
+        const visitParams = [];
+        if (mr_id && mr_id.trim()) {
+            visitFilters.push('scr.mr_id LIKE ?');
+            visitParams.push(`%${mr_id.trim()}%`);
+        }
+        if (visit_date && visit_date.trim()) {
+            visitFilters.push('DATE(scr.created_at) = ?');
+            visitParams.push(visit_date.trim());
+        }
+        const visitMatchSql = visitFilters.length ? ` AND ${visitFilters.join(' AND ')}` : '';
+        const emailMatchSql = email && email.trim() ? ' AND u.email LIKE ?' : '';
+        const selectParams = [...visitParams, ...(emailMatchSql ? [`%${email.trim()}%`] : [])];
 
-        // Build dynamic query with LEFT JOINs for MR and email
-        let query = `
-            SELECT DISTINCT
+        // Keep one SQL row per patient before LIMIT; related fields are scalar projections.
+        const select = `
+            SELECT
                 p.*,
-                scr.mr_id,
-                u.email,
+                (SELECT scr.mr_id FROM sunday_clinic_records scr
+                 WHERE scr.patient_id = p.id${visitMatchSql} ORDER BY scr.last_activity_at DESC, scr.id DESC LIMIT 1) as mr_id,
+                (SELECT MIN(u.email) FROM users u WHERE u.new_id = p.id${emailMatchSql}) as email,
                 (SELECT MAX(sa.appointment_date) FROM sunday_appointments sa
                  WHERE sa.patient_id = p.id AND sa.status IN ('completed','confirmed')) as actual_last_visit,
                 (SELECT JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.record_datetime'))
@@ -879,106 +836,74 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                  AND mr.record_type = 'anamnesa'
                  AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
                  ORDER BY mr.created_at DESC LIMIT 1) as anamnesa_datetime
-            FROM patients p
-            LEFT JOIN sunday_clinic_records scr ON p.id = scr.patient_id
-            LEFT JOIN users u ON p.id = u.new_id
-            WHERE 1=1
-              AND ${visiblePatientCondition('p')}
         `;
+        let where = ` FROM patients p WHERE ${visiblePatientCondition('p')}`;
         const params = [];
 
         // Filter by name (full_name)
         if (name && name.trim()) {
-            query += ' AND p.full_name LIKE ?';
+            where += ' AND p.full_name LIKE ?';
             params.push(`%${name.trim()}%`);
         }
 
         // Filter by patient ID
         if (id && id.trim()) {
-            query += ' AND p.id LIKE ?';
+            where += ' AND p.id LIKE ?';
             params.push(`%${id.trim()}%`);
         }
 
-        // Filter by MR ID
-        if (mr_id && mr_id.trim()) {
-            query += ' AND scr.mr_id LIKE ?';
-            params.push(`%${mr_id.trim()}%`);
+        // MR and visit date must match the same visit, as in the former joined filter.
+        if (visitFilters.length) {
+            where += ` AND EXISTS (SELECT 1 FROM sunday_clinic_records scr WHERE scr.patient_id = p.id${visitMatchSql})`;
+            params.push(...visitParams);
         }
 
         // Filter by email
         if (email && email.trim()) {
-            query += ' AND u.email LIKE ?';
+            where += ` AND EXISTS (SELECT 1 FROM users u WHERE u.new_id = p.id${emailMatchSql})`;
             params.push(`%${email.trim()}%`);
         }
 
         // Filter by age range
         if (age_min) {
-            query += ' AND p.age >= ?';
+            where += ' AND p.age >= ?';
             params.push(parseInt(age_min));
         }
         if (age_max) {
-            query += ' AND p.age <= ?';
+            where += ' AND p.age <= ?';
             params.push(parseInt(age_max));
         }
 
         // Filter by phone
         if (phone && phone.trim()) {
-            query += ' AND p.phone LIKE ?';
+            where += ' AND p.phone LIKE ?';
             params.push(`%${phone.trim()}%`);
         }
 
         // Filter by WhatsApp
         if (whatsapp && whatsapp.trim()) {
-            query += ' AND p.whatsapp LIKE ?';
+            where += ' AND p.whatsapp LIKE ?';
             params.push(`%${whatsapp.trim()}%`);
         }
 
         // Filter by husband name
         if (husband && husband.trim()) {
-            query += ' AND p.husband_name LIKE ?';
+            where += ' AND p.husband_name LIKE ?';
             params.push(`%${husband.trim()}%`);
         }
 
-        // Filter by visit date (tanggal periksa)
-        if (visit_date && visit_date.trim()) {
-            query += ' AND DATE(scr.created_at) = ?';
-            params.push(visit_date.trim());
-        }
-
-        // Order by name
-        query += ' ORDER BY p.full_name ASC';
-
         // Handle pagination
-        let total = 0;
-        let pageNum = parseInt(page) || 1;
-        let limitNum = parseInt(limit) || 50;
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = limitOf(limit);
         const offset = (pageNum - 1) * limitNum;
 
         // Count total results
-        const countQuery = query.replace(
-            /SELECT DISTINCT[\s\S]*?FROM patients/,
-            'SELECT COUNT(DISTINCT p.id) as total FROM patients'
-        ).replace(/ORDER BY[\s\S]*$/, '');
-
+        const countQuery = `SELECT COUNT(*) as total ${where}`;
         const [countResult] = await db.query(countQuery, params);
-        total = countResult[0]?.total || 0;
+        const total = countResult[0]?.total || 0;
 
         // Add pagination
-        query += ' LIMIT ? OFFSET ?';
-        params.push(limitNum, offset);
-
-        const [rows] = await db.query(query, params);
-
-        // Debug logging
-        console.log('[ADVANCED SEARCH] Query returned', rows.length, 'rows');
-
-        // Deduplicate results
-        const seen = new Set();
-        const uniqueRows = rows.filter(patient => {
-            if (seen.has(patient.id)) return false;
-            seen.add(patient.id);
-            return true;
-        });
+        const [uniqueRows] = await db.query(`${select} ${where} ORDER BY p.full_name ASC, p.id ASC LIMIT ? OFFSET ?`, [...selectParams, ...params, limitNum, offset]);
 
         const patientIds = uniqueRows.map(p => p.id);
 
@@ -1004,7 +929,7 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                     WHERE scr.patient_id IN (${ph})
                 `, [...patientIds, ...patientIds])
                     .then(([r]) => r.forEach(row => { lastVisitTypeMap[row.patient_id] = row.mr_category; }))
-                    .catch(() => {}),
+                    .catch(error => _enrichFail('lastVisitType', error)),
 
                 // Batch 2: latest HPHT for obstetri patients (ROW_NUMBER)
                 db.query(`
@@ -1021,12 +946,12 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                     ) t WHERE t.rn = 1
                 `, patientIds)
                     .then(([r]) => r.forEach(row => { obstetriMap[row.patient_id] = row.hpht; }))
-                    .catch(() => {}),
+                    .catch(error => _enrichFail('obstetriHpl', error)),
 
                 // Batch 3: patients who have delivered
                 db.query(`SELECT DISTINCT patient_id FROM birth_congratulations WHERE patient_id IN (${ph})`, patientIds)
                     .then(([r]) => r.forEach(row => birthSet.add(row.patient_id)))
-                    .catch(() => {}),
+                    .catch(error => _enrichFail('birthRecords', error)),
             ]);
         }
 
@@ -1074,11 +999,11 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
             totalPages: Math.ceil(total / limitNum)
         });
     } catch (error) {
-        console.error('Error in advanced search:', error);
-        res.status(500).json({
+        logger.error('Error in advanced search', { code: error.code || 'PATIENT_ADVANCED_SEARCH_FAILED' });
+        res.status(error.statusCode || 500).json({
             success: false,
             message: 'Failed to search patients',
-            error: error.message
+            code: error.code || 'PATIENT_ADVANCED_SEARCH_FAILED'
         });
     }
 });

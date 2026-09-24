@@ -9,6 +9,7 @@ import { formatDateLocal } from './date-utils.js';
 import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';
 import { ROLE_IDS, isSuperadminUser } from './role-constants.js';
 import { escapeHtml } from './safe-render.js';
+import { loadAllPatientPages } from './patient-list-pages.js';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -904,16 +905,12 @@ async function loadPasienBaru() {
     try {
         const token = getAuthToken();
         // Use last_visit_location=no_visit to get patients without DRD records
-        const response = await fetch(`/api/patients?last_visit_location=no_visit&_=${Date.now()}`, {
+        const data = await loadAllPatientPages(`/api/patients?last_visit_location=no_visit&_=${Date.now()}`, url => fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache'
             }
-        });
-
-        if (!response.ok) throw new Error('Gagal memuat data');
-
-        const data = await response.json();
+        }));
 
         if (!data.data || data.data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada pasien tanpa DRD</td></tr>`;
@@ -1025,16 +1022,12 @@ async function loadHospitalPatients(location) {
     try {
         const token = getAuthToken();
         // Use last_visit_location filter to get patients whose last visit was at this location
-        const response = await fetch(`/api/patients?last_visit_location=${location}&_=${Date.now()}`, {
+        const data = await loadAllPatientPages(`/api/patients?last_visit_location=${location}&_=${Date.now()}`, url => fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache'
             }
-        });
-
-        if (!response.ok) throw new Error('Gagal memuat data');
-
-        const data = await response.json();
+        }));
 
         if (!data.data || data.data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="9" class="text-center">Belum ada pasien dengan kunjungan terakhir di ${hospitalName}</td></tr>`;
@@ -3320,8 +3313,7 @@ async function showQuickPatientSelector(searchName, hospitalName) {
     const token = getAuthToken();
     let options = '';
     try {
-        const res = await fetch('/api/patients?view=basic&limit=500', { headers: { 'Authorization': `Bearer ${token}` } });
-        const result = await res.json();
+        const result = await loadAllPatientPages('/api/patients?view=basic', url => fetch(url, { headers: { 'Authorization': `Bearer ${token}` } }));
         if (result.success && result.data) {
             (result.data.patients || result.data).forEach(p => {
                 options += `<option value="${p.id || p.patient_id}">${p.full_name || p.name}</option>`;

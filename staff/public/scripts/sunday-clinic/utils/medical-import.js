@@ -162,13 +162,12 @@ async function loadPatientsForImport() {
 
     try {
         const token = window.getToken ? window.getToken() : '';
-        const response = await fetch('/api/patients?view=basic&limit=500', {
+        const { loadAllPatientPages } = await import('/scripts/patient-list-pages.js');
+        const result = await loadAllPatientPages('/api/patients?view=basic', url => fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
-        });
-
-        const result = await response.json();
+        }));
 
         if (result.success && result.data) {
             const patients = result.data.patients || result.data;

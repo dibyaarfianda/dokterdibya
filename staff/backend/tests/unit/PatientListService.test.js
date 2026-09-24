@@ -20,14 +20,16 @@ describe('PatientListService', () => {
         expect(db.query.mock.calls[1][0]).toContain('NOT EXISTS (SELECT 1 FROM sunday_clinic_records');
         expect(result.data[1].whatsapp).toBe('0813');
         expect(result.pagination).toEqual(expect.objectContaining({ total: 2, page: 1, limit: 10 }));
-        expect(result.pagination.nextCursor).toBeTruthy();
+        expect(result.pagination.nextCursor).toBeNull();
+        expect(db.query.mock.calls[1][0]).toContain('LIMIT ?');
+        expect(db.query.mock.calls[1][1]).toContain(11);
     });
 
     test('cursor pagination seeks by the stable sort key without offset', async () => {
-        const cursor = Buffer.from(JSON.stringify({
-            id: 'P9',
-            created_at: '2026-07-19 01:00:00'
-        })).toString('base64url');
+        const firstDb = { query: jest.fn()
+            .mockResolvedValueOnce([[{ total: 20 }]])
+            .mockResolvedValueOnce([[{ id: 'P9', created_at: '2026-07-19 01:00:00' }, { id: 'P8', created_at: null }]]) };
+        const cursor = (await new PatientListService(firstDb).listBasic({ limit: 1 })).pagination.nextCursor;
         const db = {
             query: jest.fn()
                 .mockResolvedValueOnce([[{ total: 20 }]])
@@ -35,21 +37,52 @@ describe('PatientListService', () => {
         };
         const service = new PatientListService(db);
 
-        await service.listBasic({ limit: 10, cursor });
+        await service.listBasic({ limit: 1, cursor });
 
         const [sql, params] = db.query.mock.calls[1];
         expect(sql).toContain('p.created_at < ?');
         expect(sql).not.toContain('OFFSET');
-        expect(params).toEqual(expect.arrayContaining(['2026-07-19 01:00:00', 'P9', 10]));
+        expect(params).toEqual(expect.arrayContaining(['2026-07-19 01:00:00', 'P9', 2]));
+        expect(db.query.mock.calls[0][0]).not.toContain('p.created_at < ?');
     });
 
-    test('unlimited compatibility request needs only the data query', async () => {
-        const db = { query: jest.fn().mockResolvedValueOnce([[]]) };
+    test('omitted and excessive limits are bounded with pagination', async () => {
+        const db = { query: jest.fn().mockImplementation(async sql => sql.includes('COUNT(*)') ? [[{ total: 0 }]] : [[]]) };
         const service = new PatientListService(db);
-
         const result = await service.listBasic({ search: 'Ani' });
+        expect(result.pagination).toEqual({ total: 0, page: 1, totalPages: 0, limit: 50, nextCursor: null });
+        expect(db.query.mock.calls[1][1]).toContain(51);
+        await service.listBasic({ limit: 1000 });
+        expect(db.query.mock.calls[3][1]).toContain(101);
+    });
 
-        expect(db.query).toHaveBeenCalledTimes(1);
-        expect(result).toEqual({ success: true, data: [], count: 0 });
+    test('malformed or filter-incompatible cursor rejects before a query', async () => {
+        const db = { query: jest.fn().mockResolvedValueOnce([[{ total: 2 }]])
+            .mockResolvedValueOnce([[{ id: 'P1', full_name: 'Ani', created_at: '2026-07-19 01:00:00' }, { id: 'P2', full_name: 'Budi' }]]) };
+        const service = new PatientListService(db);
+        const cursor = (await service.listBasic({ search: 'Ani', limit: 1 })).pagination.nextCursor;
+        db.query.mockClear();
+        await expect(service.listBasic({ cursor: 'not-base64!', search: 'Ani' })).rejects.toMatchObject({ statusCode: 400 });
+        await expect(service.listBasic({ cursor: '', search: 'Ani' })).rejects.toMatchObject({ statusCode: 400 });
+        await expect(service.listBasic({ cursor, search: 'Budi', limit: 1 })).rejects.toMatchObject({ statusCode: 400 });
+        await expect(service.listBasic({ cursor, search: 'Ani', sort: 'name', limit: 1 })).rejects.toMatchObject({ statusCode: 400 });
+        expect(db.query).not.toHaveBeenCalled();
+    });
+
+    test('name cursor seeks across equal and null keys with patient ID tie-breaker', async () => {
+        const db = { query: jest.fn()
+            .mockResolvedValueOnce([[{ total: 4 }]])
+            .mockResolvedValueOnce([[{ id: 'P1', full_name: null }, { id: 'P2', full_name: null }, { id: 'P3', full_name: 'Ani' }]])
+            .mockResolvedValueOnce([[{ total: 4 }]])
+            .mockResolvedValueOnce([[{ id: 'P3', full_name: 'Ani' }]]) };
+        const service = new PatientListService(db);
+        const first = await service.listBasic({ sort: 'name', limit: 2 });
+        expect(first.pagination.nextCursor).toBeTruthy();
+        const second = await service.listBasic({ sort: 'name', limit: 2, cursor: first.pagination.nextCursor });
+        expect(db.query.mock.calls[2][0]).not.toContain('p.full_name IS NOT NULL');
+        expect(db.query.mock.calls[3][0]).toContain('p.full_name IS NOT NULL');
+        expect(db.query.mock.calls[3][0]).toContain('p.id > ?');
+        expect(second.pagination.total).toBe(4);
+        expect(second.pagination.nextCursor).toBeNull();
     });
 });

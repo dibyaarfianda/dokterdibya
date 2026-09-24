@@ -1,6 +1,7 @@
 import { createPageRequestScope } from '../staff-api.js';
 import { escapeHtml, escapeAttribute, sanitizeUrl } from '../safe-render.js';
 import { showToast } from '../toast.js';
+import { loadAllPatientPages } from '../patient-list-pages.js';
 
 const requestScopes = new Map();
 const birthCongratsData = new Map();
@@ -217,7 +218,7 @@ async function loadPatientsForBirthCongrats() {
 
     const scope = startRequestScope('birth-patients');
     try {
-        const result = await scope.request('/api/patients?view=basic&limit=1000');
+        const result = await loadAllPatientPages('/api/patients?view=basic', url => scope.request(url));
         const patients = result?.success && Array.isArray(result.data) ? result.data : [];
         select.innerHTML = [
             '<option value="">-- Pilih Pasien --</option>',

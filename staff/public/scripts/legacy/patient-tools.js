@@ -357,11 +357,10 @@
 
         try {
             const token = (window.getAuthToken ? window.getAuthToken() : '');
-            const response = await fetch('/api/patients?limit=500', {
+            const { loadAllPatientPages } = await import('/scripts/patient-list-pages.js');
+            const result = await loadAllPatientPages('/api/patients', url => fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const result = await response.json();
+            }));
 
             if (result.success && result.data) {
                 const patients = result.data.patients || result.data;
@@ -1513,23 +1512,14 @@
             window.staffDebugLog?.('PatientSearch', 'Loading all patients', { hasToken: Boolean(token) });
 
             // Use unified patients endpoint
-            const response = await fetch(`/api/patients?_=${Date.now()}`, {
+            const { loadAllPatientPages } = await import('/scripts/patient-list-pages.js');
+            const data = await loadAllPatientPages(`/api/patients?_=${Date.now()}`, url => fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Cache-Control': 'no-cache',
                     'Pragma': 'no-cache'
                 }
-            });
-
-            window.staffDebugLog?.('PatientSearch', 'Load patients response', { status: response.status });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error('Error response:', errorData);
-                throw new Error('Failed to load patients');
-            }
-
-            const data = await response.json();
+            }));
             window.staffDebugLog?.('PatientSearch', 'Loaded patients', { count: Array.isArray(data.data) ? data.data.length : 0 });
             const tbody = document.getElementById('manage-patients-tbody');
             clearBulkDeletePatientSelection();
