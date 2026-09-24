@@ -33,6 +33,15 @@ function makePdf() {
 }
 
 describe('GambiranResumeArtifacts', () => {
+  test('loading media helpers does not initialize native canvas outside PDF rendering', () => {
+    const mediaPath = path.join(__dirname, '../../services/GambiranResumeMedia.js');
+    const script = `let nativeHandles=0; require('async_hooks').createHook({init(_id,type){if(type==='CustomGC')nativeHandles++}}).enable(); const media=require(process.argv[1]); media.isImage('image/png','foto.png'); process.stdout.write(String(nativeHandles));`;
+    const child = spawnSync(process.execPath, ['-e', script, mediaPath], { encoding: 'utf8' });
+
+    expect(child.status).toBe(0);
+    expect(child.stdout).toBe('0');
+  });
+
   test('normalizes formatted RM for Medify while retaining canonical display', () => {
     expect(normalizeMedicalRecordNumber('00-00-12-34-56')).toEqual({
       input: '00-00-12-34-56', digits: '123456', display: '00-00-12-34-56',

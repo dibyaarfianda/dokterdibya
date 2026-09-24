@@ -2,7 +2,6 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 const { spawn } = require('child_process');
 const sharp = require('sharp');
-const { createCanvas } = require('@napi-rs/canvas');
 
 const DEFAULT_PDF_RENDER_TIMEOUT_MS = 30000;
 const DEFAULT_PDF_WORKER_TIMEOUT_MS = 5 * 60 * 1000;
@@ -71,6 +70,7 @@ async function emitJpeg(item, pages, options) {
 }
 
 async function pdfToJpegsInProcess(buffer, options = {}) {
+  const { createCanvas } = require('@napi-rs/canvas');
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
   const loadingTask = pdfjs.getDocument({
     data: new Uint8Array(buffer),
