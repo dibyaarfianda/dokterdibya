@@ -36,7 +36,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y nginx-light openssl
-          npx puppeteer browsers install chrome --install-deps
+          PUPPETEER_CACHE_DIR="$RUNNER_TEMP/staff-puppeteer-cache"
+          mkdir -p "$PUPPETEER_CACHE_DIR"
+          echo "PUPPETEER_CACHE_DIR=$PUPPETEER_CACHE_DIR" >> "$GITHUB_ENV"
+          sudo env "PATH=$PATH" "PUPPETEER_CACHE_DIR=$PUPPETEER_CACHE_DIR" "$(command -v npx)" puppeteer browsers install chrome --install-deps
+          sudo chown -R "$(id -u):$(id -g)" "$PUPPETEER_CACHE_DIR"
       - name: Stage synthetic releases and render Nginx includes
         run: |
           STAFF_NGINX_PREFIX=$(mktemp -d /tmp/staff-nginx.XXXXXX)
