@@ -911,28 +911,12 @@ export default {
             // Get current USG data from state
             const usg = state.recordData?.usg || {};
 
-            // Use sunday-clinic endpoint which has auto-publish logic
-            // This ensures patient_documents is synced when photos are added/removed
-            const response = await fetch(`/api/sunday-clinic/records/${mrId}/usg`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    ...usg,
-                    photos: photos
-                })
-            });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                console.error('[USG] Failed to save photos to database:', errText);
-            } else {
-                console.log('[USG] Photos saved to database successfully (with auto-publish)');
-            }
+            const { default: apiClient } = await import('../../utils/api-client.js');
+            await apiClient.saveSection(mrId, 'usg', { ...usg, photos });
+            console.log('[USG] Photos saved to database successfully');
         } catch (error) {
             console.error('[USG] Error saving photos to database:', error);
+            throw error;
         }
     },
 

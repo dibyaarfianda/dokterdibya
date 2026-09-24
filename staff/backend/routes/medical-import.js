@@ -14,6 +14,7 @@ const {
 } = require('../services/SundayClinicClosingService');
 const { OPENAI_API_KEY, OPENAI_API_URL } = require('../services/openaiService');
 const logger = require('../utils/logger');
+const medicalRecordService = require('../services/MedicalRecordService');
 
 function resolveImportedVisitDate(body = {}) {
     if (!body.visit_date) return formatDateLocal();
@@ -1557,6 +1558,14 @@ router.post('/api/medical-import/save', verifyToken, requireOpenAccountingDateFo
                 message: 'Invalid visit_location. Use: ' + validLocations.join(', ')
             });
         }
+        const recordTypes = { obstetri: 'pemeriksaan_obstetri', gyn_repro: 'pemeriksaan_ginekologi',
+            gyn_special: 'pemeriksaan_ginekologi' };
+        const recordType = recordTypes[category];
+        if (!recordType) return res.status(400).json({ success: false, message: 'Invalid record category' });
+        if (req.get('If-None-Match') !== '*') {
+            return res.status(428).json({ success: false, code: 'VERSIONED_IMPORT_REQUIRED',
+                message: 'Import creation requires If-None-Match: *' });
+        }
 
         // Build visitDateTime from exported data (date + time from Chrome extension)
         let visitDateTime;
@@ -1574,63 +1583,30 @@ router.post('/api/medical-import/save', verifyToken, requireOpenAccountingDateFo
             visitDateTime = new Date();
         }
 
-        logger.info('[Medical Import] Using visit datetime from export', {
-            visit_date,
-            visit_time,
-            visitDateTime: visitDateTime.toISOString()
+        if (Number.isNaN(visitDateTime.getTime())) return res.status(400).json({ success: false, message: 'Invalid visit datetime' });
+        const saved = await medicalRecordService.saveInternalSections({
+            mrId: mr_id, patientId: patient_id, actor: req.user,
+            visitCreation: { visitLocation: visit_location || 'klinik_private', visitDateTime },
+            sections: [{ recordType, data: record_data, createOnly: true }]
         });
-
-        // Check if MR record exists (by mr_id)
-        const [existingMR] = await db.query(
-            'SELECT id FROM sunday_clinic_records WHERE mr_id = ?',
-            [mr_id]
-        );
-
-        if (existingMR.length === 0) {
-            // Create new sunday_clinic_record - ALWAYS new DRD for each visit
-            await db.query(
-                `INSERT INTO sunday_clinic_records (mr_id, patient_id, visit_location, created_at, last_activity_at)
-                 VALUES (?, ?, ?, ?, ?)`,
-                [mr_id, patient_id, visit_location || 'klinik_private', visitDateTime, visitDateTime]
-            );
-        } else if (visit_location) {
-            // Update existing record's location and activity time
-            await db.query(
-                `UPDATE sunday_clinic_records
-                 SET visit_location = ?, last_activity_at = ?
-                 WHERE mr_id = ?`,
-                [visit_location, visitDateTime, mr_id]
-            );
-        }
-
-        // Save medical record
-        const recordType = category === 'obstetri' ? 'pemeriksaan_kehamilan' :
-                          category === 'gyn_repro' ? 'pemeriksaan_ginekologi' :
-                          'pemeriksaan_ginekologi';
-
-        await db.query(
-            `INSERT INTO medical_records (mr_id, record_type, record_data, created_at, created_by)
-             VALUES (?, ?, ?, ?, ?)`,
-            [mr_id, recordType, JSON.stringify(record_data), visitDateTime, req.user.id]
-        );
-
+        res.set('ETag', `"${saved.version}"`);
+        res.set('Cache-Control', 'no-store');
         res.json({
             success: true,
             message: 'Medical record saved successfully',
+            version: saved.version,
             data: {
-                mr_id: mr_id,
-                patient_id: patient_id,
                 visit_location: visit_location || 'klinik_private',
                 visit_date: visitDateTime.toISOString()
             }
         });
 
     } catch (error) {
-        console.error('Error saving imported record:', error);
-        res.status(500).json({
+        const known = error instanceof medicalRecordService.MedicalRecordError;
+        logger.error('Medical import save failed', { code: known ? error.code : 'MEDICAL_IMPORT_SAVE_FAILED' });
+        res.status(known ? error.statusCode : 500).json({
             success: false,
-            message: 'Failed to save medical record',
-            error: error.message
+            message: known ? error.message : 'Failed to save medical record'
         });
     }
 });

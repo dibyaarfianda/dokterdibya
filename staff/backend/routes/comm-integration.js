@@ -197,87 +197,41 @@ router.get('/resume/:mrId', async (req, res) => {
         });
     }
 });
-
 /**
  * POST /assessments
- * Receive assessment data from COMM and save to medical_records
+ * COMM must send a canonical visit and a versioned routine section. The older
+ * external sync envelope is deliberately rejected until its producer changes.
  */
 router.post('/assessments', async (req, res) => {
+    const service = require('../services/MedicalRecordService');
+    const { patientId, mrId, recordType, data, id, changes } = req.body || {};
+    const isCreate = req.get('If-None-Match') === '*';
+    const ifMatch = req.get('If-Match');
+    if (!patientId || !mrId || !recordType || !['anamnesa', 'physical_exam', 'pemeriksaan_obstetri',
+        'pemeriksaan_ginekologi', 'usg', 'lab', 'penunjang', 'diagnosis', 'planning', 'resume_medis'].includes(recordType)) {
+        return res.status(428).json({ success: false, code: 'VERSIONED_ASSESSMENT_REQUIRED',
+            message: 'Canonical visit and versioned section are required' });
+    }
+    if ((!isCreate && !ifMatch) || (isCreate && (id || ifMatch)) || (!isCreate && !id)) {
+        return res.status(428).json({ success: false, code: 'VERSIONED_ASSESSMENT_REQUIRED',
+            message: 'Create requires If-None-Match: *; update requires id and If-Match' });
+    }
     try {
-        const { patientId, mrId, doctorName, assessmentType, data } = req.body;
-
-        // Support two formats:
-        // 1. Frontend: { patientId, mrId, data: {...} }
-        // 2. Sync job: { patient_name, no_rm, facility, diagnosis, ... }
-        const isSyncFormat = !patientId && req.body.no_rm;
-        const effectivePatientId = patientId || req.body.no_rm || 'unknown';
-        const effectiveData = data || req.body;
-
-        if (!effectivePatientId) {
-            return res.status(400).json({
-                success: false,
-                message: 'patientId (or patient_name for sync) is required'
-            });
-        }
-
-        const recordData = {
-            source: 'comm',
-            assessment_type: assessmentType || (isSyncFormat ? 'comm_sync' : 'clinical_assessment'),
-            ...(data ? data : {}),
-            // Include sync-specific fields if present
-            ...(isSyncFormat ? {
-                facility: req.body.facility,
-                no_rm: req.body.no_rm,
-                patient_name: req.body.patient_name,
-                case_id: req.body.case_id,
-                diagnosis: req.body.diagnosis,
-                diagnosis_level: req.body.diagnosis_level,
-                uk_formatted: req.body.uk_formatted,
-                saved_by: req.body.saved_by,
-                cppt_assessment: req.body.cppt_assessment,
-                r2_key: req.body.r2_key,
-                record_data: req.body.record_data,
-            } : {}),
-            received_at: new Date().toISOString()
-        };
-
-        // Use a COMM-specific record_type marker in record_data to avoid conflicting
-        // with existing 'complete' records. If mr_id has a unique constraint with record_type,
-        // we use INSERT ... ON DUPLICATE KEY UPDATE to upsert.
-        const normalizedMrId = mrId ? mrId.trim().toUpperCase() : null;
-
-        const [result] = await db.query(
-            `INSERT INTO medical_records (patient_id, mr_id, doctor_name, record_type, record_data)
-             VALUES (?, ?, ?, 'complete', ?)
-             ON DUPLICATE KEY UPDATE
-                record_data = VALUES(record_data),
-                doctor_name = VALUES(doctor_name),
-                updated_at = CURRENT_TIMESTAMP`,
-            [effectivePatientId, normalizedMrId, doctorName || 'COMM System', JSON.stringify(recordData)]
-        );
-
-        logger.info('COMM assessment saved', {
-            recordId: result.insertId,
-            patientId: effectivePatientId,
-            mrId,
-            assessmentType
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'Assessment saved successfully',
-            data: { id: result.insertId }
-        });
-
+        const actor = { id: 'comm-integration' };
+        const result = isCreate
+            ? await service.create({ patientId, mrId, recordType, data, actor })
+            : await service.patch({ id, patientId, mrId, recordType, changes, ifMatch, actor });
+        res.set('ETag', `"${result.version}"`);
+        res.set('Cache-Control', 'no-store');
+        return res.status(isCreate ? 201 : 200).json({ success: true, version: result.version, data: result.data });
     } catch (error) {
-        logger.error('COMM integration - save assessment error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to save assessment'
-        });
+        const known = error instanceof service.MedicalRecordError;
+        if (!known) logger.error('COMM assessment mutation failed', { code: 'COMM_ASSESSMENT_MUTATION_FAILED' });
+        return res.status(known ? error.statusCode : 500).json({ success: false,
+            code: known ? error.code : 'COMM_ASSESSMENT_MUTATION_FAILED',
+            message: known ? error.message : 'Assessment save failed' });
     }
 });
-
 /**
  * POST /operation-sync
  * Receive daily surgery operation snapshot from COMM.

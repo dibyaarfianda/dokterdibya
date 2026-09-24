@@ -156,8 +156,15 @@ class MedicalRecordService {
         }
     }
 
-    async lockVisit(connection, mrId, suppliedPatient) {
-        const [visits] = await connection.query('SELECT * FROM sunday_clinic_records WHERE mr_id = ? ORDER BY id FOR UPDATE', [mrId]);
+    async lockVisit(connection, mrId, suppliedPatient, visitCreation) {
+        let [visits] = await connection.query('SELECT * FROM sunday_clinic_records WHERE mr_id = ? ORDER BY id FOR UPDATE', [mrId]);
+        if (!visits.length && visitCreation) {
+            await connection.query(
+                `INSERT INTO sunday_clinic_records (mr_id, patient_id, visit_location, created_at, last_activity_at)
+                 VALUES (?, ?, ?, ?, ?)`,
+                [mrId, suppliedPatient, visitCreation.visitLocation, visitCreation.visitDateTime, visitCreation.visitDateTime]);
+            [visits] = await connection.query('SELECT * FROM sunday_clinic_records WHERE mr_id = ? ORDER BY id FOR UPDATE', [mrId]);
+        }
         if (!visits.length) fail(404, 'VISIT_NOT_FOUND', 'Visit not found');
         if (visits.length !== 1) fail(409, 'AMBIGUOUS_VISIT', 'Visit scope is ambiguous');
         const visit = visits[0];
@@ -184,6 +191,69 @@ class MedicalRecordService {
                 after === null ? null : JSON.stringify(after), JSON.stringify(paths)]);
     }
 
+    // Trusted server adapters provide a whole batch before any write. The
+    // updater runs only after visit and exact section locks in this transaction.
+    // Browser and external callers must use create/PATCH with ETags instead.
+    async saveInternalSections({ mrId, patientId, sections, actor: principal, mutateDocuments, visitCreation }) {
+        mrId = normalizeMrId(mrId);
+        const actor = this.actor(principal);
+        if (!Array.isArray(sections) || !sections.length || sections.length > RECORD_TYPES.size ||
+            sections.some(section => !RECORD_TYPES.has(section.recordType) ||
+                (typeof section.update !== 'function' && !owns(section, 'data'))) ||
+            new Set(sections.map(section => section.recordType)).size !== sections.length) {
+            fail(400, 'INVALID_SECTIONS', 'Unique routine sections are required');
+        }
+        if (visitCreation && (!['klinik_private', 'rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'].includes(visitCreation.visitLocation) ||
+            !visitCreation.visitDateTime || !patientId)) {
+            fail(400, 'INVALID_VISIT', 'A valid import visit is required');
+        }
+        return this.transaction(async connection => {
+            const visit = await this.lockVisit(connection, mrId, patientId, visitCreation);
+            const saved = [];
+            for (const section of [...sections].sort((a, b) => a.recordType.localeCompare(b.recordType))) {
+                const existing = await this.lockSection(connection, visit, mrId, section.recordType);
+                if (section.createOnly && existing) fail(409, 'SECTION_EXISTS', 'Section exists; use a versioned PATCH');
+                let before = null;
+                if (existing) {
+                    try { before = parse(existing.record_data); validateData(before); }
+                    catch (_) { fail(412, 'BASE_UNAVAILABLE', 'Section data requires reconciliation'); }
+                }
+                const after = typeof section.update === 'function' ? section.update(before === null ? {} : clone(before)) : section.data;
+                validateData(after);
+                if (before !== null && isDeepStrictEqual(before, after)) {
+                    saved.push({ ...existing, record_data: clone(before) });
+                    continue;
+                }
+                let row;
+                let version;
+                if (existing) {
+                    version = Number(existing.version) + 1;
+                    if (!Number.isInteger(version) || version > 2147483647) fail(409, 'VERSION_EXHAUSTED', 'Version limit reached');
+                    const [updated] = await connection.query(
+                        'UPDATE medical_records SET record_data = ?, doctor_id = ?, doctor_name = ?, version = ?, updated_at = NOW() WHERE id = ? AND mr_id = ? AND patient_id = ? AND version = ?',
+                        [JSON.stringify(after), actor.id, actor.name, version, existing.id, mrId, visit.patient_id, existing.version]);
+                    if (updated.affectedRows !== 1) fail(409, 'CHANGE_CONFLICT', 'Section changed during save');
+                    row = existing;
+                } else {
+                    const [history] = await connection.query(
+                        'SELECT MAX(to_version) AS last_version FROM medical_record_revisions WHERE mr_id = ? AND record_type = ?', [mrId, section.recordType]);
+                    version = Number(history[0].last_version || 0) + 1;
+                    if (version > 2147483647) fail(409, 'VERSION_EXHAUSTED', 'Version limit reached');
+                    const [result] = await connection.query(
+                        'INSERT INTO medical_records (patient_id, mr_id, doctor_id, doctor_name, record_type, record_data, version) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [visit.patient_id, mrId, actor.id, actor.name, section.recordType, JSON.stringify(after), version]);
+                    row = { id: result.insertId, patient_id: visit.patient_id, mr_id: mrId, record_type: section.recordType, version: version - 1 };
+                }
+                await this.revision(connection, row, actor, existing ? 'patch' : 'create', before, after, version, ['']);
+                const scoped = { ...row, version, record_data: clone(after), actor };
+                if (mutateDocuments) await mutateDocuments(connection, scoped);
+                saved.push(scoped);
+            }
+            return { action: 'internal_batch', recordType: saved.length === 1 ? saved[0].record_type : 'multiple',
+                version: saved.length === 1 ? saved[0].version : null, data: saved };
+        });
+    }
+
     async create({ mrId, patientId, recordType, data, actor: principal, mutateDocuments }) {
         mrId = normalizeMrId(mrId);
         if (!RECORD_TYPES.has(recordType)) fail(400, 'INVALID_RECORD_TYPE', 'Unsupported section type');
@@ -203,12 +273,12 @@ class MedicalRecordService {
                 [visit.patient_id, mrId, actor.id, actor.name, recordType, JSON.stringify(data), version]);
             const row = { id: result.insertId, patient_id: visit.patient_id, mr_id: mrId, record_type: recordType, version: version - 1 };
             await this.revision(connection, row, actor, 'create', null, data, version, ['']);
-            if (mutateDocuments) await mutateDocuments(connection, { ...row, version, record_data: clone(data), actor });
-            return { action: 'create', recordType, version, data: { ...row, version, record_data: clone(data) } };
+            const documentChange = mutateDocuments ? await mutateDocuments(connection, { ...row, version, record_data: clone(data), actor }) : undefined;
+            return { action: 'create', recordType, version, documentChange, data: { ...row, version, record_data: clone(data) } };
         });
     }
 
-    async patch({ id, mrId, patientId, changes, ifMatch, actor: principal, mutateDocuments }) {
+    async patch({ id, mrId, patientId, recordType, changes, ifMatch, actor: principal, mutateDocuments }) {
         const baseVersion = parseIfMatch(ifMatch);
         const paths = validateChanges(changes);
         const actor = this.actor(principal);
@@ -229,6 +299,7 @@ class MedicalRecordService {
                 String(row.patient_id) !== String(locator.patient_id) || row.mr_id !== mrId || row.record_type !== locator.record_type) {
                 fail(404, 'RECORD_NOT_FOUND', 'Scoped record not found');
             }
+            if (recordType !== undefined && recordType !== row.record_type) fail(404, 'RECORD_NOT_FOUND', 'Scoped record not found');
             if (!RECORD_TYPES.has(row.record_type)) fail(400, 'INVALID_RECORD_TYPE', 'Legacy section is read-only');
             let current;
             try { current = parse(row.record_data); validateData(current); }
@@ -285,8 +356,9 @@ class MedicalRecordService {
                 [JSON.stringify(after), actor.id, actor.name, version, row.id, mrId, visit.patient_id, currentVersion]);
             if (updated.affectedRows !== 1) fail(409, 'CHANGE_CONFLICT', 'Section changed during save');
             await this.revision(connection, row, actor, 'patch', current, after, version, changes.map(change => change.path));
-            if (mutateDocuments) await mutateDocuments(connection, { ...row, version, record_data: clone(after), actor });
-            return { action: 'patch', recordType: row.record_type, version, data: { ...row, doctor_id: actor.id, doctor_name: actor.name, version, record_data: after } };
+            const documentChange = mutateDocuments ? await mutateDocuments(connection, { ...row, version, record_data: clone(after), actor }) : undefined;
+            return { action: 'patch', recordType: row.record_type, version, documentChange,
+                data: { ...row, doctor_id: actor.id, doctor_name: actor.name, version, record_data: after } };
         });
     }
 

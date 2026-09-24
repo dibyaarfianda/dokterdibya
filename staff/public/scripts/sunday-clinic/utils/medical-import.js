@@ -701,17 +701,8 @@ async function saveSectionToApi(mrId, section, data) {
     }
 
     try {
-        const token = window.getToken ? window.getToken() : '';
-        const response = await fetch(`/api/sunday-clinic/records/${mrId}/${section}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
+        const { default: apiClient } = await import('./api-client.js');
+        const result = await apiClient.saveSection(mrId, section, data);
         if (result.success) {
             console.log(`[Import] Saved ${section} to database successfully`);
             return true;

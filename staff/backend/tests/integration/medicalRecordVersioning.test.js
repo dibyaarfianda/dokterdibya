@@ -7,9 +7,13 @@ const mockDb = require('../helpers/medicalRecordDatabase')();
 jest.mock('../../db', () => mockDb);
 jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(), http: jest.fn() }));
 jest.mock('../../services/activityLogger', () => ({ logFromRequest: jest.fn(), ACTIONS: {} }));
-jest.mock('../../services/PatientDocumentSyncService', () => ({ syncPenunjangLabResults: jest.fn() }));
-jest.mock('../../realtime-sync', () => ({ broadcast: jest.fn(event => { mockDb.events.push({ kind: 'broadcast', event }); }) }));
+jest.mock('../../services/PatientDocumentSyncService', () => ({ syncPenunjangLabResults: jest.fn(), mutatePenunjangDocuments: jest.fn() }));
+jest.mock('../../realtime-sync', () => ({
+    broadcast: jest.fn(event => { mockDb.events.push({ kind: 'broadcast', event }); }),
+    broadcastToRoom: jest.fn((room, event) => { mockDb.events.push({ kind: 'patient-broadcast', room, event }); })
+}));
 const logger = require('../../utils/logger');
+const { mutatePenunjangDocuments } = require('../../services/PatientDocumentSyncService');
 const { ROLE_IDS, ROLE_NAMES } = require('../../constants/roles');
 const router = require('../../routes/medical-records');
 const app = express();
@@ -23,6 +27,34 @@ const reset = (extra = {}, version = 1, role) => auth(request(app).post('/api/me
 const record = () => mockDb.state().records[0];
 
 beforeEach(() => { mockDb.reset(); mockDb.failure = null; jest.clearAllMocks(); });
+
+test('penunjang metadata failure rolls back the clinical create and emits no refresh', async () => {
+    mutatePenunjangDocuments.mockRejectedValueOnce(new Error('metadata unavailable'));
+    const response = await create({ type: 'penunjang', data: { files: [] } });
+    expect(response.status).toBe(500);
+    expect(mockDb.state().records).toHaveLength(0);
+    expect(mockDb.state().revisions).toHaveLength(0);
+    expect(mockDb.events.some(event => event.kind === 'broadcast')).toBe(false);
+});
+
+test('penunjang patient refresh follows committed metadata and omits identifiers from payload', async () => {
+    mutatePenunjangDocuments.mockResolvedValueOnce({ added: 1, removed: 0 });
+    const response = await create({ type: 'penunjang', data: { files: [] } });
+    expect(response.status).toBe(201);
+    const commit = mockDb.events.findIndex(event => event.kind === 'commit');
+    const refresh = mockDb.events.findIndex(event => event.kind === 'patient-broadcast');
+    expect(refresh).toBeGreaterThan(commit);
+    expect(mockDb.events[refresh].event).toEqual({ type: 'document:patient_updated', document_type: 'penunjang', added: 1, removed: 0 });
+});
+
+test('postcommit refresh failure does not turn a persisted penunjang save into a retryable error', async () => {
+    const realtime = require('../../realtime-sync');
+    mutatePenunjangDocuments.mockResolvedValueOnce({ added: 1, removed: 0 });
+    realtime.broadcastToRoom.mockImplementationOnce(() => { throw new Error('transport unavailable'); });
+    const response = await create({ type: 'penunjang', data: { files: [] } });
+    expect(response.status).toBe(201);
+    expect(mockDb.state().records).toHaveLength(1);
+});
 
 test('create requires canonical MR and rejects unknown or mismatched patient scope', async () => {
     expect((await create({ mrId: undefined })).status).toBe(400);
@@ -77,6 +109,15 @@ test('patch requires version; rejects malformed version and missing record', asy
     expect((await auth(request(app).patch('/api/medical-records/1')).send({ changes: [] })).status).toBe(428);
     expect((await auth(request(app).patch('/api/medical-records/1')).set('If-Match', 'W/"1"').send({ changes: [] })).status).toBe(400);
     expect((await patch(999, [{ path: '/notes', before: 'old', after: 'new' }])).status).toBe(404);
+});
+
+test('external section type claim cannot patch a different section', async () => {
+    await create();
+    const response = await auth(request(app).patch('/api/medical-records/1'))
+        .set('If-Match', '"1"').send({ mrId: 'TEST001', recordType: 'penunjang',
+            changes: [{ path: '/notes', before: 'old', after: 'wrong-section' }] });
+    expect(response.status).toBe(404);
+    expect(record().version).toBe(1);
 });
 
 test('patch preserves disjoint stale edits and deliberate empty/null values', async () => {

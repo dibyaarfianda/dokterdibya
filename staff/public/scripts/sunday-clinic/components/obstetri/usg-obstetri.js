@@ -1413,21 +1413,12 @@ export default {
             const context = getMedicalRecordContext(state, 'usg');
             const existingData = context?.data || {};
 
-            // Use sunday-clinic endpoint which has auto-publish logic
-            await fetch(`/api/sunday-clinic/records/${mrId}/usg`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    ...existingData,
-                    photos
-                })
-            });
+            const { default: apiClient } = await import('../../utils/api-client.js');
+            await apiClient.saveSection(mrId, 'usg', { ...existingData, photos });
             console.log('[USG Obstetri] Photos saved to database (with auto-publish)');
         } catch (error) {
             console.error('[USG Obstetri] Error saving photos:', error);
+            throw error;
         }
     },
 

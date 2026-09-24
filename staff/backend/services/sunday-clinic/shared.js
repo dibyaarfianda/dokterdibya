@@ -807,6 +807,8 @@ function formatMedicalRecordRow(row) {
         doctorId: row.doctor_id,
         doctorName: row.doctor_name,
         recordType: row.record_type,
+        version: row.version,
+        etag: `"${row.version}"`,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         data
@@ -820,7 +822,7 @@ async function loadMedicalRecordsBundle(patientId, mrId = null) {
 
     // Build query with mr_id filter for visit-specific records ONLY
     // Each visit should start fresh - don't load legacy records with null mr_id
-    let query = `SELECT id, patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data,
+    let query = `SELECT id, patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data, version,
                 created_at, updated_at
          FROM medical_records
          WHERE patient_id = ?`;

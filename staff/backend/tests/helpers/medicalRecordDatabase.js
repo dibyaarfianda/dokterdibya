@@ -26,6 +26,12 @@ function medicalRecordDatabase() {
             tx.visitLocked = true;
             return [clone(state.visits.filter(row => row.mr_id === p[0]))];
         }
+        if (sql.startsWith('INSERT INTO sunday_clinic_records')) {
+            if (!tx) throw new Error('Visit insertion outside transaction');
+            state.visits.push({ id: Math.max(0, ...state.visits.map(row => row.id)) + 1,
+                mr_id: p[0], patient_id: p[1], visit_location: p[2], created_at: p[3], last_activity_at: p[4] });
+            return [{ affectedRows: 1, insertId: state.visits[state.visits.length - 1].id }];
+        }
         if (sql.startsWith('SELECT') && sql.includes('FROM medical_records')) {
             if (sql.endsWith('FOR UPDATE') && !tx?.visitLocked) throw new Error('Medical lock before visit');
             let rows = state.records;

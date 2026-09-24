@@ -5,6 +5,8 @@ const { validateOperationalSchemaScope } = require('../services/OperationalSchem
 const { verifyToken, verifyStaffToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const medicalRecordService = require('../services/MedicalRecordService');
+const { mutatePenunjangDocuments } = require('../services/PatientDocumentSyncService');
+const realtimeSync = require('../realtime-sync');
 const { withSafeAuditPath } = require('../utils/requestAudit');
 
 // Create medical_records table if not exists
@@ -35,10 +37,30 @@ function versionResponse(res, result, status = 200) {
     });
 }
 
+function documentMutation(connection, row) {
+    if (row.record_type !== 'penunjang') return undefined;
+    return mutatePenunjangDocuments(connection, {
+        patientId: row.patient_id, mrId: row.mr_id,
+        files: row.record_data.files, actorUserId: row.actor.id
+    });
+}
+
+function refreshPatientAfterCommit(result) {
+    if (!result.documentChange || !result.data?.patient_id) return;
+    try {
+        realtimeSync.broadcastToRoom(`patient:${result.data.patient_id}`, {
+            type: 'document:patient_updated', document_type: result.recordType,
+            added: result.documentChange.added, removed: result.documentChange.removed
+        });
+    } catch (_) { /* persisted clinical mutation remains successful */ }
+}
+
 router.post('/api/medical-records', verifyStaffToken, requirePermission('medical_records.create'), async (req, res) => {
     try {
         const { patientId, mrId, type, data } = req.body;
-        const result = await medicalRecordService.create({ patientId, mrId, recordType: type, data, actor: req.user });
+        const result = await medicalRecordService.create({ patientId, mrId, recordType: type, data, actor: req.user,
+            mutateDocuments: documentMutation });
+        refreshPatientAfterCommit(result);
         return versionResponse(res, result, 201);
     } catch (error) { return mutationFailure(res, error); }
 });
@@ -269,8 +291,11 @@ router.patch('/api/medical-records/:id', verifyStaffToken, requirePermission('me
     try {
         const result = await medicalRecordService.patch({
             id: req.params.id, mrId: req.body.mrId, patientId: req.body.patientId,
-            changes: req.body.changes, ifMatch: req.get('If-Match'), actor: req.user
+            recordType: req.body.recordType,
+            changes: req.body.changes, ifMatch: req.get('If-Match'), actor: req.user,
+            mutateDocuments: documentMutation
         });
+        refreshPatientAfterCommit(result);
         return versionResponse(res, result);
     } catch (error) { return mutationFailure(res, error); }
 });

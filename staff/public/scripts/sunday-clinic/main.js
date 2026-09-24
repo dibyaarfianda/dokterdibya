@@ -2332,9 +2332,13 @@ class SundayClinicApp {
             const state = stateManager.getState();
             const patientId = state.derived?.patientId;
             const mrId = this.currentMrId;
+            const resumeRecord = state.medicalRecords?.byType?.resume_medis;
 
             if (!patientId || !mrId) {
                 throw new Error('Patient ID atau MR ID tidak ditemukan');
+            }
+            if (!resumeRecord?.id || !Number.isInteger(Number(resumeRecord.version))) {
+                throw new Error('Versi resume tidak tersedia. Muat ulang kunjungan sebelum reset.');
             }
 
             const token = window.getToken();
@@ -2342,12 +2346,14 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            // Delete all resume_medis records for this visit
-            const response = await fetch(`/api/medical-records/by-type/resume_medis?patientId=${patientId}&mrId=${mrId}`, {
-                method: 'DELETE',
+            const response = await fetch(`/api/medical-records/${encodeURIComponent(mrId)}/sections/resume_medis/reset`, {
+                method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'If-Match': resumeRecord.etag || `"${resumeRecord.version}"`
+                },
+                body: JSON.stringify({ patientId })
             });
 
             if (!response.ok) {
@@ -2357,6 +2363,9 @@ class SundayClinicApp {
 
             const result = await response.json();
             console.log('[SundayClinic] Resume records deleted:', result.deletedCount || 0);
+            const byType = { ...(state.medicalRecords?.byType || {}) };
+            delete byType.resume_medis;
+            stateManager.set('medicalRecords', { ...state.medicalRecords, byType });
         
 
             // Clear the resume display

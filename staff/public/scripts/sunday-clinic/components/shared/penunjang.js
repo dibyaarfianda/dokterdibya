@@ -9,6 +9,7 @@
  */
 
 import stateManager from '../../utils/state-manager.js';
+import apiClient from '../../utils/api-client.js';
 
 export default {
     /**
@@ -360,36 +361,18 @@ ${interpretation}
                 return;
             }
 
-            const response = await fetch('/api/medical-records', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    patientId: patientId,
-                    visitId: mrId, // Associate with current visit
-                    type: 'penunjang',
-                    data: {
-                        record_datetime: recordDatetime,
-                        record_date: recordDatetime.split('T')[0] || '',
-                        record_time: recordDatetime.split('T')[1] || '',
-                        files: files,
-                        interpretation: interpretation
-                    },
-                    timestamp: new Date().toISOString()
-                })
+            await apiClient.saveSection(mrId, 'penunjang', {
+                record_datetime: recordDatetime,
+                record_date: recordDatetime.split('T')[0] || '',
+                record_time: recordDatetime.split('T')[1] || '',
+                files,
+                interpretation
             });
-
-            if (!response.ok) {
-                const errText = await response.text();
-                console.error('[Penunjang] Failed to save to database:', errText);
-            } else {
-                const result = await response.json();
-                console.log('[Penunjang] Saved to database successfully:', result);
-            }
+            return true;
         } catch (error) {
             console.error('[Penunjang] Error saving to database:', error);
+            window.showToast?.('error', error.message || 'Gagal menyimpan pemeriksaan penunjang');
+            return false;
         }
     },
 

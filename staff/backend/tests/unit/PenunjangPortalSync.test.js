@@ -32,6 +32,19 @@ describe('PatientDocumentSyncService', () => {
         jest.clearAllMocks();
     });
 
+    it('mutates exact penunjang metadata on the supplied clinical connection and propagates failures', async () => {
+        const connection = { query: jest.fn()
+            .mockResolvedValueOnce([[{ id: 11, file_url: '/old' }]])
+            .mockRejectedValueOnce(new Error('metadata unavailable')) };
+        await expect(PatientDocumentSyncService.mutatePenunjangDocuments(connection, {
+            patientId: 'fixture-a', mrId: 'TEST001', files: [], actorUserId: 'actor'
+        })).rejects.toThrow('metadata unavailable');
+        expect(connection.query.mock.calls[0][0]).toContain('ORDER BY id FOR UPDATE');
+        expect(connection.query.mock.calls[0][1]).toEqual(['fixture-a', 'TEST001']);
+        expect(db.query).not.toHaveBeenCalled();
+        expect(createPatientNotification).not.toHaveBeenCalled();
+    });
+
     it('syncs new penunjang files into patient_documents and notifies the patient', async () => {
         expect(typeof PatientDocumentSyncService.syncPenunjangLabResults).toBe('function');
 
