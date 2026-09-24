@@ -48,7 +48,7 @@ jobs:
           echo "STAFF_NGINX_PREFIX=$STAFF_NGINX_PREFIX" >> "$GITHUB_ENV"
           node tests/unit/StaffAssetModulePropagation.test.js --prepare-nginx "$STAFF_NGINX_PREFIX"
           node scripts/render-staff-asset-nginx.js --release-base "$STAFF_NGINX_PREFIX/releases" --current-root "$STAFF_NGINX_PREFIX/current" --map-output "$STAFF_NGINX_PREFIX/map.conf" --location-output "$STAFF_NGINX_PREFIX/location.conf"
-          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 -subj '/CN=dokterdibya.com' -addext 'subjectAltName=DNS:dokterdibya.com' -keyout "$STAFF_NGINX_PREFIX/fixture.key" -out "$STAFF_NGINX_PREFIX/fixture.crt"
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 -subj '/CN=dokterdibya.com' -addext 'subjectAltName=DNS:dokterdibya.com,DNS:www.dokterdibya.com' -keyout "$STAFF_NGINX_PREFIX/fixture.key" -out "$STAFF_NGINX_PREFIX/fixture.crt"
       - name: Validate and start loopback TLS Nginx
         run: |
           sudo nginx -t -p "$STAFF_NGINX_PREFIX/" -c nginx.conf

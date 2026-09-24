@@ -303,7 +303,7 @@ http {
     include ${prefix}/map.conf;
     server {
         listen 127.0.0.1:443 ssl;
-        server_name dokterdibya.com;
+        server_name dokterdibya.com www.dokterdibya.com;
         ssl_certificate ${prefix}/fixture.crt;
         ssl_certificate_key ${prefix}/fixture.key;
         include ${prefix}/location.conf;
@@ -324,6 +324,7 @@ async function probeNginx(prefix) {
     const spki = new crypto.X509Certificate(certificate).publicKey.export({ type: 'spki', format: 'der' });
     const pin = crypto.createHash('sha256').update(spki).digest('base64');
     const origin = 'https://dokterdibya.com';
+    const wwwOrigin = 'https://www.dokterdibya.com';
     const proxyRequests = [];
     const upstream = http.createServer((req, res) => {
         proxyRequests.push({ url: req.url, headers: req.headers });
@@ -332,9 +333,9 @@ async function probeNginx(prefix) {
     await new Promise((resolve, reject) => { upstream.once('error', reject); upstream.listen(3000, '127.0.0.1', resolve); });
     let browser;
     const trace = [];
-    const request = (uri, referrer) => new Promise((resolve, reject) => {
-        const req = https.get({ hostname: '127.0.0.1', port: 443, servername: 'dokterdibya.com',
-            ca: certificate, path: uri, headers: { Host: 'dokterdibya.com', ...(referrer ? { Referer: referrer } : {}) } }, response => {
+    const request = (uri, referrer, host = 'dokterdibya.com') => new Promise((resolve, reject) => {
+        const req = https.get({ hostname: '127.0.0.1', port: 443, servername: host,
+            ca: certificate, path: uri, headers: { Host: host, ...(referrer ? { Referer: referrer } : {}) } }, response => {
             let body = '';
             response.setEncoding('utf8');
             response.on('data', chunk => { body += chunk; });
@@ -344,7 +345,7 @@ async function probeNginx(prefix) {
     });
     try {
         browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--no-proxy-server',
-            '--host-resolver-rules=MAP dokterdibya.com 127.0.0.1', `--ignore-certificate-errors-spki-list=${pin}`] });
+            '--host-resolver-rules=MAP dokterdibya.com 127.0.0.1, MAP www.dokterdibya.com 127.0.0.1', `--ignore-certificate-errors-spki-list=${pin}`] });
         for (const version of ['v413', 'v414']) {
             const loaded = await loadVersion(browser, origin, version);
             assert.deepEqual(loaded.result, [`root-${version}`, `mid-${version}`, `leaf-${version}`]);
@@ -354,6 +355,45 @@ async function probeNginx(prefix) {
             assert.equal(css.status, 200);
             assert.equal(css.body, `/* style-${version} */\n`);
             assert.equal(css.headers['cache-control'], 'public, max-age=31536000, immutable');
+        }
+        // Production serves the Staff shell at both exact TLS origins without a redirect.
+        // Exercise the www Host/SNI in the real browser, not only a crafted Referer header.
+        for (const version of ['v413', 'v414']) {
+            const loaded = await loadVersion(browser, wwwOrigin, version);
+            assert.deepEqual(loaded.result, [`root-${version}`, `mid-${version}`, `leaf-${version}`]);
+            verifyBrowserTrace(loaded.trace, version);
+            assert(loaded.trace.every(item => new URL(item.url).hostname === 'www.dokterdibya.com'));
+            trace.push({ origin: wwwOrigin, version, modules: loaded.trace });
+            const css = await request(`/staff/public/fixture.css?v=${version}`, '', 'www.dokterdibya.com');
+            assert.equal(css.status, 200);
+            assert.equal(css.body, `/* style-${version} */\n`);
+            assert.equal(css.headers['cache-control'], 'public, max-age=31536000, immutable');
+        }
+        const wwwStaff = await loadVersion(browser, wwwOrigin, 'v414', { staffGraph: true });
+        assert.deepEqual(wwwStaff.result, ['staff-root-v414', 'credential-v414', 'patient-list-v414']);
+        assert(wwwStaff.trace.filter(item => item.status === 200).every(item => new URL(item.url).hostname === 'www.dokterdibya.com'));
+        for (const oldWorker of [false, true]) {
+            const loaded = await loadVersion(browser, wwwOrigin, 'v413', { legacyGraph: true, oldWorker });
+            assert.deepEqual(loaded.result, ['legacy-root-v413', 'credential-v414', 'patient-list-v413']);
+            assert(loaded.trace.filter(item => item.status === 200).every(item => new URL(item.url).hostname === 'www.dokterdibya.com'));
+        }
+        for (const [uri, target] of [
+            ['/scripts/socket-credentials.js', '/staff/public/scripts/socket-credentials.js?v=v414'],
+            ['/scripts/patient-list-pages.js', '/staff/public/scripts/patient-list-pages.js?v=v413']
+        ]) {
+            const redirect = await request(uri, `${wwwOrigin}${scriptBase}realtime-sync.js?v=v413`, 'www.dokterdibya.com');
+            assert.equal(redirect.status, 307);
+            assert.equal(new URL(redirect.headers.location, wwwOrigin).href, `${wwwOrigin}${target}`);
+            assert.match(redirect.headers['cache-control'], /(?:^|,\s*)no-store(?:,|$)/);
+        }
+        for (const referrer of [
+            'https://www.dokterdibya.com.evil.test/staff/public/scripts/root.js?v=v413',
+            'https://evilwww.dokterdibya.com/staff/public/scripts/root.js?v=v413',
+            'http://www.dokterdibya.com/staff/public/scripts/root.js?v=v413'
+        ]) {
+            const response = await request(`${scriptBase}leaf.js`, referrer, 'www.dokterdibya.com');
+            assert.equal(response.status, 200);
+            assert.equal(response.body, bodies('current')['leaf.js']);
         }
         for (const query of invalidQueries) {
             const response = await request(`${scriptBase}leaf.js?${query}`);

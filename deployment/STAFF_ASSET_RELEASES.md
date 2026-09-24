@@ -138,12 +138,16 @@ The failure branch handles a partial install: it atomically restores the exact s
 ## 5. Activate routing before application cutover
 
 ```sh
-if systemctl reload nginx &&
-   node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
-     --base-url https://dokterdibya.com --release-base "$RELEASE_BASE" \
-     --expected-current-version v413 \
-     --version v413 --version v414 \
-     --path scripts/realtime-sync.js --path scripts/patient-list-pages.js; then
+verify_pre_cutover() {
+  for ORIGIN in https://dokterdibya.com https://www.dokterdibya.com; do
+    node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
+      --base-url "$ORIGIN" --release-base "$RELEASE_BASE" \
+      --expected-current-version v413 \
+      --version v413 --version v414 \
+      --path scripts/realtime-sync.js --path scripts/patient-list-pages.js || return 1
+  done
+}
+if systemctl reload nginx && verify_pre_cutover; then
   :
 else
   restore_staff_nginx || { echo 'Nginx restore validation failed' >&2; exit 1; }
@@ -153,7 +157,7 @@ else
 fi
 ```
 
-The verifier compares served v413/v414 bytes and immutable headers with validated local manifests, requires unversioned bytes to match declared current **v413** before checkout cutover, requires invalid `v0` to fail, and checks current HTML and API routing. It outputs only release version, relative path, status, byte count, and SHA-256. The failure branch restores Nginx and exits before Git/PM2 changes. Also inspect a real browser's v413 and v414 module traces, including old/disabled worker legacy imports; both exact `/scripts/` bridge paths must resolve to the documented immutable Staff targets while patient requests retain the patient route and cache policy. If this browser gate fails, call `restore_staff_nginx`, reload Nginx only after its syntax check passes, and stop before Git/PM2 changes.
+The verifier checks **both existing production origins**; `www` serves the Staff shell directly and must not be treated as a redirect. It compares served v413/v414 bytes and immutable headers with validated local manifests, requires unversioned bytes to match declared current **v413** before checkout cutover, requires invalid `v0` to fail, and checks current HTML and API routing. It outputs only release version, relative path, status, byte count, and SHA-256. The failure branch restores Nginx and exits before Git/PM2 changes. On **each origin**, inspect real-browser v413 and v414 module traces plus v413 legacy imports with old and disabled workers. Both exact `/scripts/` bridge paths must resolve to the documented immutable Staff targets on that origin, while patient requests retain the patient route and cache policy. Reject cross-origin redirects, mixed release bytes, or a failed browser gate: call `restore_staff_nginx`, reload Nginx only after its syntax check passes, and stop before Git/PM2 changes.
 
 After the routing gate passes, fast-forward the active checkout using the established non-destructive production procedure and reload PM2 exactly once:
 
@@ -180,17 +184,19 @@ curl -fsS -o /dev/null https://dokterdibya.com/api/health
 mysql -N -D dibyaklinik -e 'SELECT 1'
 ```
 
-Repeat the release verifier after cutover with current **v414**. It must reject any remaining unversioned v413 bytes:
+Repeat the release verifier on both origins after cutover with current **v414**. It must reject any remaining unversioned v413 bytes:
 
 ```sh
-node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
-  --base-url https://dokterdibya.com --release-base "$RELEASE_BASE" \
-  --expected-current-version v414 \
-  --version v413 --version v414 \
-  --path scripts/realtime-sync.js --path scripts/patient-list-pages.js
+for ORIGIN in https://dokterdibya.com https://www.dokterdibya.com; do
+  node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
+    --base-url "$ORIGIN" --release-base "$RELEASE_BASE" \
+    --expected-current-version v414 \
+    --version v413 --version v414 \
+    --path scripts/realtime-sync.js --path scripts/patient-list-pages.js || exit 1
+done
 ```
 
-Confirm current HTML and service worker advertise v414 with no-store headers, an authenticated Staff browser has one-version module traffic, polling realtime is connected, browser console is clean, and the visible layout is unchanged. Run the configured authenticated performance command from the backend directory; the Staff token must already be supplied by the protected operator/CI environment and must never be written into the command or evidence:
+Confirm on both origins that current HTML and service worker advertise v414 with no-store headers, an authenticated Staff browser has one-version module traffic and no unexpected host redirect, polling realtime is connected, browser console is clean, and the visible layout is unchanged. Run the configured authenticated performance command from the backend directory; the Staff token must already be supplied by the protected operator/CI environment and must never be written into the command or evidence:
 
 ```sh
 cd /var/www/dokterdibya/staff/backend
@@ -200,7 +206,7 @@ node scripts/perf-budget-check.js --base-url https://dokterdibya.com --page-url 
 
 Compare equal-size, post-stabilization samples: warm network requests ≤40, genuine failures 0, cached activation p95 ≤1000 ms, production p75 at least 25% better than baseline, and p95 no more than 5% worse. Over five minutes, require Nginx 5xx ≤1%, Socket.IO auth errors ≤2% of sessions, and no unplanned PM2 restart. Obtain the five-minute rates from existing aggregated operational metrics without copying raw request URLs, tokens, or patient fields into release evidence.
 
-Roll back on two failed health/DB checks, a release-related restart, excessive 5xx, failed performance gate, mixed asset hashes, or any cross-user/unauthorized clinical event. Restore the previous application commit through the established safe rollback process, reload PM2 if needed, call the exact `restore_staff_nginx` function from section 4, and reload Nginx only if its `nginx -t` succeeds. Then verify the previous HTML and rerun the release verifier with `--expected-current-version v413`. **Retain both v413 and v414**: the v413 legacy credential bridge targets v414 even after application rollback. Do not perform synthetic clinical writes. The first legitimate clinical operation remains the before/after integrity verification point.
+Roll back on two failed health/DB checks, a release-related restart, excessive 5xx, failed performance gate, mixed asset hashes, or any cross-user/unauthorized clinical event. Restore the previous application commit through the established safe rollback process, reload PM2 if needed, call the exact `restore_staff_nginx` function from section 4, and reload Nginx only if its `nginx -t` succeeds. Then verify the previous HTML on both origins and rerun the release verifier on each with `--expected-current-version v413`. **Retain both v413 and v414**: the v413 legacy credential bridge targets v414 even after application rollback. Do not perform synthetic clinical writes. The first legitimate clinical operation remains the before/after integrity verification point.
 
 ## 7. Retention and cleanup after acceptance
 

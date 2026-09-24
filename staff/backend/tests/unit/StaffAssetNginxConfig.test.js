@@ -73,9 +73,11 @@ describe('Staff Nginx release routing', () => {
     test.each([
         ['', 'https://dokterdibya.com/staff/public/scripts/root.js?v=v413', 'v413'],
         ['', 'https://dokterdibya.com/staff/public/scripts/deep/mid.js?v=v414', 'v414'],
+        ['', 'https://www.dokterdibya.com/staff/public/scripts/root.js?v=v413', 'v413'],
+        ['', 'https://www.dokterdibya.com/staff/public/scripts/deep/mid.js?v=v414', 'v414'],
         ['foo=1', 'https://dokterdibya.com/staff/public/scripts/root.js?v=v413', ''],
         ['v=v414', 'https://dokterdibya.com/staff/public/scripts/root.js?v=v413', ''],
-        ...['https://external.test/staff/public/scripts/root.js?v=v413', 'https://dokterdibya.com.evil.test/staff/public/scripts/root.js?v=v413', 'http://dokterdibya.com/staff/public/scripts/root.js?v=v413', 'https://dokterdibya.com/staff/public/scripts/root.js?v=v413&secret=x', 'https://dokterdibya.com/staff/public/scripts/root.js?v=', 'https://dokterdibya.com/staff/public/index.html?v=v413'].map(ref => ['', ref, ''])
+        ...['https://external.test/staff/public/scripts/root.js?v=v413', 'https://dokterdibya.com.evil.test/staff/public/scripts/root.js?v=v413', 'https://www.dokterdibya.com.evil.test/staff/public/scripts/root.js?v=v413', 'https://evilwww.dokterdibya.com/staff/public/scripts/root.js?v=v413', 'http://www.dokterdibya.com/staff/public/scripts/root.js?v=v413', 'http://dokterdibya.com/staff/public/scripts/root.js?v=v413', 'https://dokterdibya.com/staff/public/scripts/root.js?v=v413&secret=x', 'https://dokterdibya.com/staff/public/scripts/root.js?v=', 'https://dokterdibya.com/staff/public/index.html?v=v413'].map(ref => ['', ref, ''])
     ])('validates module referrer %s %s', (query, referrer, version) => {
         expect(evaluateMaps(renderStaffAssetNginx(roots).mapConfig, query, referrer).staff_module_redirect_version).toBe(version);
     });
@@ -84,9 +86,11 @@ describe('Staff Nginx release routing', () => {
         ['/scripts/socket-credentials.js', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', '/staff/public/scripts/socket-credentials.js?v=v414'],
         ['/scripts/patient-list-pages.js', 'https://dokterdibya.com/staff/public/scripts/legacy/patient-tools.js?v=v413', '/staff/public/scripts/patient-list-pages.js?v=v413'],
         ['/scripts/patient-list-pages.js', 'https://dokterdibya.com/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=v413', '/staff/public/scripts/patient-list-pages.js?v=v413'],
+        ['/scripts/socket-credentials.js', 'https://www.dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', '/staff/public/scripts/socket-credentials.js?v=v414'],
+        ['/scripts/patient-list-pages.js', 'https://www.dokterdibya.com/staff/public/scripts/legacy/patient-tools.js?v=v413', '/staff/public/scripts/patient-list-pages.js?v=v413'],
         ['/scripts/other.js', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', ''],
         ['/scripts/socket-credentials.js?x=1', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', ''],
-        ...['', 'https://external.test/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com.evil.test/staff/public/scripts/realtime-sync.js?v=v413', 'http://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com/public/scripts/patient-session.js?v=v413', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v414', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413&x=1', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413#fragment', 'https://dokterdibya.com/staff/public/scripts/../other.js?v=v413'].map(ref => ['/scripts/socket-credentials.js', ref, ''])
+        ...['', 'https://external.test/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com.evil.test/staff/public/scripts/realtime-sync.js?v=v413', 'https://www.dokterdibya.com.evil.test/staff/public/scripts/realtime-sync.js?v=v413', 'https://evilwww.dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', 'http://www.dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', 'http://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com/public/scripts/patient-session.js?v=v413', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v414', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413&x=1', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413#fragment', 'https://dokterdibya.com/staff/public/scripts/../other.js?v=v413'].map(ref => ['/scripts/socket-credentials.js', ref, ''])
     ])('bridges only exact legacy root request %s from %s', (uri, referrer, target) => {
         expect(evaluateMaps(renderStaffAssetNginx(roots).mapConfig, '', referrer, uri).staff_legacy_redirect || '').toBe(target);
     });

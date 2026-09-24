@@ -28,7 +28,7 @@ map "$staff_v_duplicate:$staff_v_token_present:$staff_v_present:$arg_v" $staff_a
 
 map $http_referer $staff_module_referrer_version {
     default "";
-    ~^https://dokterdibya[.]com/staff/public/scripts/[^?#]+[.]js[?]v=(v[1-9][0-9]*)$ $1;
+    ~^https://(?:www[.])?dokterdibya[.]com/staff/public/scripts/[^?#]+[.]js[?]v=(v[1-9][0-9]*)$ $1;
 }
 
 map "$args:$staff_module_referrer_version" $staff_module_redirect_version {
@@ -42,7 +42,7 @@ map "$args:$staff_module_referrer_version" $staff_module_redirect_version {
 # page still needs the v414 Staff credential helper during rollback.
 map $http_referer $staff_legacy_v413_referrer {
     default 0;
-    ~^https://dokterdibya[.]com/staff/public/scripts/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+[.]js[?]v=v413$ 1;
+    ~^https://(?:www[.])?dokterdibya[.]com/staff/public/scripts/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+[.]js[?]v=v413$ 1;
 }
 
 map "$request_uri:$staff_legacy_v413_referrer" $staff_legacy_redirect {
