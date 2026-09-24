@@ -97,37 +97,63 @@ Inspect `staff-asset-install.json` in `$PREP`: it records source/candidate/inclu
 
 ## 4. Install, validate and restore on failure
 
-The candidate file names are deterministic. Install the two snippets and site candidate to the manifest destinations, then test syntax before reload or any Git/PM2 change:
+The candidate file names are deterministic. Use one operator shell for this section so the validated paths and rollback function remain available. The backup from section 3 must exist before the first install. Stage every candidate as a sibling of its destination and publish each complete file with a same-directory rename. Check syntax before reload or any Git/PM2 change:
 
 ```sh
+set -e
 test "$(sha256sum "$SITE" | awk '{print $1}')" = "$(node -p 'require(process.argv[1]).sha256.source' "$PREP/staff-asset-install.json")"
-install -m 0644 "$PREP/dokterdibya-staff-assets-map.conf" "$MAP_DEST"
-install -m 0644 "$PREP/dokterdibya-staff-assets-location.conf" "$LOCATION_DEST"
-install -m 0644 "$PREP/dokterdibya.com.candidate" "$SITE"
-nginx -t
+test -f "$BACKUP/dokterdibya.com.staff-assets.backup"
+test ! -e "$MAP_DEST" && test ! -L "$MAP_DEST"
+test ! -e "$LOCATION_DEST" && test ! -L "$LOCATION_DEST"
+MAP_TEMP="$MAP_DEST.stage-$STAMP"
+LOCATION_TEMP="$LOCATION_DEST.stage-$STAMP"
+SITE_TEMP="$SITE.stage-$STAMP"
+RESTORE_TEMP="$SITE.restore-$STAMP"
+for candidate in "$MAP_TEMP" "$LOCATION_TEMP" "$SITE_TEMP" "$RESTORE_TEMP"; do
+  test ! -e "$candidate" && test ! -L "$candidate" || exit 1
+done
+restore_staff_nginx() {
+  install -m 0644 "$BACKUP/dokterdibya.com.staff-assets.backup" "$RESTORE_TEMP" || return 1
+  mv -Tf -- "$RESTORE_TEMP" "$SITE" || return 1
+  rm -f -- "$MAP_TEMP" "$LOCATION_TEMP" "$SITE_TEMP" "$MAP_DEST" "$LOCATION_DEST" || return 1
+  nginx -t
+}
+if install -m 0644 "$PREP/dokterdibya-staff-assets-map.conf" "$MAP_TEMP" &&
+   install -m 0644 "$PREP/dokterdibya-staff-assets-location.conf" "$LOCATION_TEMP" &&
+   install -m 0644 "$PREP/dokterdibya.com.candidate" "$SITE_TEMP" &&
+   mv -Tf -- "$MAP_TEMP" "$MAP_DEST" &&
+   mv -Tf -- "$LOCATION_TEMP" "$LOCATION_DEST" &&
+   mv -Tf -- "$SITE_TEMP" "$SITE" &&
+   nginx -t; then
+  :
+else
+  restore_staff_nginx || { echo 'Nginx restore validation failed' >&2; exit 1; }
+  echo 'Nginx candidate rejected; checkout and PM2 unchanged' >&2
+  exit 1
+fi
 ```
 
-If any install step or `nginx -t` fails, immediately restore the exact site backup and remove only the two snippets installed in this step. Recheck syntax, then stop. Do not switch Git or reload PM2:
-
-```sh
-install -m 0644 "$BACKUP/dokterdibya.com.staff-assets.backup" "$SITE"
-rm -- "$MAP_DEST" "$LOCATION_DEST"
-nginx -t
-```
-
-If restore validation fails, keep the application checkout unchanged and escalate the Nginx outage. Do not delete `$BACKUP` or any release snapshot.
+The failure branch handles a partial install: it atomically restores the exact site backup, removes only the two destinations confirmed absent before installation plus their exact staging siblings, reruns `nginx -t`, and exits before checkout/PM2. `rm -f` tolerates snippets not yet installed. If restore validation fails, keep the application checkout unchanged and escalate the Nginx outage. Do not delete `$BACKUP` or any release snapshot. This syntax gate runs against the actual candidate before Nginx reload; the Task 2 disposable Nginx fixture/Chromium probe remains a separate pre-release CI gate.
 
 ## 5. Activate routing before application cutover
 
 ```sh
-systemctl reload nginx
-node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
-  --base-url https://dokterdibya.com --release-base "$RELEASE_BASE" \
-  --version v413 --version v414 \
-  --path scripts/realtime-sync.js --path scripts/patient-list-pages.js
+if systemctl reload nginx &&
+   node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
+     --base-url https://dokterdibya.com --release-base "$RELEASE_BASE" \
+     --expected-current-version v413 \
+     --version v413 --version v414 \
+     --path scripts/realtime-sync.js --path scripts/patient-list-pages.js; then
+  :
+else
+  restore_staff_nginx || { echo 'Nginx restore validation failed' >&2; exit 1; }
+  systemctl reload nginx
+  echo 'Pre-cutover release gate failed; checkout and PM2 unchanged' >&2
+  exit 1
+fi
 ```
 
-The verifier compares served v413/v414 bytes and immutable headers with validated local manifests, checks that unversioned bytes consistently match one staged release and remain nonimmutable, requires invalid `v0` to fail, and checks current HTML and API routing. It outputs only release version, relative path, status, byte count, and SHA-256. Stop and restore Nginx from the backup if any check fails. Also inspect a real browser's v413 and v414 module traces, including old/disabled worker legacy imports; both exact `/scripts/` bridge paths must resolve to the documented immutable Staff targets while patient requests retain the patient route and cache policy.
+The verifier compares served v413/v414 bytes and immutable headers with validated local manifests, requires unversioned bytes to match declared current **v413** before checkout cutover, requires invalid `v0` to fail, and checks current HTML and API routing. It outputs only release version, relative path, status, byte count, and SHA-256. The failure branch restores Nginx and exits before Git/PM2 changes. Also inspect a real browser's v413 and v414 module traces, including old/disabled worker legacy imports; both exact `/scripts/` bridge paths must resolve to the documented immutable Staff targets while patient requests retain the patient route and cache policy. If this browser gate fails, call `restore_staff_nginx`, reload Nginx only after its syntax check passes, and stop before Git/PM2 changes.
 
 After the routing gate passes, fast-forward the active checkout using the established non-destructive production procedure and reload PM2 exactly once:
 
@@ -154,7 +180,17 @@ curl -fsS -o /dev/null https://dokterdibya.com/api/health
 mysql -N -D dibyaklinik -e 'SELECT 1'
 ```
 
-Repeat the release verifier command from section 5 after cutover. Confirm current HTML and service worker advertise v414 with no-store headers, an authenticated Staff browser has one-version module traffic, polling realtime is connected, browser console is clean, and the visible layout is unchanged. Run the configured authenticated performance command from the backend directory; the Staff token must already be supplied by the protected operator/CI environment and must never be written into the command or evidence:
+Repeat the release verifier after cutover with current **v414**. It must reject any remaining unversioned v413 bytes:
+
+```sh
+node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
+  --base-url https://dokterdibya.com --release-base "$RELEASE_BASE" \
+  --expected-current-version v414 \
+  --version v413 --version v414 \
+  --path scripts/realtime-sync.js --path scripts/patient-list-pages.js
+```
+
+Confirm current HTML and service worker advertise v414 with no-store headers, an authenticated Staff browser has one-version module traffic, polling realtime is connected, browser console is clean, and the visible layout is unchanged. Run the configured authenticated performance command from the backend directory; the Staff token must already be supplied by the protected operator/CI environment and must never be written into the command or evidence:
 
 ```sh
 cd /var/www/dokterdibya/staff/backend
@@ -164,7 +200,7 @@ node scripts/perf-budget-check.js --base-url https://dokterdibya.com --page-url 
 
 Compare equal-size, post-stabilization samples: warm network requests ≤40, genuine failures 0, cached activation p95 ≤1000 ms, production p75 at least 25% better than baseline, and p95 no more than 5% worse. Over five minutes, require Nginx 5xx ≤1%, Socket.IO auth errors ≤2% of sessions, and no unplanned PM2 restart. Obtain the five-minute rates from existing aggregated operational metrics without copying raw request URLs, tokens, or patient fields into release evidence.
 
-Roll back on two failed health/DB checks, a release-related restart, excessive 5xx, failed performance gate, mixed asset hashes, or any cross-user/unauthorized clinical event. Restore the previous application commit through the established safe rollback process, reload PM2 if needed, restore the exact Nginx backup and remove only the two snippets installed here, rerun `nginx -t`, reload Nginx, then verify the previous HTML and v413/v414 asset hashes. **Retain both v413 and v414**: the v413 legacy credential bridge targets v414 even after application rollback. Do not perform synthetic clinical writes. The first legitimate clinical operation remains the before/after integrity verification point.
+Roll back on two failed health/DB checks, a release-related restart, excessive 5xx, failed performance gate, mixed asset hashes, or any cross-user/unauthorized clinical event. Restore the previous application commit through the established safe rollback process, reload PM2 if needed, call the exact `restore_staff_nginx` function from section 4, and reload Nginx only if its `nginx -t` succeeds. Then verify the previous HTML and rerun the release verifier with `--expected-current-version v413`. **Retain both v413 and v414**: the v413 legacy credential bridge targets v414 even after application rollback. Do not perform synthetic clinical writes. The first legitimate clinical operation remains the before/after integrity verification point.
 
 ## 7. Retention and cleanup after acceptance
 

@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 const http = require('http');
 const crypto = require('crypto');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { buildStaffReleaseManifest } = require('../../services/staffAssetRelease');
 const { PROTECTED_STAFF_ASSET_RELEASES } = require('../../services/staffAssetNginxConfig');
 const { prepareStaffNginxInstallation, verifyPublishedStaffRelease, selectStaffReleaseCleanup } = require('../../services/staffAssetDeployment');
@@ -70,6 +70,18 @@ test.each([
     expect(fs.readdirSync(input.outputDirectory)).toEqual([]);
 });
 
+test.each([
+    ['a duplicate Staff public block', `location ^~ /staff/public/ { root /tmp/other; }\n    `],
+    ['an unrelated API sibling', `location /api/clinical/ { proxy_pass http://127.0.0.1:3000; }\n    `],
+    ['an unrelated patient sibling', `location = /scripts/patient.js { root /var/www/dokterdibya/public; }\n    `]
+])('rejects %s between Staff and patient markers without deleting the route', async (_name, extra) => {
+    const source = legacySite.replace(patientMarker, `${extra}${patientMarker}`);
+    const input = prepInput(source);
+    await expect(prepareStaffNginxInstallation(input)).rejects.toThrow(/Staff|location/i);
+    expect(fs.readFileSync(input.siteConfig, 'utf8')).toBe(source);
+    expect(fs.readdirSync(input.outputDirectory)).toEqual([]);
+});
+
 test('rejects path aliasing, relative paths, injection and symlinked inputs and directories', async () => {
     const input = prepInput();
     for (const unsafe of [
@@ -130,10 +142,10 @@ async function releaseFixture() {
         const manifest = await buildStaffReleaseManifest({ publicRoot, version, sourceCommit: 'a'.repeat(40) });
         fs.writeFileSync(path.join(releaseBase, version, 'release-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     }
-    return { releaseBase, paths, versions: ['v413', 'v414'] };
+    return { releaseBase, paths, versions: ['v413', 'v414'], expectedCurrentVersion: 'v414' };
 }
 
-async function serverFixture(releaseBase, override = () => null) {
+async function serverFixture(releaseBase, override = () => null, currentVersion = 'v414') {
     const server = http.createServer((req, res) => {
         const url = new URL(req.url, 'http://localhost');
         const alternative = override(url);
@@ -150,7 +162,7 @@ async function serverFixture(releaseBase, override = () => null) {
             res.end('{"status":"ok"}'); return;
         }
         const version = url.searchParams.get('v');
-        const selected = version || 'v414';
+        const selected = version || currentVersion;
         if (!/^v(?:413|414)$/.test(selected) || !url.pathname.startsWith('/staff/public/')) {
             res.writeHead(404); res.end(); return;
         }
@@ -172,6 +184,48 @@ test('verifies both immutable releases, unversioned current, HTML and API bounda
         expect(result.assets.find(row => row.version === 'v413' && row.path === 'scripts/app.js').sha256).toBe(sha('app-v413'));
         expect(JSON.stringify(result)).not.toContain('?v=');
     } finally { await server.close(); }
+});
+
+test('requires the declared pre-cutover current version instead of accepting another staged version', async () => {
+    const input = await releaseFixture(); const server = await serverFixture(input.releaseBase);
+    try {
+        await expect(verifyPublishedStaffRelease({ ...input, expectedCurrentVersion: 'v413', baseUrl: server.baseUrl }))
+            .rejects.toThrow(/current/i);
+    } finally { await server.close(); }
+});
+
+test('accepts v413 before cutover and v414 after cutover only when declared explicitly', async () => {
+    const input = await releaseFixture(); const before = await serverFixture(input.releaseBase, () => null, 'v413');
+    try { await expect(verifyPublishedStaffRelease({ ...input, expectedCurrentVersion: 'v413', baseUrl: before.baseUrl })).resolves.toMatchObject({ ok: true }); }
+    finally { await before.close(); }
+    const after = await serverFixture(input.releaseBase);
+    try { await expect(verifyPublishedStaffRelease({ ...input, expectedCurrentVersion: 'v414', baseUrl: after.baseUrl })).resolves.toMatchObject({ ok: true }); }
+    finally { await after.close(); }
+});
+
+test('verifier CLI requires and enforces expected current version', async () => {
+    const input = await releaseFixture(); const server = await serverFixture(input.releaseBase);
+    const script = path.resolve(__dirname, '../../scripts/verify-staff-asset-release.js');
+    const args = [script, '--base-url', server.baseUrl, '--release-base', input.releaseBase,
+        '--version', 'v413', '--version', 'v414', '--path', 'scripts/app.js'];
+    const run = values => new Promise(resolve => {
+        const child = spawn(process.execPath, values, { stdio: 'ignore' });
+        child.on('close', code => resolve(code));
+    });
+    try {
+        expect(await run(args)).not.toBe(0);
+        expect(await run([...args, '--expected-current-version', 'v413'])).not.toBe(0);
+        expect(await run([...args, '--expected-current-version', 'v414'])).toBe(0);
+    } finally { await server.close(); }
+});
+
+test.each(['staff', path.join('staff', 'public')])('rejects symlinked intermediate release root %s before HTTP', async segment => {
+    const input = await releaseFixture();
+    const link = path.join(input.releaseBase, 'v413', segment);
+    const actual = `${link}-real`;
+    fs.renameSync(link, actual);
+    fs.symlinkSync(actual, link, process.platform === 'win32' ? 'junction' : 'dir');
+    await expect(verifyPublishedStaffRelease({ ...input, baseUrl: 'http://127.0.0.1:9' })).rejects.toThrow(/symlink/i);
 });
 
 test.each([

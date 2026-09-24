@@ -38,6 +38,28 @@ function oneOccurrence(text, needle, label) {
     return first;
 }
 
+function staffLocationEnd(config, openingBrace, limit) {
+    let depth = 0;
+    let quote = '';
+    let comment = false;
+    let escaped = false;
+    for (let index = openingBrace; index < limit; index++) {
+        const char = config[index];
+        if (comment) { if (char === '\n') comment = false; continue; }
+        if (quote) {
+            if (escaped) escaped = false;
+            else if (char === '\\') escaped = true;
+            else if (char === quote) quote = '';
+            continue;
+        }
+        if (char === '#') { comment = true; continue; }
+        if (char === '"' || char === "'") { quote = char; continue; }
+        if (char === '{') depth++;
+        if (char === '}' && --depth === 0) return index + 1;
+    }
+    throw new Error('Unclosed legacy Staff location');
+}
+
 function createCandidate(source, mapIncludePath, locationIncludePath) {
     if (!source.startsWith(MAP_LEGACY) || source.indexOf(MAP_LEGACY, MAP_LEGACY.length) !== -1) {
         throw new Error('Expected exact leading legacy Staff cache map once');
@@ -45,7 +67,7 @@ function createCandidate(source, mapIncludePath, locationIncludePath) {
     const mapReplaced = `include ${mapIncludePath};\n${source.slice(MAP_LEGACY.length)}`;
     const staff = oneOccurrence(mapReplaced, STAFF_MARKER, 'Staff marker');
     const patient = oneOccurrence(mapReplaced, PATIENT_MARKER, 'patient marker');
-    if (patient <= staff || !/location\s+\^~\s+\/staff\/public\/\s*\{/.test(mapReplaced.slice(staff, patient))) {
+    if (patient <= staff) {
         throw new Error('Invalid legacy Staff location range');
     }
     const start = staff + STAFF_MARKER.length;
@@ -53,6 +75,21 @@ function createCandidate(source, mapIncludePath, locationIncludePath) {
     if (lineEnd < 0 || lineEnd >= patient || mapReplaced.slice(start, lineEnd).trim()) throw new Error('Invalid Staff marker line');
     const patientLineStart = mapReplaced.lastIndexOf('\n', patient - 1) + 1;
     if (mapReplaced.slice(patientLineStart, patient).trim()) throw new Error('Invalid patient marker line');
+    const locationHeaders = [...mapReplaced.matchAll(/\blocation[ \t]+\^~[ \t]+\/staff\/public\/[ \t]*\{/g)];
+    if (locationHeaders.length !== 1) throw new Error('Expected exactly one Staff public location');
+    let cursor = lineEnd + 1;
+    while (cursor < patientLineStart) {
+        const next = mapReplaced.indexOf('\n', cursor);
+        if (next < 0 || next >= patientLineStart) break;
+        const line = mapReplaced.slice(cursor, next);
+        if (line.trim() && !/^[ \t]*#/.test(line)) break;
+        cursor = next + 1;
+    }
+    const header = /^[ \t]*location[ \t]+\^~[ \t]+\/staff\/public\/[ \t]*\{/.exec(mapReplaced.slice(cursor, patientLineStart));
+    if (!header) throw new Error('Invalid legacy Staff location start');
+    const openingBrace = cursor + header[0].lastIndexOf('{');
+    const end = staffLocationEnd(mapReplaced, openingBrace, patientLineStart);
+    if (mapReplaced.slice(end, patientLineStart).trim()) throw new Error('Unexpected location after legacy Staff block');
     return `${mapReplaced.slice(0, lineEnd + 1)}include ${locationIncludePath};\n\n${mapReplaced.slice(patientLineStart)}`;
 }
 
@@ -126,6 +163,7 @@ async function readValidManifest(releaseBase, version) {
     validateReleaseVersion(version);
     const releaseDir = path.join(releaseBase, version);
     await rejectSymlinkComponents(releaseDir);
+    await rejectSymlinkComponents(path.join(releaseDir, 'staff', 'public'));
     const file = path.join(releaseDir, 'release-manifest.json');
     await rejectSymlinkComponents(file);
     const manifest = JSON.parse(await fs.promises.readFile(file, 'utf8'));
@@ -151,13 +189,15 @@ async function fetchChecked(origin, pathname) {
         cache: response.headers.get('cache-control') || '', contentType: response.headers.get('content-type') || '' };
 }
 
-async function verifyPublishedStaffRelease({ baseUrl, releaseBase, versions, paths }) {
+async function verifyPublishedStaffRelease({ baseUrl, releaseBase, versions, paths, expectedCurrentVersion }) {
     const origin = validateBaseUrl(baseUrl);
     const base = absoluteLocal(releaseBase);
     await rejectSymlinkComponents(base);
     if (!Array.isArray(versions) || new Set(versions).size < 2 || versions.some(version => { try { validateReleaseVersion(version); return false; } catch { return true; } })) {
         throw new Error('At least two valid Staff release versions required');
     }
+    validateReleaseVersion(expectedCurrentVersion);
+    if (!versions.includes(expectedCurrentVersion)) throw new Error('Expected current Staff version must be verified');
     if (!Array.isArray(paths) || !paths.length || !paths.some(value => typeof value === 'string' && value.endsWith('.js'))) {
         throw new Error('At least one Staff JavaScript dependency required');
     }
@@ -178,17 +218,18 @@ async function verifyPublishedStaffRelease({ baseUrl, releaseBase, versions, pat
             assets.push({ version, path: relative, status: response.status, bytes: response.bytes, sha256: response.sha256 });
         }
     }
-    let currentCandidates = new Set(versions);
+    const currentManifest = manifests.get(expectedCurrentVersion);
     for (const relative of paths) {
         const response = await fetchChecked(origin, `/staff/public/${relative}`);
         if (response.status !== 200 || /\bimmutable\b/.test(response.cache) || !/no-cache|no-store/.test(response.cache)) {
             throw new Error('Current Staff asset routing mismatch');
         }
-        currentCandidates = new Set([...currentCandidates].filter(version => manifests.get(version).files.some(file =>
-            file.path === relative && file.sha256 === response.sha256 && file.bytes === response.bytes)));
+        const expected = currentManifest.files.find(file => file.path === relative);
+        if (!expected || response.sha256 !== expected.sha256 || response.bytes !== expected.bytes) {
+            throw new Error('Current Staff asset does not match declared version');
+        }
         assets.push({ version: 'current', path: relative, status: response.status, bytes: response.bytes, sha256: response.sha256 });
     }
-    if (!currentCandidates.size) throw new Error('Current Staff assets mix release bytes');
     const invalid = await fetchChecked(origin, `/staff/public/${paths.find(item => item.endsWith('.js'))}?v=v0`);
     if (invalid.status < 400 || invalid.status >= 500) throw new Error('Invalid Staff release unexpectedly succeeded');
     const html = await fetchChecked(origin, '/staff/public/index-adminlte.html');
