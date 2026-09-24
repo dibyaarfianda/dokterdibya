@@ -1,7 +1,7 @@
 # Versioned Staff Asset Releases
 
-**Status:** Approved design for the Wave 3 atomic-update gate  
-**Date:** 2026-09-24  
+**Status:** Approved design for the Wave 3 atomic-update gate
+**Date:** 2026-09-24
 **Scope:** DOKTERDIBYA Staff Panel static assets and their production Nginx routing
 
 ## Purpose
