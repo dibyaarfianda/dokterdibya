@@ -1,0 +1,37 @@
+# Install in the http context, once. Raw arguments are intentionally not decoded.
+map $args $staff_v_present {
+    default 0;
+    ~(^|&)v= 1;
+}
+
+map $args $staff_v_token_present {
+    default 0;
+    ~*(^|&)v(=|&|$) 1;
+}
+
+map $args $staff_v_duplicate {
+    default 0;
+    ~*(^|&)v(?:=[^&]*)?(?:&[^&]*)*&v(?:=|&|$) 1;
+}
+
+map "$staff_v_duplicate:$staff_v_token_present:$staff_v_present:$arg_v" $staff_asset_root {
+    default "__STAFF_RELEASE_BASE__/.invalid";
+    "0:0:0:" "__DOKTERDIBYA_CURRENT_ROOT__";
+    ~^0:1:1:v[1-9][0-9]*$ "__STAFF_RELEASE_BASE__/$arg_v";
+}
+
+map "$staff_v_duplicate:$staff_v_token_present:$staff_v_present:$arg_v" $staff_asset_cache_control {
+    default "no-store";
+    "0:0:0:" "no-cache, must-revalidate";
+    ~^0:1:1:v[1-9][0-9]*$ "public, max-age=31536000, immutable";
+}
+
+map $http_referer $staff_module_referrer_version {
+    default "";
+    ~^https://dokterdibya[.]com/staff/public/scripts/[^?#]+[.]js[?]v=(v[1-9][0-9]*)$ $1;
+}
+
+map "$args:$staff_module_referrer_version" $staff_module_redirect_version {
+    default "";
+    ~^:(v[1-9][0-9]*)$ $1;
+}

@@ -6,17 +6,57 @@ on:
     paths:
       - "staff/**"
       - "public/**"
+      - "deployment/nginx/**"
       - ".github/workflows/staff-panel-ci.yml"
   pull_request:
     paths:
       - "staff/**"
       - "public/**"
+      - "deployment/nginx/**"
       - ".github/workflows/staff-panel-ci.yml"
 
 permissions:
   contents: read
 
 jobs:
+  staff-asset-nginx:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: staff/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: staff/backend/package-lock.json
+      - run: npm ci
+      - name: Install disposable Nginx probe dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx-light openssl
+          npx puppeteer browsers install chrome --install-deps
+      - name: Stage synthetic releases and render Nginx includes
+        run: |
+          STAFF_NGINX_PREFIX=$(mktemp -d /tmp/staff-nginx.XXXXXX)
+          chmod 755 "$STAFF_NGINX_PREFIX"
+          echo "STAFF_NGINX_PREFIX=$STAFF_NGINX_PREFIX" >> "$GITHUB_ENV"
+          node tests/unit/StaffAssetModulePropagation.test.js --prepare-nginx "$STAFF_NGINX_PREFIX"
+          node scripts/render-staff-asset-nginx.js --release-base "$STAFF_NGINX_PREFIX/releases" --current-root "$STAFF_NGINX_PREFIX/current" --map-output "$STAFF_NGINX_PREFIX/map.conf" --location-output "$STAFF_NGINX_PREFIX/location.conf"
+          openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 -subj '/CN=dokterdibya.com' -addext 'subjectAltName=DNS:dokterdibya.com' -keyout "$STAFF_NGINX_PREFIX/fixture.key" -out "$STAFF_NGINX_PREFIX/fixture.crt"
+      - name: Validate and start loopback TLS Nginx
+        run: |
+          sudo nginx -t -p "$STAFF_NGINX_PREFIX/" -c nginx.conf
+          sudo nginx -p "$STAFF_NGINX_PREFIX/" -c nginx.conf
+      - name: Probe actual Nginx module routing in Chromium
+        run: node tests/unit/StaffAssetModulePropagation.test.js --probe-nginx "$STAFF_NGINX_PREFIX"
+      - name: Stop disposable Nginx
+        if: always()
+        run: |
+          if [ -n "${STAFF_NGINX_PREFIX:-}" ] && [ -f "$STAFF_NGINX_PREFIX/nginx.pid" ]; then
+            sudo nginx -s quit -p "$STAFF_NGINX_PREFIX/" -c nginx.conf
+          fi
   staff-contracts:
     runs-on: ubuntu-latest
     defaults:

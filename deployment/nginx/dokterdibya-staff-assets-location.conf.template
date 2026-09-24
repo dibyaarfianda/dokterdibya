@@ -1,0 +1,39 @@
+# Replace only the TLS server's existing Staff public location.
+location ^~ /staff/public/ {
+    location = /staff/public/sw.js {
+        root __DOKTERDIBYA_CURRENT_ROOT__;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        try_files $uri =404;
+    }
+
+    location = /staff/public/sunday-clinic.html {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        add_header Pragma "no-cache" always;
+        add_header Expires "0" always;
+    }
+
+    location ~ [.]html$ {
+        root __DOKTERDIBYA_CURRENT_ROOT__;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+        try_files $uri =404;
+    }
+
+    location ~ ^/staff/public/scripts/.+[.]js$ {
+        if ($staff_module_redirect_version != "") {
+            return 307 $uri?v=$staff_module_redirect_version;
+        }
+        root $staff_asset_root;
+        add_header Cache-Control $staff_asset_cache_control always;
+        try_files $uri =404;
+    }
+
+    root $staff_asset_root;
+    add_header Cache-Control $staff_asset_cache_control always;
+    try_files $uri =404;
+}
