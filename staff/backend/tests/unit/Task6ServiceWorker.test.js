@@ -10,7 +10,7 @@ function loadWorker(file, { failPrecache = false, offline = false } = {}) {
     const cacheNames = ['other-app-v1', 'static-old', 'dynamic-old', 'dokterdibya-staff-old', 'sisiwanita-patient-portal-old'];
     const entries = new Map();
     const cache = {
-        addAll: jest.fn(async urls => { if (failPrecache) throw new Error('precache failed'); urls.forEach(url => entries.set(new URL(url, 'https://example.test').href, { cached: url })); }),
+        addAll: jest.fn(async urls => { if (failPrecache) throw new Error('precache failed'); urls.forEach(url => entries.set(new URL(url.url || url, 'https://example.test').href, { cached: url.url || url })); }),
         put: jest.fn(),
         match: jest.fn(async (request, options) => {
             const requested = new URL(request.url || request, 'https://example.test');
@@ -62,6 +62,61 @@ test('patient worker SKIP_WAITING message checks data with logical conjunction',
     const worker = loadWorker('public/sw.js');
     worker.handlers.message({ data: { type: 'SKIP_WAITING' } });
     expect(worker.self.skipWaiting).toHaveBeenCalledTimes(1);
+});
+
+test('staff worker serves only its current-version shell scripts from its atomic static cache', async () => {
+    const worker = loadWorker('staff/public/sw.js');
+    let install;
+    worker.handlers.install({ waitUntil: promise => { install = promise; } });
+    await install;
+    const cached = [...worker.entries.keys()];
+    expect(cached).toContain('https://example.test/staff/public/scripts/shell/bootstrap.js?v=v414');
+    expect(cached).toContain('https://example.test/staff/public/scripts/main.js?v=v414');
+
+    let current;
+    worker.handlers.fetch({
+        request: { url: 'https://example.test/staff/public/scripts/shell/bootstrap.js?v=v414', method: 'GET', mode: 'cors', headers: { get: () => '' } },
+        respondWith: promise => { current = promise; }
+    });
+    await expect(current).resolves.toMatchObject({ cached: expect.anything() });
+
+    let old;
+    worker.handlers.fetch({
+        request: { url: 'https://example.test/staff/public/scripts/shell/bootstrap.js?v=v413', method: 'GET', mode: 'cors', headers: { get: () => '' } },
+        respondWith: promise => { old = promise; }
+    });
+    if (old) await expect(old).resolves.toBeNull();
+    expect(worker.cache.match.mock.calls.some(([request]) => String(request.url || request).includes('v=v413'))).toBe(false);
+});
+
+test('old staff controller cannot mix cached canonical modules into a newer shell document', async () => {
+    const worker = loadWorker('staff/public/sw.js');
+    let install;
+    worker.handlers.install({ waitUntil: promise => { install = promise; } });
+    await install;
+    const request = (clientId, url) => {
+        let response;
+        worker.handlers.fetch({
+            clientId,
+            request: { url: `https://example.test${url}`, method: 'GET', mode: 'cors', headers: { get: () => '' } },
+            respondWith: promise => { response = promise; }
+        });
+        return response;
+    };
+    // The old worker sees the new document's first explicitly versioned script.
+    expect(request('new-shell', '/staff/public/scripts/error-handler.js?v=v415')).toBeUndefined();
+    expect(request('new-shell', '/staff/public/scripts/main.js')).toBeUndefined();
+    // An overlapping request from the previous document must not re-authorize
+    // stale canonical imports for the newer document on the same client.
+    expect(request('new-shell', '/staff/public/scripts/error-handler.js?v=v414')).toBeDefined();
+    expect(request('new-shell', '/staff/public/scripts/main.js')).toBeUndefined();
+
+    // A separate current-version document may still use the immutable cache.
+    expect(request('current-shell', '/staff/public/scripts/error-handler.js?v=v414')).toBeDefined();
+    await expect(request('current-shell', '/staff/public/scripts/main.js'))
+        .resolves.toMatchObject({ cached: '/staff/public/scripts/main.js?v=v414' });
+    // An unversioned request with no proven owning document version fails open to the network, not an old cache.
+    expect(request('', '/staff/public/scripts/main.js')).toBeUndefined();
 });
 
 test('patient worker update rotates cache namespace before adding new shell assets', () => {

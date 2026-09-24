@@ -32,6 +32,12 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '' }) {
         });
         await page.goto(`${FIXTURE_ORIGIN}/${file}`, { waitUntil: 'networkidle0' });
         await page.addStyleTag({ content: MASK_CSS + extraCss });
+        await page.evaluate(async () => {
+            await document.fonts.ready;
+            await Promise.all(Array.from(document.images)
+                .filter(image => image.complete && image.naturalWidth > 0)
+                .map(image => image.decode().catch(() => {})));
+        });
         return await page.screenshot({ type: 'png', captureBeyondViewport: false });
     } finally {
         await browser.close();

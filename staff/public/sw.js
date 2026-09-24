@@ -4,11 +4,62 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v413';
+const STAFF_PWA_VERSION = 'v414';
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `${CACHE_NAME}-static`;
 const DYNAMIC_CACHE = `${CACHE_NAME}-dynamic`;
 const versionedStaffAsset = (path) => `${path}?v=${STAFF_PWA_VERSION}`;
+
+// The initial Staff module graph is immutable for this cache version. Keep the
+// complete shell graph in the install transaction so the first controlled warm
+// navigation does not revalidate dozens of JavaScript files over the network.
+const STAFF_SHELL_SCRIPTS = [
+  '/staff/public/scripts/auth.js',
+  '/staff/public/scripts/chat-popup.js',
+  '/staff/public/scripts/dashboard.js',
+  '/staff/public/scripts/date-utils.js',
+  '/staff/public/scripts/error-handler.js',
+  '/staff/public/scripts/global-chat-loader.js',
+  '/staff/public/scripts/live-queue-dashboard-utils.js',
+  '/staff/public/scripts/main.js',
+  '/staff/public/scripts/mobile-helper.js',
+  '/staff/public/scripts/pages/dashboard-new-patients.js',
+  '/staff/public/scripts/patient-demo-manager.js',
+  '/staff/public/scripts/patient-list-pages.js',
+  '/staff/public/scripts/realtime-sync.js',
+  '/staff/public/scripts/role-constants.js',
+  '/staff/public/scripts/rum.js',
+  '/staff/public/scripts/safe-render.js',
+  '/staff/public/scripts/session-manager.js',
+  '/staff/public/scripts/shell/actions.js',
+  '/staff/public/scripts/shell/bootstrap.js',
+  '/staff/public/scripts/shell/credentials.js',
+  '/staff/public/scripts/shell/feature-loader.js',
+  '/staff/public/scripts/shell/module-helpers.js',
+  '/staff/public/scripts/shell/notification-badges.js',
+  '/staff/public/scripts/shell/page-descriptors.js',
+  '/staff/public/scripts/shell/page-registry.js',
+  '/staff/public/scripts/shell/polling-coordinator.js',
+  '/staff/public/scripts/shell/registration-codes.js',
+  '/staff/public/scripts/shell/support-chat-badge.js',
+  '/staff/public/scripts/staff-api.js',
+  '/staff/public/scripts/tap-feedback.js',
+  '/staff/public/scripts/toast.js',
+  '/staff/public/scripts/vps-auth-v2.js'
+];
+const staffShellScriptPaths = new Set(STAFF_SHELL_SCRIPTS);
+const verifiedClientVersions = new Map();
+
+function rememberClientVersion(clientId, version) {
+  if (!clientId) return;
+  // A mismatched explicit shell version poisons this client for the remainder
+  // of this worker's control, even if an old document races a later request.
+  if (verifiedClientVersions.get(clientId) === null) return;
+  if (!verifiedClientVersions.has(clientId) && verifiedClientVersions.size >= 256) {
+    verifiedClientVersions.delete(verifiedClientVersions.keys().next().value);
+  }
+  verifiedClientVersions.set(clientId, version === STAFF_PWA_VERSION ? version : null);
+}
 
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
@@ -16,6 +67,7 @@ const STATIC_ASSETS = [
   versionedStaffAsset('/staff/public/styles/staff-shell.css'),
   versionedStaffAsset('/staff/public/sounds/send.mp3'),
   versionedStaffAsset('/staff/public/sounds/incoming.mp3'),
+  ...STAFF_SHELL_SCRIPTS.map(versionedStaffAsset)
 ];
 
 // Real-time API routes - NEVER cache these (always fresh)
@@ -90,8 +142,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // JavaScript files use stable version strings (?v=vXX) for cache busting
-  // Let browser HTTP cache handle them directly (not SW cache)
+  // Serve only this worker's exact immutable shell graph. Old explicit versions
+  // bypass this cache rather than receiving a new-version module under an old URL.
+  if (url.origin === self.location.origin && staffShellScriptPaths.has(url.pathname)) {
+    const requestedVersion = url.searchParams.get('v');
+    if (requestedVersion) rememberClientVersion(event.clientId, requestedVersion);
+    if (requestedVersion && requestedVersion !== STAFF_PWA_VERSION) return;
+    if (!requestedVersion && verifiedClientVersions.get(event.clientId) !== STAFF_PWA_VERSION) return;
+    event.respondWith(cacheStaffShellScript(request, url.pathname));
+    return;
+  }
+
+  // Other scripts remain network-backed; no cross-version ignoreSearch lookup.
   if (url.pathname.endsWith('.js') && url.pathname.includes('/scripts/')) {
     return;
   }
@@ -124,6 +186,11 @@ self.addEventListener('fetch', (event) => {
   // Static assets - cache first, then network
   event.respondWith(cacheFirst(request));
 });
+
+async function cacheStaffShellScript(request, path) {
+  const cached = await (await caches.open(STATIC_CACHE)).match(versionedStaffAsset(path));
+  return cached || fetch(request);
+}
 
 // Cache-first strategy
 async function cacheFirst(request) {

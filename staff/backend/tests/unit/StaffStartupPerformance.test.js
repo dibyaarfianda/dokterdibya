@@ -116,8 +116,27 @@ describe('staff startup performance regressions', () => {
         expect(patientTools).toContain('function enhanceManagePatientTableImmediately(savedPage = 0)');
         expect(patientTools).toContain("document.querySelector('#manage-patients-tbody .btn-view-patient')");
         expect(index).toContain('id="manage-patients-table" class="table table-bordered table-striped table-sm" style="width: 100%;"');
-        expect(bootstrap).toContain('warmPatientManagementAssets');
-        expect(bootstrap).toContain("ensureFeature('patientTools')");
-        expect(bootstrap).toContain("ensureFeature('dataTables')");
+        expect(bootstrap).not.toContain('warmPatientManagementAssets');
+        expect(bootstrap).not.toContain("ensureFeature('dataTables')");
+        expect(bootstrap).toContain("installLazyFeatureShim(globalName, 'patientTools')");
+    });
+
+    test('staff credential module is imported by realtime before initialization without a blocking head script', () => {
+        const html = read('staff', 'public', 'index-adminlte.html');
+        const main = read('staff', 'public', 'scripts', 'main.js');
+        const realtime = read('staff', 'public', 'scripts', 'realtime-sync.js');
+        expect(html).not.toMatch(/<script[^>]+src=["']\/scripts\/socket-credentials\.js/);
+        expect(main).toContain("import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js'");
+        expect(realtime).toContain("import '/scripts/socket-credentials.js'");
+        expect(main.indexOf("import { initRealtimeSync")).toBeLessThan(main.indexOf('function scheduleRealtimeStartup'));
+    });
+
+    test('chat avatar has native lazy decoding and fixed dimensions', () => {
+        const popup = read('staff', 'public', 'scripts', 'chat-popup.js');
+        const avatarMarkup = popup.match(/<div class="chat-avatar" title="[^`]+?<\/div>/)?.[0] || '';
+        expect(avatarMarkup).toContain('loading="lazy"');
+        expect(avatarMarkup).toContain('decoding="async"');
+        expect(avatarMarkup).toContain('width="36"');
+        expect(avatarMarkup).toContain('height="36"');
     });
 });

@@ -20,6 +20,7 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { verifyToken, requireSuperadmin } = require('./middleware/auth');
 const { requestLogger, performanceLogger } = require('./middleware/requestLogger');
 const { metricsMiddleware, getMetrics, resetMetrics } = require('./middleware/metrics');
+const { appTiming } = require('./middleware/serverTiming');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const activityLogger = require('./services/activityLogger');
@@ -126,6 +127,7 @@ app.use(helmet.contentSecurityPolicy({
 
 // Response compression
 app.use(compression());
+app.use(appTiming);
 
 // Performance metrics tracking
 app.use(metricsMiddleware);

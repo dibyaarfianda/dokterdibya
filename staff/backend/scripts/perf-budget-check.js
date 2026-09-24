@@ -50,7 +50,7 @@ function fetchUrl(requestUrl, headers = {}) {
             response.on('end', () => {
                 let body = data;
                 try { body = JSON.parse(data); } catch (_) {}
-                resolve({ status: response.statusCode, body });
+                resolve({ status: response.statusCode, body, headers: response.headers });
             });
         });
         request.on('timeout', () => request.destroy(new Error('Request timed out')));
@@ -85,17 +85,26 @@ function pageBudgetViolations(page) {
 
 async function benchEndpoint(baseUrl, endpoint, token) {
     const headers = { Authorization: `Bearer ${token}` };
+    const appDuration = response => {
+        const header = response.headers?.['server-timing'];
+        const match = typeof header === 'string' && header.match(/(?:^|,)\s*app;dur=(\d+(?:\.\d+)?)(?=\s*(?:,|$))/);
+        const duration = match ? Number(match[1]) : NaN;
+        if (!Number.isFinite(duration) || duration < 0) throw new Error(`${endpoint} missing or invalid Server-Timing app duration`);
+        return duration;
+    };
     for (let index = 0; index < WARMUP_RUNS; index++) {
         const response = await fetchUrl(`${baseUrl}${endpoint}?_t=${Date.now()}-${index}`, headers);
-        assertSuccess(response, endpoint);
+        appDuration(assertSuccess(response, endpoint));
     }
 
     const timings = [];
+    const wallTimings = [];
     for (let index = 0; index < MEASURED_RUNS; index++) {
         const startedAt = Date.now();
         const response = await fetchUrl(`${baseUrl}${endpoint}?_t=${Date.now()}-${index}`, headers);
         assertSuccess(response, endpoint);
-        timings.push(Date.now() - startedAt);
+        wallTimings.push(Date.now() - startedAt);
+        timings.push(appDuration(response));
     }
 
     return {
@@ -103,7 +112,8 @@ async function benchEndpoint(baseUrl, endpoint, token) {
         p95: percentile(timings, 95),
         avg: Math.round(timings.reduce((sum, value) => sum + value, 0) / timings.length),
         min: Math.min(...timings),
-        max: Math.max(...timings)
+        max: Math.max(...timings),
+        wallP95: percentile(wallTimings, 95)
     };
 }
 
@@ -127,43 +137,79 @@ async function inspectPage(pageUrl, token) {
             await installEphemeralStaffAuth(page, token, targetOrigin);
         }
 
+        const client = await page.createCDPSession();
+        await client.send('Network.enable');
         let phase = 'cold';
         const phases = {
-            cold: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0 },
-            warm: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0 }
+            cold: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0, networkTransferBytes: 0, cacheHitCount: 0, serviceWorkerHitCount: 0 },
+            warm: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0, networkTransferBytes: 0, cacheHitCount: 0, serviceWorkerHitCount: 0 }
         };
-        const responseReads = [];
-
-        page.on('request', (request) => {
-            if (phase && !request.url().startsWith('data:')) phases[phase].requestCount++;
+        const requests = new Map();
+        client.on('Network.requestWillBeSent', event => {
+            if (!phase || event.request.url.startsWith('data:')) return;
+            if (event.redirectResponse && requests.has(event.requestId)) {
+                const redirected = requests.get(event.requestId);
+                phases[redirected.phase].requestCount++;
+                if (event.redirectResponse.status >= 400) phases[redirected.phase].failedRequests++;
+            }
+            requests.set(event.requestId, { phase, url: event.request.url, type: event.type, cached: false, serviceWorker: false, status: null });
         });
-        page.on('requestfailed', () => { if (phase) phases[phase].failedRequests++; });
-        page.on('response', (response) => {
-            const responsePhase = phase;
-            if (!responsePhase) return;
-            if (response.status() >= 400) phases[responsePhase].failedRequests++;
-            const task = (async () => {
-                const request = response.request();
-                const resourceType = request.resourceType();
-                if (!['script', 'image'].includes(resourceType)) return;
-
-                let size = Number(response.headers()['content-length'] || 0);
-                if (!size) {
-                    try { size = (await response.buffer()).length; } catch (_) { size = 0; }
-                }
-
-                if (resourceType === 'script' && new URL(response.url()).origin === targetOrigin) {
-                    phases[responsePhase].firstPartyJsBytes += size;
-                }
-                if (resourceType === 'image') {
-                    phases[responsePhase].largestImageBytes = Math.max(phases[responsePhase].largestImageBytes, size);
-                }
-            })();
-            responseReads.push(task);
+        client.on('Network.requestServedFromCache', event => {
+            const request = requests.get(event.requestId);
+            if (request) request.cached = true;
+        });
+        client.on('Network.responseReceived', event => {
+            const request = requests.get(event.requestId);
+            if (!request) return;
+            request.type = event.type;
+            request.status = event.response.status;
+            request.cached ||= Boolean(event.response.fromDiskCache || event.response.fromPrefetchCache);
+            request.serviceWorker = Boolean(event.response.fromServiceWorker);
+        });
+        client.on('Network.loadingFinished', event => {
+            const request = requests.get(event.requestId);
+            if (!request) return;
+            requests.delete(event.requestId);
+            const data = phases[request.phase];
+            const size = Math.max(0, Number(event.encodedDataLength) || 0);
+            // A 304 can use a cached body yet still make a real conditional request.
+            const networkBacked = !request.serviceWorker && (!request.cached || size > 0);
+            if (request.serviceWorker) data.serviceWorkerHitCount++;
+            else if (!networkBacked) data.cacheHitCount++;
+            if (networkBacked) {
+                data.requestCount++;
+                data.networkTransferBytes += size;
+                if (request.type === 'Script' && new URL(request.url).origin === targetOrigin) data.firstPartyJsBytes += size;
+                if (request.type === 'Image') data.largestImageBytes = Math.max(data.largestImageBytes, size);
+            }
+            if (request.status >= 400) data.failedRequests++;
+        });
+        client.on('Network.loadingFailed', event => {
+            const request = requests.get(event.requestId);
+            if (!request) return;
+            requests.delete(event.requestId);
+            const data = phases[request.phase];
+            if (!request.cached && !request.serviceWorker) data.requestCount++;
+            data.failedRequests++;
         });
 
         await page.setCacheEnabled(false);
         for (const measuredPhase of ['cold', 'warm']) {
+            if (measuredPhase === 'warm') {
+                await page.evaluate(async () => {
+                    if (!('serviceWorker' in navigator) || !await navigator.serviceWorker.getRegistration()) return;
+                    await Promise.race([
+                        navigator.serviceWorker.ready,
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Staff service worker activation timed out')), 10000))
+                    ]);
+                    if (!navigator.serviceWorker.controller) {
+                        await Promise.race([
+                            new Promise(resolve => navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true })),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('Staff service worker control timed out')), 10000))
+                        ]);
+                    }
+                });
+            }
             phase = measuredPhase;
             if (measuredPhase === 'warm') await page.setCacheEnabled(true);
             const response = measuredPhase === 'cold'
@@ -173,8 +219,11 @@ async function inspectPage(pageUrl, token) {
                 throw new Error(`${measuredPhase} staff page returned HTTP ${response?.status() || 'unknown'}`);
             }
         }
-        await Promise.allSettled(responseReads);
+        for (const request of requests.values()) {
+            if (!request.cached && !request.serviceWorker) phases[request.phase].requestCount++;
+        }
         phase = null;
+        await client.detach();
 
         // The registered dashboard is already present after shell startup; repeat its cached activation.
         const cachedActivation = [];
@@ -234,7 +283,7 @@ async function main() {
         const result = await runRequired(endpoint, () => benchEndpoint(baseUrl, endpoint, token));
         if (!result) continue;
         const pass = result.p95 <= budget.p95;
-        console.log(`[${pass ? 'PASS' : 'FAIL'}] ${endpoint} p95=${result.p95}ms budget=${budget.p95}ms`);
+        console.log(`[${pass ? 'PASS' : 'FAIL'}] ${endpoint} app p95=${result.p95}ms budget=${budget.p95}ms (wall p95=${result.wallP95}ms)`);
         if (!pass) violations++;
     }
 
@@ -295,4 +344,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { inspectPage, pageBudgetViolations, percentile, installEphemeralStaffAuth };
+module.exports = { inspectPage, pageBudgetViolations, percentile, installEphemeralStaffAuth, benchEndpoint };

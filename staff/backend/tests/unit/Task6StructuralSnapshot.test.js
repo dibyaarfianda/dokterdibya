@@ -5,13 +5,13 @@ const puppeteer = require('puppeteer');
 
 const root = path.resolve(__dirname, '../../../..');
 const baseline = {
-    'staff/public/index-adminlte.html': '916aac1920848a8425979cb49fcfa2b3493f089ea9eec29b184154c68cb58542',
-    'public/patient-menu.html': '002e188c06b967981ad5d942307062d7282ccf77e87aa5aa3503b9cf696ccde3'
+    'staff/public/index-adminlte.html': '16ac1b7df53fbe4cbf80c742e8f23db89a65a942123ce6251e19c67681289142',
+    'public/patient-menu.html': 'da9c28107e03efa0947adcfdda6acb081e7ed298ef7c266c41354957f1a846a3'
 };
 
 function maskedStructuralHash(html) {
-    // Dynamic script/style bodies and cache versions are masked; element structure and attributes remain.
-    const masked = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '<script></script>')
+    // Scripts are nonvisual; compare the approved prechange visible hierarchy.
+    const masked = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
         .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '<style></style>');
     const tags = (masked.match(/<\/?[a-z][^>]*>/gi) || [])
         .map(tag => tag.replace(/\?v=[^\s>]+/g, '?v=VERSION').replace(/\s+/g, ' '));

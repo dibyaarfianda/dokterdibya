@@ -1657,7 +1657,7 @@ import { ROLE_IDS } from './role-constants.js';
                         || (userId ? `${API_ORIGIN}/api/users/${encodeURIComponent(userId)}/photo` : null);
 
           if (photoUrl) {
-            messageHTML += `<div class="chat-avatar" title="${escapeHtml(userName || '')}"><img src="${photoUrl}" alt="${escapeHtml(userName || '')}" onerror="this.parentElement.innerHTML='${getInitials(userName || '')}';this.parentElement.style.background='${avatarBg}'"></div>`;
+            messageHTML += `<div class="chat-avatar" title="${escapeHtml(userName || '')}"><img src="${photoUrl}" alt="${escapeHtml(userName || '')}" loading="lazy" decoding="async" width="36" height="36" onerror="this.parentElement.innerHTML='${getInitials(userName || '')}';this.parentElement.style.background='${avatarBg}'"></div>`;
           } else {
             const initials = getInitials(userName || '');
             messageHTML += `<div class="chat-avatar" style="background: ${avatarBg}" title="${escapeHtml(userName || '')}">${initials}</div>`;
