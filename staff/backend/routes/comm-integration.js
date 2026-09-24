@@ -6,10 +6,24 @@ const apiKeyAuth = require('../middleware/apiKeyAuth');
 const commOperationSync = require('../services/CommOperationSyncService');
 const CommScheduleIntentService = require('../services/CommScheduleIntentService');
 const commScheduleIntent = new CommScheduleIntentService();
+const commAssessmentResolver = require('../services/CommAssessmentResolver');
 
 // All routes require API key authentication
 router.use(apiKeyAuth);
 router.use(require('./clinic-monitor').createRouter());
+
+router.post('/assessments/resolve', async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+        const data = await commAssessmentResolver.resolve(req.body);
+        return res.json({ success: true, data });
+    } catch (error) {
+        const known = error instanceof commAssessmentResolver.ResolutionError;
+        if (!known) logger.error('COMM assessment resolution failed', { code: 'RESOLUTION_FAILED' });
+        return res.status(known ? error.statusCode : 500).json({ success: false,
+            code: known ? error.code : 'RESOLUTION_FAILED' });
+    }
+});
 
 /**
  * GET /patients/search?q=&limit=10

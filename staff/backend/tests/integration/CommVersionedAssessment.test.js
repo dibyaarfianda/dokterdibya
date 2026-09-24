@@ -9,7 +9,12 @@ jest.mock('../../services/MedicalRecordService', () => ({
 jest.mock('../../services/CommOperationSyncService', () => ({}));
 jest.mock('../../services/CommScheduleIntentService', () => jest.fn().mockImplementation(() => ({})));
 jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn() }));
+jest.mock('../../services/CommAssessmentResolver', () => ({
+    resolve: jest.fn(), ResolutionError: class ResolutionError extends Error { constructor(statusCode, code) { super(code); this.statusCode = statusCode; this.code = code; } }
+}));
 const medicalRecordService = require('../../services/MedicalRecordService');
+const resolver = require('../../services/CommAssessmentResolver');
+const logger = require('../../utils/logger');
 const app = express();
 app.use(express.json());
 app.use(require('../../routes/comm-integration'));
@@ -36,4 +41,24 @@ test('COMM canonical create uses server integration actor and returns service ve
         patientId: 'fixture-a', mrId: 'TEST001', recordType: 'penunjang',
         actor: { id: 'comm-integration' }
     }));
+});
+
+test('resolver is API-key protected, no-store and returns only canonical scope', async () => {
+    resolver.resolve.mockResolvedValue({ patientId: 'P1', mrId: 'DRD123', anamnesa: null });
+    const body = { facility: 'melinda', no_rm: 'HOSP-1', nik: '1234567890123456' };
+    expect((await request(app).post('/assessments/resolve').send(body)).status).toBe(401);
+    const response = await request(app).post('/assessments/resolve').set('X-API-Key', 'fixture-key').send(body);
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body.data).toEqual({ patientId: 'P1', mrId: 'DRD123', anamnesa: null });
+    expect(JSON.stringify(response.body)).not.toContain('HOSP-1');
+});
+
+test('resolver ambiguity returns identifier-free status and logs', async () => {
+    resolver.resolve.mockRejectedValue(new resolver.ResolutionError(409, 'VISIT_AMBIGUOUS'));
+    const response = await request(app).post('/assessments/resolve').set('X-API-Key', 'fixture-key')
+        .send({ facility: 'melinda', no_rm: 'HOSP-1', nik: '1234567890123456' });
+    expect(response.status).toBe(409);
+    expect(response.body).toEqual({ success: false, code: 'VISIT_AMBIGUOUS' });
+    expect(logger.error).not.toHaveBeenCalled();
 });
