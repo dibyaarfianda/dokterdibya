@@ -413,6 +413,7 @@ function executeLoadedScripts(doc, baseUrl) {
 }
 let staffNavigationGeneration = 0;
 function reserveStaffNavigation() {
+    window.staffPageRegistry?.cancelPendingActivation?.();
     return ++staffNavigationGeneration;
 }
 function isCurrentStaffNavigation(generation) {
@@ -515,11 +516,7 @@ function setTitleAndActive(title, navId, mobileAction) {
         // Save last visited page so refresh/back restores it
         try { sessionStorage.setItem('lastStaffNavId', navId); } catch(e) {}
     }
-    if (mobileAction) {
-        dispatchStaffPageChanged(mobileAction);
-    } else {
-        window.__currentPage = title || 'unknown';
-    }
+    dispatchStaffPageChanged(mobileAction || navId || title || 'unknown');
     // Log page navigation for audit
     logActivity('Page View', `Viewed ${title}`);
 }
@@ -528,6 +525,9 @@ function dispatchStaffPageChanged(page) {
     if (!page) return;
     const previousPage = window.__currentPage || null;
     window.__currentPage = page;
+    const registry = window.staffPageRegistry;
+    if (registry?.activeKey === page) return;
+    if (registry?.navigateExternal) return registry.navigateExternal(page);
     document.dispatchEvent(new CustomEvent('page:changed', {
         detail: { page, previousPage }
     }));
@@ -574,8 +574,7 @@ async function activateRegisteredStaffPage(key) {
     initPages();
     if (!hideAllPages(navGen)) return null;
     container.classList.remove('d-none');
-    setTitleAndActive(descriptor.title, descriptor.navId, null);
-    window.__currentPage = key;
+    setTitleAndActive(descriptor.title, descriptor.navId, key);
     if (wasCached) window.__rum?.trackCachedActivation?.(performance.now() - startedAt);
     return container;
 }
@@ -1837,8 +1836,7 @@ async function showPatientPage() {
     initPages();
     if (!hideAllPages(navGen)) return;
     pages.patient?.classList.remove('d-none');
-    setTitleAndActive('Data Pasien', 'nav-patient', null);
-    window.__currentPage = 'patients';
+    setTitleAndActive('Data Pasien', 'nav-patient', 'patients');
 }
 async function showRecordHistoryPage() {
     const navGen = reserveStaffNavigation();
@@ -1848,8 +1846,7 @@ async function showRecordHistoryPage() {
     initPages();
     if (!hideAllPages(navGen)) return;
     pages.patient?.classList.remove('d-none');
-    setTitleAndActive('Rekam / Riwayat', 'nav-record-history', null);
-    window.__currentPage = 'patients';
+    setTitleAndActive('Rekam / Riwayat', 'nav-record-history', 'patients');
 }
 // Make function globally accessible for onclick handlers
 window.showPatientPage = showPatientPage;

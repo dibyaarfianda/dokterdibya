@@ -68,7 +68,9 @@ describe('staff panel wave 1 hardening contracts', () => {
         expect(clientRum).toContain('function scrubErrorText(value)');
         expect(clientRum).toContain('function stableHash(value)');
         expect(clientRum).toContain("trackError(event.reason, 'unhandled_rejection')");
-        expect(serverRum).toContain('function sanitizeClientErrorText(value)');
+        // Server owns the coarse bucket; client-supplied prose/fingerprint is never retained.
+        expect(serverRum).toContain("message: 'Client error'");
+        expect(serverRum).toContain('const fingerprint = type;');
         expect(serverRum).toContain('const clientErrorStore = {};');
         expect(serverRum).toContain('const MAX_ERRORS = 20;');
         expect(serverRum).toContain('body.errors.slice(0, MAX_ERRORS)');

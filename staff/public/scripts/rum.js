@@ -14,6 +14,23 @@
   var BEACON_INTERVAL = 30000;
   var API_BUFFER_SIZE = 50;
   var ERROR_BUFFER_SIZE = 20;
+  // Navigation keys are fixed by application code. Never beacon display names.
+  var knownPageKeys = new Set([
+    'dashboard', 'patients', 'sunday-clinic', 'anamnesa', 'usg', 'kelola-roles',
+    'template-resep', 'estimasi-biaya', 'finance-analysis', 'profile-settings',
+    'kelola-obat', 'activity-log', 'staff-activity', 'patient-activity',
+    'support-chat', 'troubleshooting', 'staff-points', 'staff-briefing',
+    'staff-payroll', 'tanya-dokter', 'birth-congrats', 'birth-testimonials',
+    'invoice-history', 'artikel-kesehatan', 'ruang-cerita', 'community-chat',
+    'klinik-private', 'antrian-online', 'hospital-appointments',
+    'hospital-patients', 'tindakan', 'obat', 'cashier', 'perhatian-khusus',
+    'physical', 'lab', 'stok', 'pengaturan', 'kelolaObat', 'logs', 'appointments',
+    'analytics', 'finance', 'kelola-pasien', 'kelola-appointment', 'kelola-jadwal',
+    'docboard', 'kelola-tindakan', 'kelola-pengumuman', 'voting',
+    'penjualan-obat', 'bulk-upload-usg', 'medify-sync', 'patient-block-list',
+    'booking-settings', 'birth-class', 'import-fields', 'profile', 'kantor-saya'
+  ]);
+  var knownErrorTypes = new Set(['window_error', 'unhandled_rejection', 'handled_error', 'error']);
 
   // --- Web Vitals via PerformanceObserver ---
 
@@ -144,12 +161,8 @@
   // --- Sanitized client error tracking ---
 
   function scrubErrorText(value) {
-    return String(value || 'Unknown client error')
-      .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]')
-      .replace(/https?:\/\/[^\s)]+/g, '[url]')
-      .replace(/\b(?:DRD|P)\d{4,}\b/gi, '[record]')
-      .replace(/\b\d{6,}\b/g, '[number]')
-      .slice(0, 180);
+    // Error prose may contain names or clinical context that regexes cannot catch.
+    return 'Client error';
   }
 
   function stableHash(value) {
@@ -163,18 +176,11 @@
   }
 
   function trackError(error, type) {
-    var source = error && typeof error === 'object' ? error : { message: error };
-    var message = scrubErrorText(source.message || source.reason || source);
-    var stackShape = String(source.stack || '')
-      .split('\n')
-      .slice(0, 4)
-      .join('\n')
-      .replace(/:\d+:\d+/g, ':#:#')
-      .replace(/https?:\/\/[^\s)]+/g, '[url]');
+    var safeType = knownErrorTypes.has(type) ? type : 'error';
     clientErrors.push({
-      type: String(type || source.name || 'error').slice(0, 40),
-      message: message,
-      fingerprint: stableHash((source.name || type || 'error') + '|' + message + '|' + stackShape),
+      type: safeType,
+      message: scrubErrorText(error),
+      fingerprint: stableHash(safeType),
       ts: Date.now()
     });
     if (clientErrors.length > ERROR_BUFFER_SIZE) clientErrors.shift();
@@ -193,8 +199,8 @@
 
   function buildPayload() {
     return {
-      page: window.__currentPage || 'unknown',
-      role: window.__userRole || 'unknown',
+      page: knownPageKeys.has(window.__currentPage) ? window.__currentPage : 'other',
+      role: 'staff',
       ts: Date.now(),
       metrics: Object.assign({}, metrics),
       apiCalls: apiCalls.splice(0),

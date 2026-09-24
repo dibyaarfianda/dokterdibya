@@ -33,6 +33,24 @@ const ALLOWED_METRICS = new Set([
     'cachedActivation'
 ]);
 const METRIC_ALIASES = Object.freeze({ lcp: 'LCP', inp: 'INP', cls: 'CLS' });
+// These are code-owned navigation keys, never patient- or user-supplied labels.
+const KNOWN_PAGE_KEYS = new Set([
+    'dashboard', 'patients', 'sunday-clinic', 'anamnesa', 'usg', 'kelola-roles',
+    'template-resep', 'estimasi-biaya', 'finance-analysis', 'profile-settings',
+    'kelola-obat', 'activity-log', 'staff-activity', 'patient-activity',
+    'support-chat', 'troubleshooting', 'staff-points', 'staff-briefing',
+    'staff-payroll', 'tanya-dokter', 'birth-congrats', 'birth-testimonials',
+    'invoice-history', 'artikel-kesehatan', 'ruang-cerita', 'community-chat',
+    'klinik-private', 'antrian-online', 'hospital-appointments',
+    'hospital-patients', 'tindakan', 'obat', 'cashier', 'perhatian-khusus',
+    'physical', 'lab', 'stok', 'pengaturan', 'kelolaObat', 'logs', 'appointments',
+    'analytics', 'finance', 'kelola-pasien', 'kelola-appointment', 'kelola-jadwal',
+    'docboard', 'kelola-tindakan', 'kelola-pengumuman', 'voting',
+    'penjualan-obat', 'bulk-upload-usg', 'medify-sync',
+    'patient-block-list', 'booking-settings', 'birth-class', 'import-fields',
+    'profile', 'kantor-saya'
+]);
+const KNOWN_ERROR_TYPES = new Set(['window_error', 'unhandled_rejection', 'handled_error', 'error']);
 const metricStore = {};
 const clientErrorStore = {};
 
@@ -89,26 +107,15 @@ function normalizeApiPath(endpoint) {
     }
 }
 
-function sanitizeClientErrorText(value) {
-    return String(value || 'Unknown client error')
-        .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, '[email]')
-        .replace(/https?:\/\/[^\s)]+/g, '[url]')
-        .replace(/\b(?:DRD|P)\d{4,}\b/gi, '[record]')
-        .replace(/\b\d{6,}\b/g, '[number]')
-        .slice(0, 180);
-}
-
 function recordClientError(raw, page) {
     if (!raw || typeof raw !== 'object') return false;
-    const fingerprint = /^[a-z0-9_-]{1,64}$/i.test(String(raw.fingerprint || ''))
-        ? String(raw.fingerprint)
-        : 'unknown';
-    const type = String(raw.type || 'error').replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'error';
+    const type = KNOWN_ERROR_TYPES.has(raw.type) ? raw.type : 'error';
+    const fingerprint = type;
     const key = `${type}:${fingerprint}`;
     const existing = clientErrorStore[key] || {
         type,
         fingerprint,
-        message: sanitizeClientErrorText(raw.message),
+        message: 'Client error',
         count: 0,
         pages: {},
         lastSeen: null
@@ -215,9 +222,7 @@ function getCacheStats() {
  */
 router.post('/', (req, res) => {
     const body = req.body || {};
-    const page = typeof body.page === 'string'
-        ? body.page.replace(/[^a-z0-9/_-]/gi, '').slice(0, 50) || null
-        : null;
+    const page = KNOWN_PAGE_KEYS.has(body.page) ? body.page : 'other';
     let accepted = 0;
 
     // Record web vitals & page load metrics

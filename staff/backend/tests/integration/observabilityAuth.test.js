@@ -103,6 +103,30 @@ describe('observability authorization integration', () => {
         expect(Object.keys(api)).toEqual(expect.arrayContaining(['/other', '/api/patients', '/api/notifications']));
     });
 
+    test('RUM stores only allowlisted page keys and coarse errors, never free clinical text', async () => {
+        const sentinel = 'Synthetic Patient Name';
+        const ingested = await request(app).post('/api/rum').send({
+            page: sentinel,
+            metrics: { LCP: 456 },
+            errors: [{ type: 'window_error', fingerprint: 'SyntheticPatientName',
+                message: `Unable to save ${sentinel} DRD778899 with email synthetic@example.test and clinical prose` }]
+        });
+        expect(ingested.status).toBe(200);
+        expect(ingested.body.accepted).toBe(2);
+        await request(app).post('/api/rum').send({ page: 'dashboard', metrics: { LCP: 123 } });
+        const summary = await request(app).get('/api/rum/summary')
+            .set('Authorization', 'Bearer valid-staff-token').set('X-Test-Role', 'dokter');
+        const serialized = JSON.stringify(summary.body);
+        for (const privateText of [sentinel, 'SyntheticPatientName', 'DRD778899', 'synthetic@example.test', 'clinical prose']) {
+            expect(serialized).not.toContain(privateText);
+        }
+        expect(summary.body.data.webVitals.LCP.byPage.other).toMatchObject({ p95: 456 });
+        expect(summary.body.data.webVitals.LCP.byPage.dashboard).toBeTruthy();
+        expect(summary.body.data.clientErrors.find(item => item.type === 'window_error')).toMatchObject({
+            fingerprint: 'window_error', message: 'Client error'
+        });
+    });
+
     test('RUM summary rejects anonymous and non-superadmin requests', async () => {
         const anonymous = await request(app).get('/api/rum/summary');
         const staff = await request(app)
@@ -121,11 +145,9 @@ describe('observability authorization integration', () => {
 
         expect(response.status).toBe(200);
         expect(response.body).toMatchObject({ success: true });
-        const recorded = response.body.data.clientErrors.find(item => item.fingerprint === 'test-fingerprint');
-        expect(recorded).toMatchObject({ type: 'window_error', count: 1 });
-        expect(recorded.message).toContain('[email]');
-        expect(recorded.message).toContain('[record]');
-        expect(recorded.message).toContain('[url]');
-        expect(recorded.message).not.toContain('patient@example.com');
+        const recorded = response.body.data.clientErrors.find(item => item.fingerprint === 'window_error');
+        expect(recorded).toMatchObject({ type: 'window_error', message: 'Client error' });
+        expect(recorded.count).toBeGreaterThanOrEqual(1);
+        expect(JSON.stringify(response.body)).not.toContain('patient@example.com');
     });
 });

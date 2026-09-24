@@ -5,6 +5,7 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '../../../..');
 const main = fs.readFileSync(path.join(root, 'staff/public/scripts/main.js'), 'utf8');
 const { PageRegistry } = require(path.join(root, 'staff/public/scripts/shell/page-registry.js'));
+const { PollingCoordinator } = require(path.join(root, 'staff/public/scripts/shell/polling-coordinator.js'));
 
 function extract(start, end) {
     const from = main.indexOf(start);
@@ -85,6 +86,57 @@ test('a synchronous menu click supersedes an in-flight patient fragment', async 
     expect(state).toEqual({ title: 'Finance Analysis', nav: 'nav-finance' });
     expect(window.__currentPage).toBe('finance');
     expect(pages.finance.classList.contains('d-none')).toBe(false);
+});
+
+test('Finance supersedes registry and polling state before a slow Patients activation resolves', async () => {
+    const slow = deferred();
+    const events = [];
+    const listeners = new Map();
+    const classList = () => {
+        const values = new Set(['d-none']);
+        return { add: name => values.add(name), remove: name => values.delete(name), contains: name => values.has(name) };
+    };
+    const title = { textContent: '' };
+    const patient = { dataset: {}, classList: classList() };
+    const finance = { classList: classList() };
+    const nav = { classList: classList(), closest: () => null };
+    const document = {
+        visibilityState: 'visible', documentElement: { classList: classList() }, body: { classList: classList() },
+        getElementById: id => ({ 'patient-page': patient, 'page-title': title })[id] || null,
+        querySelectorAll: () => [], querySelector: () => nav,
+        addEventListener: (name, handler) => listeners.set(name, handler),
+        removeEventListener: name => listeners.delete(name),
+        dispatchEvent: event => { events.push(event); listeners.get(event.type)?.(event); }
+    };
+    const registry = new PageRegistry({ document, eventTarget: document });
+    registry.register({ key: 'patients', containerId: 'patient-page', load: () => slow.promise });
+    const coordinator = new PollingCoordinator({ eventTarget: document, visibilityTarget: document,
+        setTimeout: () => 1, clearTimeout() {} });
+    coordinator.register('patients-job', { page: 'patients', run: async () => {} });
+    coordinator.register('finance-job', { page: 'finance', run: async () => {} });
+    const window = { staffPageRegistry: registry, __currentPage: null };
+    const context = vm.createContext({ window, document, pages: { patient, finance }, initPages() {},
+        setSundayClinicStylesActive() {}, sessionStorage: { setItem() {} }, logActivity() {},
+        CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } } });
+    vm.runInContext([
+        extract('let staffNavigationGeneration = 0;', '\nlet communityChatViewportSyncBound'),
+        extract('function setTitleAndActive(title, navId, mobileAction) {', '\n// Activity logging function'),
+        extract('async function showPatientPage() {', '\n// Make function globally accessible'),
+        extract('function showFinancePage() {', '\nfunction showKelolaPasienPage()')
+    ].join('\n'), context);
+    const older = context.showPatientPage();
+    context.showFinancePage();
+    slow.resolve();
+    await older;
+    expect(title.textContent).toBe('Finance Analysis');
+    expect(finance.classList.contains('d-none')).toBe(false);
+    expect(patient.classList.contains('d-none')).toBe(true);
+    expect(registry.activeKey).toBe('finance');
+    expect(events.filter(event => event.type === 'page:changed').map(event => event.detail.page)).toEqual(['finance']);
+    expect(coordinator.activePage).toBe('finance');
+    expect(coordinator.isEligible(coordinator.jobs.get('finance-job'))).toBe(true);
+    expect(coordinator.isEligible(coordinator.jobs.get('patients-job'))).toBe(false);
+    coordinator.destroy();
 });
 
 test.each([

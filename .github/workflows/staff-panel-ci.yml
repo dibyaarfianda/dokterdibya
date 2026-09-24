@@ -5,10 +5,12 @@ on:
     branches: [main]
     paths:
       - "staff/**"
+      - "public/**"
       - ".github/workflows/staff-panel-ci.yml"
   pull_request:
     paths:
       - "staff/**"
+      - "public/**"
       - ".github/workflows/staff-panel-ci.yml"
 
 permissions:

@@ -40,6 +40,21 @@
             return descriptor ? this.document?.getElementById(descriptor.containerId) : null;
         }
 
+        cancelPendingActivation() {
+            ++this.activationGeneration;
+        }
+
+        navigateExternal(page) {
+            const previousPage = this.activeKey;
+            ++this.activationGeneration;
+            this.activeKey = page;
+            const detail = { page, previousPage };
+            const EventCtor = global.CustomEvent;
+            const event = typeof EventCtor === 'function'
+                ? new EventCtor('page:changed', { detail }) : { type: 'page:changed', detail };
+            this.eventTarget?.dispatchEvent?.(event);
+        }
+
         async ensureLoaded(key) {
             const descriptor = this.get(key);
             if (!descriptor) throw new Error(`Unknown page: ${key}`);
