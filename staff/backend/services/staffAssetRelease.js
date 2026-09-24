@@ -106,16 +106,68 @@ function pidIsLive(pid) {
     catch (error) { return error.code !== 'ESRCH'; }
 }
 
-async function recoverStaleLock({ lockPath, recoveryPath, releaseBase, version, finalDir, now, protectedRoots }) {
-    let guard;
-    try { guard = await fs.promises.open(recoveryPath, 'wx'); }
-    catch (error) {
-        if (error.code === 'EEXIST') throw new Error('Staff release recovery lock exists');
-        throw error;
+function sameFileIdentity(left, right) {
+    return left && right && right.isFile() && !right.isSymbolicLink() &&
+        left.dev === right.dev && left.ino === right.ino;
+}
+
+async function unlinkOwnedGuard(recoveryPath, identity, bytes = null) {
+    const current = await optionalLstat(recoveryPath);
+    if (!sameFileIdentity(identity, current)) return false;
+    if (bytes !== null && await fs.promises.readFile(recoveryPath, 'utf8') !== bytes) return false;
+    if (!sameFileIdentity(identity, await optionalLstat(recoveryPath))) return false;
+    await fs.promises.unlink(recoveryPath);
+    return true;
+}
+
+async function acquireRecoveryGuard({ recoveryPath, version, now }) {
+    const ownBytes = `${JSON.stringify({ pid: process.pid, startedAt: now(), version, invocationId: randomUUID() })}\n`;
+    for (let attempt = 0; attempt < 2; attempt++) {
+        let handle;
+        try { handle = await fs.promises.open(recoveryPath, 'wx'); }
+        catch (error) {
+            if (error.code !== 'EEXIST') throw error;
+            if (attempt) throw new Error('Staff release recovery lock exists');
+            const staleIdentity = await optionalLstat(recoveryPath);
+            if (!staleIdentity || !staleIdentity.isFile() || staleIdentity.isSymbolicLink()) {
+                throw new Error('Unsafe Staff release recovery lock');
+            }
+            let staleBytes;
+            try { staleBytes = await fs.promises.readFile(recoveryPath, 'utf8'); }
+            catch (_) { throw new Error('Invalid Staff release recovery lock'); }
+            let stale = null;
+            try { stale = JSON.parse(staleBytes); }
+            catch (_) { /* An expired partial write can be reclaimed by file age. */ }
+            if (stale) {
+                if (stale.version !== version || typeof stale.invocationId !== 'string' || !stale.invocationId ||
+                    !Number.isFinite(stale.startedAt) || now() - stale.startedAt <= STALE_LOCK_MS || pidIsLive(stale.pid)) {
+                    throw new Error('Staff release recovery lock is live or invalid');
+                }
+            } else if (now() - staleIdentity.mtimeMs <= STALE_LOCK_MS) {
+                throw new Error('Staff release recovery lock is live or invalid');
+            }
+            if (!await unlinkOwnedGuard(recoveryPath, staleIdentity, staleBytes)) {
+                throw new Error('Staff release recovery lock changed');
+            }
+            continue;
+        }
+        let identity;
+        try {
+            identity = await handle.stat();
+            await handle.writeFile(ownBytes);
+            return { handle, identity, bytes: ownBytes };
+        } catch (error) {
+            await handle.close();
+            if (identity) await unlinkOwnedGuard(recoveryPath, identity);
+            throw error;
+        }
     }
-    let guardStat;
+    throw new Error('Staff release recovery lock exists');
+}
+
+async function recoverStaleLock({ lockPath, recoveryPath, releaseBase, version, finalDir, now, protectedRoots }) {
+    const guard = await acquireRecoveryGuard({ recoveryPath, version, now });
     try {
-        guardStat = await guard.stat();
         const stat = await optionalLstat(lockPath);
         if (!stat || !stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe Staff release publication lock');
         let oldBytes;
@@ -143,12 +195,8 @@ async function recoverStaleLock({ lockPath, recoveryPath, releaseBase, version, 
         if (await fs.promises.readFile(lockPath, 'utf8') !== oldBytes) throw new Error('Staff release publication lock changed');
         await fs.promises.unlink(lockPath);
     } finally {
-        await guard.close();
-        const currentGuard = await optionalLstat(recoveryPath);
-        if (guardStat && currentGuard && currentGuard.isFile() && !currentGuard.isSymbolicLink() &&
-            currentGuard.dev === guardStat.dev && currentGuard.ino === guardStat.ino) {
-            await fs.promises.unlink(recoveryPath);
-        }
+        await guard.handle.close();
+        await unlinkOwnedGuard(recoveryPath, guard.identity, guard.bytes);
     }
 }
 

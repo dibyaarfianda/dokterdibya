@@ -67,6 +67,7 @@ test.each(['', 'abc', 'g'.repeat(40)])('rejects invalid source commit %s', async
 const input = () => ({ repositoryRoot: repo, releaseBase, version: 'v413', sourceCommit });
 const finalDir = () => path.join(releaseBase, 'v413');
 const lockFile = () => path.join(releaseBase, '.v413.publish.lock');
+const recoveryFile = () => path.join(releaseBase, '.v413.recover.lock');
 
 async function hashTree(directory) {
     const names = [];
@@ -143,6 +144,122 @@ test('an old contained lock can be recovered with injected time', async () => {
     const result = await stageStaffAssetRelease({ ...input(), now: () => 1000 + 600001 });
     expect(result.status).toBe('published');
     await expect(fs.promises.access(path.join(releaseBase, '.v413.tmp-old'))).rejects.toMatchObject({ code: 'ENOENT' });
+});
+
+test('a dead expired recovery guard is reclaimed and publication proceeds', async () => {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    await fs.promises.writeFile(recoveryFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', invocationId: 'dead-guard' }));
+    const result = await stageStaffAssetRelease({ ...input(), now: () => 601001 });
+    expect(result.status).toBe('published');
+    await expect(fs.promises.access(recoveryFile())).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(await fs.promises.access(finalDir())).toBeUndefined();
+});
+
+test('a live recovery guard fails closed and remains untouched', async () => {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    const liveBytes = JSON.stringify({ pid: process.pid, startedAt: 1000, version: 'v413', invocationId: 'live-guard' });
+    await fs.promises.writeFile(recoveryFile(), liveBytes);
+    await expect(stageStaffAssetRelease({ ...input(), now: () => 601001 })).rejects.toThrow(/recovery lock/i);
+    expect(await fs.promises.readFile(recoveryFile(), 'utf8')).toBe(liveBytes);
+    expect(await fs.promises.readFile(lockFile(), 'utf8')).toContain('tmp-old');
+});
+
+test('an expired empty recovery guard from a crash is reclaimed', async () => {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    await fs.promises.writeFile(recoveryFile(), '');
+    await fs.promises.utimes(recoveryFile(), new Date(1000), new Date(1000));
+    const result = await stageStaffAssetRelease({ ...input(), now: () => 601001 });
+    expect(result.status).toBe('published');
+    await expect(fs.promises.access(recoveryFile())).rejects.toMatchObject({ code: 'ENOENT' });
+});
+
+test('a fresh empty recovery guard is retained while its owner may be writing', async () => {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    await fs.promises.writeFile(recoveryFile(), '');
+    await fs.promises.utimes(recoveryFile(), new Date(601000), new Date(601000));
+    await expect(stageStaffAssetRelease({ ...input(), now: () => 601001 })).rejects.toThrow(/recovery lock/i);
+    expect(await fs.promises.readFile(recoveryFile(), 'utf8')).toBe('');
+});
+
+test('failed recovery-guard record write removes only its opened guard', async () => {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    const realOpen = fs.promises.open;
+    const spy = jest.spyOn(fs.promises, 'open').mockImplementation(async (target, ...args) => {
+        const handle = await realOpen(target, ...args);
+        if (target !== recoveryFile()) return handle;
+        return { stat: () => handle.stat(), writeFile: async () => { throw new Error('simulated guard write failure'); }, close: () => handle.close() };
+    });
+    try { await expect(stageStaffAssetRelease({ ...input(), now: () => 601001 })).rejects.toThrow(/simulated guard write failure/); }
+    finally { spy.mockRestore(); }
+    await expect(fs.promises.access(recoveryFile())).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(await fs.promises.readFile(lockFile(), 'utf8')).toContain('tmp-old');
+});
+
+test('an outdated guard contender cannot unlink a replacement recovery guard', async () => {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    await fs.promises.writeFile(recoveryFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', invocationId: 'dead-guard' }));
+    let releaseGuardRead;
+    let reachedGuardRead;
+    const guardReadPaused = new Promise(resolve => { reachedGuardRead = resolve; });
+    const guardReadGate = new Promise(resolve => { releaseGuardRead = resolve; });
+    let releasePublishUnlink;
+    let reachedPublishUnlink;
+    const publishUnlinkPaused = new Promise(resolve => { reachedPublishUnlink = resolve; });
+    const publishUnlinkGate = new Promise(resolve => { releasePublishUnlink = resolve; });
+    const realRead = fs.promises.readFile;
+    const realUnlink = fs.promises.unlink;
+    let pausedRead = false;
+    let pausedUnlink = false;
+    const readSpy = jest.spyOn(fs.promises, 'readFile').mockImplementation(async (...args) => {
+        const bytes = await realRead(...args);
+        if (args[0] === recoveryFile() && !pausedRead) {
+            pausedRead = true;
+            reachedGuardRead();
+            await guardReadGate;
+        }
+        return bytes;
+    });
+    const unlinkSpy = jest.spyOn(fs.promises, 'unlink').mockImplementation(async target => {
+        if (target === lockFile() && !pausedUnlink) {
+            pausedUnlink = true;
+            reachedPublishUnlink();
+            await publishUnlinkGate;
+        }
+        return realUnlink(target);
+    });
+    const staleInput = { ...input(), now: () => 601001 };
+    const first = stageStaffAssetRelease(staleInput);
+    let second;
+    let observed;
+    let replacementSurvived = false;
+    try {
+        observed = await Promise.race([guardReadPaused.then(() => 'paused'), first.then(() => 'resolved', () => 'rejected')]);
+        if (observed === 'paused') {
+            second = stageStaffAssetRelease(staleInput);
+            await publishUnlinkPaused;
+            const replacement = await fs.promises.readFile(recoveryFile(), 'utf8');
+            releaseGuardRead();
+            const firstResult = await first.then(() => 'resolved', () => 'rejected');
+            replacementSurvived = firstResult === 'rejected' && await fs.promises.readFile(recoveryFile(), 'utf8') === replacement;
+        }
+    } finally {
+        releaseGuardRead();
+        releasePublishUnlink();
+        await Promise.allSettled([first, second].filter(Boolean));
+        readSpy.mockRestore();
+        unlinkSpy.mockRestore();
+    }
+    expect(observed).toBe('paused');
+    expect(replacementSurvived).toBe(true);
+    expect(await fs.promises.access(finalDir())).toBeUndefined();
 });
 
 test('a concurrent stale recovery cannot remove the next publisher lock', async () => {
