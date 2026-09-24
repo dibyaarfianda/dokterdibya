@@ -68,6 +68,7 @@ const input = () => ({ repositoryRoot: repo, releaseBase, version: 'v413', sourc
 const finalDir = () => path.join(releaseBase, 'v413');
 const lockFile = () => path.join(releaseBase, '.v413.publish.lock');
 const recoveryClaims = async () => (await fs.promises.readdir(releaseBase)).filter(name => /^\.v413\.recover-[0-9a-f-]{36}\.claim$/.test(name));
+const recoveryTemps = async () => (await fs.promises.readdir(releaseBase)).filter(name => /^\.v413\.recover-[0-9a-f-]{36}\.tmp$/.test(name));
 async function stalePublication() {
     await fs.promises.mkdir(releaseBase);
     await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
@@ -156,7 +157,7 @@ test('simultaneous unique recovery claims elect only one publisher', async () =>
     const realOpen = fs.promises.open;
     const openedClaims = [];
     const spy = jest.spyOn(fs.promises, 'open').mockImplementation(async (target, ...args) => {
-        if (String(target).endsWith('.claim')) openedClaims.push(path.basename(target));
+        if (/\.recover-[0-9a-f-]{36}\.tmp$/.test(String(target))) openedClaims.push(path.basename(target));
         return realOpen(target, ...args);
     });
     let results;
@@ -168,6 +169,170 @@ test('simultaneous unique recovery claims elect only one publisher', async () =>
     expect(results.filter(item => item.status === 'rejected')).toHaveLength(1);
     expect(await recoveryClaims()).toEqual([]);
     expect(await fs.promises.access(finalDir())).toBeUndefined();
+});
+
+test('a pending temp claim blocks another recoverer without exposing an incomplete final claim', async () => {
+    await stalePublication();
+    const realRename = fs.promises.rename;
+    let releaseRename;
+    let reachedRename;
+    const paused = new Promise(resolve => { reachedRename = resolve; });
+    const gate = new Promise(resolve => { releaseRename = resolve; });
+    let blocked = false;
+    const spy = jest.spyOn(fs.promises, 'rename').mockImplementation(async (from, to) => {
+        if (!blocked && String(from).endsWith('.tmp') && String(to).endsWith('.claim')) {
+            blocked = true;
+            reachedRename();
+            await gate;
+        }
+        return realRename(from, to);
+    });
+    const first = stageStaffAssetRelease({ ...input(), now: () => Date.now() });
+    const firstOutcome = first.then(value => ({ status: 'fulfilled', value }), error => ({ status: 'rejected', error }));
+    let result;
+    let later;
+    try {
+        expect(await Promise.race([paused.then(() => 'paused'), firstOutcome.then(() => 'completed')])).toBe('paused');
+        expect(await recoveryClaims()).toEqual([]);
+        expect(await recoveryTemps()).toHaveLength(1);
+        result = await stageStaffAssetRelease({ ...input(), now: () => Date.now() }).then(() => 'resolved', () => 'rejected');
+        expect(await recoveryClaims()).toEqual([]);
+        expect(await recoveryTemps()).toHaveLength(1);
+        const [temp] = await recoveryTemps();
+        await fs.promises.utimes(path.join(releaseBase, temp), new Date(1000), new Date(1000));
+        later = await stageStaffAssetRelease({ ...input(), now: () => Date.now() });
+    } finally {
+        releaseRename();
+        await firstOutcome;
+        spy.mockRestore();
+    }
+    expect(result).toBe('rejected');
+    expect(later.status).toBe('published');
+    expect((await firstOutcome).status).toBe('rejected');
+});
+
+test('pruning an expired unique temp makes its paused owner fail closed', async () => {
+    await stalePublication();
+    const realRename = fs.promises.rename;
+    let releaseRename;
+    let reachedRename;
+    const paused = new Promise(resolve => { reachedRename = resolve; });
+    const gate = new Promise(resolve => { releaseRename = resolve; });
+    let blocked = false;
+    const spy = jest.spyOn(fs.promises, 'rename').mockImplementation(async (from, to) => {
+        if (!blocked && String(from).endsWith('.tmp') && String(to).endsWith('.claim')) {
+            blocked = true;
+            reachedRename();
+            await gate;
+        }
+        return realRename(from, to);
+    });
+    const first = stageStaffAssetRelease({ ...input(), now: () => Date.now() });
+    const firstOutcome = first.then(value => ({ status: 'fulfilled', value }), error => ({ status: 'rejected', error }));
+    let second;
+    try {
+        expect(await Promise.race([paused.then(() => 'paused'), firstOutcome.then(() => 'completed')])).toBe('paused');
+        const [temp] = await recoveryTemps();
+        expect(temp).toBeDefined();
+        await fs.promises.utimes(path.join(releaseBase, temp), new Date(1000), new Date(1000));
+        second = await stageStaffAssetRelease({ ...input(), now: () => Date.now() });
+        expect(await recoveryTemps()).toEqual([]);
+    } finally {
+        releaseRename();
+        await firstOutcome;
+        spy.mockRestore();
+    }
+    expect(second.status).toBe('published');
+    expect((await firstOutcome).status).toBe('rejected');
+    expect(await recoveryClaims()).toEqual([]);
+});
+
+test('every visible finalized recovery claim is a complete immutable owner record', async () => {
+    await stalePublication();
+    const realOpen = fs.promises.open;
+    const realUnlink = fs.promises.unlink;
+    const directFinalOpens = [];
+    let releaseUnlink;
+    let reachedUnlink;
+    const paused = new Promise(resolve => { reachedUnlink = resolve; });
+    const gate = new Promise(resolve => { releaseUnlink = resolve; });
+    const openSpy = jest.spyOn(fs.promises, 'open').mockImplementation(async (target, ...args) => {
+        if (String(target).endsWith('.claim')) directFinalOpens.push(target);
+        return realOpen(target, ...args);
+    });
+    const unlinkSpy = jest.spyOn(fs.promises, 'unlink').mockImplementation(async target => {
+        if (target === lockFile()) { reachedUnlink(); await gate; }
+        return realUnlink(target);
+    });
+    const publishing = stageStaffAssetRelease({ ...input(), now: () => 601001 });
+    let finalClaims;
+    try {
+        await paused;
+        finalClaims = await recoveryClaims();
+        expect(finalClaims).toHaveLength(1);
+        for (const name of finalClaims) {
+            const before = await fs.promises.readFile(path.join(releaseBase, name), 'utf8');
+            const owner = JSON.parse(before);
+            expect(owner).toEqual({ pid: process.pid, startedAt: 601001, version: 'v413',
+                invocationId: expect.any(String), orderNs: expect.stringMatching(/^\d+$/) });
+            expect(name).toBe(`.v413.recover-${owner.invocationId}.claim`);
+            expect(await fs.promises.readFile(path.join(releaseBase, name), 'utf8')).toBe(before);
+        }
+    } finally {
+        releaseUnlink();
+        await publishing;
+        openSpy.mockRestore();
+        unlinkSpy.mockRestore();
+    }
+    expect(directFinalOpens).toEqual([]);
+});
+
+test('an expired temp owner resumed after replacement cannot delete the new live publication lock', async () => {
+    await stalePublication();
+    const realRename = fs.promises.rename;
+    const realCopy = fs.promises.copyFile;
+    let releaseRename;
+    let reachedRename;
+    let releaseCopy;
+    let reachedCopy;
+    const renamePaused = new Promise(resolve => { reachedRename = resolve; });
+    const renameGate = new Promise(resolve => { releaseRename = resolve; });
+    const copyPaused = new Promise(resolve => { reachedCopy = resolve; });
+    const copyGate = new Promise(resolve => { releaseCopy = resolve; });
+    let blocked = false;
+    const renameSpy = jest.spyOn(fs.promises, 'rename').mockImplementation(async (from, to) => {
+        if (!blocked && String(from).endsWith('.tmp') && String(to).endsWith('.claim')) {
+            blocked = true;
+            reachedRename();
+            await renameGate;
+        }
+        return realRename(from, to);
+    });
+    const copySpy = jest.spyOn(fs.promises, 'copyFile').mockImplementation(async (...args) => {
+        reachedCopy(); await copyGate; return realCopy(...args);
+    });
+    const first = stageStaffAssetRelease({ ...input(), now: () => Date.now() });
+    const firstOutcome = first.then(value => ({ status: 'fulfilled', value }), error => ({ status: 'rejected', error }));
+    let second;
+    let liveBytes;
+    try {
+        expect(await Promise.race([renamePaused.then(() => 'paused'), copyPaused.then(() => 'copied')])).toBe('paused');
+        const [temp] = await recoveryTemps();
+        await fs.promises.utimes(path.join(releaseBase, temp), new Date(1000), new Date(1000));
+        second = stageStaffAssetRelease({ ...input(), now: () => Date.now() });
+        await copyPaused;
+        liveBytes = await fs.promises.readFile(lockFile(), 'utf8');
+        releaseRename();
+        expect((await firstOutcome).status).toBe('rejected');
+        expect(await fs.promises.readFile(lockFile(), 'utf8')).toBe(liveBytes);
+    } finally {
+        releaseRename();
+        releaseCopy();
+        await Promise.allSettled([first, second].filter(Boolean));
+        renameSpy.mockRestore();
+        copySpy.mockRestore();
+    }
+    expect((await second).status).toBe('published');
 });
 
 test('a later contender cannot delete or replace the winner unique claim', async () => {

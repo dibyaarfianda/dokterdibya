@@ -120,6 +120,13 @@ function claimIdFromName(version, name) {
     return CLAIM_ID.test(id) ? id : null;
 }
 
+function tempClaimIdFromName(version, name) {
+    const prefix = `.${version}.recover-`;
+    if (!name.startsWith(prefix) || !name.endsWith('.tmp')) return null;
+    const id = name.slice(prefix.length, -'.tmp'.length);
+    return CLAIM_ID.test(id) ? id : null;
+}
+
 async function removeExactClaim(claim, expectedBytes = claim.bytes) {
     const stat = await optionalLstat(claim.path);
     if (!sameFileIdentity(claim.identity, stat)) return false;
@@ -135,25 +142,53 @@ async function removeExactClaim(claim, expectedBytes = claim.bytes) {
 async function createRecoveryClaim({ releaseBase, version, now }) {
     const invocationId = randomUUID();
     const claimPath = path.resolve(releaseBase, `.${version}.recover-${invocationId}.claim`);
-    if (!isInside(releaseBase, claimPath)) throw new Error('Staff recovery claim escapes release base');
-    const handle = await fs.promises.open(claimPath, 'wx');
+    const tempPath = path.resolve(releaseBase, `.${version}.recover-${invocationId}.tmp`);
+    if (!isInside(releaseBase, claimPath) || !isInside(releaseBase, tempPath)) throw new Error('Staff recovery claim escapes release base');
+    const handle = await fs.promises.open(tempPath, 'wx');
     let identity;
+    let closed = false;
     try {
         identity = await handle.stat();
         const bytes = `${JSON.stringify({ pid: process.pid, startedAt: now(), version,
             invocationId, orderNs: process.hrtime.bigint().toString() })}\n`;
         await handle.writeFile(bytes);
+        await handle.sync();
+        await handle.close();
+        closed = true;
+        if (await optionalLstat(claimPath)) throw new Error('Staff recovery claim already exists');
+        await fs.promises.rename(tempPath, claimPath);
+        if (!sameFileIdentity(identity, await optionalLstat(claimPath)) ||
+            await fs.promises.readFile(claimPath, 'utf8') !== bytes) {
+            throw new Error('Staff recovery claim changed during finalization');
+        }
         return { path: claimPath, identity, bytes, invocationId };
     } catch (error) {
-        if (identity) await removeExactClaim({ path: claimPath, identity, bytes: null }, null);
+        if (identity) {
+            await removeExactClaim({ path: tempPath, identity, bytes: null }, null);
+            await removeExactClaim({ path: claimPath, identity, bytes: null }, null);
+        }
         throw error;
-    } finally { await handle.close(); }
+    } finally { if (!closed) await handle.close(); }
 }
 
 async function listLiveClaims({ releaseBase, version, now }) {
     const claims = [];
     let incomplete = false;
     for (const entry of await fs.promises.readdir(releaseBase, { withFileTypes: true })) {
+        const tempId = tempClaimIdFromName(version, entry.name);
+        if (tempId) {
+            const tempPath = path.resolve(releaseBase, entry.name);
+            if (!isInside(releaseBase, tempPath) || !entry.isFile() || entry.isSymbolicLink()) {
+                throw new Error('Unsafe Staff recovery temp claim path');
+            }
+            const identity = await optionalLstat(tempPath);
+            if (!identity) { incomplete = true; continue; }
+            if (!identity.isFile() || identity.isSymbolicLink()) throw new Error('Unsafe Staff recovery temp claim path');
+            if (now() - identity.mtimeMs > STALE_LOCK_MS) {
+                if (!await removeExactClaim({ path: tempPath, identity, bytes: null }, null)) incomplete = true;
+            } else incomplete = true;
+            continue;
+        }
         const id = claimIdFromName(version, entry.name);
         if (!id) continue;
         const claimPath = path.resolve(releaseBase, entry.name);
@@ -172,13 +207,13 @@ async function listLiveClaims({ releaseBase, version, now }) {
         const valid = record && record.version === version && record.invocationId === id &&
             Number.isSafeInteger(record.pid) && record.pid > 0 && Number.isFinite(record.startedAt) &&
             typeof record.orderNs === 'string' && /^\d+$/.test(record.orderNs);
-        const expired = now() - (valid ? record.startedAt : identity.mtimeMs) > STALE_LOCK_MS;
+        if (!valid) throw new Error('Invalid finalized Staff recovery claim');
+        const expired = now() - record.startedAt > STALE_LOCK_MS;
         const exactClaim = { path: claimPath, identity, bytes, invocationId: id };
-        if (expired && (!valid || !pidIsLive(record.pid))) {
+        if (expired && !pidIsLive(record.pid)) {
             if (!await removeExactClaim(exactClaim)) incomplete = true;
             continue;
         }
-        if (!valid) { incomplete = true; continue; }
         claims.push(record);
     }
     return { claims, incomplete };
