@@ -173,6 +173,81 @@ test('genuine warm network disconnect remains a gate failure', async () => {
     }
 }, 30000);
 
+test.each([
+    ['HTTP 503', (req, res, done) => setTimeout(() => { res.writeHead(503).end('unavailable'); done(); }, 1800)],
+    ['disconnect', (req, _res, done) => setTimeout(() => { req.socket.destroy(); done(); }, 1800)]
+])('warm %s finishing after networkidle2 is still a gate failure', async (_label, finishLate) => {
+    let visits = 0;
+    let lateCompleted = 0;
+    const server = http.createServer((req, res) => {
+        if (req.url === '/late') {
+            finishLate(req, res, () => { lateCompleted++; });
+            return;
+        }
+        visits++;
+        res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
+        res.end(`<!doctype html><link rel="icon" href="data:,"><script>
+            window.activateRegisteredStaffPage = async () => document.body;
+            if (${visits} > 1) fetch('/late').catch(() => {});
+        </script>`);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+        const { inspectPage } = require(scriptPath);
+        const result = await inspectPage(`http://127.0.0.1:${server.address().port}/staff/public/index-adminlte.html`, null);
+        expect(lateCompleted).toBeGreaterThanOrEqual(1);
+        expect(result.warm.failedRequests).toBeGreaterThanOrEqual(1);
+        expect(result.warm.requestCount).toBeGreaterThanOrEqual(2);
+    } finally {
+        server.closeAllConnections();
+        await new Promise(resolve => server.close(resolve));
+    }
+}, 30000);
+
+test('warm ordinary request left pending at the settlement deadline fails closed', async () => {
+    let visits = 0;
+    const server = http.createServer((req, res) => {
+        if (req.url === '/stuck') return;
+        visits++;
+        res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
+        res.end(`<!doctype html><link rel="icon" href="data:,"><script>
+            window.activateRegisteredStaffPage = async () => document.body;
+            if (${visits} > 1) fetch('/stuck').catch(() => {});
+        </script>`);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+        const { inspectPage } = require(scriptPath);
+        await expect(inspectPage(`http://127.0.0.1:${server.address().port}/staff/public/index-adminlte.html`, null))
+            .rejects.toThrow('Warm network requests did not settle before timeout');
+    } finally {
+        server.closeAllConnections();
+        await new Promise(resolve => server.close(resolve));
+    }
+}, 30000);
+
+test('open Socket.IO polling request does not falsely fail the warm gate', async () => {
+    let visits = 0;
+    const server = http.createServer((req, res) => {
+        if (req.url.startsWith('/socket.io/?transport=polling')) return;
+        visits++;
+        res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
+        res.end(`<!doctype html><link rel="icon" href="data:,"><script>
+            window.activateRegisteredStaffPage = async () => document.body;
+            if (${visits} > 1) fetch('/socket.io/?transport=polling&EIO=4').catch(() => {});
+        </script>`);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+        const { inspectPage } = require(scriptPath);
+        const result = await inspectPage(`http://127.0.0.1:${server.address().port}/staff/public/index-adminlte.html`, null);
+        expect(result.warm.failedRequests).toBe(0);
+    } finally {
+        server.closeAllConnections();
+        await new Promise(resolve => server.close(resolve));
+    }
+}, 30000);
+
 test('closed-chat avatar markup defers photo transfer and retains 36px visible size', async () => {
     const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/chat-popup.js'), 'utf8');
     const template = source.match(/messageHTML \+= `(<div class="chat-avatar" title="[^`]+?<\/div>)`;/)?.[1];

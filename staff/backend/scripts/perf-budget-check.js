@@ -219,6 +219,30 @@ async function inspectPage(pageUrl, token) {
                 throw new Error(`${measuredPhase} staff page returned HTTP ${response?.status() || 'unknown'}`);
             }
         }
+        // networkidle2 permits two in-flight requests. Keep observing until
+        // every warm navigation request except an expected Socket.IO poll has
+        // a terminal CDP event; a stuck ordinary request fails the gate.
+        const pendingWarm = () => [...requests.values()].some(request => {
+            if (request.phase !== 'warm') return false;
+            const url = new URL(request.url);
+            return !(url.origin === targetOrigin && /^\/socket\.io\/?$/.test(url.pathname)
+                && url.searchParams.get('transport') === 'polling');
+        });
+        if (pendingWarm()) {
+            await new Promise((resolve, reject) => {
+                const interval = setInterval(() => {
+                    if (!pendingWarm()) {
+                        clearInterval(interval);
+                        clearTimeout(timeout);
+                        resolve();
+                    }
+                }, 25);
+                const timeout = setTimeout(() => {
+                    clearInterval(interval);
+                    reject(new Error('Warm network requests did not settle before timeout'));
+                }, 5000);
+            });
+        }
         for (const request of requests.values()) {
             if (!request.cached && !request.serviceWorker) phases[request.phase].requestCount++;
         }
