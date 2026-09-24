@@ -122,6 +122,9 @@ class SundayClinicApp {
         this.currentRecordSignature = null;
         this.currentBillingSignature = null;
         this.pendingRealtimeRefresh = false;
+        this.recordInvalidationTimer = null;
+        this.recordInvalidationPending = false;
+        this.recordVisibilityHandler = null;
         this.billingRefreshTimer = null;
         this.formDirtyTrackingBound = false;
     }
@@ -1258,6 +1261,9 @@ class SundayClinicApp {
                 console.warn('[SundayClinic] Background metadata refresh skipped:', error.message);
             } finally {
                 this.softRefreshInFlight = false;
+                if (this.recordInvalidationPending && !stateManager.hasUnsavedChanges()) {
+                    this.scheduleRealtimeRecordRefresh(stateManager.getState().activeSection);
+                }
             }
         }, delay);
     }
@@ -2516,6 +2522,14 @@ class SundayClinicApp {
             window.addEventListener('realtime:socket-ready', this.recordSocketReadyHandler);
             window.addEventListener('realtime:socket-connected', this.recordSocketReadyHandler);
         }
+        if (!this.recordVisibilityHandler) {
+            this.recordVisibilityHandler = () => {
+                if (document.visibilityState === 'visible' && this.recordInvalidationPending) {
+                    this.scheduleRealtimeRecordRefresh(stateManager.getState().activeSection);
+                }
+            };
+            document.addEventListener('visibilitychange', this.recordVisibilityHandler);
+        }
         this.bindRealtimeRecordSocket();
     }
 
@@ -2528,8 +2542,11 @@ class SundayClinicApp {
         }
         this.recordSocket = socket;
         this.recordSocketHandler = (event = {}) => {
-            if (!this.currentMrId || String(event.mr_id) !== String(this.currentMrId)) return;
-            this.refreshCurrentRecordFromRealtime(event.section);
+            if (!this.currentMrId) return;
+            // The staff event intentionally carries no clinical identifier. It
+            // invalidates the currently open visit, never a locally dirty draft.
+            this.recordInvalidationPending = true;
+            this.scheduleRealtimeRecordRefresh(event.section);
         };
         socket.on('medical_record:updated', this.recordSocketHandler);
         this.queueSocketHandler = (event = {}) => {
@@ -2538,6 +2555,28 @@ class SundayClinicApp {
             this._restoreQueueState(this.currentMrId);
         };
         socket.on('queue:updated', this.queueSocketHandler);
+    }
+
+    scheduleRealtimeRecordRefresh(section) {
+        if (this.recordInvalidationTimer) return;
+        this.recordInvalidationTimer = setTimeout(async () => {
+            this.recordInvalidationTimer = null;
+            if (!this.currentMrId) { this.recordInvalidationPending = false; return; }
+            if (document.visibilityState === 'hidden') {
+                this.pendingRealtimeRefresh = true;
+                return;
+            }
+            if (stateManager.hasUnsavedChanges()) {
+                this.pendingRealtimeRefresh = true;
+                return;
+            }
+            if (this.softRefreshInFlight) return;
+            this.recordInvalidationPending = false;
+            await this.refreshCurrentRecordFromRealtime(section);
+            if (this.recordInvalidationPending && !stateManager.hasUnsavedChanges()) {
+                this.scheduleRealtimeRecordRefresh(section);
+            }
+        }, 100);
     }
 
     async refreshCurrentRecordFromRealtime(section, prefetchedResponse = null) {
@@ -2571,6 +2610,9 @@ class SundayClinicApp {
             console.warn('[SundayClinic] Realtime record refresh failed:', error.message);
         } finally {
             this.softRefreshInFlight = false;
+            if (this.recordInvalidationPending && !stateManager.hasUnsavedChanges()) {
+                this.scheduleRealtimeRecordRefresh(section);
+            }
         }
     }
 
@@ -2603,8 +2645,8 @@ class SundayClinicApp {
 
         if (!this.recordDirtyUnsubscribe) {
             this.recordDirtyUnsubscribe = stateManager.subscribe('isDirty', isDirty => {
-                if (!isDirty && this.pendingRealtimeRefresh) {
-                    window.staffPollingCoordinator?.trigger('sunday-clinic-active-record');
+                if (!isDirty && (this.pendingRealtimeRefresh || this.recordInvalidationPending)) {
+                    this.scheduleRealtimeRecordRefresh(stateManager.getState().activeSection);
                 }
             });
         }

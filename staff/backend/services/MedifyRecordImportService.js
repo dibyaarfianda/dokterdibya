@@ -110,6 +110,7 @@ class MedifyRecordImportService {
         const now = new Date();
         const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Jakarta' });
         const title = `Resume Medis - ${patientName} - ${dateStr}`;
+        const sourceData = JSON.stringify({ content: resume, generatedAt: now.toISOString() });
         await this.records.saveInternalSections({
             patientId, mrId, actor: actor || { id: 'medify-sync', name: 'Medify Sync' },
             sections: [{ recordType: 'resume_medis', data: { resume, saved_at: now.toISOString() } }],
@@ -120,16 +121,19 @@ class MedifyRecordImportService {
                 if (documents.length > 1) throw new Error('Ambiguous resume publication');
                 if (documents.length) {
                     await connection.query(
-                        `UPDATE patient_documents SET title = ?, file_url = ?, file_name = ?, file_type = 'text/plain',
+                        `UPDATE patient_documents SET title = ?, file_url = ?, file_name = ?, source_data = ?, file_type = 'text/plain',
                          status = 'published', source = 'clinic', published_at = NOW(), updated_at = NOW()
                          WHERE id = ? AND patient_id = ? AND mr_id = ?`,
-                        [title, `resume:${mrId}`, `resume_${mrId}.txt`, documents[0].id, row.patient_id, row.mr_id]);
+                        [title, `resume:${mrId}`, `resume_${mrId}.txt`, sourceData,
+                            documents[0].id, row.patient_id, row.mr_id]);
                 } else {
                     await connection.query(
                         `INSERT INTO patient_documents
-                         (patient_id, mr_id, document_type, title, file_url, file_name, file_type, status, source, description, created_at)
-                         VALUES (?, ?, 'resume_medis', ?, ?, ?, 'text/plain', 'published', 'clinic', 'Auto-generated from MEDIFY sync', NOW())`,
-                        [row.patient_id, row.mr_id, title, `resume:${mrId}`, `resume_${mrId}.txt`]);
+                         (patient_id, mr_id, document_type, title, file_url, file_name, file_type, source_data,
+                          status, source, description, created_at)
+                         VALUES (?, ?, 'resume_medis', ?, ?, ?, 'text/plain', ?, 'published', 'clinic',
+                          'Auto-generated from MEDIFY sync', NOW())`,
+                        [row.patient_id, row.mr_id, title, `resume:${mrId}`, `resume_${mrId}.txt`, sourceData]);
                 }
             }
         });

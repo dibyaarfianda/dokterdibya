@@ -94,8 +94,16 @@ function medicalRecordDatabase() {
         }
         if (sql.startsWith('SELECT') && sql.includes('FROM patient_documents')) {
             if (!tx?.visitLocked || !sql.endsWith('FOR UPDATE')) throw new Error('Document lock missing');
-            const documentTypes = Array.isArray(p[2]) ? p[2] : sql.includes("document_type = 'usg_photo'") ? ['usg_photo'] : [];
+            const documentTypes = Array.isArray(p[2]) ? p[2]
+                : sql.includes("document_type = 'usg_photo'") ? ['usg_photo']
+                    : sql.includes("document_type = 'resume_medis'") ? ['resume_medis'] : [];
             return [clone(state.documents.filter(r => r.patient_id === p[0] && r.mr_id === p[1] && documentTypes.includes(r.document_type)))];
+        }
+        if (sql.startsWith('UPDATE patient_documents') && sql.includes('source_data = ?') && sql.includes('file_url = ?')) {
+            const row = state.documents.find(r => r.id === p[4] && r.patient_id === p[5] && r.mr_id === p[6]);
+            if (!row) return [{ affectedRows: 0 }];
+            Object.assign(row, { title: p[0], file_url: p[1], file_name: p[2], source_data: p[3] });
+            return [{ affectedRows: 1 }];
         }
         if (sql.startsWith('INSERT INTO patient_documents')) {
             if (!tx?.visitLocked) throw new Error('Document insertion before visit lock');

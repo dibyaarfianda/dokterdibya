@@ -21,6 +21,11 @@ function documentFor(photo) {
     };
 }
 
+function normalizePhoto(photo) {
+    const document = documentFor(photo);
+    return typeof photo === 'string' ? { ...document, storage: 'r2' } : { ...photo, ...document };
+}
+
 class UsgClinicalPhotoService {
     constructor(dependencies = {}) {
         this.records = dependencies.records || records;
@@ -31,7 +36,8 @@ class UsgClinicalPhotoService {
 
     async appendPhotos({ patientId, mrId, photos, actor, recordDate }) {
         if (!Array.isArray(photos) || !photos.length) throw new Error('Uploaded USG photos required');
-        const documents = photos.map(documentFor);
+        const normalized = photos.map(normalizePhoto);
+        const documents = normalized.map(documentFor);
         const result = await this.records.saveInternalSections({
             mrId, patientId, actor,
             sections: [{ recordType: 'usg', update: current => ({
@@ -39,7 +45,8 @@ class UsgClinicalPhotoService {
                     ...(recordDate ? { record_datetime: `${recordDate}T00:00`, record_date: recordDate } : {}),
                     saved_at: new Date().toISOString(), source: 'bulk-upload'
                 }),
-                photos: [...(Array.isArray(current.photos) ? current.photos : []), ...photos]
+                photos: [...(Array.isArray(current.photos) ? current.photos.map(photo =>
+                    typeof photo === 'string' ? normalizePhoto(photo) : photo) : []), ...normalized]
             }) }],
             mutateDocuments: async (connection, row) => {
                 const [existing] = await connection.query(
@@ -85,3 +92,4 @@ class UsgClinicalPhotoService {
 
 module.exports = new UsgClinicalPhotoService();
 module.exports.UsgClinicalPhotoService = UsgClinicalPhotoService;
+module.exports.normalizePhoto = normalizePhoto;

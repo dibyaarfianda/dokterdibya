@@ -55,6 +55,17 @@ function assertExternalPath(filename) {
     return realFile;
 }
 
+function publishExclusive(temporary, destination) {
+    // Same-filesystem hard link is an atomic no-replace publish. In contrast,
+    // rename may replace a destination created after an existence check.
+    fs.linkSync(temporary, destination);
+    if (process.platform !== 'win32') {
+        const directory = fs.openSync(path.dirname(destination), 'r');
+        try { fs.fsyncSync(directory); }
+        finally { fs.closeSync(directory); }
+    }
+}
+
 async function verifyBackup(filename, expectedSha256) {
     requireHash(expectedSha256, 'BACKUP_CHECKSUM_REQUIRED');
     let stat;
@@ -78,7 +89,6 @@ async function verifyBackup(filename, expectedSha256) {
 
 function writePrivateManifest(filename, manifest) {
     const destination = assertExternalPath(filename);
-    failIf(fs.existsSync(destination), 'MANIFEST_EXISTS');
     const serialized = canonicalJson(manifest);
     const temporary = path.join(path.dirname(destination), `.medical-manifest-${crypto.randomUUID()}.tmp`);
     try {
@@ -89,14 +99,15 @@ function writePrivateManifest(filename, manifest) {
         } finally { fs.closeSync(descriptor); }
         fs.chmodSync(temporary, 0o600);
         failIf((fs.statSync(temporary).mode & 0o777) !== 0o600, 'MANIFEST_MODE_UNENFORCEABLE');
-        failIf(fs.existsSync(destination), 'MANIFEST_EXISTS');
-        fs.renameSync(temporary, destination);
+        publishExclusive(temporary, destination);
         failIf((fs.statSync(destination).mode & 0o777) !== 0o600, 'MANIFEST_MODE_UNENFORCEABLE');
         return sha256(serialized);
     } catch (error) {
-        try { fs.unlinkSync(temporary); } catch (_) { /* no private temporary remains */ }
+        if (error?.code === 'EEXIST') throw new ReconciliationError('MANIFEST_EXISTS');
         if (error instanceof ReconciliationError) throw error;
         throw new ReconciliationError('MANIFEST_WRITE_FAILED');
+    } finally {
+        try { fs.unlinkSync(temporary); } catch (_) { /* no private temporary remains */ }
     }
 }
 
@@ -335,6 +346,25 @@ async function assertSchema(connection) {
         .every(name => triggers.some(item => item.TRIGGER_NAME === name)), 'SCHEMA_VERSION_MISSING');
 }
 
+async function assertPopulationLockStorage(connection) {
+    const [tables] = await connection.query(
+        `SELECT TABLE_NAME,ENGINE FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('sunday_clinic_records','medical_records')`);
+    failIf(tables.length !== 2 || tables.some(row => row.ENGINE !== 'InnoDB'), 'LOCK_STORAGE_UNSUPPORTED');
+}
+
+async function lockCurrentPopulation(connection) {
+    // Under REPEATABLE READ, full PRIMARY-index locking scans hold next-key and
+    // supremum-gap locks. They must precede the transaction's first consistent
+    // read so the subsequent classification cannot use an older read view.
+    await connection.query(
+        `SELECT /* legacy:visit-population-locks */ id FROM sunday_clinic_records
+         FORCE INDEX (PRIMARY) ORDER BY id FOR UPDATE`);
+    await connection.query(
+        `SELECT /* legacy:medical-population-locks */ id FROM medical_records
+         FORCE INDEX (PRIMARY) ORDER BY id FOR UPDATE`);
+}
+
 async function loadSnapshot(connection) {
     const [[version]] = await connection.query('SELECT VERSION() AS database_version');
     failIf(!String(version?.database_version || '').includes('MariaDB'), 'DATABASE_VERSION_UNSUPPORTED');
@@ -543,10 +573,12 @@ async function runReconciliation({ db, dbFactory, mode = 'dry-run', backupPath, 
                 `SELECT GET_LOCK('medical-records-legacy-reconcile-v1',0) acquired`);
             failIf(Number(lock?.acquired) !== 1, 'ADVISORY_LOCK_UNAVAILABLE');
             advisory = true;
+            await assertPopulationLockStorage(connection);
         }
         await connection.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
-        await connection.query('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+        await connection.query(mode === 'apply' ? 'START TRANSACTION' : 'START TRANSACTION WITH CONSISTENT SNAPSHOT');
         transaction = true;
+        if (mode === 'apply') await lockCurrentPopulation(connection);
         let snapshot = await loadSnapshot(connection);
         if (mode === 'dry-run') {
             const classified = classifySnapshot({ ...snapshot, expected, snapshotAt: now().toISOString(),
@@ -570,8 +602,8 @@ async function runReconciliation({ db, dbFactory, mode = 'dry-run', backupPath, 
         failIf(lockedDocuments.length !== expected.documents.count ||
             setHash(lockedDocuments) !== expected.documents.hash ||
             digestObject(lockedDocuments) !== manifest.documentFullDigest, 'LOCKED_DOCUMENT_DRIFT');
-        snapshot = await loadSnapshot(connection);
-        assertReceiptUnchanged(snapshot, expected, manifest, rerun);
+        // The first consistent snapshot was created after both full population
+        // locks; a second plain SELECT would only reread that same snapshot.
         if (!rerun) await applyActions(connection, manifest, manifestSha256, snapshot.rows);
         await verifyPostState(connection, manifest, lockedDocuments, snapshot.completeRows);
         const [finalRevisions] = await connection.query(
@@ -593,5 +625,5 @@ async function runReconciliation({ db, dbFactory, mode = 'dry-run', backupPath, 
 }
 
 module.exports = { ALGORITHM_VERSION, SCHEMA_VERSION, AUDITED, ReconciliationError, sha256, canonicalJson,
-    assertExternalPath, verifyBackup, writePrivateManifest, readPrivateManifest, classifySnapshot,
+    assertExternalPath, publishExclusive, verifyBackup, writePrivateManifest, readPrivateManifest, classifySnapshot,
     digestObject, sourceState, visitState, targetState, setHash, loadSnapshot, runReconciliation };

@@ -79,6 +79,10 @@ function database(input, options = {}) {
                 { TRIGGER_NAME: 'medical_record_revisions_no_update' },
                 { TRIGGER_NAME: 'medical_record_revisions_no_delete' }
             ]];
+            if (statement.includes('information_schema.TABLES')) return [[
+                { TABLE_NAME: 'sunday_clinic_records', ENGINE: options.nonTransactionalVisits ? 'Aria' : 'InnoDB' },
+                { TABLE_NAME: 'medical_records', ENGINE: 'InnoDB' }
+            ]];
             if (statement.includes('legacy:source-count')) return [[{ source_count: state.rows.filter(row => !row.mr_id).length }]];
             if (statement.startsWith('WITH legacy AS')) return [structuredClone(
                 (options.staleSnapshotOnLock ? before.rows : state.rows).filter(row => !row.mr_id))];
@@ -98,6 +102,19 @@ function database(input, options = {}) {
                         visit_updated_at_text: row.visit_updated_at_text,
                         visit_last_activity_at_text: row.visit_last_activity_at_text };
                 })]];
+            }
+            if (statement.includes('legacy:visit-population-locks')) {
+                if (options.newCloserVisit) {
+                    state.rows[0].candidate_mr_id = 'TEST-MR-NEW';
+                    state.rows[0].visit_row_id = 9999;
+                    state.rows[0].row_digest = hash('closer-visit');
+                }
+                return [state.rows.map(row => ({ id: row.visit_row_id }))];
+            }
+            if (statement.includes('legacy:medical-population-locks')) {
+                if (options.newNullSource) state.rows.push({ ...structuredClone(state.rows[0]), id: 9999,
+                    patient_id: 'TEST-P-NEW', row_digest: hash('new-source') });
+                return [state.rows.map(row => ({ id: row.id }))];
             }
             if (statement.includes('legacy:medical-locks')) {
                 const result = [];
@@ -191,6 +208,12 @@ test('apply locks visits before medical rows, backfills exactly three metadata r
     expect(db.state.completeRows).toEqual(input.completeRows);
     expect(db.state.events.findIndex(sql => sql.includes('legacy:visit-locks')))
         .toBeLessThan(db.state.events.findIndex(sql => sql.includes('legacy:medical-locks')));
+    const eventIndex = marker => db.state.events.findIndex(sql => sql.includes(marker));
+    expect(eventIndex('legacy:visit-population-locks')).toBeLessThan(eventIndex('legacy:medical-population-locks'));
+    expect(eventIndex('legacy:medical-population-locks')).toBeLessThan(eventIndex('legacy:source-count'));
+    expect(db.state.events.find(sql => sql.includes('legacy:visit-population-locks'))).toMatch(/FORCE INDEX \(PRIMARY\).*FOR UPDATE/);
+    expect(db.state.events.find(sql => sql.includes('legacy:medical-population-locks'))).toMatch(/FORCE INDEX \(PRIMARY\).*FOR UPDATE/);
+    expect(db.state.events.find(sql => sql.startsWith('START TRANSACTION'))).toBe('START TRANSACTION');
     expect(db.state.commits).toBe(1);
 }));
 
@@ -211,7 +234,8 @@ test.each([
     ['compare-and-set failure', { casFailure: true }],
     ['document changed inside transaction', { documentMutation: true }],
     ['versioned schema missing', { schemaMissing: true }],
-    ['unique MR/type index missing', { targetUniqueMissing: true }]
+    ['unique MR/type index missing', { targetUniqueMissing: true }],
+    ['nontransactional Sunday visit storage', { nonTransactionalVisits: true }]
 ])('%s leaves every medical, complete and document row unchanged', async (_, options) => withBackup(async backup => {
     const input = fixture(), db = database(input, options);
     await expect(runReconciliation({ db, mode: 'apply', expected: input.expected,
@@ -299,4 +323,18 @@ test('current document metadata drift aborts despite a stale consistent snapshot
         .rejects.toThrow('LOCKED_DOCUMENT_DRIFT');
     expect(db.state.revisions).toHaveLength(0);
     expect(db.state.commits).toBe(0);
+}));
+
+test.each([
+    ['new closer same-patient visit', { newCloserVisit: true }],
+    ['new null-MR source', { newNullSource: true }]
+])('%s before population locks aborts with no revision or backfill', async (_, race) => withBackup(async backup => {
+    const input = fixture(), db = database(input, race);
+    await expect(runReconciliation({ db, mode: 'apply', expected: input.expected,
+        manifestPath: path.join(backup.directory, 'manifest.json'), confirmationSha256: sha256(canonicalJson(input.manifest)),
+        confirmPhrase: 'APPLY_LEGACY_MEDICAL_RECORDS', readManifest: () => input.manifest, ...backup }))
+        .rejects.toThrow();
+    expect(db.state.revisions).toHaveLength(0);
+    expect(db.state.commits).toBe(0);
+    expect(db.state.events.at(-1)).toBe('RELEASE_CONNECTION');
 }));

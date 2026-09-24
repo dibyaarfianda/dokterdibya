@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const {
-    runReconciliation, assertExternalPath, canonicalJson, ReconciliationError
+    runReconciliation, assertExternalPath, publishExclusive, canonicalJson, ReconciliationError
 } = require('../services/LegacyMedicalReconciliation');
 
 const VALUE_FLAGS = new Set(['--backup', '--backup-sha256', '--manifest',
@@ -35,7 +35,6 @@ function parseArguments(argv) {
 
 function writePublicReceipt(filename, receipt) {
     const destination = assertExternalPath(filename);
-    if (fs.existsSync(destination)) throw new ReconciliationError('RECEIPT_EXISTS');
     const temporary = path.join(path.dirname(destination), `.medical-receipt-${crypto.randomUUID()}.tmp`);
     try {
         const descriptor = fs.openSync(temporary, 'wx', 0o644);
@@ -43,12 +42,13 @@ function writePublicReceipt(filename, receipt) {
             fs.writeFileSync(descriptor, `${canonicalJson(receipt)}\n`, 'utf8');
             fs.fsyncSync(descriptor);
         } finally { fs.closeSync(descriptor); }
-        if (fs.existsSync(destination)) throw new ReconciliationError('RECEIPT_EXISTS');
-        fs.renameSync(temporary, destination);
+        publishExclusive(temporary, destination);
     } catch (error) {
-        try { fs.unlinkSync(temporary); } catch (_) { /* no partial public receipt remains */ }
+        if (error?.code === 'EEXIST') throw new ReconciliationError('RECEIPT_EXISTS');
         if (error instanceof ReconciliationError) throw error;
         throw new ReconciliationError('RECEIPT_WRITE_FAILED');
+    } finally {
+        try { fs.unlinkSync(temporary); } catch (_) { /* no partial public receipt remains */ }
     }
 }
 

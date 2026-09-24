@@ -7,13 +7,16 @@ const { createPatientNotification } = require('../routes/patient-notifications')
 const { mutatePenunjangDocuments } = require('./PatientDocumentSyncService');
 const { updateQueueStatus } = require('./sunday-clinic/queue');
 const { MEDIFY_SOAP_SYNC_SECTIONS, sundayClinicMedifySyncQueue } = require('./sunday-clinic/shared');
+const { normalizePhoto } = require('./UsgClinicalPhotoService');
 
-function validFiles(files) {
-    return Array.isArray(files) ? files.filter(file => file && typeof file.url === 'string' && file.url) : [];
+function validFiles(files, documentType) {
+    return Array.isArray(files) ? files.map(file =>
+        documentType === 'usg_photo' && typeof file === 'string' ? normalizePhoto(file) : file)
+        .filter(file => file && typeof file.url === 'string' && file.url) : [];
 }
 
 async function mutateFileDocuments(connection, row, { files, documentType, defaultTitle, defaultType }) {
-    const currentFiles = validFiles(files);
+    const currentFiles = validFiles(files, documentType);
     const [existing] = await connection.query(
         `SELECT id, file_url FROM patient_documents
          WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND status = 'published'

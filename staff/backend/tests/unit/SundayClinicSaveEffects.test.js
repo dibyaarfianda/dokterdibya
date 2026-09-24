@@ -20,6 +20,9 @@ const { createPatientNotification } = require('../../routes/patient-notification
 const realtime = require('../../realtime-sync');
 const { mutatePenunjangDocuments } = require('../../services/PatientDocumentSyncService');
 const { mutateSundayClinicDocuments, afterSundayClinicSave } = require('../../services/SundayClinicSaveEffects');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
 
 const scoped = (recordType, recordData = {}, extra = {}) => ({
     id: 17, patient_id: 'fixture-a', mr_id: 'TEST001', record_type: recordType,
@@ -155,4 +158,68 @@ test('patient document refresh and notification occur only after committed save 
     expect(realtime.broadcastToRoom).toHaveBeenCalledWith('patient:fixture-a', {
         type: 'usg:patient_updated', added: 2, removed: 1
     });
+});
+
+test('identifier-free staff invalidation refreshes clean records once and defers dirty drafts until clean', async () => {
+    jest.useFakeTimers();
+    try {
+        let dirty = false, dirtyListener;
+        const listeners = {};
+        const documentListeners = {};
+        const socket = { on: (name, handler) => { listeners[name] = handler; }, off: jest.fn() };
+        const state = { activeSection: 'anamnesa' };
+        const stateManager = { hasUnsavedChanges: () => dirty, get: () => 0, getState: () => state,
+            loadRecord: jest.fn(), subscribe: (_name, handler) => { dirtyListener = handler; } };
+        const apiClient = { getRecord: jest.fn().mockResolvedValue({ success: true,
+            data: { record: { visit_location: 'klinik_private' }, medicalRecords: { byType: {} } } }) };
+        const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/sunday-clinic/main.js'), 'utf8');
+        const classSource = source.slice(source.indexOf('class SundayClinicApp {'), source.indexOf('// Export singleton instance'));
+        const context = { window: { __realtimeSyncState: { socket }, addEventListener: jest.fn(), showToast: jest.fn() },
+            document: { visibilityState: 'visible', addEventListener: (name, handler) => { documentListeners[name] = handler; } }, stateManager, apiClient,
+            SECTIONS: { IDENTITY: 'identity' }, setTimeout, clearTimeout, console };
+        vm.runInNewContext(`${classSource}\nglobalThis.TestApp = SundayClinicApp;`, context);
+        const app = new context.TestApp();
+        app.currentMrId = 'TEST001';
+        app.render = jest.fn();
+        app._restoreQueueState = jest.fn();
+        app.setupRealtimeRecordUpdates();
+        app.setupLiveRecordPolling();
+        await afterSundayClinicSave(result('physical_exam'));
+        const event = realtime.broadcast.mock.calls.at(-1)[0];
+        expect(event).toEqual({ type: 'medical_record:updated', section: 'physical_exam' });
+        expect(JSON.stringify(event)).not.toMatch(/TEST001|fixture-a|mr_id|patient_id/);
+        listeners['medical_record:updated'](event);
+        listeners['medical_record:updated'](event);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(1);
+        dirty = true;
+        listeners['medical_record:updated'](event);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(1);
+        dirty = false;
+        dirtyListener(false);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(2);
+        let finishInFlight;
+        apiClient.getRecord.mockImplementationOnce(() => new Promise(resolve => { finishInFlight = resolve; }));
+        listeners['medical_record:updated'](event);
+        jest.advanceTimersByTime(100);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(3);
+        listeners['medical_record:updated'](event);
+        jest.advanceTimersByTime(100);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(3);
+        finishInFlight({ success: true, data: { record: { visit_location: 'klinik_private' },
+            medicalRecords: { byType: {} } } });
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(4);
+        context.document.visibilityState = 'hidden';
+        listeners['medical_record:updated'](event);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(4);
+        expect(app.recordInvalidationPending).toBe(true);
+        context.document.visibilityState = 'visible';
+        documentListeners.visibilitychange();
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(5);
+    } finally { jest.useRealTimers(); }
 });

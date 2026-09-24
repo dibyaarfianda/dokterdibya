@@ -126,3 +126,25 @@ test('private manifest is atomic, mode 0600, canonical and SHA-confirmed; repo p
         expect(() => assertExternalPath(path.resolve(__dirname, '../../../..', 'unsafe.json'))).toThrow();
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
 });
+
+test('private manifest publication cannot overwrite a destination won by another writer', () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'medical-reconcile-'));
+    const file = path.join(directory, 'manifest.json');
+    const rename = fs.renameSync, link = fs.linkSync, stat = fs.statSync;
+    const competitor = () => { if (!fs.existsSync(file)) fs.writeFileSync(file, 'competing private manifest'); };
+    const renameSpy = jest.spyOn(fs, 'renameSync').mockImplementation((from, to) => { competitor(); return rename(from, to); });
+    const linkSpy = jest.spyOn(fs, 'linkSync').mockImplementation((from, to) => { competitor(); return link(from, to); });
+    const statSpy = jest.spyOn(fs, 'statSync').mockImplementation((target, ...args) => {
+        const result = stat(target, ...args);
+        return process.platform === 'win32' && String(target).startsWith(directory)
+            ? { ...result, mode: (result.mode & ~0o777) | 0o600 } : result;
+    });
+    try {
+        expect(() => writePrivateManifest(file, { rows: [{ sourceRecordId: 1 }] })).toThrow('MANIFEST_EXISTS');
+        expect(fs.readFileSync(file, 'utf8')).toBe('competing private manifest');
+        expect(fs.readdirSync(directory)).toEqual(['manifest.json']);
+    } finally {
+        statSpy.mockRestore(); linkSpy.mockRestore(); renameSpy.mockRestore();
+        fs.rmSync(directory, { recursive: true, force: true });
+    }
+});
