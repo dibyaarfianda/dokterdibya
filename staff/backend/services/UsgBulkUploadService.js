@@ -35,6 +35,15 @@ const MIME_TYPES = {
     '.bmp': 'image/bmp'
 };
 
+const BOT_SCHEMA_COLUMNS = Object.freeze({
+    usg_bulk_upload_bot_config: ['id', 'enabled', 'sources_json', 'updated_by', 'updated_at'],
+    usg_bulk_upload_jobs: [
+        'id', 'status', 'hospital', 'upload_date', 'zip_url', 'zip_filename',
+        'dry_run', 'force_rerun', 'preview_json', 'result_json', 'error_message',
+        'requested_by', 'created_at', 'updated_at'
+    ]
+});
+
 let tablesReady = null;
 const jobProcessors = new Map();
 
@@ -556,33 +565,33 @@ async function downloadZipFromUrl(rawUrl, fetchImpl = fetch) {
 async function ensureBotTables() {
     if (tablesReady) return tablesReady;
     tablesReady = (async () => {
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS usg_bulk_upload_bot_config (
-                id TINYINT PRIMARY KEY,
-                enabled TINYINT(1) NOT NULL DEFAULT 0,
-                sources_json LONGTEXT,
-                updated_by VARCHAR(255) DEFAULT NULL,
-                updated_at DATETIME NOT NULL
-            )
-        `);
-        await db.query(`
-            CREATE TABLE IF NOT EXISTS usg_bulk_upload_jobs (
-                id VARCHAR(36) PRIMARY KEY,
-                status VARCHAR(32) NOT NULL,
-                hospital VARCHAR(64) NOT NULL,
-                upload_date DATE NOT NULL,
-                zip_url TEXT NOT NULL,
-                zip_filename VARCHAR(255) DEFAULT NULL,
-                dry_run TINYINT(1) NOT NULL DEFAULT 0,
-                force_rerun TINYINT(1) NOT NULL DEFAULT 0,
-                preview_json LONGTEXT,
-                result_json LONGTEXT,
-                error_message TEXT,
-                requested_by VARCHAR(255) DEFAULT NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NOT NULL
-            )
-        `);
+        const [rows] = await db.query(
+            `SELECT TABLE_NAME, COLUMN_NAME
+             FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME IN (?)`,
+            [Object.keys(BOT_SCHEMA_COLUMNS)]
+        );
+        const available = new Map();
+        for (const row of rows) {
+            const table = row.TABLE_NAME || row.table_name;
+            const column = row.COLUMN_NAME || row.column_name;
+            if (!available.has(table)) available.set(table, new Set());
+            available.get(table).add(column);
+        }
+        const missing = Object.entries(BOT_SCHEMA_COLUMNS).flatMap(([table, columns]) =>
+            columns.filter(column => !available.get(table)?.has(column)).map(column => `${table}.${column}`)
+        );
+        if (missing.length) {
+            const error = new Error(
+                `USG bulk upload schema is incomplete: ${missing.join(', ')}. ` +
+                'Run migration 20260909_usg_bulk_upload_bot.sql.'
+            );
+            error.code = 'USG_BULK_UPLOAD_SCHEMA_MISSING';
+            error.statusCode = 503;
+            error.missing = missing;
+            throw error;
+        }
         const [existing] = await db.query('SELECT id FROM usg_bulk_upload_bot_config WHERE id = 1');
         if (!existing.length) {
             await db.query(
