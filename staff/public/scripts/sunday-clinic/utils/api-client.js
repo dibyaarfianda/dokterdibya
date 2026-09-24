@@ -186,23 +186,24 @@ class APIClient {
      */
     async saveSection(mrId, section, data, options = {}) {
         const current = stateManager.get('medicalRecords')?.byType?.[section] || null;
-        const baseData = current?.data || {};
+        const persisted = stateManager.get('persistedMedicalRecords')?.byType?.[section] || current;
+        const baseData = persisted?.data || {};
         const saveRevision = stateManager.get('dirtyRevision') || 0;
         const changes = sectionChanges(baseData, data);
-        if (current?.id && !changes.length) {
+        if (persisted?.id && !changes.length) {
             stateManager.markClean(saveRevision);
-            return { success: true, data: current, version: current.version };
+            return { success: true, data: persisted, version: persisted.version };
         }
-        if (current?.id && (!Number.isInteger(Number(current.version)) || Number(current.version) < 1)) {
+        if (persisted?.id && (!Number.isInteger(Number(persisted.version)) || Number(persisted.version) < 1)) {
             const error = new Error('Section version is unavailable. Reload before saving.');
             error.status = 428;
             throw error;
         }
-        const response = current?.id
-            ? await this.request(`/api/medical-records/${current.id}`, {
+        const response = persisted?.id
+            ? await this.request(`/api/medical-records/${persisted.id}`, {
                 method: 'PATCH',
-                headers: { ...(options.headers || {}), 'If-Match': current.etag || `"${current.version}"` },
-                body: JSON.stringify({ mrId, patientId: current.patientId, recordType: section, changes })
+                headers: { ...(options.headers || {}), 'If-Match': persisted.etag || `"${persisted.version}"` },
+                body: JSON.stringify({ mrId, patientId: persisted.patientId, recordType: section, changes })
             })
             : await this.request('/api/medical-records', {
                 method: 'POST', headers: options.headers || {},
@@ -211,27 +212,59 @@ class APIClient {
 
         if (response?.success && response.data) {
             const row = response.data;
-            const next = { ...current, id: row.id, mrId: row.mr_id || mrId,
-                patientId: row.patient_id || current?.patientId,
+            const next = { ...persisted, id: row.id, mrId: row.mr_id || mrId,
+                patientId: row.patient_id || persisted?.patientId,
                 version: response.version, etag: response.etag || `"${response.version}"`,
                 data: row.record_data };
+            const persistedMedicalRecords = stateManager.get('persistedMedicalRecords') || { byType: {} };
+            stateManager.set('persistedMedicalRecords', {
+                ...persistedMedicalRecords,
+                byType: { ...(persistedMedicalRecords.byType || {}), [section]: next }
+            });
             const medicalRecords = stateManager.get('medicalRecords') || { byType: {} };
+            const draftChangedDuringSave = (stateManager.get('dirtyRevision') || 0) !== saveRevision;
+            const latestDraft = medicalRecords.byType?.[section]?.data;
             stateManager.set('medicalRecords', {
                 ...medicalRecords,
-                byType: { ...(medicalRecords.byType || {}), [section]: next }
+                byType: { ...(medicalRecords.byType || {}), [section]: {
+                    ...next, data: draftChangedDuringSave ? latestDraft : row.record_data
+                } }
             });
-            stateManager.replaceSectionData(section, row.record_data);
-            stateManager.markClean(saveRevision);
+            if (!draftChangedDuringSave) {
+                stateManager.replaceSectionData(section, row.record_data);
+                stateManager.markClean(saveRevision);
+            }
         }
 
         return response;
+    }
+
+    /** Reset only the loaded, versioned section in this exact visit. */
+    async resetSection(mrId, section) {
+        const row = stateManager.get('persistedMedicalRecords')?.byType?.[section]
+            || stateManager.get('medicalRecords')?.byType?.[section];
+        const patientId = row?.patientId || row?.patient_id;
+        if (!mrId || mrId !== stateManager.get('currentMrId') ||
+            (row?.mrId || row?.mr_id) !== mrId || !row?.id || !patientId ||
+            !Number.isInteger(Number(row.version)) || Number(row.version) < 1) {
+            const error = new Error('Section scope or version is unavailable. Reload before resetting.');
+            error.status = 428;
+            throw error;
+        }
+        return this.request(`/api/medical-records/${encodeURIComponent(mrId)}/sections/${encodeURIComponent(section)}/reset`, {
+            method: 'POST',
+            headers: { 'If-Match': row.etag || `"${row.version}"` },
+            body: JSON.stringify({ patientId })
+        });
     }
 
     /**
      * Save entire medical record (all sections)
      */
     async saveRecord(mrId, recordData) {
-        return this.put(`${API_ENDPOINTS.RECORDS}/${mrId}`, recordData);
+        const error = new Error('Whole-record save is retired. Save a loaded, versioned section instead.');
+        error.status = 410;
+        throw error;
     }
 
     /**

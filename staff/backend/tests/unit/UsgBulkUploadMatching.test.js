@@ -10,6 +10,10 @@ const mockDb = {
 const mockR2Storage = {
     uploadFile: jest.fn()
 };
+const mockClinicalPhotos = {
+    appendPhotos: jest.fn().mockResolvedValue({ version: 1 }),
+    compensateUploaded: jest.fn().mockResolvedValue({ attempted: 1, failed: 0 })
+};
 
 jest.mock('../../db', () => mockDb);
 jest.mock('../../utils/logger', () => ({
@@ -24,6 +28,7 @@ jest.mock('../../middleware/auth', () => ({
     }
 }));
 jest.mock('../../services/r2Storage', () => mockR2Storage);
+jest.mock('../../services/UsgClinicalPhotoService', () => mockClinicalPhotos);
 jest.mock('../../routes/patient-notifications', () => ({
     createPatientNotification: jest.fn().mockResolvedValue({ success: true })
 }));
@@ -299,7 +304,26 @@ describe('USG bulk upload patient matching regressions', () => {
             patient_id: 'P2026327',
             mr_id: 'DRD1089'
         }));
-        const medicalRecordLookup = mockDb.query.mock.calls.find(([sql]) => sql.includes("record_type = 'usg'"));
-        expect(medicalRecordLookup[1]).toEqual(['P2026327', 'DRD1089']);
+        expect(mockClinicalPhotos.appendPhotos).toHaveBeenCalledWith(expect.objectContaining({
+            patientId: 'P2026327', mrId: 'DRD1089', photos: [expect.objectContaining({ key: 'usg-photos/bulk-test.jpg' })]
+        }));
+        expect(mockDb.query.mock.calls.some(([sql]) => /(?:INSERT INTO|UPDATE|DELETE FROM) medical_records/i.test(sql))).toBe(false);
+    });
+
+    test('post-upload clinical failure reports error and compensates only newly uploaded object', async () => {
+        mockDb.query.mockImplementation(async sql => sql.includes('SELECT scr.id, scr.mr_id')
+            ? [[{ id: 1, mr_id: 'TEST001', patient_id: 'fixture-a', visit_location: 'klinik_private' }]]
+            : [{ affectedRows: 1, insertId: 1 }]);
+        mockClinicalPhotos.appendPhotos.mockRejectedValueOnce(new Error('Injected metadata failure'));
+        const response = await request(createApp())
+            .post('/api/usg-bulk-upload/execute')
+            .field('hospital', 'klinik_private')
+            .field('date', '2026-08-09')
+            .field('mappings', JSON.stringify([{ folderName: 'synthetic', patient_id: 'fixture-a', mr_id: 'TEST001', scr_id: 1,
+                files: [{ name: 'image.jpg', path: 'synthetic/image.jpg' }] }]))
+            .attach('zipFile', createZip('synthetic'), { filename: 'synthetic.zip', contentType: 'application/zip' });
+        expect(response.status).toBe(200);
+        expect(response.body.results[0].status).toBe('error');
+        expect(mockClinicalPhotos.compensateUploaded).toHaveBeenCalledWith([expect.objectContaining({ key: 'usg-photos/bulk-test.jpg' })]);
     });
 });

@@ -6,6 +6,10 @@
 // Store parsed data for applying to forms
 let parsedImportData = null;
 
+// Imported clinical data, patient identifiers and raw errors must not enter
+// browser logs, including the older debug paths retained for field mapping.
+function safeImportDiagnostic() {}
+
 function deriveSimrsSource(source, visitLocation) {
     if (source) {
         return source;
@@ -114,7 +118,7 @@ async function importMedicalParse() {
         showImportPreview(result.data);
 
     } catch (error) {
-        console.error('Import error:', error);
+        safeImportDiagnostic('Import error:', error);
         window.showToast('error', 'Error: ' + error.message);
         document.getElementById('btn-import-parse').innerHTML = '<i class="fas fa-search mr-1"></i>Parse & Preview';
         document.getElementById('btn-import-parse').disabled = false;
@@ -180,7 +184,7 @@ async function loadPatientsForImport() {
             });
         }
     } catch (error) {
-        console.error('Error loading patients:', error);
+        safeImportDiagnostic('Error loading patients:', error);
     }
 }
 
@@ -525,7 +529,7 @@ async function importMedicalApply() {
 
                 if (checkResult.success && checkResult.existingMrId) {
                     // Use existing DRD
-                    console.log('[Import] Using existing DRD:', checkResult.existingMrId);
+                    safeImportDiagnostic('[Import] Using existing DRD:', checkResult.existingMrId);
 
                     // Close modal first
                     $('#import-medical-modal').modal('hide');
@@ -582,7 +586,7 @@ async function importMedicalApply() {
                 }
 
             } catch (error) {
-                console.error('Check existing MR error:', error);
+                safeImportDiagnostic('Check existing MR error:', error);
                 if (applyBtn) {
                     applyBtn.innerHTML = originalBtnText;
                     applyBtn.disabled = false;
@@ -678,7 +682,7 @@ async function importMedicalApply() {
         }
 
     } catch (error) {
-        console.error('Apply error:', error);
+        safeImportDiagnostic('Apply error:', error);
         window.showToast('error', 'Error menerapkan data: ' + error.message);
     }
 }
@@ -696,24 +700,20 @@ function getMrIdFromUrl() {
  * Save section data to API for persistence
  */
 async function saveSectionToApi(mrId, section, data) {
+    const { default: apiClient } = await import('./api-client.js');
+    return persistImportedSection(apiClient, mrId, section, data);
+}
+
+async function persistImportedSection(apiClient, mrId, section, data) {
     if (!mrId || !section || !data || Object.keys(data).length === 0) {
-        return false;
+        const error = new Error('Kunjungan atau bagian impor tidak lengkap. Data impor tetap disimpan.');
+        error.status = 428;
+        throw error;
     }
 
-    try {
-        const { default: apiClient } = await import('./api-client.js');
-        const result = await apiClient.saveSection(mrId, section, data);
-        if (result.success) {
-            console.log(`[Import] Saved ${section} to database successfully`);
-            return true;
-        } else {
-            console.warn(`[Import] Failed to save ${section}:`, result.message);
-            return false;
-        }
-    } catch (error) {
-        console.error(`[Import] Error saving ${section} to API:`, error);
-        return false;
-    }
+    const result = await apiClient.saveSection(mrId, section, data);
+    if (!result?.success) throw new Error('Bagian impor gagal disimpan. Data impor tetap disimpan.');
+    return result;
 }
 
 /**
@@ -722,19 +722,19 @@ async function saveSectionToApi(mrId, section, data) {
  * Supports both 'pendingImportData' and 'simrs_import_data' keys
  */
 async function applyPendingImportData() {
-    console.log('[Import] applyPendingImportData called');
-    console.log('[Import] sessionStorage keys:', Object.keys(sessionStorage));
+    safeImportDiagnostic('[Import] applyPendingImportData called');
+    safeImportDiagnostic('[Import] sessionStorage keys:', Object.keys(sessionStorage));
 
     // Check for SIMRS import data first (from Chrome extension flow)
     const simrsData = sessionStorage.getItem('simrs_import_data');
     const simrsMrId = sessionStorage.getItem('simrs_import_mr_id');
 
-    console.log('[Import] simrsData exists:', !!simrsData);
-    console.log('[Import] simrsMrId:', simrsMrId);
+    safeImportDiagnostic('[Import] simrsData exists:', !!simrsData);
+    safeImportDiagnostic('[Import] simrsMrId:', simrsMrId);
 
     if (simrsData) {
-        console.log('[Import] Found SIMRS import data, processing...');
-        console.log('[Import] Raw simrsData:', simrsData.substring(0, 500));
+        safeImportDiagnostic('[Import] Found SIMRS import data, processing...');
+        safeImportDiagnostic('[Import] Raw simrsData:', simrsData.substring(0, 500));
         try {
             const importData = JSON.parse(simrsData);
             const parsed = importData.raw_parsed || importData;
@@ -746,7 +746,7 @@ async function applyPendingImportData() {
             // - RPD (Riwayat Penyakit Dahulu) → detail_riwayat_penyakit
             // - RPK (Riwayat Penyakit Keluarga) → riwayat_keluarga
             // NO LONGER concatenating all subjective fields - each field goes to its specific target
-            console.log('[Import] Subjective fields:', {
+            safeImportDiagnostic('[Import] Subjective fields:', {
                 keluhan_utama: parsed.subjective?.keluhan_utama,
                 rps: parsed.subjective?.rps,
                 rpd: parsed.subjective?.rpd,
@@ -754,7 +754,7 @@ async function applyPendingImportData() {
                 hpl: parsed.subjective?.hpl,
                 hpht: parsed.subjective?.hpht
             });
-            console.log('[Import] Assessment fields:', {
+            safeImportDiagnostic('[Import] Assessment fields:', {
                 gravida: parsed.assessment?.gravida,
                 para: parsed.assessment?.para,
                 abortus: parsed.assessment?.abortus,
@@ -839,7 +839,7 @@ async function applyPendingImportData() {
             };
 
             // Debug log the mapped values
-            console.log('[Import] Mapped obstetri values:', {
+            safeImportDiagnostic('[Import] Mapped obstetri values:', {
                 hpht: mappedTemplate.obstetri.hpht,
                 hpl: mappedTemplate.obstetri.hpl,
                 gravida: mappedTemplate.obstetri.gravida,
@@ -847,36 +847,34 @@ async function applyPendingImportData() {
                 abortus: mappedTemplate.obstetri.abortus,
                 anak_hidup: mappedTemplate.obstetri.anak_hidup
             });
-            console.log('[Import] visit_date/time:', { visit_date: mappedTemplate.visit_date, visit_time: mappedTemplate.visit_time });
-
-            // Clear SIMRS data from sessionStorage
-            sessionStorage.removeItem('simrs_import_data');
-            sessionStorage.removeItem('simrs_import_mr_id');
+            safeImportDiagnostic('[Import] visit_date/time:', { visit_date: mappedTemplate.visit_date, visit_time: mappedTemplate.visit_time });
 
             // Apply data using existing logic
             await applySIMRSImportData(mappedTemplate, importData.visit_date, importData.visit_time, importData.visit_location);
-            return;
-        } catch (e) {
-            console.error('[Import] Error parsing SIMRS data:', e);
             sessionStorage.removeItem('simrs_import_data');
             sessionStorage.removeItem('simrs_import_mr_id');
+            return;
+        } catch (e) {
+            safeImportDiagnostic('[Import] SIMRS data retained for retry');
+            window.showToast?.('error', 'Data impor belum tersimpan. Muat ulang versi rekam medis lalu coba lagi.');
+            return;
         }
     }
 
     // Check for standard pendingImportData
     const pendingData = sessionStorage.getItem('pendingImportData');
     if (!pendingData) {
-        console.log('[Import] No pending import data found');
+        safeImportDiagnostic('[Import] No pending import data found');
         return;
     }
 
     try {
         const { template, checkedFields, visitDate, visitTime, visitLocation } = JSON.parse(pendingData);
-        console.log('[Import] Found pending data:', { template, checkedFields, visitDate, visitTime, visitLocation });
+        safeImportDiagnostic('[Import] Found pending data:', { template, checkedFields, visitDate, visitTime, visitLocation });
 
         // Get MR ID from URL for API persistence
         const mrId = getMrIdFromUrl();
-        console.log('[Import] MR ID from URL:', mrId);
+        safeImportDiagnostic('[Import] MR ID from URL:', mrId);
 
         // Wait for stateManager to be ready
         let attempts = 0;
@@ -888,14 +886,14 @@ async function applyPendingImportData() {
         // Wait for DOM to be fully rendered
         await new Promise(r => setTimeout(r, 1000));
 
-        console.log('[Import] Applying pending import data...');
+        safeImportDiagnostic('[Import] Applying pending import data...');
 
         // Prepare data for API persistence
         const sectionsToSave = [];
 
         // Build record_datetime from visit_date and visit_time for stamping all sections
         const recordDatetime = visitDate ? `${visitDate}T${visitTime || '12:00'}` : '';
-        console.log('[Import] Record datetime for all sections:', recordDatetime);
+        safeImportDiagnostic('[Import] Record datetime for all sections:', recordDatetime);
 
         // Apply data to stateManager if available
         if (window.stateManager) {
@@ -983,9 +981,9 @@ async function applyPendingImportData() {
                     sectionsToSave.push({ section: 'planning', data: planningData });
                 }
 
-                console.log('[Import] StateManager updated successfully');
+                safeImportDiagnostic('[Import] StateManager updated successfully');
             } catch (stateError) {
-                console.error('[Import] StateManager update error:', stateError);
+                safeImportDiagnostic('[Import] StateManager update error:', stateError);
             }
         }
 
@@ -993,22 +991,18 @@ async function applyPendingImportData() {
         fillFormFieldsDirect(template, checkedFields || {});
 
         // PERSIST TO DATABASE via API
-        if (mrId && sectionsToSave.length > 0) {
-            console.log('[Import] Persisting data to database...');
-            let savedCount = 0;
-
+        if (sectionsToSave.length > 0) {
+            if (!mrId) throw new Error('MR kunjungan belum tersedia; data impor tetap disimpan.');
+            safeImportDiagnostic('[Import] Persisting data to database...');
             for (const { section, data } of sectionsToSave) {
-                const saved = await saveSectionToApi(mrId, section, data);
-                if (saved) savedCount++;
+                await saveSectionToApi(mrId, section, data);
             }
-
-            console.log(`[Import] Saved ${savedCount}/${sectionsToSave.length} sections to database`);
         }
 
         // Clear pending data
         sessionStorage.removeItem('pendingImportData');
 
-        console.log('[Import] Pending import data applied and persisted successfully');
+        safeImportDiagnostic('[Import] Pending import data applied and persisted successfully');
 
         // Show notification
         if (window.Swal) {
@@ -1022,8 +1016,8 @@ async function applyPendingImportData() {
         }
 
     } catch (error) {
-        console.error('[Import] Error applying pending data:', error);
-        sessionStorage.removeItem('pendingImportData');
+        safeImportDiagnostic('[Import] Pending data retained for retry');
+        window.showToast?.('error', 'Data impor belum tersimpan. Muat ulang versi rekam medis lalu coba lagi.');
     }
 }
 
@@ -1032,16 +1026,16 @@ async function applyPendingImportData() {
  * Similar to applyPendingImportData but handles SIMRS-specific data structure
  */
 async function applySIMRSImportData(template, visitDate, visitTime, visitLocation) {
-    console.log('[Import] applySIMRSImportData called');
-    console.log('[Import] Template anamnesa:', template.anamnesa);
-    console.log('[Import] Template obstetri:', template.obstetri);
-    console.log('[Import] Template pemeriksaan_fisik:', template.pemeriksaan_fisik);
-    console.log('[Import] Template planning:', template.planning);
-    console.log('[Import] visitDate/Time/Location:', { visitDate, visitTime, visitLocation });
+    safeImportDiagnostic('[Import] applySIMRSImportData called');
+    safeImportDiagnostic('[Import] Template anamnesa:', template.anamnesa);
+    safeImportDiagnostic('[Import] Template obstetri:', template.obstetri);
+    safeImportDiagnostic('[Import] Template pemeriksaan_fisik:', template.pemeriksaan_fisik);
+    safeImportDiagnostic('[Import] Template planning:', template.planning);
+    safeImportDiagnostic('[Import] visitDate/Time/Location:', { visitDate, visitTime, visitLocation });
 
     // Get MR ID from URL
     const mrId = getMrIdFromUrl();
-    console.log('[Import] MR ID from URL:', mrId);
+    safeImportDiagnostic('[Import] MR ID from URL:', mrId);
 
     // Wait for stateManager to be ready
     let attempts = 0;
@@ -1049,11 +1043,11 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
         await new Promise(r => setTimeout(r, 200));
         attempts++;
     }
-    console.log('[Import] stateManager ready after', attempts, 'attempts');
+    safeImportDiagnostic('[Import] stateManager ready after', attempts, 'attempts');
 
     // Wait for DOM to be fully rendered
     await new Promise(r => setTimeout(r, 1500)); // Increased to 1.5s
-    console.log('[Import] DOM wait complete, checking elements...');
+    safeImportDiagnostic('[Import] DOM wait complete, checking elements...');
 
     // Debug: Check if anamnesa and physical exam elements exist
     const keluhanEl = document.querySelector('#anamnesa-keluhan-utama');
@@ -1061,16 +1055,16 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
     const gravidaEl = document.querySelector('#anamnesa-gravida');
     const tinggiBadanEl = document.querySelector('#pe-tinggi-badan');
     const beratBadanEl = document.querySelector('#pe-berat-badan');
-    console.log('[Import] Element check:', {
+    safeImportDiagnostic('[Import] Element check:', {
         keluhanUtama: !!keluhanEl,
         hpht: !!hphtEl,
         gravida: !!gravidaEl,
         tinggiBadan: !!tinggiBadanEl,
         beratBadan: !!beratBadanEl
     });
-    console.log('[Import] pemeriksaan_fisik data:', template.pemeriksaan_fisik);
+    safeImportDiagnostic('[Import] pemeriksaan_fisik data:', template.pemeriksaan_fisik);
 
-    console.log('[Import] Applying SIMRS import data...');
+    safeImportDiagnostic('[Import] Applying SIMRS import data...');
 
     // Prepare sections to save to database
     const sectionsToSave = [];
@@ -1081,8 +1075,8 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
     const effectiveVisitDate = visitDate || template?.visit_date || parsedImportData?.visit_date || '';
     const effectiveVisitTime = visitTime || template?.visit_time || parsedImportData?.visit_time || '12:00';
     const recordDatetime = effectiveVisitDate ? `${effectiveVisitDate}T${effectiveVisitTime}` : '';
-    console.log('[Import] Building recordDatetime from:', { visitDate, visitTime, templateDate: template?.visit_date, templateTime: template?.visit_time, effectiveVisitDate, effectiveVisitTime, recordDatetime });
-    console.log('[Import] Record datetime for all sections:', recordDatetime);
+    safeImportDiagnostic('[Import] Building recordDatetime from:', { visitDate, visitTime, templateDate: template?.visit_date, templateTime: template?.visit_time, effectiveVisitDate, effectiveVisitTime, recordDatetime });
+    safeImportDiagnostic('[Import] Record datetime for all sections:', recordDatetime);
 
     // Helper: check if object has any non-null, non-empty values
     const hasAnyValue = (obj) => {
@@ -1102,7 +1096,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
                 if (recordDatetime) anamnesaUpdates.record_datetime = recordDatetime;
                 window.stateManager.updateSectionData('anamnesa', anamnesaUpdates);
                 sectionsToSave.push({ section: 'anamnesa', data: anamnesaUpdates });
-                console.log('[Import] Saving anamnesa with data:', anamnesaUpdates);
+                safeImportDiagnostic('[Import] Saving anamnesa with data:', anamnesaUpdates);
             }
 
             // Update physical exam - save if has recordDatetime OR any values
@@ -1111,7 +1105,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
                 if (recordDatetime) physicalExamData.record_datetime = recordDatetime;
                 window.stateManager.updateSectionData('physical_exam', physicalExamData);
                 sectionsToSave.push({ section: 'physical_exam', data: physicalExamData });
-                console.log('[Import] Saving physical_exam with data:', physicalExamData);
+                safeImportDiagnostic('[Import] Saving physical_exam with data:', physicalExamData);
             }
 
             // Update diagnosis - save if has recordDatetime OR any values
@@ -1120,7 +1114,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
                 if (recordDatetime) diagnosisData.record_datetime = recordDatetime;
                 window.stateManager.updateSectionData('diagnosis', diagnosisData);
                 sectionsToSave.push({ section: 'diagnosis', data: diagnosisData });
-                console.log('[Import] Saving diagnosis with data:', diagnosisData);
+                safeImportDiagnostic('[Import] Saving diagnosis with data:', diagnosisData);
             }
 
             // Update obstetri - save if has recordDatetime OR any values
@@ -1129,7 +1123,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
                 if (recordDatetime) obstetriData.record_datetime = recordDatetime;
                 window.stateManager.updateSectionData('pemeriksaan_obstetri', obstetriData);
                 sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: obstetriData });
-                console.log('[Import] Saving pemeriksaan_obstetri with data:', obstetriData);
+                safeImportDiagnostic('[Import] Saving pemeriksaan_obstetri with data:', obstetriData);
             }
 
             // Update planning - save if has recordDatetime OR any planning data
@@ -1158,12 +1152,12 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
                 if (recordDatetime) planningData.record_datetime = recordDatetime;
                 window.stateManager.updateSectionData('planning', planningData);
                 sectionsToSave.push({ section: 'planning', data: planningData });
-                console.log('[Import] Saving planning with data:', planningData);
+                safeImportDiagnostic('[Import] Saving planning with data:', planningData);
             }
 
-            console.log('[Import] StateManager updated with SIMRS data');
+            safeImportDiagnostic('[Import] StateManager updated with SIMRS data');
         } catch (stateError) {
-            console.error('[Import] StateManager update error:', stateError);
+            safeImportDiagnostic('[Import] StateManager update error:', stateError);
         }
     }
 
@@ -1172,7 +1166,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
 
     // Retry fill for fields after additional delay (they might load later)
     setTimeout(() => {
-        console.log('[Import] Retrying fill for TB/BB/Riwayat Kehamilan after delay...');
+        safeImportDiagnostic('[Import] Retrying fill for TB/BB/Riwayat Kehamilan after delay...');
 
         // TB/BB - Fill values and manually calculate BMI
         const tbEl = document.querySelector('#pe-tinggi-badan');
@@ -1182,32 +1176,32 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
 
         if (tbEl && template.pemeriksaan_fisik?.tinggi_badan) {
             tbEl.value = template.pemeriksaan_fisik.tinggi_badan;
-            console.log('[Import] Filled TB:', template.pemeriksaan_fisik.tinggi_badan);
+            safeImportDiagnostic('[Import] Filled TB:', template.pemeriksaan_fisik.tinggi_badan);
         }
         if (bbEl && template.pemeriksaan_fisik?.berat_badan) {
             bbEl.value = template.pemeriksaan_fisik.berat_badan;
-            console.log('[Import] Filled BB:', template.pemeriksaan_fisik.berat_badan);
+            safeImportDiagnostic('[Import] Filled BB:', template.pemeriksaan_fisik.berat_badan);
         }
 
         // Debug: Check element existence
-        console.log('[Import] Element check - TB:', !!tbEl, 'BB:', !!bbEl, 'IMT:', !!imtEl, 'KategoriIMT:', !!kategoriImtEl);
-        console.log('[Import] TB value:', tbEl?.value, 'BB value:', bbEl?.value);
+        safeImportDiagnostic('[Import] Element check - TB:', !!tbEl, 'BB:', !!bbEl, 'IMT:', !!imtEl, 'KategoriIMT:', !!kategoriImtEl);
+        safeImportDiagnostic('[Import] TB value:', tbEl?.value, 'BB value:', bbEl?.value);
 
         // Manually calculate BMI since event listeners may not be ready
         const tinggi = parseFloat(tbEl?.value);
         const berat = parseFloat(bbEl?.value);
-        console.log('[Import] Parsed - tinggi:', tinggi, 'berat:', berat);
+        safeImportDiagnostic('[Import] Parsed - tinggi:', tinggi, 'berat:', berat);
 
         if (tinggi && berat && tinggi > 0) {
             const tinggiMeter = tinggi / 100;
             const imt = (berat / (tinggiMeter * tinggiMeter)).toFixed(1);
-            console.log('[Import] Calculated IMT value:', imt);
+            safeImportDiagnostic('[Import] Calculated IMT value:', imt);
 
             if (imtEl) {
                 imtEl.value = imt;
-                console.log('[Import] Set IMT field to:', imt);
+                safeImportDiagnostic('[Import] Set IMT field to:', imt);
             } else {
-                console.error('[Import] IMT element not found!');
+                safeImportDiagnostic('[Import] IMT element not found!');
             }
 
             // Set kategori IMT
@@ -1222,12 +1216,12 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
 
             if (kategoriImtEl) {
                 kategoriImtEl.value = kategori;
-                console.log('[Import] Set Kategori IMT to:', kategori);
+                safeImportDiagnostic('[Import] Set Kategori IMT to:', kategori);
             } else {
-                console.error('[Import] Kategori IMT element not found!');
+                safeImportDiagnostic('[Import] Kategori IMT element not found!');
             }
         } else {
-            console.log('[Import] Cannot calculate IMT - missing TB or BB values');
+            safeImportDiagnostic('[Import] Cannot calculate IMT - missing TB or BB values');
         }
 
         // Riwayat Kehamilan Saat Ini
@@ -1235,7 +1229,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
         if (riwayatEl && template.anamnesa?.riwayat_kehamilan_saat_ini) {
             riwayatEl.value = template.anamnesa.riwayat_kehamilan_saat_ini;
             riwayatEl.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('[Import] Filled Riwayat Kehamilan:', template.anamnesa.riwayat_kehamilan_saat_ini.substring(0, 100));
+            safeImportDiagnostic('[Import] Filled Riwayat Kehamilan:', template.anamnesa.riwayat_kehamilan_saat_ini.substring(0, 100));
         }
 
         // HPL and HPHT - convert DD/MM/YYYY to YYYY-MM-DD for date inputs
@@ -1255,28 +1249,28 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
         // Fill HPL
         const hplEl = document.querySelector('#anamnesa-hpl');
         const hplValue = template.anamnesa?.hpl || template.obstetri?.hpl;
-        console.log('[Import] HPL raw value:', hplValue, 'Element exists:', !!hplEl);
+        safeImportDiagnostic('[Import] HPL raw value:', hplValue, 'Element exists:', !!hplEl);
         if (hplEl && hplValue) {
             const isoHpl = convertToISODate(hplValue);
-            console.log('[Import] HPL converted to ISO:', isoHpl);
+            safeImportDiagnostic('[Import] HPL converted to ISO:', isoHpl);
             if (isoHpl) {
                 hplEl.value = isoHpl;
                 hplEl.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log('[Import] Filled HPL:', isoHpl);
+                safeImportDiagnostic('[Import] Filled HPL:', isoHpl);
             }
         }
 
         // Fill HPHT
         const hphtEl = document.querySelector('#anamnesa-hpht');
         const hphtValue = template.anamnesa?.hpht || template.obstetri?.hpht;
-        console.log('[Import] HPHT raw value:', hphtValue, 'Element exists:', !!hphtEl);
+        safeImportDiagnostic('[Import] HPHT raw value:', hphtValue, 'Element exists:', !!hphtEl);
         if (hphtEl && hphtValue) {
             const isoHpht = convertToISODate(hphtValue);
-            console.log('[Import] HPHT converted to ISO:', isoHpht);
+            safeImportDiagnostic('[Import] HPHT converted to ISO:', isoHpht);
             if (isoHpht) {
                 hphtEl.value = isoHpht;
                 hphtEl.dispatchEvent(new Event('change', { bubbles: true }));
-                console.log('[Import] Filled HPHT:', isoHpht);
+                safeImportDiagnostic('[Import] Filled HPHT:', isoHpht);
             }
         }
 
@@ -1291,34 +1285,34 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
         const abortusVal = template.anamnesa?.abortus ?? template.obstetri?.abortus;
         const anakHidupVal = template.anamnesa?.anak_hidup ?? template.obstetri?.anak_hidup;
 
-        console.log('[Import] Obstetric values - Gravida:', gravidaVal, 'Para:', paraVal, 'Abortus:', abortusVal, 'AnakHidup:', anakHidupVal);
+        safeImportDiagnostic('[Import] Obstetric values - Gravida:', gravidaVal, 'Para:', paraVal, 'Abortus:', abortusVal, 'AnakHidup:', anakHidupVal);
 
         if (gravidaEl && (gravidaVal !== undefined && gravidaVal !== null)) {
             gravidaEl.value = gravidaVal;
             gravidaEl.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('[Import] Filled Gravida:', gravidaVal);
+            safeImportDiagnostic('[Import] Filled Gravida:', gravidaVal);
         }
         if (paraEl && (paraVal !== undefined && paraVal !== null)) {
             paraEl.value = paraVal;
             paraEl.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('[Import] Filled Para:', paraVal);
+            safeImportDiagnostic('[Import] Filled Para:', paraVal);
         }
         if (abortusEl && (abortusVal !== undefined && abortusVal !== null)) {
             abortusEl.value = abortusVal;
             abortusEl.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('[Import] Filled Abortus:', abortusVal);
+            safeImportDiagnostic('[Import] Filled Abortus:', abortusVal);
         }
         if (anakHidupEl && (anakHidupVal !== undefined && anakHidupVal !== null)) {
             anakHidupEl.value = anakHidupVal;
             anakHidupEl.dispatchEvent(new Event('change', { bubbles: true }));
-            console.log('[Import] Filled Anak Hidup:', anakHidupVal);
+            safeImportDiagnostic('[Import] Filled Anak Hidup:', anakHidupVal);
         }
 
         // Retry fill datetime fields for all sections
         // For SIMRS import, use template.visit_date/visit_time (passed from Chrome extension)
         const visitDate = template?.visit_date || parsedImportData?.visit_date || '';
         const visitTime = template?.visit_time || parsedImportData?.visit_time || '12:00';
-        console.log('[Import] Retry datetime - visitDate:', visitDate, 'visitTime:', visitTime);
+        safeImportDiagnostic('[Import] Retry datetime - visitDate:', visitDate, 'visitTime:', visitTime);
         if (visitDate) {
             const datetime = `${visitDate}T${visitTime}`;
             const datetimeFields = [
@@ -1336,39 +1330,35 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
                 if (el) {  // Always overwrite with MEDIFY datetime
                     el.value = datetime;
                     el.dispatchEvent(new Event('change', { bubbles: true }));
-                    console.log(`[Import] Set datetime ${selector} to: ${datetime}`);
+                    safeImportDiagnostic(`[Import] Set datetime ${selector} to: ${datetime}`);
                 }
             });
         }
     }, 3000); // Retry after 3 more seconds
 
     // Persist to database via API
-    if (mrId && sectionsToSave.length > 0) {
-        console.log('[Import] Persisting SIMRS data to database...');
-        let savedCount = 0;
-
+    if (sectionsToSave.length > 0) {
+        if (!mrId) throw new Error('MR kunjungan belum tersedia; data SIMRS tetap disimpan.');
+        safeImportDiagnostic('[Import] Persisting SIMRS data to database...');
         for (const { section, data } of sectionsToSave) {
-            const saved = await saveSectionToApi(mrId, section, data);
-            if (saved) savedCount++;
+            await saveSectionToApi(mrId, section, data);
         }
 
-        console.log(`[Import] Saved ${savedCount}/${sectionsToSave.length} SIMRS sections to database`);
-
         // Re-fetch and render the record to ensure form displays saved data
-        if (savedCount > 0 && window.sundayClinicApp && typeof window.sundayClinicApp.fetchRecord === 'function') {
-            console.log('[Import] Re-fetching record to refresh form display...');
+        if (window.sundayClinicApp && typeof window.sundayClinicApp.fetchRecord === 'function') {
+            safeImportDiagnostic('[Import] Re-fetching record to refresh form display...');
             setTimeout(async () => {
                 try {
                     await window.sundayClinicApp.fetchRecord(mrId);
-                    console.log('[Import] Form refreshed with saved data');
+                    safeImportDiagnostic('[Import] Form refreshed with saved data');
                 } catch (e) {
-                    console.error('[Import] Failed to refresh form:', e);
+                    safeImportDiagnostic('[Import] Failed to refresh form:', e);
                 }
             }, 500); // Small delay to ensure API has processed
         }
     }
 
-    console.log('[Import] SIMRS import data applied successfully');
+    safeImportDiagnostic('[Import] SIMRS import data applied successfully');
 
     // Show notification with correct hospital name
     const hospitalName = getSimrsSourceLabel(parsedImportData?.source, parsedImportData?.visit_location);
@@ -1389,7 +1379,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
  * Maps imported data fields to actual form element IDs in the Sunday Clinic components
  */
 function fillFormFieldsDirect(template, checkedFields) {
-    console.log('[Import] fillFormFieldsDirect called with template:', template);
+    safeImportDiagnostic('[Import] fillFormFieldsDirect called with template:', template);
 
     // Fill datetime fields for all sections using visit_date and visit_time from template
     const visitDate = template.visit_date || parsedImportData?.visit_date || '';
@@ -1410,7 +1400,7 @@ function fillFormFieldsDirect(template, checkedFields) {
             const el = document.querySelector(selector);
             if (el) {
                 el.value = datetime;
-                console.log(`[Import] Filled datetime ${selector} with: ${datetime}`);
+                safeImportDiagnostic(`[Import] Filled datetime ${selector} with: ${datetime}`);
             }
         });
     }
@@ -1514,18 +1504,18 @@ function fillFormFieldsDirect(template, checkedFields) {
 
         if (terapiText) {
             allData.terapi = terapiText;
-            console.log('[Import] Built terapi text:', terapiText.substring(0, 200));
+            safeImportDiagnostic('[Import] Built terapi text:', terapiText.substring(0, 200));
         }
 
         // Build tindakan text separately (procedures)
         if (template.planning.tindakan && template.planning.tindakan.length > 0) {
             const tindakanText = template.planning.tindakan.join('\n');
             allData.tindakan = tindakanText;
-            console.log('[Import] Built tindakan text:', tindakanText.substring(0, 200));
+            safeImportDiagnostic('[Import] Built tindakan text:', tindakanText.substring(0, 200));
         }
     }
 
-    console.log('[Import] fillFormFieldsDirect allData keys:', Object.keys(allData));
+    safeImportDiagnostic('[Import] fillFormFieldsDirect allData keys:', Object.keys(allData));
 
     // Helper to convert date from DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD (for type="date" inputs)
     function convertToISODate(dateStr) {
@@ -1566,13 +1556,13 @@ function fillFormFieldsDirect(template, checkedFields) {
                     const isoDate = convertToISODate(valueToSet);
                     if (isoDate) {
                         valueToSet = isoDate;
-                        console.log(`[Import] Converted ${field} from "${allData[field]}" to ISO: "${isoDate}"`);
+                        safeImportDiagnostic(`[Import] Converted ${field} from "${allData[field]}" to ISO: "${isoDate}"`);
                     } else {
-                        console.warn(`[Import] Could not convert ${field} date: "${valueToSet}"`);
+                        safeImportDiagnostic(`[Import] Could not convert ${field} date: "${valueToSet}"`);
                     }
                 }
 
-                console.log(`[Import] Filling ${field} with:`, valueToSet);
+                safeImportDiagnostic(`[Import] Filling ${field} with:`, valueToSet);
                 if (element.tagName === 'SELECT') {
                     // Try to find matching option
                     const value = String(valueToSet).toLowerCase();
@@ -1594,7 +1584,7 @@ function fillFormFieldsDirect(template, checkedFields) {
             }
         }
     }
-    console.log(`[Import] Filled ${filledCount} form fields via DOM`);
+    safeImportDiagnostic(`[Import] Filled ${filledCount} form fields via DOM`);
 
     // Trigger gestational age calculation if HPL or HPHT is filled
     // Wait a bit for form to stabilize then trigger calculation
@@ -1614,7 +1604,7 @@ function fillFormFieldsDirect(template, checkedFields) {
                 if (hphtInput) {
                     hphtInput.value = hphtValue;
                     hphtInput.dispatchEvent(new Event('change', { bubbles: true }));
-                    console.log('[Import] Calculated HPHT from HPL:', hphtValue);
+                    safeImportDiagnostic('[Import] Calculated HPHT from HPL:', hphtValue);
                 }
             }
         }
@@ -1701,16 +1691,16 @@ function openImportModal() {
 function openImportModalWithExtensionData() {
     const simrsData = sessionStorage.getItem('simrs_import_data');
     if (!simrsData) {
-        console.log('[Import] No SIMRS data in sessionStorage, opening empty modal');
+        safeImportDiagnostic('[Import] No SIMRS data in sessionStorage, opening empty modal');
         openImportModal();
         return;
     }
 
     try {
         const data = JSON.parse(simrsData);
-        console.log('[Import] Opening import modal with extension data');
-        console.log('[Import] Source:', data.source);
-        console.log('[Import] Visit location:', data.visit_location);
+        safeImportDiagnostic('[Import] Opening import modal with extension data');
+        safeImportDiagnostic('[Import] Source:', data.source);
+        safeImportDiagnostic('[Import] Visit location:', data.visit_location);
 
         // Store as parsedImportData for the apply function
         parsedImportData = data;
@@ -1728,7 +1718,7 @@ function openImportModalWithExtensionData() {
         $('#import-medical-modal').modal('show');
 
     } catch (e) {
-        console.error('[Import] Error parsing extension data:', e);
+        safeImportDiagnostic('[Import] Error parsing extension data:', e);
         openImportModal();
     }
 }
@@ -1828,7 +1818,7 @@ async function handleBulkFilesSelect(event) {
         displayBulkImportResults(result.data, files);
 
     } catch (error) {
-        console.error('Bulk import error:', error);
+        safeImportDiagnostic('Bulk import error:', error);
         window.showToast('error', 'Error: ' + error.message);
     }
 }
@@ -1998,83 +1988,15 @@ async function applyBulkImport() {
  * Save multiple records to database
  */
 async function saveBulkRecords(items) {
-    const token = window.getToken ? window.getToken() : '';
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
-
-    for (const item of items) {
-        try {
-            // Get patient ID from the form or search
-            const patientId = await findOrCreatePatient(item.template.identitas);
-
-            if (!patientId) {
-                errors.push(`Pasien "${item.patient_name}" tidak ditemukan`);
-                errorCount++;
-                continue;
-            }
-
-            // Generate MR ID if needed
-            const mrId = `MR-${patientId}-${Date.now()}`;
-
-            const response = await fetch('/api/medical-import/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    patient_id: patientId,
-                    mr_id: mrId,
-                    category: item.category,
-                    visit_date: item.visit_date,
-                    visit_location: item.visit_location,
-                    record_data: item.template
-                })
-            });
-
-            const result = await response.json();
-            if (result.success) {
-                successCount++;
-            } else {
-                errors.push(`${item.patient_name}: ${result.message}`);
-                errorCount++;
-            }
-        } catch (err) {
-            errors.push(`${item.patient_name}: ${err.message}`);
-            errorCount++;
-        }
-    }
-
-    // Show result
-    let message = `Berhasil menyimpan ${successCount} dari ${items.length} catatan.`;
-    if (errorCount > 0) {
-        message += `\n\nGagal (${errorCount}):\n` + errors.join('\n');
-    }
-
+    // This legacy batch path never resolved a patient or canonical visit: its
+    // findOrCreatePatient placeholder always returned null. Do not invent an MR
+    // or discard selected drafts; each item must be applied to a loaded visit.
+    const message = 'Simpan tiap item melalui kunjungan Sunday Clinic yang sesuai. Pilihan impor tetap tersimpan.';
     if (window.Swal) {
-        Swal.fire({
-            icon: errorCount === 0 ? 'success' : 'warning',
-            title: errorCount === 0 ? 'Berhasil' : 'Sebagian Berhasil',
-            text: message
-        });
+        Swal.fire({ icon: 'warning', title: 'Pilih kunjungan', text: message });
     } else {
-        window.showToast(errorCount === 0 ? 'success' : 'warning', message);
+        window.showToast('warning', message);
     }
-
-    $('#bulk-import-modal').modal('hide');
-    resetBulkImportModal();
-}
-
-/**
- * Find or create patient based on identity data
- * Returns patient_id or null
- */
-async function findOrCreatePatient(identitas) {
-    // This is a placeholder - actual implementation would search/create patient
-    // For now, return null to skip automatic patient creation
-    console.log('Finding patient:', identitas);
-    return null;
 }
 
 /**
@@ -2088,9 +2010,9 @@ function checkUrlImportParam() {
     if (importData) {
         try {
             const data = JSON.parse(importData);
-            console.log('[Import] Found import data in URL parameter');
-            console.log('[Import] Source:', data.source);
-            console.log('[Import] Visit location:', data.visit_location);
+            safeImportDiagnostic('[Import] Found import data in URL parameter');
+            safeImportDiagnostic('[Import] Source:', data.source);
+            safeImportDiagnostic('[Import] Visit location:', data.visit_location);
 
             // Store in sessionStorage for processing by applyPendingImportData
             sessionStorage.setItem('simrs_import_data', JSON.stringify(data));
@@ -2105,10 +2027,10 @@ function checkUrlImportParam() {
             const newUrl = window.location.pathname + window.location.hash;
             window.history.replaceState({}, '', newUrl);
 
-            console.log('[Import] Stored in sessionStorage, cleaned URL');
+            safeImportDiagnostic('[Import] Stored in sessionStorage, cleaned URL');
             return true;
         } catch (e) {
-            console.error('[Import] Error parsing import URL param:', e);
+            safeImportDiagnostic('[Import] Error parsing import URL param:', e);
         }
     }
     return false;

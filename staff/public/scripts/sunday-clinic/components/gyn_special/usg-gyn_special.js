@@ -310,11 +310,8 @@ export function render() {
             resetBtn.addEventListener('click', async () => {
                 if (confirm('Yakin ingin menghapus semua data USG?')) {
                     try {
-                        const patientId = state.derived?.patientId;
                         const mrId = state.currentMrId;
-                        if (!patientId) throw new Error('Patient ID not found');
-
-                        await apiClient.delete(`/api/medical-records/by-type/usg?patientId=${patientId}&mrId=${mrId}`);
+                        await apiClient.resetSection(mrId, 'usg');
                         window.showSuccess('Data USG berhasil direset.');
 
                         const SundayClinicApp = (await import('../../main.js')).default;
@@ -378,7 +375,6 @@ async function saveUSGGynSpecial() {
     try {
         const state = stateManager.getState();
         const context = getMedicalRecordContext(state, 'usg');
-        const existingRecordId = context?.record?.id;
 
         // Collect myoma locations
         const myomaLocations = Array.from(document.querySelectorAll('input[name="myoma_location"]:checked')).map(el => el.value);
@@ -423,13 +419,8 @@ async function saveUSGGynSpecial() {
 
         if (!patientId) throw new Error('Patient ID not found');
 
-        const payload = { patientId, mrId, type: 'usg', data: usgData };
-
-        if (existingRecordId) {
-            await apiClient.put(`/api/medical-records/${existingRecordId}`, { type: 'usg', data: usgData });
-        } else {
-            await apiClient.post('/api/medical-records', payload);
-        }
+        if (!mrId) throw new Error('MR ID not found');
+        await apiClient.saveSection(mrId, 'usg', usgData);
 
         window.showSuccess('Data USG berhasil disimpan!');
         const SundayClinicApp = (await import('../../main.js')).default;

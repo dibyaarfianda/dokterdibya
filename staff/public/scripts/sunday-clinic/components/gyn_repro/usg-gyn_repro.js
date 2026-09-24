@@ -151,27 +151,14 @@ async function savePhotosToDatabase(photos) {
 
         if (!patientId || !mrId) return;
 
-        const token = window.getToken?.() || '';
-        if (!token) return;
-
         const context = getMedicalRecordContext(state, 'usg');
         const existingData = context?.data || {};
-
-        // Use sunday-clinic endpoint which has auto-publish logic
-        await fetch(`/api/sunday-clinic/records/${mrId}/usg`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                ...existingData,
-                photos
-            })
-        });
-        console.log('[USG GynRepro] Photos saved to database (with auto-publish)');
+        await apiClient.saveSection(mrId, 'usg', { ...existingData, photos });
+        console.log('[USG GynRepro] Photos saved to database');
     } catch (error) {
         console.error('[USG GynRepro] Error saving photos:', error);
+        window.showError?.('Gagal menyimpan foto USG: ' + error.message);
+        throw error;
     }
 }
 
@@ -495,11 +482,8 @@ export function render() {
             resetBtn.addEventListener('click', async () => {
                 if (confirm('Yakin ingin menghapus semua data USG?')) {
                     try {
-                        const patientId = state.derived?.patientId;
                         const mrId = state.currentMrId;
-                        if (!patientId) throw new Error('Patient ID not found');
-
-                        await apiClient.delete(`/api/medical-records/by-type/usg?patientId=${patientId}&mrId=${mrId}`);
+                        await apiClient.resetSection(mrId, 'usg');
                         window.showSuccess('Data USG berhasil direset.');
 
                         const SundayClinicApp = (await import('../../main.js')).default;
@@ -563,7 +547,6 @@ async function saveUSGGynRepro() {
     try {
         const state = stateManager.getState();
         const context = getMedicalRecordContext(state, 'usg');
-        const existingRecordId = context?.record?.id;
 
         // Collect myoma locations
         const myomaLocations = Array.from(document.querySelectorAll('input[name="myoma_location"]:checked')).map(el => el.value);
@@ -600,13 +583,8 @@ async function saveUSGGynRepro() {
         const patientId = state.derived?.patientId;
         if (!patientId) throw new Error('Patient ID not found');
 
-        const payload = { patientId, type: 'usg', data: usgData };
-
-        if (existingRecordId) {
-            await apiClient.put(`/api/medical-records/${existingRecordId}`, { type: 'usg', data: usgData });
-        } else {
-            await apiClient.post('/api/medical-records', payload);
-        }
+        if (!state.currentMrId) throw new Error('MR ID not found');
+        await apiClient.saveSection(state.currentMrId, 'usg', usgData);
 
         window.showSuccess('Data USG berhasil disimpan!');
         const SundayClinicApp = (await import('../../main.js')).default;

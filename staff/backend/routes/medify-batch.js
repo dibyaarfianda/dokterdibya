@@ -11,6 +11,7 @@ const { verifyToken, requireRoles } = require('../middleware/auth');
 const activityLogger = require('../services/activityLogger');
 const medifyService = require('../services/medifyPuppeteerService');
 const httpService = require('../services/medifyHttpService');
+const medifyRecords = require('../services/MedifyRecordImportService');
 
 // Restrict to dokter and admin roles
 const requireDocterOrAdmin = requireRoles('dokter', 'admin');
@@ -70,7 +71,7 @@ router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res)
         // Start background processing (async - don't await)
         const syncFn = syncMode === 'http' ? processSyncHttp : processSync;
         syncFn(batchId, source, date, userId).catch(err => {
-            console.error('[Medify] Sync error:', err);
+            console.error('[Medify] Sync error');
         });
 
         res.json({
@@ -81,7 +82,7 @@ router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res)
         });
 
     } catch (error) {
-        console.error('[Medify] Error starting sync:', error);
+        console.error('[Medify] Error starting sync');
         res.status(500).json({
             success: false,
             message: error.message
@@ -163,9 +164,9 @@ async function processSync(batchId, source, targetDate, userId) {
 
         for (let i = 0; i < simrsPatients.length; i++) {
             const simrsPatient = simrsPatients[i];
-            console.log(`[Medify] Processing ${i + 1}/${simrsPatients.length}: ${simrsPatient.name}`);
+            console.log(`[Medify] Processing ${i + 1}/${simrsPatients.length}`);
             emitProgress('matching', {
-                message: `Mencocokkan: ${simrsPatient.name}`,
+                message: 'Mencocokkan pasien...',
                 total: simrsPatients.length,
                 current: i + 1
             });
@@ -181,13 +182,13 @@ async function processSync(batchId, source, targetDate, userId) {
             });
 
             if (potentialMatches.length === 0) {
-                console.log(`[Medify] No name match for ${simrsPatient.name}`);
+                console.log('[Medify] No name match');
                 noMatches.push({ name: simrsPatient.name, reason: 'no_name_match' });
                 continue;
             }
 
             // Extract full identity from SIMRS for proper matching
-            console.log(`[Medify] Extracting identity for ${simrsPatient.name}...`);
+            console.log('[Medify] Extracting identity');
             const identity = await medifyService.extractPatientIdentity(page, source, simrsPatient.medId);
             await medifyService.delay(1000);
 
@@ -209,7 +210,7 @@ async function processSync(batchId, source, targetDate, userId) {
             }
 
             if (bestScore >= 3) {
-                console.log(`[Medify] MATCH: ${simrsPatient.name} → ${bestMatch.full_name} (${bestScore} factors: ${bestFactors.join(', ')})`);
+                console.log(`[Medify] Match by ${bestScore} factors`);
                 matches.push({
                     simrsPatient: { ...simrsPatient, ...identity },
                     dbPatient: bestMatch,
@@ -217,7 +218,7 @@ async function processSync(batchId, source, targetDate, userId) {
                     matchFactors: bestFactors
                 });
             } else {
-                console.log(`[Medify] No strong match for ${simrsPatient.name} (best: ${bestScore} factors)`);
+                console.log(`[Medify] No strong match (${bestScore} factors)`);
                 noMatches.push({ name: simrsPatient.name, reason: `only_${bestScore}_factors` });
             }
         }
@@ -281,7 +282,7 @@ async function processSync(batchId, source, targetDate, userId) {
         }
 
     } catch (error) {
-        console.error(`[Medify] Sync error:`, error);
+        console.error('[Medify] Sync error');
         await page.close();
 
         // Mark any pending jobs as failed
@@ -296,7 +297,7 @@ async function processSync(batchId, source, targetDate, userId) {
         if (global.io) {
             global.io.to('staff').emit('medify_sync_complete', {
                 batchId,
-                error: error.message,
+                error: 'Sync failed',
                 stats: { total: 0, success: 0, failed: 0, skipped: 0 }
             });
         }
@@ -308,7 +309,7 @@ async function processSync(batchId, source, targetDate, userId) {
  */
 async function processSyncJobs(batchId, source, page) {
     const jobs = await pool.query(
-        `SELECT id, patient_id, patient_name, simrs_med_id
+        `SELECT id, patient_id, patient_name, simrs_med_id, created_by
          FROM medify_import_jobs
          WHERE batch_id = ? AND status = 'pending'`,
         [batchId]
@@ -332,7 +333,7 @@ async function processSyncJobs(batchId, source, page) {
     for (let i = 0; i < jobs.length; i++) {
         const job = jobs[i];
         emitExtractProgress({
-            message: `Ekstrak: ${job.patient_name}`,
+            message: 'Mengekstrak rekam medis...',
             total: jobs.length,
             current: i + 1
         });
@@ -359,12 +360,13 @@ async function processSyncJobs(batchId, source, page) {
             }
 
             // Parse CPPT with AI
-            console.log(`[Medify] Parsing CPPT for ${job.patient_name}...`);
+            console.log('[Medify] Parsing CPPT');
             const aiParseResult = await parseWithAI(cpptResult.rawText, 'obstetri');
 
             // Save to medical record (creates DRD if needed)
-            console.log(`[Medify] Saving medical record for ${job.patient_name}...`);
-            const recordsSaved = await saveMedicalRecord(job.patient_id, source, aiParseResult);
+            console.log('[Medify] Saving medical record');
+            const recordsSaved = await saveMedicalRecord(job.patient_id, source, aiParseResult,
+                { id: job.created_by || 'medify-sync', name: 'Medify Sync' });
 
             // Save CPPT data and update status
             await pool.query(
@@ -377,10 +379,10 @@ async function processSyncJobs(batchId, source, page) {
                 [JSON.stringify(cpptResult), recordsSaved, job.id]
             );
 
-            console.log(`[Medify] CPPT extracted and saved for ${job.patient_name} (${recordsSaved} sections)`);
+            console.log(`[Medify] CPPT saved (${recordsSaved} sections)`);
 
         } catch (error) {
-            console.error(`[Medify] CPPT extraction failed for ${job.patient_name}:`, error.message);
+            console.error('[Medify] CPPT extraction failed');
             await pool.query(
                 `UPDATE medify_import_jobs
                  SET status = 'failed', error_message = ?, completed_at = NOW()
@@ -459,9 +461,9 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
 
         for (let i = 0; i < simrsPatients.length; i++) {
             const simrsPatient = simrsPatients[i];
-            console.log(`[Medify-HTTP] Processing ${i + 1}/${simrsPatients.length}: ${simrsPatient.name}`);
+            console.log(`[Medify-HTTP] Processing ${i + 1}/${simrsPatients.length}`);
             emitProgress('matching', {
-                message: `Mencocokkan: ${simrsPatient.name}`,
+                message: 'Mencocokkan pasien...',
                 total: simrsPatients.length,
                 current: i + 1
             });
@@ -476,13 +478,13 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
             });
 
             if (potentialMatches.length === 0) {
-                console.log(`[Medify-HTTP] No name match for ${simrsPatient.name}`);
+                console.log('[Medify-HTTP] No name match');
                 noMatches.push({ name: simrsPatient.name, reason: 'no_name_match' });
                 continue;
             }
 
             // Extract identity via HTTP
-            console.log(`[Medify-HTTP] Extracting identity for ${simrsPatient.name}...`);
+            console.log('[Medify-HTTP] Extracting identity');
             const identity = await session.extractPatientIdentity(simrsPatient.medId);
             await httpService.delay(500); // Smaller delay than puppeteer
 
@@ -504,7 +506,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
             }
 
             if (bestScore >= 3) {
-                console.log(`[Medify-HTTP] MATCH: ${simrsPatient.name} → ${bestMatch.full_name} (${bestScore} factors: ${bestFactors.join(', ')})`);
+                console.log(`[Medify-HTTP] Match by ${bestScore} factors`);
                 matches.push({
                     simrsPatient: { ...simrsPatient, ...identity },
                     dbPatient: bestMatch,
@@ -512,7 +514,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
                     matchFactors: bestFactors
                 });
             } else {
-                console.log(`[Medify-HTTP] No strong match for ${simrsPatient.name} (best: ${bestScore} factors)`);
+                console.log(`[Medify-HTTP] No strong match (${bestScore} factors)`);
                 noMatches.push({ name: simrsPatient.name, reason: `only_${bestScore}_factors` });
             }
         }
@@ -575,7 +577,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
         }
 
     } catch (error) {
-        console.error(`[Medify-HTTP] Sync error:`, error);
+        console.error('[Medify-HTTP] Sync error');
         await session.close();
 
         await pool.query(
@@ -588,7 +590,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
         if (global.io) {
             global.io.to('staff').emit('medify_sync_complete', {
                 batchId,
-                error: error.message,
+                error: 'Sync failed',
                 stats: { total: 0, success: 0, failed: 0, skipped: 0 }
             });
         }
@@ -600,7 +602,7 @@ async function processSyncHttp(batchId, source, targetDate, userId) {
  */
 async function processSyncJobsHttp(batchId, source, session) {
     const jobs = await pool.query(
-        `SELECT id, patient_id, patient_name, simrs_med_id
+        `SELECT id, patient_id, patient_name, simrs_med_id, created_by
          FROM medify_import_jobs
          WHERE batch_id = ? AND status = 'pending'`,
         [batchId]
@@ -619,7 +621,7 @@ async function processSyncJobsHttp(batchId, source, session) {
     for (let i = 0; i < jobs.length; i++) {
         const job = jobs[i];
         emitExtractProgress({
-            message: `Ekstrak: ${job.patient_name}`,
+            message: 'Mengekstrak rekam medis...',
             total: jobs.length,
             current: i + 1
         });
@@ -644,12 +646,13 @@ async function processSyncJobsHttp(batchId, source, session) {
             }
 
             // Parse CPPT with AI
-            console.log(`[Medify-HTTP] Parsing CPPT for ${job.patient_name}...`);
+            console.log('[Medify-HTTP] Parsing CPPT');
             const aiParseResult = await parseWithAI(cpptResult.rawText, 'obstetri');
 
             // Save to medical record
-            console.log(`[Medify-HTTP] Saving medical record for ${job.patient_name}...`);
-            const recordsSaved = await saveMedicalRecord(job.patient_id, source, aiParseResult);
+            console.log('[Medify-HTTP] Saving medical record');
+            const recordsSaved = await saveMedicalRecord(job.patient_id, source, aiParseResult,
+                { id: job.created_by || 'medify-sync', name: 'Medify Sync' });
 
             await pool.query(
                 `UPDATE medify_import_jobs
@@ -661,10 +664,10 @@ async function processSyncJobsHttp(batchId, source, session) {
                 [JSON.stringify(cpptResult), recordsSaved, job.id]
             );
 
-            console.log(`[Medify-HTTP] CPPT extracted and saved for ${job.patient_name} (${recordsSaved} sections)`);
+            console.log(`[Medify-HTTP] CPPT saved (${recordsSaved} sections)`);
 
         } catch (error) {
-            console.error(`[Medify-HTTP] CPPT extraction failed for ${job.patient_name}:`, error.message);
+            console.error('[Medify-HTTP] CPPT extraction failed');
             await pool.query(
                 `UPDATE medify_import_jobs
                  SET status = 'failed', error_message = ?, completed_at = NOW()
@@ -717,7 +720,7 @@ router.get('/status', verifyToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Medify] Error getting status:', error);
+        console.error('[Medify] Error getting status');
         res.status(500).json({
             success: false,
             message: error.message
@@ -770,7 +773,7 @@ router.get('/history', verifyToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Medify] Error getting history:', error);
+        console.error('[Medify] Error getting history');
         res.status(500).json({
             success: false,
             message: error.message
@@ -803,7 +806,7 @@ router.get('/jobs/:batchId', verifyToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Medify] Error getting jobs:', error);
+        console.error('[Medify] Error getting jobs');
         res.status(500).json({
             success: false,
             message: error.message
@@ -846,7 +849,7 @@ router.post('/credentials', verifyToken, requireRoles('dokter'), async (req, res
         });
 
     } catch (error) {
-        console.error('[Medify] Error saving credentials:', error);
+        console.error('[Medify] Error saving credentials');
         res.status(500).json({
             success: false,
             message: error.message
@@ -914,7 +917,7 @@ router.post('/test-connection', verifyToken, requireRoles('dokter'), async (req,
         }
 
     } catch (error) {
-        console.error('[Medify] Error testing connection:', error);
+        console.error('[Medify] Error testing connection');
         res.status(500).json({
             success: false,
             message: error.message
@@ -997,19 +1000,18 @@ router.post('/test-sync', verifyToken, requireDocterOrAdmin, async (req, res) =>
             });
         }
 
-        console.log(`[Medify Test] Starting test sync: ${simrsSearchName} → ${targetPatient[0].full_name}`);
+        console.log('[Medify Test] Starting test sync');
 
         // Log activity
-        await activityLogger.log(userId, userName, 'MEDIFY Test Sync Started',
-            `Target: ${targetPatient[0].full_name}, SIMRS Search: ${simrsSearchName}, Source: ${source}`);
+        await activityLogger.log(userId, userName, 'MEDIFY Test Sync Started', `Source: ${source}`);
 
         // Start test sync in background
-        testSyncProcess(targetPatientId, targetPatient[0].full_name, simrsSearchName, source, { dateStart, dateEnd })
+        testSyncProcess(targetPatientId, targetPatient[0].full_name, simrsSearchName, source, { dateStart, dateEnd }, req.user)
             .then(result => {
-                console.log(`[Medify Test] Test sync completed:`, result);
+                console.log(`[Medify Test] Test sync ${result.success ? 'completed' : 'failed'}`);
             })
             .catch(err => {
-                console.error('[Medify Test] Test sync error:', err);
+                console.error('[Medify Test] Test sync error');
             });
 
         res.json({
@@ -1022,7 +1024,7 @@ router.post('/test-sync', verifyToken, requireDocterOrAdmin, async (req, res) =>
         });
 
     } catch (error) {
-        console.error('[Medify Test] Error:', error);
+        console.error('[Medify Test] Error');
         res.status(500).json({
             success: false,
             message: error.message
@@ -1033,8 +1035,8 @@ router.post('/test-sync', verifyToken, requireDocterOrAdmin, async (req, res) =>
 /**
  * Test sync processor - single patient
  */
-async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchName, source, options = {}) {
-    console.log(`[Medify Test] Processing: ${simrsSearchName} → ${targetPatientName}`);
+async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchName, source, options = {}, actor) {
+    console.log('[Medify Test] Processing');
 
     const browser = await medifyService.getBrowser();
     let page = null;
@@ -1123,7 +1125,7 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
                 }
                 return { found: false, error: 'Dokter/DPJP select element not found' };
             });
-            console.log(`[Medify Test] DPJP filter:`, dpjpResult);
+            console.log(`[Medify Test] DPJP filter found: ${dpjpResult.found}`);
 
             // If direct select didn't work, try the visual Select2 interaction
             if (!dpjpResult.found) {
@@ -1160,7 +1162,7 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
             await medifyService.delay(1000); // Wait for filter to apply
 
         } catch (dpjpError) {
-            console.log(`[Medify Test] DPJP filter error (continuing):`, dpjpError.message);
+            console.log('[Medify Test] DPJP filter error (continuing)');
         }
 
         // Set date range
@@ -1252,9 +1254,9 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
         const searchWords = searchName.split(/\s+/).filter(w => w.length >= 2);
 
         // Debug: log all patients found
-        console.log(`[Medify Test] Search words: ${searchWords.join(', ')}`);
+        console.log(`[Medify Test] Search terms: ${searchWords.length}`);
         console.log(`[Medify Test] Total patients in table: ${allPatients.length}`);
-        console.log(`[Medify Test] First 20 patients:`, allPatients.map(p => p.name).slice(0, 20));
+        // Names and external case IDs must not enter diagnostics.
 
         const matchingPatients = allPatients.filter(p => {
             const pName = p.name.toLowerCase();
@@ -1262,7 +1264,7 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
             return searchWords.every(word => pName.includes(word));
         });
 
-        console.log(`[Medify Test] Found ${matchingPatients.length} matches for "${simrsSearchName}"`);
+        console.log(`[Medify Test] Found ${matchingPatients.length} matches`);
 
         if (matchingPatients.length === 0) {
             throw new Error(`Patient "${simrsSearchName}" not found in SIMRS`);
@@ -1270,7 +1272,7 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
 
         // Get first match
         const firstMatch = matchingPatients[0];
-        console.log(`[Medify Test] Using match: ${firstMatch.name} (${firstMatch.medId})`);
+        console.log('[Medify Test] Using match');
 
         // Extract CPPT
         const cpptResult = await medifyService.extractCPPT(page, source, firstMatch.medId);
@@ -1281,7 +1283,7 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
         console.log(`[Medify Test] AI parse complete`);
 
         // Save to target patient (creates new DRD)
-        const recordsSaved = await saveMedicalRecord(targetPatientId, source, aiParseResult);
+        const recordsSaved = await saveMedicalRecord(targetPatientId, source, aiParseResult, actor);
         console.log(`[Medify Test] Saved ${recordsSaved} record sections`);
 
         // Get the new MR ID
@@ -1293,11 +1295,11 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
         );
 
         const mrId = newMR && newMR.length > 0 ? newMR[0].mr_id : null;
-        console.log(`[Medify Test] New MR ID: ${mrId}`);
+        console.log('[Medify Test] Canonical visit resolved');
 
         // Generate resume and publish to portal
         if (mrId) {
-            await generateAndPublishResume(targetPatientId, mrId);
+            await generateAndPublishResume(targetPatientId, mrId, actor);
         }
 
         return {
@@ -1309,7 +1311,7 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
         };
 
     } catch (error) {
-        console.error(`[Medify Test] Error:`, error);
+        console.error('[Medify Test] Error');
         return {
             success: false,
             error: error.message
@@ -1324,358 +1326,41 @@ async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchNa
 /**
  * Generate resume medis and publish to patient portal
  */
-async function generateAndPublishResume(patientId, mrId) {
-    try {
-        console.log(`[Medify] Generating resume for ${patientId} / ${mrId}`);
+async function generateAndPublishResume(patientId, mrId, actor) {
+    const patients = await pool.query('SELECT * FROM patients WHERE id = ?', [patientId]);
+    if (patients.length !== 1) throw new Error('Medify resume patient not found');
+    const patient = patients[0];
+    const records = await pool.query(
+        `SELECT record_type, record_data FROM medical_records
+         WHERE mr_id = ? AND record_type != 'resume_medis'
+         ORDER BY created_at DESC, id DESC`, [mrId]);
+    if (!records.length) throw new Error('Medify resume source sections not found');
 
-        // Fetch patient data
-        const patients = await pool.query(
-            'SELECT * FROM patients WHERE id = ?',
-            [patientId]
-        );
-
-        if (!patients || patients.length === 0) {
-            console.error(`[Medify] Patient ${patientId} not found`);
-            return;
-        }
-
-        const patient = patients[0];
-        const identitas = {
-            nama: patient.full_name,
-            tanggal_lahir: patient.birth_date,
-            umur: patient.age,
-            alamat: patient.address,
-            no_telp: patient.phone
-        };
-
-        // Fetch medical records for this visit - get LATEST record for each type
-        const records = await pool.query(
-            `SELECT record_type, record_data FROM medical_records
-             WHERE mr_id = ? AND record_type != 'resume_medis'
-             ORDER BY created_at DESC`,
-            [mrId]
-        );
-
-        if (!records || records.length === 0) {
-            console.error(`[Medify] No records found for ${mrId}`);
-            return;
-        }
-
-        // Organize records by type - use FIRST occurrence (which is LATEST due to ORDER BY DESC)
-        const recordsByType = {};
-        records.forEach(record => {
-            if (!recordsByType[record.record_type]) {
-                let data = record.record_data;
-                if (typeof data === 'string') {
-                    try { data = JSON.parse(data); } catch (e) {}
-                }
-                recordsByType[record.record_type] = data;
-            }
-        });
-
-        // Generate resume using the function from medical-records.js
-        const { generateMedicalResume } = require('./medical-records');
-        const resume = generateMedicalResume(identitas, recordsByType, { obat: [], tindakan: [] });
-
-        // Save resume to medical_records
-        const now = new Date();
-        await pool.query(
-            `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-             VALUES (?, ?, 'resume_medis', ?, ?)
-             ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-            [mrId, patientId, JSON.stringify({ resume, saved_at: now.toISOString() }), now]
-        );
-        console.log(`[Medify] Resume saved to medical_records`);
-
-        // Get today's date for title
-        const dateStr = now.toLocaleDateString('id-ID', {
-            day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Jakarta'
-        });
-
-        // Insert into patient_documents with status='published'
-        const docTitle = `Resume Medis - ${patient.full_name} - ${dateStr}`;
-        await pool.query(
-            `INSERT INTO patient_documents
-             (patient_id, mr_id, document_type, title, file_url, file_name, file_type, status, source, description, created_at)
-             VALUES (?, ?, 'resume_medis', ?, ?, ?, 'text/plain', 'published', 'clinic', 'Auto-generated from MEDIFY sync', NOW())`,
-            [patientId, mrId, docTitle, `resume:${mrId}`, `resume_${mrId}.txt`]
-        );
-        console.log(`[Medify] Resume published to patient_documents`);
-
-        // Create patient notification
-        await pool.query(
-            `INSERT INTO patient_notifications
-             (patient_id, type, title, message, created_at)
-             VALUES (?, 'document', 'Resume Medis Baru', ?, NOW())`,
-            [patientId, `Resume medis kunjungan ${mrId} telah tersedia di portal Anda.`]
-        );
-        console.log(`[Medify] Patient notification created`);
-
-        return true;
-
-    } catch (error) {
-        console.error(`[Medify] Error generating/publishing resume:`, error);
-        return false;
+    const recordsByType = {};
+    for (const record of records) {
+        if (Object.prototype.hasOwnProperty.call(recordsByType, record.record_type)) continue;
+        recordsByType[record.record_type] = typeof record.record_data === 'string'
+            ? JSON.parse(record.record_data) : record.record_data;
     }
-}
-
-/**
- * Parse CPPT text with AI using medical-import's parseWithAI
- */
-async function parseWithAI(text, category) {
-    const medicalImport = require('./medical-import');
-
-    // Use the exported parseWithAI function
-    if (medicalImport.parseWithAI) {
-        try {
-            console.log(`[Medify] Sending to AI for parsing, text length: ${text.length}`);
-            console.log(`[Medify] Text preview: ${text.substring(0, 500)}...`);
-            const parsed = await medicalImport.parseWithAI(text, category);
-            console.log(`[Medify] AI parsing successful`);
-            console.log(`[Medify] Parsed keys: ${Object.keys(parsed).join(', ')}`);
-            console.log(`[Medify] Subjective keys: ${Object.keys(parsed.subjective || {}).join(', ')}`);
-            return parsed;
-        } catch (error) {
-            console.error(`[Medify] AI parsing failed:`, error.message);
-            // Return basic structure with raw text if AI fails
-            return {
-                subjective: { keluhan_utama: text.substring(0, 500) },
-                objective: {},
-                assessment: {},
-                plan: {},
-                rawText: text
-            };
-        }
-    }
-
-    // Fallback if parseWithAI not available
-    return {
-        subjective: { keluhan_utama: text.substring(0, 500) },
-        objective: {},
-        assessment: {},
-        plan: {},
-        rawText: text
+    const identitas = {
+        nama: patient.full_name,
+        tanggal_lahir: patient.birth_date,
+        umur: patient.age,
+        alamat: patient.address,
+        no_telp: patient.phone
     };
+    const { generateMedicalResume } = require('./medical-records');
+    const resume = generateMedicalResume(identitas, recordsByType, { obat: [], tindakan: [] });
+    await medifyRecords.publishResume({ patientId, mrId, resume, patientName: patient.full_name, actor });
+    return true;
 }
-
 /**
  * Save medical record to database
  */
-async function saveMedicalRecord(patientId, source, parsedData) {
-    try {
-        // Map source to visit_location
-        const visitLocation = source === 'rsia_melinda' ? 'rsia_melinda' : 'rsud_gambiran';
-
-        // Find the most recent sunday_clinic_record for this patient at this location
-        let existingRecord = await pool.query(
-            `SELECT mr_id FROM sunday_clinic_records
-             WHERE patient_id = ? AND visit_location = ?
-             ORDER BY created_at DESC LIMIT 1`,
-            [patientId, visitLocation]
-        );
-
-        let mrId;
-        if (existingRecord && existingRecord.length > 0) {
-            mrId = existingRecord[0].mr_id;
-            console.log(`[Medify] Using existing MR: ${mrId}`);
-        } else {
-            // Create new sunday_clinic_record
-            // Get next MR sequence
-            const seqResult = await pool.query(
-                `SELECT COALESCE(MAX(mr_sequence), 0) + 1 as next_seq FROM sunday_clinic_records FOR UPDATE`
-            );
-            const nextSeq = seqResult[0]?.next_seq || 1;
-            mrId = `DRD${String(nextSeq).padStart(4, '0')}`;
-
-            // Generate folder_path: DDMMYYYY-SEQ_PATIENTID
-            const today = new Date();
-            const dateStr = String(today.getDate()).padStart(2, '0') +
-                String(today.getMonth() + 1).padStart(2, '0') +
-                today.getFullYear();
-            const folderPath = `${dateStr}-${nextSeq}_${patientId}`;
-
-            await pool.query(
-                `INSERT INTO sunday_clinic_records (mr_id, mr_sequence, patient_id, visit_location, import_source, folder_path, created_at, last_activity_at)
-                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-                [mrId, nextSeq, patientId, visitLocation, `medify_${source}`, folderPath]
-            );
-            console.log(`[Medify] Created new MR: ${mrId}`);
-        }
-
-        // Determine record types to save based on parsed data
-        let recordsSaved = 0;
-        const now = new Date();
-        // Format: YYYY-MM-DDTHH:MM (required by form datetime inputs)
-        const recordDatetime = now.toISOString().slice(0, 16);
-
-        // Helper to convert DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD
-        const convertDateFormat = (dateStr) => {
-            if (!dateStr) return null;
-            // Match DD/MM/YYYY or DD-MM-YYYY
-            const match = dateStr.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/);
-            if (match) {
-                let [, day, month, year] = match;
-                // Handle 2-digit year
-                if (year.length === 2) {
-                    year = (parseInt(year) > 50 ? '19' : '20') + year;
-                }
-                return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-            }
-            return dateStr; // Return as-is if can't parse
-        };
-
-        // Build anamnesa data - map field names to match form expectations
-        const anamnesaData = {
-            record_datetime: recordDatetime,
-            keluhan_utama: parsedData.subjective?.keluhan_utama,
-            // Map field names: rps → riwayat_kehamilan_saat_ini, etc.
-            riwayat_kehamilan_saat_ini: parsedData.subjective?.rps,
-            detail_riwayat_penyakit: parsedData.subjective?.rpd,
-            riwayat_keluarga: parsedData.subjective?.rpk,
-            // Convert dates to YYYY-MM-DD format for form inputs
-            hpht: convertDateFormat(parsedData.subjective?.hpht),
-            hpl: convertDateFormat(parsedData.subjective?.hpl),
-            // Copy obstetric fields from assessment to anamnesa (form expects them here)
-            gravida: parsedData.assessment?.gravida ?? parsedData.subjective?.gravida,
-            para: parsedData.assessment?.para ?? parsedData.subjective?.para,
-            abortus: parsedData.assessment?.abortus ?? parsedData.subjective?.abortus,
-            anak_hidup: parsedData.assessment?.anak_hidup ?? parsedData.subjective?.anak_hidup
-        };
-
-        // Save anamnesa if present
-        if (anamnesaData && Object.keys(anamnesaData).length > 0) {
-            await pool.query(
-                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-                 VALUES (?, ?, 'anamnesa', ?, ?)
-                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(anamnesaData), now]
-            );
-            recordsSaved++;
-            console.log(`[Medify] Saved anamnesa for ${mrId}`);
-        }
-
-        // Save physical_exam (vital signs) if present
-        const physicalExamData = {
-            record_datetime: recordDatetime,
-            keadaan_umum: parsedData.objective?.keadaan_umum,
-            tensi: parsedData.objective?.tensi,
-            nadi: parsedData.objective?.nadi,
-            suhu: parsedData.objective?.suhu,
-            spo2: parsedData.objective?.spo2,
-            rr: parsedData.objective?.rr,
-            gcs: parsedData.objective?.gcs,
-            tinggi_badan: parsedData.objective?.tinggi_badan || parsedData.identity?.tinggi_badan,
-            berat_badan: parsedData.objective?.berat_badan || parsedData.identity?.berat_badan
-        };
-        // Save if any vital sign is present
-        if (physicalExamData.tensi || physicalExamData.nadi || physicalExamData.suhu ||
-            physicalExamData.keadaan_umum || physicalExamData.tinggi_badan || physicalExamData.berat_badan) {
-            await pool.query(
-                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-                 VALUES (?, ?, 'physical_exam', ?, ?)
-                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(physicalExamData), now]
-            );
-            recordsSaved++;
-            console.log(`[Medify] Saved physical_exam for ${mrId}`);
-        }
-
-        // Save pemeriksaan_obstetri if present (obstetric-specific findings)
-        const obstetriData = {
-            record_datetime: recordDatetime,
-            // TFU, DJJ, leopold, etc. would go here if parsed
-            ...parsedData.objective
-        };
-        if (parsedData.objective && Object.keys(parsedData.objective).length > 0) {
-            await pool.query(
-                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-                 VALUES (?, ?, 'pemeriksaan_obstetri', ?, ?)
-                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(obstetriData), now]
-            );
-            recordsSaved++;
-            console.log(`[Medify] Saved pemeriksaan_obstetri for ${mrId}`);
-        }
-
-        // Save usg (USG data from objective) if present
-        const usgData = {
-            record_datetime: recordDatetime,
-            hasil_usg: parsedData.objective?.usg,
-            berat_janin: parsedData.objective?.berat_janin,
-            presentasi: parsedData.objective?.presentasi || parsedData.assessment?.presentasi,
-            plasenta: parsedData.objective?.plasenta,
-            ketuban: parsedData.objective?.ketuban
-        };
-        // Save if USG text or fetal weight is present
-        if (usgData.hasil_usg || usgData.berat_janin || usgData.presentasi) {
-            await pool.query(
-                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-                 VALUES (?, ?, 'usg', ?, ?)
-                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(usgData), now]
-            );
-            recordsSaved++;
-            console.log(`[Medify] Saved usg for ${mrId}`);
-        }
-
-        // Save penunjang (lab results) if present
-        const penunjangData = {
-            record_datetime: recordDatetime,
-            hasil_lab: parsedData.objective?.hasil_lab,
-            catatan: parsedData.objective?.catatan_penunjang
-        };
-        if (penunjangData.hasil_lab) {
-            await pool.query(
-                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-                 VALUES (?, ?, 'penunjang', ?, ?)
-                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(penunjangData), now]
-            );
-            recordsSaved++;
-            console.log(`[Medify] Saved penunjang for ${mrId}`);
-        }
-
-        // Save diagnosis if present
-        if (parsedData.assessment && Object.keys(parsedData.assessment).length > 0) {
-            const diagnosisData = { record_datetime: recordDatetime, ...parsedData.assessment };
-            await pool.query(
-                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-                 VALUES (?, ?, 'diagnosis', ?, ?)
-                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(diagnosisData), now]
-            );
-            recordsSaved++;
-            console.log(`[Medify] Saved diagnosis for ${mrId}`);
-        }
-
-        // Save planning if present
-        if (parsedData.plan && Object.keys(parsedData.plan).length > 0) {
-            const planData = { record_datetime: recordDatetime, ...parsedData.plan };
-            await pool.query(
-                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
-                 VALUES (?, ?, 'planning', ?, ?)
-                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(planData), now]
-            );
-            recordsSaved++;
-            console.log(`[Medify] Saved planning for ${mrId}`);
-        }
-
-        // Update last_activity_at on sunday_clinic_records
-        await pool.query(
-            `UPDATE sunday_clinic_records SET last_activity_at = NOW() WHERE mr_id = ?`,
-            [mrId]
-        );
-
-        console.log(`[Medify] Saved ${recordsSaved} record sections for ${mrId}`);
-        return recordsSaved;
-
-    } catch (error) {
-        console.error(`[Medify] Error saving medical record:`, error);
-        return 0;
-    }
+async function saveMedicalRecord(patientId, source, parsedData, actor) {
+    const result = await medifyRecords.saveParsedRecord({ patientId, source, parsedData, actor });
+    return result.recordsSaved;
 }
-
 /**
  * Calculate age from birth date
  */
@@ -1724,7 +1409,7 @@ router.get('/last-batch', verifyToken, async (req, res) => {
             res.json({ success: false, message: 'No batch found' });
         }
     } catch (error) {
-        console.error('[Medify] Error getting last batch:', error);
+        console.error('[Medify] Error getting last batch');
         res.status(500).json({ success: false, message: error.message });
     }
 });
@@ -1835,7 +1520,7 @@ router.get('/review/:batchId', verifyToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Medify] Error loading review data:', error);
+        console.error('[Medify] Error loading review data');
         res.status(500).json({ success: false, message: error.message });
     }
 });
@@ -1913,7 +1598,7 @@ router.get('/patient-preview/:patientId/:mrId', verifyToken, async (req, res) =>
         });
 
     } catch (error) {
-        console.error('[Medify] Error loading preview:', error);
+        console.error('[Medify] Error loading preview');
         res.status(500).json({ success: false, message: error.message });
     }
 });
@@ -1970,7 +1655,7 @@ router.post('/send-to-portal', verifyToken, async (req, res) => {
                 }
 
                 // Generate and publish resume
-                await generateAndPublishResume(patientId, mrId);
+                await generateAndPublishResume(patientId, mrId, req.user);
 
                 // Also publish USG photos if available
                 await pool.query(`
@@ -1998,7 +1683,7 @@ router.post('/send-to-portal', verifyToken, async (req, res) => {
                 results.push({ patientId, mrId, success: true });
 
             } catch (patientError) {
-                console.error(`[Medify] Error sending for ${patientId}:`, patientError);
+                console.error('[Medify] Error sending to portal for one patient');
                 results.push({ patientId, success: false, error: patientError.message });
             }
         }
@@ -2019,7 +1704,7 @@ router.post('/send-to-portal', verifyToken, async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Medify] Error sending to portal:', error);
+        console.error('[Medify] Error sending to portal');
         res.status(500).json({ success: false, message: error.message });
     }
 });

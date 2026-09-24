@@ -8,8 +8,7 @@ const AdmZip = require('adm-zip');
 const db = require('../db');
 const logger = require('../utils/logger');
 const r2Storage = require('./r2Storage');
-const { createPatientNotification } = require('../routes/patient-notifications');
-const realtimeSync = require('../realtime-sync');
+const clinicalPhotos = require('./UsgClinicalPhotoService');
 const {
     extractPatientName,
     extractDateFromFolder,
@@ -302,6 +301,8 @@ async function executeFromZipBuffer({
             continue;
         }
 
+        const uploadedPhotos = [];
+        let clinicalSaved = false;
         try {
             const selectedVisit = await resolveVisitRecord(db, {
                 scrId: scr_id,
@@ -315,18 +316,8 @@ async function executeFromZipBuffer({
 
             if (selectedVisit) {
                 effectiveMrId = selectedVisit.mr_id;
-                logger.info('[BulkUSG] Using existing kunjungan at hospital', {
-                    patient_id,
-                    mr_id: effectiveMrId,
-                    hospital,
-                    record_id: selectedVisit.id
-                });
             } else {
-                logger.info('[BulkUSG] No existing DRD for patient at this hospital - skipping', {
-                    patient_id,
-                    hospital,
-                    folder: folderName
-                });
+                logger.info('[BulkUSG] Canonical visit unavailable', { count: 1 });
                 results.push({
                     folder: folderName,
                     status: 'skipped',
@@ -336,7 +327,6 @@ async function executeFromZipBuffer({
                 continue;
             }
 
-            const uploadedPhotos = [];
             for (const file of files) {
                 const entry = zip.getEntry(file.path);
                 if (!entry) continue;
@@ -345,7 +335,7 @@ async function executeFromZipBuffer({
                 const ext = path.extname(file.name).toLowerCase();
                 const r2Result = await r2Storage.uploadFile(
                     fileBuffer,
-                    `bulk-${patient_id}-${file.name}`,
+                    `bulk-${randomUUID()}${ext}`,
                     MIME_TYPES[ext] || 'image/jpeg',
                     'usg-photos'
                 );
@@ -373,85 +363,9 @@ async function executeFromZipBuffer({
                 continue;
             }
 
-            const [existingRecords] = await db.query(`
-                    SELECT id, record_data
-                    FROM medical_records
-                    WHERE patient_id = ? AND mr_id = ? AND record_type = 'usg'
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                `, [patient_id, effectiveMrId]);
-
-            if (existingRecords.length > 0) {
-                const existingData = typeof existingRecords[0].record_data === 'string'
-                    ? JSON.parse(existingRecords[0].record_data)
-                    : existingRecords[0].record_data || {};
-                const existingPhotos = existingData.photos || [];
-                const updatedData = {
-                    ...existingData,
-                    photos: [...existingPhotos, ...uploadedPhotos]
-                };
-
-                await db.query(`
-                        UPDATE medical_records
-                        SET record_data = ?,
-                            updated_at = NOW()
-                        WHERE id = ?
-                    `, [JSON.stringify(updatedData), existingRecords[0].id]);
-            } else {
-                const recordData = {
-                    photos: uploadedPhotos,
-                    saved_at: new Date().toISOString(),
-                    source: 'bulk-upload'
-                };
-                await db.query(`
-                        INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, created_at, updated_at)
-                        VALUES (?, ?, 'usg', ?, ?, NOW())
-                    `, [patient_id, effectiveMrId, JSON.stringify(recordData), date]);
-            }
-
-            try {
-                for (const photo of uploadedPhotos) {
-                    await db.query(
-                        `INSERT INTO patient_documents
-                             (patient_id, mr_id, document_type, title, file_url, file_path, file_name, file_type, file_size,
-                              source, status, published_at, published_by, created_by, created_at)
-                             VALUES (?, ?, 'usg_photo', ?, ?, ?, ?, ?, ?, 'clinic', 'published', NOW(), ?, ?, NOW())
-                             ON DUPLICATE KEY UPDATE updated_at = NOW()`,
-                        [
-                            patient_id,
-                            effectiveMrId,
-                            photo.name || 'Foto USG',
-                            photo.url,
-                            photo.key || photo.filename,
-                            photo.name,
-                            photo.type || 'image/jpeg',
-                            photo.size || 0,
-                            user?.id || null,
-                            user?.id || null
-                        ]
-                    );
-                }
-
-                await createPatientNotification({
-                    patient_id,
-                    type: 'document',
-                    title: 'Foto USG Baru',
-                    message: `${uploadedPhotos.length} foto USG baru telah tersedia. Klik untuk melihat.`,
-                    link: '/album-usg.html',
-                    icon: 'fa fa-image',
-                    icon_color: 'text-primary'
-                });
-
-                realtimeSync.broadcast({
-                    type: 'usg:patient_updated',
-                    patient_id,
-                    mr_id: effectiveMrId,
-                    added: uploadedPhotos.length,
-                    removed: 0
-                });
-            } catch (publishError) {
-                logger.warn('[BulkUSG] Auto-publish warning:', publishError);
-            }
+            await clinicalPhotos.appendPhotos({ patientId: patient_id, mrId: effectiveMrId,
+                photos: uploadedPhotos, actor: user?.id ? user : { id: 'usg-bulk-bot', name: 'USG Bulk Bot' }, recordDate: date });
+            clinicalSaved = true;
 
             results.push({
                 folder: folderName,
@@ -462,10 +376,8 @@ async function executeFromZipBuffer({
             });
             successCount += 1;
         } catch (folderError) {
-            logger.error('[BulkUSG] Error processing folder', {
-                folder: folderName,
-                error: folderError.message
-            });
+            if (!clinicalSaved && uploadedPhotos.length) await clinicalPhotos.compensateUploaded(uploadedPhotos);
+            logger.error('[BulkUSG] Error processing folder', { count: 1 });
             results.push({
                 folder: folderName,
                 status: 'error',
@@ -493,7 +405,7 @@ async function executeFromZipBuffer({
             user?.name || user?.email || 'Grok Bot'
         ]);
     } catch (logError) {
-        logger.error('[BulkUSG] Failed to log upload history', logError);
+        logger.error('[BulkUSG] Failed to log upload history', { count: 1 });
     }
 
     return {
@@ -860,7 +772,7 @@ async function processJob(jobId, fetchImpl = fetch) {
         });
         return getJob(jobId);
     } catch (error) {
-        logger.error('[BulkUSG] Bot job failed', { jobId, error: error.message });
+        logger.error('[BulkUSG] Bot job failed', { count: 1 });
         await updateJob(jobId, {
             status: 'failed',
             error_message: error.message

@@ -21,11 +21,10 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 const fs = require('fs').promises;
 const path = require('path');
+const { randomUUID } = require('crypto');
 const db = require('../db');
 const r2Storage = require('../services/r2Storage');
-const {
-    acquireSundayClinicAccountingDateGuard
-} = require('../services/SundayClinicClosingService');
+const clinicalPhotos = require('../services/UsgClinicalPhotoService');
 const logger = require('../utils/logger');
 
 // Paths
@@ -136,73 +135,29 @@ async function searchPatientsByName(searchName) {
 }
 
 /**
- * Get or create medical record for patient
+ * Resolve an existing canonical visit. An inbox folder alone cannot authorize
+ * a new clinical visit; unmatched folders remain available in the failed queue.
  */
 async function getOrCreateMedicalRecord(patientId, hospital, recordDate) {
     // Check if patient has kunjungan at this hospital
     const [existing] = await db.query(`
-        SELECT id, mr_id FROM sunday_clinic_records
-        WHERE patient_id = ? AND visit_location = ?
-        ORDER BY created_at DESC
-        LIMIT 1
-    `, [patientId, hospital]);
+        SELECT scr.id, scr.mr_id FROM sunday_clinic_records scr
+        WHERE scr.patient_id = ? AND scr.visit_location = ?
+          AND (
+              (scr.created_at >= ? AND scr.created_at < DATE_ADD(?, INTERVAL 1 DAY))
+              OR EXISTS (
+                  SELECT 1 FROM sunday_appointments sa
+                  WHERE sa.id = scr.appointment_id AND sa.patient_id = scr.patient_id
+                    AND sa.appointment_date = ? AND sa.status IN ('confirmed', 'completed')
+              )
+          )
+        ORDER BY scr.id LIMIT 2
+    `, [patientId, hospital, recordDate, recordDate, recordDate]);
 
-    if (existing.length > 0) {
+    if (existing.length === 1 && /^[A-Za-z]+\d+$/.test(existing[0].mr_id || '')) {
         return { mrId: existing[0].mr_id, recordId: existing[0].id, isNew: false };
     }
-
-    // A private-clinic source must not be inserted after its date is closed.
-    const accountingGuard = hospital === 'klinik_private'
-        ? await acquireSundayClinicAccountingDateGuard(db, { clinicDate: recordDate })
-        : null;
-
-    // Create new kunjungan with atomic transaction
-    let connection = null;
-    try {
-        connection = await db.getConnection();
-        await connection.beginTransaction();
-
-        const [maxSeq] = await connection.query(`
-            SELECT MAX(mr_sequence) as max_seq FROM sunday_clinic_records FOR UPDATE
-        `);
-        const nextSeq = (maxSeq[0].max_seq || 0) + 1;
-        const mrId = `DRD${String(nextSeq).padStart(4, '0')}`;
-
-        await connection.query(`
-            UPDATE sunday_clinic_mr_counters
-            SET current_sequence = GREATEST(current_sequence, ?)
-            WHERE category = 'unified'
-        `, [nextSeq]);
-
-        const [patientInfo] = await connection.query(`SELECT full_name FROM patients WHERE id = ?`, [patientId]);
-        const patientName = patientInfo[0]?.full_name || 'Unknown';
-        const folderPath = `${mrId}_${patientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-        const [lastCategory] = await connection.query(`
-            SELECT mr_category FROM sunday_clinic_records
-            WHERE patient_id = ? ORDER BY created_at DESC LIMIT 1
-        `, [patientId]);
-        const category = lastCategory[0]?.mr_category || 'obstetri';
-
-        const [insertResult] = await connection.query(`
-            INSERT INTO sunday_clinic_records
-            (mr_id, mr_sequence, patient_id, visit_location, folder_path, mr_category, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, NOW())
-        `, [mrId, nextSeq, patientId, hospital, folderPath, category, recordDate]);
-
-        await connection.commit();
-        connection.release();
-
-        return { mrId, recordId: insertResult.insertId, isNew: true };
-    } catch (err) {
-        if (connection) {
-            await connection.rollback();
-            connection.release();
-        }
-        throw err;
-    } finally {
-        if (accountingGuard) await accountingGuard.release();
-    }
+    throw new Error('Canonical visit is required and must be unambiguous before inbox USG import');
 }
 
 /**
@@ -217,24 +172,24 @@ async function uploadImages(folderPath, mrId, patientName, recordDate) {
     }
 
     const urls = [];
-    const dateFolder = recordDate.replace(/-/g, '').split('').reverse().join('');
     // Convert YYYYMMDD to DDMMYYYY
     const ddmmyyyy = recordDate.substring(8, 10) + recordDate.substring(5, 7) + recordDate.substring(0, 4);
 
-    for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i];
-        const filePath = path.join(folderPath, file);
-        const fileBuffer = await fs.readFile(filePath);
-        const ext = path.extname(file).toLowerCase();
-        const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
-
-        // R2 key: usg/{DDMMYYYY}/{MR_ID}_{index}.{ext}
-        const r2Key = `usg/${ddmmyyyy}/${mrId}_${i + 1}${ext}`;
-
-        await r2Storage.uploadFile(fileBuffer, r2Key, mimeType);
-        urls.push(r2Key);
-
-        console.log(`  Uploaded: ${file} -> ${r2Key}`);
+    try {
+        for (let i = 0; i < imageFiles.length; i++) {
+            const file = imageFiles[i];
+            const filePath = path.join(folderPath, file);
+            const fileBuffer = await fs.readFile(filePath);
+            const ext = path.extname(file).toLowerCase();
+            const mimeType = ext === '.png' ? 'image/png' : 'image/jpeg';
+            // uploadFile creates a fresh key; deterministic names would overwrite
+            // an existing clinical object before the database transaction commits.
+            const uploaded = await r2Storage.uploadFile(fileBuffer, `inbox-${randomUUID()}${ext}`, mimeType, `usg/${ddmmyyyy}`);
+            urls.push(uploaded.key);
+        }
+    } catch (error) {
+        await clinicalPhotos.compensateUploaded(urls);
+        throw error;
     }
 
     return { uploaded: urls.length, urls };
@@ -245,37 +200,8 @@ async function uploadImages(folderPath, mrId, patientName, recordDate) {
  */
 async function saveUsgRecord(patientId, mrId, urls, recordDate) {
     if (urls.length === 0) return;
-
-    // Get existing USG record
-    const [existing] = await db.query(`
-        SELECT id, record_data FROM medical_records
-        WHERE mr_id = ? AND record_type = 'usg'
-        ORDER BY created_at DESC LIMIT 1
-    `, [mrId]);
-
-    if (existing.length > 0) {
-        // Append to existing
-        const existingData = JSON.parse(existing[0].record_data || '{}');
-        const existingPhotos = existingData.photos || [];
-        existingData.photos = [...existingPhotos, ...urls];
-
-        await db.query(`
-            UPDATE medical_records SET record_data = ?, updated_at = NOW()
-            WHERE id = ?
-        `, [JSON.stringify(existingData), existing[0].id]);
-    } else {
-        // Create new
-        const recordData = {
-            record_datetime: `${recordDate}T00:00`,
-            record_date: recordDate,
-            photos: urls
-        };
-
-        await db.query(`
-            INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, created_at, updated_at)
-            VALUES (?, ?, 'usg', ?, NOW(), NOW())
-        `, [patientId, mrId, JSON.stringify(recordData)]);
-    }
+    return clinicalPhotos.appendPhotos({ patientId, mrId, photos: urls, recordDate,
+        actor: { id: 'usg-inbox', name: 'USG Inbox' } });
 }
 
 /**
@@ -287,7 +213,7 @@ async function processFolder(hospitalKey, folderName) {
     const folderPath = path.join(INBOX_DIR, hospitalKey, folderName);
     const hospital = HOSPITAL_MAP[hospitalKey];
 
-    console.log(`\nProcessing: ${hospitalKey}/${folderName}`);
+    console.log('Processing USG inbox folder');
 
     // Extract info from folder name
     const patientName = extractPatientName(folderName);
@@ -298,7 +224,6 @@ async function processFolder(hospitalKey, folderName) {
         return { success: false, reason: 'Cannot extract patient name' };
     }
 
-    console.log(`  Name: ${patientName}, Date: ${recordDate}, Hospital: ${hospital}`);
 
     // Search for matching patient
     const patients = await searchPatientsByName(patientName);
@@ -310,16 +235,14 @@ async function processFolder(hospitalKey, folderName) {
     }
 
     if (matches.length > 1) {
-        console.log(`  ✗ Multiple matches found: ${matches.map(m => m.full_name).join(', ')}`);
-        return { success: false, reason: 'Multiple matches', matches: matches.map(m => m.full_name) };
+        console.log('  Multiple matches found');
+        return { success: false, reason: 'Multiple matches' };
     }
 
     const patient = matches[0];
-    console.log(`  Matched: ${patient.full_name} (${patient.patient_id})`);
 
     // Get or create medical record at THIS hospital
     const { mrId, recordId, isNew } = await getOrCreateMedicalRecord(patient.patient_id, hospital, recordDate);
-    console.log(`  MR: ${mrId} ${isNew ? '(new)' : '(existing)'}`);
 
     // Upload images
     const { uploaded, urls } = await uploadImages(folderPath, mrId, patient.full_name, recordDate);
@@ -327,11 +250,16 @@ async function processFolder(hospitalKey, folderName) {
 
     if (uploaded > 0) {
         // Save to database
-        await saveUsgRecord(patient.patient_id, mrId, urls, recordDate);
+        try {
+            await saveUsgRecord(patient.patient_id, mrId, urls, recordDate);
+        } catch (error) {
+            await clinicalPhotos.compensateUploaded(urls);
+            throw error;
+        }
         console.log(`  ✓ Saved to database`);
     }
 
-    return { success: true, patient: patient.full_name, mrId, uploaded, hospital };
+    return { success: true, mrId, uploaded, hospital };
 }
 
 /**
@@ -390,7 +318,7 @@ async function main() {
                         failCount++;
                     }
                 } catch (err) {
-                    console.error(`  ✗ Error: ${err.message}`);
+                    console.error('  USG inbox folder failed');
                     await moveFolder(hospitalKey, item, false);
                     failCount++;
                 }
@@ -405,11 +333,13 @@ async function main() {
         }
 
     } catch (err) {
-        console.error('Fatal error:', err);
+        console.error('Fatal USG inbox processor error');
         process.exit(1);
     }
 
     process.exit(0);
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = { getOrCreateMedicalRecord, uploadImages, saveUsgRecord, processFolder };

@@ -2330,42 +2330,15 @@ class SundayClinicApp {
             this.showLoading('Mereset resume medis...');
 
             const state = stateManager.getState();
-            const patientId = state.derived?.patientId;
             const mrId = this.currentMrId;
-            const resumeRecord = state.medicalRecords?.byType?.resume_medis;
-
-            if (!patientId || !mrId) {
-                throw new Error('Patient ID atau MR ID tidak ditemukan');
-            }
-            if (!resumeRecord?.id || !Number.isInteger(Number(resumeRecord.version))) {
-                throw new Error('Versi resume tidak tersedia. Muat ulang kunjungan sebelum reset.');
-            }
-
-            const token = window.getToken();
-            if (!token) {
-                throw new Error('Authentication token tidak tersedia');
-            }
-
-            const response = await fetch(`/api/medical-records/${encodeURIComponent(mrId)}/sections/resume_medis/reset`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                    'If-Match': resumeRecord.etag || `"${resumeRecord.version}"`
-                },
-                body: JSON.stringify({ patientId })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
-            const result = await response.json();
-            console.log('[SundayClinic] Resume records deleted:', result.deletedCount || 0);
+            await apiClient.resetSection(mrId, 'resume_medis');
             const byType = { ...(state.medicalRecords?.byType || {}) };
             delete byType.resume_medis;
             stateManager.set('medicalRecords', { ...state.medicalRecords, byType });
+            const persisted = state.persistedMedicalRecords || { byType: {} };
+            const persistedByType = { ...(persisted.byType || {}) };
+            delete persistedByType.resume_medis;
+            stateManager.set('persistedMedicalRecords', { ...persisted, byType: persistedByType });
         
 
             // Clear the resume display

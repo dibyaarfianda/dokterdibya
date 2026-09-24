@@ -60,3 +60,18 @@ test('external import create-only precondition cannot replace an existing sectio
     })).rejects.toMatchObject({ statusCode: 409 });
     expect(JSON.parse(database.state().records[0].record_data)).toEqual({ notes: 'existing' });
 });
+
+test('trusted resolver selects canonical visit inside the same section transaction', async () => {
+    const database = databaseFactory();
+    const service = new MedicalRecordService(database);
+    const resolveVisit = jest.fn(async connection => {
+        expect(connection.query).toEqual(expect.any(Function));
+        return { mrId: 'TEST001', patientId: 'fixture-a' };
+    });
+    const result = await service.saveInternalSections({ patientId: 'fixture-a', actor: { id: 'medify-import' },
+        resolveVisit, sections: [{ recordType: 'anamnesa', data: { notes: 'synthetic' } }] });
+    expect(resolveVisit).toHaveBeenCalledTimes(1);
+    expect(result.mrId).toBe('TEST001');
+    expect(database.events.filter(event => event.kind === 'begin')).toHaveLength(1);
+    expect(database.events.filter(event => event.kind === 'commit')).toHaveLength(1);
+});

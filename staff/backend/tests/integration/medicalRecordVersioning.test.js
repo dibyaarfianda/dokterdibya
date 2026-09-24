@@ -8,12 +8,17 @@ jest.mock('../../db', () => mockDb);
 jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(), http: jest.fn() }));
 jest.mock('../../services/activityLogger', () => ({ logFromRequest: jest.fn(), ACTIONS: {} }));
 jest.mock('../../services/PatientDocumentSyncService', () => ({ syncPenunjangLabResults: jest.fn(), mutatePenunjangDocuments: jest.fn() }));
+jest.mock('../../services/SundayClinicSaveEffects', () => ({
+    mutateSundayClinicDocuments: jest.fn(),
+    afterSundayClinicSave: jest.fn()
+}));
 jest.mock('../../realtime-sync', () => ({
     broadcast: jest.fn(event => { mockDb.events.push({ kind: 'broadcast', event }); }),
     broadcastToRoom: jest.fn((room, event) => { mockDb.events.push({ kind: 'patient-broadcast', room, event }); })
 }));
 const logger = require('../../utils/logger');
 const { mutatePenunjangDocuments } = require('../../services/PatientDocumentSyncService');
+const { mutateSundayClinicDocuments, afterSundayClinicSave } = require('../../services/SundayClinicSaveEffects');
 const { ROLE_IDS, ROLE_NAMES } = require('../../constants/roles');
 const router = require('../../routes/medical-records');
 const app = express();
@@ -26,7 +31,41 @@ const patch = (id, changes, version = 1) => auth(request(app).patch(`/api/medica
 const reset = (extra = {}, version = 1, role) => auth(request(app).post('/api/medical-records/TEST001/sections/usg/reset'), role).set('If-Match', `"${version}"`).send({ patientId: 'fixture-a', ...extra });
 const record = () => mockDb.state().records[0];
 
-beforeEach(() => { mockDb.reset(); mockDb.failure = null; jest.clearAllMocks(); });
+beforeEach(() => {
+    mockDb.reset(); mockDb.failure = null; jest.clearAllMocks();
+    mutateSundayClinicDocuments.mockImplementation((connection, row) => row.record_type === 'penunjang'
+        ? mutatePenunjangDocuments(connection, { patientId: row.patient_id, mrId: row.mr_id,
+            files: row.record_data.files, actorUserId: row.actor.doctorId })
+        : undefined);
+    afterSundayClinicSave.mockImplementation(async result => {
+        if (result.documentChange) require('../../realtime-sync').broadcastToRoom(`patient:${result.data.patient_id}`, {
+            type: 'document:patient_updated', document_type: result.recordType === 'penunjang' ? 'lab_result' : result.recordType,
+            added: result.documentChange.added, removed: result.documentChange.removed
+        });
+    });
+});
+
+test('USG metadata failure rolls back the versioned clinical write', async () => {
+    mutateSundayClinicDocuments.mockRejectedValueOnce(new Error('metadata unavailable'));
+    const response = await create({ type: 'usg', data: { photos: [] } });
+    expect(response.status).toBe(500);
+    expect(mockDb.state().records).toHaveLength(0);
+    expect(mockDb.state().revisions).toHaveLength(0);
+    expect(afterSundayClinicSave).not.toHaveBeenCalled();
+});
+
+test('Sunday postcommit effects follow the committed versioned save', async () => {
+    afterSundayClinicSave.mockImplementationOnce(async () => {
+        mockDb.events.push({ kind: 'sunday-postcommit' });
+    });
+    const response = await create({ type: 'usg', data: { photos: [] } });
+    expect(response.status).toBe(201);
+    expect(mockDb.events.findIndex(event => event.kind === 'sunday-postcommit'))
+        .toBeGreaterThan(mockDb.events.findIndex(event => event.kind === 'commit'));
+    expect(mutateSundayClinicDocuments).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+        mr_id: 'TEST001', patient_id: 'fixture-a', record_type: 'usg'
+    }));
+});
 
 test('penunjang metadata failure rolls back the clinical create and emits no refresh', async () => {
     mutatePenunjangDocuments.mockRejectedValueOnce(new Error('metadata unavailable'));
@@ -44,7 +83,7 @@ test('penunjang patient refresh follows committed metadata and omits identifiers
     const commit = mockDb.events.findIndex(event => event.kind === 'commit');
     const refresh = mockDb.events.findIndex(event => event.kind === 'patient-broadcast');
     expect(refresh).toBeGreaterThan(commit);
-    expect(mockDb.events[refresh].event).toEqual({ type: 'document:patient_updated', document_type: 'penunjang', added: 1, removed: 0 });
+    expect(mockDb.events[refresh].event).toEqual({ type: 'document:patient_updated', document_type: 'lab_result', added: 1, removed: 0 });
 });
 
 test('postcommit refresh failure does not turn a persisted penunjang save into a retryable error', async () => {
@@ -69,7 +108,7 @@ test('create trusts verified actor, returns ETag, appends revision and serialize
     const created = responses.find(r => r.status === 201);
     expect(created.headers.etag).toBe('"1"');
     expect(created.body.data.version).toBe(1);
-    expect(record().doctor_id).toBe('verified-actor');
+    expect(record().doctor_id).toBeNull(); // synthetic nonnumeric actor cannot impersonate an integer doctor ID
     expect(record().doctor_name).toBe('Synthetic Staff');
     expect(mockDb.state().records).toHaveLength(1);
     expect(mockDb.state().revisions).toHaveLength(1);

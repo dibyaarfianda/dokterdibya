@@ -144,7 +144,8 @@ class MedicalRecordService {
 
     actor(actor) {
         if (!actor?.id || actor.user_type === 'patient' || actor.role === 'patient') fail(403, 'STAFF_REQUIRED', 'Verified staff actor required');
-        return { id: String(actor.id), name: actor.name || null };
+        return { id: String(actor.id), doctorId: /^\d+$/.test(String(actor.id)) ? Number(actor.id) : null,
+            name: actor.name || null };
     }
 
     assertResetRole(principal) {
@@ -194,8 +195,9 @@ class MedicalRecordService {
     // Trusted server adapters provide a whole batch before any write. The
     // updater runs only after visit and exact section locks in this transaction.
     // Browser and external callers must use create/PATCH with ETags instead.
-    async saveInternalSections({ mrId, patientId, sections, actor: principal, mutateDocuments, visitCreation }) {
-        mrId = normalizeMrId(mrId);
+    async saveInternalSections({ mrId, patientId, sections, actor: principal, mutateDocuments, visitCreation, resolveVisit, afterSections }) {
+        if (resolveVisit !== undefined && typeof resolveVisit !== 'function') fail(400, 'INVALID_VISIT', 'Visit resolver must be a function');
+        if (!resolveVisit) mrId = normalizeMrId(mrId);
         const actor = this.actor(principal);
         if (!Array.isArray(sections) || !sections.length || sections.length > RECORD_TYPES.size ||
             sections.some(section => !RECORD_TYPES.has(section.recordType) ||
@@ -208,6 +210,14 @@ class MedicalRecordService {
             fail(400, 'INVALID_VISIT', 'A valid import visit is required');
         }
         return this.transaction(async connection => {
+            if (resolveVisit) {
+                const resolved = await resolveVisit(connection, { patientId });
+                mrId = normalizeMrId(resolved?.mrId);
+                if (patientId !== undefined && String(patientId) !== String(resolved?.patientId)) {
+                    fail(409, 'PATIENT_SCOPE_MISMATCH', 'Patient does not match resolved visit');
+                }
+                patientId = resolved.patientId;
+            }
             const visit = await this.lockVisit(connection, mrId, patientId, visitCreation);
             const saved = [];
             for (const section of [...sections].sort((a, b) => a.recordType.localeCompare(b.recordType))) {
@@ -231,7 +241,7 @@ class MedicalRecordService {
                     if (!Number.isInteger(version) || version > 2147483647) fail(409, 'VERSION_EXHAUSTED', 'Version limit reached');
                     const [updated] = await connection.query(
                         'UPDATE medical_records SET record_data = ?, doctor_id = ?, doctor_name = ?, version = ?, updated_at = NOW() WHERE id = ? AND mr_id = ? AND patient_id = ? AND version = ?',
-                        [JSON.stringify(after), actor.id, actor.name, version, existing.id, mrId, visit.patient_id, existing.version]);
+                        [JSON.stringify(after), actor.doctorId, actor.name, version, existing.id, mrId, visit.patient_id, existing.version]);
                     if (updated.affectedRows !== 1) fail(409, 'CHANGE_CONFLICT', 'Section changed during save');
                     row = existing;
                 } else {
@@ -241,7 +251,7 @@ class MedicalRecordService {
                     if (version > 2147483647) fail(409, 'VERSION_EXHAUSTED', 'Version limit reached');
                     const [result] = await connection.query(
                         'INSERT INTO medical_records (patient_id, mr_id, doctor_id, doctor_name, record_type, record_data, version) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                        [visit.patient_id, mrId, actor.id, actor.name, section.recordType, JSON.stringify(after), version]);
+                        [visit.patient_id, mrId, actor.doctorId, actor.name, section.recordType, JSON.stringify(after), version]);
                     row = { id: result.insertId, patient_id: visit.patient_id, mr_id: mrId, record_type: section.recordType, version: version - 1 };
                 }
                 await this.revision(connection, row, actor, existing ? 'patch' : 'create', before, after, version, ['']);
@@ -249,7 +259,8 @@ class MedicalRecordService {
                 if (mutateDocuments) await mutateDocuments(connection, scoped);
                 saved.push(scoped);
             }
-            return { action: 'internal_batch', recordType: saved.length === 1 ? saved[0].record_type : 'multiple',
+            if (afterSections) await afterSections(connection, { visit, sections: saved });
+            return { action: 'internal_batch', mrId, recordType: saved.length === 1 ? saved[0].record_type : 'multiple',
                 version: saved.length === 1 ? saved[0].version : null, data: saved };
         });
     }
@@ -270,11 +281,13 @@ class MedicalRecordService {
             const [result] = await connection.query(
                 `INSERT INTO medical_records (patient_id, mr_id, doctor_id, doctor_name, record_type, record_data, version)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [visit.patient_id, mrId, actor.id, actor.name, recordType, JSON.stringify(data), version]);
+                [visit.patient_id, mrId, actor.doctorId, actor.name, recordType, JSON.stringify(data), version]);
             const row = { id: result.insertId, patient_id: visit.patient_id, mr_id: mrId, record_type: recordType, version: version - 1 };
             await this.revision(connection, row, actor, 'create', null, data, version, ['']);
-            const documentChange = mutateDocuments ? await mutateDocuments(connection, { ...row, version, record_data: clone(data), actor }) : undefined;
-            return { action: 'create', recordType, version, documentChange, data: { ...row, version, record_data: clone(data) } };
+            const documentChange = mutateDocuments ? await mutateDocuments(connection, { ...row, version, record_data: clone(data), actor,
+                visitId: visit.id, visitStatus: visit.status, visitLocation: visit.visit_location }) : undefined;
+            return { action: 'create', recordType, version, visitLocation: visit.visit_location, documentChange,
+                data: { ...row, version, record_data: clone(data) } };
         });
     }
 
@@ -353,12 +366,13 @@ class MedicalRecordService {
             if (version > 2147483647) fail(409, 'VERSION_EXHAUSTED', 'Version limit reached');
             const [updated] = await connection.query(
                 'UPDATE medical_records SET record_data = ?, doctor_id = ?, doctor_name = ?, version = ?, updated_at = NOW() WHERE id = ? AND mr_id = ? AND patient_id = ? AND version = ?',
-                [JSON.stringify(after), actor.id, actor.name, version, row.id, mrId, visit.patient_id, currentVersion]);
+                [JSON.stringify(after), actor.doctorId, actor.name, version, row.id, mrId, visit.patient_id, currentVersion]);
             if (updated.affectedRows !== 1) fail(409, 'CHANGE_CONFLICT', 'Section changed during save');
             await this.revision(connection, row, actor, 'patch', current, after, version, changes.map(change => change.path));
-            const documentChange = mutateDocuments ? await mutateDocuments(connection, { ...row, version, record_data: clone(after), actor }) : undefined;
-            return { action: 'patch', recordType: row.record_type, version, documentChange,
-                data: { ...row, doctor_id: actor.id, doctor_name: actor.name, version, record_data: after } };
+            const documentChange = mutateDocuments ? await mutateDocuments(connection, { ...row, version, record_data: clone(after), actor,
+                visitId: visit.id, visitStatus: visit.status, visitLocation: visit.visit_location }) : undefined;
+            return { action: 'patch', recordType: row.record_type, version, visitLocation: visit.visit_location, documentChange,
+                data: { ...row, doctor_id: actor.doctorId, doctor_name: actor.name, version, record_data: after } };
         });
     }
 

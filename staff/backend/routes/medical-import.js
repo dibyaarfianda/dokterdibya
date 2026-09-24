@@ -1540,7 +1540,9 @@ router.post('/api/medical-import/save', verifyToken, requireOpenAccountingDateFo
             visit_date,
             visit_time,
             visit_location,
-            record_data
+            record_data,
+            record_id,
+            changes
         } = req.body;
 
         if (!patient_id || !mr_id) {
@@ -1562,6 +1564,17 @@ router.post('/api/medical-import/save', verifyToken, requireOpenAccountingDateFo
             gyn_special: 'pemeriksaan_ginekologi' };
         const recordType = recordTypes[category];
         if (!recordType) return res.status(400).json({ success: false, message: 'Invalid record category' });
+        if (record_id !== undefined || req.get('If-Match')) {
+            if (!record_id) return res.status(400).json({ success: false, message: 'record_id is required for versioned update' });
+            const updated = await medicalRecordService.patch({
+                id: record_id, mrId: mr_id, patientId: patient_id, recordType,
+                changes, ifMatch: req.get('If-Match'), actor: req.user
+            });
+            res.set('ETag', `"${updated.version}"`);
+            res.set('Cache-Control', 'no-store');
+            return res.json({ success: true, message: 'Medical record saved successfully',
+                version: updated.version, data: updated.data });
+        }
         if (req.get('If-None-Match') !== '*') {
             return res.status(428).json({ success: false, code: 'VERSIONED_IMPORT_REQUIRED',
                 message: 'Import creation requires If-None-Match: *' });

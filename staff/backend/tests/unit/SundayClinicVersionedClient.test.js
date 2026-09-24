@@ -4,12 +4,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function clientFixture(sectionRow) {
+function clientFixture(sectionRow, persistedRow = null) {
     const filename = path.resolve(__dirname, '../../../public/scripts/sunday-clinic/utils/api-client.js');
     const source = fs.readFileSync(filename, 'utf8')
         .replace(/^import .*;\s*$/gm, '')
         .replace('export default new APIClient();', 'globalThis.client = new APIClient();');
-    const state = { medicalRecords: { byType: sectionRow ? { usg: sectionRow } : {} }, dirtyRevision: 4 };
+    const state = { currentMrId: 'TEST001', medicalRecords: { byType: sectionRow ? { usg: sectionRow } : {} },
+        persistedMedicalRecords: { byType: persistedRow ? { usg: persistedRow } : {} }, dirtyRevision: 4 };
     const stateManager = {
         get: key => state[key],
         set: (key, value) => { state[key] = value; },
@@ -75,5 +76,54 @@ describe('Sunday Clinic versioned medical client', () => {
         expect(result.success).toBe(true);
         expect(fixture.fetch).not.toHaveBeenCalled();
         expect(fixture.stateManager.markClean).toHaveBeenCalledWith(4);
+    });
+
+    test('patch compares imported draft with persisted snapshot, not already-updated display state', async () => {
+        const row = { id: 7, mrId: 'TEST001', patientId: 'fixture-a', version: 3,
+            etag: '"3"', data: { notes: 'imported' } };
+        const fixture = clientFixture(row, { ...row, data: { notes: 'previous' } });
+        fixture.fetch.mockResolvedValue(response(200, { success: true, version: 4,
+            data: { id: 7, mr_id: 'TEST001', patient_id: 'fixture-a', record_data: { notes: 'imported' } } }, '"4"'));
+        await fixture.client.saveSection('TEST001', 'usg', { notes: 'imported' });
+        expect(fixture.fetch).toHaveBeenCalledTimes(1);
+        expect(JSON.parse(fixture.fetch.mock.calls[0][1].body).changes).toEqual([
+            { path: '/notes', before: 'previous', after: 'imported' }
+        ]);
+        expect(fixture.state.persistedMedicalRecords.byType.usg.version).toBe(4);
+    });
+
+    test('does not replace a newer local draft when a save completes', async () => {
+        const row = { id: 7, mrId: 'TEST001', patientId: 'fixture-a', version: 3,
+            etag: '"3"', data: { notes: 'old' } };
+        const fixture = clientFixture(row, row);
+        fixture.fetch.mockImplementation(async () => {
+            fixture.state.dirtyRevision = 5;
+            fixture.state.medicalRecords.byType.usg.data = { notes: 'newer draft' };
+            return response(200, { success: true, version: 4,
+                data: { id: 7, mr_id: 'TEST001', patient_id: 'fixture-a', record_data: { notes: 'submitted' } } }, '"4"');
+        });
+        await fixture.client.saveSection('TEST001', 'usg', { notes: 'submitted' });
+        expect(fixture.state.medicalRecords.byType.usg.data).toEqual({ notes: 'newer draft' });
+        expect(fixture.state.persistedMedicalRecords.byType.usg.data).toEqual({ notes: 'submitted' });
+        expect(fixture.stateManager.replaceSectionData).not.toHaveBeenCalled();
+        expect(fixture.stateManager.markClean).not.toHaveBeenCalled();
+    });
+
+    test('reset sends exact MR and patient scope with section ETag', async () => {
+        const row = { id: 7, mrId: 'TEST001', patientId: 'fixture-a', version: 3, etag: '"3"', data: { notes: 'old' } };
+        const fixture = clientFixture(row, row);
+        fixture.fetch.mockResolvedValue(response(200, { success: true, deletedCount: 1, version: 4 }, '"4"'));
+        await fixture.client.resetSection('TEST001', 'usg');
+        const [url, options] = fixture.fetch.mock.calls[0];
+        expect(url).toBe('/api/medical-records/TEST001/sections/usg/reset');
+        expect(options.method).toBe('POST');
+        expect(options.headers['If-Match']).toBe('"3"');
+        expect(JSON.parse(options.body)).toEqual({ patientId: 'fixture-a' });
+    });
+
+    test('reset refuses missing version without calling the server', async () => {
+        const fixture = clientFixture({ id: 7, mrId: 'TEST001', patientId: 'fixture-a', data: {} });
+        await expect(fixture.client.resetSection('TEST001', 'usg')).rejects.toMatchObject({ status: 428 });
+        expect(fixture.fetch).not.toHaveBeenCalled();
     });
 });

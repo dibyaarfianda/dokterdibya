@@ -16,6 +16,7 @@ class StateManager {
             intakeData: null,
             billingData: null,
             medicalRecords: null,
+            persistedMedicalRecords: null,
             derived: null,  // Computed derived state from all data
             isDirty: false,  // Track unsaved changes
             dirtyRevision: 0,
@@ -177,6 +178,8 @@ class StateManager {
                 appointmentData: recordData.appointment,
                 intakeData: recordData.intake,
                 medicalRecords: recordData.medicalRecords,
+                persistedMedicalRecords: recordData.medicalRecords
+                    ? JSON.parse(JSON.stringify(recordData.medicalRecords)) : null,
                 derived: derived,  // ADD DERIVED STATE
                 loading: false,
                 isDirty: false,
@@ -238,6 +241,7 @@ class StateManager {
             intakeData: null,
             billingData: null,
             medicalRecords: null,
+            persistedMedicalRecords: null,
             isDirty: false,
             dirtyRevision: 0,
             activeSection: 'identity',

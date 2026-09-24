@@ -5,8 +5,7 @@ const { validateOperationalSchemaScope } = require('../services/OperationalSchem
 const { verifyToken, verifyStaffToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const medicalRecordService = require('../services/MedicalRecordService');
-const { mutatePenunjangDocuments } = require('../services/PatientDocumentSyncService');
-const realtimeSync = require('../realtime-sync');
+const { mutateSundayClinicDocuments, afterSundayClinicSave } = require('../services/SundayClinicSaveEffects');
 const { withSafeAuditPath } = require('../utils/requestAudit');
 
 // Create medical_records table if not exists
@@ -33,34 +32,28 @@ function versionResponse(res, result, status = 200) {
         success: true,
         message: result.action === 'reset' ? 'Section reset successfully' : 'Medical record saved successfully',
         version: result.version,
+        ...(result.sync ? { sync: result.sync } : {}),
         ...(result.data ? { data: result.data } : { deletedCount: result.deletedCount })
     });
 }
 
-function documentMutation(connection, row) {
-    if (row.record_type !== 'penunjang') return undefined;
-    return mutatePenunjangDocuments(connection, {
-        patientId: row.patient_id, mrId: row.mr_id,
-        files: row.record_data.files, actorUserId: row.actor.id
-    });
-}
-
-function refreshPatientAfterCommit(result) {
-    if (!result.documentChange || !result.data?.patient_id) return;
+async function postcommitSundayEffect(result, req) {
     try {
-        realtimeSync.broadcastToRoom(`patient:${result.data.patient_id}`, {
-            type: 'document:patient_updated', document_type: result.recordType,
-            added: result.documentChange.added, removed: result.documentChange.removed
+        await afterSundayClinicSave(result, {
+            user: req.user, skipMedifySync: req.get('X-Skip-Medify-Sync') === '1'
         });
-    } catch (_) { /* persisted clinical mutation remains successful */ }
+    } catch (_) {
+        // The versioned clinical row and metadata already committed; keep the response successful.
+        logger.warn('Sunday Clinic postcommit effect failed', { effect: 'unexpected' });
+    }
 }
 
 router.post('/api/medical-records', verifyStaffToken, requirePermission('medical_records.create'), async (req, res) => {
     try {
         const { patientId, mrId, type, data } = req.body;
         const result = await medicalRecordService.create({ patientId, mrId, recordType: type, data, actor: req.user,
-            mutateDocuments: documentMutation });
-        refreshPatientAfterCommit(result);
+            mutateDocuments: mutateSundayClinicDocuments });
+        await postcommitSundayEffect(result, req);
         return versionResponse(res, result, 201);
     } catch (error) { return mutationFailure(res, error); }
 });
@@ -293,9 +286,9 @@ router.patch('/api/medical-records/:id', verifyStaffToken, requirePermission('me
             id: req.params.id, mrId: req.body.mrId, patientId: req.body.patientId,
             recordType: req.body.recordType,
             changes: req.body.changes, ifMatch: req.get('If-Match'), actor: req.user,
-            mutateDocuments: documentMutation
+            mutateDocuments: mutateSundayClinicDocuments
         });
-        refreshPatientAfterCommit(result);
+        await postcommitSundayEffect(result, req);
         return versionResponse(res, result);
     } catch (error) { return mutationFailure(res, error); }
 });

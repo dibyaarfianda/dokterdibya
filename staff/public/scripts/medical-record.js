@@ -1089,27 +1089,10 @@ window.saveAllMedicalRecords = async function() {
 
 // Generic save function
 async function saveMedicalRecord(data, recordType) {
-    try {
-        const response = await authorizedFetch('/api/medical-records', {
-            method: 'POST',
-            body: JSON.stringify({
-                ...data,
-                timestamp: new Date().toISOString(),
-                doctorId: auth.currentUser?.id,
-                doctorName: auth.currentUser?.name || auth.currentUser?.email
-            })
-        });
-        
-        if (!response.ok) throw new Error('Failed to save');
-        
-        const result = await response.json();
-        if (!result.success) throw new Error(result.message);
-        
-        showAlert(`${recordType} berhasil disimpan!`, 'success');
-    } catch (error) {
-        console.error('Error saving medical record:', error);
-        showAlert(`Gagal menyimpan ${recordType}: ` + error.message, 'danger');
-    }
+    // This archived standalone form has no canonical visit MR or row version.
+    // Keep its local inputs intact and fail closed; current clinical editing is
+    // provided by the versioned Sunday Clinic section client.
+    showAlert('Formulir lama tidak dapat menyimpan rekam medis. Buka kunjungan Sunday Clinic terbaru.', 'danger');
 }
 
 // Initialize

@@ -873,14 +873,8 @@ export function renderUSG() {
             resetBtn.addEventListener('click', async () => {
                 if (confirm('Are you sure you want to reset ALL USG data for this patient?')) {
                     try {
-                        const patientId = state.derived?.patientId;
                         const mrId = state.currentMrId;
-                        
-                        if (!patientId) {
-                            throw new Error('Patient ID not found');
-                        }
-                        
-                        const response = await apiClient.delete(`/api/medical-records/by-type/usg?patientId=${patientId}&mrId=${mrId}`);
+                        const response = await apiClient.resetSection(mrId, 'usg');
                         window.showSuccess(response.data?.message || 'USG data has been reset.');
                         
                         const SundayClinicApp = (await import('../main.js')).default;
@@ -959,7 +953,6 @@ export async function saveUSGExam() {
     try {
         const state = stateManager.getState();
         const context = getMedicalRecordContext(state, 'usg');
-        const existingRecordId = context?.record?.id;
 
         // Get trimester from selector, or from saved data if editing (when selector is locked/hidden)
         let activeTrimester = document.querySelector('.trimester-selector .btn.active input')?.value;
@@ -1080,21 +1073,8 @@ export async function saveUSGExam() {
             throw new Error('Patient ID not found');
         }
 
-        const payload = {
-            patientId,
-            type: 'usg',
-            data: usgData,
-        };
-
-        let response;
-        if (existingRecordId) {
-            response = await apiClient.put(`/api/medical-records/${existingRecordId}`, { 
-                type: 'usg',
-                data: usgData 
-            });
-        } else {
-            response = await apiClient.post('/api/medical-records', payload);
-        }
+        if (!state.currentMrId) throw new Error('MR ID not found');
+        await apiClient.saveSection(state.currentMrId, 'usg', usgData);
 
         window.showSuccess('USG data saved successfully!');
         const SundayClinicApp = (await import('../main.js')).default;
