@@ -272,7 +272,11 @@ async function prepareNginx(prefix) {
     async function writeTree(root, version) {
         const publicRoot = path.join(root, 'staff/public');
         await fs.promises.mkdir(path.join(publicRoot, 'scripts'), { recursive: true });
-        for (const [name, body] of Object.entries(bodies(version))) await fs.promises.writeFile(path.join(publicRoot, 'scripts', name), body);
+        for (const [name, body] of Object.entries(bodies(version))) {
+            const destination = path.join(publicRoot, 'scripts', name);
+            await fs.promises.mkdir(path.dirname(destination), { recursive: true });
+            await fs.promises.writeFile(destination, body);
+        }
         await fs.promises.writeFile(path.join(publicRoot, 'index.html'), `<!doctype html><title>Staff ${version}</title>`);
         await fs.promises.writeFile(path.join(publicRoot, 'sw.js'), `// sw-${version}\n`);
         await fs.promises.writeFile(path.join(publicRoot, 'fixture.css'), `/* style-${version} */\n`);
