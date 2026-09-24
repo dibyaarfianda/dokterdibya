@@ -87,10 +87,21 @@ async function compareExisting(finalDir, expected) {
     try {
         const finalStat = await fs.promises.lstat(finalDir);
         if (!finalStat.isDirectory() || finalStat.isSymbolicLink()) return false;
+        const rootEntries = await fs.promises.readdir(finalDir, { withFileTypes: true });
+        if (rootEntries.length !== 2 ||
+            !rootEntries.some(entry => entry.name === 'release-manifest.json' && entry.isFile() && !entry.isSymbolicLink()) ||
+            !rootEntries.some(entry => entry.name === 'staff' && entry.isDirectory() && !entry.isSymbolicLink())) return false;
+        const staffDir = path.join(finalDir, 'staff');
+        const staffEntries = await fs.promises.readdir(staffDir, { withFileTypes: true });
+        if (staffEntries.length !== 1 || staffEntries[0].name !== 'public' ||
+            !staffEntries[0].isDirectory() || staffEntries[0].isSymbolicLink()) return false;
+        const publicRoot = path.join(staffDir, 'public');
+        // The source manifest is excluded from assets; only the release-root manifest is allowed.
+        if (await optionalLstat(path.join(publicRoot, 'release-manifest.json'))) return false;
         const manifestPath = path.join(finalDir, 'release-manifest.json');
         const bytes = await fs.promises.readFile(manifestPath, 'utf8');
         if (bytes !== `${JSON.stringify(expected, null, 2)}\n`) return false;
-        const actual = await buildStaffReleaseManifest({ publicRoot: finalDir, version: expected.version, sourceCommit: expected.sourceCommit });
+        const actual = await buildStaffReleaseManifest({ publicRoot, version: expected.version, sourceCommit: expected.sourceCommit });
         return sameManifest(actual, expected);
     } catch (_) { return false; }
 }
@@ -307,6 +318,7 @@ async function stageStaffAssetRelease({ repositoryRoot, releaseBase, version, so
     const finalDir = path.resolve(base, version);
     const tempBasename = `.${version}.tmp-${process.pid}-${randomUUID()}`;
     const tempDir = path.resolve(base, tempBasename);
+    const tempPublic = path.join(tempDir, 'staff', 'public');
     const lockPath = path.resolve(base, `.${version}.publish.lock`);
     if (!isInside(base, finalDir) || !isInside(base, tempDir) || !isInside(base, lockPath)) {
         throw new Error('Staff release path escapes release base');
@@ -325,15 +337,16 @@ async function stageStaffAssetRelease({ repositoryRoot, releaseBase, version, so
             return { status: 'existing', releaseDir: finalDir, manifest, manifestSha256 };
         }
         await fs.promises.mkdir(tempDir);
+        await fs.promises.mkdir(tempPublic, { recursive: true });
         for (const file of manifest.files) {
             const from = path.resolve(sourcePublic, ...file.path.split('/'));
-            const to = path.resolve(tempDir, ...file.path.split('/'));
-            if (!isInside(sourcePublic, from) || !isInside(tempDir, to)) throw new Error('Staff asset path escapes staging directory');
+            const to = path.resolve(tempPublic, ...file.path.split('/'));
+            if (!isInside(sourcePublic, from) || !isInside(tempPublic, to)) throw new Error('Staff asset path escapes staging directory');
             await fs.promises.mkdir(path.dirname(to), { recursive: true });
             await fs.promises.copyFile(from, to);
         }
         await fs.promises.writeFile(path.join(tempDir, 'release-manifest.json'), manifestBytes, { flag: 'wx' });
-        const copied = await buildStaffReleaseManifest({ publicRoot: tempDir, version, sourceCommit });
+        const copied = await buildStaffReleaseManifest({ publicRoot: tempPublic, version, sourceCommit });
         if (!sameManifest(copied, manifest) || await fs.promises.readFile(path.join(tempDir, 'release-manifest.json'), 'utf8') !== manifestBytes) {
             throw new Error('Staff asset checksum mismatch after copy');
         }

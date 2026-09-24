@@ -66,6 +66,7 @@ test.each(['', 'abc', 'g'.repeat(40)])('rejects invalid source commit %s', async
 
 const input = () => ({ repositoryRoot: repo, releaseBase, version: 'v413', sourceCommit });
 const finalDir = () => path.join(releaseBase, 'v413');
+const finalPublic = () => path.join(finalDir(), 'staff', 'public');
 const lockFile = () => path.join(releaseBase, '.v413.publish.lock');
 const recoveryClaims = async () => (await fs.promises.readdir(releaseBase)).filter(name => /^\.v413\.recover-[0-9a-f-]{36}\.claim$/.test(name));
 const recoveryTemps = async () => (await fs.promises.readdir(releaseBase)).filter(name => /^\.v413\.recover-[0-9a-f-]{36}\.tmp$/.test(name));
@@ -88,17 +89,118 @@ async function hashTree(directory) {
     return names.sort((a, b) => a[0].localeCompare(b[0]));
 }
 
+async function nestedReleaseFixture() {
+    const { entries } = currentFixture;
+    const manifest = {
+        schemaVersion: 1, version: 'v413', sourceCommit,
+        fileCount: 5, totalBytes: entries.reduce((sum, [, bytes]) => sum + bytes.length, 0),
+        files: entries.map(([name, bytes]) => ({ path: name, bytes: bytes.length, sha256: sha256(bytes) }))
+    };
+    for (const [name, bytes] of entries) {
+        const target = path.join(finalPublic(), name);
+        await fs.promises.mkdir(path.dirname(target), { recursive: true });
+        await fs.promises.writeFile(target, bytes);
+    }
+    await fs.promises.writeFile(path.join(finalDir(), 'release-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+    return manifest;
+}
+
 test('publishes a complete release and an identical restage returns existing', async () => {
     const first = await stageStaffAssetRelease(input());
     expect(first.status).toBe('published');
     expect(first.releaseDir).toBe(finalDir());
     expect(first.manifest.fileCount).toBe(5);
+    expect(first.manifest.files.map(file => file.path)).toEqual(['css/main.css', 'empty.txt', 'images/logo.bin', 'index.html', 'scripts/app.js']);
+    expect((await fs.promises.readdir(finalDir())).sort()).toEqual(['release-manifest.json', 'staff']);
+    expect(await fs.promises.readdir(path.join(finalDir(), 'staff'))).toEqual(['public']);
+    for (const [name, bytes] of currentFixture.entries) {
+        expect(await fs.promises.readFile(path.join(finalPublic(), name))).toEqual(bytes);
+    }
+    await expect(fs.promises.access(path.join(finalDir(), 'scripts'))).rejects.toMatchObject({ code: 'ENOENT' });
     expect(first.manifestSha256).toBe(sha256(JSON.stringify(first.manifest, null, 2) + '\n'));
     expect(await fs.promises.readFile(path.join(finalDir(), 'release-manifest.json'), 'utf8')).toBe(JSON.stringify(first.manifest, null, 2) + '\n');
     const before = await hashTree(finalDir());
     const second = await stageStaffAssetRelease(input());
     expect(second).toEqual({ ...first, status: 'existing' });
     expect(await hashTree(finalDir())).toEqual(before);
+});
+
+test('verifies copied assets under the staging staff/public with the manifest at the staging root', async () => {
+    const realReaddir = fs.promises.readdir;
+    const inspected = [];
+    const spy = jest.spyOn(fs.promises, 'readdir').mockImplementation(async (target, ...args) => {
+        const relative = path.relative(releaseBase, target).split(path.sep);
+        if (relative.length === 3 && relative[0].startsWith('.v413.tmp-') && relative[1] === 'staff' && relative[2] === 'public') {
+            const stagingRoot = path.join(releaseBase, relative[0]);
+            inspected.push(JSON.parse(await fs.promises.readFile(path.join(stagingRoot, 'release-manifest.json'), 'utf8')));
+            await expect(fs.promises.access(path.join(target, 'release-manifest.json'))).rejects.toMatchObject({ code: 'ENOENT' });
+        }
+        return realReaddir(target, ...args);
+    });
+    let result;
+    try { result = await stageStaffAssetRelease(input()); }
+    finally { spy.mockRestore(); }
+    expect(inspected).toEqual([result.manifest]);
+    expect(result.status).toBe('published');
+});
+
+test('an independently prepared nested release is accepted without changes', async () => {
+    const manifest = await nestedReleaseFixture();
+    const before = await hashTree(finalDir());
+    await expect(stageStaffAssetRelease(input())).resolves.toEqual({
+        status: 'existing', releaseDir: finalDir(), manifest,
+        manifestSha256: sha256(JSON.stringify(manifest, null, 2) + '\n')
+    });
+    expect(await hashTree(finalDir())).toEqual(before);
+});
+
+test.each([
+    'staff/public/extra.js',
+    'staff/public/release-manifest.json',
+    'extra.txt',
+    'scripts/app.js',
+    'other/nested/extra.txt',
+    'staff/extra.txt',
+    'staff/other/nested/extra.txt'
+])('restaging rejects unexpected release file %s without modifying it', async relative => {
+    await nestedReleaseFixture();
+    const target = path.join(finalDir(), relative);
+    await fs.promises.mkdir(path.dirname(target), { recursive: true });
+    await fs.promises.writeFile(target, 'unexpected');
+    const before = await hashTree(finalDir());
+    await expect(stageStaffAssetRelease(input())).rejects.toThrow(/already exists with different content/i);
+    expect(await hashTree(finalDir())).toEqual(before);
+});
+
+test.each(['missing', 'changed', 'manifest'])('restaging rejects a %s nested release member', async change => {
+    await nestedReleaseFixture();
+    const asset = path.join(finalPublic(), 'scripts', 'app.js');
+    if (change === 'missing') await fs.promises.unlink(asset);
+    else if (change === 'changed') await fs.promises.writeFile(asset, 'changed');
+    else await fs.promises.writeFile(path.join(finalDir(), 'release-manifest.json'), '{}\n');
+    const before = await hashTree(finalDir());
+    await expect(stageStaffAssetRelease(input())).rejects.toThrow(/already exists with different content/i);
+    expect(await hashTree(finalDir())).toEqual(before);
+});
+
+test.each(['linked', 'staff/linked', 'staff', 'staff/public', 'staff/public/scripts', 'release-manifest.json'])('restaging rejects the release symlink %s and preserves its target', async relative => {
+    await nestedReleaseFixture();
+    const target = path.join(finalDir(), relative);
+    const external = path.join(root, 'external');
+    if (fs.existsSync(target)) await fs.promises.rename(target, external);
+    else {
+        await fs.promises.mkdir(external);
+        await fs.promises.writeFile(path.join(external, 'keep.txt'), 'keep');
+    }
+    // Directory junctions exercise link rejection without Windows symlink privileges.
+    if (relative === 'release-manifest.json') {
+        await fs.promises.mkdir(path.join(root, 'manifest-directory'));
+        await fs.promises.symlink(path.join(root, 'manifest-directory'), target, 'junction');
+    } else await fs.promises.symlink(external, target, 'junction');
+    const before = relative === 'release-manifest.json' ? await fs.promises.readFile(external) : await hashTree(external);
+    await expect(stageStaffAssetRelease(input())).rejects.toThrow(/already exists with different content/i);
+    expect((await fs.promises.lstat(target)).isSymbolicLink()).toBe(true);
+    expect(relative === 'release-manifest.json' ? await fs.promises.readFile(external) : await hashTree(external)).toEqual(before);
 });
 
 test.each(['content', 'commit'])('rejects changed %s without replacing the release', async changed => {
@@ -122,7 +224,7 @@ test('two concurrent publishers cannot publish different contents under one vers
     expect(results.filter(result => result.status === 'rejected')).toHaveLength(1);
     const winner = results.find(result => result.status === 'fulfilled').value;
     expect(winner.status).toBe('published');
-    expect(await buildStaffReleaseManifest({ publicRoot: finalDir(), version: 'v413', sourceCommit })).toEqual(winner.manifest);
+    expect(await buildStaffReleaseManifest({ publicRoot: finalPublic(), version: 'v413', sourceCommit })).toEqual(winner.manifest);
 });
 
 test('a live publication lock fails closed', async () => {
@@ -555,6 +657,7 @@ test('CLI publishes with only the approved summary fields', async () => {
         fileCount: 5, totalBytes: currentFixture.entries.reduce((sum, [, bytes]) => sum + bytes.length, 0),
         manifestSha256: sha256(await fs.promises.readFile(path.join(finalDir(), 'release-manifest.json')))
     });
+    expect(await fs.promises.readFile(path.join(finalPublic(), 'scripts', 'app.js'), 'utf8')).toBe("console.log('ok');\n");
 });
 
 test.each([
