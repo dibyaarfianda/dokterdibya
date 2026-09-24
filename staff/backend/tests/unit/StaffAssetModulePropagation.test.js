@@ -120,12 +120,11 @@ async function loadVersion(browser, origin, version, { staffGraph = false, worke
         if (workerCacheMiss) {
             await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
             await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-            await page.evaluate(async oldGraph => {
+            await page.evaluate(async () => {
                 const cache = await caches.open('dokterdibya-staff-v414-static');
-                if (oldGraph) await cache.add('/staff/public/scripts/socket-credentials.js?v=v414');
-                await Promise.all((oldGraph ? ['patient-list-pages.js'] : ['socket-credentials.js', 'patient-list-pages.js']).map(name =>
+                await Promise.all(['socket-credentials.js', 'patient-list-pages.js'].map(name =>
                     cache.delete(`/staff/public/scripts/${name}?v=v414`)));
-            }, legacyGraph);
+            });
         }
         if (oldWorker) {
             await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/old-sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
@@ -200,6 +199,8 @@ if (typeof describe === 'function') {
             fixture.trace.length = 0;
             const { result } = await loadVersion(browser, fixture.origin, 'v413', { legacyGraph: true, workerCacheMiss: true });
             expect(result).toEqual(['legacy-root-v413', 'credential-v414', 'patient-list-v413']);
+            expect(fixture.trace.some(item => new URL(item.url).pathname === '/staff/public/scripts/socket-credentials.js'
+                && new URL(item.url).search === '?v=v414' && item.servedVersion === 'v414')).toBe(true);
             expect(fixture.trace.some(item => new URL(item.url).pathname === '/staff/public/scripts/patient-list-pages.js'
                 && new URL(item.url).search === '?v=v413' && item.servedVersion === 'v413')).toBe(true);
             expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);

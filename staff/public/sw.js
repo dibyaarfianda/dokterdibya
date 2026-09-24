@@ -164,7 +164,7 @@ self.addEventListener('fetch', (event) => {
     if (url.pathname === '/scripts/socket-credentials.js') {
       event.respondWith(caches.open(STATIC_CACHE)
         .then(cache => cache.match(versionedStaffAsset('/staff/public/scripts/socket-credentials.js')))
-        .then(cached => cached || Promise.reject(new Error('Legacy Staff credential asset unavailable'))));
+        .then(cached => cached || fetch(`${self.location.origin}${versionedStaffAsset('/staff/public/scripts/socket-credentials.js')}`)));
     } else {
       event.respondWith(fetch(`${self.location.origin}/staff/public/scripts/patient-list-pages.js?v=v413`));
     }

@@ -128,8 +128,9 @@ test('v414 worker bridges only legacy v413 Staff credential and patient-list imp
     expect(networkFetch).toHaveBeenCalledTimes(1);
 });
 
-test('legacy credential bridge fails closed when the reviewed Staff copy is absent from cache', async () => {
-    const worker = loadWorker('staff/public/sw.js');
+test('legacy credential bridge fetches only the exact immutable Staff copy when its cache entry is absent', async () => {
+    const networkFetch = jest.fn(async url => ({ fetched: url }));
+    const worker = loadWorker('staff/public/sw.js', { networkFetch });
     let install;
     worker.handlers.install({ waitUntil: promise => { install = promise; } });
     await install;
@@ -140,8 +141,10 @@ test('legacy credential bridge fails closed when the reviewed Staff copy is abse
             referrer: 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413',
             method: 'GET', mode: 'cors', headers: { get: () => '' } },
         respondWith: promise => { response = promise; } });
-    await expect(response).rejects.toThrow('Legacy Staff credential asset unavailable');
-    expect(worker.networkFetch).not.toHaveBeenCalled();
+    await expect(response).resolves.toMatchObject({ fetched: 'https://example.test/staff/public/scripts/socket-credentials.js?v=v414' });
+    expect(networkFetch).toHaveBeenCalledTimes(1);
+    expect(networkFetch).toHaveBeenCalledWith('https://example.test/staff/public/scripts/socket-credentials.js?v=v414');
+    expect(worker.cache.match.mock.calls.some(([, options]) => options?.ignoreSearch)).toBe(false);
 });
 
 test.each([
