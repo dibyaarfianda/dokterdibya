@@ -5,7 +5,7 @@ const puppeteer = require('puppeteer');
 
 const root = path.resolve(__dirname, '../../../..');
 const baseline = {
-    'staff/public/index-adminlte.html': '16ac1b7df53fbe4cbf80c742e8f23db89a65a942123ce6251e19c67681289142',
+    'staff/public/index-adminlte.html': 'b4781f1b58765d9e6fe1d5e735e90764dfa278a9d7e02fad48777de159dae0a1',
     'public/patient-menu.html': 'da9c28107e03efa0947adcfdda6acb081e7ed298ef7c266c41354957f1a846a3'
 };
 

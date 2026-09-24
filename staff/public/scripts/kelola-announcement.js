@@ -1,5 +1,5 @@
 import { auth, initAuth, getIdToken, signOut } from './vps-auth-v2.js';
-import '/scripts/socket-credentials.js';
+import './socket-credentials.js';
 
 const API_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3000/api' 

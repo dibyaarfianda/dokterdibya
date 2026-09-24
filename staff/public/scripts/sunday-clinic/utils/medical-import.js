@@ -162,7 +162,7 @@ async function loadPatientsForImport() {
 
     try {
         const token = window.getToken ? window.getToken() : '';
-        const { loadAllPatientPages } = await import('/scripts/patient-list-pages.js');
+        const { loadAllPatientPages } = await import('../../patient-list-pages.js');
         const result = await loadAllPatientPages('/api/patients?view=basic', url => fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`

@@ -357,7 +357,7 @@
 
         try {
             const token = (window.getAuthToken ? window.getAuthToken() : '');
-            const { loadAllPatientPages } = await import('/scripts/patient-list-pages.js');
+            const { loadAllPatientPages } = await import('../patient-list-pages.js');
             const result = await loadAllPatientPages('/api/patients', url => fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }
             }));
@@ -1512,7 +1512,7 @@
             window.staffDebugLog?.('PatientSearch', 'Loading all patients', { hasToken: Boolean(token) });
 
             // Use unified patients endpoint
-            const { loadAllPatientPages } = await import('/scripts/patient-list-pages.js');
+            const { loadAllPatientPages } = await import('../patient-list-pages.js');
             const data = await loadAllPatientPages(`/api/patients?_=${Date.now()}`, url => fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`,

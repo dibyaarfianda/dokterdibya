@@ -13,7 +13,10 @@ const invalidQueries = ['v', 'V', 'V=', 'v=', 'v=garbage', 'V=v413', 'v=v0', 'v=
 const bodies = version => ({
     'root.js': `import mid from './mid.js'; export default ['root-${version}', ...mid];`,
     'mid.js': `import leaf from './leaf.js'; export default ['mid-${version}', ...leaf];`,
-    'leaf.js': `export default ['leaf-${version}'];`
+    'leaf.js': `export default ['leaf-${version}'];`,
+    'staff-root.js': `import './socket-credentials.js'; export default async () => ['staff-root-${version}', globalThis.credentialSentinel, (await import('./patient-list-pages.js')).default];`,
+    'socket-credentials.js': `globalThis.credentialSentinel = 'credential-${version}';`,
+    'patient-list-pages.js': `export default 'patient-list-${version}';`
 });
 
 // A small map interpreter for the loopback fixture; Nginx itself executes these maps in CI.
@@ -54,6 +57,9 @@ async function loopbackFixture() {
         if (url.pathname === '/staff/public/index.html') {
             res.setHeader('Content-Type', 'text/html');
             body = '<!doctype html><title>Staff module fixture</title>';
+        } else if (url.pathname === '/staff/public/sw.js') {
+            res.setHeader('Content-Type', 'application/javascript');
+            body = fs.readFileSync(path.join(__dirname, '../../../public/sw.js'), 'utf8');
         } else if (url.pathname.startsWith(scriptBase) && url.pathname.endsWith('.js')) {
             if (state.staff_module_redirect_version) {
                 status = 307;
@@ -62,9 +68,12 @@ async function loopbackFixture() {
             } else {
                 servedVersion = state.staff_asset_root === '/current' ? 'current' : state.staff_asset_root.split('/').pop();
                 body = ['current', 'v413', 'v414'].includes(servedVersion) ? bodies(servedVersion)[url.pathname.slice(scriptBase.length)] : undefined;
+                if (!body && servedVersion === 'v414') body = '/* precache fixture */';
                 if (!body) { status = 404; servedVersion = null; body = 'not found'; }
                 res.setHeader('Content-Type', 'application/javascript');
             }
+        } else if (url.pathname.startsWith('/staff/public/') && url.search === '?v=v414') {
+            body = 'fixture asset';
         } else { status = 404; body = 'not found'; }
         trace.push({ url: `${origin}${req.url}`, referrer: req.headers.referer || '', status, servedVersion });
         res.setHeader('Cache-Control', 'no-store');
@@ -75,9 +84,9 @@ async function loopbackFixture() {
     return { origin, trace, close: () => new Promise(resolve => server.close(resolve)) };
 }
 
-async function loadVersion(browser, origin, version) {
+async function loadVersion(browser, origin, version, { staffGraph = false, workerCacheMiss = false } = {}) {
     const page = await browser.newPage();
-    await page.setBypassServiceWorker(true);
+    await page.setBypassServiceWorker(!workerCacheMiss);
     await page.setCacheEnabled(false);
     const trace = [];
     const pending = [];
@@ -91,7 +100,20 @@ async function loadVersion(browser, origin, version) {
     });
     try {
         await page.goto(`${origin}/staff/public/index.html`);
-        const result = await page.evaluate(async url => (await import(url)).default, `${origin}${scriptBase}root.js?v=${version}`);
+        if (workerCacheMiss) {
+            await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
+            await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+            await page.evaluate(async () => {
+                const cache = await caches.open('dokterdibya-staff-v414-static');
+                await Promise.all(['socket-credentials.js', 'patient-list-pages.js'].map(name =>
+                    cache.delete(`/staff/public/scripts/${name}?v=v414`)));
+            });
+        }
+        const entry = `${origin}${scriptBase}${staffGraph ? 'staff-root.js' : 'root.js'}?v=${version}`;
+        const result = await page.evaluate(async url => {
+            const module = await import(url);
+            return typeof module.default === 'function' ? module.default() : module.default;
+        }, entry);
         await Promise.all(pending);
         return { result, trace };
     } finally { await page.close(); }
@@ -132,6 +154,24 @@ if (typeof describe === 'function') {
             const served = fixture.trace.filter(item => item.servedVersion);
             expect(served).toHaveLength(3);
             expect(served.every(item => item.servedVersion === version)).toBe(true);
+        }, 30000);
+
+        test.each(['v413', 'v414'])('keeps %s Staff credentials and lazy patient-list in one release with worker disabled', async version => {
+            fixture.trace.length = 0;
+            const { result, trace } = await loadVersion(browser, fixture.origin, version, { staffGraph: true });
+            expect(result).toEqual([`staff-root-${version}`, `credential-${version}`, `patient-list-${version}`]);
+            expect(trace.filter(item => item.status === 200).map(item => new URL(item.url).search)).toEqual(['?v=' + version, '?v=' + version, '?v=' + version]);
+            expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);
+            expect(fixture.trace.filter(item => item.servedVersion && /\/(?:staff-root|socket-credentials|patient-list-pages)\.js$/.test(new URL(item.url).pathname)).every(item => item.servedVersion === version)).toBe(true);
+        }, 30000);
+
+        test.each(['v413', 'v414'])('keeps %s Staff credentials and lazy patient-list in one release after current worker cache misses', async version => {
+            fixture.trace.length = 0;
+            const { result, trace } = await loadVersion(browser, fixture.origin, version, { staffGraph: true, workerCacheMiss: true });
+            expect(result).toEqual([`staff-root-${version}`, `credential-${version}`, `patient-list-${version}`]);
+            expect(trace.filter(item => item.status === 200)).toHaveLength(3);
+            expect(trace.filter(item => item.status === 200).every(item => new URL(item.url).search === `?v=${version}`)).toBe(true);
+            expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);
         }, 30000);
 
         test.each(invalidQueries)('fails closed for raw version query %s', async query => {

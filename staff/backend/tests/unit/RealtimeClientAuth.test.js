@@ -4,6 +4,76 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '../../../..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
+async function credentialHelperTrace(file) {
+    const listeners = new Map();
+    const timers = new Map();
+    const actions = [];
+    let nextTimer = 0;
+    let token = null;
+    let delayedRead = null;
+    const socket = {
+        connected: false, active: false,
+        connect() { actions.push('connect'); this.connected = true; this.active = true; },
+        disconnect() { actions.push('disconnect'); this.connected = false; this.active = false; }
+    };
+    const window = {
+        addEventListener(name, callback) { listeners.set(name, callback); },
+        removeEventListener(name) { listeners.delete(name); },
+        setInterval(callback) { const id = ++nextTimer; timers.set(id, callback); return id; },
+        clearInterval(id) { timers.delete(id); }
+    };
+    vm.runInNewContext(read(file), { window });
+    window.bindSocketCredentials(socket, () => delayedRead || token);
+    const flush = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); };
+    await flush();
+    let missingAuth;
+    await socket.auth(value => { missingAuth = value; });
+    const missing = { connected: socket.connected, auth: missingAuth };
+    token = 'first';
+    listeners.get('storage')();
+    await flush();
+    const initial = { connected: socket.connected, auth: await new Promise(resolve => socket.auth(resolve)) };
+    token = 'second';
+    socket.refreshCredentials();
+    await flush();
+    const changed = { connected: socket.connected, auth: await new Promise(resolve => socket.auth(resolve)) };
+    token = null;
+    socket.invalidateCredentials();
+    await flush();
+    const logout = { connected: socket.connected };
+    token = 'third';
+    listeners.get('online')();
+    await flush();
+    const reconnect = { connected: socket.connected, auth: await new Promise(resolve => socket.auth(resolve)) };
+    let resolveDelayed;
+    delayedRead = new Promise(resolve => { resolveDelayed = resolve; });
+    socket.refreshCredentials();
+    token = 'fourth'; delayedRead = null;
+    socket.invalidateCredentials();
+    await flush();
+    resolveDelayed('stale');
+    await flush();
+    const staleRead = { connected: socket.connected, auth: await new Promise(resolve => socket.auth(resolve)) };
+    socket.stopCredentialTracking();
+    const stopped = { connected: socket.connected, listeners: listeners.size, timers: timers.size };
+    return { missing, initial, changed, logout, reconnect, staleRead, stopped, actions };
+}
+
+test('Staff-local and patient credential helpers preserve the same lifecycle behavior', async () => {
+    const patient = await credentialHelperTrace('public/scripts/socket-credentials.js');
+    const staff = await credentialHelperTrace('staff/public/scripts/socket-credentials.js');
+    expect(staff).toEqual(patient);
+    expect(staff).toMatchObject({
+        missing: { connected: false },
+        initial: { connected: true, auth: { token: 'first' } },
+        changed: { connected: true, auth: { token: 'second' } },
+        logout: { connected: false },
+        reconnect: { connected: true, auth: { token: 'third' } },
+        staleRead: { connected: true, auth: { token: 'fourth' } },
+        stopped: { connected: false, listeners: 0, timers: 0 }
+    });
+});
+
 function context(extra = {}) {
     const sockets = [];
     const timers = [];

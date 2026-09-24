@@ -53,7 +53,7 @@ const featureLoaders = {
     },
     apexCharts: () => loadScript('https://cdn.jsdelivr.net/npm/apexcharts@3.54.1/dist/apexcharts.min.js'),
     markdown: () => Promise.all([
-        loadScript('https://cdn.jsdelivr.net/npm/marked/marked.min.js'),
+        loadScript('https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js'),
         loadScript('https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js')
     ]),
     qrcode: async () => {

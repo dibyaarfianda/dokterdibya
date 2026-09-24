@@ -89,6 +89,25 @@ test('staff worker serves only its current-version shell scripts from its atomic
     expect(worker.cache.match.mock.calls.some(([request]) => String(request.url || request).includes('v=v413'))).toBe(false);
 });
 
+test('staff credential dependency is in the verified shell cache and an exact-version miss reaches network', async () => {
+    const worker = loadWorker('staff/public/sw.js');
+    let install;
+    worker.handlers.install({ waitUntil: promise => { install = promise; } });
+    await install;
+    const credential = 'https://example.test/staff/public/scripts/socket-credentials.js?v=v414';
+    expect(worker.entries.has(credential)).toBe(true);
+    worker.entries.delete(credential);
+    let response;
+    worker.handlers.fetch({
+        clientId: 'current-shell',
+        request: { url: credential, method: 'GET', mode: 'cors', headers: { get: () => '' } },
+        respondWith: promise => { response = promise; }
+    });
+    await expect(response).rejects.toThrow('offline');
+    expect(worker.cache.match).toHaveBeenCalledWith('/staff/public/scripts/socket-credentials.js?v=v414');
+    expect(worker.cache.match.mock.calls.some(([, options]) => options?.ignoreSearch)).toBe(false);
+});
+
 test('old staff controller cannot mix cached canonical modules into a newer shell document', async () => {
     const worker = loadWorker('staff/public/sw.js');
     let install;

@@ -1,7 +1,7 @@
 // Real-time synchronization module using Socket.io
 // Allows users to see what others are doing in real-time
 import { getIdToken } from './vps-auth-v2.js';
-import '/scripts/socket-credentials.js';
+import './socket-credentials.js';
 
 const REALTIME_API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3001'

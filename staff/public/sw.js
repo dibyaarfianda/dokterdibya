@@ -31,6 +31,7 @@ const STAFF_SHELL_SCRIPTS = [
   '/staff/public/scripts/rum.js',
   '/staff/public/scripts/safe-render.js',
   '/staff/public/scripts/session-manager.js',
+  '/staff/public/scripts/socket-credentials.js',
   '/staff/public/scripts/shell/actions.js',
   '/staff/public/scripts/shell/bootstrap.js',
   '/staff/public/scripts/shell/credentials.js',
