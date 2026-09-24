@@ -145,6 +145,66 @@ test('an old contained lock can be recovered with injected time', async () => {
     await expect(fs.promises.access(path.join(releaseBase, '.v413.tmp-old'))).rejects.toMatchObject({ code: 'ENOENT' });
 });
 
+test('a concurrent stale recovery cannot remove the next publisher lock', async () => {
+    await fs.promises.mkdir(releaseBase);
+    await fs.promises.mkdir(path.join(releaseBase, '.v413.tmp-old'));
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    let releaseUnlink;
+    let reachedUnlink;
+    const unlinkPaused = new Promise(resolve => { reachedUnlink = resolve; });
+    const unlinkGate = new Promise(resolve => { releaseUnlink = resolve; });
+    let releaseCopy;
+    let reachedCopy;
+    const copyStarted = new Promise(resolve => { reachedCopy = resolve; });
+    const copyGate = new Promise(resolve => { releaseCopy = resolve; });
+    const realUnlink = fs.promises.unlink;
+    const realCopy = fs.promises.copyFile;
+    let paused = false;
+    const unlinkSpy = jest.spyOn(fs.promises, 'unlink').mockImplementation(async target => {
+        if (target === lockFile() && !paused) {
+            paused = true;
+            reachedUnlink();
+            await unlinkGate;
+        }
+        return realUnlink(target);
+    });
+    const copySpy = jest.spyOn(fs.promises, 'copyFile').mockImplementation(async (...args) => {
+        reachedCopy();
+        await copyGate;
+        return realCopy(...args);
+    });
+    const staleInput = { ...input(), now: () => 601001 };
+    const first = stageStaffAssetRelease(staleInput);
+    let second;
+    let observed;
+    let liveLockPreserved = false;
+    try {
+        await unlinkPaused;
+        second = stageStaffAssetRelease(staleInput);
+        observed = await Promise.race([
+            second.then(() => 'resolved', () => 'rejected'),
+            copyStarted.then(() => 'second reached copy')
+        ]);
+        if (observed === 'rejected') {
+            releaseUnlink();
+            await copyStarted;
+            const activeLock = await fs.promises.readFile(lockFile(), 'utf8');
+            const third = await stageStaffAssetRelease(staleInput).then(() => 'resolved', () => 'rejected');
+            liveLockPreserved = third === 'rejected' && await fs.promises.readFile(lockFile(), 'utf8') === activeLock;
+        }
+    } finally {
+        releaseUnlink();
+        releaseCopy();
+        await Promise.allSettled([first, second].filter(Boolean));
+        unlinkSpy.mockRestore();
+        copySpy.mockRestore();
+    }
+    expect(observed).toBe('rejected');
+    expect(liveLockPreserved).toBe(true);
+    expect((await fs.promises.readdir(releaseBase)).filter(name => name.endsWith('.publish.lock'))).toEqual([]);
+    expect(await fs.promises.access(finalDir())).toBeUndefined();
+});
+
 test('a stale lock pointing outside its release base fails closed', async () => {
     await fs.promises.mkdir(releaseBase);
     await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '../outside' }));
@@ -208,6 +268,25 @@ test('rejects a symbolic link inside source assets', async () => {
 
 test('rejects release base equal to repository root', async () => {
     await expect(stageStaffAssetRelease({ ...input(), releaseBase: repo })).rejects.toThrow(/release base/i);
+});
+
+test('stale cleanup cannot remove a repository stored as the recorded temp directory', async () => {
+    await fs.promises.mkdir(releaseBase);
+    const protectedRepo = path.join(releaseBase, '.v413.tmp-old');
+    await fs.promises.cp(repo, protectedRepo, { recursive: true });
+    await fs.promises.writeFile(lockFile(), JSON.stringify({ pid: 999999, startedAt: 1000, version: 'v413', tempBasename: '.v413.tmp-old' }));
+    await expect(stageStaffAssetRelease({ ...input(), repositoryRoot: protectedRepo, now: () => 601001 })).rejects.toThrow(/release base|protected|overlap/i);
+    expect(await fs.promises.readFile(path.join(protectedRepo, 'staff', 'public', 'index.html'), 'utf8')).toBe('<h1>Staff</h1>\n');
+});
+
+test('a release-base junction resolving inside the repository is rejected before publication', async () => {
+    const actualBase = path.join(repo, 'release-store');
+    const alias = path.join(root, 'release-alias');
+    await fs.promises.mkdir(actualBase);
+    await fs.promises.symlink(actualBase, alias, 'junction');
+    await expect(stageStaffAssetRelease({ ...input(), releaseBase: alias })).rejects.toThrow(/release base|overlap/i);
+    expect(await fs.promises.readdir(actualBase)).toEqual([]);
+    expect((await fs.promises.lstat(alias)).isSymbolicLink()).toBe(true);
 });
 
 test('rejects a final path that escapes the release base', async () => {
