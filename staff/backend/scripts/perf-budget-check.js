@@ -107,17 +107,26 @@ async function benchEndpoint(baseUrl, endpoint, token) {
     };
 }
 
+async function installEphemeralStaffAuth(page, token, targetOrigin) {
+    await page.evaluateOnNewDocument((authToken, allowedOrigin) => {
+        if (window !== window.top || window.location.origin !== allowedOrigin || typeof Storage === 'undefined') return;
+        const originalGetItem = Storage.prototype.getItem;
+        Storage.prototype.getItem = function (key) {
+            if (typeof window.TOKEN_KEY === 'string' && key === window.TOKEN_KEY) return authToken;
+            return originalGetItem.call(this, key);
+        };
+    }, token, targetOrigin);
+}
+
 async function inspectPage(pageUrl, token) {
     const browser = await puppeteer.launch({ headless: true });
     try {
         const page = await browser.newPage();
+        const targetOrigin = new URL(pageUrl).origin;
         if (token) {
-            await page.evaluateOnNewDocument((authToken) => {
-                try { localStorage.setItem('vps_auth_token', authToken); } catch (_) {}
-            }, token);
+            await installEphemeralStaffAuth(page, token, targetOrigin);
         }
 
-        const targetOrigin = new URL(pageUrl).origin;
         let phase = 'cold';
         const phases = {
             cold: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0 },
@@ -286,4 +295,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { inspectPage, pageBudgetViolations, percentile };
+module.exports = { inspectPage, pageBudgetViolations, percentile, installEphemeralStaffAuth };

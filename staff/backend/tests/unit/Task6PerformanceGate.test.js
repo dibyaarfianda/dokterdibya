@@ -1,6 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { spawnSync } = require('child_process');
+const http = require('http');
 
 const scriptPath = path.resolve(__dirname, '../../scripts/perf-budget-check.js');
 
@@ -37,3 +38,52 @@ test('performance command fails closed without CI credential before making a req
     expect(child.stderr).toContain('STAFF_PERF_TOKEN environment variable is required');
     expect(child.stdout).not.toContain('https://example.test');
 });
+
+test('performance script has no literal token key or persistent credential write', () => {
+    const source = fs.readFileSync(scriptPath, 'utf8');
+    expect(source).not.toContain('vps_auth_token');
+    expect(source).not.toMatch(/(?:localStorage|sessionStorage)\.setItem\s*\(/);
+});
+
+test('performance browser credential follows the page key without storage persistence', async () => {
+    const token = 'synthetic-ci-token';
+    const probes = [];
+    const html = `<!doctype html><script>
+        const beforeKey = localStorage.getItem('SYNTHETIC_CI_AUTH');
+        window.TOKEN_KEY = 'SYNTHETIC_CI_AUTH';
+        window.getAuthToken = () => localStorage.getItem(window.TOKEN_KEY)
+            || sessionStorage.getItem(window.TOKEN_KEY);
+        window.activateRegisteredStaffPage = async () => document.body;
+        fetch('/probe', {
+            method: 'POST',
+            headers: { Authorization: 'Bearer ' + (window.getAuthToken() || '') },
+            body: JSON.stringify({ beforeKeyEmpty: beforeKey === null,
+                unrelatedEmpty: localStorage.getItem('SYNTHETIC_OTHER_KEY') === null,
+                localCount: localStorage.length, sessionCount: sessionStorage.length })
+        });
+    </script>`;
+    const server = http.createServer((req, res) => {
+        if (req.url === '/probe') {
+            let body = '';
+            req.on('data', chunk => { body += chunk; });
+            req.on('end', () => {
+                probes.push({ authorized: req.headers.authorization === `Bearer ${token}`, ...JSON.parse(body) });
+                res.writeHead(probes.at(-1).authorized ? 200 : 401).end();
+            });
+            return;
+        }
+        res.writeHead(200, { 'Content-Type': 'text/html' }).end(html);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+        const { inspectPage } = require(scriptPath);
+        await inspectPage(`http://127.0.0.1:${server.address().port}/staff/public/index-adminlte.html`, token);
+        expect(probes).toHaveLength(2);
+        expect(probes).toEqual([
+            { authorized: true, beforeKeyEmpty: true, unrelatedEmpty: true, localCount: 0, sessionCount: 0 },
+            { authorized: true, beforeKeyEmpty: true, unrelatedEmpty: true, localCount: 0, sessionCount: 0 }
+        ]);
+    } finally {
+        await new Promise(resolve => server.close(resolve));
+    }
+}, 30000);
