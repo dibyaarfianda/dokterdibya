@@ -14,6 +14,7 @@
     "test:integration": "jest --testPathPatterns=integration",
     "test:ci": "jest --runInBand --coverage=false --testPathPatterns=unit",
     "test:staff-smoke": "jest --runInBand --coverage=false tests/unit/StaffPanelWave1Hardening.test.js tests/unit/StaffPanelWave2LazyShell.test.js tests/unit/StaffApiClient.test.js tests/integration/observabilityAuth.test.js",
+    "reconcile:legacy-medical-records": "node scripts/reconcile-legacy-medical-records.js",
     "check:staff-static": "node scripts/staff-static-check.js",
     "perf:budget": "node scripts/perf-budget-check.js"
   },

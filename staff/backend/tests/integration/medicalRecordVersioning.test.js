@@ -193,6 +193,17 @@ test('unavailable base or unversioned server mutation fails 412', async () => {
     expect((await patch(1, [{ path: '/nested/a', before: 'old', after: 'new' }])).status).toBe(412);
 });
 
+test('legacy MR-only backfill revision forces a stale client to reload instead of guessing a clinical base', async () => {
+    await create();
+    record().version = 2;
+    mockDb.state().revisions.push({ medical_record_id: record().id, patient_id: record().patient_id,
+        mr_id: record().mr_id, record_type: record().record_type, event_type: 'legacy_backfill',
+        actor_id: 'legacy-reconciliation', from_version: 1, to_version: 2,
+        before_snapshot: record().record_data, after_snapshot: record().record_data, changed_paths: '[]' });
+    expect((await patch(1, [{ path: '/notes', before: 'old', after: 'stale' }])).status).toBe(412);
+    expect(record().record_data).toContain('"notes":"old"');
+});
+
 test.each(['INSERT INTO medical_record_revisions', 'DELETE FROM medical_records', 'DELETE FROM patient_documents'])('reset rolls back medical/doc state on %s failure and emits nothing', async failure => {
     await create();
     mockDb.state().documents.push({ id: 1, patient_id: 'fixture-a', mr_id: 'TEST001', document_type: 'usg_photo' });
