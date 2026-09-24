@@ -37,3 +37,21 @@ location ^~ /staff/public/ {
     add_header Cache-Control $staff_asset_cache_control always;
     try_files $uri =404;
 }
+
+location = /scripts/socket-credentials.js {
+    if ($staff_legacy_redirect != "") {
+        return 307 $staff_legacy_redirect;
+    }
+    root __DOKTERDIBYA_CURRENT_ROOT__/public;
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+}
+
+location = /scripts/patient-list-pages.js {
+    if ($staff_legacy_redirect != "") {
+        return 307 $staff_legacy_redirect;
+    }
+    root __DOKTERDIBYA_CURRENT_ROOT__/public;
+    add_header Cache-Control "no-store" always;
+    try_files $uri =404;
+}

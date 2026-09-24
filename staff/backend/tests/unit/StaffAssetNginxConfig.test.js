@@ -8,9 +8,9 @@ const { renderStaffAssetNginx } = require('../../services/staffAssetNginxConfig'
 const roots = { releaseBase: '/var/www/dokterdibya-staff-releases', currentRoot: '/var/www/dokterdibya' };
 
 // Interpret only the map grammar emitted by this renderer. Real Nginx is a separate CI gate.
-function evaluateMaps(config, args, referer = '') {
+function evaluateMaps(config, args, referer = '', requestUri = '') {
     const arg = args.match(/(?:^|&)v=([^&]*)/i);
-    const vars = { args, arg_v: arg ? arg[1] : '', http_referer: referer };
+    const vars = { args, arg_v: arg ? arg[1] : '', http_referer: referer, request_uri: requestUri };
     const expand = value => value.replace(/\$(\w+)/g, (_, name) => vars[name] || '');
     for (const block of config.matchAll(/map\s+("[^"]*"|\S+)\s+\$(\w+)\s*\{([^}]+)\}/g)) {
         const input = expand(block[1].replace(/^"|"$/g, ''));
@@ -80,17 +80,29 @@ describe('Staff Nginx release routing', () => {
         expect(evaluateMaps(renderStaffAssetNginx(roots).mapConfig, query, referrer).staff_module_redirect_version).toBe(version);
     });
 
+    test.each([
+        ['/scripts/socket-credentials.js', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', '/staff/public/scripts/socket-credentials.js?v=v414'],
+        ['/scripts/patient-list-pages.js', 'https://dokterdibya.com/staff/public/scripts/legacy/patient-tools.js?v=v413', '/staff/public/scripts/patient-list-pages.js?v=v413'],
+        ['/scripts/patient-list-pages.js', 'https://dokterdibya.com/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=v413', '/staff/public/scripts/patient-list-pages.js?v=v413'],
+        ['/scripts/other.js', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', ''],
+        ['/scripts/socket-credentials.js?x=1', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', ''],
+        ...['', 'https://external.test/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com.evil.test/staff/public/scripts/realtime-sync.js?v=v413', 'http://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com/public/scripts/patient-session.js?v=v413', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v414', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413&x=1', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413#fragment', 'https://dokterdibya.com/staff/public/scripts/../other.js?v=v413'].map(ref => ['/scripts/socket-credentials.js', ref, ''])
+    ])('bridges only exact legacy root request %s from %s', (uri, referrer, target) => {
+        expect(evaluateMaps(renderStaffAssetNginx(roots).mapConfig, '', referrer, uri).staff_legacy_redirect || '').toBe(target);
+    });
+
     test('keeps current HTML, service worker and production proxy ahead of release scripts', () => {
         const { locationConfig: config } = renderStaffAssetNginx(roots);
         const locations = [...config.matchAll(/location\s+([^\{]+)\{/g)].map(match => match[1].trim());
-        expect(locations).toEqual(['^~ /staff/public/', '= /staff/public/sw.js', '= /staff/public/sunday-clinic.html', '~ [.]html$', '~ ^/staff/public/scripts/.+[.]js$']);
+        expect(locations).toEqual(['^~ /staff/public/', '= /staff/public/sw.js', '= /staff/public/sunday-clinic.html', '~ [.]html$', '~ ^/staff/public/scripts/.+[.]js$', '= /scripts/socket-credentials.js', '= /scripts/patient-list-pages.js']);
         expect(config).toContain('proxy_pass http://127.0.0.1:3000;');
         for (const directive of ['proxy_http_version 1.1;', 'proxy_set_header Host $host;', 'proxy_set_header X-Real-IP $remote_addr;', 'proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;', 'proxy_set_header X-Forwarded-Proto $scheme;']) expect(config).toContain(directive);
         expect(config.match(/root \/var\/www\/dokterdibya;/g)).toHaveLength(2);
+        expect(config.match(/root \/var\/www\/dokterdibya\/public;/g)).toHaveLength(2);
         expect(config.match(/no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0/g)).toHaveLength(3);
-        expect(config.match(/try_files \$uri =404;/g)).toHaveLength(4);
+        expect(config.match(/try_files \$uri =404;/g)).toHaveLength(6);
         expect(config).toContain('return 307 $uri?v=$staff_module_redirect_version;');
-        expect(config).not.toMatch(/location[^\n]*(?:api|socket|uploads|patient|docboard)/i);
+        expect(config).not.toMatch(/location[^\n]*(?:api|uploads|docboard)/i);
         expect(config).not.toMatch(/(?:alias|rewrite)\s/);
     });
 

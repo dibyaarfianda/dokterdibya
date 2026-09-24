@@ -22,10 +22,11 @@ const bodies = version => ({
 });
 
 // A small map interpreter for the loopback fixture; Nginx itself executes these maps in CI.
-function routeState(args, referrer, origin) {
+function routeState(args, referrer, origin, requestUri = '') {
     const { mapConfig } = renderStaffAssetNginx({ releaseBase: '/releases', currentRoot: '/current' });
     const arg = args.match(/(?:^|&)v=([^&]*)/i);
-    const vars = { args, arg_v: arg ? arg[1] : '', http_referer: referrer.startsWith(`${origin}/`) ? referrer.replace(origin, 'https://dokterdibya.com') : referrer };
+    const vars = { args, arg_v: arg ? arg[1] : '', request_uri: requestUri,
+        http_referer: referrer.startsWith(`${origin}/`) ? referrer.replace(origin, 'https://dokterdibya.com') : referrer };
     const expand = value => value.replace(/\$(\w+)/g, (_, key) => vars[key] || '');
     for (const block of mapConfig.matchAll(/map\s+("[^"]*"|\S+)\s+\$(\w+)\s*\{([^}]+)\}/g)) {
         const input = expand(block[1].replace(/^"|"$/g, ''));
@@ -52,7 +53,7 @@ async function loopbackFixture() {
     let origin;
     const server = http.createServer((req, res) => {
         const url = new URL(req.url, origin);
-        const state = routeState(url.search.slice(1), req.headers.referer || '', origin);
+        const state = routeState(url.search.slice(1), req.headers.referer || '', origin, req.url);
         let status = 200;
         let body;
         let servedVersion = null;
@@ -62,6 +63,9 @@ async function loopbackFixture() {
         } else if (url.pathname === '/staff/public/sw.js') {
             res.setHeader('Content-Type', 'application/javascript');
             body = fs.readFileSync(path.join(__dirname, '../../../public/sw.js'), 'utf8');
+        } else if (url.pathname === '/staff/public/old-sw.js') {
+            res.setHeader('Content-Type', 'application/javascript');
+            body = "self.addEventListener('install', event => event.waitUntil(self.skipWaiting())); self.addEventListener('activate', event => event.waitUntil(self.clients.claim())); self.addEventListener('fetch', () => {});";
         } else if (url.pathname.startsWith(scriptBase) && url.pathname.endsWith('.js')) {
             if (state.staff_module_redirect_version) {
                 status = 307;
@@ -76,6 +80,17 @@ async function loopbackFixture() {
             }
         } else if (url.pathname.startsWith('/staff/public/') && url.search === '?v=v414') {
             body = 'fixture asset';
+        } else if (url.pathname.startsWith('/scripts/') && url.pathname.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+            if (state.staff_legacy_redirect) {
+                status = 307;
+                res.setHeader('Location', state.staff_legacy_redirect);
+                body = '';
+            } else {
+                body = url.pathname === '/scripts/socket-credentials.js' ? "globalThis.credentialSentinel = 'credential-patient-current';"
+                    : url.pathname === '/scripts/patient-list-pages.js' ? "export default 'patient-list-patient-current';" : undefined;
+                if (!body) { status = 404; body = 'not found'; }
+            }
         } else { status = 404; body = 'not found'; }
         trace.push({ url: `${origin}${req.url}`, referrer: req.headers.referer || '', status, servedVersion });
         res.setHeader('Cache-Control', 'no-store');
@@ -86,9 +101,9 @@ async function loopbackFixture() {
     return { origin, trace, close: () => new Promise(resolve => server.close(resolve)) };
 }
 
-async function loadVersion(browser, origin, version, { staffGraph = false, workerCacheMiss = false, legacyGraph = false } = {}) {
+async function loadVersion(browser, origin, version, { staffGraph = false, workerCacheMiss = false, legacyGraph = false, oldWorker = false } = {}) {
     const page = await browser.newPage();
-    await page.setBypassServiceWorker(!workerCacheMiss);
+    await page.setBypassServiceWorker(!workerCacheMiss && !oldWorker);
     await page.setCacheEnabled(false);
     const trace = [];
     const pending = [];
@@ -111,6 +126,10 @@ async function loadVersion(browser, origin, version, { staffGraph = false, worke
                 await Promise.all((oldGraph ? ['patient-list-pages.js'] : ['socket-credentials.js', 'patient-list-pages.js']).map(name =>
                     cache.delete(`/staff/public/scripts/${name}?v=v414`)));
             }, legacyGraph);
+        }
+        if (oldWorker) {
+            await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/old-sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
+            await page.waitForFunction(() => navigator.serviceWorker.controller?.scriptURL.endsWith('/staff/public/old-sw.js'));
         }
         const entry = `${origin}${scriptBase}${legacyGraph ? 'realtime-sync.js' : staffGraph ? 'staff-root.js' : 'root.js'}?v=${version}`;
         const result = await page.evaluate(async url => {
@@ -210,6 +229,19 @@ if (typeof describe === 'function') {
             } finally { await page.close(); }
         }, 30000);
 
+        test.each([
+            ['disabled', false], ['old passthrough', true]
+        ])('edge bridge preserves v413 legacy graph with %s service worker', async (_, oldWorker) => {
+            fixture.trace.length = 0;
+            const { result } = await loadVersion(browser, fixture.origin, 'v413', { legacyGraph: true, oldWorker });
+            expect(result).toEqual(['legacy-root-v413', 'credential-v414', 'patient-list-v413']);
+            const rootRequests = fixture.trace.filter(item => new URL(item.url).pathname.startsWith('/scripts/'));
+            expect(rootRequests).toHaveLength(2);
+            expect(rootRequests.every(item => item.status === 307)).toBe(true);
+            expect(fixture.trace.some(item => new URL(item.url).pathname === '/staff/public/scripts/patient-list-pages.js'
+                && new URL(item.url).search === '?v=v413' && item.servedVersion === 'v413')).toBe(true);
+        }, 30000);
+
         test.each(invalidQueries)('fails closed for raw version query %s', async query => {
             const response = await fetch(`${fixture.origin}${scriptBase}leaf.js?${query}`);
             expect(response.status).toBe(404);
@@ -246,6 +278,11 @@ async function prepareNginx(prefix) {
         await fs.promises.writeFile(path.join(publicRoot, 'fixture.css'), `/* style-${version} */\n`);
     }
     await writeTree(currentRoot, 'current');
+    await fs.promises.mkdir(path.join(currentRoot, 'public/scripts'), { recursive: true });
+    await fs.promises.writeFile(path.join(currentRoot, 'public/scripts/socket-credentials.js'), "globalThis.credentialSentinel = 'credential-patient-current';");
+    await fs.promises.writeFile(path.join(currentRoot, 'public/scripts/patient-list-pages.js'), "export default 'patient-list-patient-current';");
+    await fs.promises.writeFile(path.join(currentRoot, 'public/scripts/other.js'), "export default 'other-patient-current';");
+    await fs.promises.writeFile(path.join(currentRoot, 'staff/public/old-sw.js'), "self.addEventListener('install', event => event.waitUntil(self.skipWaiting())); self.addEventListener('activate', event => event.waitUntil(self.clients.claim())); self.addEventListener('fetch', () => {});");
     for (const version of ['v413', 'v414']) {
         const repositoryRoot = path.join(prefix, `source-${version}`);
         await writeTree(repositoryRoot, version);
@@ -266,6 +303,11 @@ http {
         ssl_certificate_key ${prefix}/fixture.key;
         include ${prefix}/location.conf;
         location = /api/health { return 200 "current-api"; }
+        location ~ [.]js$ {
+            root ${prefix}/current/public;
+            add_header Cache-Control "no-store" always;
+            try_files $uri =404;
+        }
         location / { return 404; }
     }
 }
@@ -330,6 +372,33 @@ async function probeNginx(prefix) {
         const nonempty = await request(`${scriptBase}leaf.js?foo=1`, `${origin}${scriptBase}mid.js?v=v413`);
         assert.equal(nonempty.status, 200);
         assert.equal(nonempty.body, bodies('current')['leaf.js']);
+        for (const oldWorker of [false, true]) {
+            const loaded = await loadVersion(browser, origin, 'v413', { legacyGraph: true, oldWorker });
+            assert.deepEqual(loaded.result, ['legacy-root-v413', 'credential-v414', 'patient-list-v413']);
+        }
+        for (const [uri, target] of [
+            ['/scripts/socket-credentials.js', '/staff/public/scripts/socket-credentials.js?v=v414'],
+            ['/scripts/patient-list-pages.js', '/staff/public/scripts/patient-list-pages.js?v=v413']
+        ]) {
+            const redirect = await request(uri, `${origin}${scriptBase}realtime-sync.js?v=v413`);
+            assert.equal(redirect.status, 307);
+            assert.equal(new URL(redirect.headers.location, origin).href, `${origin}${target}`);
+        }
+        for (const uri of ['/scripts/socket-credentials.js', '/scripts/patient-list-pages.js', '/scripts/other.js']) {
+            for (const referrer of ['', `${origin}/public/scripts/patient-session.js?v=v413`, 'https://sisiwanita.id/public/patient-menu.html', `${origin}${scriptBase}realtime-sync.js?v=v414`, `${origin}${scriptBase}realtime-sync.js?v=v413&x=1`, 'https://external.test/staff/public/scripts/realtime-sync.js?v=v413']) {
+                const response = await request(uri, referrer);
+                assert.equal(response.status, 200);
+                assert.match(response.headers['cache-control'], /no-store/);
+                assert.match(response.body, /patient-current/);
+            }
+        }
+        const nonexact = await request('/scripts/socket-credentials.js?x=1', `${origin}${scriptBase}realtime-sync.js?v=v413`);
+        assert.equal(nonexact.status, 200);
+        assert.match(nonexact.headers['cache-control'], /no-store/);
+        assert.match(nonexact.body, /credential-patient-current/);
+        const unrelated = await request('/scripts/other.js', `${origin}${scriptBase}realtime-sync.js?v=v413`);
+        assert.equal(unrelated.status, 200);
+        assert.match(unrelated.body, /other-patient-current/);
         for (const uri of ['/staff/public/index.html', '/staff/public/sw.js', '/staff/public/sunday-clinic.html']) {
             for (const query of ['', '?v=v413', '?v=v999', '?v=']) {
                 const response = await request(uri + query);

@@ -35,3 +35,16 @@ map "$args:$staff_module_referrer_version" $staff_module_redirect_version {
     default "";
     ~^:(v[1-9][0-9]*)$ $1;
 }
+
+# Bridge only the two historical v413 Staff imports that pointed at the
+# mutable patient root. The request URI is raw, so any query disables it.
+map $http_referer $staff_legacy_v413_referrer {
+    default 0;
+    ~^https://dokterdibya[.]com/staff/public/scripts/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+[.]js[?]v=v413$ 1;
+}
+
+map "$request_uri:$staff_legacy_v413_referrer" $staff_legacy_redirect {
+    default "";
+    "/scripts/socket-credentials.js:1" "/staff/public/scripts/socket-credentials.js?v=v414";
+    "/scripts/patient-list-pages.js:1" "/staff/public/scripts/patient-list-pages.js?v=v413";
+}
