@@ -579,6 +579,26 @@ test('copy failure leaves no published release and preserves unrelated temporary
     expect((await fs.promises.readdir(releaseBase)).filter(name => name.startsWith('.v413.tmp-'))).toEqual(['.v413.tmp-neighbor']);
 });
 
+test('a competing directory at the selected temp path is never deleted when mkdir fails', async () => {
+    const originalMkdir = fs.promises.mkdir;
+    let competingTemp;
+    const spy = jest.spyOn(fs.promises, 'mkdir').mockImplementation(async (target, options) => {
+        if (!options && path.basename(target).startsWith('.v413.tmp-')) {
+            competingTemp = target;
+            await originalMkdir(target);
+            await fs.promises.writeFile(path.join(target, 'owner.txt'), 'other invocation');
+            throw Object.assign(new Error('competing temp directory'), { code: 'EEXIST' });
+        }
+        return originalMkdir(target, options);
+    });
+    try {
+        await expect(stageStaffAssetRelease(input())).rejects.toThrow('competing temp directory');
+    } finally { spy.mockRestore(); }
+    expect(competingTemp).toBeDefined();
+    expect(await fs.promises.readFile(path.join(competingTemp, 'owner.txt'), 'utf8')).toBe('other invocation');
+    await expect(fs.promises.access(finalDir())).rejects.toMatchObject({ code: 'ENOENT' });
+});
+
 test('post-copy checksum failure prevents publication', async () => {
     const spy = jest.spyOn(fs.promises, 'copyFile').mockImplementationOnce(async (_source, target) => fs.promises.writeFile(target, 'corrupt'));
     try { await expect(stageStaffAssetRelease(input())).rejects.toThrow(/checksum|different content/i); }

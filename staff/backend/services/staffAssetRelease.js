@@ -331,12 +331,17 @@ async function stageStaffAssetRelease({ repositoryRoot, releaseBase, version, so
     if (await optionalLstat(invalid)) throw new Error('Invalid Staff release base: .invalid path exists');
     const protectedRoots = [repository, sourcePublic, finalDir, lockPath];
     const ownLockBytes = await acquireLock({ lockPath, releaseBase: base, version, finalDir, tempBasename, now, protectedRoots });
+    let createdTempIdentity = null;
     try {
         if (await optionalLstat(finalDir)) {
             if (!await compareExisting(finalDir, manifest)) throw new Error('Staff release already exists with different content');
             return { status: 'existing', releaseDir: finalDir, manifest, manifestSha256 };
         }
         await fs.promises.mkdir(tempDir);
+        createdTempIdentity = await fs.promises.lstat(tempDir);
+        if (!createdTempIdentity.isDirectory() || createdTempIdentity.isSymbolicLink()) {
+            throw new Error('Unsafe Staff release staging directory');
+        }
         await fs.promises.mkdir(tempPublic, { recursive: true });
         for (const file of manifest.files) {
             const from = path.resolve(sourcePublic, ...file.path.split('/'));
@@ -362,9 +367,12 @@ async function stageStaffAssetRelease({ repositoryRoot, releaseBase, version, so
         }
         return { status: 'published', releaseDir: finalDir, manifest, manifestSha256 };
     } finally {
-        if (isInside(base, tempDir) && !protectedRoots.some(root => pathsOverlap(tempDir, root))) {
+        if (createdTempIdentity && isInside(base, tempDir) && !protectedRoots.some(root => pathsOverlap(tempDir, root))) {
             const stat = await optionalLstat(tempDir);
-            if (stat && stat.isDirectory() && !stat.isSymbolicLink()) await fs.promises.rm(tempDir, { recursive: true });
+            if (stat && stat.isDirectory() && !stat.isSymbolicLink() &&
+                stat.dev === createdTempIdentity.dev && stat.ino === createdTempIdentity.ino) {
+                await fs.promises.rm(tempDir, { recursive: true });
+            }
         }
         if (await optionalLstat(lockPath)) {
             try {
