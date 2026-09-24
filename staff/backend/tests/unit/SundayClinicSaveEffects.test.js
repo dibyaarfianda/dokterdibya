@@ -223,3 +223,84 @@ test('identifier-free staff invalidation refreshes clean records once and defers
         expect(apiClient.getRecord).toHaveBeenCalledTimes(5);
     } finally { jest.useRealTimers(); }
 });
+
+test('global save for another visit fetches but does not replace the UI; same-second section version change does', async () => {
+    jest.useFakeTimers();
+    try {
+        const listeners = {};
+        let dirty = false, dirtyListener;
+        const socket = { on: (name, handler) => { listeners[name] = handler; }, off: jest.fn() };
+        const timestamp = '2026-09-24T10:00:00';
+        const record = { visit_location: 'klinik_private', status: 'draft', updatedAt: timestamp,
+            lastActivityAt: timestamp, queue_status: 'menunggu' };
+        const responseFor = version => ({ record, medicalRecords: {
+            lastUpdatedAt: timestamp, byType: { usg: { version, updatedAt: timestamp } }
+        } });
+        const original = responseFor(4);
+        const apiClient = { getRecord: jest.fn()
+            .mockResolvedValueOnce({ success: true, data: original })
+            .mockResolvedValueOnce({ success: true, data: responseFor(5) }) };
+        const stateManager = { hasUnsavedChanges: () => dirty, get: () => 0,
+            getState: () => ({ activeSection: 'usg' }), loadRecord: jest.fn(),
+            subscribe: (_name, listener) => { dirtyListener = listener; } };
+        const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/sunday-clinic/main.js'), 'utf8');
+        const classSource = source.slice(source.indexOf('class SundayClinicApp {'), source.indexOf('// Export singleton instance'));
+        const context = { window: { __realtimeSyncState: { socket }, showToast: jest.fn() },
+            document: { visibilityState: 'visible' }, stateManager, apiClient,
+            SECTIONS: { IDENTITY: 'identity' }, setTimeout, clearTimeout, console };
+        vm.runInNewContext(`${classSource}\nglobalThis.TestApp = SundayClinicApp;`, context);
+        const app = new context.TestApp();
+        app.currentMrId = 'TEST-VISIT-A';
+        app.currentRecordSignature = app.getRecordSignature(original);
+        app.render = jest.fn();
+        app._restoreQueueState = jest.fn();
+        app.bindRealtimeRecordSocket();
+        app.setupLiveRecordPolling();
+        await afterSundayClinicSave(result('physical_exam'));
+        const unrelatedEvent = realtime.broadcast.mock.calls.at(-1)[0];
+        expect(unrelatedEvent).toEqual({ type: 'medical_record:updated', section: 'physical_exam' });
+        expect(JSON.stringify(unrelatedEvent)).not.toMatch(/TEST-VISIT-A|TEST001|fixture-a|mr_id|patient_id/);
+        listeners['medical_record:updated'](unrelatedEvent);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledWith('TEST-VISIT-A');
+        expect(stateManager.loadRecord).not.toHaveBeenCalled();
+        expect(app.render).not.toHaveBeenCalled();
+        expect(app._restoreQueueState).not.toHaveBeenCalled();
+        expect(context.window.showToast).not.toHaveBeenCalled();
+        expect(app.pendingRealtimeRefresh).toBe(false);
+        await afterSundayClinicSave(result('physical_exam', {}, { data: scoped('physical_exam', {}, { mr_id: 'TEST-VISIT-A' }) }));
+        listeners['medical_record:updated'](realtime.broadcast.mock.calls.at(-1)[0]);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(2);
+        expect(stateManager.loadRecord).toHaveBeenCalledTimes(1);
+        expect(app.render).toHaveBeenCalledTimes(1);
+        expect(app._restoreQueueState).toHaveBeenCalledTimes(1);
+        expect(context.window.showToast).toHaveBeenCalledTimes(1);
+        expect(app.getRecordSignature(responseFor(5))).not.toBe(app.getRecordSignature(original));
+        apiClient.getRecord.mockResolvedValueOnce({ success: true, data: responseFor(5) });
+        context.window.showToast.mockClear();
+        dirty = true;
+        listeners['medical_record:updated'](unrelatedEvent);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(2);
+        expect(context.window.showToast).not.toHaveBeenCalled();
+        dirty = false;
+        dirtyListener(false);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(apiClient.getRecord).toHaveBeenCalledTimes(3);
+        expect(stateManager.loadRecord).toHaveBeenCalledTimes(1);
+        expect(app.render).toHaveBeenCalledTimes(1);
+        expect(context.window.showToast).not.toHaveBeenCalled();
+        context.window.getToken = () => 'synthetic-token';
+        app.applyMedifyPrefillIfNeeded = jest.fn();
+        apiClient.getRecord.mockResolvedValueOnce({ success: true, data: responseFor(6) });
+        await app.fetchRecord('TEST-VISIT-A', { silent: true, rerender: false });
+        expect(app.currentRecordSignature).toBe(app.getRecordSignature(responseFor(6)));
+        apiClient.getRecord.mockResolvedValueOnce({ success: true, data: responseFor(6) });
+        listeners['medical_record:updated'](unrelatedEvent);
+        await jest.advanceTimersByTimeAsync(200);
+        expect(stateManager.loadRecord).toHaveBeenCalledTimes(2);
+        expect(app.render).toHaveBeenCalledTimes(1);
+        expect(context.window.showToast).not.toHaveBeenCalled();
+    } finally { jest.useRealTimers(); }
+});

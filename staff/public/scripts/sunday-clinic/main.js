@@ -1907,6 +1907,7 @@ class SundayClinicApp {
 
             // Load record data into state manager
             await stateManager.loadRecord(response.data);
+            this.currentRecordSignature = this.getRecordSignature(response.data);
             this.currentLocation = response.data.record?.visit_location || this.currentLocation || 'klinik_private';
             this.importSource = response.data.record?.import_source || this.importSource || null;
 
@@ -2599,8 +2600,13 @@ class SundayClinicApp {
                 this.pendingRealtimeRefresh = true;
                 return;
             }
+            const nextSignature = this.getRecordSignature(response.data);
+            if (this.currentRecordSignature && nextSignature === this.currentRecordSignature) {
+                this.pendingRealtimeRefresh = false;
+                return;
+            }
             await stateManager.loadRecord(response.data);
-            this.currentRecordSignature = this.getRecordSignature(response.data);
+            this.currentRecordSignature = nextSignature;
             this.pendingRealtimeRefresh = false;
             this.currentLocation = response.data.record?.visit_location || this.currentLocation;
             await this.render(activeSection);
@@ -2620,10 +2626,18 @@ class SundayClinicApp {
         const byType = data?.medicalRecords?.byType || {};
         const sectionVersions = Object.keys(byType)
             .sort()
-            .map(key => [key, byType[key]?.updatedAt || byType[key]?.createdAt || null]);
+            .map(key => {
+                const rawVersion = byType[key]?.version;
+                const version = rawVersion != null && Number.isSafeInteger(Number(rawVersion))
+                    ? Number(rawVersion) : null;
+                return [key, version, byType[key]?.updatedAt || byType[key]?.createdAt || null];
+            });
         return JSON.stringify([
             data?.record?.updatedAt || null,
             data?.record?.lastActivityAt || null,
+            data?.record?.status || null,
+            data?.record?.finalizedAt || null,
+            data?.record?.visit_location || null,
             data?.record?.queue_status || null,
             data?.record?.exam_started_at || null,
             data?.medicalRecords?.lastUpdatedAt || null,
