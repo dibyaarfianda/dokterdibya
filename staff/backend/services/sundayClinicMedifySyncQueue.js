@@ -26,7 +26,8 @@ const COMM_SIMRS_EMAIL = process.env.COMM_SIMRS_EMAIL || '';
 const COMM_SIMRS_PASSWORD = process.env.COMM_SIMRS_PASSWORD || '';
 
 let ensureTablePromise = null;
-let workerStarted = false;
+let workerInterval = null;
+let initialWorkerTick = null;
 let isProcessing = false;
 
 function nowDateTimeParts(dateInput) {
@@ -290,14 +291,12 @@ async function ensureTable() {
     return ensureTablePromise;
 }
 
-function startWorkerIfNeeded() {
-    if (workerStarted) {
+function startWorker() {
+    if (workerInterval) {
         return;
     }
 
-    workerStarted = true;
-
-    setInterval(() => {
+    workerInterval = setInterval(() => {
         processPendingJobs().catch((error) => {
             logger.error('[SundayClinicMedifySyncQueue] Worker tick failed', {
                 error: error.message
@@ -306,7 +305,8 @@ function startWorkerIfNeeded() {
     }, WORKER_INTERVAL_MS);
 
     // Run once shortly after startup.
-    setTimeout(() => {
+    initialWorkerTick = setTimeout(() => {
+        initialWorkerTick = null;
         processPendingJobs().catch((error) => {
             logger.error('[SundayClinicMedifySyncQueue] Initial worker tick failed', {
                 error: error.message
@@ -315,9 +315,19 @@ function startWorkerIfNeeded() {
     }, 1500);
 }
 
+function stopWorker() {
+    if (workerInterval) {
+        clearInterval(workerInterval);
+        workerInterval = null;
+    }
+    if (initialWorkerTick) {
+        clearTimeout(initialWorkerTick);
+        initialWorkerTick = null;
+    }
+}
+
 async function enqueue(jobType, input) {
     await ensureTable();
-    startWorkerIfNeeded();
 
     if (!shouldProcessJobType(jobType)) {
         return { queued: false, reason: 'sync_disabled' };
@@ -761,12 +771,12 @@ async function getJobsByMr(mrId, limit = 20) {
     }));
 }
 
-startWorkerIfNeeded();
-
 module.exports = {
     enqueueDiagnosis,
     enqueueTerapi,
     getStats,
     getJobsByMr,
-    processPendingJobs
+    processPendingJobs,
+    startWorker,
+    stopWorker
 };

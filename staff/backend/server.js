@@ -1128,6 +1128,7 @@ io.on('connection', (socket) => {
 // Start server
 server.listen(PORT, () => {
     require('./services/clinicMonitorRuntime').startWorker();
+    require('./services/sundayClinicMedifySyncQueue').startWorker();
     logger.info(`Backend server running on port ${PORT}`);
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     logger.info('Socket.io real-time enabled');
@@ -1151,6 +1152,7 @@ server.listen(PORT, () => {
 // Graceful shutdown — handles both SIGTERM (PM2 reload) and SIGINT (Ctrl+C)
 function gracefulShutdown(signal) {
     require('./services/clinicMonitorRuntime').stopWorker();
+    require('./services/sundayClinicMedifySyncQueue').stopWorker();
     logger.info(`${signal} received, closing server...`);
     server.close(async () => {
         logger.info('HTTP server closed');
