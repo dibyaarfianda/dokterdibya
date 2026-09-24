@@ -1,6 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Cleanup and rollback must retain every immutable target of the legacy bridge.
+const PROTECTED_STAFF_ASSET_RELEASES = Object.freeze(['v413', 'v414']);
+
 function validateLinuxRoot(value) {
     if (typeof value !== 'string' || !/^\/[A-Za-z0-9/._-]+$/.test(value) ||
         value.split('/').some(segment => segment === '.' || segment === '..')) {
@@ -29,4 +32,4 @@ function renderStaffAssetNginx({ releaseBase, currentRoot }) {
     };
 }
 
-module.exports = { renderStaffAssetNginx };
+module.exports = { renderStaffAssetNginx, PROTECTED_STAFF_ASSET_RELEASES };

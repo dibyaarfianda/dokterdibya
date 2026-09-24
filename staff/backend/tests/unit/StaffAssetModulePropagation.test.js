@@ -305,7 +305,7 @@ http {
         location = /api/health { return 200 "current-api"; }
         location ~ [.]js$ {
             root ${prefix}/current/public;
-            add_header Cache-Control "no-store" always;
+            add_header Cache-Control "no-store, no-cache, must-revalidate" always;
             try_files $uri =404;
         }
         location / { return 404; }
@@ -383,18 +383,19 @@ async function probeNginx(prefix) {
             const redirect = await request(uri, `${origin}${scriptBase}realtime-sync.js?v=v413`);
             assert.equal(redirect.status, 307);
             assert.equal(new URL(redirect.headers.location, origin).href, `${origin}${target}`);
+            assert.match(redirect.headers['cache-control'], /(?:^|,\s*)no-store(?:,|$)/);
         }
         for (const uri of ['/scripts/socket-credentials.js', '/scripts/patient-list-pages.js', '/scripts/other.js']) {
             for (const referrer of ['', `${origin}/public/scripts/patient-session.js?v=v413`, 'https://sisiwanita.id/public/patient-menu.html', `${origin}${scriptBase}realtime-sync.js?v=v414`, `${origin}${scriptBase}realtime-sync.js?v=v413&x=1`, 'https://external.test/staff/public/scripts/realtime-sync.js?v=v413']) {
                 const response = await request(uri, referrer);
                 assert.equal(response.status, 200);
-                assert.match(response.headers['cache-control'], /no-store/);
+                assert.equal(response.headers['cache-control'], 'no-store, no-cache, must-revalidate');
                 assert.match(response.body, /patient-current/);
             }
         }
         const nonexact = await request('/scripts/socket-credentials.js?x=1', `${origin}${scriptBase}realtime-sync.js?v=v413`);
         assert.equal(nonexact.status, 200);
-        assert.match(nonexact.headers['cache-control'], /no-store/);
+        assert.equal(nonexact.headers['cache-control'], 'no-store, no-cache, must-revalidate');
         assert.match(nonexact.body, /credential-patient-current/);
         const unrelated = await request('/scripts/other.js', `${origin}${scriptBase}realtime-sync.js?v=v413`);
         assert.equal(unrelated.status, 200);

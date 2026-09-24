@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const yaml = require('js-yaml');
-const { renderStaffAssetNginx } = require('../../services/staffAssetNginxConfig');
+const { renderStaffAssetNginx, PROTECTED_STAFF_ASSET_RELEASES } = require('../../services/staffAssetNginxConfig');
 
 const roots = { releaseBase: '/var/www/dokterdibya-staff-releases', currentRoot: '/var/www/dokterdibya' };
 
@@ -89,6 +89,25 @@ describe('Staff Nginx release routing', () => {
         ...['', 'https://external.test/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com.evil.test/staff/public/scripts/realtime-sync.js?v=v413', 'http://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413', 'https://dokterdibya.com/public/scripts/patient-session.js?v=v413', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v414', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413&x=1', 'https://dokterdibya.com/staff/public/scripts/realtime-sync.js?v=v413#fragment', 'https://dokterdibya.com/staff/public/scripts/../other.js?v=v413'].map(ref => ['/scripts/socket-credentials.js', ref, ''])
     ])('bridges only exact legacy root request %s from %s', (uri, referrer, target) => {
         expect(evaluateMaps(renderStaffAssetNginx(roots).mapConfig, '', referrer, uri).staff_legacy_redirect || '').toBe(target);
+    });
+
+    test('preserves the live patient Cache-Control header for both nonmatching root requests', () => {
+        const { locationConfig } = renderStaffAssetNginx(roots);
+        for (const name of ['socket-credentials.js', 'patient-list-pages.js']) {
+            const block = locationConfig.match(new RegExp(`location = /scripts/${name.replace('.', '[.]')} \\{([\\s\\S]*?)\\n\\}`));
+            expect(block).not.toBeNull();
+            expect(block[1]).toContain('root /var/www/dokterdibya/public;');
+            expect(block[1]).toContain('add_header Cache-Control "no-store, no-cache, must-revalidate" always;');
+            expect(block[1]).toContain('try_files $uri =404;');
+        }
+    });
+
+    test('protects every immutable release referenced by a hardcoded legacy bridge target', () => {
+        const rendered = renderStaffAssetNginx(roots);
+        const targets = [...`${rendered.mapConfig}\n${rendered.locationConfig}`.matchAll(/\/staff\/public\/scripts\/[^"\s;?]+[?]v=(v[1-9][0-9]*)/g)];
+        expect(targets.map(match => match[1]).sort()).toEqual(['v413', 'v414']);
+        expect(Object.isFrozen(PROTECTED_STAFF_ASSET_RELEASES)).toBe(true);
+        for (const target of targets) expect(PROTECTED_STAFF_ASSET_RELEASES).toContain(target[1]);
     });
 
     test('keeps current HTML, service worker and production proxy ahead of release scripts', () => {

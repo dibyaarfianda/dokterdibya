@@ -43,7 +43,7 @@ location = /scripts/socket-credentials.js {
         return 307 $staff_legacy_redirect;
     }
     root __DOKTERDIBYA_CURRENT_ROOT__/public;
-    add_header Cache-Control "no-store" always;
+    add_header Cache-Control "no-store, no-cache, must-revalidate" always;
     try_files $uri =404;
 }
 
@@ -52,6 +52,6 @@ location = /scripts/patient-list-pages.js {
         return 307 $staff_legacy_redirect;
     }
     root __DOKTERDIBYA_CURRENT_ROOT__/public;
-    add_header Cache-Control "no-store" always;
+    add_header Cache-Control "no-store, no-cache, must-revalidate" always;
     try_files $uri =404;
 }
