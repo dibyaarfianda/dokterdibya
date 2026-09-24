@@ -15,6 +15,8 @@ const bodies = version => ({
     'mid.js': `import leaf from './leaf.js'; export default ['mid-${version}', ...leaf];`,
     'leaf.js': `export default ['leaf-${version}'];`,
     'staff-root.js': `import './socket-credentials.js'; export default async () => ['staff-root-${version}', globalThis.credentialSentinel, (await import('./patient-list-pages.js')).default];`,
+    'realtime-sync.js': `import '/scripts/socket-credentials.js'; export default async () => ['legacy-root-${version}', globalThis.credentialSentinel, (await import('/scripts/patient-list-pages.js')).default];`,
+    'legacy/patient-tools.js': `globalThis.loadLegacyPatientList = async () => (await import('/scripts/patient-list-pages.js')).default;`,
     'socket-credentials.js': `globalThis.credentialSentinel = 'credential-${version}';`,
     'patient-list-pages.js': `export default 'patient-list-${version}';`
 });
@@ -84,7 +86,7 @@ async function loopbackFixture() {
     return { origin, trace, close: () => new Promise(resolve => server.close(resolve)) };
 }
 
-async function loadVersion(browser, origin, version, { staffGraph = false, workerCacheMiss = false } = {}) {
+async function loadVersion(browser, origin, version, { staffGraph = false, workerCacheMiss = false, legacyGraph = false } = {}) {
     const page = await browser.newPage();
     await page.setBypassServiceWorker(!workerCacheMiss);
     await page.setCacheEnabled(false);
@@ -103,13 +105,14 @@ async function loadVersion(browser, origin, version, { staffGraph = false, worke
         if (workerCacheMiss) {
             await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
             await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-            await page.evaluate(async () => {
+            await page.evaluate(async oldGraph => {
                 const cache = await caches.open('dokterdibya-staff-v414-static');
-                await Promise.all(['socket-credentials.js', 'patient-list-pages.js'].map(name =>
+                if (oldGraph) await cache.add('/staff/public/scripts/socket-credentials.js?v=v414');
+                await Promise.all((oldGraph ? ['patient-list-pages.js'] : ['socket-credentials.js', 'patient-list-pages.js']).map(name =>
                     cache.delete(`/staff/public/scripts/${name}?v=v414`)));
-            });
+            }, legacyGraph);
         }
-        const entry = `${origin}${scriptBase}${staffGraph ? 'staff-root.js' : 'root.js'}?v=${version}`;
+        const entry = `${origin}${scriptBase}${legacyGraph ? 'realtime-sync.js' : staffGraph ? 'staff-root.js' : 'root.js'}?v=${version}`;
         const result = await page.evaluate(async url => {
             const module = await import(url);
             return typeof module.default === 'function' ? module.default() : module.default;
@@ -172,6 +175,39 @@ if (typeof describe === 'function') {
             expect(trace.filter(item => item.status === 200)).toHaveLength(3);
             expect(trace.filter(item => item.status === 200).every(item => new URL(item.url).search === `?v=${version}`)).toBe(true);
             expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);
+        }, 30000);
+
+        test('v414 worker bridges actual v413 root import shapes without patient-root network traffic', async () => {
+            fixture.trace.length = 0;
+            const { result } = await loadVersion(browser, fixture.origin, 'v413', { legacyGraph: true, workerCacheMiss: true });
+            expect(result).toEqual(['legacy-root-v413', 'credential-v414', 'patient-list-v413']);
+            expect(fixture.trace.some(item => new URL(item.url).pathname === '/staff/public/scripts/patient-list-pages.js'
+                && new URL(item.url).search === '?v=v413' && item.servedVersion === 'v413')).toBe(true);
+            expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);
+        }, 30000);
+
+        test('v414 worker bridges v413 classic patient-tools dynamic import', async () => {
+            const page = await browser.newPage();
+            fixture.trace.length = 0;
+            try {
+                await page.goto(`${fixture.origin}/staff/public/index.html`);
+                await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
+                await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+                fixture.trace.length = 0;
+                const result = await page.evaluate(async origin => {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = `${origin}/staff/public/scripts/legacy/patient-tools.js?v=v413`;
+                        script.onload = resolve; script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    return globalThis.loadLegacyPatientList();
+                }, fixture.origin);
+                expect(result).toBe('patient-list-v413');
+                expect(fixture.trace.some(item => new URL(item.url).pathname === '/staff/public/scripts/patient-list-pages.js'
+                    && new URL(item.url).search === '?v=v413' && item.servedVersion === 'v413')).toBe(true);
+                expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);
+            } finally { await page.close(); }
         }, 30000);
 
         test.each(invalidQueries)('fails closed for raw version query %s', async query => {

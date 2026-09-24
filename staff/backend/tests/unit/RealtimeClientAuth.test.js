@@ -74,6 +74,10 @@ test('Staff-local and patient credential helpers preserve the same lifecycle beh
     });
 });
 
+test('legacy Staff credential bridge has byte-identical patient and Staff helper sources', () => {
+    expect(read('staff/public/scripts/socket-credentials.js')).toBe(read('public/scripts/socket-credentials.js'));
+});
+
 function context(extra = {}) {
     const sockets = [];
     const timers = [];

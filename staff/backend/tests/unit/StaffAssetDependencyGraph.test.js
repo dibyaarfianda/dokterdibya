@@ -17,8 +17,20 @@ function executableSpecifiers(source) {
     for (const match of source.matchAll(/\bimport\s*(?:\(\s*|(?:[^;\n]*?\bfrom\s*)?)["']([^"']+)["']|(?:\.src|\bsrc)\s*=\s*["']([^"']+\.js(?:\?[^"']*)?)["']|\bloadScript\s*\(\s*["']([^"']+)["']|\bsetAttribute\s*\(\s*["']src["']\s*,\s*["']([^"']+\.js(?:\?[^"']*)?)["']/g)) {
         values.push(match[1] || match[2] || match[3] || match[4]);
     }
+    for (const match of source.matchAll(/\bimport\s*\(\s*`([^`$]+)`\s*\)/g)) values.push(match[1]);
     return values;
 }
+
+test('graph scanner recognizes quoted and backtick literal imports that escape Staff assets', () => {
+    const fixture = [
+        "import '/scripts/single.js';",
+        'import "/scripts/double.js";',
+        'await import(`/scripts/backtick.js`);'
+    ].join('\n');
+    expect(executableSpecifiers(fixture)).toEqual([
+        '/scripts/single.js', '/scripts/double.js', '/scripts/backtick.js'
+    ]);
+});
 
 test('authenticated Staff executable graph stays below its versioned public root', () => {
     const escaped = [];

@@ -4,7 +4,7 @@ const vm = require('vm');
 
 const root = path.resolve(__dirname, '../../../..');
 
-function loadWorker(file, { failPrecache = false, offline = false } = {}) {
+function loadWorker(file, { failPrecache = false, offline = false, networkFetch = jest.fn(() => Promise.reject(new Error('offline'))) } = {}) {
     const handlers = {};
     const removed = [];
     const cacheNames = ['other-app-v1', 'static-old', 'dynamic-old', 'dokterdibya-staff-old', 'sisiwanita-patient-portal-old'];
@@ -34,10 +34,10 @@ function loadWorker(file, { failPrecache = false, offline = false } = {}) {
     };
     vm.runInNewContext(fs.readFileSync(path.join(root, file), 'utf8'), {
         self, caches, Request: class { constructor(url) { this.url = url.url || url; this.method = 'GET'; } },
-        Response: class {}, URL, fetch: jest.fn(() => Promise.reject(new Error('offline'))), clients: self.clients,
+        Response: class {}, URL, fetch: networkFetch, clients: self.clients,
         console: { log() {}, error() {} }
     }, { filename: file });
-    return { handlers, removed, caches, self, cache, entries };
+    return { handlers, removed, caches, self, cache, entries, networkFetch };
 }
 
 test.each(['staff/public/sw.js', 'public/sw.js'])('%s does not activate a partially precached version', async file => {
@@ -106,6 +106,65 @@ test('staff credential dependency is in the verified shell cache and an exact-ve
     await expect(response).rejects.toThrow('offline');
     expect(worker.cache.match).toHaveBeenCalledWith('/staff/public/scripts/socket-credentials.js?v=v414');
     expect(worker.cache.match.mock.calls.some(([, options]) => options?.ignoreSearch)).toBe(false);
+});
+
+test('v414 worker bridges only legacy v413 Staff credential and patient-list imports', async () => {
+    const networkFetch = jest.fn(async url => ({ fetched: url }));
+    const worker = loadWorker('staff/public/sw.js', { networkFetch });
+    let install;
+    worker.handlers.install({ waitUntil: promise => { install = promise; } });
+    await install;
+    const referrer = 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413';
+    const legacyRequest = (path, from = referrer, clientId = 'old-staff') => {
+        let response;
+        worker.handlers.fetch({ clientId, request: { url: `https://example.test${path}`, referrer: from, method: 'GET', mode: 'cors', headers: { get: () => '' } },
+            respondWith: promise => { response = promise; } });
+        return response;
+    };
+    await expect(legacyRequest('/scripts/socket-credentials.js')).resolves.toMatchObject({ cached: '/staff/public/scripts/socket-credentials.js?v=v414' });
+    expect(networkFetch).not.toHaveBeenCalled();
+    await expect(legacyRequest('/scripts/patient-list-pages.js', 'https://example.test/staff/public/scripts/legacy/patient-tools.js?v=v413'))
+        .resolves.toMatchObject({ fetched: 'https://example.test/staff/public/scripts/patient-list-pages.js?v=v413' });
+    expect(networkFetch).toHaveBeenCalledTimes(1);
+});
+
+test('legacy credential bridge fails closed when the reviewed Staff copy is absent from cache', async () => {
+    const worker = loadWorker('staff/public/sw.js');
+    let install;
+    worker.handlers.install({ waitUntil: promise => { install = promise; } });
+    await install;
+    worker.entries.delete('https://example.test/staff/public/scripts/socket-credentials.js?v=v414');
+    let response;
+    worker.handlers.fetch({ clientId: 'old-staff',
+        request: { url: 'https://example.test/scripts/socket-credentials.js',
+            referrer: 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413',
+            method: 'GET', mode: 'cors', headers: { get: () => '' } },
+        respondWith: promise => { response = promise; } });
+    await expect(response).rejects.toThrow('Legacy Staff credential asset unavailable');
+    expect(worker.networkFetch).not.toHaveBeenCalled();
+});
+
+test.each([
+    ['/scripts/other.js', 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413', 'old-staff'],
+    ['/scripts/socket-credentials.js?x=1', 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413', 'old-staff'],
+    ['/scripts/socket-credentials.js', '', 'old-staff'],
+    ['/scripts/socket-credentials.js', 'https://foreign.test/staff/public/scripts/realtime-sync.js?v=v413', 'old-staff'],
+    ['/scripts/socket-credentials.js', 'https://example.test/public/scripts/realtime-sync.js?v=v413', 'old-staff'],
+    ['/scripts/socket-credentials.js', 'https://example.test/staff/public/index-adminlte.html?v=v413', 'old-staff'],
+    ['/scripts/socket-credentials.js', 'https://example.test/staff/public/scripts/realtime-sync.js?v=v414', 'old-staff'],
+    ['/scripts/socket-credentials.js', 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413&x=1', 'old-staff'],
+    ['/scripts/socket-credentials.js', 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413&v=v413', 'old-staff'],
+    ['/scripts/socket-credentials.js', 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413', ''],
+    ['/scripts/patient-list-pages.js', 'https://example.test/public/scripts/patient-session.js?v=v413', 'patient']
+])('legacy bridge leaves untrusted request %s from %s on network', (path, referrer, clientId) => {
+    const worker = loadWorker('staff/public/sw.js');
+    let responded = false;
+    worker.handlers.fetch({ clientId,
+        request: { url: `https://example.test${path}`, referrer, method: 'GET', mode: 'cors', headers: { get: () => '' } },
+        respondWith: () => { responded = true; } });
+    expect(responded).toBe(false);
+    expect(worker.cache.match).not.toHaveBeenCalled();
+    expect(worker.networkFetch).not.toHaveBeenCalled();
 });
 
 test('old staff controller cannot mix cached canonical modules into a newer shell document', async () => {

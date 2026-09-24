@@ -62,6 +62,20 @@ function rememberClientVersion(clientId, version) {
   verifiedClientVersions.set(clientId, version === STAFF_PWA_VERSION ? version : null);
 }
 
+function isLegacyStaffDependency(request, clientId, url) {
+  if (!clientId || url.origin !== self.location.origin || url.search || url.hash ||
+      !['/scripts/socket-credentials.js', '/scripts/patient-list-pages.js'].includes(url.pathname)) return false;
+  try {
+    const referrer = new URL(request.referrer);
+    return referrer.origin === self.location.origin && !referrer.username && !referrer.password &&
+      /^\/staff\/public\/scripts\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.js$/.test(referrer.pathname) &&
+      referrer.search === '?v=v413' && !referrer.hash &&
+      referrer.href === `${referrer.origin}${referrer.pathname}?v=v413`;
+  } catch (_) {
+    return false;
+  }
+}
+
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
   versionedStaffAsset('/staff/public/styles/mobile-responsive.css'),
@@ -140,6 +154,20 @@ self.addEventListener('fetch', (event) => {
 
   // IMPORTANT: Completely bypass SW for Socket.IO (real-time connections)
   if (url.pathname.includes('/socket.io')) {
+    return;
+  }
+
+  // A v413 Staff module can still import the two former patient-root scripts
+  // after this worker claims its open page. Keep the old request off the
+  // mutable patient root and bind it to reviewed Staff bytes.
+  if (isLegacyStaffDependency(request, event.clientId, url)) {
+    if (url.pathname === '/scripts/socket-credentials.js') {
+      event.respondWith(caches.open(STATIC_CACHE)
+        .then(cache => cache.match(versionedStaffAsset('/staff/public/scripts/socket-credentials.js')))
+        .then(cached => cached || Promise.reject(new Error('Legacy Staff credential asset unavailable'))));
+    } else {
+      event.respondWith(fetch(`${self.location.origin}/staff/public/scripts/patient-list-pages.js?v=v413`));
+    }
     return;
   }
 
