@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20260924wave3');
+importScripts('/sw.js?v=20260924wave3r1');

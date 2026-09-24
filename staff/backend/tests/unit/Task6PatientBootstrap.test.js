@@ -20,8 +20,7 @@ test('an incomplete intake stops the profile gate before settings and nickname',
 
 test('patient bootstrap parallelizes only independent post-intake reads and preserves nickname and birth precedence', () => {
     const init = source.match(/async function init\(\) \{[\s\S]*?(?=\n        const shellActionHandlers)/)?.[0] || '';
-    expect(init).toMatch(/profileReady = await loadProfile\(\)/);
-    expect(init).toContain('if (!profileReady) return;');
+    expect(init).toContain('if (!await loadProfile()) return;');
     expect(init).toContain('Promise.all([loadPortalSettings(), loadNotificationCount()])');
     expect(init.indexOf('await ensurePortalNicknameOnLogin()')).toBeGreaterThan(init.indexOf('Promise.all([loadPortalSettings(), loadNotificationCount()])'));
     expect(init.indexOf('await loadBirthCongratsHome()')).toBeGreaterThan(init.indexOf('await checkBirthPending()'));

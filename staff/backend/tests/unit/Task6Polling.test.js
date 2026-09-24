@@ -46,8 +46,8 @@ test('patient home queue never polls hidden and refreshes once when visible', as
     const window = { clearInterval() {}, setInterval: fn => { intervals.push(fn); return 1; } };
     const ctx = vm.createContext({ document, window, fetch, getToken: () => 'synthetic', requestAnimationFrame() {},
         updateHomeActionGap() {}, Date, liveQueueHomeTimer: null,
-        liveQueueHomeInFlight: false, liveQueueHomeVisibleRefreshPending: false,
-        liveQueueHomeWasHidden: false, liveQueueHomeVisibilityBound: false });
+        queueBusy: false, queuePending: false,
+        queueHidden: false, queueBound: false });
     vm.runInContext(`${queueFns}\ninitializeLiveQueueHome();`, ctx);
     await Promise.resolve();
     await Promise.resolve();

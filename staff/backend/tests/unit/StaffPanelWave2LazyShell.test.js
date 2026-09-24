@@ -206,7 +206,8 @@ describe('staff panel wave 2 lazy shell contracts', () => {
     test('final staff UI commit is generation guarded and records only cached activation duration', () => {
         const main = read('staff', 'public', 'scripts', 'main.js');
         const activation = main.match(/async function activateRegisteredStaffPage\(key\) \{[\s\S]*?\n\}/)?.[0] || '';
-        expect(activation).toContain('navigationGeneration !== registeredPageNavigationGeneration');
+        expect(activation).toContain('isCurrentStaffNavigation(navGen)');
+        expect(activation).toContain('hideAllPages(navGen)');
         expect(activation).toContain("window.__rum?.trackCachedActivation?.(");
         expect(activation).not.toContain('patientId');
         expect(activation).not.toContain('mrId');

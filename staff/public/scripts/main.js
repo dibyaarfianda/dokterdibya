@@ -411,7 +411,16 @@ function executeLoadedScripts(doc, baseUrl) {
         setTimeout(() => inlineScript.remove(), 0);
     });
 }
-function hideAllPages() {
+let staffNavigationGeneration = 0;
+function reserveStaffNavigation() {
+    return ++staffNavigationGeneration;
+}
+function isCurrentStaffNavigation(generation) {
+    return generation === staffNavigationGeneration;
+}
+function hideAllPages(expectedGeneration = null) {
+    if (expectedGeneration !== null && !isCurrentStaffNavigation(expectedGeneration)) return false;
+    if (expectedGeneration === null) reserveStaffNavigation();
     setSundayClinicStylesActive(false);
     document.documentElement.classList.remove('kantor-saya-active');
     document.body.classList.remove('kantor-saya-active');
@@ -425,6 +434,7 @@ function hideAllPages() {
         p.classList.add('d-none');
     });
     document.querySelectorAll('.nav-sidebar .nav-link').forEach(l => l.classList.remove('active'));
+    return true;
 }
 
 let communityChatViewportSyncBound = false;
@@ -549,9 +559,8 @@ async function ensureRegisteredPage(key) {
     return container;
 }
 
-let registeredPageNavigationGeneration = 0;
 async function activateRegisteredStaffPage(key) {
-    const navigationGeneration = ++registeredPageNavigationGeneration;
+    const navGen = reserveStaffNavigation();
     const registry = window.staffPageRegistry;
     const descriptor = registry?.get(key);
     if (!registry || !descriptor) {
@@ -561,9 +570,9 @@ async function activateRegisteredStaffPage(key) {
     const wasCached = registry.getContainer(key)?.dataset.pageLoaded === 'true';
     const startedAt = performance.now();
     const container = await registry.activate(key);
-    if (!container || navigationGeneration !== registeredPageNavigationGeneration) return null;
+    if (!container || !isCurrentStaffNavigation(navGen)) return null;
     initPages();
-    hideAllPages();
+    if (!hideAllPages(navGen)) return null;
     container.classList.remove('d-none');
     setTitleAndActive(descriptor.title, descriptor.navId, null);
     window.__currentPage = key;
@@ -626,13 +635,18 @@ function logActivity(action, details) {
 }
 window.logActivity = logActivity;
 async function showDashboardPage() {
-    await window.staffPageRegistry?.activate('dashboard');
-    hideAllPages();
+    const navGen = reserveStaffNavigation();
+    const container = await window.staffPageRegistry?.activate('dashboard');
+    if (window.staffPageRegistry && !container) return;
+    if (!hideAllPages(navGen)) return;
     pages.dashboard?.classList.remove('d-none');
     setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard');
     const dashboardModule = await importWithVersion('./dashboard.js');
+    if (!isCurrentStaffNavigation(navGen)) return;
     await dashboardModule.activateDashboard?.();
+    if (!isCurrentStaffNavigation(navGen)) return;
     await window.ensureStaffFeature?.('dashboardNewPatients');
+    if (!isCurrentStaffNavigation(navGen)) return;
     await window.loadDashboardNewPatients?.();
 }
 
@@ -744,6 +758,7 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
         backToSundayClinicLanding();
         return;
     }
+    const navGen = reserveStaffNavigation();
 
     try {
         // The fragment must exist before the Sunday Clinic module evaluates,
@@ -752,9 +767,10 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
             ? window.ensureStaffFeature('sundayClinic')
             : Promise.resolve();
         await ensureRegisteredPage('sunday-clinic');
+        if (!isCurrentStaffNavigation(navGen)) return;
         const sundayClinicModulePromise = ensureSundayClinicModule();
 
-        hideAllPages();
+        if (!hideAllPages(navGen)) return;
         setSundayClinicStylesActive(true);
         pages.sundayClinic?.classList.remove('d-none');
         setTitleAndActive(
@@ -764,6 +780,7 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
         );
 
         await Promise.all([sundayClinicFeaturePromise, sundayClinicModulePromise]);
+        if (!isCurrentStaffNavigation(navGen)) return;
         if (typeof window.initSundayClinicPage === 'function') {
             const initialized = await window.initSundayClinicPage({
                 mrId: normalizedMrId || null,
@@ -773,6 +790,7 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
                 location: options.location || null,
                 embedded: true
             });
+            if (!isCurrentStaffNavigation(navGen)) return;
             if (closingOnly && initialized !== false) {
                 const opened = typeof window.openSundayClinicClosingModal === 'function'
                     && window.openSundayClinicClosingModal();
@@ -782,6 +800,7 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
             throw new Error('Sunday Clinic module belum siap');
         }
     } catch (error) {
+        if (!isCurrentStaffNavigation(navGen)) return;
         console.error('Failed to load Sunday Clinic page:', error);
         showError('Gagal memuat Sunday Clinic: ' + error.message);
     }
@@ -821,9 +840,10 @@ function showHospitalAppointmentsPage(location) {
 }
 
 async function showHospitalPatientsPage(location) {
+    const navGen = reserveStaffNavigation();
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
+    if (!hideAllPages(navGen)) return;
     currentHospitalLocation = location;
-    hideAllPages();
 
     pages.hospitalPatients?.classList.remove('d-none');
 
@@ -842,8 +862,9 @@ async function showHospitalPatientsPage(location) {
 
 // Show Pasien Baru page - patients without DRD yet
 async function showPasienBaruPage() {
+    const navGen = reserveStaffNavigation();
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.hospitalPatients?.classList.remove('d-none');
 
     // Update title
@@ -1757,12 +1778,14 @@ function showObatPage() {
     });
 }
 function showCashierPage() {
+    const navGen = reserveStaffNavigation();
     // Load all billing modules dynamically with shared cache version
     Promise.all([
         importWithVersion('./billing.js'),
         importWithVersion('./billing-obat.js'),
         importWithVersion('./cashier.js')
     ]).then(async ([billingModule, billingObatModule, cashierModule]) => {
+        if (!isCurrentStaffNavigation(navGen)) return;
         // Validate patient before opening Rincian Tagihan
         if (!billingModule.validatePatient()) {
             showPatientPage();
@@ -1770,11 +1793,12 @@ function showCashierPage() {
         }
 
         if (!await billingObatModule.validateObatUsage()) {
+            if (!isCurrentStaffNavigation(navGen)) return;
             showObatPage();
             return;
         }
 
-        hideAllPages();
+        if (!hideAllPages(navGen)) return;
         pages.cashier?.classList.remove('d-none');
         setTitleAndActive('Rincian Tagihan', 'nav-cashier', 'cashier');
 
@@ -1791,6 +1815,7 @@ function showCashierPage() {
             cashierModule.initCashier();
         }
     }).catch(error => {
+        if (!isCurrentStaffNavigation(navGen)) return;
         console.error('Failed to load billing modules:', error);
     });
 }
@@ -1805,17 +1830,23 @@ function showPerhatianKhususPage() {
 window.showPerhatianKhususPage = showPerhatianKhususPage;
 
 async function showPatientPage() {
-    await window.staffPageRegistry?.activate('patients');
+    const navGen = reserveStaffNavigation();
+    const container = await window.staffPageRegistry?.activate('patients');
+    if (window.staffPageRegistry && !container) return;
+    if (!isCurrentStaffNavigation(navGen)) return;
     initPages();
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.patient?.classList.remove('d-none');
     setTitleAndActive('Data Pasien', 'nav-patient', null);
     window.__currentPage = 'patients';
 }
 async function showRecordHistoryPage() {
-    await window.staffPageRegistry?.activate('patients');
+    const navGen = reserveStaffNavigation();
+    const container = await window.staffPageRegistry?.activate('patients');
+    if (window.staffPageRegistry && !container) return;
+    if (!isCurrentStaffNavigation(navGen)) return;
     initPages();
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.patient?.classList.remove('d-none');
     setTitleAndActive('Rekam / Riwayat', 'nav-record-history', null);
     window.__currentPage = 'patients';
@@ -1825,8 +1856,9 @@ window.showPatientPage = showPatientPage;
 window.showRecordHistoryPage = showRecordHistoryPage;
 
 async function showAnamnesa() {
+    const navGen = reserveStaffNavigation();
     await ensureRegisteredPage('anamnesa');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.anamnesa?.classList.remove('d-none');
     setTitleAndActive('Anamnesa', 'nav-anamnesa', 'anamnesa');
 
@@ -1846,8 +1878,9 @@ async function showPhysicalExam() {
 }
 
 async function showUSGExam() {
+    const navGen = reserveStaffNavigation();
     await ensureRegisteredPage('usg');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.usg?.classList.remove('d-none');
     setTitleAndActive('Pemeriksaan USG', 'nav-usg', 'usg');
 
@@ -1912,9 +1945,10 @@ function showPengaturanPage() {
     });
 }
 async function showKelolaObatPage() {
+    const navGen = reserveStaffNavigation();
     await ensureRegisteredPage('kelola-obat');
     console.log('🔧 showKelolaObatPage called');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.kelolaObat?.classList.remove('d-none');
     setTitleAndActive('Kelola Obat', 'management-nav-kelola-obat', 'kelolaObat');
 
@@ -1960,8 +1994,9 @@ function showKelolaPasienPage() {
     loadExternalPage('kelola-pasien-page', 'kelola-pasien.html', { forceReload: true });
 }
 async function showKelolaAppointmentPage() {
+    const navGen = reserveStaffNavigation();
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.kelolaAppointment?.classList.remove('d-none');
     setTitleAndActive('Kelola Appointment', 'management-nav-kelola-appointment', 'kelola-appointment');
 
@@ -1976,8 +2011,9 @@ async function showKelolaAppointmentPage() {
     });
 }
 async function showKelolaJadwalPage() {
+    const navGen = reserveStaffNavigation();
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('dataTables');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.kelolaJadwal?.classList.remove('d-none');
     setTitleAndActive('Kelola Jadwal', 'nav-jadwal', 'kelola-jadwal');
 
@@ -2037,8 +2073,9 @@ function showKelolaObatManagementPage() {
 }
 
 async function showKelolaPengumumanPage() {
+    const navGen = reserveStaffNavigation();
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('markdown');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.kelolaPengumuman?.classList.remove('d-none');
     setTitleAndActive('Kelola Pengumuman', 'nav-pengumuman', 'kelola-pengumuman');
 
@@ -2122,8 +2159,9 @@ function showMedifySyncPage() {
 }
 
 async function showKelolaRolesPage() {
+    const navGen = reserveStaffNavigation();
     await ensureRegisteredPage('kelola-roles');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.kelolaRoles?.classList.remove('d-none');
     setTitleAndActive('Roles Manajemen', 'management-nav-kelola-roles', 'kelola-roles');
 
@@ -2154,9 +2192,10 @@ function showPatientBlockListPage() {
 }
 
 async function showFinanceAnalysisPage() {
+    const navGen = reserveStaffNavigation();
     await ensureRegisteredPage('finance-analysis');
     if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('financeAnalysis');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.financeAnalysis?.classList.remove('d-none');
     setTitleAndActive('Finance Analysis', 'nav-finance-analysis', 'finance-analysis');
     // Call embedded initialization function after page is visible
@@ -2211,8 +2250,9 @@ function showImportFieldsPage() {
 
 
 async function showProfileSettings() {
+    const navGen = reserveStaffNavigation();
     await ensureRegisteredPage('profile-settings');
-    hideAllPages();
+    if (!hideAllPages(navGen)) return;
     pages.profile?.classList.remove('d-none');
     setTitleAndActive('Pengaturan Profil', 'nav-profile-settings', 'profile');
     var profileVersion = window.__assetVersion ? encodeURIComponent(window.__assetVersion) : '';
@@ -2221,7 +2261,10 @@ async function showProfileSettings() {
 }
 
 function showKantorSayaPage() {
+    hideAllPages();
+    const navGen = staffNavigationGeneration;
     function revealKantorRoot() {
+        if (!isCurrentStaffNavigation(navGen)) return;
         var root = document.querySelector('#content-kantor-saya #kantor-saya-page');
         if (root) {
             root.classList.remove('d-none');
@@ -2233,7 +2276,6 @@ function showKantorSayaPage() {
         return !!(grid && grid.gridstack);
     }
 
-    hideAllPages();
     document.documentElement.classList.add('kantor-saya-active');
     document.body.classList.add('kantor-saya-active');
     pages.kantorSaya?.classList.remove('d-none');
@@ -2254,6 +2296,7 @@ function showKantorSayaPage() {
     var forcedFinalRetry = false;
 
     function scheduleBootstrapRetry() {
+        if (!isCurrentStaffNavigation(navGen)) return false;
         if ((Date.now() - bootstrapStartedAt) < bootstrapWindowMs) {
             setTimeout(bootstrapKantorSaya, 120);
             return true;
@@ -2262,6 +2305,7 @@ function showKantorSayaPage() {
     }
 
     function attemptRecoveryLoad() {
+        if (!isCurrentStaffNavigation(navGen)) return;
         var container = document.getElementById('content-kantor-saya');
         if (!container) return;
 
@@ -2287,6 +2331,7 @@ function showKantorSayaPage() {
     }
 
     function bootstrapKantorSaya() {
+        if (!isCurrentStaffNavigation(navGen)) return;
         var hasKantorApi = window.kantorSaya && typeof window.kantorSaya.init === 'function';
         var rootReady = !!document.querySelector('#content-kantor-saya #kantor-saya-page');
         var gridReady = !!document.querySelector('#content-kantor-saya #kantor-grid');
@@ -2305,6 +2350,7 @@ function showKantorSayaPage() {
             }
 
             Promise.resolve(initResult).finally(function () {
+                if (!isCurrentStaffNavigation(navGen)) return;
                 if (isKantorGridReady()) {
                     return;
                 }

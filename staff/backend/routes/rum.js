@@ -65,13 +65,24 @@ function recordMetric(name, value, page) {
     }
 }
 
+const KNOWN_API_FAMILIES = new Set([
+    'auth', 'patients', 'patient', 'visits', 'medical-exams', 'appointments',
+    'sunday-appointments', 'hospital-appointments', 'dashboard-stats',
+    'sunday-clinic', 'lab-results', 'usg-photos', 'usg-bulk-upload',
+    'patient-documents', 'practice-schedules', 'pdf', 'notifications',
+    'analytics', 'billings', 'patient-billing', 'announcements',
+    'staff-announcements', 'role-visibility', 'inventory', 'articles',
+    'community-chat', 'support-chat', 'rum', 'registration-codes',
+    'patient-notifications', 'medical-import', 'medify-batch', 'integration'
+]);
+
 function normalizeApiPath(endpoint) {
     if (typeof endpoint !== 'string' || !endpoint.trim()) return '/unknown';
 
     try {
         const parsed = new URL(endpoint, 'https://dokterdibya.local');
         const segments = parsed.pathname.split('/').filter(Boolean);
-        if (segments[0] !== 'api' || !/^[a-z][a-z0-9-]{0,40}$/i.test(segments[1] || '')) return '/other';
+        if (segments[0] !== 'api' || !KNOWN_API_FAMILIES.has(segments[1] || '')) return '/other';
         return `/api/${segments[1]}${segments.length > 2 ? '/:path' : ''}`;
     } catch (_) {
         return '/unknown';

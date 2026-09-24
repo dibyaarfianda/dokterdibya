@@ -22,6 +22,8 @@ jobs:
         working-directory: staff/backend
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # visual baseline is the approved e6105ef6 commit
       - uses: actions/setup-node@v4
         with:
           node-version: 22

@@ -96,11 +96,24 @@
 
   // --- API Call Tracking ---
 
+  // Only route families verified in server.js may become metric bucket names.
+  // An arbitrary first segment can itself be a patient identifier.
+  var knownApiFamilies = new Set([
+    'auth', 'patients', 'patient', 'visits', 'medical-exams', 'appointments',
+    'sunday-appointments', 'hospital-appointments', 'dashboard-stats',
+    'sunday-clinic', 'lab-results', 'usg-photos', 'usg-bulk-upload',
+    'patient-documents', 'practice-schedules', 'pdf', 'notifications',
+    'analytics', 'billings', 'patient-billing', 'announcements',
+    'staff-announcements', 'role-visibility', 'inventory', 'articles',
+    'community-chat', 'support-chat', 'rum', 'registration-codes',
+    'patient-notifications', 'medical-import', 'medify-batch', 'integration'
+  ]);
+
   function normalizeApiPath(endpoint) {
     try {
       var parsed = new URL(endpoint, window.location.origin);
       var segments = parsed.pathname.split('/').filter(Boolean);
-      if (segments[0] !== 'api' || !/^[a-z][a-z0-9-]{0,40}$/i.test(segments[1] || '')) return '/other';
+      if (segments[0] !== 'api' || !knownApiFamilies.has(segments[1] || '')) return '/other';
       return '/api/' + segments[1] + (segments.length > 2 ? '/:path' : '');
     } catch (e) {
       return '/unknown';

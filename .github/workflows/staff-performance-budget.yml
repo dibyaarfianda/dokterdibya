@@ -11,8 +11,6 @@ permissions:
 jobs:
   production-budget:
     runs-on: ubuntu-latest
-    env:
-      STAFF_PERF_TOKEN: ${{ secrets.STAFF_PERF_TOKEN }}
     defaults:
       run:
         working-directory: staff/backend
@@ -21,5 +19,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: staff/backend/package-lock.json
+      - name: Require CI credential
+        env:
+          STAFF_PERF_TOKEN: ${{ secrets.STAFF_PERF_TOKEN }}
+        run: test -n "$STAFF_PERF_TOKEN"
+      - name: Install locked backend dependencies
+        run: npm ci
+      - name: Install pinned Chromium
+        run: ./node_modules/.bin/puppeteer browsers install chrome
       - name: Check production performance budgets
+        env:
+          STAFF_PERF_TOKEN: ${{ secrets.STAFF_PERF_TOKEN }}
         run: node scripts/perf-budget-check.js --base-url https://dokterdibya.com --page-url https://dokterdibya.com/staff/public/index-adminlte.html

@@ -86,6 +86,23 @@ describe('observability authorization integration', () => {
         expect(JSON.stringify(summary.body)).not.toContain(sentinel);
     });
 
+    test('RUM unknown first API segment is redacted while known route families remain distinct', async () => {
+        const sentinel = 'privatepatient123';
+        const response = await request(app).post('/api/rum').send({
+            page: 'dashboard', apiCalls: [
+                { endpoint: `/api/${sentinel}/detail`, duration: 11, status: 200 },
+                { endpoint: '/api/patients', duration: 12, status: 200 },
+                { endpoint: '/api/notifications', duration: 13, status: 200 }
+            ]
+        });
+        expect(response.status).toBe(200);
+        const summary = await request(app).get('/api/rum/summary')
+            .set('Authorization', 'Bearer valid-staff-token').set('X-Test-Role', 'dokter');
+        const api = summary.body.data.apiTimings;
+        expect(JSON.stringify(api)).not.toContain(sentinel);
+        expect(Object.keys(api)).toEqual(expect.arrayContaining(['/other', '/api/patients', '/api/notifications']));
+    });
+
     test('RUM summary rejects anonymous and non-superadmin requests', async () => {
         const anonymous = await request(app).get('/api/rum/summary');
         const staff = await request(app)

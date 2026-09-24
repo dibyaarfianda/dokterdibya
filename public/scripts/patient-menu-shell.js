@@ -35,10 +35,8 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         let audioContext = null;
         const cancelBookingState = { appointmentId: '' };
         let liveQueueHomeTimer = null;
-        let liveQueueHomeInFlight = false;
-        let liveQueueHomeVisibleRefreshPending = false;
-        let liveQueueHomeWasHidden = document.visibilityState === 'hidden';
-        let liveQueueHomeVisibilityBound = false;
+        let queueBusy = false, queuePending = false;
+        let queueHidden = document.visibilityState === 'hidden', queueBound = false;
         let stopCommunityBadge = null;
         let currentBirthCongratsId = '';
         let currentBirthCongratsData = null;
@@ -1838,13 +1836,10 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
         async function loadLiveQueueHome() {
             if (document.visibilityState === 'hidden') return;
-            if (liveQueueHomeInFlight) {
-                liveQueueHomeVisibleRefreshPending = true;
-                return;
-            }
+            if (queueBusy) { queuePending = true; return; }
             const section = document.getElementById('live-queue-home-section');
             if (!section) return;
-            liveQueueHomeInFlight = true;
+            queueBusy = true;
             try {
                 const token = getToken();
                 if (!token) {
@@ -1883,25 +1878,18 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             } catch (error) {
                 section.classList.remove('show');
             } finally {
-                liveQueueHomeInFlight = false;
-                if (liveQueueHomeVisibleRefreshPending && document.visibilityState === 'visible') {
-                    liveQueueHomeVisibleRefreshPending = false;
-                    loadLiveQueueHome();
-                }
+                queueBusy = false;
+                if (queuePending && document.visibilityState === 'visible') { queuePending = false; loadLiveQueueHome(); }
             }
         }
 
         function initializeLiveQueueHome() {
             loadLiveQueueHome();
-            if (!liveQueueHomeVisibilityBound) {
-                liveQueueHomeVisibilityBound = true;
+            if (!queueBound) {
+                queueBound = true;
                 document.addEventListener('visibilitychange', function() {
-                    if (document.visibilityState === 'hidden') {
-                        liveQueueHomeWasHidden = true;
-                    } else if (liveQueueHomeWasHidden) {
-                        liveQueueHomeWasHidden = false;
-                        loadLiveQueueHome();
-                    }
+                    if (document.visibilityState === 'hidden') queueHidden = true;
+                    else if (queueHidden) { queueHidden = false; loadLiveQueueHome(); }
                 });
             }
             window.clearInterval(liveQueueHomeTimer);
@@ -3093,19 +3081,15 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             loadPatientFeature('patientTracking').catch(function() {});
             refreshPatientServiceWorker();
 
-            let profileReady = false;
             try {
-                profileReady = await loadProfile();
+                if (!await loadProfile()) return;
             } catch (error) { if (error.message === 'unauthorized') logout(); return; }
-            if (!profileReady) return;
             try {
                 await Promise.all([loadPortalSettings(), loadNotificationCount()]);
             } catch (error) { if (error.message === 'unauthorized') { logout(); return; } }
 
             const nicknameReady = await ensurePortalNicknameOnLogin();
-            if (!nicknameReady) {
-                return;
-            }
+            if (!nicknameReady) return;
 
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';

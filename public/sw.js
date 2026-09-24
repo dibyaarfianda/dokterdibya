@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20260924wave3';
+const CACHE_VERSION = '20260924wave3r1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -39,6 +39,10 @@ const PRECACHE_FILES = [
   '/styles/patient-tool-retrofit.css',
   '/styles/patient-my-corner.css',
   '/scripts/patient-menu-shell.js',
+  '/scripts/community-chat-badge.js',
+  '/scripts/community-chat-ui.js',
+  '/scripts/patient-native-app-guard.js',
+  '/scripts/booking-break-display.js',
   '/scripts/patient-session.js',
   '/scripts/socket-credentials.js',
   '/scripts/patient-shell/session-bootstrap.js',
@@ -93,6 +97,13 @@ const IMMUTABLE_STATIC_ASSETS = [...new Set(PRECACHE_FILES)].filter(url => {
   const parsed = new URL(url, self.location.origin);
   return parsed.origin === self.location.origin && !parsed.pathname.endsWith('.html') && parsed.pathname !== '/';
 }).map(url => `${url}?v=${CACHE_VERSION}`);
+const OWNED_STATIC_PATHS = new Set(IMMUTABLE_STATIC_ASSETS.map(url => new URL(url, self.location.origin).pathname));
+function matchOwnedStatic(cache, request, url) {
+  if (url.origin !== self.location.origin || !OWNED_STATIC_PATHS.has(url.pathname)) return Promise.resolve(null);
+  // Cache entries are revision-pinned, while page asset URLs retain their own
+  // historical version query. Ignore only the query for this explicit app set.
+  return cache.match(request, { ignoreSearch: true });
+}
 
 // Install event - cache essential files
 self.addEventListener('install', (event) => {
@@ -172,7 +183,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(freshRequest)
         .catch(() => {
-          return caches.open(CACHE_NAME).then(cache => cache.match(request));
+          return caches.open(CACHE_NAME).then(cache => matchOwnedStatic(cache, request, url));
         })
     );
     return;
@@ -180,7 +191,7 @@ self.addEventListener('fetch', (event) => {
 
   // For other assets (images, fonts) - cache first, network fallback
   event.respondWith(
-    caches.open(CACHE_NAME).then(cache => cache.match(request))
+    caches.open(CACHE_NAME).then(cache => matchOwnedStatic(cache, request, url))
       .then((cachedResponse) => {
         if (cachedResponse) {
           return cachedResponse;
