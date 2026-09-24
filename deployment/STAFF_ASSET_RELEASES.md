@@ -161,7 +161,7 @@ After the routing gate passes, fast-forward the active checkout using the establ
 cd /var/www/dokterdibya
 git merge --ff-only "$TARGET_SHA"
 test "$(git rev-parse HEAD)" = "$TARGET_SHA"
-pm2 reload dokterdibya_codex
+pm2 reload dibyaklinik-backend
 ```
 
 If the established PM2 process name or checkout procedure differs, stop and reconcile the observed production configuration before issuing the cutover commands. Do not use `git reset --hard`.

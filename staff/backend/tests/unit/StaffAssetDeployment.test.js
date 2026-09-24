@@ -280,3 +280,9 @@ test('cleanup keeps the five newest plus bridge targets and refuses a corrupt ol
     await expect(selectStaffReleaseCleanup({ releaseBase: input.releaseBase,
         currentVersion: 'v418', previousVersion: 'v417' })).rejects.toThrow(/manifest/i);
 });
+
+test('production cutover runbook targets the observed DOKTERDIBYA PM2 process', () => {
+    const runbook = fs.readFileSync(path.resolve(__dirname, '../../../../deployment/STAFF_ASSET_RELEASES.md'), 'utf8');
+    expect(runbook).toContain('pm2 reload dibyaklinik-backend');
+    expect(runbook).not.toContain('pm2 reload dokterdibya_codex');
+});
