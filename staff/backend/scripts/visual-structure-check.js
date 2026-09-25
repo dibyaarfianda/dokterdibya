@@ -5,6 +5,7 @@ const { createHash } = require('crypto');
 const FIXTURE_ORIGIN = 'https://structural-snapshot.invalid';
 const MASK_CSS = `
   *, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }
+  html { scroll-behavior: auto !important; }
   #live-clock, #current-time, .live-time, .notification-count,
   [data-visual-dynamic], [data-live-timestamp] { visibility: hidden !important; }
 `;
@@ -49,9 +50,10 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '', onDi
             // Autofocus in the real shell can otherwise make identical pages
             // capture different vertical regions on slower CI runners.
             document.activeElement?.blur();
-            document.documentElement.style.scrollBehavior = 'auto';
-            window.scrollTo(0, 0);
+            document.scrollingElement.scrollTop = 0;
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         });
+        await page.waitForFunction(() => window.scrollY === 0, { timeout: 1000 });
         if (missingRequiredAssets.length) {
             throw new Error(`Missing required visual fixture assets: ${missingRequiredAssets.join(', ')}`);
         }
@@ -66,6 +68,7 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '', onDi
                     body: { backgroundColor: bodyStyle.backgroundColor, fontFamily: bodyStyle.fontFamily,
                         scrollWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight },
                     scrollY: window.scrollY,
+                    scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
                     htmlBackgroundColor: getComputedStyle(document.documentElement).backgroundColor,
                     sidebar: rect(document.querySelector('.main-sidebar')),
                     content: rect(document.querySelector('.content-wrapper')),

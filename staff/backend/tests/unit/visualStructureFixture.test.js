@@ -58,3 +58,19 @@ test('masked visual fixture captures the top of an autofocus-scrolled page', asy
     expect(diagnostics[0].scrollY).toBe(0);
     expect(diagnostics[0].content.y).toBe(8);
 });
+
+test('masked visual fixture cancels smooth scrolling before capture', async () => {
+    const diagnostics = [];
+    await renderMaskedShell({
+        file: 'staff/public/fixture.html',
+        viewport: { width: 320, height: 240 },
+        readFile: file => {
+            if (file === 'staff/public/fixture.html') return Buffer.from('<!doctype html><html><head><style>html { scroll-behavior: smooth !important; }</style></head><body><main class="content-wrapper" style="height:3000px">Top</main><input autofocus></body></html>');
+            throw new Error(`Unavailable: ${file}`);
+        },
+        onDiagnostics: details => diagnostics.push(details)
+    });
+    expect(diagnostics[0].scrollY).toBe(0);
+    expect(diagnostics[0].content.y).toBe(8);
+    expect(diagnostics[0].scrollBehavior).toBe('auto');
+});

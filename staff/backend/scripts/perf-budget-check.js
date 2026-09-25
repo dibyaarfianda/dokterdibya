@@ -389,6 +389,7 @@ async function runPerformanceGate({ baseUrl, getOidcToken = requestGithubActions
         const end = window?.windowEndedAtMs;
         const pass = window?.windowSeconds === 300 && Number.isFinite(start)
             && Number.isFinite(end) && start <= end
+            && end - start >= 295000
             && start >= checkedAt - 305000 && end >= checkedAt - 300000
             && end <= checkedAt + 5000;
         log(`[${pass ? 'PASS' : 'FAIL'}] ${label} observation window=${window?.windowSeconds} seconds`);

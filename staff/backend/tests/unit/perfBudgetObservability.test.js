@@ -2,7 +2,7 @@ const { runPerformanceGate } = require('../../scripts/perf-budget-check');
 
 function releaseSummary() {
     const end = Date.now();
-    const start = end - 60000;
+    const start = end - 299000;
     const window = { windowSeconds: 300, windowStartedAtMs: start, windowEndedAtMs: end };
     return {
         requests: { ...window, total: 300, serverErrors: 0 },
@@ -52,6 +52,15 @@ test('release gate rejects stale observation windows even when percentiles look 
     const fresh = releaseSummary();
     fresh.api.notificationsCount.windowEndedAtMs = Date.now() - 301000;
     expect(await score(fresh)).toBeGreaterThan(0);
+});
+
+test('release gate rejects a fresh bucket containing less than five minutes of observations', async () => {
+    const data = releaseSummary();
+    data.requests.windowStartedAtMs = Date.now() - 60000;
+    expect(await score(data)).toBeGreaterThan(0);
+    const endpoint = releaseSummary();
+    endpoint.api.patients.windowStartedAtMs = Date.now() - 60000;
+    expect(await score(endpoint)).toBeGreaterThan(0);
 });
 
 test('release gate allows a freshly pruned five-minute bucket after transport delay', async () => {
