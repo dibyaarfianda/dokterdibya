@@ -17,8 +17,9 @@ Record the full current commit and verify that the current Staff HTML and worker
 ```sh
 CURRENT_SHA='<observed-40-character-current-commit>'
 TARGET_SHA='<reviewed-40-character-target-commit>'
-git fetch origin main
+git fetch origin main codex/system-hardening-seamless
 test "$(git rev-parse HEAD)" = "$CURRENT_SHA"
+test "$(git rev-parse refs/remotes/origin/codex/system-hardening-seamless)" = "$TARGET_SHA"
 test "$(git cat-file -t "$TARGET_SHA")" = commit
 SHORT_SHA="$(git rev-parse --short=12 "$TARGET_SHA")"
 WORKTREE="/var/tmp/dokterdibya-wave3-assets-$SHORT_SHA"
@@ -27,7 +28,7 @@ git worktree add --detach "$WORKTREE" "$TARGET_SHA"
 test "$(git -C "$WORKTREE" rev-parse HEAD)" = "$TARGET_SHA"
 ```
 
-This creates the target tree without changing the active checkout. Stop if the current commit or target differs from the approved release.
+This creates the target tree without changing the active checkout. Push the reviewed feature branch before this fetch; do not push `main` until the pre-cutover asset and Nginx gates pass. Stop if the current commit or target differs from the approved release. Confirm whether any main-branch push webhook can move the production checkout before performing the later `main` push; coordinate that trigger with the cutover rather than allowing an uncontrolled reload.
 
 ## 2. Stage and verify both immutable snapshots
 
@@ -196,15 +197,11 @@ for ORIGIN in https://dokterdibya.com https://www.dokterdibya.com; do
 done
 ```
 
-Confirm on both origins that current HTML and service worker advertise v414 with no-store headers, an authenticated Staff browser has one-version module traffic and no unexpected host redirect, polling realtime is connected, browser console is clean, and the visible layout is unchanged. Run the configured authenticated performance command from the backend directory; the Staff token must already be supplied by the protected operator/CI environment and must never be written into the command or evidence:
+Confirm on both origins that current HTML and service worker advertise v414 with no-store headers, an authenticated Staff browser has one-version module traffic and no unexpected host redirect, polling realtime is connected, browser console is clean, and the visible layout is unchanged. After the main-branch cutover, dispatch **Staff Performance Budget** in GitHub Actions and wait for its result before accepting the release. The workflow requests a short-lived GitHub OIDC identity scoped to this repository, branch and workflow; it sends that identity only to `/api/ci/performance-summary`, which returns allowlisted aggregate numbers. It measures the real Staff shell/assets in an isolated IPv6-loopback browser fixture with synthetic empty API responses. The fixture credential never reaches production. Do not create `STAFF_PERF_TOKEN` or run the CI command directly on the VPS: outside the approved GitHub-hosted job it fails closed.
 
-```sh
-cd /var/www/dokterdibya/staff/backend
-test -n "$STAFF_PERF_TOKEN"
-node scripts/perf-budget-check.js --base-url https://dokterdibya.com --page-url https://dokterdibya.com/staff/public/index-adminlte.html
-```
+If the workflow cannot obtain OIDC, cannot verify the aggregate response, detects unexpected fixture API calls, or fails any budget, treat it as a failed release gate and follow the rollback paragraph below. The browser fixture does not replace a legitimate authenticated Staff session on the live origins; both checks are required.
 
-Compare equal-size, post-stabilization samples: warm network requests ≤40, genuine failures 0, cached activation p95 ≤1000 ms, production p75 at least 25% better than baseline, and p95 no more than 5% worse. Over five minutes, require Nginx 5xx ≤1%, Socket.IO auth errors ≤2% of sessions, and no unplanned PM2 restart. Obtain the five-minute rates from existing aggregated operational metrics without copying raw request URLs, tokens, or patient fields into release evidence.
+Compare equal-size, post-stabilization samples: warm fixture network requests ≤40, genuine failures 0, cached Dashboard↔Pasien activation p95 ≤1000 ms, and live Staff production p75 at least 25% better than baseline with p95 no more than 5% worse. The in-memory aggregate counter resets on PM2 reload and may need legitimate Staff traffic before its sample-count gate is meaningful; never generate synthetic patient calls to fill it. Over five minutes, require Nginx 5xx ≤1%, Socket.IO auth errors ≤2% of sessions, and no unplanned PM2 restart. Obtain the five-minute rates from existing aggregated operational metrics without copying raw request URLs, tokens, or patient fields into release evidence.
 
 Roll back on two failed health/DB checks, a release-related restart, excessive 5xx, failed performance gate, mixed asset hashes, or any cross-user/unauthorized clinical event. Restore the previous application commit through the established safe rollback process, reload PM2 if needed, call the exact `restore_staff_nginx` function from section 4, and reload Nginx only if its `nginx -t` succeeds. Then verify the previous HTML on both origins and rerun the release verifier on each with `--expected-current-version v413`. **Retain both v413 and v414**: the v413 legacy credential bridge targets v414 even after application rollback. Do not perform synthetic clinical writes. The first legitimate clinical operation remains the before/after integrity verification point.
 

@@ -53,26 +53,37 @@ describe('SLO route authorization', () => {
     app.use('/api/slo', sloRoutes);
 
     test('requires an authenticated superadmin', async () => {
-        const anonymous = await request(app).get('/api/slo');
-        const nonSuperadmin = await request(app)
-            .get('/api/slo')
-            .set('Authorization', 'Bearer valid-staff-token');
-        const dokter = await request(app)
-            .get('/api/slo')
-            .set('Authorization', 'Bearer valid-staff-token')
-            .set('X-Test-Role', 'dokter');
-
-        expect(anonymous.status).toBe(401);
-        expect(nonSuperadmin.status).toBe(403);
-        expect(dokter.status).toBe(200);
-        expect(dokter.body).toMatchObject({
-            status: 'healthy',
-            slos: {
-                dbHealth: {
-                    pass: true,
-                    detail: { slowQueriesLast15m: 0 }
-                }
-            }
+        // This authorization contract must not depend on RSS accumulated by
+        // unrelated suites when Jest runs every integration test in one process.
+        const memorySpy = jest.spyOn(process, 'memoryUsage').mockReturnValue({
+            rss: 128 * 1024 * 1024,
+            heapUsed: 32 * 1024 * 1024,
+            heapTotal: 64 * 1024 * 1024
         });
+        try {
+            const anonymous = await request(app).get('/api/slo');
+            const nonSuperadmin = await request(app)
+                .get('/api/slo')
+                .set('Authorization', 'Bearer valid-staff-token');
+            const dokter = await request(app)
+                .get('/api/slo')
+                .set('Authorization', 'Bearer valid-staff-token')
+                .set('X-Test-Role', 'dokter');
+
+            expect(anonymous.status).toBe(401);
+            expect(nonSuperadmin.status).toBe(403);
+            expect(dokter.status).toBe(200);
+            expect(dokter.body).toMatchObject({
+                status: 'healthy',
+                slos: {
+                    dbHealth: {
+                        pass: true,
+                        detail: { slowQueriesLast15m: 0 }
+                    }
+                }
+            });
+        } finally {
+            memorySpy.mockRestore();
+        }
     });
 });

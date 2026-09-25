@@ -130,11 +130,12 @@ describe('staff panel wave 3 lifecycle contracts', () => {
     test('performance workflow measures the exact staff shell and never exposes credentials on the command line', () => {
         const workflow = read('.github', 'workflows', 'staff-performance-budget.yml');
         const script = read('staff', 'backend', 'scripts', 'perf-budget-check.js');
-        expect(workflow).toContain('STAFF_PERF_TOKEN');
-        expect(workflow).not.toContain("if: ${{ env.STAFF_PERF_TOKEN != '' }}");
+        expect(workflow).toContain('id-token: write');
+        expect(workflow).not.toContain('secrets.STAFF_PERF_TOKEN');
         expect(workflow).not.toContain('--token');
-        expect(workflow).toContain('--page-url https://dokterdibya.com/staff/public/index-adminlte.html');
-        expect(script).toContain('process.env.STAFF_PERF_TOKEN');
+        expect(workflow).not.toContain('--page-url https://dokterdibya.com/staff/public/index-adminlte.html');
+        expect(script).toContain('requestGithubActionsIdToken');
+        expect(script).toContain('startStaffPerformanceFixture');
         expect(script).toContain('cachedActivation');
         expect(script).toContain('failedRequests');
         expect(script).toContain('maxRequestCount: 40');

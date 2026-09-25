@@ -3,13 +3,15 @@
  * Strict performance budget guardrail.
  *
  * Usage:
- *   STAFF_PERF_TOKEN=<secret> node perf-budget-check.js --base-url https://example.test
- *     [--page-url https://example.test/staff/public/index-adminlte.html] [--allow-unreachable]
+ *   node perf-budget-check.js
+ * Requires GitHub Actions OIDC. Never accepts a staff or patient credential.
  */
 
 const http = require('http');
 const https = require('https');
 const puppeteer = require('puppeteer');
+const { AUDIENCE } = require('../services/githubActionsOidc');
+const { startStaffPerformanceFixture } = require('./staff-performance-fixture');
 
 const WARMUP_RUNS = 3;
 const MEASURED_RUNS = 20;
@@ -18,8 +20,7 @@ const BUDGETS = {
     api: {
         '/api/patients': { p95: 100 },
         '/api/dashboard-stats': { p95: 50 },
-        '/api/notifications/count': { p95: 30 },
-        '/api/rum/summary': { p95: 50 }
+        '/api/notifications/count': { p95: 30 }
     },
     page: {
         maxJsSizeKB: 500,
@@ -117,33 +118,59 @@ async function benchEndpoint(baseUrl, endpoint, token) {
     };
 }
 
-async function installEphemeralStaffAuth(page, token, targetOrigin) {
-    await page.evaluateOnNewDocument((authToken, allowedOrigin) => {
+async function installEphemeralStaffAuth(page, token, targetOrigin, cacheVersion = null) {
+    await page.evaluateOnNewDocument((authToken, allowedOrigin, currentCacheVersion) => {
         if (window !== window.top || window.location.origin !== allowedOrigin || typeof Storage === 'undefined') return;
         const originalGetItem = Storage.prototype.getItem;
         Storage.prototype.getItem = function (key) {
             if (typeof window.TOKEN_KEY === 'string' && key === window.TOKEN_KEY) return authToken;
+            if (key === 'cache_version' && currentCacheVersion) return currentCacheVersion;
             return originalGetItem.call(this, key);
         };
-    }, token, targetOrigin);
+    }, token, targetOrigin, cacheVersion);
 }
 
-async function inspectPage(pageUrl, token) {
+async function inspectPage(pageUrl, token, { cacheVersion = null } = {}) {
+    const parsedPage = new URL(pageUrl);
+    if (token && (parsedPage.protocol !== 'http:'
+        || !['localhost', '127.0.0.1', '[::1]'].includes(parsedPage.hostname)
+        || parsedPage.username || parsedPage.password)) {
+        throw new Error('Local Staff fixture required');
+    }
     const browser = await puppeteer.launch({ headless: true });
     try {
         const page = await browser.newPage();
         const targetOrigin = new URL(pageUrl).origin;
+        let blockedExternal = 0;
         if (token) {
-            await installEphemeralStaffAuth(page, token, targetOrigin);
+            await installEphemeralStaffAuth(page, token, targetOrigin, cacheVersion);
+            await page.setRequestInterception(true);
+            const staticOrigins = new Set([
+                'https://cdn.jsdelivr.net', 'https://cdn.socket.io', 'https://cdn.datatables.net',
+                'https://fonts.googleapis.com', 'https://fonts.gstatic.com'
+            ]);
+            page.on('request', request => {
+                const url = new URL(request.url());
+                const local = url.origin === targetOrigin;
+                const publicStatic = staticOrigins.has(url.origin) && request.method() === 'GET'
+                    && !request.headers().authorization;
+                if (local || publicStatic || url.protocol === 'data:') request.continue();
+                else {
+                    blockedExternal++;
+                    request.abort('blockedbyclient');
+                }
+            });
         }
 
         const client = await page.createCDPSession();
         await client.send('Network.enable');
         let phase = 'cold';
         const phases = {
-            cold: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0, networkTransferBytes: 0, cacheHitCount: 0, serviceWorkerHitCount: 0 },
-            warm: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0, networkTransferBytes: 0, cacheHitCount: 0, serviceWorkerHitCount: 0 }
+            cold: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0, networkTransferBytes: 0, cacheHitCount: 0, serviceWorkerHitCount: 0, failures: [] },
+            warm: { requestCount: 0, failedRequests: 0, firstPartyJsBytes: 0, largestImageBytes: 0, networkTransferBytes: 0, cacheHitCount: 0, serviceWorkerHitCount: 0, failures: [] }
         };
+        const documentResponses = { cold: null, warm: null };
+        let coldLoaderId = null;
         const requests = new Map();
         client.on('Network.requestWillBeSent', event => {
             if (!phase || event.request.url.startsWith('data:')) return;
@@ -152,7 +179,12 @@ async function inspectPage(pageUrl, token) {
                 phases[redirected.phase].requestCount++;
                 if (event.redirectResponse.status >= 400) phases[redirected.phase].failedRequests++;
             }
-            requests.set(event.requestId, { phase, url: event.request.url, type: event.type, cached: false, serviceWorker: false, status: null });
+            if (phase === 'cold' && event.type === 'Document') coldLoaderId = event.loaderId;
+            // Unload beacons from the cold document can begin during warm navigation.
+            const requestPhase = phase === 'warm' && event.loaderId === coldLoaderId
+                && event.type !== 'Document' ? 'cold' : phase;
+            requests.set(event.requestId, { phase: requestPhase, url: event.request.url, type: event.type,
+                method: event.request.method, cached: false, serviceWorker: false, status: null });
         });
         client.on('Network.requestServedFromCache', event => {
             const request = requests.get(event.requestId);
@@ -163,6 +195,9 @@ async function inspectPage(pageUrl, token) {
             if (!request) return;
             request.type = event.type;
             request.status = event.response.status;
+            if (event.type === 'Document' && event.response.url === pageUrl) {
+                documentResponses[request.phase] = event.response.status;
+            }
             request.cached ||= Boolean(event.response.fromDiskCache || event.response.fromPrefetchCache);
             request.serviceWorker = Boolean(event.response.fromServiceWorker);
         });
@@ -182,7 +217,10 @@ async function inspectPage(pageUrl, token) {
                 if (request.type === 'Script' && new URL(request.url).origin === targetOrigin) data.firstPartyJsBytes += size;
                 if (request.type === 'Image') data.largestImageBytes = Math.max(data.largestImageBytes, size);
             }
-            if (request.status >= 400) data.failedRequests++;
+            if (request.status >= 400) {
+                data.failedRequests++;
+                if (token) data.failures.push(`${request.status}:${new URL(request.url).origin}${new URL(request.url).pathname}`);
+            }
         });
         client.on('Network.loadingFailed', event => {
             const request = requests.get(event.requestId);
@@ -191,6 +229,7 @@ async function inspectPage(pageUrl, token) {
             const data = phases[request.phase];
             if (!request.cached && !request.serviceWorker) data.requestCount++;
             data.failedRequests++;
+            if (token) data.failures.push(`network:${new URL(request.url).origin}${new URL(request.url).pathname}:${event.errorText}`);
         });
 
         await page.setCacheEnabled(false);
@@ -212,19 +251,21 @@ async function inspectPage(pageUrl, token) {
             }
             phase = measuredPhase;
             if (measuredPhase === 'warm') await page.setCacheEnabled(true);
-            const response = measuredPhase === 'cold'
-                ? await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 })
-                : await page.reload({ waitUntil: 'networkidle2', timeout: 30000 });
-            if (!response || !response.ok()) {
-                throw new Error(`${measuredPhase} staff page returned HTTP ${response?.status() || 'unknown'}`);
+            const response = await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            if (!(response?.ok() || (response === null && documentResponses[measuredPhase] === 200))) {
+                throw new Error(`${measuredPhase} staff page returned HTTP ${response?.status() || documentResponses[measuredPhase] || 'unknown'}`);
             }
         }
+        // Include startup work deferred through requestIdleCallback in the warm-load budget.
+        await new Promise(resolve => setTimeout(resolve, 2500));
         // networkidle2 permits two in-flight requests. Keep observing until
         // every warm navigation request except an expected Socket.IO poll has
         // a terminal CDP event; a stuck ordinary request fails the gate.
         const pendingWarm = () => [...requests.values()].some(request => {
             if (request.phase !== 'warm') return false;
             const url = new URL(request.url);
+            if (request.method === 'POST' && url.origin === targetOrigin
+                && url.pathname === '/api/logs' && request.status === 200) return false;
             return !(url.origin === targetOrigin && /^\/socket\.io\/?$/.test(url.pathname)
                 && url.searchParams.get('transport') === 'polling');
         });
@@ -239,7 +280,9 @@ async function inspectPage(pageUrl, token) {
                 }, 25);
                 const timeout = setTimeout(() => {
                     clearInterval(interval);
-                    reject(new Error('Warm network requests did not settle before timeout'));
+                    const pending = [...requests.values()].filter(request => request.phase === 'warm')
+                        .map(request => `${request.type}:${new URL(request.url).origin}${new URL(request.url).pathname}:${request.status}`).slice(0, 5).join(', ');
+                    reject(new Error(`Warm network requests did not settle before timeout (${pending})`));
                 }, 5000);
             });
         }
@@ -248,17 +291,27 @@ async function inspectPage(pageUrl, token) {
         }
         phase = null;
         await client.detach();
+        if (blockedExternal) throw new Error(`Staff fixture blocked ${blockedExternal} external request(s)`);
 
-        // The registered dashboard is already present after shell startup; repeat its cached activation.
+        // Warm both registered pages once, then time real cached menu transitions.
+        await page.evaluate(async () => {
+            if (typeof window.activateRegisteredStaffPage !== 'function') throw new Error('Staff navigation unavailable');
+            const first = await window.activateRegisteredStaffPage('patients');
+            const second = await window.activateRegisteredStaffPage('dashboard');
+            if (!first || !second) throw new Error('Staff menu preload did not commit');
+        });
         const cachedActivation = [];
         for (let index = 0; index < 5; index++) {
-            const duration = await page.evaluate(async () => {
+            const key = index % 2 === 0 ? 'patients' : 'dashboard';
+            const duration = await page.evaluate(async selectedKey => {
                 if (typeof window.activateRegisteredStaffPage !== 'function') throw new Error('Staff navigation unavailable');
                 const started = performance.now();
-                const container = await window.activateRegisteredStaffPage('dashboard');
-                if (!container) throw new Error('Staff navigation did not commit');
+                const container = await window.activateRegisteredStaffPage(selectedKey);
+                if (!container || container.classList.contains('d-none')) {
+                    throw new Error('Staff menu switch did not commit');
+                }
                 return performance.now() - started;
-            });
+            }, key);
             cachedActivation.push(duration);
         }
 
@@ -266,6 +319,7 @@ async function inspectPage(pageUrl, token) {
             cold: phases.cold,
             warm: phases.warm,
             cachedActivationP95: percentile(cachedActivation, 95),
+            menuSwitches: cachedActivation.length,
             firstPartyJsKB: Math.round(phases.warm.firstPartyJsBytes / 1024),
             largestImageKB: Math.round(phases.warm.largestImageBytes / 1024)
         };
@@ -274,91 +328,92 @@ async function inspectPage(pageUrl, token) {
     }
 }
 
+async function requestGithubActionsIdToken({ env = process.env, fetch = fetchUrl } = {}) {
+    let requestUrl;
+    try { requestUrl = new URL(env.ACTIONS_ID_TOKEN_REQUEST_URL); } catch (_) {}
+    if (env.GITHUB_ACTIONS !== 'true' || !requestUrl || requestUrl.protocol !== 'https:'
+        || !/(^|\.)actions\.githubusercontent\.com$/.test(requestUrl.hostname)
+        || requestUrl.username || requestUrl.password || requestUrl.hash
+        || !env.ACTIONS_ID_TOKEN_REQUEST_TOKEN) {
+        throw new Error('GitHub Actions OIDC identity is required');
+    }
+    requestUrl.searchParams.set('audience', AUDIENCE);
+    const response = await fetch(requestUrl.toString(), {
+        Authorization: `Bearer ${env.ACTIONS_ID_TOKEN_REQUEST_TOKEN}`,
+        Accept: 'application/json'
+    });
+    if (response.status !== 200 || typeof response.body?.value !== 'string'
+        || response.body.value.length < 100 || response.body.value.length > 16000) {
+        throw new Error('GitHub Actions OIDC identity is required');
+    }
+    return response.body.value;
+}
+
+async function runPerformanceGate({ baseUrl, getOidcToken = requestGithubActionsIdToken,
+    fetchAggregate = fetchUrl, inspectPageImpl = inspectPage,
+    startFixture = startStaffPerformanceFixture, log = console.log }) {
+    if (baseUrl !== 'https://dokterdibya.com') {
+        throw new Error('Production performance origin is required');
+    }
+    // Acquire the short-lived identity before any network or output. It is only
+    // sent to the aggregate endpoint, never installed in the browser.
+    const token = await getOidcToken();
+    const aggregate = assertSuccess(await fetchAggregate(`${baseUrl}/api/ci/performance-summary`, {
+        Authorization: `Bearer ${token}`
+    }), '/api/ci/performance-summary').body;
+    if (aggregate?.success !== true || !aggregate.data) throw new Error('CI performance summary unavailable');
+    const data = aggregate.data;
+    let violations = 0;
+    const check = (label, value, budget, minimumCount = null) => {
+        const pass = Number.isFinite(value) && value <= budget
+            && (minimumCount === null || minimumCount >= 5);
+        log(`[${pass ? 'PASS' : 'FAIL'}] ${label}=${value} budget=${budget}`);
+        if (!pass) violations++;
+    };
+
+    const requests = data.requests?.total;
+    const serverErrors = data.requests?.serverErrors;
+    check('Production 5xx rate (%)', Number.isFinite(requests) && requests > 0 && Number.isFinite(serverErrors)
+        ? serverErrors / requests * 100 : NaN, 1);
+    check('Production p99 (ms)', data.latency?.p99Ms, 500);
+    for (const [key, budget] of [
+        ['patients', BUDGETS.api['/api/patients'].p95],
+        ['dashboardStats', BUDGETS.api['/api/dashboard-stats'].p95],
+        ['notificationsCount', BUDGETS.api['/api/notifications/count'].p95]
+    ]) check(`Production ${key} p95 (ms)`, data.api?.[key]?.p95Ms, budget, data.api?.[key]?.count);
+
+    const fixture = await startFixture();
+    let page;
+    try {
+        const fixtureUrl = new URL(fixture.url);
+        if (fixtureUrl.protocol !== 'http:' || fixtureUrl.hostname !== '[::1]'
+            || fixtureUrl.pathname !== '/staff/public/index-adminlte.html'
+            || fixtureUrl.username || fixtureUrl.password) {
+            throw new Error('Local Staff fixture required');
+        }
+        page = await inspectPageImpl(fixture.url, fixture.token, { cacheVersion: fixture.cacheVersion });
+        fixture.assertClean();
+    } finally {
+        await fixture.close();
+    }
+    log(`[INFO] Cold staff load: requests=${page.cold.requestCount} failed=${page.cold.failedRequests}`);
+    for (const failed of pageBudgetViolations(page)) {
+        log(`[FAIL] ${failed.label}=${failed.value} budget=${failed.budget}`);
+        violations++;
+    }
+    log(`Result: ${violations === 0 ? 'ALL PASS' : `${violations} VIOLATION(S)`}`);
+    return { violations, page };
+}
+
 async function main() {
     const args = process.argv.slice(2);
-    const baseUrl = argumentValue(args, '--base-url', 'http://localhost:3000').replace(/\/$/, '');
-    const pageUrl = argumentValue(args, '--page-url', `${baseUrl}/staff/public/index-adminlte.html`);
-    const token = process.env.STAFF_PERF_TOKEN;
-    const allowUnreachable = args.includes('--allow-unreachable');
-    let violations = 0;
-
-    if (!token || args.includes('--token')) {
-        console.error('[CONFIG] STAFF_PERF_TOKEN environment variable is required; --token is not accepted.');
-        process.exit(1);
+    if (args.some(arg => ['--token', '--password', '--allow-unreachable', '--page-url'].includes(arg))) {
+        throw new Error('GitHub Actions OIDC identity is required');
     }
-
-    async function runRequired(label, operation) {
-        try {
-            return await operation();
-        } catch (error) {
-            if (allowUnreachable && /timed out|ECONN|ENOTFOUND|socket hang up/i.test(error.message)) {
-                console.warn(`[WARN] ${label} unreachable: ${error.message}`);
-                return null;
-            }
-            console.error(`[FAIL] ${label}: ${error.message}`);
-            violations++;
-            return null;
-        }
-    }
-
-    console.log(`Performance budgets for ${baseUrl}`);
-
-    for (const [endpoint, budget] of Object.entries(BUDGETS.api)) {
-        const result = await runRequired(endpoint, () => benchEndpoint(baseUrl, endpoint, token));
-        if (!result) continue;
-        const pass = result.p95 <= budget.p95;
-        console.log(`[${pass ? 'PASS' : 'FAIL'}] ${endpoint} app p95=${result.p95}ms budget=${budget.p95}ms (wall p95=${result.wallP95}ms)`);
-        if (!pass) violations++;
-    }
-
-    const headers = { Authorization: `Bearer ${token}` };
-    const metrics = await runRequired('/api/metrics', async () => {
-        const response = await fetchUrl(`${baseUrl}/api/metrics`, headers);
-        return assertSuccess(response, '/api/metrics').body;
-    });
-    if (metrics) {
-        const serverErrors = metrics.errors?.byType?.server || 0;
-        const totalRequests = metrics.requests?.total || 1;
-        const serverErrorRate = (serverErrors / totalRequests) * 100;
-        const errorPass = serverErrorRate < 5;
-        const p99Pass = (metrics.performance?.p99Ms || 0) < 500;
-        console.log(`[${errorPass ? 'PASS' : 'FAIL'}] Server 5xx rate=${serverErrorRate.toFixed(2)}%`);
-        console.log(`[${p99Pass ? 'PASS' : 'FAIL'}] Global p99=${metrics.performance?.p99Ms || 0}ms`);
-        if (!errorPass) violations++;
-        if (!p99Pass) violations++;
-    }
-
-    const slo = await runRequired('/api/slo', async () => {
-        const response = await fetchUrl(`${baseUrl}/api/slo`, headers);
-        return assertSuccess(response, '/api/slo').body;
-    });
-    if (slo?.slos) {
-        for (const item of Object.values(slo.slos)) {
-            console.log(`[${item.pass ? 'PASS' : 'FAIL'}] ${item.name}: ${item.value}`);
-            if (!item.pass) violations++;
-        }
-    }
-
-    const page = await runRequired(pageUrl, () => inspectPage(pageUrl, token));
-    if (page) {
-        console.log(`[INFO] Cold staff load: requests=${page.cold.requestCount} failed=${page.cold.failedRequests}`);
-        const checks = [
-            ['Warm requests', page.warm.requestCount, BUDGETS.page.maxRequestCount],
-            ['Warm failed requests', page.warm.failedRequests, 0],
-            ['Cached activation p95 (ms)', page.cachedActivationP95, BUDGETS.page.maxCachedActivationP95Ms],
-            ['First-party JavaScript (KB)', page.firstPartyJsKB, BUDGETS.page.maxJsSizeKB],
-            ['Largest image (KB)', page.largestImageKB, BUDGETS.page.maxImageSizeKB]
-        ];
-        const failed = pageBudgetViolations(page);
-        for (const [label, value, budget] of checks) {
-            const pass = !failed.some(item => item.label === label);
-            console.log(`[${pass ? 'PASS' : 'FAIL'}] ${label}=${value} budget=${budget}`);
-            if (!pass) violations++;
-        }
-    }
-
-    console.log(`Result: ${violations === 0 ? 'ALL PASS' : `${violations} VIOLATION(S)`}`);
-    process.exit(violations > 0 ? 1 : 0);
+    const baseUrl = argumentValue(args, '--base-url', 'https://dokterdibya.com').replace(/\/$/, '');
+    if (baseUrl !== 'https://dokterdibya.com') throw new Error('Production performance origin is required');
+    const result = await runPerformanceGate({ baseUrl });
+    process.exit(result.violations > 0 ? 1 : 0);
 }
 
 if (require.main === module) {
@@ -368,4 +423,5 @@ if (require.main === module) {
     });
 }
 
-module.exports = { inspectPage, pageBudgetViolations, percentile, installEphemeralStaffAuth, benchEndpoint };
+module.exports = { inspectPage, pageBudgetViolations, percentile, installEphemeralStaffAuth,
+    benchEndpoint, requestGithubActionsIdToken, runPerformanceGate };

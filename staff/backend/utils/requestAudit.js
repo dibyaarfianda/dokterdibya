@@ -15,6 +15,12 @@ function safeAuditPath(req) {
     if (req.method === 'GET' && /^\/api\/patients\/search\/advanced\/?$/i.test(pathname)) {
         return '/api/patients/search/advanced';
     }
+    if (req.method === 'GET' && /^\/api\/dashboard-stats\/?$/i.test(pathname)) {
+        return '/api/dashboard-stats';
+    }
+    if (req.method === 'GET' && /^\/api\/notifications\/count\/?$/i.test(pathname)) {
+        return '/api/notifications/count';
+    }
     if (req.method === 'POST' && /^\/api\/medical-records\/[^/]+\/sections\/[^/]+\/reset\/?$/i.test(pathname)) {
         return '/api/medical-records/:mrId/sections/:recordType/reset';
     }

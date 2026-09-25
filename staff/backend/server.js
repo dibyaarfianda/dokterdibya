@@ -804,6 +804,16 @@ app.use(createSystemRoutes({
     requireSuperadmin
 }));
 
+// GitHub Actions receives only a fixed, numeric performance summary. Its OIDC
+// identity is never converted into a staff JWT or admitted to clinical routes.
+const { createCiPerformanceRouter } = require('./routes/ci-performance');
+const { createGithubActionsVerifier } = require('./services/githubActionsOidc');
+app.use('/api/ci', createCiPerformanceRouter({
+    verifier: createGithubActionsVerifier(),
+    getMetrics,
+    getRumSummary: rumRoutes.getRumSummary
+}));
+
 // Async PDF queue routes
 const pdfQueueRoutes = require('./routes/pdf-queue');
 app.use('/api/pdf/queue', pdfQueueRoutes);

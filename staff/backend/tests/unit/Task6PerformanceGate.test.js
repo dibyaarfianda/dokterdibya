@@ -22,23 +22,130 @@ test('performance workflow installs pinned backend dependencies and browser befo
     const lock = require('../../package-lock.json');
     expect(lock.packages['node_modules/puppeteer'].version).toMatch(/^24\./);
     const install = workflow.indexOf('run: npm ci');
-    const browser = workflow.indexOf('run: ./node_modules/.bin/puppeteer browsers install chrome');
+    const browser = workflow.indexOf('puppeteer browsers install chrome --install-deps');
     const gate = workflow.indexOf('run: node scripts/perf-budget-check.js');
     expect(install).toBeGreaterThan(0);
     expect(browser).toBeGreaterThan(install);
     expect(gate).toBeGreaterThan(browser);
-    expect(workflow).toMatch(/STAFF_PERF_TOKEN:\s*\$\{\{ secrets\.STAFF_PERF_TOKEN \}\}/);
+    expect(workflow).toContain('id-token: write');
+    expect(workflow).not.toContain('secrets.STAFF_PERF_TOKEN');
     expect(workflow).not.toMatch(/--token\b|--password\b/);
 });
 
-test('performance command fails closed without CI credential before making a request', () => {
-    const child = spawnSync(process.execPath, [scriptPath, '--base-url', 'https://example.test'], {
-        env: { ...process.env, STAFF_PERF_TOKEN: '' }, encoding: 'utf8', timeout: 10000
+test('performance command fails closed without GitHub OIDC runner identity before making a request', () => {
+    const child = spawnSync(process.execPath, [scriptPath, '--base-url', 'https://dokterdibya.com'], {
+        env: { ...process.env, GITHUB_ACTIONS: '', ACTIONS_ID_TOKEN_REQUEST_URL: '',
+            ACTIONS_ID_TOKEN_REQUEST_TOKEN: '', STAFF_PERF_TOKEN: '' }, encoding: 'utf8', timeout: 10000
     });
     expect(child.status).toBe(1);
-    expect(child.stderr).toContain('STAFF_PERF_TOKEN environment variable is required');
-    expect(child.stdout).not.toContain('https://example.test');
+    expect(child.stderr).toContain('GitHub Actions OIDC identity is required');
+    expect(child.stdout).toBe('');
 });
+
+test('OIDC acquisition accepts only GitHub runner endpoint and never logs the runner credential', async () => {
+    const { requestGithubActionsIdToken } = require(scriptPath);
+    const seen = [];
+    const syntheticToken = 'synthetic.' + 'x'.repeat(110) + '.signature';
+    const fetch = async (url, headers) => {
+        seen.push({ url, headers });
+        return { status: 200, body: { value: syntheticToken } };
+    };
+    const env = {
+        GITHUB_ACTIONS: 'true',
+        ACTIONS_ID_TOKEN_REQUEST_URL: 'https://pipelines.actions.githubusercontent.com/token?existing=1',
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: 'synthetic-runner-credential'
+    };
+    expect(await requestGithubActionsIdToken({ env, fetch })).toBe(syntheticToken);
+    expect(seen).toEqual([{
+        url: 'https://pipelines.actions.githubusercontent.com/token?existing=1&audience=dokterdibya-staff-performance',
+        headers: { Authorization: 'Bearer synthetic-runner-credential', Accept: 'application/json' }
+    }]);
+    await expect(requestGithubActionsIdToken({ env: { ...env,
+        ACTIONS_ID_TOKEN_REQUEST_URL: 'https://attacker.example/token' }, fetch }))
+        .rejects.toThrow('GitHub Actions OIDC identity is required');
+    expect(seen).toHaveLength(1);
+});
+
+test('production gate reads only aggregate CI endpoint and never fetches clinical payloads', async () => {
+    const seen = [];
+    const response = {
+        status: 200, body: {
+            success: true,
+            data: {
+                requests: { total: 100, serverErrors: 0 },
+                latency: { p95Ms: 90, p99Ms: 120 },
+                api: {
+                    patients: { count: 10, p95Ms: 80 },
+                    dashboardStats: { count: 10, p95Ms: 40 },
+                    notificationsCount: { count: 10, p95Ms: 20 }
+                },
+                rum: { cachedActivation: { count: 10, p75: 300, p95: 450 },
+                    LCP: { count: 10, p75: 400, p95: 600 } }
+            }
+        }
+    };
+    const { runPerformanceGate } = require(scriptPath);
+    const result = await runPerformanceGate({
+            baseUrl: 'https://dokterdibya.com',
+            getOidcToken: async () => 'synthetic-oidc',
+            fetchAggregate: async (url, headers) => {
+                seen.push({ url, authorization: headers.Authorization });
+                return response;
+            },
+            startFixture: async () => ({ url: 'http://[::1]:31337/staff/public/index-adminlte.html',
+                token: 'synthetic-fixture-only', assertClean: () => {}, close: async () => {} }),
+            inspectPageImpl: async (pageUrl, token) => {
+                expect(pageUrl).toBe('http://[::1]:31337/staff/public/index-adminlte.html');
+                expect(token).toBe('synthetic-fixture-only');
+                return ({
+                cold: { requestCount: 30, failedRequests: 0 },
+                warm: { requestCount: 20, failedRequests: 0 },
+                cachedActivationP95: 500, firstPartyJsKB: 100, largestImageKB: 50
+                });
+            }, log: () => {}
+        });
+    expect(result.violations).toBe(0);
+    expect(seen).toEqual([{
+        url: 'https://dokterdibya.com/api/ci/performance-summary',
+        authorization: 'Bearer synthetic-oidc'
+    }]);
+});
+
+test('production gate rejects an untrusted metric origin before acquiring OIDC', async () => {
+    const { runPerformanceGate } = require(scriptPath);
+    let acquired = false;
+    await expect(runPerformanceGate({
+        baseUrl: 'http://127.0.0.1:1234',
+        getOidcToken: async () => { acquired = true; return 'synthetic-oidc'; }
+    })).rejects.toThrow('Production performance origin is required');
+    expect(acquired).toBe(false);
+});
+
+test('performance browser refuses any synthetic login outside the local fixture', async () => {
+    const { inspectPage } = require(scriptPath);
+    await expect(inspectPage('https://dokterdibya.com/staff/public/index-adminlte.html', 'synthetic-perf-fixture'))
+        .rejects.toThrow('Local Staff fixture required');
+});
+
+test('fixture browser blocks outbound API requests before any synthetic credential can leave loopback', async () => {
+    const server = http.createServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html' }).end(`<!doctype html><script>
+            window.activateRegisteredStaffPage = async () => document.body;
+            fetch('https://example.test/api/clinical', {
+                headers: { Authorization: 'Bearer synthetic-fixture-only' }
+            }).catch(() => {});
+        </script>`);
+    });
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    try {
+        const { inspectPage } = require(scriptPath);
+        await expect(inspectPage(`http://127.0.0.1:${server.address().port}/staff/public/index-adminlte.html`,
+            'synthetic-fixture-only')).rejects.toThrow('Staff fixture blocked');
+    } finally {
+        server.closeAllConnections();
+        await new Promise(resolve => server.close(resolve));
+    }
+}, 30000);
 
 test('performance script has no literal token key or persistent credential write', () => {
     const source = fs.readFileSync(scriptPath, 'utf8');
