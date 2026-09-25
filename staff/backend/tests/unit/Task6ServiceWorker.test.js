@@ -206,6 +206,9 @@ test('patient worker update rotates cache namespace before adding new shell asse
 });
 
 test('patient precache contains only versioned same-origin static assets, never HTML or CDN', async () => {
+    const source = fs.readFileSync(path.join(root, 'public/sw.js'), 'utf8');
+    const cacheVersion = source.match(/const CACHE_VERSION = '([^']+)';/)?.[1];
+    expect(cacheVersion).toBeTruthy();
     const worker = loadWorker('public/sw.js');
     let install;
     worker.handlers.install({ waitUntil: promise => { install = promise; } });
@@ -215,7 +218,8 @@ test('patient precache contains only versioned same-origin static assets, never 
     const items = (await urls).addAll.mock.calls[0][0];
     expect(items.length).toBeGreaterThan(0);
     for (const item of items) {
-        expect(item).toMatch(/^\/[^?]+\?v=20260924wave3r1$/);
+        expect(item).toMatch(/^\/[^?]+\?v=[^?]+$/);
+        expect(new URL(item, 'https://example.test').searchParams.get('v')).toBe(cacheVersion);
         expect(item).not.toMatch(/\.html(?:\?|$)/);
     }
 });

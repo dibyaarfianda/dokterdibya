@@ -4,12 +4,13 @@ export function bindPatientNavigation(actions, options = {}) {
     const actionSelector = options.actionSelector || '[data-shell-action]';
 
     function handleAction(event) {
-        if (event.type === 'click' && event.target.closest(stopSelector)) {
+        const trigger = event.target.closest(actionSelector);
+        const stopTarget = event.type === 'click' ? event.target.closest(stopSelector) : null;
+        if (stopTarget && (!trigger || !stopTarget.contains(trigger))) {
             event.stopPropagation();
             return;
         }
 
-        const trigger = event.target.closest(actionSelector);
         if (!trigger) return;
 
         const handler = actions[trigger.dataset.shellAction || ''];
