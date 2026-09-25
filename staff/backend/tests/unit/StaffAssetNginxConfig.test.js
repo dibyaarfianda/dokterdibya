@@ -33,28 +33,30 @@ function evaluateMaps(config, args, referer = '', requestUri = '') {
 }
 
 describe('Staff Nginx release routing', () => {
-    test('elevates browser OS dependency installation and returns the shared cache to the runner', () => {
+    test('disposable Nginx browser probe uses system Chrome with sandbox and loopback routing', () => {
         const workflow = yaml.load(fs.readFileSync(path.resolve(__dirname, '../../../../.github/workflows/staff-panel-ci.yml'), 'utf8'));
-        const steps = workflow.jobs['staff-asset-nginx'].steps;
-        const installIndex = steps.findIndex(step => step.run?.includes('browsers install chrome --install-deps'));
+        const job = workflow.jobs['staff-asset-nginx'];
+        expect(job['runs-on']).toBe('ubuntu-24.04');
+        expect(job.env).toMatchObject({
+            PUPPETEER_SKIP_DOWNLOAD: 'true',
+            PUPPETEER_EXECUTABLE_PATH: '/opt/google/chrome/chrome'
+        });
+        const steps = job.steps;
+        const installIndex = steps.findIndex(step => step.run?.includes('apt-get install -y nginx-light openssl'));
+        const chromeIndex = steps.findIndex(step => step.run?.includes('test -x "$PUPPETEER_EXECUTABLE_PATH"'));
         expect(installIndex).toBeGreaterThan(-1);
-        const commands = steps[installIndex].run.trim().split('\n').map(line => line.trim());
-        const browserIndex = commands.findIndex(line => line.includes('browsers install chrome --install-deps'));
-        // --install-deps checks getuid() itself; a preceding sudo apt-get is insufficient.
-        expect(commands[browserIndex]).toMatch(/^sudo env "PATH=\$PATH" "PUPPETEER_CACHE_DIR=\$PUPPETEER_CACHE_DIR" "\$\(command -v npx\)" puppeteer browsers install chrome --install-deps$/);
-        const cacheIndex = commands.findIndex(line => /^PUPPETEER_CACHE_DIR="\$RUNNER_TEMP\/[A-Za-z0-9_-]+"$/.test(line));
-        expect(cacheIndex).toBeGreaterThanOrEqual(0);
-        expect(cacheIndex).toBeLessThan(browserIndex);
-        const mkdirIndex = commands.indexOf('mkdir -p "$PUPPETEER_CACHE_DIR"');
-        expect(mkdirIndex).toBeGreaterThan(cacheIndex);
-        expect(mkdirIndex).toBeLessThan(browserIndex);
-        expect(commands.slice(cacheIndex, browserIndex)).toContain('echo "PUPPETEER_CACHE_DIR=$PUPPETEER_CACHE_DIR" >> "$GITHUB_ENV"');
-        expect(commands.slice(browserIndex + 1)).toContain('sudo chown -R "$(id -u):$(id -g)" "$PUPPETEER_CACHE_DIR"');
-        expect(steps[installIndex].run).not.toMatch(/chmod/);
+        expect(chromeIndex).toBeGreaterThan(installIndex);
+        expect(steps[chromeIndex].run).toContain('"$PUPPETEER_EXECUTABLE_PATH" --version');
+        expect(steps[chromeIndex].run).toContain('puppeteer.launch({ headless: true })');
+        expect(steps.every(step => !step.run?.includes('browsers install chrome'))).toBe(true);
         const probeIndex = steps.findIndex(step => step.run?.includes('--probe-nginx'));
-        expect(probeIndex).toBeGreaterThan(installIndex);
+        expect(probeIndex).toBeGreaterThan(chromeIndex);
         expect(steps[probeIndex].run).toMatch(/^node /);
         expect(steps.find(step => step.run?.includes('nginx -s quit')).if).toBe('always()');
+        const browserProbe = fs.readFileSync(path.resolve(__dirname, './StaffAssetModulePropagation.test.js'), 'utf8');
+        expect(browserProbe).not.toContain('--no-sandbox');
+        expect(browserProbe).toContain('--no-proxy-server');
+        expect(browserProbe).toContain('--host-resolver-rules=MAP dokterdibya.com 127.0.0.1');
     });
 
     test.each([

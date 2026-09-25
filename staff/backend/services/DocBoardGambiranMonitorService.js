@@ -32,9 +32,9 @@ function parseDateTime(value) {
     if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
     const raw = clean(value);
 
-    const localIso = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?))?$/);
+    const localIso = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2})(\.\d{1,9})?)?)?$/);
     if (localIso) {
-        const time = localIso[2] ? localIso[2].padStart(5, '0') : '00:00';
+        const time = `${String(localIso[2] || '00').padStart(2, '0')}:${localIso[3] || '00'}:${localIso[4] || '00'}${localIso[5] || ''}`;
         const parsed = new Date(`${localIso[1]}T${time}+07:00`);
         return Number.isNaN(parsed.getTime()) ? null : parsed;
     }
@@ -173,7 +173,7 @@ function normalizeCpptEntry(entry = {}) {
     return {
         doctor_key: doctor.key,
         doctor_name: doctor.name,
-        created_at: entry.created_at || entry.createdAt || isoFromDate(created),
+        created_at: isoFromDate(created),
         diagnosis,
         planning,
         sortTime: created ? created.getTime() : 0,
@@ -344,12 +344,15 @@ class DocBoardGambiranMonitorService {
 
             const caseId = clean(patient.caseId || patient.case_id || patient.kasusId || patient.kasus_id);
             if (!caseId) continue;
-            candidates.push({ patient, room, admissionAt, caseId });
+            candidates.push({ patient, room, admissionDate, caseId });
         }
 
         if (missingAdmissionAt > 0) {
             warnings.push('Cache pasien aktif belum memuat admission_at untuk sebagian pasien; refresh cache COMM diperlukan.');
         }
+
+        candidates.sort((first, second) => second.admissionDate.getTime() - first.admissionDate.getTime()
+            || first.caseId.localeCompare(second.caseId));
 
         const operationIndex = await this.getOperationIndex(candidates.map(item => item.caseId));
         const rows = [];
@@ -369,13 +372,11 @@ class DocBoardGambiranMonitorService {
                 patient_name: clean(patient.patientName || patient.patient_name || patient.name || patient.nama),
                 room: item.room,
                 bed: extractBed(patient),
-                admission_at: item.admissionAt,
+                admission_at: item.admissionDate.toISOString(),
                 cppt,
                 operation: indexOperation || cachedOperation,
             });
         }
-
-        rows.sort((first, second) => clean(second.admission_at).localeCompare(clean(first.admission_at)));
 
         return {
             generated_at: generatedAt.toISOString(),

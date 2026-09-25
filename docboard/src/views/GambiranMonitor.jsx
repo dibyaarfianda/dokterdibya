@@ -1,42 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
+import { jakartaDateString, addDays, formatDateTime, formatDate } from '../utils/gambiranMonitorDate';
 
 const DEFAULT_ROOMS = ['Kirana', 'Joyoboyo', 'Tegowangi'];
-
-function isoDateLocal(date = new Date()) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function addDays(value, days) {
-  const date = new Date(`${value}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return isoDateLocal(date);
-}
-
-function formatDateTime(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
-}
-
-function formatDate(value) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 function cpptSummary(cppt) {
   if (!cppt) return null;
@@ -114,7 +81,7 @@ function PatientCard({ patient }) {
 }
 
 export default function GambiranMonitor() {
-  const [selectedDate, setSelectedDate] = useState(() => isoDateLocal());
+  const [selectedDate, setSelectedDate] = useState(() => jakartaDateString());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -143,7 +110,7 @@ export default function GambiranMonitor() {
   const patients = data?.patients || [];
   const rooms = data?.rooms || DEFAULT_ROOMS;
   const warnings = data?.warnings || [];
-  const todayDate = isoDateLocal();
+  const todayDate = jakartaDateString();
   const canGoForward = selectedDate < todayDate;
 
   return (

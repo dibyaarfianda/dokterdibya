@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "node scripts/test-date-utils.mjs",
+    "test": "node scripts/test-date-utils.mjs && node scripts/test-gambiran-monitor-date.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

@@ -30,6 +30,59 @@ describe('DocBoardGambiranMonitorService', () => {
         expect(_private.parseDateTime('03/07/2026 08:45').toISOString()).toBe('2026-07-03T01:45:00.000Z');
         expect(_private.parseDateTime('2026-07-03').toISOString()).toBe('2026-07-02T17:00:00.000Z');
         expect(_private.parseDateTime('2026-07-03T09:45:00.000+07:00').toISOString()).toBe('2026-07-03T02:45:00.000Z');
+        expect(_private.parseDateTime('2026-07-03 8:45:00').toISOString()).toBe('2026-07-03T01:45:00.000Z');
+        expect(_private.parseDateTime('2026-07-03 08:45:00.123456').toISOString()).toBe('2026-07-03T01:45:00.123Z');
+    });
+
+    test('selects the latest CPPT using Jakarta instants and returns a timezone-safe display value', () => {
+        const result = _private.latestTargetDoctorCppt({ entries: [
+            {
+                author: 'dr. Dibya Arfianda, SpOG',
+                created_at: '2026-07-03 8:45:00',
+                assessment: 'Lebih awal'
+            },
+            {
+                author: 'dr. Latifa Maharani, SpOG',
+                created_at: '2026-07-03 09:00:00.123456',
+                assessment: 'Lebih baru'
+            }
+        ] });
+
+        expect(result).toEqual(expect.objectContaining({
+            doctor_key: 'latifa',
+            diagnosis: 'Lebih baru',
+            created_at: '2026-07-03T02:00:00.123Z'
+        }));
+    });
+
+    test('keeps single-digit admission hours and orders mixed timestamp formats by instant', async () => {
+        r2Storage.getJson.mockImplementation(async (key) => {
+            if (key === 'active-patients/gambiran.json') return {
+                results: [
+                    { caseId: 'med-early', ward: 'Kirana', admission_at: '2026-07-03 8:30:00' },
+                    { caseId: 'med-late', ward: 'Kirana', admission_at: '2026-07-03 09:00:00' },
+                    { caseId: 'med-middle', ward: 'Kirana', admission_at: '2026-07-03T08:45:00.000+07:00' }
+                ]
+            };
+            if (key.startsWith('cppt/')) return {
+                entries: [{
+                    author: 'dr. Dibya Arfianda, SpOG',
+                    created_at: '2026-07-03 09:30:00',
+                    assessment: 'Diagnosis'
+                }]
+            };
+            return {};
+        });
+        db.query.mockResolvedValueOnce([[]]);
+
+        const result = await buildService().getGambiranMonitor({ date: '2026-07-03' });
+
+        expect(result.patients.map(patient => patient.case_id)).toEqual(['med-late', 'med-middle', 'med-early']);
+        expect(result.patients.map(patient => patient.admission_at)).toEqual([
+            '2026-07-03T02:00:00.000Z',
+            '2026-07-03T01:45:00.000Z',
+            '2026-07-03T01:30:00.000Z'
+        ]);
     });
 
     test('returns recent target-room admissions with latest target-doctor CPPT and operation data', async () => {
@@ -123,7 +176,7 @@ describe('DocBoardGambiranMonitorService', () => {
             patient_name: 'Pasien Kirana',
             room: 'Kirana',
             bed: 'Bed 1',
-            admission_at: '2026-07-03T08:15:00.000+07:00'
+            admission_at: '2026-07-03T01:15:00.000Z'
         }));
         expect(result.patients[0].cppt).toEqual(expect.objectContaining({
             doctor_key: 'latifa',

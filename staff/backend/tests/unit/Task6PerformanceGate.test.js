@@ -17,9 +17,10 @@ test('performance gate is importable without running CI and rejects request, fai
         .map(item => item.label)).toContain('Warm requests');
 });
 
-test('performance workflow uses sandboxed system Chrome without downloading an unused browser', () => {
+test('performance workflow pins Ubuntu 24.04 and uses sandboxed system Chrome without downloading an unused browser', () => {
     const workflow = fs.readFileSync(path.resolve(__dirname, '../../../../.github/workflows/staff-performance-budget.yml'), 'utf8');
     const lock = require('../../package-lock.json');
+    expect(workflow).toMatch(/^    runs-on: ubuntu-24\.04$/m);
     expect(lock.packages['node_modules/puppeteer'].version).toMatch(/^24\./);
     const install = workflow.indexOf('run: npm ci');
     const browser = workflow.indexOf('test -x /opt/google/chrome/chrome');

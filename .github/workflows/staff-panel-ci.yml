@@ -21,6 +21,9 @@ permissions:
 jobs:
   staff-asset-nginx:
     runs-on: ubuntu-24.04
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      PUPPETEER_EXECUTABLE_PATH: /opt/google/chrome/chrome
     defaults:
       run:
         working-directory: staff/backend
@@ -36,11 +39,11 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y nginx-light openssl
-          PUPPETEER_CACHE_DIR="$RUNNER_TEMP/staff-puppeteer-cache"
-          mkdir -p "$PUPPETEER_CACHE_DIR"
-          echo "PUPPETEER_CACHE_DIR=$PUPPETEER_CACHE_DIR" >> "$GITHUB_ENV"
-          sudo env "PATH=$PATH" "PUPPETEER_CACHE_DIR=$PUPPETEER_CACHE_DIR" "$(command -v npx)" puppeteer browsers install chrome --install-deps
-          sudo chown -R "$(id -u):$(id -g)" "$PUPPETEER_CACHE_DIR"
+      - name: Verify sandboxed system Chrome
+        run: |
+          test -x "$PUPPETEER_EXECUTABLE_PATH"
+          "$PUPPETEER_EXECUTABLE_PATH" --version
+          node -e "const puppeteer = require('puppeteer'); (async () => { const browser = await puppeteer.launch({ headless: true }); try { const page = await browser.newPage(); await page.goto('about:blank'); } finally { await browser.close(); } })().catch(error => { console.error(error); process.exitCode = 1; });"
       - name: Stage synthetic releases and render Nginx includes
         run: |
           STAFF_NGINX_PREFIX=$(mktemp -d /tmp/staff-nginx.XXXXXX)

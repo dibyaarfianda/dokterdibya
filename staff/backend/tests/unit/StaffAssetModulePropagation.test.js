@@ -163,7 +163,7 @@ if (typeof describe === 'function') {
         let browser;
         beforeAll(async () => {
             fixture = await loopbackFixture();
-            browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+            browser = await puppeteer.launch({ headless: true });
         }, 30000);
         afterAll(async () => { if (browser) await browser.close(); if (fixture) await fixture.close(); });
 
@@ -344,7 +344,7 @@ async function probeNginx(prefix) {
         req.on('error', reject);
     });
     try {
-        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--no-proxy-server',
+        browser = await puppeteer.launch({ headless: true, args: ['--no-proxy-server',
             '--host-resolver-rules=MAP dokterdibya.com 127.0.0.1, MAP www.dokterdibya.com 127.0.0.1', `--ignore-certificate-errors-spki-list=${pin}`] });
         for (const version of ['v413', 'v414']) {
             const loaded = await loadVersion(browser, origin, version);
