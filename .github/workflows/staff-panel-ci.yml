@@ -105,6 +105,8 @@ jobs:
           retention-days: 7
   docboard-contracts:
     runs-on: ubuntu-24.04
+    env:
+      TZ: Asia/Jakarta
     defaults:
       run:
         working-directory: docboard
