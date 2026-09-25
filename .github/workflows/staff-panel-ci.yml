@@ -6,12 +6,14 @@ on:
     paths:
       - "staff/**"
       - "public/**"
+      - "docboard/**"
       - "deployment/nginx/**"
       - ".github/workflows/staff-panel-ci.yml"
   pull_request:
     paths:
       - "staff/**"
       - "public/**"
+      - "docboard/**"
       - "deployment/nginx/**"
       - ".github/workflows/staff-panel-ci.yml"
 
@@ -91,6 +93,8 @@ jobs:
       - run: npm run test:staff-smoke
       - name: Run Staff contracts and detect open handles
         run: timeout --signal=TERM --kill-after=15s 300s npm run test:ci -- --detectOpenHandles
+      - name: Run all integration contracts and detect open handles
+        run: timeout --signal=TERM --kill-after=15s 300s npm run test:integration -- --runInBand --coverage=false --detectOpenHandles
       - name: Upload masked visual diff on failure
         if: failure()
         uses: actions/upload-artifact@v4
@@ -99,3 +103,18 @@ jobs:
           path: ${{ runner.temp }}/staff-visual-diff/
           if-no-files-found: ignore
           retention-days: 7
+  docboard-contracts:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: docboard
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docboard/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build

@@ -76,7 +76,7 @@ test('production gate reads only aggregate CI endpoint and never fetches clinica
     const seen = [];
     const observedAt = Date.now();
     const window = { windowSeconds: 300,
-        windowStartedAtMs: observedAt - 60000, windowEndedAtMs: observedAt };
+        windowStartedAtMs: observedAt - 299000, windowEndedAtMs: observedAt };
     const response = {
         status: 200, body: {
             success: true,

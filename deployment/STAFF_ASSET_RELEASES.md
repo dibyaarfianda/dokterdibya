@@ -2,6 +2,8 @@
 
 This runbook is for the reviewed v413 → v414 production change. Run commands on the VPS as an operator with the existing deployment access. Stop on any nonzero exit, unexpected path, hash mismatch, or failed browser/health gate. The preparation command writes candidate files only; the operator installs them after inspection. Do not record credentials, tokens, patient identifiers, query values, or manifest file lists in evidence.
 
+If the v413/v414 immutable bridge has already been activated during a guarded trial, **do not rerun sections 3–5 against the modified site**: the preparation tool correctly rejects pre-existing snippets. Verify the installed map, location, site, both release manifests, and both-origin pre-cutover verifier again; then perform the status-log preparation below against that exact current site before any application cutover. Preserve the previously validated bridge on application rollback.
+
 ## 1. Freeze and identify the two source commits
 
 ```sh
@@ -162,6 +164,66 @@ The verifier checks **both existing production origins**; `www` serves the Staff
 
 After the routing gate passes, fast-forward the active checkout using the established non-destructive production procedure and reload PM2 exactly once. Reload from the ecosystem file, not only the process name: the active PM2 daemon otherwise retains its old 5-second `kill_timeout` even when the checked-out file says 330 seconds.
 
+Before that cutover, install a dedicated status-only Nginx log for the HTTPS site. It records only epoch time and status code, including proxy-generated 502/504 and locations previously configured with `access_log off`; it does **not** record URLs or patient identifiers. Run the preparation script from the reviewed target worktree against the observed regular site file. Use a new, empty 0700 preparation directory and a separate exact backup; inspect the candidate diff and stop on any unexpected site change. Install the format snippet and candidate site via same-directory staging names, require `nginx -t`, reload Nginx, and repeat the two-origin pre-cutover verifier. On a syntax, reload, or routing failure, atomically restore this exact site backup and remove only the newly installed status-format snippet; keep the pre-existing immutable bridge. Do not cut over the application until this status log is verified to receive a status-only line from a read-only health request.
+
+```sh
+STATUS_FORMAT=/etc/nginx/snippets/dokterdibya-status-log-format.conf
+SITE=/etc/nginx/sites-enabled/dokterdibya.com
+test -f "$SITE" && test ! -L "$SITE"
+test ! -e "$STATUS_FORMAT" && test ! -L "$STATUS_FORMAT"
+STATUS_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+STATUS_PREP="/var/tmp/dokterdibya-status-$STATUS_STAMP"
+STATUS_BACKUP="/var/backups/dokterdibya/status-site-$STATUS_STAMP.conf"
+test ! -e "$STATUS_PREP" && test ! -e "$STATUS_BACKUP"
+install -d -m 0700 "$STATUS_PREP"
+install -m 0600 "$SITE" "$STATUS_BACKUP"
+node "$WORKTREE/staff/backend/scripts/prepare-nginx-release-status.js" \
+  --site "$SITE" --candidate "$STATUS_PREP/site.candidate" \
+  --format "$STATUS_PREP/format.candidate"
+diff -u "$STATUS_BACKUP" "$STATUS_PREP/site.candidate" || test "$?" -eq 1
+```
+
+After reviewing that diff, publish only the exact staged paths, then verify before proceeding. The rollback below restores the site while retaining the already validated immutable-asset snippets.
+
+```sh
+STATUS_STAGE="$STATUS_FORMAT.stage-$STATUS_STAMP"
+SITE_STAGE="$SITE.stage-status-$STATUS_STAMP"
+SITE_RESTORE="$SITE.restore-status-$STATUS_STAMP"
+for target in "$STATUS_STAGE" "$SITE_STAGE" "$SITE_RESTORE"; do
+  test ! -e "$target" && test ! -L "$target" || exit 1
+done
+restore_status_nginx() {
+  install -m 0644 "$STATUS_BACKUP" "$SITE_RESTORE" || return 1
+  mv -Tf -- "$SITE_RESTORE" "$SITE" || return 1
+  rm -f -- "$STATUS_STAGE" "$SITE_STAGE" "$STATUS_FORMAT" || return 1
+  nginx -t && systemctl reload nginx
+}
+if install -m 0644 "$STATUS_PREP/format.candidate" "$STATUS_STAGE" &&
+   install -m 0644 "$STATUS_PREP/site.candidate" "$SITE_STAGE" &&
+   mv -Tf -- "$STATUS_STAGE" "$STATUS_FORMAT" &&
+   mv -Tf -- "$SITE_STAGE" "$SITE" &&
+   nginx -t && systemctl reload nginx; then
+  :
+else
+  restore_status_nginx || { echo 'Nginx status-log restore failed' >&2; exit 1; }
+  exit 1
+fi
+for ORIGIN in https://dokterdibya.com https://www.dokterdibya.com; do
+  node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
+    --base-url "$ORIGIN" --release-base "$RELEASE_BASE" \
+    --expected-current-version v413 --version v413 --version v414 \
+    --path scripts/realtime-sync.js --path scripts/patient-list-pages.js || {
+      restore_status_nginx || echo 'Nginx status-log restore failed' >&2
+      exit 1
+    }
+done
+curl -fsS -o /dev/null https://dokterdibya.com/api/health
+test -f /var/log/nginx/dokterdibya-status.log
+tail -n 1 /var/log/nginx/dokterdibya-status.log | grep -Eq '^[0-9]{10}\.[0-9]{3} [1-5][0-9]{2}$'
+```
+
+The status logger is a separate Nginx precondition, not a substitute for the immutable-route test. Its live five-minute rate must be checked after cutover with the reviewed `check-nginx-release-status.js` script; the Express aggregate alone cannot detect proxy-generated 502/504.
+
 ```sh
 cd /var/www/dokterdibya
 git merge --ff-only "$TARGET_SHA"
@@ -169,6 +231,7 @@ test "$(git rev-parse HEAD)" = "$TARGET_SHA"
 cd /var/www/dokterdibya/staff/backend
 pm2 reload ecosystem.config.js --only dibyaklinik-backend --update-env
 pm2 jlist | jq -e '[.[] | select(.name == "dibyaklinik-backend" and .pm2_env.status == "online" and .pm2_env.wait_ready == true and .pm2_env.kill_timeout >= 330000)] | length == 1'
+CUTOVER_MS="$(date +%s%3N)"
 ```
 
 If the runtime drain check fails, the cutover has failed; do not accept the release or retry with a process-name-only reload. Inspect PM2 and the rollback gate. If the established PM2 process name or checkout procedure differs, stop and reconcile the observed production configuration before issuing the cutover commands. Do not use `git reset --hard`.
@@ -204,6 +267,12 @@ Confirm on both origins that current HTML and service worker advertise v414 with
 If the workflow cannot obtain OIDC, cannot verify the aggregate response, detects unexpected fixture API calls, or fails any budget, treat it as a failed release gate and follow the rollback paragraph below. The browser fixture does not replace a legitimate authenticated Staff session on the live origins; both checks are required.
 
 Compare equal-size, post-stabilization samples: warm fixture network requests ≤40, genuine failures 0, cached Dashboard↔Pasien activation p95 ≤1000 ms, and live Staff production p75 at least 25% better than baseline with p95 no more than 5% worse. The in-memory aggregate counter resets on PM2 reload and may need legitimate Staff traffic before its sample-count gate is meaningful; never generate synthetic patient calls to fill it. Over five minutes, require Nginx 5xx ≤1%, Socket.IO auth rejection ≤2% of handshake attempts, and no unplanned PM2 restart. Read the Socket.IO ratio as rejected / attempts from the numeric-only CI OIDC aggregate; expiry after an accepted connection is reported separately, not in this handshake numerator. Do not copy raw request URLs, tokens, or patient fields into release evidence.
+
+After at least 300 seconds of post-cutover traffic, check the dedicated Nginx log on the VPS. This fails closed if the five-minute window has no observations at its beginning/end, the log contains anything besides timestamp and status, or the 5xx rate exceeds 1%:
+
+```sh
+node "$WORKTREE/staff/backend/scripts/check-nginx-release-status.js" --cutover-ms "$CUTOVER_MS"
+```
 
 Roll back on two failed health/DB checks, a release-related restart, excessive 5xx, failed performance gate, mixed asset hashes, or any cross-user/unauthorized clinical event. For an **application or performance rollback after the v414 cutover**, restore the previous application commit through the established safe rollback process and reload PM2 if needed, but **keep the validated immutable Nginx site, map, and location installed**. Restoring the old Nginx site at this point would make still-open v413/v414 Staff documents fetch mutable or missing module bytes. Confirm `nginx -t`, then verify the previous v413 HTML, both immutable releases, unversioned v413 bytes, the two legacy-import bridges, health/DB, and PM2 on both origins. Rerun the section 5 verifier with `--expected-current-version v413`; do not use the section 4 `restore_staff_nginx` function for this application-only rollback. **Retain both v413 and v414**: the v413 legacy credential bridge targets v414 even after application rollback. Do not perform synthetic clinical writes. The first legitimate clinical operation remains the before/after integrity verification point.
 
