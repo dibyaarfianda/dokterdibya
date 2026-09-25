@@ -46,6 +46,11 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '', onDi
             await Promise.all(Array.from(document.images)
                 .filter(image => image.complete && image.naturalWidth > 0)
                 .map(image => image.decode().catch(() => {})));
+            // Autofocus in the real shell can otherwise make identical pages
+            // capture different vertical regions on slower CI runners.
+            document.activeElement?.blur();
+            document.documentElement.style.scrollBehavior = 'auto';
+            window.scrollTo(0, 0);
         });
         if (missingRequiredAssets.length) {
             throw new Error(`Missing required visual fixture assets: ${missingRequiredAssets.join(', ')}`);
@@ -60,6 +65,7 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '', onDi
                 return {
                     body: { backgroundColor: bodyStyle.backgroundColor, fontFamily: bodyStyle.fontFamily,
                         scrollWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight },
+                    scrollY: window.scrollY,
                     htmlBackgroundColor: getComputedStyle(document.documentElement).backgroundColor,
                     sidebar: rect(document.querySelector('.main-sidebar')),
                     content: rect(document.querySelector('.content-wrapper')),

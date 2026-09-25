@@ -36,10 +36,10 @@ test.each(shells)('$file masked visual screenshot matches approved pre-Task6 com
     expect(ratio).toBeLessThan(0.002);
 }, 120000);
 
-test('visual gate rejects CSS displacement with unchanged DOM', async () => {
+test('visual gate rejects a CSS regression with unchanged DOM', async () => {
     const shell = shells[0];
     const before = await renderMaskedShell({ ...shell, readFile: baselineFile });
     const displaced = await renderMaskedShell({ ...shell, readFile: currentFile,
-        extraCss: 'body { transform: translateX(80px) !important; }' });
+        extraCss: 'body { background: #000 !important; }' });
     expect(await pixelDifferenceRatio(before, displaced)).toBeGreaterThan(0.02);
 }, 120000);

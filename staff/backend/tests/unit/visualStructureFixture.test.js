@@ -43,3 +43,18 @@ test('pixel difference grid locates a changed quadrant without masking it', asyn
         channels: 3, background: { r: 0, g: 0, b: 0 } } }).png().toBuffer(), left: 0, top: 0 }]).png().toBuffer();
     expect(await pixelDifferenceGrid(before, after, 2, 2)).toEqual([[1, 0], [0, 0]]);
 });
+
+test('masked visual fixture captures the top of an autofocus-scrolled page', async () => {
+    const diagnostics = [];
+    await renderMaskedShell({
+        file: 'staff/public/fixture.html',
+        viewport: { width: 320, height: 240 },
+        readFile: file => {
+            if (file === 'staff/public/fixture.html') return Buffer.from('<!doctype html><html><body><main class="content-wrapper" style="height:3000px">Top</main><input autofocus></body></html>');
+            throw new Error(`Unavailable: ${file}`);
+        },
+        onDiagnostics: details => diagnostics.push(details)
+    });
+    expect(diagnostics[0].scrollY).toBe(0);
+    expect(diagnostics[0].content.y).toBe(8);
+});
