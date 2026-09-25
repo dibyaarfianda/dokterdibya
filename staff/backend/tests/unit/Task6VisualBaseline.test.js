@@ -2,7 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const { renderMaskedShell, pixelDifferenceRatio } = require('../../scripts/visual-structure-check');
+const { renderMaskedShell, pixelDifferenceRatio, pixelDifferenceGrid } = require('../../scripts/visual-structure-check');
 
 const root = path.resolve(__dirname, '../../../..');
 const baselineCommit = 'e6105ef6';
@@ -14,10 +14,18 @@ const baselineFile = file => execFileSync('git', ['show', `${baselineCommit}:${f
 const currentFile = file => fs.readFileSync(path.join(root, file));
 
 test.each(shells)('$file masked visual screenshot matches approved pre-Task6 commit', async ({ file, viewport }) => {
-    const before = await renderMaskedShell({ file, viewport, readFile: baselineFile });
-    const after = await renderMaskedShell({ file, viewport, readFile: currentFile });
+    let beforeDetails;
+    let afterDetails;
+    const before = await renderMaskedShell({ file, viewport, readFile: baselineFile,
+        onDiagnostics: details => { beforeDetails = details; } });
+    const after = await renderMaskedShell({ file, viewport, readFile: currentFile,
+        onDiagnostics: details => { afterDetails = details; } });
     const ratio = await pixelDifferenceRatio(before, after);
     if (ratio >= 0.002 && process.env.CI) {
+        // Only static fixture hashes and layout geometry; no live account data.
+        console.error('Masked visual fixture diagnostics', JSON.stringify({ file, ratio,
+            grid: await pixelDifferenceGrid(before, after),
+            before: beforeDetails, after: afterDetails }));
         const directory = path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'staff-visual-diff');
         const name = file.replace(/[^a-z0-9_-]+/gi, '-');
         fs.mkdirSync(directory, { recursive: true });

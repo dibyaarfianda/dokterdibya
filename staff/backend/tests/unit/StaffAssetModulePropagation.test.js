@@ -135,6 +135,9 @@ async function loadVersion(browser, origin, version, { staffGraph = false, worke
             const module = await import(url);
             return typeof module.default === 'function' ? module.default() : module.default;
         }, entry);
+        // A module can resolve before the DevTools response-body callback has
+        // finished. Wait for all network responses before closing the target.
+        await page.waitForNetworkIdle({ idleTime: 100, timeout: 10000 });
         await Promise.all(pending);
         return { result, trace };
     } finally { await page.close(); }
