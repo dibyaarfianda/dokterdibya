@@ -137,7 +137,11 @@ async function inspectPage(pageUrl, token, { cacheVersion = null } = {}) {
         || parsedPage.username || parsedPage.password)) {
         throw new Error('Local Staff fixture required');
     }
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({
+        headless: true,
+        channel: process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Linux'
+            ? 'chrome' : undefined
+    });
     try {
         const page = await browser.newPage();
         const targetOrigin = new URL(pageUrl).origin;
@@ -228,8 +232,16 @@ async function inspectPage(pageUrl, token, { cacheVersion = null } = {}) {
             requests.delete(event.requestId);
             const data = phases[request.phase];
             if (!request.cached && !request.serviceWorker) data.requestCount++;
+            const requestUrl = new URL(request.url);
+            // The chat fallback poll is canceled when Socket.IO connects. CDP
+            // reports that client-side AbortController action as ERR_ABORTED.
+            if (event.canceled === true && event.errorText === 'net::ERR_ABORTED'
+                && request.method === 'GET' && requestUrl.origin === targetOrigin
+                && requestUrl.pathname === '/api/chat/messages'
+                && requestUrl.searchParams.get('limit') === '100'
+                && requestUrl.searchParams.has('_t')) return;
             data.failedRequests++;
-            if (token) data.failures.push(`network:${new URL(request.url).origin}${new URL(request.url).pathname}:${event.errorText}`);
+            if (token) data.failures.push(`network:${requestUrl.origin}${requestUrl.pathname}:${event.errorText}`);
         });
 
         await page.setCacheEnabled(false);

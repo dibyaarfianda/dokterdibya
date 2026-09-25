@@ -17,16 +17,21 @@ test('performance gate is importable without running CI and rejects request, fai
         .map(item => item.label)).toContain('Warm requests');
 });
 
-test('performance workflow installs pinned backend dependencies and browser before running gate', () => {
+test('performance workflow uses sandboxed system Chrome without downloading an unused browser', () => {
     const workflow = fs.readFileSync(path.resolve(__dirname, '../../../../.github/workflows/staff-performance-budget.yml'), 'utf8');
     const lock = require('../../package-lock.json');
     expect(lock.packages['node_modules/puppeteer'].version).toMatch(/^24\./);
     const install = workflow.indexOf('run: npm ci');
-    const browser = workflow.indexOf('puppeteer browsers install chrome --install-deps');
+    const browser = workflow.indexOf('test -x /opt/google/chrome/chrome');
+    const version = workflow.indexOf('/opt/google/chrome/chrome --version');
     const gate = workflow.indexOf('run: node scripts/perf-budget-check.js');
     expect(install).toBeGreaterThan(0);
     expect(browser).toBeGreaterThan(install);
+    expect(version).toBeGreaterThan(browser);
     expect(gate).toBeGreaterThan(browser);
+    expect(workflow).toContain("PUPPETEER_SKIP_DOWNLOAD: 'true'");
+    expect(workflow).not.toContain('puppeteer browsers install chrome');
+    expect(workflow).not.toContain('--no-sandbox');
     expect(workflow).toContain('id-token: write');
     expect(workflow).not.toContain('secrets.STAFF_PERF_TOKEN');
     expect(workflow).not.toMatch(/--token\b|--password\b/);
@@ -125,6 +130,39 @@ test('performance browser refuses any synthetic login outside the local fixture'
     const { inspectPage } = require(scriptPath);
     await expect(inspectPage('https://dokterdibya.com/staff/public/index-adminlte.html', 'synthetic-perf-fixture'))
         .rejects.toThrow('Local Staff fixture required');
+});
+
+test('performance browser uses sandboxed system Chrome only on a Linux GitHub runner', async () => {
+    const puppeteer = require('puppeteer');
+    const { inspectPage } = require(scriptPath);
+    const previousGithubActions = process.env.GITHUB_ACTIONS;
+    const previousRunnerOs = process.env.RUNNER_OS;
+    const launch = jest.spyOn(puppeteer, 'launch').mockImplementation(async options => {
+        const linuxGithubRunner = process.env.GITHUB_ACTIONS === 'true' && process.env.RUNNER_OS === 'Linux';
+        if (options.args?.includes('--no-sandbox')) throw new Error('Chrome sandbox unexpectedly disabled');
+        if (linuxGithubRunner && options.channel !== 'chrome') {
+            throw new Error('No usable sandbox');
+        }
+        if (!linuxGithubRunner && options.channel) {
+            throw new Error('Local Chrome selection unexpectedly changed');
+        }
+        throw new Error('Browser launch accepted');
+    });
+    try {
+        process.env.GITHUB_ACTIONS = 'true';
+        process.env.RUNNER_OS = 'Linux';
+        await expect(inspectPage('http://127.0.0.1:31337/staff/public/index-adminlte.html', null))
+            .rejects.toThrow('Browser launch accepted');
+        process.env.GITHUB_ACTIONS = 'false';
+        await expect(inspectPage('http://127.0.0.1:31337/staff/public/index-adminlte.html', null))
+            .rejects.toThrow('Browser launch accepted');
+    } finally {
+        launch.mockRestore();
+        if (previousGithubActions === undefined) delete process.env.GITHUB_ACTIONS;
+        else process.env.GITHUB_ACTIONS = previousGithubActions;
+        if (previousRunnerOs === undefined) delete process.env.RUNNER_OS;
+        else process.env.RUNNER_OS = previousRunnerOs;
+    }
 });
 
 test('fixture browser blocks outbound API requests before any synthetic credential can leave loopback', async () => {
@@ -257,28 +295,56 @@ test('genuine warm HTTP failures remain failures after cache filtering', async (
     }
 }, 30000);
 
-test('genuine warm network disconnect remains a gate failure', async () => {
+test('intentional warm chat poll cancellation is not a failed network request', async () => {
     let visits = 0;
     const server = http.createServer((req, res) => {
-        if (req.url === '/disconnect') return req.socket.destroy();
+        if (req.url.startsWith('/api/chat/messages?limit=100&_t=')) return;
         visits++;
         res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
         res.end(`<!doctype html><link rel="icon" href="data:,"><script>
             window.activateRegisteredStaffPage = async () => document.body;
-            if (${visits} > 1) fetch('/disconnect').catch(() => {});
+            if (${visits} > 1) {
+                const controller = new AbortController();
+                fetch('/api/chat/messages?limit=100&_t=synthetic', { signal: controller.signal }).catch(() => {});
+                setTimeout(() => controller.abort(), 750);
+            }
         </script>`);
     });
     await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
     try {
         const { inspectPage } = require(scriptPath);
         const result = await inspectPage(`http://127.0.0.1:${server.address().port}/staff/public/index-adminlte.html`, null);
-        expect(result.warm.failedRequests).toBe(1);
         expect(result.warm.requestCount).toBeGreaterThanOrEqual(2);
+        expect(result.warm.failedRequests).toBe(0);
     } finally {
         server.closeAllConnections();
         await new Promise(resolve => server.close(resolve));
     }
 }, 30000);
+
+test.each(['/disconnect', '/api/chat/messages?limit=100&_t=synthetic'])(
+    'genuine warm network disconnect on %s remains a gate failure', async endpoint => {
+        let visits = 0;
+        const server = http.createServer((req, res) => {
+            if (req.url === endpoint) return req.socket.destroy();
+            visits++;
+            res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
+            res.end(`<!doctype html><link rel="icon" href="data:,"><script>
+                window.activateRegisteredStaffPage = async () => document.body;
+                if (${visits} > 1) fetch('${endpoint}').catch(() => {});
+            </script>`);
+        });
+        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+        try {
+            const { inspectPage } = require(scriptPath);
+            const result = await inspectPage(`http://127.0.0.1:${server.address().port}/staff/public/index-adminlte.html`, null);
+            expect(result.warm.failedRequests).toBe(1);
+            expect(result.warm.requestCount).toBeGreaterThanOrEqual(2);
+        } finally {
+            server.closeAllConnections();
+            await new Promise(resolve => server.close(resolve));
+        }
+    }, 30000);
 
 test.each([
     ['HTTP 503', (req, res, done) => setTimeout(() => { res.writeHead(503).end('unavailable'); done(); }, 1800)],

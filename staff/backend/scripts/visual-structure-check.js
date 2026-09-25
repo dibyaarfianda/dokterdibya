@@ -9,7 +9,7 @@ const MASK_CSS = `
 `;
 
 async function renderMaskedShell({ file, viewport, readFile, extraCss = '' }) {
-    const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
+    const browser = await puppeteer.launch({ headless: true });
     try {
         const page = await browser.newPage();
         await page.setViewport(viewport);

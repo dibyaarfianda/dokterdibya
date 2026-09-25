@@ -31,17 +31,23 @@ function parseDateTime(value) {
     if (!value) return null;
     if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
     const raw = clean(value);
-    const direct = new Date(raw);
-    if (!Number.isNaN(direct.getTime())) return direct;
 
-    const local = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[ T,]+(\d{1,2}):(\d{2}))?/);
+    const localIso = raw.match(/^(\d{4}-\d{2}-\d{2})(?:[ T](\d{1,2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?))?$/);
+    if (localIso) {
+        const time = localIso[2] ? localIso[2].padStart(5, '0') : '00:00';
+        const parsed = new Date(`${localIso[1]}T${time}+07:00`);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    const local = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
     if (local) {
-        const iso = `${local[3]}-${String(local[2]).padStart(2, '0')}-${String(local[1]).padStart(2, '0')}T${String(local[4] || '00').padStart(2, '0')}:${String(local[5] || '00').padStart(2, '0')}:00+07:00`;
+        const iso = `${local[3]}-${String(local[2]).padStart(2, '0')}-${String(local[1]).padStart(2, '0')}T${String(local[4] || '00').padStart(2, '0')}:${String(local[5] || '00').padStart(2, '0')}:${local[6] || '00'}+07:00`;
         const parsed = new Date(iso);
         return Number.isNaN(parsed.getTime()) ? null : parsed;
     }
 
-    return null;
+    const direct = new Date(raw);
+    return Number.isNaN(direct.getTime()) ? null : direct;
 }
 
 function normalizeMonitorDate(value) {

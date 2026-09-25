@@ -1,4 +1,5 @@
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const { renderMaskedShell, pixelDifferenceRatio } = require('../../scripts/visual-structure-check');
@@ -15,7 +16,15 @@ const currentFile = file => fs.readFileSync(path.join(root, file));
 test.each(shells)('$file masked visual screenshot matches approved pre-Task6 commit', async ({ file, viewport }) => {
     const before = await renderMaskedShell({ file, viewport, readFile: baselineFile });
     const after = await renderMaskedShell({ file, viewport, readFile: currentFile });
-    expect(await pixelDifferenceRatio(before, after)).toBeLessThan(0.002);
+    const ratio = await pixelDifferenceRatio(before, after);
+    if (ratio >= 0.002 && process.env.CI) {
+        const directory = path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'staff-visual-diff');
+        const name = file.replace(/[^a-z0-9_-]+/gi, '-');
+        fs.mkdirSync(directory, { recursive: true });
+        fs.writeFileSync(path.join(directory, `${name}-before.png`), before);
+        fs.writeFileSync(path.join(directory, `${name}-after.png`), after);
+    }
+    expect(ratio).toBeLessThan(0.002);
 }, 120000);
 
 test('visual gate rejects CSS displacement with unchanged DOM', async () => {

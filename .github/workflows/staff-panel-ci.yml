@@ -20,7 +20,7 @@ permissions:
 
 jobs:
   staff-asset-nginx:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: staff/backend
@@ -62,7 +62,10 @@ jobs:
             sudo nginx -s quit -p "$STAFF_NGINX_PREFIX/" -c nginx.conf
           fi
   staff-contracts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
+      PUPPETEER_EXECUTABLE_PATH: /opt/google/chrome/chrome
     defaults:
       run:
         working-directory: staff/backend
@@ -76,6 +79,20 @@ jobs:
           cache: npm
           cache-dependency-path: staff/backend/package-lock.json
       - run: npm ci
+      - name: Verify sandboxed system Chrome
+        run: |
+          test -x "$PUPPETEER_EXECUTABLE_PATH"
+          "$PUPPETEER_EXECUTABLE_PATH" --version
+          node -e "const puppeteer = require('puppeteer'); (async () => { const browser = await puppeteer.launch({ headless: true }); try { const page = await browser.newPage(); await page.goto('about:blank'); } finally { await browser.close(); } })().catch(error => { console.error(error); process.exitCode = 1; });"
       - run: npm run check:staff-static
       - run: npm run test:staff-smoke
-      - run: npm run test:ci
+      - name: Run Staff contracts and detect open handles
+        run: timeout --signal=TERM --kill-after=15s 300s npm run test:ci -- --detectOpenHandles
+      - name: Upload masked visual diff on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staff-visual-diff
+          path: ${{ runner.temp }}/staff-visual-diff/
+          if-no-files-found: ignore
+          retention-days: 7

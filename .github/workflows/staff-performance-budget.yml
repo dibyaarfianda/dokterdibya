@@ -11,6 +11,8 @@ permissions:
 jobs:
   production-budget:
     runs-on: ubuntu-latest
+    env:
+      PUPPETEER_SKIP_DOWNLOAD: 'true'
     permissions:
       contents: read
       id-token: write
@@ -26,13 +28,9 @@ jobs:
           cache-dependency-path: staff/backend/package-lock.json
       - name: Install locked backend dependencies
         run: npm ci
-      - name: Install pinned Chromium and system dependencies
+      - name: Verify sandboxed system Chrome
         run: |
-          sudo apt-get update
-          PUPPETEER_CACHE_DIR="$RUNNER_TEMP/staff-puppeteer-cache"
-          mkdir -p "$PUPPETEER_CACHE_DIR"
-          echo "PUPPETEER_CACHE_DIR=$PUPPETEER_CACHE_DIR" >> "$GITHUB_ENV"
-          sudo env "PATH=$PATH" "PUPPETEER_CACHE_DIR=$PUPPETEER_CACHE_DIR" "$(command -v npx)" puppeteer browsers install chrome --install-deps
-          sudo chown -R "$(id -u):$(id -g)" "$PUPPETEER_CACHE_DIR"
+          test -x /opt/google/chrome/chrome
+          /opt/google/chrome/chrome --version
       - name: Check production performance budgets
         run: node scripts/perf-budget-check.js --base-url https://dokterdibya.com

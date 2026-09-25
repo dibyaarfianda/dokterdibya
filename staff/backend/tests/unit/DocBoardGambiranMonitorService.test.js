@@ -9,7 +9,7 @@ jest.mock('../../db', () => ({
 
 const r2Storage = require('../../services/r2Storage');
 const db = require('../../db');
-const { DocBoardGambiranMonitorService } = require('../../services/DocBoardGambiranMonitorService');
+const { DocBoardGambiranMonitorService, _private } = require('../../services/DocBoardGambiranMonitorService');
 
 describe('DocBoardGambiranMonitorService', () => {
     beforeEach(() => {
@@ -24,6 +24,13 @@ describe('DocBoardGambiranMonitorService', () => {
             now: () => new Date('2026-07-03T10:00:00.000Z')
         });
     }
+
+    test('interprets timezone-free COMM timestamps in Jakarta time', () => {
+        expect(_private.parseDateTime('2026-07-03 08:45').toISOString()).toBe('2026-07-03T01:45:00.000Z');
+        expect(_private.parseDateTime('03/07/2026 08:45').toISOString()).toBe('2026-07-03T01:45:00.000Z');
+        expect(_private.parseDateTime('2026-07-03').toISOString()).toBe('2026-07-02T17:00:00.000Z');
+        expect(_private.parseDateTime('2026-07-03T09:45:00.000+07:00').toISOString()).toBe('2026-07-03T02:45:00.000Z');
+    });
 
     test('returns recent target-room admissions with latest target-doctor CPPT and operation data', async () => {
         r2Storage.getJson.mockImplementation(async (key) => {
