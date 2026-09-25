@@ -60,7 +60,7 @@ module.exports = {
             // --- Zero-downtime reload ---
             wait_ready: true,          // wait for process.send('ready')
             listen_timeout: 10000,     // max wait time for 'ready' signal (ms)
-            kill_timeout: 5000,        // grace period before SIGKILL
+            kill_timeout: 330000,      // outlive the 315s application drain for in-flight long requests
 
             // --- Memory guard ---
             max_memory_restart: process.env.PM2_MAX_MEMORY || '768M',

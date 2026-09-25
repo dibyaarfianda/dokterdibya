@@ -74,17 +74,24 @@ test('OIDC acquisition accepts only GitHub runner endpoint and never logs the ru
 
 test('production gate reads only aggregate CI endpoint and never fetches clinical payloads', async () => {
     const seen = [];
+    const observedAt = Date.now();
+    const window = { windowSeconds: 300,
+        windowStartedAtMs: observedAt - 60000, windowEndedAtMs: observedAt };
     const response = {
         status: 200, body: {
             success: true,
             data: {
-                requests: { total: 100, serverErrors: 0 },
-                latency: { p95Ms: 90, p99Ms: 120 },
+                requests: { ...window, total: 100, serverErrors: 0 },
+                latency: { ...window, p95Ms: 90, p99Ms: 120, sampleCount: 100 },
                 api: {
-                    patients: { count: 10, p95Ms: 80 },
-                    dashboardStats: { count: 10, p95Ms: 40 },
-                    notificationsCount: { count: 10, p95Ms: 20 }
+                    patients: { ...window, count: 10, p95Ms: 80 },
+                    dashboardStats: { ...window, count: 10, p95Ms: 40 },
+                    notificationsCount: { ...window, count: 10, p95Ms: 20 }
                 },
+                socketAuth: { ...window, attempts: 100, accepted: 100, rejected: 0,
+                    anonymousQuarantined: 0,
+                    expiredAfterConnect: 0,
+                    rejectedByCode: { AUTH_MISSING: 0, AUTH_INVALID: 0, AUTH_EXPIRED: 0, FORBIDDEN: 0 } },
                 rum: { cachedActivation: { count: 10, p75: 300, p95: 450 },
                     LCP: { count: 10, p75: 400, p95: 600 } }
             }

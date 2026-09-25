@@ -160,16 +160,18 @@ fi
 
 The verifier checks **both existing production origins**; `www` serves the Staff shell directly and must not be treated as a redirect. It compares served v413/v414 bytes and immutable headers with validated local manifests, requires unversioned bytes to match declared current **v413** before checkout cutover, requires invalid `v0` to fail, and checks current HTML and API routing. It outputs only release version, relative path, status, byte count, and SHA-256. The failure branch restores Nginx and exits before Git/PM2 changes. On **each origin**, inspect real-browser v413 and v414 module traces plus v413 legacy imports with old and disabled workers. Both exact `/scripts/` bridge paths must resolve to the documented immutable Staff targets on that origin, while patient requests retain the patient route and cache policy. Reject cross-origin redirects, mixed release bytes, or a failed browser gate: call `restore_staff_nginx`, reload Nginx only after its syntax check passes, and stop before Git/PM2 changes.
 
-After the routing gate passes, fast-forward the active checkout using the established non-destructive production procedure and reload PM2 exactly once:
+After the routing gate passes, fast-forward the active checkout using the established non-destructive production procedure and reload PM2 exactly once. Reload from the ecosystem file, not only the process name: the active PM2 daemon otherwise retains its old 5-second `kill_timeout` even when the checked-out file says 330 seconds.
 
 ```sh
 cd /var/www/dokterdibya
 git merge --ff-only "$TARGET_SHA"
 test "$(git rev-parse HEAD)" = "$TARGET_SHA"
-pm2 reload dibyaklinik-backend
+cd /var/www/dokterdibya/staff/backend
+pm2 reload ecosystem.config.js --only dibyaklinik-backend --update-env
+pm2 jlist | jq -e '[.[] | select(.name == "dibyaklinik-backend" and .pm2_env.status == "online" and .pm2_env.wait_ready == true and .pm2_env.kill_timeout >= 330000)] | length == 1'
 ```
 
-If the established PM2 process name or checkout procedure differs, stop and reconcile the observed production configuration before issuing the cutover commands. Do not use `git reset --hard`.
+If the runtime drain check fails, the cutover has failed; do not accept the release or retry with a process-name-only reload. Inspect PM2 and the rollback gate. If the established PM2 process name or checkout procedure differs, stop and reconcile the observed production configuration before issuing the cutover commands. Do not use `git reset --hard`.
 
 ## 6. Acceptance and rollback gates
 

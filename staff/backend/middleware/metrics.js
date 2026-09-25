@@ -6,6 +6,13 @@
 const os = require('os');
 const logger = require('../utils/logger');
 const { safeAuditPath, requestAuditFields } = require('../utils/requestAudit');
+const { socketAuthMetrics } = require('../security/socketAuthMetrics');
+
+const RELEASE_WINDOW_MS = 5 * 60 * 1000;
+const RELEASE_BUDGET_ENDPOINTS = new Set([
+    'GET /api/patients', 'GET /api/dashboard-stats', 'GET /api/notifications/count'
+]);
+const RELEASE_ENDPOINT_SAMPLE_CAP = 1000;
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -84,8 +91,26 @@ const getEndpointKey = (req) => {
 };
 
 const trackEndpointAllowed = (map, endpointKey) => {
+    if (RELEASE_BUDGET_ENDPOINTS.has(endpointKey)) return true;
     if (map[endpointKey]) return true;
     return Object.keys(map).length < MAX_TRACKED_ENDPOINTS;
+};
+
+const pruneTimeSamples = (samples, at) => {
+    const cutoff = at - RELEASE_WINDOW_MS;
+    while (samples.length && samples[0].at < cutoff) samples.shift();
+};
+
+const observation = (samples) => ({
+    windowSeconds: RELEASE_WINDOW_MS / 1000,
+    sampleCount: samples.length,
+    windowStartedAtMs: samples[0]?.at ?? null,
+    windowEndedAtMs: samples.at(-1)?.at ?? null
+});
+
+const pruneRequestBuckets = (buckets, at) => {
+    const cutoff = at - RELEASE_WINDOW_MS;
+    while (buckets.length && buckets[0].second < cutoff) buckets.shift();
 };
 
 // Metrics storage (in production, use Redis or a proper metrics store)
@@ -95,7 +120,8 @@ const metrics = {
         byEndpoint: {},
         byMethod: {},
         byStatus: {},
-        byStatusCode: {}
+        byStatusCode: {},
+        recentBuckets: []
     },
     responseTimes: {
         total: 0,
@@ -151,6 +177,18 @@ const metricsMiddleware = (req, res, next) => {
             const statusCode = res.statusCode;
             const statusCategory = `${Math.floor(statusCode / 100)}xx`;
             const endpoint = getEndpointKey(req);
+            const at = Date.now();
+
+            pruneRequestBuckets(metrics.requests.recentBuckets, at);
+            const second = Math.floor(at / 1000) * 1000;
+            let recentBucket = metrics.requests.recentBuckets.at(-1);
+            if (!recentBucket || recentBucket.second !== second) {
+                recentBucket = { second, lastAt: at, total: 0, serverErrors: 0 };
+                metrics.requests.recentBuckets.push(recentBucket);
+            }
+            recentBucket.lastAt = at;
+            recentBucket.total++;
+            if (statusCode >= 500) recentBucket.serverErrors++;
 
             metrics.requests.byStatusCode[statusCode] = (metrics.requests.byStatusCode[statusCode] || 0) + 1;
             metrics.requests.byStatus[statusCategory] = (metrics.requests.byStatus[statusCategory] || 0) + 1;
@@ -162,15 +200,20 @@ const metricsMiddleware = (req, res, next) => {
                 metrics.errors.byStatus[statusCode] = (metrics.errors.byStatus[statusCode] || 0) + 1;
             }
 
-            const shouldTrackDetailed = ENABLE_DETAILED_METRICS &&
+            const shouldSample = ENABLE_DETAILED_METRICS &&
                 (METRICS_SAMPLE_RATE >= 1 || Math.random() <= METRICS_SAMPLE_RATE);
+            const shouldTrackEndpoint = ENABLE_DETAILED_METRICS &&
+                (shouldSample || RELEASE_BUDGET_ENDPOINTS.has(endpoint));
 
-            if (shouldTrackDetailed) {
+            if (shouldSample) {
                 metrics.responseTimes.total += responseTime;
                 metrics.responseTimes.count++;
-                metrics.responseTimes.all.push(responseTime);
+                metrics.responseTimes.all.push({ at, ms: responseTime });
+                pruneTimeSamples(metrics.responseTimes.all, at);
                 trimArrayToMax(metrics.responseTimes.all, MAX_GLOBAL_SAMPLES);
+            }
 
+            if (shouldTrackEndpoint) {
                 if (trackEndpointAllowed(metrics.requests.byEndpoint, endpoint)) {
                     metrics.requests.byEndpoint[endpoint] = (metrics.requests.byEndpoint[endpoint] || 0) + 1;
                 }
@@ -191,8 +234,10 @@ const metricsMiddleware = (req, res, next) => {
                     endpointMetrics.count++;
                     endpointMetrics.min = Math.min(endpointMetrics.min, responseTime);
                     endpointMetrics.max = Math.max(endpointMetrics.max, responseTime);
-                    endpointMetrics.times.push(responseTime);
-                    trimArrayToMax(endpointMetrics.times, MAX_ENDPOINT_SAMPLES);
+                    endpointMetrics.times.push({ at, ms: responseTime });
+                    pruneTimeSamples(endpointMetrics.times, at);
+                    trimArrayToMax(endpointMetrics.times, RELEASE_BUDGET_ENDPOINTS.has(endpoint)
+                        ? RELEASE_ENDPOINT_SAMPLE_CAP : MAX_ENDPOINT_SAMPLES);
                 }
             }
 
@@ -220,6 +265,9 @@ const metricsMiddleware = (req, res, next) => {
  * Get current metrics with advanced analytics
  */
 const getMetrics = () => {
+    const at = Date.now();
+    pruneTimeSamples(metrics.responseTimes.all, at);
+    pruneRequestBuckets(metrics.requests.recentBuckets, at);
     // Update system metrics
     metrics.system.uptime = Math.floor((Date.now() - metrics.system.startTime) / 1000);
     
@@ -229,9 +277,10 @@ const getMetrics = () => {
         : 0;
     
     // Calculate percentiles
-    const p50 = calculatePercentile(metrics.responseTimes.all, 50);
-    const p95 = calculatePercentile(metrics.responseTimes.all, 95);
-    const p99 = calculatePercentile(metrics.responseTimes.all, 99);
+    const globalDurations = metrics.responseTimes.all.map(sample => sample.ms);
+    const p50 = calculatePercentile(globalDurations, 50);
+    const p95 = calculatePercentile(globalDurations, 95);
+    const p99 = calculatePercentile(globalDurations, 99);
     
     // Calculate endpoint statistics
     const endpointStats = {};
@@ -240,11 +289,13 @@ const getMetrics = () => {
     
     Object.keys(metrics.responseTimes.byEndpoint).forEach(endpoint => {
         const data = metrics.responseTimes.byEndpoint[endpoint];
+        pruneTimeSamples(data.times, at);
         const avg = Math.round(data.total / data.count);
-        const p95Endpoint = calculatePercentile(data.times, 95);
+        const p95Endpoint = calculatePercentile(data.times.map(sample => sample.ms), 95);
         
         endpointStats[endpoint] = {
             count: data.count,
+            ...observation(data.times),
             avgMs: avg,
             minMs: data.min === Infinity ? 0 : data.min,
             maxMs: data.max,
@@ -262,7 +313,7 @@ const getMetrics = () => {
     // Compute p95 budget violations
     const violations = [];
     Object.entries(endpointStats).forEach(([endpoint, stats]) => {
-        if (stats.count < 5) return; // need enough samples
+        if (stats.sampleCount < 5) return; // need enough recent samples
         const budgetEntry = Object.entries(P95_BUDGETS).find(([pattern]) => endpoint.includes(pattern));
         if (budgetEntry && stats.p95Ms > budgetEntry[1]) {
             violations.push({
@@ -290,6 +341,13 @@ const getMetrics = () => {
         timestamp: new Date().toISOString(),
         requests: {
             total: metrics.requests.total,
+            recent: {
+                windowSeconds: RELEASE_WINDOW_MS / 1000,
+                windowStartedAtMs: metrics.requests.recentBuckets[0]?.second ?? null,
+                windowEndedAtMs: metrics.requests.recentBuckets.at(-1)?.lastAt ?? null,
+                total: metrics.requests.recentBuckets.reduce((sum, bucket) => sum + bucket.total, 0),
+                serverErrors: metrics.requests.recentBuckets.reduce((sum, bucket) => sum + bucket.serverErrors, 0)
+            },
             byMethod: metrics.requests.byMethod,
             byStatus: metrics.requests.byStatus,
             byStatusCode: metrics.requests.byStatusCode,
@@ -299,6 +357,7 @@ const getMetrics = () => {
                 .map(([endpoint, count]) => ({ endpoint, count }))
         },
         performance: {
+            observation: observation(metrics.responseTimes.all),
             avgResponseTimeMs: avgResponseTime,
             p50Ms: p50,
             p95Ms: p95,
@@ -324,6 +383,7 @@ const getMetrics = () => {
             active: metrics.users.active.size,
             total: metrics.users.active.size
         },
+        socketAuth: socketAuthMetrics.snapshot(),
         system: systemInfo
     };
 };
@@ -337,7 +397,8 @@ const resetMetrics = () => {
         byEndpoint: {},
         byMethod: {},
         byStatus: {},
-        byStatusCode: {}
+        byStatusCode: {},
+        recentBuckets: []
     };
     metrics.responseTimes = {
         total: 0,

@@ -114,3 +114,44 @@ describe.each([undefined, 'false', 'true'])('SOCKET_AUTH_REQUIRED=%s', required 
         expect(socket.conn.transport.name).toBe('polling');
     });
 });
+
+test('strict handshake metrics count connect_error attempts without retaining credentials or principals', async () => {
+    const { getMetrics } = require('../../middleware/metrics');
+    await start('true');
+    const before = getMetrics().socketAuth;
+    const secretMarker = 'synthetic-secret-handshake-marker';
+    const patientMarker = 'synthetic-private-patient-marker';
+    const credential = jwt.sign(
+        { id: patientMarker, role: 'patient', user_type: 'patient' },
+        process.env.JWT_SECRET, { expiresIn: 60 }
+    );
+    expect((await handshake()).type).toBe(PacketType.CONNECT_ERROR);
+    expect((await handshake(secretMarker)).type).toBe(PacketType.CONNECT_ERROR);
+    expect((await handshake(jwt.sign(
+        { id: patientMarker, role: 'patient', user_type: 'patient' },
+        process.env.JWT_SECRET, { expiresIn: -1 }
+    ))).type).toBe(PacketType.CONNECT_ERROR);
+    expect((await handshake(credential)).type).toBe(PacketType.CONNECT);
+
+    const after = getMetrics().socketAuth;
+    expect(after.attempts - before.attempts).toBe(4);
+    expect(after.accepted - before.accepted).toBe(1);
+    expect(after.rejected - before.rejected).toBe(3);
+    expect(after.rejectedByCode.AUTH_MISSING - before.rejectedByCode.AUTH_MISSING).toBe(1);
+    expect(after.rejectedByCode.AUTH_INVALID - before.rejectedByCode.AUTH_INVALID).toBe(1);
+    expect(after.rejectedByCode.AUTH_EXPIRED - before.rejectedByCode.AUTH_EXPIRED).toBe(1);
+    expect(after.windowSeconds).toBe(300);
+    expect(JSON.stringify(after)).not.toContain(secretMarker);
+    expect(JSON.stringify(after)).not.toContain(patientMarker);
+});
+
+test('anonymous quarantine is counted separately from accepted authenticated handshakes', async () => {
+    const { getMetrics } = require('../../middleware/metrics');
+    await start('false');
+    const before = getMetrics().socketAuth;
+    expect((await handshake()).type).toBe(PacketType.CONNECT);
+    const after = getMetrics().socketAuth;
+    expect(after.attempts - before.attempts).toBe(1);
+    expect(after.accepted - before.accepted).toBe(1);
+    expect(after.anonymousQuarantined - before.anonymousQuarantined).toBe(1);
+});

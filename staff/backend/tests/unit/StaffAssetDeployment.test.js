@@ -281,8 +281,9 @@ test('cleanup keeps the five newest plus bridge targets and refuses a corrupt ol
         currentVersion: 'v418', previousVersion: 'v417' })).rejects.toThrow(/manifest/i);
 });
 
-test('production cutover runbook targets the observed DOKTERDIBYA PM2 process', () => {
+test('production cutover runbook reloads the observed process with its drain configuration', () => {
     const runbook = fs.readFileSync(path.resolve(__dirname, '../../../../deployment/STAFF_ASSET_RELEASES.md'), 'utf8');
-    expect(runbook).toContain('pm2 reload dibyaklinik-backend');
+    expect(runbook).toContain('pm2 reload ecosystem.config.js --only dibyaklinik-backend --update-env');
+    expect(runbook).toContain('.pm2_env.kill_timeout >= 330000');
     expect(runbook).not.toContain('pm2 reload dokterdibya_codex');
 });

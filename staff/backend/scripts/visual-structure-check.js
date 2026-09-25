@@ -12,6 +12,7 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '' }) {
     const browser = await puppeteer.launch({ headless: true });
     try {
         const page = await browser.newPage();
+        const missingRequiredAssets = [];
         await page.setViewport(viewport);
         await page.setJavaScriptEnabled(false);
         await page.setRequestInterception(true);
@@ -24,7 +25,10 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '' }) {
             if (!asset || asset.includes('..')) return request.abort();
             let body;
             try { body = readFile(asset); }
-            catch (_) { return request.respond({ status: 404, body: '' }); }
+            catch (_) {
+                if (asset.endsWith('.html') || asset.endsWith('.css')) missingRequiredAssets.push(asset);
+                return request.respond({ status: 404, body: '' });
+            }
             const contentType = asset.endsWith('.html') ? 'text/html' : asset.endsWith('.css') ? 'text/css'
                 : asset.endsWith('.png') ? 'image/png' : asset.endsWith('.jpg') || asset.endsWith('.jpeg') ? 'image/jpeg'
                     : asset.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream';
@@ -38,6 +42,9 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '' }) {
                 .filter(image => image.complete && image.naturalWidth > 0)
                 .map(image => image.decode().catch(() => {})));
         });
+        if (missingRequiredAssets.length) {
+            throw new Error(`Missing required visual fixture assets: ${missingRequiredAssets.join(', ')}`);
+        }
         return await page.screenshot({ type: 'png', captureBeyondViewport: false });
     } finally {
         await browser.close();

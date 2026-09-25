@@ -244,11 +244,14 @@ test.each(['support:leave', 'community:leave', 'community:typing', 'community:st
 
 test('token expiry removes socket from rooms and disconnects it', async () => {
     const h = harness();
+    const before = require('../../middleware/metrics').getMetrics().socketAuth.expiredAfterConnect;
     const s = await h.connect(token(staff, 1));
     jest.advanceTimersByTime(1001);
     expect(s.connected).toBe(false);
     expect(s.rooms.size).toBe(0);
     expect(s.received).toContainEqual({ event: 'auth:error', payload: { code: 'AUTH_EXPIRED' } });
+    await s.receive('activity:update', { activity: 'synthetic' });
+    expect(require('../../middleware/metrics').getMetrics().socketAuth.expiredAfterConnect - before).toBe(1);
 });
 
 test('support join uses canonical ownership and rollout policy, never supplied identity', async () => {

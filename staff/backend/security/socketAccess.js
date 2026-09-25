@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/auth');
 const { ROLE_NAMES, ROLE_ID_TO_NAME } = require('../constants/roles');
+const { socketAuthMetrics } = require('./socketAuthMetrics');
+const expiredSockets = new WeakSet();
 
 function authError(code) {
     const error = new Error(code);
@@ -41,11 +43,19 @@ function requireSocketPrincipal(socket, { staffOnly = false, errorEvent = 'auth:
         : principal.exp * 1000 <= Date.now() ? 'AUTH_EXPIRED'
             : staffOnly && principal.user_type !== 'staff' ? 'FORBIDDEN' : null;
     if (code) {
-        socket.emit(errorEvent, { code });
-        if (code === 'AUTH_EXPIRED') socket.disconnect(true);
+        if (code === 'AUTH_EXPIRED') disconnectExpiredSocket(socket, errorEvent);
+        else socket.emit(errorEvent, { code });
         return null;
     }
     return socket.connected ? principal : null;
+}
+
+function disconnectExpiredSocket(socket, errorEvent = 'auth:error') {
+    if (expiredSockets.has(socket)) return;
+    expiredSockets.add(socket);
+    socketAuthMetrics.expiredAfterConnect();
+    socket.emit(errorEvent, { code: 'AUTH_EXPIRED' });
+    socket.disconnect(true);
 }
 
 function installSocketAccess(io, options = {}) {
@@ -53,9 +63,14 @@ function installSocketAccess(io, options = {}) {
         try {
             const principal = resolveSocketPrincipal(socket.handshake.auth?.token, options);
             Object.defineProperty(socket.data, 'principal', { value: principal, enumerable: true });
+            socketAuthMetrics.accepted(principal === null);
             next();
         } catch (error) {
-            next(error);
+            const code = error?.data?.code;
+            const stable = ['AUTH_MISSING', 'AUTH_INVALID', 'AUTH_EXPIRED', 'FORBIDDEN'].includes(code)
+                ? error : authError('AUTH_INVALID');
+            socketAuthMetrics.rejected(stable.data.code);
+            next(stable);
         }
     });
     // Registered before domain handlers; anonymous clients get no shared room.
@@ -69,8 +84,7 @@ function installSocketAccess(io, options = {}) {
         const expire = () => {
             const remaining = principal.exp * 1000 - Date.now();
             if (remaining <= 0) {
-                socket.emit('auth:error', { code: 'AUTH_EXPIRED' });
-                socket.disconnect(true);
+                disconnectExpiredSocket(socket);
                 return;
             }
             expiryTimer = setTimeout(expire, Math.min(remaining, 2147483647));

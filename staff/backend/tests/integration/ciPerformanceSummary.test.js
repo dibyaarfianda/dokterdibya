@@ -26,16 +26,31 @@ function appWithFixtureData() {
     const { createCiPerformanceRouter } = require('../../routes/ci-performance');
     const app = express();
     const getMetrics = () => ({
-        requests: { total: 200, byStatusCode: { 500: 2 } },
+        requests: { total: 200, recent: {
+            windowSeconds: 300, windowStartedAtMs: 1700000000000,
+            windowEndedAtMs: 1700000001000, total: 100, serverErrors: 1
+        }, byStatusCode: { 500: 2 } },
         errors: { byType: { server: 2 }, topErrors: [{ message: SENTINEL }] },
         performance: {
             p95Ms: 57, p99Ms: 84,
+            observation: { windowSeconds: 300, sampleCount: 120,
+                windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
             endpoints: {
-                'GET /api/patients': { count: 27, p95Ms: 30, maxMs: 40 },
-                'GET /api/dashboard-stats': { count: 21, p95Ms: 18 },
-                'GET /api/notifications/count': { count: 20, p95Ms: 9 },
+                'GET /api/patients': { count: 27, sampleCount: 12, p95Ms: 30, maxMs: 40, windowSeconds: 300,
+                    windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
+                'GET /api/dashboard-stats': { count: 21, sampleCount: 11, p95Ms: 18, windowSeconds: 300,
+                    windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
+                'GET /api/notifications/count': { count: 20, sampleCount: 10, p95Ms: 9, windowSeconds: 300,
+                    windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
                 [`GET /api/patients/${SENTINEL}`]: { count: 1, p95Ms: 1 }
             }
+        },
+        socketAuth: {
+            windowSeconds: 300, windowStartedAtMs: 1700000000000,
+            windowEndedAtMs: 1700000001000, attempts: 50, accepted: 49,
+            rejected: 1, anonymousQuarantined: 2, expiredAfterConnect: 2,
+            rejectedByCode: { AUTH_MISSING: 1, AUTH_INVALID: 0, AUTH_EXPIRED: 0, FORBIDDEN: 0,
+                [SENTINEL]: 999 }, privateIdentity: SENTINEL
         },
         db: { recentSlowQueries: [{ sql: `SELECT '${SENTINEL}'` }] },
         system: { hostname: SENTINEL }
@@ -63,18 +78,53 @@ test('CI route returns only allowlisted aggregate numbers and no clinical or inf
     expect(response.body).toEqual({
         success: true,
         data: {
-            requests: { total: 200, serverErrors: 2 },
-            latency: { p95Ms: 57, p99Ms: 84 },
+            requests: { total: 100, serverErrors: 1, windowSeconds: 300,
+                windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
+            latency: { p95Ms: 57, p99Ms: 84, sampleCount: 120, windowSeconds: 300,
+                windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
             api: {
-                patients: { count: 27, p95Ms: 30 },
-                dashboardStats: { count: 21, p95Ms: 18 },
-                notificationsCount: { count: 20, p95Ms: 9 }
+                patients: { count: 12, p95Ms: 30, windowSeconds: 300,
+                    windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
+                dashboardStats: { count: 11, p95Ms: 18, windowSeconds: 300,
+                    windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 },
+                notificationsCount: { count: 10, p95Ms: 9, windowSeconds: 300,
+                    windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000 }
             },
+            socketAuth: { windowSeconds: 300, windowStartedAtMs: 1700000000000,
+                windowEndedAtMs: 1700000001000, attempts: 50, accepted: 49, rejected: 1,
+                anonymousQuarantined: 2,
+                expiredAfterConnect: 2,
+                rejectedByCode: { AUTH_MISSING: 1, AUTH_INVALID: 0, AUTH_EXPIRED: 0, FORBIDDEN: 0 } },
             rum: {
                 cachedActivation: { count: 8, p75: 310, p95: 450 },
                 LCP: { count: 10, p75: 410, p95: 700 }
             }
         }
+    });
+    expect(JSON.stringify(response.body)).not.toContain(SENTINEL);
+});
+
+test('CI aggregate exposes only numeric five-minute HTTP and Socket auth windows', async () => {
+    const response = await request(appWithFixtureData()).get('/api/ci/performance-summary')
+        .set('Authorization', `Bearer ${ciToken()}`);
+    expect(response.status).toBe(200);
+    expect(response.body.data.requests).toEqual({
+        total: 100, serverErrors: 1, windowSeconds: 300,
+        windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000
+    });
+    expect(response.body.data.latency).toEqual({
+        p95Ms: 57, p99Ms: 84, sampleCount: 120, windowSeconds: 300,
+        windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000
+    });
+    expect(response.body.data.api.notificationsCount).toEqual({
+        count: 10, p95Ms: 9, windowSeconds: 300,
+        windowStartedAtMs: 1700000000000, windowEndedAtMs: 1700000001000
+    });
+    expect(response.body.data.socketAuth).toEqual({
+        windowSeconds: 300, windowStartedAtMs: 1700000000000,
+        windowEndedAtMs: 1700000001000, attempts: 50, accepted: 49,
+        rejected: 1, anonymousQuarantined: 2, expiredAfterConnect: 2,
+        rejectedByCode: { AUTH_MISSING: 1, AUTH_INVALID: 0, AUTH_EXPIRED: 0, FORBIDDEN: 0 }
     });
     expect(JSON.stringify(response.body)).not.toContain(SENTINEL);
 });

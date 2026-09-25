@@ -383,16 +383,51 @@ async function runPerformanceGate({ baseUrl, getOidcToken = requestGithubActions
         if (!pass) violations++;
     };
 
+    const checkedAt = Date.now();
+    const checkWindow = (label, window) => {
+        const start = window?.windowStartedAtMs;
+        const end = window?.windowEndedAtMs;
+        const pass = window?.windowSeconds === 300 && Number.isFinite(start)
+            && Number.isFinite(end) && start <= end
+            && start >= checkedAt - 305000 && end >= checkedAt - 300000
+            && end <= checkedAt + 5000;
+        log(`[${pass ? 'PASS' : 'FAIL'}] ${label} observation window=${window?.windowSeconds} seconds`);
+        if (!pass) violations++;
+    };
+
     const requests = data.requests?.total;
     const serverErrors = data.requests?.serverErrors;
+    checkWindow('Production HTTP', data.requests);
     check('Production 5xx rate (%)', Number.isFinite(requests) && requests > 0 && Number.isFinite(serverErrors)
         ? serverErrors / requests * 100 : NaN, 1);
+    checkWindow('Production global latency', data.latency);
+    const globalSamples = data.latency?.sampleCount;
+    const enoughGlobalSamples = Number.isSafeInteger(globalSamples) && globalSamples >= 100;
+    log(`[${enoughGlobalSamples ? 'PASS' : 'FAIL'}] Production global sample count=${globalSamples} minimum=100`);
+    if (!enoughGlobalSamples) violations++;
     check('Production p99 (ms)', data.latency?.p99Ms, 500);
     for (const [key, budget] of [
         ['patients', BUDGETS.api['/api/patients'].p95],
         ['dashboardStats', BUDGETS.api['/api/dashboard-stats'].p95],
         ['notificationsCount', BUDGETS.api['/api/notifications/count'].p95]
-    ]) check(`Production ${key} p95 (ms)`, data.api?.[key]?.p95Ms, budget, data.api?.[key]?.count);
+    ]) {
+        checkWindow(`Production ${key}`, data.api?.[key]);
+        check(`Production ${key} p95 (ms)`, data.api?.[key]?.p95Ms, budget, data.api?.[key]?.count);
+    }
+
+    const socketAuth = data.socketAuth;
+    checkWindow('Production Socket auth', socketAuth);
+    const authCounts = [socketAuth?.attempts, socketAuth?.accepted, socketAuth?.rejected,
+        socketAuth?.rejectedByCode?.AUTH_MISSING, socketAuth?.rejectedByCode?.AUTH_INVALID,
+        socketAuth?.rejectedByCode?.AUTH_EXPIRED, socketAuth?.rejectedByCode?.FORBIDDEN];
+    const authCountsValid = authCounts.every(value => Number.isSafeInteger(value) && value >= 0)
+        && socketAuth.attempts > 0 && socketAuth.accepted + socketAuth.rejected === socketAuth.attempts
+        && authCounts.slice(3).reduce((sum, value) => sum + value, 0) === socketAuth.rejected
+        && Number.isSafeInteger(socketAuth.anonymousQuarantined)
+        && socketAuth.anonymousQuarantined === 0
+        && Number.isSafeInteger(socketAuth.expiredAfterConnect) && socketAuth.expiredAfterConnect >= 0;
+    check('Production Socket auth rejection rate (%)', authCountsValid
+        ? socketAuth.rejected / socketAuth.attempts * 100 : NaN, 2);
 
     const fixture = await startFixture();
     let page;

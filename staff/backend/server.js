@@ -1175,11 +1175,12 @@ function gracefulShutdown(signal) {
         process.exit(0);
     });
 
-    // Force exit after 10s if graceful shutdown stalls
+    // Let the longest 300s proxied request finish before forcing a stalled drain.
+    // PM2's kill_timeout must remain longer than this application deadline.
     setTimeout(() => {
-        logger.warn('Forced exit after 10s timeout');
+        logger.warn('Forced exit after 315s shutdown deadline');
         process.exit(1);
-    }, 10000).unref();
+    }, 315000).unref();
 }
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
