@@ -53,7 +53,11 @@ test('Nginx release gate cannot forget errors at the start of cutover when check
 test('release runbook records the observation start before the PM2 cutover command', () => {
     const runbook = fs.readFileSync(path.resolve(__dirname, '../../../../deployment/STAFF_ASSET_RELEASES.md'), 'utf8');
     const capture = runbook.indexOf('CUTOVER_MS="$(date +%s%3N)"');
+    const checkout = runbook.indexOf('git merge --ff-only "$TARGET_SHA"');
     const reload = runbook.indexOf('pm2 reload ecosystem.config.js --only dibyaklinik-backend --update-env');
-    expect(capture).toBeGreaterThan(0);
+    expect(capture).toBeGreaterThan(checkout);
     expect(reload).toBeGreaterThan(capture);
+    expect(runbook).toContain('UPSTREAM_STAGE="$SITE.stage-upstream-$UPSTREAM_STAMP"');
+    expect(runbook).toContain('restore_upstream_nginx()');
+    expect(runbook).toContain('test ! -e "$UPSTREAM_BACKUP" && test ! -L "$UPSTREAM_BACKUP"');
 });

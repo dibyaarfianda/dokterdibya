@@ -236,7 +236,8 @@ UPSTREAM_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 UPSTREAM_PREP="/var/tmp/dokterdibya-upstream-$UPSTREAM_STAMP"
 UPSTREAM_BACKUP="/var/backups/dokterdibya/upstream-site-$UPSTREAM_STAMP.conf"
 test -f "$SITE" && test ! -L "$SITE"
-test ! -e "$UPSTREAM_PREP" && test ! -e "$UPSTREAM_BACKUP"
+test ! -e "$UPSTREAM_PREP" && test ! -L "$UPSTREAM_PREP"
+test ! -e "$UPSTREAM_BACKUP" && test ! -L "$UPSTREAM_BACKUP"
 install -d -m 0700 "$UPSTREAM_PREP"
 install -m 0600 "$SITE" "$UPSTREAM_BACKUP"
 UPSTREAM_SHA="$(sha256sum "$SITE" | cut -d ' ' -f 1)"
@@ -246,16 +247,60 @@ node "$WORKTREE/staff/backend/scripts/prepare-nginx-single-upstream.js" \
 diff -u "$UPSTREAM_BACKUP" "$UPSTREAM_PREP/site.candidate" || test "$?" -eq 1
 ```
 
-After confirming that only the six upstream addresses changed, install the candidate via an exact same-directory staged path. If syntax, reload, health, or either-origin asset verification fails, restore **only** this backup; retain the status log and immutable asset bridge. Confirm that the status-only log receives a fresh 200 line and has no new 5xx before application cutover. On an application rollback after this Nginx gate passes, keep the pinned proxy along with the immutable bridge.
+After confirming that only the six upstream addresses changed, install the candidate via an exact same-directory staged path. Set `CURRENT_ASSET_VERSION` to the verified active v413 or v414 first. This failure branch restores **only** this backup; it retains the status log and immutable asset bridge. On an application rollback after this Nginx gate passes, keep the pinned proxy along with the immutable bridge.
+
+```sh
+CURRENT_ASSET_VERSION='<verified-v413-or-v414>'
+case "$CURRENT_ASSET_VERSION" in v413|v414) ;; *) exit 1 ;; esac
+UPSTREAM_STAGE="$SITE.stage-upstream-$UPSTREAM_STAMP"
+UPSTREAM_RESTORE="$SITE.restore-upstream-$UPSTREAM_STAMP"
+for target in "$UPSTREAM_STAGE" "$UPSTREAM_RESTORE"; do
+  test ! -e "$target" && test ! -L "$target" || exit 1
+done
+test "$(sha256sum "$SITE" | cut -d ' ' -f 1)" = "$UPSTREAM_SHA"
+STATUS_LINES_BEFORE="$(wc -l < /var/log/nginx/dokterdibya-status.log)"
+STATUS_ERRORS_BEFORE="$(grep -Ec ' 5[0-9][0-9]$' /var/log/nginx/dokterdibya-status.log || true)"
+restore_upstream_nginx() {
+  install -m 0644 "$UPSTREAM_BACKUP" "$UPSTREAM_RESTORE" || return 1
+  mv -Tf -- "$UPSTREAM_RESTORE" "$SITE" || return 1
+  rm -f -- "$UPSTREAM_STAGE" || return 1
+  nginx -t && systemctl reload nginx
+}
+fail_upstream_gate() {
+  restore_upstream_nginx || echo 'Upstream Nginx restore failed' >&2
+  exit 1
+}
+if install -m 0644 "$UPSTREAM_PREP/site.candidate" "$UPSTREAM_STAGE" &&
+   mv -Tf -- "$UPSTREAM_STAGE" "$SITE" &&
+   nginx -t && systemctl reload nginx; then
+  :
+else
+  fail_upstream_gate
+fi
+for ORIGIN in https://dokterdibya.com https://www.dokterdibya.com; do
+  node "$WORKTREE/staff/backend/scripts/verify-staff-asset-release.js" \
+    --base-url "$ORIGIN" --release-base "$RELEASE_BASE" \
+    --expected-current-version "$CURRENT_ASSET_VERSION" \
+    --version v413 --version v414 \
+    --path scripts/realtime-sync.js --path scripts/patient-list-pages.js || fail_upstream_gate
+  curl -fsS -o /dev/null "$ORIGIN/api/health" || fail_upstream_gate
+done
+STATUS_LINES_AFTER="$(wc -l < /var/log/nginx/dokterdibya-status.log)"
+STATUS_ERRORS_AFTER="$(grep -Ec ' 5[0-9][0-9]$' /var/log/nginx/dokterdibya-status.log || true)"
+test "$STATUS_LINES_AFTER" -gt "$STATUS_LINES_BEFORE" || fail_upstream_gate
+test "$STATUS_ERRORS_AFTER" = "$STATUS_ERRORS_BEFORE" || fail_upstream_gate
+tail -n "$((STATUS_LINES_AFTER - STATUS_LINES_BEFORE))" /var/log/nginx/dokterdibya-status.log |
+  grep -Eq '^[0-9]{10}\.[0-9]{3} 200$' || fail_upstream_gate
+```
 
 For a resumed attempt where the active checkout already serves v414 (as `b0d79acb` did), use `--expected-current-version v414` in every **pre-cutover** verifier instead of the original v413 example above. Do not overwrite the already verified immutable v414 snapshot; compare the target `staff/public` tree to the snapshot source commit before reusing it.
 
 ```sh
-CUTOVER_MS="$(date +%s%3N)"
 cd /var/www/dokterdibya
 git merge --ff-only "$TARGET_SHA"
 test "$(git rev-parse HEAD)" = "$TARGET_SHA"
 cd /var/www/dokterdibya/staff/backend
+CUTOVER_MS="$(date +%s%3N)"
 pm2 reload ecosystem.config.js --only dibyaklinik-backend --update-env
 pm2 jlist | jq -e '[.[] | select(.name == "dibyaklinik-backend" and .pm2_env.status == "online" and .pm2_env.wait_ready == true and .pm2_env.kill_timeout >= 330000)] | length == 1'
 ```
