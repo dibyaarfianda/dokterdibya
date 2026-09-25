@@ -30,7 +30,10 @@ function scoreNginxStatusLog(contents, { now = Date.now(), cutover, maxErrorRate
         throw new Error('Full post-cutover Nginx observation window required');
     }
     if (typeof contents !== 'string') throw new Error('Nginx status-only log required');
-    const start = now - 300000;
+    // Score the first complete release window, not a later rolling window that
+    // can silently forget errors during the cutover itself.
+    const start = cutover;
+    const end = cutover + 300000;
     let total = 0;
     let serverErrors = 0;
     let first = Infinity;
@@ -40,13 +43,13 @@ function scoreNginxStatusLog(contents, { now = Date.now(), cutover, maxErrorRate
         const match = /^(\d{10}(?:\.\d{3})?) ([1-5]\d\d)$/.exec(line);
         if (!match) throw new Error('Nginx status log is not status-only');
         const at = Math.round(Number(match[1]) * 1000);
-        if (at < start || at > now) continue;
+        if (at < start || at >= end) continue;
         total++;
         if (Number(match[2]) >= 500) serverErrors++;
         first = Math.min(first, at);
         last = Math.max(last, at);
     }
-    if (total === 0 || first > start + 5000 || last < now - 5000) {
+    if (total === 0 || first > start + 5000 || last < end - 5000) {
         throw new Error('Nginx status observations do not cover five minutes');
     }
     const errorRatePercent = serverErrors / total * 100;

@@ -224,14 +224,40 @@ tail -n 1 /var/log/nginx/dokterdibya-status.log | grep -Eq '^[0-9]{10}\.[0-9]{3}
 
 The status logger is a separate Nginx precondition, not a substitute for the immutable-route test. Its live five-minute rate must be checked after cutover with the reviewed `check-nginx-release-status.js` script; the Express aggregate alone cannot detect proxy-generated 502/504.
 
+### Single-address backend proxy after the 2026-09-25 failed reload
+
+The first v414 application reload was rolled back: the **first** five minutes had 12/332 Nginx 5xx (3.61%). Two upstream connections closed and Nginx then reported 15 `no live upstreams` errors over about ten seconds. The live site resolves `localhost` to both `::1` and `127.0.0.1`, while its existing explicit IPv4 proxy locations and direct IPv4 health check work. Before retrying, pin only the six remaining `proxy_pass http://localhost:3000` directives to `127.0.0.1:3000`; preserve their URI suffixes, all other routes, and the validated asset/status configuration. This changes no UI or patient data. If the active site differs from the reviewed six-directive shape, stop rather than applying a partial rewrite.
+
+Prepare against the observed site and review the exact six-line diff. Use a fresh staging directory and backup; the preparation script refuses a changed source checksum or an existing candidate:
+
 ```sh
+SITE=/etc/nginx/sites-enabled/dokterdibya.com
+UPSTREAM_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+UPSTREAM_PREP="/var/tmp/dokterdibya-upstream-$UPSTREAM_STAMP"
+UPSTREAM_BACKUP="/var/backups/dokterdibya/upstream-site-$UPSTREAM_STAMP.conf"
+test -f "$SITE" && test ! -L "$SITE"
+test ! -e "$UPSTREAM_PREP" && test ! -e "$UPSTREAM_BACKUP"
+install -d -m 0700 "$UPSTREAM_PREP"
+install -m 0600 "$SITE" "$UPSTREAM_BACKUP"
+UPSTREAM_SHA="$(sha256sum "$SITE" | cut -d ' ' -f 1)"
+node "$WORKTREE/staff/backend/scripts/prepare-nginx-single-upstream.js" \
+  --site "$SITE" --candidate "$UPSTREAM_PREP/site.candidate" \
+  --expected-sha256 "$UPSTREAM_SHA"
+diff -u "$UPSTREAM_BACKUP" "$UPSTREAM_PREP/site.candidate" || test "$?" -eq 1
+```
+
+After confirming that only the six upstream addresses changed, install the candidate via an exact same-directory staged path. If syntax, reload, health, or either-origin asset verification fails, restore **only** this backup; retain the status log and immutable asset bridge. Confirm that the status-only log receives a fresh 200 line and has no new 5xx before application cutover. On an application rollback after this Nginx gate passes, keep the pinned proxy along with the immutable bridge.
+
+For a resumed attempt where the active checkout already serves v414 (as `b0d79acb` did), use `--expected-current-version v414` in every **pre-cutover** verifier instead of the original v413 example above. Do not overwrite the already verified immutable v414 snapshot; compare the target `staff/public` tree to the snapshot source commit before reusing it.
+
+```sh
+CUTOVER_MS="$(date +%s%3N)"
 cd /var/www/dokterdibya
 git merge --ff-only "$TARGET_SHA"
 test "$(git rev-parse HEAD)" = "$TARGET_SHA"
 cd /var/www/dokterdibya/staff/backend
 pm2 reload ecosystem.config.js --only dibyaklinik-backend --update-env
 pm2 jlist | jq -e '[.[] | select(.name == "dibyaklinik-backend" and .pm2_env.status == "online" and .pm2_env.wait_ready == true and .pm2_env.kill_timeout >= 330000)] | length == 1'
-CUTOVER_MS="$(date +%s%3N)"
 ```
 
 If the runtime drain check fails, the cutover has failed; do not accept the release or retry with a process-name-only reload. Inspect PM2 and the rollback gate. If the established PM2 process name or checkout procedure differs, stop and reconcile the observed production configuration before issuing the cutover commands. Do not use `git reset --hard`.
@@ -268,7 +294,7 @@ If the workflow cannot obtain OIDC, cannot verify the aggregate response, detect
 
 Compare equal-size, post-stabilization samples: warm fixture network requests ≤40, genuine failures 0, cached Dashboard↔Pasien activation p95 ≤1000 ms, and live Staff production p75 at least 25% better than baseline with p95 no more than 5% worse. The in-memory aggregate counter resets on PM2 reload and may need legitimate Staff traffic before its sample-count gate is meaningful; never generate synthetic patient calls to fill it. Over five minutes, require Nginx 5xx ≤1%, Socket.IO auth rejection ≤2% of handshake attempts, and no unplanned PM2 restart. Read the Socket.IO ratio as rejected / attempts from the numeric-only CI OIDC aggregate; expiry after an accepted connection is reported separately, not in this handshake numerator. Do not copy raw request URLs, tokens, or patient fields into release evidence.
 
-After at least 300 seconds of post-cutover traffic, check the dedicated Nginx log on the VPS. This fails closed if the five-minute window has no observations at its beginning/end, the log contains anything besides timestamp and status, or the 5xx rate exceeds 1%:
+Capture `CUTOVER_MS` before moving the application checkout or reloading PM2. After at least 300 seconds, check the dedicated Nginx log on the VPS. The checker scores the **first** five minutes beginning at that captured instant, even if invoked later; it fails closed if that window has no observations at its beginning/end, the log contains anything besides timestamp and status, or the 5xx rate exceeds 1%:
 
 ```sh
 node "$WORKTREE/staff/backend/scripts/check-nginx-release-status.js" --cutover-ms "$CUTOVER_MS"
