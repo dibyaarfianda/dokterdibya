@@ -23,14 +23,15 @@ test.each(shells)('$file masked visual screenshot matches approved pre-Task6 com
     const ratio = await pixelDifferenceRatio(before, after);
     if (ratio >= 0.002 && process.env.CI) {
         // Only static fixture hashes and layout geometry; no live account data.
-        console.error('Masked visual fixture diagnostics', JSON.stringify({ file, ratio,
+        const diagnostics = { file, ratio,
             grid: await pixelDifferenceGrid(before, after),
-            before: beforeDetails, after: afterDetails }));
+            before: beforeDetails, after: afterDetails };
         const directory = path.join(process.env.RUNNER_TEMP || os.tmpdir(), 'staff-visual-diff');
         const name = file.replace(/[^a-z0-9_-]+/gi, '-');
         fs.mkdirSync(directory, { recursive: true });
         fs.writeFileSync(path.join(directory, `${name}-before.png`), before);
         fs.writeFileSync(path.join(directory, `${name}-after.png`), after);
+        throw new Error(`Masked visual fixture diagnostics:\n${JSON.stringify(diagnostics, null, 2)}`);
     }
     expect(ratio).toBeLessThan(0.002);
 }, 120000);
