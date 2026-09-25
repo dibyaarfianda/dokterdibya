@@ -73,4 +73,5 @@ test('masked visual fixture cancels smooth scrolling before capture', async () =
     expect(diagnostics[0].scrollY).toBe(0);
     expect(diagnostics[0].content.y).toBe(8);
     expect(diagnostics[0].scrollBehavior).toBe('auto');
+    expect(diagnostics[0].autofocusCount).toBe(0);
 });

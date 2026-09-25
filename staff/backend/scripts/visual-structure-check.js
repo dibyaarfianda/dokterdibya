@@ -35,6 +35,9 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '', onDi
             if (asset.endsWith('.html') || asset.endsWith('.css')) {
                 requiredAssetHashes[asset] = createHash('sha256').update(body).digest('hex');
             }
+            // Disable autofocus before parsing; a late browser focus task can
+            // restart smooth scrolling after the fixture has returned to top.
+            if (asset.endsWith('.html')) body = Buffer.from(body.toString('utf8').replace(/\sautofocus(?=[\s>])/gi, ''));
             const contentType = asset.endsWith('.html') ? 'text/html' : asset.endsWith('.css') ? 'text/css'
                 : asset.endsWith('.png') ? 'image/png' : asset.endsWith('.jpg') || asset.endsWith('.jpeg') ? 'image/jpeg'
                     : asset.endsWith('.svg') ? 'image/svg+xml' : 'application/octet-stream';
@@ -53,7 +56,7 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '', onDi
             document.scrollingElement.scrollTop = 0;
             window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         });
-        await page.waitForFunction(() => window.scrollY === 0, { timeout: 1000 });
+        await page.waitForFunction(() => window.scrollY === 0, { timeout: 5000 });
         if (missingRequiredAssets.length) {
             throw new Error(`Missing required visual fixture assets: ${missingRequiredAssets.join(', ')}`);
         }
@@ -69,6 +72,7 @@ async function renderMaskedShell({ file, viewport, readFile, extraCss = '', onDi
                         scrollWidth: document.body.scrollWidth, scrollHeight: document.body.scrollHeight },
                     scrollY: window.scrollY,
                     scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+                    autofocusCount: document.querySelectorAll('[autofocus]').length,
                     htmlBackgroundColor: getComputedStyle(document.documentElement).backgroundColor,
                     sidebar: rect(document.querySelector('.main-sidebar')),
                     content: rect(document.querySelector('.content-wrapper')),
