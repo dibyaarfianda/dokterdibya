@@ -60,4 +60,6 @@ test('release runbook records the observation start before the PM2 cutover comma
     expect(runbook).toContain('UPSTREAM_STAGE="$SITE.stage-upstream-$UPSTREAM_STAMP"');
     expect(runbook).toContain('restore_upstream_nginx()');
     expect(runbook).toContain('test ! -e "$UPSTREAM_BACKUP" && test ! -L "$UPSTREAM_BACKUP"');
+    expect(runbook).toMatch(/```sh\nset -Eeuo pipefail\nSITE=\/etc\/nginx\/sites-enabled\/dokterdibya\.com\nUPSTREAM_STAMP=/);
+    expect(runbook).toMatch(/```sh\nset -Eeuo pipefail\nCURRENT_ASSET_VERSION=/);
 });

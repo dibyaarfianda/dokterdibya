@@ -231,6 +231,7 @@ The first v414 application reload was rolled back: the **first** five minutes ha
 Prepare against the observed site and review the exact six-line diff. Use a fresh staging directory and backup; the preparation script refuses a changed source checksum or an existing candidate:
 
 ```sh
+set -Eeuo pipefail
 SITE=/etc/nginx/sites-enabled/dokterdibya.com
 UPSTREAM_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 UPSTREAM_PREP="/var/tmp/dokterdibya-upstream-$UPSTREAM_STAMP"
@@ -250,6 +251,7 @@ diff -u "$UPSTREAM_BACKUP" "$UPSTREAM_PREP/site.candidate" || test "$?" -eq 1
 After confirming that only the six upstream addresses changed, install the candidate via an exact same-directory staged path. Set `CURRENT_ASSET_VERSION` to the verified active v413 or v414 first. This failure branch restores **only** this backup; it retains the status log and immutable asset bridge. On an application rollback after this Nginx gate passes, keep the pinned proxy along with the immutable bridge.
 
 ```sh
+set -Eeuo pipefail
 CURRENT_ASSET_VERSION='<verified-v413-or-v414>'
 case "$CURRENT_ASSET_VERSION" in v413|v414) ;; *) exit 1 ;; esac
 UPSTREAM_STAGE="$SITE.stage-upstream-$UPSTREAM_STAMP"
