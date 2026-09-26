@@ -3,6 +3,10 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '../../../..');
+const staffVersion = fs.readFileSync(path.join(root, 'staff/public/sw.js'), 'utf8')
+    .match(/const STAFF_PWA_VERSION = '([^']+)'/)?.[1];
+if (!/^v\d+$/.test(staffVersion || '')) throw new Error('Current Staff worker version unavailable');
+const nextStaffVersion = `v${Number(staffVersion.slice(1)) + 1}`;
 
 function loadWorker(file, { failPrecache = false, offline = false, networkFetch = jest.fn(() => Promise.reject(new Error('offline'))) } = {}) {
     const handlers = {};
@@ -70,12 +74,12 @@ test('staff worker serves only its current-version shell scripts from its atomic
     worker.handlers.install({ waitUntil: promise => { install = promise; } });
     await install;
     const cached = [...worker.entries.keys()];
-    expect(cached).toContain('https://example.test/staff/public/scripts/shell/bootstrap.js?v=v414');
-    expect(cached).toContain('https://example.test/staff/public/scripts/main.js?v=v414');
+    expect(cached).toContain(`https://example.test/staff/public/scripts/shell/bootstrap.js?v=${staffVersion}`);
+    expect(cached).toContain(`https://example.test/staff/public/scripts/main.js?v=${staffVersion}`);
 
     let current;
     worker.handlers.fetch({
-        request: { url: 'https://example.test/staff/public/scripts/shell/bootstrap.js?v=v414', method: 'GET', mode: 'cors', headers: { get: () => '' } },
+        request: { url: `https://example.test/staff/public/scripts/shell/bootstrap.js?v=${staffVersion}`, method: 'GET', mode: 'cors', headers: { get: () => '' } },
         respondWith: promise => { current = promise; }
     });
     await expect(current).resolves.toMatchObject({ cached: expect.anything() });
@@ -94,7 +98,7 @@ test('staff credential dependency is in the verified shell cache and an exact-ve
     let install;
     worker.handlers.install({ waitUntil: promise => { install = promise; } });
     await install;
-    const credential = 'https://example.test/staff/public/scripts/socket-credentials.js?v=v414';
+    const credential = `https://example.test/staff/public/scripts/socket-credentials.js?v=${staffVersion}`;
     expect(worker.entries.has(credential)).toBe(true);
     worker.entries.delete(credential);
     let response;
@@ -104,11 +108,11 @@ test('staff credential dependency is in the verified shell cache and an exact-ve
         respondWith: promise => { response = promise; }
     });
     await expect(response).rejects.toThrow('offline');
-    expect(worker.cache.match).toHaveBeenCalledWith('/staff/public/scripts/socket-credentials.js?v=v414');
+    expect(worker.cache.match).toHaveBeenCalledWith(`/staff/public/scripts/socket-credentials.js?v=${staffVersion}`);
     expect(worker.cache.match.mock.calls.some(([, options]) => options?.ignoreSearch)).toBe(false);
 });
 
-test('v414 worker bridges only legacy v413 Staff credential and patient-list imports', async () => {
+test('current worker bridges only legacy v413 Staff credential and patient-list imports', async () => {
     const networkFetch = jest.fn(async url => ({ fetched: url }));
     const worker = loadWorker('staff/public/sw.js', { networkFetch });
     let install;
@@ -121,7 +125,7 @@ test('v414 worker bridges only legacy v413 Staff credential and patient-list imp
             respondWith: promise => { response = promise; } });
         return response;
     };
-    await expect(legacyRequest('/scripts/socket-credentials.js')).resolves.toMatchObject({ cached: '/staff/public/scripts/socket-credentials.js?v=v414' });
+    await expect(legacyRequest('/scripts/socket-credentials.js')).resolves.toMatchObject({ cached: `/staff/public/scripts/socket-credentials.js?v=${staffVersion}` });
     expect(networkFetch).not.toHaveBeenCalled();
     await expect(legacyRequest('/scripts/patient-list-pages.js', 'https://example.test/staff/public/scripts/legacy/patient-tools.js?v=v413'))
         .resolves.toMatchObject({ fetched: 'https://example.test/staff/public/scripts/patient-list-pages.js?v=v413' });
@@ -134,16 +138,16 @@ test('legacy credential bridge fetches only the exact immutable Staff copy when 
     let install;
     worker.handlers.install({ waitUntil: promise => { install = promise; } });
     await install;
-    worker.entries.delete('https://example.test/staff/public/scripts/socket-credentials.js?v=v414');
+    worker.entries.delete(`https://example.test/staff/public/scripts/socket-credentials.js?v=${staffVersion}`);
     let response;
     worker.handlers.fetch({ clientId: 'old-staff',
         request: { url: 'https://example.test/scripts/socket-credentials.js',
             referrer: 'https://example.test/staff/public/scripts/realtime-sync.js?v=v413',
             method: 'GET', mode: 'cors', headers: { get: () => '' } },
         respondWith: promise => { response = promise; } });
-    await expect(response).resolves.toMatchObject({ fetched: 'https://example.test/staff/public/scripts/socket-credentials.js?v=v414' });
+    await expect(response).resolves.toMatchObject({ fetched: `https://example.test/staff/public/scripts/socket-credentials.js?v=${staffVersion}` });
     expect(networkFetch).toHaveBeenCalledTimes(1);
-    expect(networkFetch).toHaveBeenCalledWith('https://example.test/staff/public/scripts/socket-credentials.js?v=v414');
+    expect(networkFetch).toHaveBeenCalledWith(`https://example.test/staff/public/scripts/socket-credentials.js?v=${staffVersion}`);
     expect(worker.cache.match.mock.calls.some(([, options]) => options?.ignoreSearch)).toBe(false);
 });
 
@@ -185,17 +189,17 @@ test('old staff controller cannot mix cached canonical modules into a newer shel
         return response;
     };
     // The old worker sees the new document's first explicitly versioned script.
-    expect(request('new-shell', '/staff/public/scripts/error-handler.js?v=v415')).toBeUndefined();
+    expect(request('new-shell', `/staff/public/scripts/error-handler.js?v=${nextStaffVersion}`)).toBeUndefined();
     expect(request('new-shell', '/staff/public/scripts/main.js')).toBeUndefined();
     // An overlapping request from the previous document must not re-authorize
     // stale canonical imports for the newer document on the same client.
-    expect(request('new-shell', '/staff/public/scripts/error-handler.js?v=v414')).toBeDefined();
+    expect(request('new-shell', `/staff/public/scripts/error-handler.js?v=${staffVersion}`)).toBeDefined();
     expect(request('new-shell', '/staff/public/scripts/main.js')).toBeUndefined();
 
     // A separate current-version document may still use the immutable cache.
-    expect(request('current-shell', '/staff/public/scripts/error-handler.js?v=v414')).toBeDefined();
+    expect(request('current-shell', `/staff/public/scripts/error-handler.js?v=${staffVersion}`)).toBeDefined();
     await expect(request('current-shell', '/staff/public/scripts/main.js'))
-        .resolves.toMatchObject({ cached: '/staff/public/scripts/main.js?v=v414' });
+        .resolves.toMatchObject({ cached: `/staff/public/scripts/main.js?v=${staffVersion}` });
     // An unversioned request with no proven owning document version fails open to the network, not an old cache.
     expect(request('', '/staff/public/scripts/main.js')).toBeUndefined();
 });

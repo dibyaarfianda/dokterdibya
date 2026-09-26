@@ -7,6 +7,9 @@ const crypto = require('node:crypto');
 const puppeteer = require('puppeteer');
 const { stageStaffAssetRelease } = require('../../services/staffAssetRelease');
 const { renderStaffAssetNginx } = require('../../services/staffAssetNginxConfig');
+const currentWorkerVersion = fs.readFileSync(path.join(__dirname, '../../../public/sw.js'), 'utf8')
+    .match(/const STAFF_PWA_VERSION = '([^']+)'/)?.[1];
+if (!/^v\d+$/.test(currentWorkerVersion || '')) throw new Error('Current Staff worker version unavailable');
 
 const scriptBase = '/staff/public/scripts/';
 const invalidQueries = ['v', 'V', 'V=', 'v=', 'v=garbage', 'V=v413', 'v=v0', 'v=v0413', 'v=v413&v=v414', 'v=v413&V=v414', 'V&v=v413', 'v=v413&v', 'v=v413%2f..', 'v=v413%26v=v414', 'v=v999'];
@@ -73,12 +76,12 @@ async function loopbackFixture() {
                 body = '';
             } else {
                 servedVersion = state.staff_asset_root === '/current' ? 'current' : state.staff_asset_root.split('/').pop();
-                body = ['current', 'v413', 'v414'].includes(servedVersion) ? bodies(servedVersion)[url.pathname.slice(scriptBase.length)] : undefined;
-                if (!body && servedVersion === 'v414') body = '/* precache fixture */';
+                body = ['current', 'v413', 'v414', currentWorkerVersion].includes(servedVersion) ? bodies(servedVersion)[url.pathname.slice(scriptBase.length)] : undefined;
+                if (!body && servedVersion === currentWorkerVersion) body = '/* precache fixture */';
                 if (!body) { status = 404; servedVersion = null; body = 'not found'; }
                 res.setHeader('Content-Type', 'application/javascript');
             }
-        } else if (url.pathname.startsWith('/staff/public/') && url.search === '?v=v414') {
+        } else if (url.pathname.startsWith('/staff/public/') && url.search === `?v=${currentWorkerVersion}`) {
             body = 'fixture asset';
         } else if (url.pathname.startsWith('/scripts/') && url.pathname.endsWith('.js')) {
             res.setHeader('Content-Type', 'application/javascript');
@@ -120,11 +123,11 @@ async function loadVersion(browser, origin, version, { staffGraph = false, worke
         if (workerCacheMiss) {
             await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
             await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-            await page.evaluate(async () => {
-                const cache = await caches.open('dokterdibya-staff-v414-static');
+            await page.evaluate(async workerVersion => {
+                const cache = await caches.open(`dokterdibya-staff-${workerVersion}-static`);
                 await Promise.all(['socket-credentials.js', 'patient-list-pages.js'].map(name =>
-                    cache.delete(`/staff/public/scripts/${name}?v=v414`)));
-            });
+                    cache.delete(`/staff/public/scripts/${name}?v=${workerVersion}`)));
+            }, currentWorkerVersion);
         }
         if (oldWorker) {
             await page.evaluate(async () => { await navigator.serviceWorker.register('/staff/public/old-sw.js', { scope: '/staff/public/' }); await navigator.serviceWorker.ready; });
@@ -195,18 +198,18 @@ if (typeof describe === 'function') {
             expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);
         }, 30000);
 
-        test('v414 worker bridges actual v413 root import shapes without patient-root network traffic', async () => {
+        test('current worker bridges actual v413 root import shapes without patient-root network traffic', async () => {
             fixture.trace.length = 0;
             const { result } = await loadVersion(browser, fixture.origin, 'v413', { legacyGraph: true, workerCacheMiss: true });
-            expect(result).toEqual(['legacy-root-v413', 'credential-v414', 'patient-list-v413']);
+            expect(result).toEqual(['legacy-root-v413', `credential-${currentWorkerVersion}`, 'patient-list-v413']);
             expect(fixture.trace.some(item => new URL(item.url).pathname === '/staff/public/scripts/socket-credentials.js'
-                && new URL(item.url).search === '?v=v414' && item.servedVersion === 'v414')).toBe(true);
+                && new URL(item.url).search === `?v=${currentWorkerVersion}` && item.servedVersion === currentWorkerVersion)).toBe(true);
             expect(fixture.trace.some(item => new URL(item.url).pathname === '/staff/public/scripts/patient-list-pages.js'
                 && new URL(item.url).search === '?v=v413' && item.servedVersion === 'v413')).toBe(true);
             expect(fixture.trace.some(item => new URL(item.url).pathname.startsWith('/scripts/'))).toBe(false);
         }, 30000);
 
-        test('v414 worker bridges v413 classic patient-tools dynamic import', async () => {
+        test('current worker bridges v413 classic patient-tools dynamic import', async () => {
             const page = await browser.newPage();
             fixture.trace.length = 0;
             try {

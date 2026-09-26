@@ -2946,8 +2946,9 @@ async function initializeApp(user) {
         // Initialize queue button state
         initializeQueueButton();
 
+        window.staffCompactSidebar?.init(user);
         // Fetch menu visibility without blocking critical startup tasks.
-        applyMenuVisibility(user).catch(error => {
+        applyMenuVisibility(user).then(() => window.staffCompactSidebar?.refresh()).catch(error => {
             console.error('Error fetching menu visibility:', error);
         });
 

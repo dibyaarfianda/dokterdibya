@@ -432,6 +432,8 @@ test('service-worker-served decoded JavaScript is not counted as warm network tr
 
 test('real staff worker precache makes the first controlled shell reload network-bounded', async () => {
     const workerSource = fs.readFileSync(path.resolve(__dirname, '../../../public/sw.js'), 'utf8');
+    const staffVersion = workerSource.match(/const STAFF_PWA_VERSION = '([^']+)'/)?.[1];
+    expect(staffVersion).toMatch(/^v\d+$/);
     const server = http.createServer((req, res) => {
         const pathname = new URL(req.url, 'http://127.0.0.1').pathname;
         if (pathname === '/staff/public/sw.js') {
@@ -441,7 +443,7 @@ test('real staff worker precache makes the first controlled shell reload network
         if (pathname === '/staff/public/index-adminlte.html') {
             res.writeHead(200, { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' });
             res.end(`<!doctype html><link rel="icon" href="data:,">
-                <script type="module" src="/staff/public/scripts/shell/bootstrap.js?v=v414"></script>
+                <script type="module" src="/staff/public/scripts/shell/bootstrap.js?v=${staffVersion}"></script>
                 <script>window.activateRegisteredStaffPage = async () => document.body;
                     navigator.serviceWorker.register('/staff/public/sw.js', { scope: '/staff/public/' });</script>`);
             return;
