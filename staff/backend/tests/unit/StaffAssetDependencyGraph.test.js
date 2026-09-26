@@ -59,11 +59,13 @@ test('authenticated Staff executable graph stays below its versioned public root
 
 test('authenticated shell local script entries use one exact current release', () => {
     const entries = [...shell.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)].map(match => match[1]);
+    const version = shell.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
+    expect(version).toMatch(/^v\d+$/);
     expect(entries.length).toBeGreaterThan(8);
     const invalid = entries.filter(src => {
         const url = new URL(src, 'https://dokterdibya.com/staff/public/index-adminlte.html');
         if (url.origin !== 'https://dokterdibya.com') return false;
-        return url.search !== '?v=v414' || !url.pathname.startsWith('/staff/public/');
+        return url.search !== `?v=${version}` || !url.pathname.startsWith('/staff/public/');
     });
     expect(invalid).toEqual([]);
 });
