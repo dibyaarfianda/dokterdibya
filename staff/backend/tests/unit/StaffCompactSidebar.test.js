@@ -58,7 +58,7 @@ describe('compact desktop staff sidebar', () => {
         });
         expect(result.initialized).toBe(true);
         expect(result.shortcuts).toEqual([
-            'nav-dashboard', 'nav-klinik-private', 'nav-antrian-online', 'nav-kelola-pasien', 'nav-tanya-dokter'
+            'nav-dashboard', 'nav-klinik-private', 'nav-antrian-online', 'nav-tanya-dokter'
         ]);
         expect(result.groups).toEqual([
             'klinik', 'pasien', 'percakapan', 'konten', 'operasional', 'keuangan', 'monitoring', 'sistem'
@@ -66,6 +66,28 @@ describe('compact desktop staff sidebar', () => {
         expect(result.currentIds.sort()).toEqual(result.originalIds.sort());
         expect(result.badgeStillOnOriginalLink).toBe(true);
         expect(result.actionStillOnOriginalLink).toBe('show-manage-patients');
+    });
+
+    test('requested menus move to patient content and finance without changing their actions', async () => {
+        const result = await page.evaluate(() => {
+            document.querySelectorAll('.dokter-only,.doctor-role-only').forEach(item => item.classList.remove('d-none'));
+            window.staffCompactSidebar?.init({ role_id: 1 });
+            return Object.fromEntries([
+                'nav-estimasi-biaya', 'nav-bulk-upload-usg', 'management-nav-block-list', 'nav-staff-activity'
+            ].map(id => {
+                const item = document.getElementById(id);
+                return [id, {
+                    group: item.closest('.staff-compact-group')?.dataset.group,
+                    action: item.querySelector('.nav-link')?.dataset.staffCall
+                }];
+            }));
+        });
+        expect(result).toEqual({
+            'nav-estimasi-biaya': { group: 'konten', action: 'showEstimasiBiayaPage' },
+            'nav-bulk-upload-usg': { group: 'konten', action: 'showBulkUploadUSGPage' },
+            'management-nav-block-list': { group: 'konten', action: 'showPatientBlockListPage' },
+            'nav-staff-activity': { group: 'keuangan', action: 'showStaffActivityPage' }
+        });
     });
 
     test('non-doctor search never reveals denied items and finds allowed group menus', async () => {
@@ -93,7 +115,7 @@ describe('compact desktop staff sidebar', () => {
             };
         });
         expect(result.shortcuts).toEqual([
-            'nav-dashboard', 'nav-kantor-saya', 'nav-antrian-online', 'nav-kelola-pasien', 'nav-pasien-baru'
+            'nav-dashboard', 'nav-kantor-saya', 'nav-antrian-online', 'nav-pasien-baru'
         ]);
         expect(result.deniedSearchVisible).toBe(false);
         expect(result.uploadGroupOpen).toBe(true);
@@ -131,6 +153,66 @@ describe('compact desktop staff sidebar', () => {
         expect(result.collapsed).toBe(true);
         expect(result.searchControl).toBe(true);
         expect(result.badgeWithinIcon).toBe(true);
+    });
+
+    test('finance group can close and reopen while it contains the active page', async () => {
+        const result = await page.evaluate(() => {
+            document.querySelectorAll('.dokter-only').forEach(item => item.classList.remove('d-none'));
+            window.staffCompactSidebar?.init({ role_id: 1 });
+            document.querySelector('#nav-staff-activity .nav-link').classList.add('active');
+            window.staffCompactSidebar?.refresh();
+            const group = document.querySelector('[data-group="keuangan"]');
+            const button = group.querySelector('.staff-compact-group-button');
+            const initiallyOpen = group.classList.contains('menu-open');
+            button.click();
+            const manuallyClosed = !group.classList.contains('menu-open') && button.getAttribute('aria-expanded') === 'false';
+            button.click();
+            return { initiallyOpen, manuallyClosed, reopened: group.classList.contains('menu-open') };
+        });
+        expect(result).toEqual({ initiallyOpen: true, manuallyClosed: true, reopened: true });
+    });
+
+    test('schedule moves to System while Clinic group and its contents stay hidden from search', async () => {
+        const result = await page.evaluate(() => {
+            document.querySelectorAll('.dokter-only').forEach(item => item.classList.remove('d-none'));
+            window.staffCompactSidebar?.init({ role_id: 1 });
+            const clinic = document.querySelector('[data-group="klinik"]');
+            const schedule = document.getElementById('nav-jadwal-booking');
+            const initialClinicHidden = getComputedStyle(clinic).display === 'none';
+            const shortcutStillVisible = getComputedStyle(document.getElementById('nav-klinik-private')).display !== 'none';
+            const search = document.getElementById('staff-compact-search');
+            search.value = 'RSIA Melinda';
+            search.dispatchEvent(new Event('input', { bubbles: true }));
+            return {
+                scheduleGroup: schedule.closest('.staff-compact-group')?.dataset.group,
+                scheduleAction: schedule.querySelector('.nav-link')?.dataset.staffCall,
+                initialClinicHidden,
+                searchClinicHidden: getComputedStyle(clinic).display === 'none',
+                searchShowsEmpty: !document.getElementById('staff-compact-empty').hidden,
+                shortcutStillVisible
+            };
+        });
+        expect(result).toEqual({
+            scheduleGroup: 'sistem',
+            scheduleAction: 'showKelolaJadwalPage',
+            initialClinicHidden: true,
+            searchClinicHidden: true,
+            searchShowsEmpty: true,
+            shortcutStillVisible: true
+        });
+    });
+
+    test.each([1, 25])('manage patients is in the Patient group for role %s', async roleId => {
+        const result = await page.evaluate(role_id => {
+            window.staffCompactSidebar?.init({ role_id });
+            const item = document.getElementById('nav-kelola-pasien');
+            return {
+                group: item.closest('.staff-compact-group')?.dataset.group,
+                action: item.querySelector('.nav-link')?.dataset.shellAction,
+                inShortcuts: Boolean(item.closest('#staff-compact-shortcuts'))
+            };
+        }, roleId);
+        expect(result).toEqual({ group: 'pasien', action: 'show-manage-patients', inShortcuts: false });
     });
 
     test('phone layout retains the original sidebar structure', async () => {

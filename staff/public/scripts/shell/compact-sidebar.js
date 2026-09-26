@@ -12,8 +12,8 @@
         { key: 'sistem', label: 'Sistem', icon: 'fa-cog' }
     ];
     const SHORTCUTS = {
-        dokter: ['nav-dashboard', 'nav-klinik-private', 'nav-antrian-online', 'nav-kelola-pasien', 'nav-tanya-dokter'],
-        staff: ['nav-dashboard', 'nav-kantor-saya', 'nav-antrian-online', 'nav-kelola-pasien', 'nav-pasien-baru']
+        dokter: ['nav-dashboard', 'nav-klinik-private', 'nav-antrian-online', 'nav-tanya-dokter'],
+        staff: ['nav-dashboard', 'nav-kantor-saya', 'nav-antrian-online', 'nav-pasien-baru']
     };
     const HEADER_GROUPS = {
         BERANDA: 'klinik', KLINIK: 'klinik', PASIEN: 'pasien',
@@ -22,11 +22,15 @@
     };
     const CONTENT_IDS = new Set([
         'nav-voting', 'nav-birth-class', 'nav-birth-congrats', 'nav-birth-testimonials',
-        'nav-artikel-kesehatan', 'nav-ruang-cerita'
+        'nav-artikel-kesehatan', 'nav-ruang-cerita', 'nav-estimasi-biaya',
+        'nav-bulk-upload-usg', 'management-nav-block-list'
     ]);
     const FINANCE_IDS = new Set([
-        'nav-invoice-history', 'nav-finance-analysis', 'nav-staff-briefing', 'nav-private'
+        'nav-invoice-history', 'nav-finance-analysis', 'nav-staff-briefing',
+        'nav-private', 'nav-staff-activity'
     ]);
+    const SYSTEM_IDS = new Set(['nav-jadwal-booking']);
+    const HIDDEN_GROUPS = new Set(['klinik']);
 
     const nav = document.querySelector('.main-sidebar .nav-sidebar');
     const sidebar = document.querySelector('.main-sidebar .sidebar');
@@ -37,7 +41,9 @@
     const originalItems = originalNodes.filter(node => node.classList?.contains('nav-item'));
     const groups = new Map();
     const openGroups = new Set();
+    const closedGroups = new Set();
     const searchOpenedItems = new Set();
+    let activeMenuIds = '';
     let attached = false;
     let currentUser = null;
     let searchInput = null;
@@ -74,6 +80,7 @@
     function groupFor(item, header) {
         if (CONTENT_IDS.has(item.id)) return 'konten';
         if (FINANCE_IDS.has(item.id)) return 'keuangan';
+        if (SYSTEM_IDS.has(item.id)) return 'sistem';
         return HEADER_GROUPS[header] || 'sistem';
     }
 
@@ -109,8 +116,13 @@
         item.addEventListener('mouseenter', positionFlyout);
         item.addEventListener('focusin', positionFlyout);
         button.addEventListener('click', () => {
-            if (openGroups.has(definition.key)) openGroups.delete(definition.key);
-            else openGroups.add(definition.key);
+            if (item.classList.contains('menu-open')) {
+                openGroups.delete(definition.key);
+                closedGroups.add(definition.key);
+            } else {
+                closedGroups.delete(definition.key);
+                openGroups.add(definition.key);
+            }
             refresh();
         });
         groups.set(definition.key, { item, button, list });
@@ -128,7 +140,10 @@
         searchInput.setAttribute('aria-label', 'Cari menu staff');
         searchInput.autocomplete = 'off';
         searchWrap.appendChild(searchInput);
-        searchInput.addEventListener('input', refresh);
+        searchInput.addEventListener('input', () => {
+            closedGroups.clear();
+            refresh();
+        });
         sidebar.insertBefore(searchWrap, sidebar.querySelector('nav'));
 
         collapseButton = makeButton('staff-compact-collapse', 'Ciutkan sidebar', 'fa-angle-double-left');
@@ -261,6 +276,13 @@
 
     function refresh() {
         if (!attached) return;
+        const currentActiveMenuIds = originalItems
+            .filter(item => item.querySelector('.nav-link.active'))
+            .map(item => item.id).join(',');
+        if (currentActiveMenuIds !== activeMenuIds) {
+            closedGroups.clear();
+            activeMenuIds = currentActiveMenuIds;
+        }
         const query = searchInput.value.trim().toLocaleLowerCase('id');
         let matches = 0;
         document.querySelectorAll('#staff-compact-shortcuts > .nav-item').forEach(item => {
@@ -269,6 +291,13 @@
             if (match) matches++;
         });
         groups.forEach((group, key) => {
+            if (HIDDEN_GROUPS.has(key)) {
+                group.item.style.display = 'none';
+                group.item.classList.remove('menu-open');
+                group.list.style.display = 'none';
+                group.button.setAttribute('aria-expanded', 'false');
+                return;
+            }
             let visible = 0;
             let active = false;
             Array.from(group.list.children).forEach(item => {
@@ -296,7 +325,7 @@
                 if (match) visible++;
                 if (allowed && item.querySelector('.nav-link.active')) active = true;
             });
-            const open = query ? visible > 0 : openGroups.has(key) || active;
+            const open = !closedGroups.has(key) && (query ? visible > 0 : openGroups.has(key) || active);
             group.item.style.display = visible > 0 ? '' : 'none';
             group.item.classList.toggle('menu-open', open);
             group.list.style.display = open ? 'block' : 'none';
@@ -317,7 +346,9 @@
         onlineObserver?.disconnect();
         groups.clear();
         openGroups.clear();
+        closedGroups.clear();
         searchOpenedItems.clear();
+        activeMenuIds = '';
         originalItems.forEach(item => {
             item.classList.remove('staff-compact-filtered');
             item.querySelector('.staff-compact-rail-badge')?.remove();
