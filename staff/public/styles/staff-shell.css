@@ -1784,6 +1784,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
     body.sidebar-collapse .main-sidebar.staff-compact-enabled .sidebar > nav {
         padding-left: 8px !important;
         padding-right: 8px !important;
+        overflow-x: hidden !important;
     }
     body.sidebar-collapse .staff-compact-group-button,
     body.sidebar-collapse .staff-compact-online {
@@ -1820,8 +1821,11 @@ body.mobile-app-mode .mobile-action-bar-force button {
         top: -1px;
         right: -2px;
     }
-    body.sidebar-collapse .staff-compact-group:hover > .nav-treeview,
-    body.sidebar-collapse .staff-compact-group:focus-within > .nav-treeview {
+    body.sidebar-collapse .main-sidebar.staff-compact-enabled .staff-compact-group > .nav-treeview {
+        display: none !important;
+    }
+    body.sidebar-collapse .main-sidebar.staff-compact-enabled .staff-compact-group:hover > .nav-treeview,
+    body.sidebar-collapse .main-sidebar.staff-compact-enabled .staff-compact-group:focus-within > .nav-treeview {
         display: block !important;
         position: fixed !important;
         left: 4.6rem !important;

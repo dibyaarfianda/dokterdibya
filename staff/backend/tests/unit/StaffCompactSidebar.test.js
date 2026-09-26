@@ -155,6 +155,25 @@ describe('compact desktop staff sidebar', () => {
         expect(result.badgeWithinIcon).toBe(true);
     });
 
+    test('collapsed rail hides an open group list until its icon is hovered', async () => {
+        await page.evaluate(() => {
+            document.querySelectorAll('.dokter-only').forEach(item => item.classList.remove('d-none'));
+            window.staffCompactSidebar?.init({ role_id: 1 });
+            document.getElementById('staff-compact-group-konten').click();
+            document.getElementById('staff-compact-collapse').click();
+        });
+        const list = '#staff-compact-list-konten';
+        expect(await page.$eval(list, el => getComputedStyle(el).display)).toBe('none');
+        expect(await page.$eval('.main-sidebar .sidebar > nav', el => getComputedStyle(el).overflowX)).toBe('hidden');
+        await page.hover('[data-group="konten"] > .staff-compact-group-button');
+        expect(await page.$eval(list, el => ({
+            display: getComputedStyle(el).display,
+            position: getComputedStyle(el).position
+        }))).toEqual({ display: 'block', position: 'fixed' });
+        await page.mouse.move(900, 500);
+        expect(await page.$eval(list, el => getComputedStyle(el).display)).toBe('none');
+    });
+
     test('finance group can close and reopen while it contains the active page', async () => {
         const result = await page.evaluate(() => {
             document.querySelectorAll('.dokter-only').forEach(item => item.classList.remove('d-none'));
