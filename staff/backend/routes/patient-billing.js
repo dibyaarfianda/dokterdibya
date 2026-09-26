@@ -104,7 +104,7 @@ router.get('/:billingId/details', async (req, res) => {
 
         // Get billing (verify ownership)
         const [[billing]] = await db.query(`
-            SELECT b.id, b.mr_id, b.patient_id, b.subtotal, b.total, b.status,
+            SELECT b.id, b.mr_id, b.patient_id, b.total, b.status,
                    b.confirmed_at, b.created_at, b.cancellation_reason, b.cancelled_at, b.cancelled_by_name,
                    p.full_name as patient_name
             FROM sunday_clinic_billings b
@@ -118,7 +118,7 @@ router.get('/:billingId/details', async (req, res) => {
 
         // Get billing items
         const [items] = await db.query(`
-            SELECT item_type, item_name, quantity, price, total
+            SELECT item_type, item_name, quantity
             FROM sunday_clinic_billing_items
             WHERE billing_id = ?
             ORDER BY item_type, item_name

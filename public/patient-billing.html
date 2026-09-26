@@ -947,9 +947,8 @@
                     html += '<div class="item-row">' +
                         '<div class="item-info">' +
                             '<div class="item-name">' + escapeHtml(item.item_name) + '<span class="item-type-badge ' + typeClass + '">' + typeLabel + '</span></div>' +
-                            '<div class="item-qty">' + item.quantity + ' x ' + formatRupiah(item.price) + '</div>' +
+                            '<div class="item-qty">Jumlah: ' + escapeHtml(item.quantity) + '</div>' +
                         '</div>' +
-                        '<div class="item-total">' + formatRupiah(item.total) + '</div>' +
                     '</div>';
                 });
                 html += '</div>';

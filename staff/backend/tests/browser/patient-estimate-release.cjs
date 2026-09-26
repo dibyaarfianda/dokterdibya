@@ -83,17 +83,20 @@ const fixture={...buildPreview({aliases:{7:'Suplemen contoh'},trimesters:Object.
  const keys=await page.$$eval('[data-estimate="service"]',ns=>ns.map(n=>n.dataset.key));
  for(const [i,k] of keys.entries())await change('[data-estimate="service"][data-key="'+k+'"]',liveAuth?[1,2,2,1,1,2][i]:1);
  assert.equal(await page.$eval('#estimate-total',n=>n.textContent),liveAuth?'Rp 4.061.500':'Rp 505.000');
- assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 25.000');
+ assert.equal(await page.$eval('#estimate-app',n=>(n.innerText.match(/Rp\s/g)||[]).length),1);
+ assert.equal(await page.$$eval('#estimate-app [id="estimate-total"]',ns=>ns.length),1);
+ assert.equal(await page.$$eval('#estimate-app strong',ns=>ns.filter(n=>n.textContent.includes('Rp ')).length),1);
  await page.select('[data-estimate="book"]','owned');
- assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 0');
+ assert.equal(await page.$$eval('#estimate-app strong',ns=>ns.filter(n=>n.textContent.includes('Rp ')).length),1);
  assert.equal(await page.$eval('#estimate-total',n=>n.textContent),liveAuth?'Rp 4.036.500':'Rp 480.000');
  for(const k of ['t1','t2','t3']){
   await page.select('[data-estimate="trimester"]',k);
   assert.ok(await page.$('.estimate-book'));
   assert.equal(await page.$eval('[data-estimate="book"]',n=>n.value),'owned');
-  assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 0');
+  assert.equal(await page.$$eval('#estimate-app strong',ns=>ns.filter(n=>n.textContent.includes('Rp ')).length),1);
   await page.select('[data-estimate="book"]','obstetri');
-  assert.equal(await page.$eval('#estimate-book-total',n=>n.textContent),'Rp 25.000');
+  assert.equal(await page.$$eval('#estimate-app [id="estimate-total"]',ns=>ns.length),1);
+ assert.equal(await page.$$eval('#estimate-app strong',ns=>ns.filter(n=>n.textContent.includes('Rp ')).length),1);
   await page.select('[data-estimate="book"]','owned');
  }
  await page.$eval('.estimate-book',n=>n.scrollIntoView({block:'center',behavior:'instant'}));

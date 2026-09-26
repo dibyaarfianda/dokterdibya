@@ -65,4 +65,19 @@ describe('patient billing endpoints', () => {
             ['P001']
         );
     });
+
+    it('returns item descriptions and quantities without unit prices to patients', async () => {
+        const patientToken = tokenFor({ id: 'P001', user_type: 'patient', role: 'patient' });
+        db.query
+            .mockResolvedValueOnce([[{ id: 10, patient_id: 'P001', total_amount: 120000 }]])
+            .mockResolvedValueOnce([[{ item_name: 'Pemeriksaan', quantity: 2 }]]);
+
+        const response = await request(app)
+            .get('/api/billings/10/details')
+            .set('Authorization', `Bearer ${patientToken}`)
+            .expect(200);
+
+        expect(response.body.data.items).toEqual([{ item_name: 'Pemeriksaan', quantity: 2 }]);
+        expect(db.query.mock.calls[1][0]).not.toMatch(/\b(?:unit_price|subtotal|total_amount)\b/i);
+    });
 });

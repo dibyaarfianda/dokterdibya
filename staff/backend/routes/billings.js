@@ -201,7 +201,9 @@ router.get('/my-billings', verifyPatientToken, async (req, res) => {
     }
     
     const [billings] = await db.query(
-      `SELECT b.*, p.full_name as patient_name
+      `SELECT b.id, b.billing_number, b.patient_id, b.patient_record_id,
+              b.billing_date, b.total_amount, b.payment_status, b.payment_method,
+              p.full_name as patient_name
        FROM billings b
        LEFT JOIN patients p ON b.patient_id = p.id
        WHERE b.patient_id = ?
@@ -243,11 +245,11 @@ router.get('/:id/details', verifyPatientToken, async (req, res) => {
     
     // Get billing with patient verification
     const [billings] = await db.query(
-      `SELECT b.*, p.full_name as patient_name, p.whatsapp, p.email,
-              u.name as created_by_name
+      `SELECT b.id, b.billing_number, b.patient_id, b.patient_record_id,
+              b.billing_date, b.total_amount, b.payment_status, b.payment_method,
+              p.full_name as patient_name
        FROM billings b
        LEFT JOIN patients p ON b.patient_id = p.id
-       LEFT JOIN users u ON b.created_by = u.id
        WHERE b.id = ? AND b.patient_id = ?`,
       [req.params.id, patientId]
     );
@@ -260,7 +262,7 @@ router.get('/:id/details', verifyPatientToken, async (req, res) => {
     }
     
     const [items] = await db.query(
-      'SELECT * FROM billing_items WHERE billing_id = ? ORDER BY id',
+      'SELECT item_type, item_name, description, quantity FROM billing_items WHERE billing_id = ? ORDER BY id',
       [req.params.id]
     );
     
