@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20260925birthdate1');
+importScripts('/sw.js?v=20260926patientpopup1');

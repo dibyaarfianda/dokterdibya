@@ -139,6 +139,8 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             stopEvent: stopTopbarEvent
         });
         const openNotificationModal = notificationController.open;
+        const showPendingPatientPopup = notificationController.showPendingPopup;
+        const dismissPatientPopup = notificationController.dismissPopup;
         const markTopbarNotificationRead = notificationController.markRead;
         const markAllTopbarNotificationsRead = notificationController.markAllRead;
 
@@ -1440,6 +1442,17 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             },
             'mark-notification-read': function(target) {
                 markTopbarNotificationRead(target.dataset.notificationId);
+            },
+            'dismiss-patient-popup': async function(target) {
+                if (await dismissPatientPopup(target.dataset.notificationId)) {
+                    closeAllModals();
+                    showPendingPatientPopup();
+                }
+            },
+            'book-after-patient-popup': async function(target) {
+                if (await dismissPatientPopup(target.dataset.notificationId)) {
+                    window.location.href = '/booking-klinik.html';
+                }
             },
             'open-settings-notifications': function(target, event) {
                 openSettingsNotifications(event);
@@ -3111,7 +3124,8 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             updateRuangBacaBadges();
             checkActiveBooking();
             loadBirthClassHomeCard();
-            checkAttendanceConfirmation();
+            await checkAttendanceConfirmation();
+            showPendingPatientPopup();
             const pendingBirth = await checkBirthPending();
             const publishedBirth = await loadBirthCongratsHome();
             if (!pendingBirth && !publishedBirth) loadPregnancyTrackerHome();
@@ -3275,6 +3289,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                     loadHomeAnnouncements();
                     loadUnreadDocCounts();
                     checkActiveBooking();
+                    showPendingPatientPopup();
                     checkBirthPending({ silent: true });
                     loadBirthCongratsHome();
                 }

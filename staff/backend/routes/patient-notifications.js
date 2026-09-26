@@ -226,6 +226,40 @@ router.get('/', verifyPatientToken, async (req, res) => {
     }
 });
 
+router.get('/popup-pending', verifyPatientToken, async (req, res) => {
+    const patientId = req.patient?.patientId || req.patient?.id;
+    if (!patientId) return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    try {
+        const [rows] = await db.query(
+            `SELECT id, title, message, link FROM patient_notifications
+             WHERE patient_id = ? AND popup_on_open = 1 AND popup_dismissed_at IS NULL
+             ORDER BY created_at ASC, id ASC LIMIT 1`,
+            [patientId]
+        );
+        res.json({ success: true, notification: rows[0] || null });
+    } catch (error) {
+        console.error('Error fetching patient popup:', error);
+        res.status(500).json({ success: false, message: 'Gagal mengambil pop up pasien' });
+    }
+});
+
+router.post('/:id/dismiss-popup', verifyPatientToken, async (req, res) => {
+    const patientId = req.patient?.patientId || req.patient?.id;
+    if (!patientId) return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+    try {
+        const [result] = await db.query(
+            `UPDATE patient_notifications SET popup_dismissed_at = NOW()
+             WHERE id = ? AND patient_id = ? AND popup_on_open = 1 AND popup_dismissed_at IS NULL`,
+            [req.params.id, patientId]
+        );
+        res.json({ success: true, dismissed: result.affectedRows > 0 });
+    } catch (error) {
+        console.error('Error dismissing patient popup:', error);
+        res.status(500).json({ success: false, message: 'Gagal menutup pop up pasien' });
+    }
+});
+
 /**
  * GET /api/patient-notifications/count
  * Get unread notification count for badge
@@ -439,13 +473,19 @@ async function createPatientNotification({
     message,
     link = null,
     icon = 'fa fa-bell',
-    icon_color = 'text-primary'
+    icon_color = 'text-primary',
+    popup_on_open = false
 }) {
     try {
-        const [result] = await db.query(`
-            INSERT INTO patient_notifications (patient_id, type, title, message, link, icon, icon_color)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `, [patient_id, type, title, message, link, icon, icon_color]);
+        const [result] = popup_on_open
+            ? await db.query(`
+                INSERT INTO patient_notifications (patient_id, type, title, message, link, icon, icon_color, popup_on_open)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+            `, [patient_id, type, title, message, link, icon, icon_color])
+            : await db.query(`
+                INSERT INTO patient_notifications (patient_id, type, title, message, link, icon, icon_color)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            `, [patient_id, type, title, message, link, icon, icon_color]);
 
         // Broadcast notification via Socket.IO for real-time updates (web)
         try {
