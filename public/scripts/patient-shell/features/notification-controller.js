@@ -70,6 +70,41 @@ export function createPatientNotificationController(options = {}) {
         return data.success && Array.isArray(data.notifications) ? data.notifications : [];
     }
 
+    async function showPendingPopup() {
+        if (!getToken()) return;
+        try {
+            const response = await fetch('/api/patient-notifications/popup-pending?_t=' + Date.now(), {
+                headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' },
+                cache: 'no-store'
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            const item = data.success && data.notification;
+            if (!item || document.getElementById('attendance-confirm-overlay')) return;
+            const link = String(item.link || '');
+            const bookingLink = link === '/booking-klinik.html'
+                ? '<button type="button" class="primary-action soundable" data-shell-action="book-after-patient-popup" data-notification-id="' + escapeHtml(item.id) + '">Booking ulang</button>'
+                : '';
+            openTopbarModal(item.title || 'Pemberitahuan Klinik', 'Klinik Privat',
+                '<p style="white-space:pre-line;line-height:1.6;">' + escapeHtml(item.message || '') + '</p>' +
+                '<div class="modal-actions">' + bookingLink +
+                '<button type="button" class="ghost-action soundable" data-shell-action="dismiss-patient-popup" data-notification-id="' + escapeHtml(item.id) + '">Saya mengerti</button></div>');
+        } catch (_error) {}
+    }
+
+    async function dismissPopup(id) {
+        try {
+            const response = await fetch('/api/patient-notifications/' + encodeURIComponent(id) + '/dismiss-popup', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + getToken() }
+            });
+            if (!response.ok) return false;
+            return Boolean((await response.json()).success);
+        } catch (_error) {
+            return false;
+        }
+    }
+
     async function open(event) {
         stopEvent(event);
         if (!requireRealPatient(
@@ -128,8 +163,10 @@ export function createPatientNotificationController(options = {}) {
     }
 
     return Object.freeze({
+        dismissPopup,
         markAllRead,
         markRead,
-        open
+        open,
+        showPendingPopup
     });
 }
