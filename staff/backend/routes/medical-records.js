@@ -48,7 +48,14 @@ async function postcommitSundayEffect(result, req) {
     }
 }
 
-router.post('/api/medical-records', verifyStaffToken, requirePermission('medical_records.create'), async (req, res) => {
+function requireSectionWritePermission(action) {
+    const general = requirePermission(`medical_records.${action}`);
+    const anamnesa = requirePermission(`medical_records.${action}`, 'medical_records.anamnesa_write');
+    return (req, res, next) => (req.body?.[action === 'create' ? 'type' : 'recordType'] === 'anamnesa'
+        ? anamnesa : general)(req, res, next);
+}
+
+router.post('/api/medical-records', verifyStaffToken, requireSectionWritePermission('create'), async (req, res) => {
     try {
         const { patientId, mrId, type, data } = req.body;
         const result = await medicalRecordService.create({ patientId, mrId, recordType: type, data, actor: req.user,
@@ -280,7 +287,7 @@ const retiredMutation = (req, res) => res.status(410).json({
 router.put('/api/medical-records/:id', verifyStaffToken, retiredMutation);
 router.delete('/api/medical-records/:id', verifyStaffToken, retiredMutation);
 
-router.patch('/api/medical-records/:id', verifyStaffToken, requirePermission('medical_records.edit'), async (req, res) => {
+router.patch('/api/medical-records/:id', verifyStaffToken, requireSectionWritePermission('edit'), async (req, res) => {
     try {
         const result = await medicalRecordService.patch({
             id: req.params.id, mrId: req.body.mrId, patientId: req.body.patientId,

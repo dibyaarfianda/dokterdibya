@@ -309,4 +309,15 @@ describe('requirePermission', () => {
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
         expect(next).not.toHaveBeenCalled();
     });
+
+    it('checks a user grant as well as the role grant', async () => {
+        req.user.id = 'LCBRGLMAMX';
+        db.query.mockResolvedValueOnce([[{ name: 'medical_records.anamnesa_write' }]]);
+        await requirePermission('medical_records.anamnesa_write')(req, res, next);
+        expect(db.query).toHaveBeenCalledWith(
+            expect.stringContaining('user_permission_grants'),
+            expect.arrayContaining(['LCBRGLMAMX', 'medical_records.anamnesa_write'])
+        );
+        expect(next).toHaveBeenCalled();
+    });
 });

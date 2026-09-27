@@ -310,9 +310,11 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     if (user.role_id) {
         const [permRows] = await db.query(
             `SELECT p.name FROM permissions p
-             JOIN role_permissions rp ON p.id = rp.permission_id
-             WHERE rp.role_id = ?`,
-            [user.role_id]
+             WHERE EXISTS (SELECT 1 FROM role_permissions rp
+                           WHERE rp.permission_id = p.id AND rp.role_id = ?)
+                OR EXISTS (SELECT 1 FROM user_permission_grants upg
+                           WHERE upg.permission_id = p.id AND upg.user_id = ?)`,
+            [user.role_id, user.new_id]
         );
         permissions = permRows.map(p => p.name);
     }

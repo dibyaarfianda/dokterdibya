@@ -585,14 +585,17 @@ function requirePermission(...requiredPermissions) {
                 });
             }
 
-            // Check if user's role has ANY of the required permissions
+            // Check role grants and explicit staff grants for the same permission.
             const placeholders = requiredPermissions.map(() => '?').join(', ');
             const [rows] = await db.query(
                 `SELECT p.name
-                 FROM role_permissions rp
-                 JOIN permissions p ON rp.permission_id = p.id
-                 WHERE rp.role_id = ? AND p.name IN (${placeholders})`,
-                [roleId, ...requiredPermissions]
+                 FROM permissions p
+                 WHERE p.name IN (${placeholders})
+                   AND (EXISTS (SELECT 1 FROM role_permissions rp
+                                WHERE rp.permission_id = p.id AND rp.role_id = ?)
+                        OR EXISTS (SELECT 1 FROM user_permission_grants upg
+                                   WHERE upg.permission_id = p.id AND upg.user_id = ?))`,
+                [...requiredPermissions, roleId, req.user.id]
             );
 
             if (rows.length === 0) {
