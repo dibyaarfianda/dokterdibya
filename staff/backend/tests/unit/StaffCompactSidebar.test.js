@@ -123,6 +123,20 @@ describe('compact desktop staff sidebar', () => {
         expect(result.doctorGroupHidden).toBe(true);
     });
 
+    test('staff with Klinik Privat visibility can see its sidebar shortcut', async () => {
+        const result = await page.evaluate(() => {
+            document.getElementById('nav-klinik-private').style.display = '';
+            window.staffCompactSidebar?.init({ role_id: 7, role: 'managerial' });
+            window.staffCompactSidebar?.refresh();
+            const item = document.getElementById('nav-klinik-private');
+            return {
+                inShortcuts: item.parentElement?.id === 'staff-compact-shortcuts',
+                visible: getComputedStyle(item).display !== 'none'
+            };
+        });
+        expect(result).toEqual({ inShortcuts: true, visible: true });
+    });
+
     test('groups open for active pages, preserve badges, and collapse to an icon rail', async () => {
         const result = await page.evaluate(() => {
             document.querySelectorAll('.dokter-only').forEach(item => item.classList.remove('d-none'));

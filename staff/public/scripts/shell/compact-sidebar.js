@@ -13,7 +13,7 @@
     ];
     const SHORTCUTS = {
         dokter: ['nav-dashboard', 'nav-klinik-private', 'nav-antrian-online', 'nav-tanya-dokter'],
-        staff: ['nav-dashboard', 'nav-kantor-saya', 'nav-antrian-online', 'nav-pasien-baru']
+        staff: ['nav-dashboard', 'nav-klinik-private', 'nav-kantor-saya', 'nav-antrian-online', 'nav-pasien-baru']
     };
     const HEADER_GROUPS = {
         BERANDA: 'klinik', KLINIK: 'klinik', PASIEN: 'pasien',
