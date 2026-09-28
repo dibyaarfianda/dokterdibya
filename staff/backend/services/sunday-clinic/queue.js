@@ -157,7 +157,7 @@ async function processQueueReminderNotifications() {
 
             const notification = await createPatientNotification({
                 patient_id: settings.patient_id,
-                type: 'queue_reminder',
+                type: 'reminder',
                 title: 'Antrian Anda Sudah Dekat',
                 message,
                 link: '/antrian.html',

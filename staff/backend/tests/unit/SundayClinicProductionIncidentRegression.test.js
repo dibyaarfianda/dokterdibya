@@ -55,7 +55,7 @@ describe('Sunday Clinic production incident regressions', () => {
         mockShared.queueTodayCache.expiresAt = 1000;
     });
 
-    test('processes queue reminders without an undefined notification dependency', async () => {
+    test('stores queue reminders with a notification type accepted by the patient database', async () => {
         mockShared.db.query
             .mockResolvedValueOnce([{ affectedRows: 1 }])
             .mockResolvedValueOnce([[
@@ -83,7 +83,9 @@ describe('Sunday Clinic production incident regressions', () => {
         expect(mockShared.listActiveQueueReminderSettings).toHaveBeenCalledWith(['patient-test']);
         expect(mockShared.createPatientNotification).toHaveBeenCalledWith(expect.objectContaining({
             patient_id: 'patient-test',
-            type: 'queue_reminder'
+            type: 'reminder',
+            title: 'Antrian Anda Sudah Dekat',
+            link: '/antrian.html'
         }));
         expect(mockShared.markQueueReminderTriggered).toHaveBeenCalledWith(
             'patient-test',
@@ -93,6 +95,74 @@ describe('Sunday Clinic production incident regressions', () => {
             'processQueueReminderNotifications failed',
             expect.anything()
         );
+    });
+
+    test('keeps a failed queue reminder eligible for retry', async () => {
+        mockShared.db.query.mockImplementation(async (query) => query.includes('UPDATE sunday_clinic_records')
+            ? [{ affectedRows: 1 }]
+            : [[{
+                patient_id: 'patient-test',
+                appointment_date: '2026-08-09',
+                session: 1,
+                slot_number: 1,
+                queue_status: 'menunggu'
+            }]]);
+        mockShared.listActiveQueueReminderSettings.mockResolvedValue([{
+            patient_id: 'patient-test',
+            threshold_ahead: 2,
+            last_notified_signature: null
+        }]);
+        mockShared.createPatientNotification
+            .mockResolvedValueOnce({ success: false, error: 'database rejected type' })
+            .mockResolvedValueOnce({ success: true });
+
+        await queueService.updateQueueStatus('DRD0001', 'anamnesa');
+        await flushBackgroundWork();
+        expect(mockShared.markQueueReminderTriggered).not.toHaveBeenCalled();
+
+        await queueService.updateQueueStatus('DRD0001', 'anamnesa');
+        await flushBackgroundWork();
+        expect(mockShared.createPatientNotification).toHaveBeenCalledTimes(2);
+        expect(mockShared.createPatientNotification).toHaveBeenNthCalledWith(2, expect.objectContaining({
+            type: 'reminder'
+        }));
+        expect(mockShared.markQueueReminderTriggered).toHaveBeenCalledWith(
+            'patient-test',
+            '2026-08-09|1|1'
+        );
+    });
+
+    test('does not resend a successful queue reminder for the same slot', async () => {
+        let lastNotifiedSignature = null;
+        mockShared.db.query.mockImplementation(async (query) => query.includes('UPDATE sunday_clinic_records')
+            ? [{ affectedRows: 1 }]
+            : [[{
+                patient_id: 'patient-test',
+                appointment_date: '2026-08-09',
+                session: 1,
+                slot_number: 1,
+                queue_status: 'menunggu'
+            }]]);
+        mockShared.listActiveQueueReminderSettings.mockImplementation(async () => [{
+            patient_id: 'patient-test',
+            threshold_ahead: 2,
+            last_notified_signature: lastNotifiedSignature
+        }]);
+        mockShared.createPatientNotification.mockResolvedValue({ success: true });
+        mockShared.markQueueReminderTriggered.mockImplementation(async (_patientId, signature) => {
+            lastNotifiedSignature = signature;
+        });
+
+        await queueService.updateQueueStatus('DRD0001', 'anamnesa');
+        await flushBackgroundWork();
+        await queueService.updateQueueStatus('DRD0001', 'anamnesa');
+        await flushBackgroundWork();
+
+        expect(mockShared.createPatientNotification).toHaveBeenCalledTimes(1);
+        expect(mockShared.createPatientNotification).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'reminder'
+        }));
+        expect(mockShared.markQueueReminderTriggered).toHaveBeenCalledTimes(1);
     });
 
     test('releases its own database connection once after a successful record creation', async () => {
