@@ -36,10 +36,8 @@ const spaces = {
     subtitle: 'Jadwal tindakan klinik dan poli seperti IUD, implan, pap smear/IVA, USG, dan tindakan VK.',
     action: 'Tambah tindakan',
     categoryLabel: 'Jenis tindakan',
-    participantLabel: 'Pasien / pendamping',
     agendaPlaceholder: 'Nama pasien atau ringkasan tindakan',
-    locationPlaceholder: 'Klinik, VK, poli, atau rumah sakit',
-    participantPlaceholder: 'Nama pasien, pendamping, atau staff terkait',
+    locationOptions: ['Melinda', 'Gambiran', 'Bhayangkara', 'Klinik Privat'],
     categories: [
       'Pasang IUD',
       'Lepas Pasang IUD',
@@ -392,13 +390,25 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
           <div class="form-group">
             <label>Lokasi</label>
-            <input value={form.location} onInput={handleChange('location')} placeholder={config.locationPlaceholder} />
+            {space === 'tindakan' ? (
+              <select value={form.location} onInput={handleChange('location')} required>
+                <option value="">Pilih lokasi</option>
+                {editingId && form.location && !config.locationOptions.includes(form.location) && (
+                  <option value={form.location}>{form.location} (lokasi sebelumnya)</option>
+                )}
+                {config.locationOptions.map((location) => <option key={location} value={location}>{location}</option>)}
+              </select>
+            ) : (
+              <input value={form.location} onInput={handleChange('location')} placeholder={config.locationPlaceholder} />
+            )}
           </div>
 
-          <div class="form-group">
-            <label>{config.participantLabel}</label>
-            <input value={form.participants} onInput={handleChange('participants')} placeholder={config.participantPlaceholder} />
-          </div>
+          {space !== 'tindakan' && (
+            <div class="form-group">
+              <label>{config.participantLabel}</label>
+              <input value={form.participants} onInput={handleChange('participants')} placeholder={config.participantPlaceholder} />
+            </div>
+          )}
 
           <div class="form-group">
             <label>Catatan jadwal</label>
@@ -447,7 +457,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
                       {(item.creator_display_name || item.creator_name) && (
                         <div class="space-agenda-submeta">Entry oleh {item.creator_display_name || item.creator_name}</div>
                       )}
-                      {item.participants && <div class="space-agenda-submeta">{item.participants}</div>}
+                      {space !== 'tindakan' && item.participants && <div class="space-agenda-submeta">{item.participants}</div>}
                       {isExpanded && item.notes && <div class="space-agenda-notes">{item.notes}</div>}
                       {isExpanded && (
                         <div class="space-status-actions">

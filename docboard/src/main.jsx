@@ -3,7 +3,7 @@ import App from './app';
 import './index.css';
 import { playAlarmSound } from './utils/alarmSound';
 
-const DOCBOARD_PWA_VERSION = '20260929-1';
+const DOCBOARD_PWA_VERSION = '20260929-2';
 let reloadingForWorkerUpdate = false;
 
 function showUpdatePrompt(registration) {
