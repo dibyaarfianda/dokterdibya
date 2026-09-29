@@ -471,7 +471,7 @@ class SurgeryService {
       `SELECT s.*, ot.code as op_code, ot.name as op_name, ot.name_id as op_name_id, ot.category as op_category
        FROM surgery_schedules s
        JOIN surgery_operation_types ot ON s.operation_type_id = ot.id
-       WHERE s.surgery_date BETWEEN ? AND ? AND s.status NOT IN ('cancelled','completed')
+       WHERE s.surgery_date BETWEEN ? AND ? AND s.status != 'cancelled'
        ORDER BY s.surgery_date, s.surgery_time`,
       [todayStr, endStr]
     );

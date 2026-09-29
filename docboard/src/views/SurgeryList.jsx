@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
-import { LOCATIONS, SURGERY_STATUS } from '../utils/constants';
+import { LOCATIONS, SURGERY_STATUS, getRolePermissions } from '../utils/constants';
 import { today, normalizeDateInput, getDayName, formatDateShort } from '../utils/date';
+import { userRole } from '../stores/auth';
 import ExportButton from '../components/ExportButton';
 
 export default function SurgeryList() {
   const [surgeries, setSurgeries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [completingId, setCompletingId] = useState(null);
+  const canChangeStatus = getRolePermissions(userRole.value).canChangeStatus;
 
   useEffect(() => { loadUpcoming(); }, []);
 
@@ -29,6 +32,19 @@ export default function SurgeryList() {
     const dateStr = normalizeDateInput(s.surgery_date);
     if (!grouped[dateStr]) grouped[dateStr] = [];
     grouped[dateStr].push(s);
+  }
+
+  async function completeSurgery(id) {
+    if (completingId !== null) return;
+    setCompletingId(id);
+    try {
+      await api.updateSurgeryStatus(id, 'completed');
+      setSurgeries((current) => current.map((surgery) => surgery.id === id ? { ...surgery, status: 'completed' } : surgery));
+    } catch (err) {
+      alert('Gagal menyelesaikan jadwal operasi: ' + err.message);
+    } finally {
+      setCompletingId(null);
+    }
   }
 
   const todayStr = today();
@@ -80,7 +96,7 @@ export default function SurgeryList() {
                   <span class="surgery-date-count">{items.length} operasi</span>
                 </div>
                 {items.map(s => (
-                  <SurgeryCard key={s.id} surgery={s} onClick={() => route(`/docboard/surgery/${s.id}`)} />
+                  <SurgeryCard key={s.id} surgery={s} onClick={() => route(`/docboard/surgery/${s.id}`)} onComplete={() => completeSurgery(s.id)} canComplete={canChangeStatus} completing={completingId === s.id} />
                 ))}
               </div>
             );
@@ -98,7 +114,7 @@ export default function SurgeryList() {
   );
 }
 
-function SurgeryCard({ surgery: s, onClick }) {
+function SurgeryCard({ surgery: s, onClick, onComplete, canComplete, completing }) {
   const loc = LOCATIONS[s.location];
   const status = SURGERY_STATUS[s.status] || SURGERY_STATUS.planned;
   const timeStr = s.surgery_time ? s.surgery_time.substring(0, 5) : '--:--';
@@ -107,7 +123,7 @@ function SurgeryCard({ surgery: s, onClick }) {
   const diagnosis = s.diagnosis && s.diagnosis.trim() ? s.diagnosis.trim() : '';
 
   return (
-    <button class="surgery-row-card" type="button" onClick={onClick}>
+    <article class="surgery-row-card" onClick={onClick}>
       <div class="surgery-row-time">
         <span>{timeStr}</span>
         <small>WIB</small>
@@ -137,8 +153,13 @@ function SurgeryCard({ surgery: s, onClick }) {
         <span class="status-badge" style={{ color: status.color, backgroundColor: status.bg }}>
           {status.label}
         </span>
-        <span class="surgery-row-chevron">›</span>
+        {canComplete && !['completed', 'cancelled', 'in_progress'].includes(s.status) && (
+          <button class="surgery-row-complete" type="button" disabled={completing} onClick={(event) => { event.stopPropagation(); onComplete(); }}>
+            {completing ? 'Menyimpan...' : 'SELESAI'}
+          </button>
+        )}
+        <button class="surgery-row-detail" type="button" aria-label={`Lihat detail operasi ${s.patient_name}`} onClick={(event) => { event.stopPropagation(); onClick(); }}>›</button>
       </div>
-    </button>
+    </article>
   );
 }

@@ -20,10 +20,13 @@ const STATUS_MAP = {
     confirmed: 'confirmed',
     done: 'completed',
     completed: 'completed',
+    selesai: 'completed',
     cancelled: 'cancelled',
     canceled: 'cancelled',
+    batal: 'cancelled',
     postponed: 'postponed',
-    delayed: 'postponed'
+    delayed: 'postponed',
+    ditunda: 'postponed'
 };
 
 function normalizeString(value) {
@@ -149,6 +152,7 @@ class CommOperationSyncService {
 
     normalizeItem(item, batch) {
         const location = normalizeLocation(item.location || item.facility || batch.facility);
+        const sourceStatus = normalizeStatus(item.raw_status || item.status);
         const operationDate = normalizeDate(item.operation_date);
         const patientName = normalizeString(item.patient_name);
         const sourceKey = normalizeString(item.source_key);
@@ -164,7 +168,7 @@ class CommOperationSyncService {
             operationDate,
             operationTime: normalizeTime(item.operation_time),
             location,
-            status: normalizeStatus(item.raw_status || item.status),
+            status: location === 'rsia_melinda' && sourceStatus !== 'cancelled' ? 'completed' : sourceStatus,
             notes: normalizeNullableString(item.notes),
             sentFields: getSentFields(item)
         };
@@ -292,7 +296,14 @@ class CommOperationSyncService {
             if (item.sentFields.location) addField('location', item.location);
             if (item.sentFields.operation_date) addField('surgery_date', item.operationDate);
             if (item.sentFields.operation_time) addField('surgery_time', item.operationTime);
-            if (item.sentFields.raw_status && item.status) addField('status', item.status);
+            if ((item.location === 'rsia_melinda' || item.sentFields.raw_status) && item.status) {
+                if (item.location !== 'rsia_melinda' || item.status === 'cancelled') {
+                    addField('status', item.status);
+                } else {
+                    const [current] = await this.db.query('SELECT status FROM surgery_schedules WHERE id = ?', [surgeryId]);
+                    if (current[0]?.status !== 'cancelled') addField('status', item.status);
+                }
+            }
         }
 
         if (!fields.length) return false;
