@@ -15,6 +15,7 @@ VPS AI terpisah belum tersedia. Rilis ini tidak menjalankan inferensi di server 
 - Jadwal tindakan dari Asisten diubah melalui Asisten. DocBoard tetap menampilkan hasilnya.
 - Duplikasi diperiksa berdasarkan identitas/fasilitas/jenis/tanggal. Operasi yang sudah ada di modul operasi pada fasilitas/tanggal/RM sama juga menahan pembuatan; perlu diperiksa di DocBoard.
 - Kata relatif pada pesan terusan (besok/lusa) tidak otomatis diberi tanggal karena waktu pesan asli tidak tersedia.
+- Pembacaan awal direktori Gambiran terukur sekitar 29 detik. Batas pemeriksaan identitas 45 detik di COMM, satu permintaan per fasilitas pada proses yang sama; kegagalan tetap menahan jadwal. Ini bukan waktu inferensi AI.
 
 ## Keamanan
 
@@ -57,3 +58,7 @@ Belum boleh dianggap lulus:
 - AI privat: VPS terpisah, WireGuard/private networking, fungsi konteks baca terbatas, uji model 50 perintah p95 <10 detik. Uji parser bukan uji model.
 - WhatsApp resmi: bukti dokumentasi+mitra tentang coexistence dan semua pesan grup lama, uji nomor cadangan. Tanpa bukti, gerbang gagal. Jangan memakai WhatsApp Web/scraping/notifikasi.
 - Mode bayangan 2–4 minggu dan sedikitnya 100 usulan tanpa salah tanggal/lokasi, baru pertimbangkan otomatisasi. Perubahan/pembatalan selalu dikonfirmasi. Tahap ini boleh tidak pernah dijalankan.
+
+## Pemeriksaan gerbang WhatsApp, 30 September 2026
+
+Dokumentasi produk [8x8 tentang coexistence](https://developer.8x8.com/connect/docs/whatsapp/whatsapp-business-app-coexistence/) menyatakan chat grup tidak disinkronkan melalui platform. Akses langsung ke halaman dokumentasi Meta tentang coexistence dan Groups API pada sesi ini mendapat HTTP 429; belum ada konfirmasi tertulis khusus nomor Dokter dari mitra. Karena persyaratan cakupan semua pesan grup lama belum terbukti, gerbang tetap tidak lulus dan tahap pemantauan otomatis dihentikan. Nomor praktik belum di-onboard atau diubah.

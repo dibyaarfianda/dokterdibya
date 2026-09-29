@@ -254,6 +254,8 @@ async function searchPatients() {
   form.elements.patient_facility.value = '';
   $('#selected-patient').textContent = 'Belum ada identitas terverifikasi';
   if (query.length < 2 || !facility) { message('Pilih rumah sakit dan isi nomor RM lengkap.', true); return; }
+  $('#patient-search-button').disabled = true;
+  $('#patient-search-button').textContent = 'Memeriksa direktori rumah sakit…';
   try {
     const { patients } = await api('/patients/search', { method: 'POST', body: JSON.stringify({ q: query, facility }) });
     if ($('#patient-search').value.trim() !== query || facilityByLocation[form.elements.location.value] !== facility || !unlocked) return;
@@ -272,6 +274,7 @@ async function searchPatients() {
     }
     if (!matching.length) line(container, 'Tidak ada nomor RM terverifikasi untuk fasilitas yang dipilih.');
   } catch (error) { message(error.message, true); }
+  finally { $('#patient-search-button').disabled = false; $('#patient-search-button').textContent = 'Periksa nomor RM'; }
 }
 
 async function submitConfirmation(event) {

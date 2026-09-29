@@ -18,6 +18,10 @@ const mockModule = (file, exports) => { require.cache[require.resolve(path.join(
   const admin = await mysql.createConnection({ socketPath: '/run/mysqld/mysqld.sock', user: 'root', multipleStatements: true });
   await admin.query(`CREATE DATABASE ${schema}`);
   await admin.query(`CREATE TABLE ${schema}.docboard_space_schedules LIKE dibyaklinik.docboard_space_schedules`);
+  const [columns] = await admin.query(`SHOW COLUMNS FROM ${schema}.docboard_space_schedules LIKE 'assistant_active'`);
+  if (columns.length) await admin.query(`ALTER TABLE ${schema}.docboard_space_schedules
+    DROP INDEX uniq_assistant_patient_procedure_day, DROP COLUMN assistant_active,
+    DROP COLUMN patient_ref_type, DROP COLUMN patient_ref_value, DROP COLUMN patient_facility, DROP COLUMN patient_name`);
   await admin.query(`CREATE TABLE ${schema}.surgery_schedules LIKE dibyaklinik.surgery_schedules`);
   await admin.query(`USE ${schema}`);
   await admin.query(fs.readFileSync(path.join(root, 'migrations/20260929_assistant_daf_phase1.sql'), 'utf8'));

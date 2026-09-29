@@ -188,8 +188,10 @@ class AssistantDafDraftService {
 
       const patient = action === 'cancel' ? null : await this.resolvePatient(connection, input);
       if (existing?.space === 'tindakan') {
-        const originalPatient = await this.resolvePatient(connection, existing);
-        if (action === 'update' && originalPatient.patient_id !== patient.patient_id) throw fail('IDENTITAS_TARGET_BERBEDA', 409);
+        if (action === 'update') {
+          if (existing.patient_ref_type !== patient.ref_type || existing.patient_ref_value !== patient.ref_value
+            || existing.patient_facility !== patient.facility) throw fail('IDENTITAS_TARGET_BERBEDA', 409);
+        } else await this.resolvePatient(connection, existing);
       }
       let scheduleId;
       if (action === 'create' || action === 'update') {

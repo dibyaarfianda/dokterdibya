@@ -9,7 +9,7 @@ class AssistantDafContextService {
     if (!this.key) throw Object.assign(new Error('Pemeriksaan identitas COMM belum dikonfigurasi'), { statusCode: 503 });
     try {
       const response = await this.fetch('http://127.0.0.1:3002/api/assistant-context/patient', {
-        method: 'POST', redirect: 'error', signal: AbortSignal.timeout(14000),
+        method: 'POST', redirect: 'error', signal: AbortSignal.timeout(47000),
         headers: { 'content-type': 'application/json', 'x-assistant-key': this.key },
         body: JSON.stringify({ facility, mr })
       });
