@@ -10,6 +10,7 @@ import {
 import { user } from '../stores/auth';
 import { formatDateDisplay, getDayName, today } from '../utils/date';
 import { isNandaUser } from '../utils/access';
+import { getJakartaNow, isArchivedProcedure } from '../utils/scheduleArchive';
 
 const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
 
@@ -141,6 +142,15 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
   const [expandedId, setExpandedId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [procedureView, setProcedureView] = useState('active');
+  const [clock, setClock] = useState(getJakartaNow);
+
+  useEffect(() => {
+    if (space !== 'tindakan') return undefined;
+    setClock(getJakartaNow());
+    const timer = window.setInterval(() => setClock(getJakartaNow()), 30000);
+    return () => window.clearInterval(timer);
+  }, [space]);
 
   useEffect(() => {
     let active = true;
@@ -158,6 +168,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
     setShowForm(false);
     setExpandedId(null);
     setEditingId(null);
+    setProcedureView('active');
     return () => { active = false; };
   }, [space]);
 
@@ -167,24 +178,41 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
     return items;
   };
 
+  const procedureSchedules = useMemo(() => {
+    if (space !== 'tindakan') return { active: schedules, archive: [] };
+    return {
+      active: schedules.filter((item) => !isArchivedProcedure(item, clock)),
+      archive: schedules.filter((item) => isArchivedProcedure(item, clock)),
+    };
+  }, [schedules, space, clock]);
+
+  const visibleSchedules = space === 'tindakan' ? procedureSchedules[procedureView] : schedules;
+
   const stats = useMemo(() => {
     const todayDate = today();
+    if (space === 'tindakan') return {
+      today: procedureSchedules.active.filter((item) => item.schedule_date === clock.date).length,
+      active: procedureSchedules.active.length,
+      done: procedureSchedules.archive.length,
+    };
     return {
       today: schedules.filter((item) => item.schedule_date === todayDate && item.status !== 'cancelled').length,
       active: schedules.filter((item) => item.status !== 'done' && item.status !== 'cancelled').length,
       done: schedules.filter((item) => item.status === 'done').length,
     };
-  }, [schedules]);
+  }, [schedules, space, procedureSchedules, clock]);
 
   const groupedSchedules = useMemo(() => {
     const groups = new Map();
-    schedules.forEach((item) => {
+    visibleSchedules.forEach((item) => {
       const dateKey = item.schedule_date || 'tanpa-tanggal';
       const items = groups.get(dateKey) || [];
       groups.set(dateKey, [...items, item]);
     });
-    return [...groups.entries()].map(([date, items]) => ({ date, items }));
-  }, [schedules]);
+    const entries = [...groups.entries()];
+    if (space === 'tindakan' && procedureView === 'archive') entries.reverse();
+    return entries.map(([date, items]) => ({ date, items }));
+  }, [visibleSchedules, space, procedureView]);
 
   const handleChange = (field) => (event) => {
     setForm((current) => ({ ...current, [field]: event.currentTarget.value }));
@@ -315,9 +343,20 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
         </div>
         <div class="space-summary-chips">
           <span>{stats.active} aktif</span>
-          <span>{stats.done} selesai</span>
+          <span>{stats.done} {space === 'tindakan' ? 'arsip' : 'selesai'}</span>
         </div>
       </div>
+
+      {space === 'tindakan' && (
+        <div class="view-toggle space-toggle" role="tablist" aria-label="Tampilan jadwal tindakan">
+          <button type="button" role="tab" aria-selected={procedureView === 'active'} class={`view-toggle-btn${procedureView === 'active' ? ' active' : ''}`} onClick={() => { setProcedureView('active'); setExpandedId(null); }}>
+            Belum selesai ({procedureSchedules.active.length})
+          </button>
+          <button type="button" role="tab" aria-selected={procedureView === 'archive'} class={`view-toggle-btn${procedureView === 'archive' ? ' active' : ''}`} onClick={() => { setProcedureView('archive'); setExpandedId(null); }}>
+            Arsip ({procedureSchedules.archive.length})
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <form class="space-form-card" onSubmit={handleSubmit}>
@@ -375,10 +414,10 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
       {loading ? (
         <div class="loading-state"><div class="spinner" /></div>
-      ) : schedules.length === 0 ? (
+      ) : visibleSchedules.length === 0 ? (
         <div class="empty-state">
-          <p>Belum ada jadwal</p>
-          <button class="btn-primary" onClick={openCreateForm}>+ Tambah agenda</button>
+          <p>{space === 'tindakan' ? (procedureView === 'archive' ? 'Belum ada jadwal dalam arsip' : 'Belum ada tindakan yang akan datang') : 'Belum ada jadwal'}</p>
+          {procedureView !== 'archive' && <button class="btn-primary" onClick={openCreateForm}>+ Tambah agenda</button>}
         </div>
       ) : (
         <div class="space-groups">
