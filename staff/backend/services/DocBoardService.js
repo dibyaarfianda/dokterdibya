@@ -59,6 +59,10 @@ class DocBoardService {
       location: row.location || '',
       participants: row.participants || '',
       notes: row.notes || '',
+      patient_ref_type: row.patient_ref_type || '',
+      patient_ref_value: row.patient_ref_value || '',
+      patient_facility: row.patient_facility || '',
+      patient_name: row.patient_name || '',
       status: row.status || 'scheduled',
       creator_name: row.creator_name || '',
       creator_display_name: row.creator_display_name || row.creator_name || '',
@@ -166,6 +170,10 @@ class DocBoardService {
 
   async updateSpaceSchedule(userId, id, data) {
     await this.ensureSpaceScheduleTable();
+    const current = await this.getSpaceSchedule(userId, id);
+    if (current?.patient_ref_value) {
+      throw new Error('Ubah jadwal beridentitas pasien melalui Asisten DAF agar nomor RM dan fasilitas diperiksa kembali.');
+    }
     await pool.query(
       `UPDATE docboard_space_schedules
        SET agenda = ?, category = ?, schedule_date = ?, start_time = ?, end_time = ?, location = ?, participants = ?, notes = ?

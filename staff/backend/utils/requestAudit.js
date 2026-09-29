@@ -9,6 +9,7 @@ function safeAuditPath(req) {
     // Access/performance logs and the global patient guard run before route
     // middleware. Recognize sensitive contracts at that boundary.
     const pathname = String(req.originalUrl || req.url || req.path || '').split('?')[0];
+    if (/^\/api\/assistant-daf(?:\/|$)/i.test(pathname)) return '/api/assistant-daf/[private]';
     if (req.method === 'GET' && /^\/api\/patients\/?$/i.test(pathname)) {
         return '/api/patients';
     }

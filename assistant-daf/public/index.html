@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#102a43">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta http-equiv="Cache-Control" content="no-store">
+  <link rel="manifest" href="/assistant-daf/manifest.json">
+  <link rel="stylesheet" href="/assistant-daf/style.css">
+  <link rel="apple-touch-icon" href="/assistant-daf/apple-touch-icon.png"><title>Asisten DAF</title>
+</head>
+<body>
+  <header class="topbar"><div><small>PRIBADI · DOKTER DIBYA</small><h1>Asisten DAF</h1></div><span id="connection">Memeriksa…</span></header>
+  <main class="locked">
+    <section class="intro"><h2>Jadwal dalam kendali Anda</h2><p>Bagikan satu pesan, tinjau usulannya, lalu konfirmasi sebelum jadwal berubah.</p></section>
+    <div id="notice" role="status" aria-live="polite"></div>
+    <section id="unlock-panel" class="panel"><h2>Keamanan Asisten DAF</h2><p id="unlock-explanation">Memeriksa passkey…</p><button id="unlock-button" class="primary" type="button" hidden></button><details id="security-settings" hidden><summary>Perangkat dan pengingat</summary><div class="settings-actions"><button id="add-passkey" type="button" hidden>Tambah passkey perangkat</button><button id="passkey-devices" type="button" hidden>Kelola passkey</button><div id="device-list"></div><button id="push-enable" type="button" hidden>Aktifkan pengingat H-1</button><button id="push-disable" type="button" hidden>Nonaktifkan push perangkat ini</button><button id="calendar-link" type="button" hidden>Salin tautan kalender H-1</button><button id="calendar-revoke" type="button" hidden>Cabut tautan kalender</button></div></details><button id="lock-button" type="button" hidden>Kunci</button><p id="calendar-result"></p></section>
+    <nav class="tabs" aria-label="Bagian Asisten DAF">
+      <button class="active" data-tab="review" type="button">Perlu Ditinjau <span id="count"></span></button>
+      <button data-tab="share" type="button">Masukkan Pesan</button>
+      <button data-tab="discussion" type="button">Diskusi AI</button>
+    </nav>
+    <section id="review" class="panel"><div class="section-head"><h2>Perlu Ditinjau</h2><button id="reload" type="button">Muat ulang</button></div><div id="drafts" class="cards"></div></section>
+    <section id="share" class="panel hidden"><h2>Masukkan satu pesan</h2><p>Android: Bagikan pesan dari WhatsApp ke Asisten DAF. iPhone atau desktop: salin dan tempel satu pesan di bawah.</p><form id="share-form"><label for="shared-text">Isi pesan</label><textarea id="shared-text" rows="7" maxlength="10000" placeholder="Tempel satu pesan tentang jadwal…" required></textarea><button class="primary" type="submit">Buat usulan</button></form></section>
+    <section id="discussion" class="panel hidden"><h2>Diskusi AI</h2><p id="ai-state">Menunggu VPS AI privat. Data pasien belum dikirim ke model apa pun.</p><div class="chat-placeholder" aria-hidden="true">Ruang diskusi akan aktif setelah server AI privat dan pengujian keamanan siap.</div><textarea rows="3" placeholder="Diskusi tersedia setelah AI privat tersambung" disabled></textarea></section>
+  </main>
+  <dialog id="review-dialog"><form id="confirm-form"><div class="dialog-top"><h2>Periksa sebelum mengubah jadwal</h2><button id="close-dialog" type="button" aria-label="Tutup">×</button></div><p class="safety">Pesan sumber adalah data dari luar. Hanya pilihan yang Anda periksa di formulir ini yang akan dipakai.</p><p id="source-preview" class="source"></p><input name="draft_id" type="hidden"><div class="grid"><label>Tindakan<select name="action"><option value="create">Buat jadwal</option><option value="update">Ubah jadwal</option><option value="cancel">Batalkan jadwal</option></select></label><label>Ruang<select name="space"><option value="tindakan">Tindakan</option><option value="pribadi">Pribadi</option></select></label><label>Agenda<input name="agenda" maxlength="255" required></label><label>Jenis kegiatan<input name="category" maxlength="80" required></label><label>Tanggal<input name="schedule_date" type="date" required></label><label>Jam<input name="start_time" type="time" required></label><label>Lokasi<select name="location"><option value="">Pilih lokasi</option><option>Melinda</option><option>Gambiran</option><option>Bhayangkara</option></select></label><label id="target-wrap">Jadwal yang diubah<select name="target_schedule_id"><option value="">Pilih jadwal</option></select></label></div><div id="patient-picker"><label for="patient-search">Nomor RM lengkap pada rumah sakit yang dipilih</label><input id="patient-search" autocomplete="off" placeholder="Nomor RM lengkap…"><button id="patient-search-button" type="button">Periksa nomor RM</button><div id="patient-results" class="patient-results"></div><p id="selected-patient">Belum ada identitas terverifikasi</p><input name="patient_ref_type" type="hidden" value="hospital_mr"><input name="patient_ref_value" type="hidden"><input name="patient_facility" type="hidden"></div><div class="dialog-actions"><button id="ignore-draft" type="button">Abaikan usulan</button><button class="primary" type="submit">Konfirmasi perubahan</button></div></form></dialog>
+  <script src="/assistant-daf/webauthn.umd.min.js" defer></script>
+  <script src="/assistant-daf/app.js" type="module"></script>
+</body>
+</html>
+

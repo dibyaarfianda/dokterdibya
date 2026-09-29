@@ -756,6 +756,9 @@ app.use('/api/integration/operation-data', operationDataIntegrationRoutes);
 const docboardRoutes = require('./routes/docboard');
 app.use('/api/docboard', docboardRoutes);
 
+// Private Asisten DAF proposal API. All clinical changes require owner confirmation.
+app.use('/api/assistant-daf', require('./routes/assistant-daf'));
+
 // Serve DocBoard PWA static files (production build)
 const docboardDistPath = path.join(__dirname, '../../docboard/dist');
 app.use('/docboard', express.static(docboardDistPath, {
@@ -774,6 +777,31 @@ app.use('/docboard', express.static(docboardDistPath, {
 // DocBoard SPA fallback - serve index.html for all /docboard/* routes
 app.get('/docboard/*', (req, res) => {
     res.sendFile(path.join(docboardDistPath, 'index.html'));
+});
+
+const assistantDafStaticPath = path.join(__dirname, '../../assistant-daf/public');
+app.use('/assistant-daf', (req, res, next) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+});
+app.get('/assistant-daf/docboard-session.js', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(path.join(__dirname, '../../public/scripts/docboard-session.js'));
+});
+app.use('/assistant-daf', express.static(assistantDafStaticPath, {
+    setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+        res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'");
+        res.setHeader('Referrer-Policy', 'no-referrer');
+    }
+}));
+app.get('/assistant-daf/*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.sendFile(path.join(assistantDafStaticPath, 'index.html'));
 });
 
 // API Documentation
@@ -1136,7 +1164,7 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-server.listen(PORT, () => {
+server.listen(PORT, process.env.BIND_HOST || '127.0.0.1', () => {
     require('./services/clinicMonitorRuntime').startWorker();
     require('./services/sundayClinicMedifySyncQueue').startWorker();
     logger.info(`Backend server running on port ${PORT}`);

@@ -13,4 +13,7 @@ find /var/www/dokterdibya -type f -exec chmod 644 {} \;
 # Make scripts executable
 find /var/www/dokterdibya -name "*.sh" -exec chmod +x {} \;
 
+# Runtime credentials must not inherit the public static-file permissions.
+find /var/www/dokterdibya -type f \( -name '.env' -o -name '.env.production' -o -name '.env.local' \) -exec chmod 600 {} \;
+
 echo "Permissions fixed!"
