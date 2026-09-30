@@ -44,5 +44,6 @@ test('the AI review is separate from disabled discussion and returns bounded fie
   const request = JSON.parse(fetchImpl.mock.calls[0][1].body);
   expect(request.messages[0].content).not.toContain('03/10/2026');
   expect(request.messages[1].content).toContain('03/10/2026');
+  expect(request.reasoning_effort).toBe('none');
   expect(request).not.toHaveProperty('tools');
 });
