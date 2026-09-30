@@ -6,6 +6,14 @@ PWA `/assistant-daf/` menggunakan passkey, menerima satu pesan pilihan Dokter, m
 
 VPS AI terpisah belum tersedia. Rilis ini tidak menjalankan inferensi di server COMM. Integrasi konteks hanya pemeriksaan identitas pasien melalui COMM; bukan akses rekam medis bebas.
 
+## Konektor RunPod Flex yang belum aktif
+
+`staff/backend/services/AssistantDafRunpodClient.js` menyiapkan panggilan ke endpoint vLLM Serverless milik Dokter pada host tetap `api.runpod.ai`. Konektor hanya mengembalikan klasifikasi terbatas (buat/ubah/batal, ruang, dan kategori); tanggal, jam, lokasi, serta identitas pasien tidak diambil dari jawaban model. Konektor ini belum dihubungkan ke rute Asisten atau antarmuka. Tidak ada endpoint RunPod, model, kunci, atau izin pemrosesan data yang terpasang pada aplikasi produksi, sehingga tidak ada panggilan keluar.
+
+Untuk tahap aktivasi nanti, administrator harus mengonfigurasi endpoint ID, nama model, dan kunci di luar repositori, lalu menyetel **kedua** gerbang `ASSISTANT_DAF_RUNPOD_ENABLED=1` dan `ASSISTANT_DAF_RUNPOD_DATA_CONSENT=1`. Gerbang kedua tidak boleh disetel sebelum Dokter memberi izin eksplisit tentang jenis data yang boleh dikirim. Masih diperlukan alur penyamaran yang diverifikasi, pembatasan biaya, validasi model, penanganan cold start, dan alur masuk ke Perlu Ditinjau sebelum konektor disambung ke pengguna. Klasifikasi yang kembali dari model tidak boleh menulis jadwal secara langsung.
+
+Ini persiapan kode, bukan aktivasi layanan atau bukti keamanan/ketepatan model. RunPod adalah pihak ketiga; data yang dikirim dapat diproses di luar Indonesia. Jangan mengirim pesan pasien ke sana berdasarkan persiapan ini saja.
+
 ## Identitas dan konfirmasi
 
 - Pilih fasilitas lalu ketik nomor RM lengkap. COMM memanggil direktori SIMRS Melinda/Gambiran atau pencarian pasien ERM Bhayangkara. Hasil harus cocok persis dengan RM dan hanya satu ID pasien. Nama sama tidak cukup.
