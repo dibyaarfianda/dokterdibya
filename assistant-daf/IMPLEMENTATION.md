@@ -2,7 +2,7 @@
 
 ## Batas rilis
 
-PWA `/assistant-daf/` menggunakan passkey, menerima satu pesan pilihan Dokter, membuat usulan terenkripsi, dan meminta konfirmasi sebelum menulis ke DocBoard. Pesan pada alur berbagi manual tidak dikirim ke model AI. Hanya pertanyaan yang sengaja dikirim dari ruang Diskusi AI diproses oleh RunPod. Pemantauan WhatsApp, mode bayangan, dan penulisan otomatis tetap nonaktif.
+PWA `/assistant-daf/` menggunakan passkey, menerima satu pesan pilihan Dokter, membuat usulan terenkripsi, dan meminta konfirmasi sebelum menulis ke DocBoard. Pesan pada alur berbagi manual tidak dikirim ke model AI. Saat Diskusi AI diaktifkan kelak, hanya pertanyaan yang sengaja dikirim dari ruang itu yang diproses oleh RunPod. Pemantauan WhatsApp otomatis, mode bayangan, dan penulisan otomatis tetap nonaktif.
 
 RunPod Serverless disiapkan untuk inferensi terpisah dari server COMM. Integrasi konteks hanya pemeriksaan identitas pasien melalui COMM pada alur konfirmasi jadwal; Diskusi AI belum membaca jadwal, COMM, atau DOKTERDIBYA secara langsung.
 
@@ -14,7 +14,7 @@ Aktivasi memerlukan endpoint ID, nama model, dan kunci di luar repositori, serta
 
 Ini bukan bukti ketepatan model untuk mengenali tanggal, lokasi, atau identitas. Jawaban AI tetap saran dan tidak boleh dipakai sebagai konfirmasi klinis atau jadwal.
 
-**Status produksi 1 Oktober 2026:** kode, halaman, dan kunci di file root-only sudah terpasang, tetapi `ASSISTANT_DAF_RUNPOD_ENABLED=0`. Permintaan sintetis pertama tertahan di antrean; setelah pekerja idle yang macet disegarkan, model mulai sekitar 169 detik dan permintaan berikutnya berhasil. Panggilan OpenAI langsung yang sederhana menjawab sekitar 4 detik, sedangkan pertanyaan jadwal melalui konektor aplikasi sekitar 18 detik. Keduanya tidak membuktikan target p95 <10 detik pada 50 perintah. Dua permintaan awal dan satu permintaan diagnosis yang tertahan telah dibatalkan. Diskusi AI tetap tertutup sampai keputusan kapasitas/waktu tunggu sesuai rencana dibuat. Jangan menyimpulkan `private_ai_ready=true` hanya dari tersedianya kunci; uji respons nyata tetap diperlukan setelah perubahan endpoint.
+**Status produksi 1 Oktober 2026:** kode, halaman, dan kunci di file root-only sudah terpasang, tetapi `ASSISTANT_DAF_RUNPOD_ENABLED=0`. Dokter memilih agar Diskusi AI tetap nonaktif. Permintaan sintetis pertama tertahan di antrean; setelah pekerja idle yang macet disegarkan, model mulai sekitar 169 detik dan permintaan berikutnya berhasil. Panggilan OpenAI langsung yang sederhana menjawab sekitar 4 detik, sedangkan pertanyaan jadwal melalui konektor aplikasi sekitar 18 detik. Keduanya tidak membuktikan target p95 <10 detik pada 50 perintah. Dua permintaan awal dan satu permintaan diagnosis yang tertahan telah dibatalkan. Jangan menyimpulkan `private_ai_ready=true` hanya dari tersedianya kunci; uji respons nyata tetap diperlukan setelah perubahan endpoint.
 
 ## Identitas dan konfirmasi
 
