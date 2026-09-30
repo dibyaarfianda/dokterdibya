@@ -7,7 +7,9 @@ const DIRECTORY = '/var/backups/assistant-daf';
 const KEY = '/etc/assistant-daf/backup.key';
 const OWNER = 'UDZAQUCQWZ';
 const tables = ['assistant_daf_owner_state', 'assistant_daf_drafts', 'assistant_daf_audit',
-  'assistant_daf_passkeys', 'assistant_daf_push_subscriptions', 'assistant_daf_reminders', 'docboard_space_schedules'];
+  'assistant_daf_passkeys', 'assistant_daf_push_subscriptions', 'assistant_daf_reminders',
+  'assistant_daf_monitor_devices', 'assistant_daf_monitor_chats', 'assistant_daf_memory',
+  'docboard_space_schedules'];
 
 (async () => {
   const key = await fs.readFile(KEY);

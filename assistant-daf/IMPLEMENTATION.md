@@ -1,5 +1,15 @@
 # Asisten DAF — rilis manual dan Diskusi AI, 1 Oktober 2026
 
+## Rancangan pemantauan Android terbatas (persetujuan 1 Oktober 2026)
+
+Dokter mengubah batas rencana untuk menerima pemantauan otomatis **terbatas** dari ponsel Android cadangan yang ditautkan ke WhatsApp Business. Pembacaan dilakukan oleh aplikasi pendamping Android terpisah melalui izin akses pemberitahuan. Ini bukan Cloud API resmi dan tidak menjamin seluruh pesan terbaca. Dokter tetap menentukan chat yang dipantau, menerima atau mengoreksi tiap usulan, serta mempertahankan ruang Diskusi AI nonaktif.
+
+Tab Pemantauan di PWA menghasilkan kode pemasangan 10 menit, menampilkan perangkat dan chat yang ditemukan, dan mengizinkan Dokter memilih chat. Pembaca Android hanya mengirim metadata chat sebelum chat dipilih. Isi pemberitahuan dikirim melalui HTTPS setelah server mengonfirmasi bahwa chat masih dipilih. Bila WhatsApp tidak memberikan identitas percakapan yang stabil melalui notification shortcut ID, pesan dibuang. Pemberitahuan yang tidak muncul, terpotong, atau tergabung tidak dapat direkonstruksi. Status koneksi perangkat terlihat, tetapi status online bukan bukti tidak ada pesan terlewat.
+
+Server menyimpan isi sumber sebagai payload AES-GCM maksimal 30 hari, membuat usulan, dan meninjau secara asinkron dengan RunPod melalui sakelar `ASSISTANT_DAF_RUNPOD_REVIEW_ENABLED` yang terpisah dari sakelar Diskusi AI. AI hanya mengklasifikasi maksud dan memberi alasan pendek; tanggal, jam, lokasi, identitas pasien, dan penulisan jadwal tetap melewati parser serta konfirmasi yang sudah ada. Setiap pesan chat terpilih tetap terlihat sebagai usulan, termasuk ketika AI menganggapnya bukan jadwal atau gagal merespons. Memori keputusan hanya berisi kategori tindakan, lokasi, jenis tindakan jadwal, dan jumlah keputusan dari persetujuan/koreksi Dokter; tidak berisi teks pesan, nama, atau nomor RM. Dokter dapat menghapusnya.
+
+**Gerbang aktivasi:** menerapkan migrasi `20261001_assistant_daf_monitor.sql`, memasang APK pendamping pada ponsel cadangan, menautkan WhatsApp Business dengan ponsel utama, memberikan izin pemberitahuan, memasangkan ponsel ke PWA, dan memilih chat. Pada perangkat nyata harus dibuktikan bahwa WhatsApp Business mengisi shortcut ID yang stabil untuk chat yang hendak dipantau; bila tidak, chat tersebut tidak dapat dipantau melalui rancangan ini. Sebelum verifikasi perangkat nyata dan pilihan chat, klaim pemantauan aktif dilarang. APK debug dari CI hanya untuk pilot; pemakaian rutin dengan data pasien memerlukan APK rilis yang ditandatangani dengan kunci yang dikelola secara aman.
+
 ## Batas rilis
 
 PWA `/assistant-daf/` menggunakan passkey, menerima satu pesan pilihan Dokter, membuat usulan terenkripsi, dan meminta konfirmasi sebelum menulis ke DocBoard. Pesan pada alur berbagi manual tidak dikirim ke model AI. Saat Diskusi AI diaktifkan kelak, hanya pertanyaan yang sengaja dikirim dari ruang itu yang diproses oleh RunPod. Pemantauan WhatsApp otomatis, mode bayangan, dan penulisan otomatis tetap nonaktif.
@@ -66,7 +76,7 @@ Belum boleh dianggap lulus:
 - iPhone Home Screen, passkey perangkat nyata, push H-1, pembaruan langganan ICS dan alarm kalender Android/iPhone.
 - Pemulihan bencana dari backup terpisah, disk encryption, rotasi kunci menyeluruh.
 - AI dengan konteks klinis: fungsi konteks baca terbatas, uji model 50 perintah p95 <10 detik. Diskusi RunPod saat ini belum memakai konteks klinis; uji parser bukan uji model.
-- WhatsApp resmi: bukti dokumentasi+mitra tentang coexistence dan semua pesan grup lama, uji nomor cadangan. Tanpa bukti, gerbang gagal. Jangan memakai WhatsApp Web/scraping/notifikasi.
+- WhatsApp resmi: bukti dokumentasi+mitra tentang coexistence dan semua pesan grup lama, uji nomor cadangan. Tanpa bukti, gerbang resmi gagal. Larangan notifikasi pada rencana awal diganti oleh keputusan Dokter 1 Oktober 2026 untuk pemantauan Android terbatas, dengan batas dan gerbang aktivasi di atas.
 - Mode bayangan 2–4 minggu dan sedikitnya 100 usulan tanpa salah tanggal/lokasi, baru pertimbangkan otomatisasi. Perubahan/pembatalan selalu dikonfirmasi. Tahap ini boleh tidak pernah dijalankan.
 
 ## Pemeriksaan gerbang WhatsApp, 30 September 2026

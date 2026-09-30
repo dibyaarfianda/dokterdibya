@@ -30,6 +30,8 @@ function clearPrivateUi() {
   $('#patient-results').replaceChildren(); $('#patient-search').value = '';
   $('#selected-patient').textContent = ''; $('#shared-text').value = '';
   $('#device-list').replaceChildren(); $('#calendar-result').textContent = '';
+  $('#monitor-devices').replaceChildren(); $('#monitor-chats').replaceChildren();
+  $('#monitor-memory').replaceChildren(); $('#monitor-code').textContent = ''; $('#monitor-code').hidden = true;
   $('#ai-question').value = ''; $('#ai-answer').textContent = ''; $('#ai-answer').hidden = true;
   aiBusy = false; updateAiControls();
   $('#count').textContent = ''; sharedText = '';
@@ -48,7 +50,8 @@ function message(text, error = false) {
 
 function showTab(name) {
   for (const button of document.querySelectorAll('[data-tab]')) button.classList.toggle('active', button.dataset.tab === name);
-  for (const section of document.querySelectorAll('#review, #share, #discussion')) section.classList.toggle('hidden', section.id !== name);
+  for (const section of document.querySelectorAll('#review, #share, #monitor, #discussion')) section.classList.toggle('hidden', section.id !== name);
+  if (name === 'monitor' && unlocked) loadMonitor().catch((error) => message(error.message, true));
 }
 
 async function api(path, options = {}) {
@@ -196,6 +199,11 @@ function renderDrafts(drafts) {
     line(card, draft.proposal?.agenda || 'Agenda perlu diperiksa', 'h3');
     line(card, `${draft.proposal?.schedule_date || 'Tanggal belum jelas'} · ${draft.proposal?.start_time || 'Jam belum jelas'} · ${draft.proposal?.location || 'Lokasi belum jelas'}`);
     if (draft.proposal?.needs_review?.length) line(card, `Periksa: ${draft.proposal.needs_review.join(', ')}`, 'span').className = 'badge';
+    if (draft.source_chat) line(card, `Sumber: ${draft.source_chat} · pemberitahuan Android`, 'span').className = 'badge';
+    if (draft.ai_status === 'pending') line(card, 'AI sedang meninjau. Anda tetap dapat meninjau rincian sendiri.');
+    if (draft.ai_status === 'failed') line(card, 'AI belum dapat meninjau. Periksa sendiri atau tunggu koneksi pulih.');
+    if (draft.ai_review) line(card, `AI: ${draft.ai_review.is_schedule ? 'kemungkinan jadwal' : 'kemungkinan bukan jadwal'} · ${draft.ai_review.reason}`);
+    if (draft.notification_truncated) line(card, 'Pratinjau pemberitahuan mungkin tidak lengkap.', 'span').className = 'badge';
     line(card, draft.source_text, 'div').className = 'source';
     const actions = document.createElement('div'); actions.className = 'card-actions';
     const button = document.createElement('button'); button.type = 'button'; button.textContent = 'Tinjau usulan';
@@ -211,6 +219,48 @@ async function loadDrafts() {
   } catch (error) {
     $('#drafts').textContent = error.message;
   }
+}
+
+async function loadMonitor() {
+  const result = await api('/monitor');
+  $('#monitor-state').textContent = result.review_ready
+    ? (result.review_usage.reviewed >= result.review_usage.daily_limit
+      ? `Batas AI hari ini tercapai (${result.review_usage.daily_limit}). Usulan tetap tersedia untuk tinjauan Dokter; AI melanjutkan besok.`
+      : `Peninjauan AI aktif: ${result.review_usage.reviewed}/${result.review_usage.daily_limit} pesan hari ini. Cakupan tetap terbatas pada pemberitahuan chat terpilih.`)
+    : 'Peninjauan AI belum aktif. Pesan dari perangkat akan menunggu peninjauan.';
+  const devices = $('#monitor-devices'); devices.replaceChildren();
+  if (!result.devices.length) line(devices, 'Belum ada ponsel pendamping terpasang.');
+  for (const device of result.devices) {
+    const row = document.createElement('div'); row.className = 'card';
+    line(row, device.device_label, 'h3');
+    line(row, device.last_seen_at ? `Terakhir terhubung: ${new Date(device.last_seen_at).toLocaleString('id-ID')}` : 'Belum terhubung');
+    const revoke = document.createElement('button'); revoke.type = 'button'; revoke.textContent = 'Cabut perangkat';
+    revoke.addEventListener('click', async () => {
+      if (!window.confirm(`Cabut ${device.device_label} dari pemantauan?`)) return;
+      try { await api(`/monitor/devices/${encodeURIComponent(device.id)}`, { method: 'DELETE' }); await loadMonitor(); }
+      catch (error) { message(error.message, true); }
+    });
+    row.append(revoke); devices.append(row);
+  }
+  const chats = $('#monitor-chats'); chats.replaceChildren();
+  if (!result.chats.length) line(chats, 'Chat akan muncul setelah ada pemberitahuan baru pada ponsel pendamping.');
+  for (const chat of result.chats) {
+    const row = document.createElement('div'); row.className = 'card';
+    line(row, chat.label, 'h3'); line(row, `Terakhir terlihat: ${new Date(chat.last_seen_at).toLocaleString('id-ID')}`);
+    const button = document.createElement('button'); button.type = 'button';
+    button.textContent = chat.allowed ? 'Hentikan pemantauan' : 'Pantau chat ini';
+    button.addEventListener('click', async () => {
+      if (!chat.allowed && !window.confirm(`Pantau pemberitahuan dari ${chat.label}? Pastikan ini chat yang dimaksud.`)) return;
+      try { await api(`/monitor/chats/${encodeURIComponent(chat.id)}`, {
+        method: 'PUT', body: JSON.stringify({ allowed: !chat.allowed })
+      }); await loadMonitor(); } catch (error) { message(error.message, true); }
+    });
+    row.append(button); chats.append(row);
+  }
+  const memory = $('#monitor-memory'); memory.replaceChildren();
+  if (!result.memory.length) line(memory, 'Belum ada kebiasaan yang dipelajari.');
+  for (const item of result.memory) line(memory,
+    `${item.category} · ${item.location} · ${item.action} · ${item.observations} keputusan`);
 }
 
 async function loadSchedules() {
@@ -347,6 +397,19 @@ $('#lock-button').addEventListener('click', async () => {
   catch (error) { message(error.message, true); }
 });
 $('#reload').addEventListener('click', loadDrafts);
+$('#monitor-reload').addEventListener('click', () => loadMonitor().catch((error) => message(error.message, true)));
+$('#monitor-pair').addEventListener('click', async () => {
+  try {
+    const pair = await api('/monitor/pair', { method: 'POST', body: '{}' });
+    $('#monitor-code').textContent = `Kode pemasangan: ${pair.code} · berlaku ${pair.expires_minutes} menit. Masukkan hanya pada aplikasi pendamping Asisten DAF di ponsel cadangan.`;
+    $('#monitor-code').hidden = false;
+  } catch (error) { message(error.message, true); }
+});
+$('#monitor-clear-memory').addEventListener('click', async () => {
+  if (!window.confirm('Hapus semua memori keputusan? Jadwal dan usulan tidak akan terhapus.')) return;
+  try { await api('/monitor/memory', { method: 'DELETE' }); await loadMonitor(); }
+  catch (error) { message(error.message, true); }
+});
 $('#close-dialog').addEventListener('click', () => dialog.close());
 form.elements.action.addEventListener('change', syncForm);
 form.elements.space.addEventListener('change', syncForm);

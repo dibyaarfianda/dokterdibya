@@ -79,6 +79,10 @@ class AssistantDafDraftService {
       source_kind: row.source_kind,
       source_text: payload?.source_text || '',
       proposal: payload?.proposal || null,
+      source_chat: payload?.source_chat || null,
+      notification_truncated: Boolean(payload?.truncated),
+      ai_status: row.ai_status || null,
+      ai_review: payload?.ai_review || null,
       schedule_id: row.schedule_id || null,
       created_at: row.created_at
     };
@@ -256,6 +260,19 @@ class AssistantDafDraftService {
       await connection.query(`INSERT INTO assistant_daf_audit
         (user_id, draft_id, schedule_id, event_type, encrypted_payload, payload_iv, payload_tag) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [ownerId, id, scheduleId, `schedule_${action}`, sealedDecision.ciphertext, sealedDecision.iv, sealedDecision.tag]);
+      // Memory contains only canonical scheduling choices, never message text or patient identity.
+      if (['SC', 'Kuret', 'IUD'].includes(input.category)
+          && ['Melinda', 'Gambiran', 'Bhayangkara'].includes(input.location)) {
+        const proposal = this.readRow(draftRows[0]).proposal || {};
+        const decisionKind = proposal.action === input.action
+          && proposal.category === input.category && proposal.location === input.location
+          ? 'approval' : 'correction';
+        await connection.query(
+          `INSERT INTO assistant_daf_memory
+           (user_id, draft_id, decision_kind, action, category, location) VALUES (?, ?, ?, ?, ?, ?)`,
+          [ownerId, id, decisionKind, input.action, input.category, input.location]
+        );
+      }
       await connection.commit();
       return { id, status: 'confirmed', schedule_id: String(scheduleId), action };
     } catch (error) {

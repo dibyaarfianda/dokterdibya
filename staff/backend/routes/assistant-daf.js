@@ -15,6 +15,7 @@ const { AssistantDafPushService } = require('../services/AssistantDafPushService
 const { snapshot, version } = require('../services/AssistantDafScheduleState');
 const AssistantDafContextService = require('../services/AssistantDafContextService');
 const AssistantDafRunpodClient = require('../services/AssistantDafRunpodClient');
+const AssistantDafMonitorService = require('../services/AssistantDafMonitorService');
 const createAiRouter = require('./assistant-daf-ai');
 const logger = require('../utils/logger');
 
@@ -25,18 +26,22 @@ const COOKIE = 'assistant_daf_session';
 let draftService;
 let passkeyService;
 let pushService;
+let monitorService;
 const contextService = new AssistantDafContextService();
 const runpodClient = AssistantDafRunpodClient.fromEnvironment();
+const reviewClient = AssistantDafRunpodClient.fromEnvironment('review');
 try {
   if (process.env.ASSISTANT_DAF_DATA_KEY && process.env.ASSISTANT_DAF_RP_ID && process.env.ASSISTANT_DAF_ORIGIN) {
     draftService = new AssistantDafDraftService({ db, key: loadKey(), context: contextService });
     passkeyService = new AssistantDafPasskeyService({ db, rpID: process.env.ASSISTANT_DAF_RP_ID,
       origin: process.env.ASSISTANT_DAF_ORIGIN, ownerId: OWNER_ID });
     pushService = new AssistantDafPushService({ db, key: loadKey() });
+    monitorService = new AssistantDafMonitorService({ db, key: loadKey(), ownerId: OWNER_ID, ai: reviewClient });
   }
 } catch {
   draftService = undefined;
   passkeyService = undefined;
+  monitorService = undefined;
 }
 
 function readCookie(req) {
@@ -81,6 +86,43 @@ async function requireRegistrationAuthority(req, res, next) {
   } catch (error) { return respondError(res, error); }
 }
 
+const deviceRouter = express.Router();
+const deviceLimit = rateLimit({ windowMs: 60 * 1000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false });
+const claimLimit = rateLimit({ windowMs: 60 * 1000, limit: 5, standardHeaders: 'draft-7', legacyHeaders: false });
+deviceRouter.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  if (req.get('origin') && req.get('origin') !== process.env.ASSISTANT_DAF_ORIGIN) {
+    return res.status(403).json({ success: false, message: 'Origin tidak valid' });
+  }
+  if (!monitorService) return res.status(503).json({ success: false, message: 'Pemantauan belum dikonfigurasi' });
+  next();
+});
+deviceRouter.post('/claim', claimLimit, async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.claim(req.body?.code, req.body?.label) }); }
+  catch (error) { return respondError(res, error); }
+});
+deviceRouter.use(deviceLimit, async (req, res, next) => {
+  try { req.monitorDeviceId = await monitorService.authenticate(req.get('authorization')); next(); }
+  catch (error) { return respondError(res, error); }
+});
+deviceRouter.post('/heartbeat', async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.heartbeat(req.monitorDeviceId) }); }
+  catch (error) { return respondError(res, error); }
+});
+deviceRouter.post('/discover', async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.discover(req.monitorDeviceId, req.body?.chat_key, req.body?.label) }); }
+  catch (error) { return respondError(res, error); }
+});
+deviceRouter.post('/allowed', async (req, res) => {
+  try { return res.json({ success: true, allowed: await monitorService.allowed(req.monitorDeviceId, req.body?.chat_key) }); }
+  catch (error) { return respondError(res, error); }
+});
+deviceRouter.post('/event', async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.ingest(req.monitorDeviceId, req.body || {}) }); }
+  catch (error) { return respondError(res, error); }
+});
+router.use('/monitor/device', deviceRouter);
+
 router.use((req, res, next) => {
   res.set('Cache-Control', 'no-store');
   res.set('Pragma', 'no-cache');
@@ -97,6 +139,8 @@ router.get('/status', (req, res) => res.json({
   success: true,
   manual_share_ready: Boolean(draftService && passkeyService),
   private_ai_ready: Boolean(draftService && passkeyService && runpodClient.isReady()),
+  monitor_review_ready: Boolean(monitorService && reviewClient.isReady()),
+  whatsapp_limited_monitor_available: Boolean(monitorService),
   whatsapp_automatic_ready: false
 }));
 
@@ -171,6 +215,28 @@ router.post('/passkey/lock', configured, async (req, res) => {
 router.use(requirePasskey);
 router.use(configured);
 router.use('/ai', createAiRouter(runpodClient));
+
+router.post('/monitor/pair', authLimit, async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.createPair() }); }
+  catch (error) { return respondError(res, error); }
+});
+router.get('/monitor', async (req, res) => {
+  try { return res.json({ success: true, ...(await monitorService.list()), memory: await monitorService.memory(),
+    review_usage: await monitorService.reviewUsage(), review_ready: reviewClient.isReady() }); }
+  catch (error) { return respondError(res, error); }
+});
+router.put('/monitor/chats/:id', async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.setAllowed(req.params.id, req.body?.allowed === true) }); }
+  catch (error) { return respondError(res, error); }
+});
+router.delete('/monitor/devices/:id', async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.revokeDevice(req.params.id) }); }
+  catch (error) { return respondError(res, error); }
+});
+router.delete('/monitor/memory', async (req, res) => {
+  try { return res.json({ success: true, ...await monitorService.clearMemory() }); }
+  catch (error) { return respondError(res, error); }
+});
 
 router.get('/passkey/devices', async (req, res) => {
   try { return res.json({ success: true, devices: await passkeyService.listPasskeys() }); }
@@ -283,8 +349,10 @@ if (draftService && passkeyService) {
     running = true;
     try {
       await draftService.purgeExpiredSources();
+      await monitorService.purge();
       await passkeyService.purgeExpired();
       if (docboardPushService.isReady()) await pushService.dispatchDue();
+      await monitorService.reviewOne();
     } catch { logger.error('[AssistantDAF] Maintenance failed', { code: 'ASSISTANT_MAINTENANCE_FAILED' }); }
     finally { running = false; }
   };
