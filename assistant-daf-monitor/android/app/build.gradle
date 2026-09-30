@@ -15,3 +15,15 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+
+def signingPath = System.getenv('ASSISTANT_DAF_MONITOR_KEYSTORE_FILE')
+def signingPassword = System.getenv('ASSISTANT_DAF_MONITOR_STORE_PASSWORD')
+if (signingPath && signingPassword) {
+    android.signingConfigs.create('assistantRelease') {
+        storeFile = file(signingPath)
+        storePassword = signingPassword
+        keyAlias = 'assistant-daf-monitor'
+        keyPassword = signingPassword
+    }
+    android.buildTypes.release.signingConfig = android.signingConfigs.assistantRelease
+}

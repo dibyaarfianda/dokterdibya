@@ -26,13 +26,23 @@ jobs:
             fi
           done
           exit 1
-      - name: Build pilot APK
+      - name: Restore release signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ASSISTANT_DAF_MONITOR_KEYSTORE_B64 }}
+        run: |
+          test -n "$KEYSTORE_B64"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/assistant-daf-monitor.p12"
+          chmod 600 "$RUNNER_TEMP/assistant-daf-monitor.p12"
+      - name: Build signed release APK
         working-directory: assistant-daf-monitor/android
+        env:
+          ASSISTANT_DAF_MONITOR_KEYSTORE_FILE: ${{ runner.temp }}/assistant-daf-monitor.p12
+          ASSISTANT_DAF_MONITOR_STORE_PASSWORD: ${{ secrets.ASSISTANT_DAF_MONITOR_STORE_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug
+          ./gradlew --no-daemon assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: Asisten-DAF-Monitor-Pilot
-          path: assistant-daf-monitor/android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 14
+          name: Asisten-DAF-Monitor-Release
+          path: assistant-daf-monitor/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
