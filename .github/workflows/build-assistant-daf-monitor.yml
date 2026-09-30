@@ -41,6 +41,11 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
+      - name: Verify release signature
+        run: |
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify \
+            assistant-daf-monitor/android/app/build/outputs/apk/release/app-release.apk
+          echo release_signature_verified
       - uses: actions/upload-artifact@v4
         with:
           name: Asisten-DAF-Monitor-Release
