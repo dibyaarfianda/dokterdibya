@@ -27,4 +27,11 @@ describe('Asisten DAF access boundary', () => {
     expect(result.body.private_ai_ready).toBe(false);
     expect(result.headers['cache-control']).toBe('no-store');
   });
+
+  test('discussion requires a passkey session even when an AI endpoint exists', async () => {
+    const result = await request(app).post('/api/assistant-daf/ai/discuss')
+      .set('Origin', process.env.ASSISTANT_DAF_ORIGIN || 'https://dokterdibya.com')
+      .send({ text: 'Apa jadwal besok?' });
+    expect(result.status).toBe(401);
+  });
 });

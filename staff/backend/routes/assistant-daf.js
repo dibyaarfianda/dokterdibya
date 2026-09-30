@@ -14,6 +14,8 @@ const docboardPushService = require('../services/DocBoardPushService');
 const { AssistantDafPushService } = require('../services/AssistantDafPushService');
 const { snapshot, version } = require('../services/AssistantDafScheduleState');
 const AssistantDafContextService = require('../services/AssistantDafContextService');
+const AssistantDafRunpodClient = require('../services/AssistantDafRunpodClient');
+const createAiRouter = require('./assistant-daf-ai');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -24,6 +26,7 @@ let draftService;
 let passkeyService;
 let pushService;
 const contextService = new AssistantDafContextService();
+const runpodClient = AssistantDafRunpodClient.fromEnvironment();
 try {
   if (process.env.ASSISTANT_DAF_DATA_KEY && process.env.ASSISTANT_DAF_RP_ID && process.env.ASSISTANT_DAF_ORIGIN) {
     draftService = new AssistantDafDraftService({ db, key: loadKey(), context: contextService });
@@ -93,7 +96,7 @@ const authLimit = rateLimit({ windowMs: 60 * 1000, limit: 10, standardHeaders: '
 router.get('/status', (req, res) => res.json({
   success: true,
   manual_share_ready: Boolean(draftService && passkeyService),
-  private_ai_ready: false,
+  private_ai_ready: Boolean(draftService && passkeyService && runpodClient.isReady()),
   whatsapp_automatic_ready: false
 }));
 
@@ -167,6 +170,7 @@ router.post('/passkey/lock', configured, async (req, res) => {
 
 router.use(requirePasskey);
 router.use(configured);
+router.use('/ai', createAiRouter(runpodClient));
 
 router.get('/passkey/devices', async (req, res) => {
   try { return res.json({ success: true, devices: await passkeyService.listPasskeys() }); }

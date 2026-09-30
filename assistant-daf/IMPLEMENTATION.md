@@ -1,18 +1,18 @@
-# Asisten DAF — rilis manual, 30 September 2026
+# Asisten DAF — rilis manual dan Diskusi AI, 1 Oktober 2026
 
 ## Batas rilis
 
-PWA `/assistant-daf/` menggunakan passkey, menerima satu pesan pilihan Dokter, membuat usulan terenkripsi, dan meminta konfirmasi sebelum menulis ke DocBoard. Pesan tidak dikirim ke model AI. Diskusi AI tampil sebagai ruang yang belum aktif. Pemantauan WhatsApp, mode bayangan, dan penulisan otomatis tetap nonaktif.
+PWA `/assistant-daf/` menggunakan passkey, menerima satu pesan pilihan Dokter, membuat usulan terenkripsi, dan meminta konfirmasi sebelum menulis ke DocBoard. Pesan pada alur berbagi manual tidak dikirim ke model AI. Hanya pertanyaan yang sengaja dikirim dari ruang Diskusi AI diproses oleh RunPod. Pemantauan WhatsApp, mode bayangan, dan penulisan otomatis tetap nonaktif.
 
-VPS AI terpisah belum tersedia. Rilis ini tidak menjalankan inferensi di server COMM. Integrasi konteks hanya pemeriksaan identitas pasien melalui COMM; bukan akses rekam medis bebas.
+RunPod Serverless dipakai untuk inferensi terpisah dari server COMM. Integrasi konteks hanya pemeriksaan identitas pasien melalui COMM pada alur konfirmasi jadwal; Diskusi AI belum membaca jadwal, COMM, atau DOKTERDIBYA secara langsung.
 
-## Konektor RunPod Flex yang belum aktif
+## Konektor RunPod Flex
 
-`staff/backend/services/AssistantDafRunpodClient.js` menyiapkan panggilan ke endpoint vLLM Serverless milik Dokter pada host tetap `api.runpod.ai`. Konektor hanya mengembalikan klasifikasi terbatas (buat/ubah/batal, ruang, dan kategori); tanggal, jam, lokasi, serta identitas pasien tidak diambil dari jawaban model. Konektor ini belum dihubungkan ke rute Asisten atau antarmuka. Tidak ada endpoint RunPod, model, kunci, atau izin pemrosesan data yang terpasang pada aplikasi produksi, sehingga tidak ada panggilan keluar.
+`staff/backend/services/AssistantDafRunpodClient.js` memanggil endpoint Serverless milik Dokter pada host tetap `api.runpod.ai`. Rute `/api/assistant-daf/ai/discuss` memerlukan sesi passkey dan dibatasi enam permintaan per menit. Ia mengirim hanya teks pertanyaan yang dimasukkan Dokter, mengembalikan jawaban teks terbatas, dan tidak menulis jadwal. Perintah yang hendak dijadikan usulan dibuat dari teks Dokter melalui alur draft terpisah, lalu harus dikonfirmasi. Klasifikasi terbatas yang sudah ada belum mengendalikan usulan, tanggal, jam, lokasi, atau identitas pasien.
 
-Untuk tahap aktivasi nanti, administrator harus mengonfigurasi endpoint ID, nama model, dan kunci di luar repositori, lalu menyetel **kedua** gerbang `ASSISTANT_DAF_RUNPOD_ENABLED=1` dan `ASSISTANT_DAF_RUNPOD_DATA_CONSENT=1`. Gerbang kedua tidak boleh disetel sebelum Dokter memberi izin eksplisit tentang jenis data yang boleh dikirim. Masih diperlukan alur penyamaran yang diverifikasi, pembatasan biaya, validasi model, penanganan cold start, dan alur masuk ke Perlu Ditinjau sebelum konektor disambung ke pengguna. Klasifikasi yang kembali dari model tidak boleh menulis jadwal secara langsung.
+Aktivasi memerlukan endpoint ID, nama model, dan kunci di luar repositori, serta **kedua** gerbang `ASSISTANT_DAF_RUNPOD_ENABLED=1` dan `ASSISTANT_DAF_RUNPOD_DATA_CONSENT=1`. Dokter telah mengizinkan pemrosesan pihak ketiga, termasuk kemungkinan di luar Indonesia. Tidak ada penyamaran otomatis pada pertanyaan Diskusi AI: teks pasien yang sengaja diketik ikut terkirim. Jangan menempelkan rekam medis lengkap. Periksa biaya dan latensi pada RunPod; status "siap" hanya berarti konfigurasi tersedia, bukan jaminan model selalu menjawab.
 
-Ini persiapan kode, bukan aktivasi layanan atau bukti keamanan/ketepatan model. RunPod adalah pihak ketiga; data yang dikirim dapat diproses di luar Indonesia. Jangan mengirim pesan pasien ke sana berdasarkan persiapan ini saja.
+Ini bukan bukti ketepatan model untuk mengenali tanggal, lokasi, atau identitas. Jawaban AI tetap saran dan tidak boleh dipakai sebagai konfirmasi klinis atau jadwal.
 
 ## Identitas dan konfirmasi
 
@@ -63,7 +63,7 @@ Belum boleh dianggap lulus:
 - Android WhatsApp → Bagikan ke PWA terpasang pada perangkat nyata.
 - iPhone Home Screen, passkey perangkat nyata, push H-1, pembaruan langganan ICS dan alarm kalender Android/iPhone.
 - Pemulihan bencana dari backup terpisah, disk encryption, rotasi kunci menyeluruh.
-- AI privat: VPS terpisah, WireGuard/private networking, fungsi konteks baca terbatas, uji model 50 perintah p95 <10 detik. Uji parser bukan uji model.
+- AI dengan konteks klinis: fungsi konteks baca terbatas, uji model 50 perintah p95 <10 detik. Diskusi RunPod saat ini belum memakai konteks klinis; uji parser bukan uji model.
 - WhatsApp resmi: bukti dokumentasi+mitra tentang coexistence dan semua pesan grup lama, uji nomor cadangan. Tanpa bukti, gerbang gagal. Jangan memakai WhatsApp Web/scraping/notifikasi.
 - Mode bayangan 2–4 minggu dan sedikitnya 100 usulan tanpa salah tanggal/lokasi, baru pertimbangkan otomatisasi. Perubahan/pembatalan selalu dikonfirmasi. Tahap ini boleh tidak pernah dijalankan.
 

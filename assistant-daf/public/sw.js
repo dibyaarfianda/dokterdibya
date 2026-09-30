@@ -1,4 +1,4 @@
-const CACHE = 'assistant-daf-shell-20261001-1';
+const CACHE = 'assistant-daf-shell-20261001-2';
 const SHELL = ['/assistant-daf/', '/assistant-daf/index.html', '/assistant-daf/style.css', '/assistant-daf/app.js', '/assistant-daf/docboard-session.js', '/assistant-daf/webauthn.umd.min.js', '/assistant-daf/manifest.json', '/assistant-daf/icon.svg'];
 let pendingShare = null;
 

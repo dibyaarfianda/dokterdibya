@@ -12,6 +12,15 @@ let lastActivity = Date.now();
 let sharedText = '';
 let authenticatorOpen = false;
 let selectedPatientName = '';
+let aiReady = false;
+let aiBusy = false;
+
+function updateAiControls() {
+  const available = unlocked && aiReady && !aiBusy;
+  $('#ai-question').disabled = !available;
+  $('#ai-send').disabled = !available;
+  $('#ai-propose').disabled = !available || !$('#ai-question').value.trim();
+}
 
 function clearPrivateUi() {
   unlocked = false; authEpoch++;
@@ -21,6 +30,8 @@ function clearPrivateUi() {
   $('#patient-results').replaceChildren(); $('#patient-search').value = '';
   $('#selected-patient').textContent = ''; $('#shared-text').value = '';
   $('#device-list').replaceChildren(); $('#calendar-result').textContent = '';
+  $('#ai-question').value = ''; $('#ai-answer').textContent = ''; $('#ai-answer').hidden = true;
+  aiBusy = false; updateAiControls();
   $('#count').textContent = ''; sharedText = '';
   $('#connection').textContent = 'Terkunci';
   $('#security-settings').hidden = true; $('#security-settings').open = false;
@@ -59,6 +70,7 @@ async function refreshPasskeyState() {
   const state = await api('/passkey/state');
   if (!state.unlocked && unlocked) clearPrivateUi();
   unlocked = state.unlocked;
+  updateAiControls();
   document.querySelector('main').classList.toggle('locked', !unlocked);
   $('#connection').textContent = unlocked ? 'Passkey aktif' : 'Terkunci';
   $('#security-settings').hidden = !unlocked;
@@ -375,6 +387,37 @@ $('#share-form').addEventListener('submit', async (event) => {
   } catch (error) { message(error.message, true); }
 });
 
+$('#ai-question').addEventListener('input', updateAiControls);
+$('#ai-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const question = $('#ai-question').value.trim();
+  if (!question || !unlocked || !aiReady || aiBusy) return;
+  aiBusy = true; updateAiControls();
+  $('#ai-send').textContent = 'Menunggu jawaban…';
+  $('#ai-answer').hidden = false;
+  $('#ai-answer').textContent = 'AI sedang menjawab…';
+  try {
+    const result = await api('/ai/discuss', { method: 'POST', body: JSON.stringify({ text: question }) });
+    if (unlocked) $('#ai-answer').textContent = result.answer;
+  } catch (error) {
+    if (unlocked) { $('#ai-answer').textContent = ''; $('#ai-answer').hidden = true; message(error.message, true); }
+  } finally {
+    aiBusy = false; $('#ai-send').textContent = 'Tanya AI'; updateAiControls();
+  }
+});
+$('#ai-propose').addEventListener('click', async () => {
+  const text = $('#ai-question').value.trim();
+  if (!text || !unlocked || !aiReady || aiBusy) return;
+  aiBusy = true; updateAiControls();
+  try {
+    await api('/drafts', { method: 'POST', body: JSON.stringify({ text }) });
+    $('#ai-question').value = ''; $('#ai-answer').textContent = ''; $('#ai-answer').hidden = true;
+    message('Pesan Anda masuk ke Perlu Ditinjau. Periksa semua rinciannya sebelum konfirmasi.');
+    showTab('review'); await loadDrafts();
+  } catch (error) { message(error.message, true); }
+  finally { aiBusy = false; updateAiControls(); }
+});
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type !== 'SHARED_TEXT') return;
@@ -404,6 +447,9 @@ setInterval(() => {
 
 if (new URLSearchParams(location.search).has('share_error')) message('Aplikasi pengirim tidak menyediakan teks pesan.', true);
 api('/status').then(async (result) => {
+  aiReady = result.private_ai_ready === true;
+  $('#ai-state').textContent = aiReady ? 'AI RunPod tersambung. Gunakan passkey untuk bertanya.' : 'AI RunPod belum aktif. Masukkan pesan dan tinjau usulan secara manual.';
+  updateAiControls();
   if (!result.manual_share_ready) {
     $('#connection').textContent = 'Menunggu konfigurasi';
     $('#unlock-explanation').textContent = 'Penyimpanan terenkripsi dan passkey belum dikonfigurasi. Data pasien belum dapat diproses.';
