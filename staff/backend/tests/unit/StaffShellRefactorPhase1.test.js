@@ -67,7 +67,11 @@ describe('staff shell refactor phase 1', () => {
         const main = readNormalizedFile('staff', 'public', 'scripts', 'main.js');
         const helpers = readNormalizedFile('staff', 'public', 'scripts', 'shell', 'module-helpers.js');
 
-        expect(main).toContain("import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';");
+        const helperImports = /import\s*\{([^}]+)\}\s*from\s*['"]\.\/shell\/module-helpers\.js['"]/.exec(main);
+        expect(helperImports).not.toBeNull();
+        expect(helperImports[1].split(',').map(name => name.trim())).toEqual(
+            expect.arrayContaining(['getAuthToken', 'importWithVersion', 'grab'])
+        );
         expect(main).not.toMatch(/module-helpers\.js\?v=/);
         expect(main).not.toContain('function getAuthToken()');
         expect(main).not.toContain('function importWithVersion(path)');
