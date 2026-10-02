@@ -27,3 +27,12 @@ export const importWithVersion = createCanonicalImporter();
 export function grab(id) {
     return document.getElementById(id);
 }
+
+export function showBookingSettingsLoadError() {
+    for (const id of ['booking-settings-container', 'bookings-container']) {
+        const container = grab(id);
+        if (container) {
+            container.innerHTML = '<div class="col-12"><div class="alert alert-danger">Gagal memuat halaman Booking Setting. <button type="button" class="btn btn-sm btn-outline-danger ml-2" onclick="window.location.reload()">Muat Ulang</button></div></div>';
+        }
+    }
+}

@@ -96,7 +96,7 @@ function openMobileMenu() {
         {icon: 'fa-capsules', text: 'Obat/Alkes', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
         {icon: 'fa-prescription', text: 'Template Resep', fn: 'showTemplateResepPage', color: '#0d6efd', doctorOnly: true},
         {icon: 'fa-hand-holding-medical', text: 'Layanan', fn: 'showKelolaTindakanPage', color: '#0d6efd'},
-        {icon: 'fa-calendar-day', text: 'Pengaturan Sesi', fn: 'showBookingSettingsPage', color: '#0d6efd'},
+        {icon: 'fa-calendar-day', text: 'Booking Setting', fn: 'showBookingSettingsPage', color: '#0d6efd', doctorOnly: true},
         {icon: 'fa-pills', text: 'Penjualan', fn: 'showPenjualanObatPage', color: '#0d6efd'},
         {icon: 'divider'},
         {icon: 'fa-sync-alt', text: 'Perbarui Aplikasi', fn: 'clearAppCache', color: '#6c757d'},

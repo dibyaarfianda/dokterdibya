@@ -1,4 +1,4 @@
-import './booking-slot-utils.js?v=20260922-1';
+import './booking-slot-utils.js';
 
 // Kelola Booking Settings Module
 // Manages booking session times for Sunday Clinic appointments

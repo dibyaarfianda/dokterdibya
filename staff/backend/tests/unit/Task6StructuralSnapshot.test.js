@@ -5,7 +5,8 @@ const puppeteer = require('puppeteer');
 
 const root = path.resolve(__dirname, '../../../..');
 const baseline = {
-    'staff/public/index-adminlte.html': 'b4781f1b58765d9e6fe1d5e735e90764dfa278a9d7e02fad48777de159dae0a1',
+    // Mobile Booking Setting now uses the doctor-only visibility class.
+    'staff/public/index-adminlte.html': '544e62fe5531c3e8f43eeba6e51f883f2b272b62306b00f7de3b4c87a135f990',
     'public/patient-menu.html': 'da9c28107e03efa0947adcfdda6acb081e7ed298ef7c266c41354957f1a846a3'
 };
 

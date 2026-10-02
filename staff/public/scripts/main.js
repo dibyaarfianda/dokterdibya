@@ -6,7 +6,7 @@ import { showWarning, showSuccess, showError } from './toast.js';
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
 import { formatDateLocal } from './date-utils.js';
-import { getAuthToken, importWithVersion, grab } from './shell/module-helpers.js';
+import { getAuthToken, importWithVersion, grab, showBookingSettingsLoadError } from './shell/module-helpers.js';
 import { ROLE_IDS, isSuperadminUser } from './role-constants.js';
 import { escapeHtml } from './safe-render.js';
 import { loadAllPatientPages } from './patient-list-pages.js';
@@ -2211,14 +2211,15 @@ function showBookingSettingsPage() {
     setTitleAndActive('Pengaturan Booking', 'nav-booking-settings', 'booking-settings');
 
     // Dynamically import and initialize the Booking Settings module
-    importWithVersion('./kelola-booking-settings.js').then(module => {
+    return importWithVersion('./kelola-booking-settings.js').then(module => {
         if (typeof window.initKelolaBookingSettings === 'function') {
             window.initKelolaBookingSettings();
         } else {
-            console.error('Kelola Booking Settings module loaded, but initKelolaBookingSettings function not found on window.');
+            throw new Error('Kelola Booking Settings initializer unavailable');
         }
     }).catch(error => {
         console.error('Failed to load kelola-booking-settings.js:', error);
+        showBookingSettingsLoadError();
     });
 }
 
