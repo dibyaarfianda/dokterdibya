@@ -12,7 +12,14 @@
  * VERSION: 2026-01-19-v6-fix-modal-show
  */
 
+import { renderPreviousPlanningPanel, loadPreviousPlanning } from '../../utils/previous-planning.js';
+
 export default {
+    afterRender(state) {
+        const root = document.querySelector('#sunday-clinic-content [data-planning-mr-id]');
+        if (!root || root.dataset.planningMrId !== state.currentMrId) return;
+        return loadPreviousPlanning(state, root);
+    },
     /**
      * Render the Plan form
      */
@@ -167,6 +174,8 @@ export default {
      * Render old Obstetri format (simple)
      */
     async renderObstetriFormat(state) {
+        const record = state.recordData?.record || state.recordData || {};
+        const showPreviousControl = record.visit_location === 'klinik_private';
         // Get saved data from medicalRecords if available
         let savedData = {};
         let metaHtml = '';
@@ -234,7 +243,7 @@ export default {
         };
 
         return `
-            <div class="sc-section">
+            <div class="sc-section" data-planning-mr-id="${escapeHtml(state.currentMrId || record.mrId || record.mr_id || '')}">
                 <div class="sc-section-header">
                     <h3>Planning</h3>
                 </div>
@@ -296,8 +305,11 @@ export default {
                         </div>
 
                         <!-- Textarea for custom entries (vitamins not in list, etc.) -->
-                        <textarea class="form-control" id="planning-terapi" rows="3"
-                                  placeholder="Tulis resep manual di sini (untuk obat/vitamin yang tidak ada di daftar)...">${escapeHtml(planData.terapi)}</textarea>
+                        <div${showPreviousControl ? ' class="sc-planning-reference-row"' : ''}>
+                            <textarea class="form-control" id="planning-terapi" rows="3"
+                                      placeholder="Tulis resep manual di sini (untuk obat/vitamin yang tidak ada di daftar)...">${escapeHtml(planData.terapi)}</textarea>
+                            ${showPreviousControl ? renderPreviousPlanningPanel('terapi') : ''}
+                        </div>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi"
                                     onclick="if(window.openTerapiModal)window.openTerapiModal();else alert('Fungsi belum siap');">
@@ -316,8 +328,11 @@ export default {
 
                     <div class="mb-3">
                         <label class="font-weight-bold">Rencana</label>
-                        <textarea class="form-control" id="planning-rencana" rows="4"
-                                  placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(planData.rencana)}</textarea>
+                        <div${showPreviousControl ? ' class="sc-planning-reference-row"' : ''}>
+                            <textarea class="form-control" id="planning-rencana" rows="4"
+                                      placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(planData.rencana)}</textarea>
+                            ${showPreviousControl ? renderPreviousPlanningPanel('rencana') : ''}
+                        </div>
                     </div>
 
                     <div class="text-right mt-3">

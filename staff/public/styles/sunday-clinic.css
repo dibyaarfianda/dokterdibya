@@ -1658,6 +1658,66 @@ body.patient-sidebar-open .main-header {
 }
 
 /* Shared semantic sizing hooks. PWA overrides live in sunday-clinic-pwa.css. */
+/* Previous-control references stay open beside their own editable field. */
+.sc-planning-reference-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    align-items: start !important;
+}
+
+.sc-planning-reference-row > .form-control {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.sc-planning-history {
+    min-width: 0 !important;
+    padding: 12px !important;
+    border: 1px solid #dbe4ed !important;
+    border-radius: 8px !important;
+    background: #f5f8fc !important;
+    color: #334155 !important;
+    overflow-wrap: anywhere !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+}
+
+.sc-planning-history-title {
+    margin: 0 0 6px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #24628a !important;
+}
+
+.sc-planning-history-meta {
+    margin-bottom: 8px !important;
+    font-size: 11px !important;
+    color: #64748b !important;
+}
+
+.sc-planning-history-meta:empty {
+    display: none !important;
+}
+
+.sc-planning-history-text {
+    white-space: pre-wrap !important;
+}
+
+.sc-planning-history-medication {
+    margin-bottom: 8px !important;
+}
+
+.sc-planning-history-error {
+    color: #a33325 !important;
+}
+
+@media (min-width: 992px) {
+    .sc-planning-reference-row {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) !important;
+    }
+}
+
 .sc-form-limit-md {
     max-width: 300px;
 }

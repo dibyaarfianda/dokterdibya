@@ -1,6 +1,24 @@
 /* Sunday Clinic PWA visual system.
    Loaded after sunday-clinic.css and enabled only for the embedded mobile app. */
 
+body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-planning-reference-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: var(--sc-pwa-space-2, 8px) !important;
+}
+
+body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-planning-history {
+    padding: var(--sc-pwa-space-2, 8px) !important;
+    font-size: var(--sc-pwa-font-body, 11px) !important;
+}
+
+body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-planning-history-title {
+    font-size: var(--sc-pwa-font-label, 11px) !important;
+}
+
+body.mobile-app-mode.sunday-clinic-embedded-active #sunday-clinic-content .sc-planning-history-meta {
+    font-size: var(--sc-pwa-font-meta, 10px) !important;
+}
+
 @media (max-width: 991.98px) {
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-pwa-mobile-only,
     body.mobile-app-mode.sunday-clinic-embedded-active .sc-pwa-mobile-title {
