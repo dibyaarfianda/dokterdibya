@@ -25,6 +25,8 @@ describe('compact desktop staff sidebar', () => {
         await page.setViewport({ width: 1440, height: 900 });
         await page.setContent(`<body class="sidebar-mini">${sidebar}</body>`);
         await page.addStyleTag({ content: '.d-none,[hidden]{display:none!important}' });
+        // AdminLTE moves its sidebar offscreen below the tablet breakpoint.
+        await page.addStyleTag({ content: '@media(max-width:767.98px){.main-sidebar{margin-left:-250px}}' });
         await page.addStyleTag({ content: shellCss });
         await page.evaluate(() => {
             window.staffRoleConstants = {
@@ -249,7 +251,12 @@ describe('compact desktop staff sidebar', () => {
     });
 
     test('phone layout retains the original sidebar structure', async () => {
-        await page.setViewport({ width: 390, height: 844 });
+        await page.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+        // Changing touch emulation reloads Chromium; rebuild the real sidebar fixture.
+        await page.setContent(`<body class="sidebar-mini">${sidebar}</body>`);
+        await page.addStyleTag({ content: '.d-none,[hidden]{display:none!important}' });
+        await page.addStyleTag({ content: shellCss });
+        await page.addScriptTag({ path: scriptPath });
         const result = await page.evaluate(() => {
             const nav = document.querySelector('.nav-sidebar');
             const before = [...nav.children].map(item => item.id || item.textContent.trim());
@@ -262,6 +269,55 @@ describe('compact desktop staff sidebar', () => {
         });
         expect(result.after).toEqual(result.before);
         expect(result.searchAdded).toBe(false);
+    });
+
+    test.each([854, 640, 390])('small desktop starts with compact navigation at %s pixels', async width => {
+        await page.setViewport({ width, height: 844 });
+        const result = await page.evaluate(() => {
+            const initialized = window.staffCompactSidebar.init({ role_id: 1 });
+            return {
+                initialized,
+                enabled: document.querySelector('.main-sidebar').classList.contains('staff-compact-enabled'),
+                searchVisible: Boolean(document.getElementById('staff-compact-search')),
+                layout: getComputedStyle(document.querySelector('.main-sidebar .sidebar')).display,
+                sidebarMargin: getComputedStyle(document.querySelector('.main-sidebar')).marginLeft
+            };
+        });
+        expect(result).toEqual({ initialized: true, enabled: true, searchVisible: true, layout: 'flex', sidebarMargin: '0px' });
+    });
+
+    test('desktop resize preserves the menu, open group, search, and collapsed rail', async () => {
+        await page.evaluate(() => {
+            window.staffCompactSidebar.init({ role_id: 1 });
+            window.sidebarSearchBeforeResize = document.getElementById('staff-compact-search');
+            window.sidebarIdsBeforeResize = [...document.querySelectorAll('.nav-sidebar .nav-item[id]')].map(item => item.id).sort();
+            document.getElementById('staff-compact-group-pasien').click();
+            document.getElementById('staff-compact-collapse').click();
+        });
+        for (const width of [854, 640, 390, 1440]) {
+            await page.setViewport({ width, height: 844 });
+            // Wait for the real resize listener before examining the resulting navigation.
+            await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+            const result = await page.evaluate(() => ({
+                sameSearch: document.getElementById('staff-compact-search') === window.sidebarSearchBeforeResize,
+                sameMenus: JSON.stringify([...document.querySelectorAll('.nav-sidebar .nav-item[id]')].map(item => item.id).sort()) === JSON.stringify(window.sidebarIdsBeforeResize),
+                groupOpen: document.querySelector('[data-group="pasien"]')?.classList.contains('menu-open') || false,
+                collapsed: document.body.classList.contains('sidebar-collapse'),
+                searchToggleDisplay: getComputedStyle(document.getElementById('staff-compact-search-toggle') || document.body).display
+            }));
+            expect(result).toEqual({ sameSearch: true, sameMenus: true, groupOpen: true, collapsed: true, searchToggleDisplay: 'flex' });
+        }
+    });
+
+    test('mobile app mode retains original navigation even with a desktop pointer and wide viewport', async () => {
+        const result = await page.evaluate(() => {
+            document.documentElement.classList.add('mobile-app-mode');
+            const nav = document.querySelector('.nav-sidebar');
+            const before = nav.innerHTML;
+            const initialized = window.staffCompactSidebar.init({ role_id: 1 });
+            return { initialized, unchanged: nav.innerHTML === before, searchAdded: Boolean(document.getElementById('staff-compact-search')) };
+        });
+        expect(result).toEqual({ initialized: false, unchanged: true, searchAdded: false });
     });
 
     test('desktop search, closed groups, and collapsed rail remain readable', async () => {

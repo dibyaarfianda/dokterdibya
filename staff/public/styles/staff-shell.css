@@ -1569,7 +1569,10 @@ body.mobile-app-mode .mobile-action-bar-force button {
 }
 
 /* Compact Staff Panel navigation is applied only to desktop. Original menu nodes stay intact. */
-@media (min-width: 992px) {
+@media (min-width: 992px), (hover: hover) and (pointer: fine) {
+    .main-sidebar.staff-compact-enabled {
+        margin-left: 0 !important;
+    }
     .main-sidebar.staff-compact-enabled .sidebar {
         display: flex !important;
         flex-direction: column !important;

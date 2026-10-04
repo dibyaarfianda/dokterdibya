@@ -56,8 +56,12 @@
     let onlineButton = null;
 
     function isDesktop() {
-        return window.matchMedia('(min-width: 992px)').matches &&
-            !document.documentElement.classList.contains('mobile-app-mode');
+        // A small desktop window still uses the desktop navigation. Keep the
+        // original sidebar for touch/mobile shells, rather than using width alone.
+        return !document.documentElement.classList.contains('mobile-app-mode') &&
+            !document.body.classList.contains('mobile-app-mode') &&
+            (window.matchMedia('(min-width: 992px)').matches ||
+                window.matchMedia('(hover: hover) and (pointer: fine)').matches);
     }
 
     function isDoctor() {
