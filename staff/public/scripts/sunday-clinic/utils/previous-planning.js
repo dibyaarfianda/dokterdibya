@@ -1,7 +1,10 @@
-/** Read-only references from the immediately preceding private-clinic visit. */
+/** Previous private-clinic references, reused only through an explicit user action. */
 import apiClient from './api-client.js';
 import stateManager from './state-manager.js';
 import { escapeHtml } from './helpers.js';
+
+const pendingTherapy = new Set();
+const historyLoads = new WeakMap();
 
 export function visitTimestamp(value) {
     if (typeof value !== 'string' || !value.trim()) return NaN;
@@ -58,20 +61,117 @@ export function renderPreviousPlanningPanel(kind) {
         <h6 id="previous-${kind}-title" class="sc-planning-history-title">${title}</h6>
         <div class="sc-planning-history-meta" data-planning-history-meta></div>
         <div data-planning-history-content aria-live="polite">Memuat kontrol sebelumnya...</div>
+        <button type="button" class="btn btn-sm btn-outline-primary mt-2" data-use-previous-planning="${kind}" disabled>
+            Pakai ${kind === 'terapi' ? 'terapi' : 'rencana'} sebelumnya
+        </button>
+        <div class="small mt-1" data-planning-history-feedback role="status"></div>
     </aside>`;
+}
+
+function medicationData(item) {
+    if (typeof item.item_data !== 'string') return item.item_data || {};
+    try { return JSON.parse(item.item_data) || {}; } catch { return {}; }
 }
 
 function medicationHtml(billing) {
     return (Array.isArray(billing?.items) ? billing.items : []).filter(item => item.item_type === 'obat').map(item => {
-        let data = item.item_data || {};
-        if (typeof data === 'string') {
-            try { data = JSON.parse(data) || {}; } catch { data = {}; }
-        }
+        const data = medicationData(item);
         const quantity = item.quantity == null ? '' : `Jumlah: ${item.quantity}`;
         const usage = textValue(data.caraPakai || data.latinSig);
         return `<div class="sc-planning-history-medication"><strong>${escapeHtml(item.item_name || '')}</strong>
             <div>${escapeHtml([quantity, usage].filter(Boolean).join(' • '))}</div></div>`;
     }).join('');
+}
+
+function prescriptionsFromBilling(billing) {
+    return (Array.isArray(billing?.items) ? billing.items : []).filter(item => item.item_type === 'obat').map(item => {
+        const data = medicationData(item);
+        const quantity = Number(item.quantity);
+        const name = textValue(item.item_name);
+        const unit = textValue(data.unit);
+        if (!name || !unit || !Number.isFinite(quantity) || quantity <= 0) {
+            throw new Error('Data obat sebelumnya tidak lengkap. Periksa melalui Input Terapi.');
+        }
+        return { obatId: data.obatId || null, name, quantity, unit,
+            caraPakai: textValue(data.caraPakai), latinSig: textValue(data.latinSig) };
+    });
+}
+
+function medicationKeys(item) {
+    return [item.obatId ? `id:${item.obatId}` : '', `name:${item.name.trim().toLocaleLowerCase('id-ID')}`].filter(Boolean);
+}
+
+function missingPrescriptions(items, billing) {
+    const existing = new Set((Array.isArray(billing?.items) ? billing.items : [])
+        .filter(item => item.item_type === 'obat')
+        .flatMap(item => medicationKeys({obatId: medicationData(item).obatId, name: String(item.item_name || '')})));
+    return items.filter(item => {
+        const keys = medicationKeys(item);
+        if (keys.some(key => existing.has(key))) return false;
+        keys.forEach(key => existing.add(key));
+        return true;
+    });
+}
+
+function appendPreviousText(root, kind, text) {
+    if (!text) return;
+    const field = root.querySelector(`#planning-${kind}`);
+    if (!field || (`\n${field.value.trim()}\n`).includes(`\n${text}\n`)) return;
+    field.value += `${field.value && !field.value.endsWith('\n') ? '\n' : ''}${text}`;
+    field.dispatchEvent(new Event('input', {bubbles:true}));
+    field.dispatchEvent(new Event('change', {bubbles:true}));
+}
+
+function enablePreviousPlanningActions(root, mrId, planning, billing, completeTherapy, isCurrent) {
+    const therapyButton = root.querySelector('[data-use-previous-planning="terapi"]');
+    const planButton = root.querySelector('[data-use-previous-planning="rencana"]');
+    const feedback = (kind, message) => {
+        if (isCurrent()) root.querySelector(`[data-planning-history="${kind}"] [data-planning-history-feedback]`).textContent = message;
+    };
+    therapyButton.disabled = !completeTherapy || !(planning?.terapi || billing?.items?.some(item => item.item_type === 'obat'));
+    planButton.disabled = !planning?.rencana;
+    planButton.onclick = () => {
+        if (!isCurrent() || planButton.disabled) return;
+        appendPreviousText(root, 'rencana', planning.rencana);
+        planButton.disabled = true;
+        feedback('rencana', 'Rencana dipakai. Simpan Planning untuk menyimpan perubahan.');
+    };
+    therapyButton.onclick = async () => {
+        if (!isCurrent() || therapyButton.disabled || pendingTherapy.has(mrId)) return;
+        pendingTherapy.add(mrId);
+        therapyButton.disabled = true;
+        let applied = false;
+        feedback('terapi', 'Memakai terapi sebelumnya...');
+        try {
+            const items = prescriptionsFromBilling(billing);
+            let added = 0;
+            if (items.length) {
+                // Read fresh billing on every action, including after reopening the form.
+                const activeBilling = await readFresh(`/api/sunday-clinic/billing/${encodeURIComponent(mrId)}`);
+                if (!isCurrent()) return;
+                const missing = missingPrescriptions(items, activeBilling);
+                if (missing.length) {
+                    const response = await apiClient.updateBillingObat(mrId, missing);
+                    if (!response?.success) throw new Error(response?.message || 'Gagal memakai terapi sebelumnya.');
+                    added = missing.length;
+                }
+            }
+            if (!isCurrent()) return;
+            appendPreviousText(root, 'terapi', planning.terapi);
+            applied = true;
+            if (items.length && window.renderTerapiItemsList) {
+                const refreshed = await window.renderTerapiItemsList({preserveEdits:true,isCurrent});
+                if (!refreshed) throw new Error('Daftar obat belum termuat.');
+            }
+            feedback('terapi', `Terapi dipakai. ${added} obat ditambahkan; obat yang sudah ada tetap dipertahankan.${planning.terapi ? ' Simpan Planning untuk menyimpan teks manual.' : ''}`);
+        } catch (error) {
+            feedback('terapi', applied ? 'Terapi dipakai, tetapi daftar obat belum termuat. Buka kembali Planning.' :
+                error.message || 'Gagal memakai terapi sebelumnya. Silakan coba lagi.');
+        } finally {
+            pendingTherapy.delete(mrId);
+            if (isCurrent()) therapyButton.disabled = applied;
+        }
+    };
 }
 
 async function readFresh(endpoint) {
@@ -88,10 +188,13 @@ export async function loadPreviousPlanning(state, root) {
     const patientId = state.patientData?.id || record.patientId || record.patient_id;
     const panels = root?.querySelectorAll('[data-planning-history]');
     if (!panels?.length) return;
+    const loadId = {};
+    historyLoads.set(root, loadId);
+    root.querySelectorAll('[data-use-previous-planning]').forEach(button => { button.disabled = true; });
     const isCurrent = () => {
         const live = stateManager.getState();
         const liveRecord = live.recordData?.record || live.recordData || {};
-        return root.isConnected && live.currentMrId === mrId && live.activeSection === 'plan' &&
+        return root.isConnected && historyLoads.get(root) === loadId && live.currentMrId === mrId && live.activeSection === 'plan' &&
             (live.patientData?.id || liveRecord.patientId || liveRecord.patient_id) === patientId;
     };
     const update = (kind, html) => {
@@ -136,6 +239,8 @@ export async function loadPreviousPlanning(state, root) {
             `<div class="sc-planning-history-text">${escapeHtml(planning.rencana)}</div>` :
             'Tidak ada rencana tercatat pada kontrol sebelumnya.') :
             '<div class="sc-planning-history-error">Gagal memuat rencana kontrol sebelumnya.</div>');
+        enablePreviousPlanningActions(root, mrId, planning, billingResult.status === 'fulfilled' ? billingResult.value : null,
+            planningResult.status === 'fulfilled' && billingResult.status === 'fulfilled', isCurrent);
     } catch {
         update('terapi', '<div class="sc-planning-history-error">Gagal memuat kontrol sebelumnya. Buka kembali Planning untuk mencoba lagi.</div>');
         update('rencana', '<div class="sc-planning-history-error">Gagal memuat kontrol sebelumnya. Buka kembali Planning untuk mencoba lagi.</div>');

@@ -1780,34 +1780,38 @@ async function updateIndividualObat(itemId, button) {
  * Render terapi items as a list with individual delete buttons
  * Fetches current billing obat items and displays them
  */
-async function renderTerapiItemsList() {
+async function renderTerapiItemsList(options = {}) {
     const container = document.getElementById('terapi-items-container');
-    if (!container) return;
+    if (!container) return false;
 
     try {
         const token = await window.getToken();
-        if (!token) return;
+        if (!token) return false;
 
         const mrSlug = window.routeMrSlug;
-        if (!mrSlug) return;
+        if (!mrSlug) return false;
 
-        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}${options.preserveEdits ? '?_t=' + Date.now() : ''}`, {
+            ...(options.preserveEdits ? {cache:'no-store'} : {}),
+            headers: { 'Authorization': `Bearer ${token}`, ...(options.preserveEdits ? {'Cache-Control':'no-cache'} : {}) }
         });
 
         if (!response.ok) {
-            container.innerHTML = '<p class="text-muted small">Belum ada obat dari billing.</p>';
-            return;
+            if (!options.preserveEdits) container.innerHTML = '<p class="text-muted small">Belum ada obat dari billing.</p>';
+            return false;
         }
 
         const result = await response.json();
+        if (options.isCurrent && !options.isCurrent()) return false;
+        if (options.preserveEdits && !result.success) return false;
         const billing = result.data || {};
         const obatItems = (billing.items || []).filter(item => item.item_type === 'obat');
         const isDraft = billing.status === 'draft';
 
         if (obatItems.length === 0) {
+            if (options.preserveEdits) return false;
             container.innerHTML = '<p class="text-muted small">Belum ada obat. Klik "Input Terapi" untuk menambahkan.</p>';
-            return;
+            return true;
         }
 
         const escapeHtmlLocal = (str) => {
@@ -1867,11 +1871,28 @@ async function renderTerapiItemsList() {
             `;
         }).join('');
 
+        if (options.isCurrent && !options.isCurrent()) return false;
+        // Reusing a previous control must keep edits made to existing prescription inputs,
+        // including edits made while this billing read was in flight.
+        const drafts = options.preserveEdits ? new Map(Array.from(container.querySelectorAll('input[id]'),
+            input => [input.id, input.value])) : new Map();
+        const focused = document.activeElement;
+        const focusId = options.preserveEdits && container.contains(focused) ? focused.id : null;
+        const selection = focusId && focused.type === 'text' ? [focused.selectionStart, focused.selectionEnd] : null;
         container.innerHTML = listHtml;
+        container.querySelectorAll('input[id]').forEach(input => {
+            if (drafts.has(input.id)) input.value = drafts.get(input.id);
+            if (input.id === focusId) {
+                input.focus({preventScroll:true});
+                if (selection) input.setSelectionRange(...selection);
+            }
+        });
+        return true;
 
     } catch (error) {
         console.error('Error rendering terapi items:', error);
-        container.innerHTML = '<p class="text-muted small">Gagal memuat daftar obat.</p>';
+        if (!options.preserveEdits) container.innerHTML = '<p class="text-muted small">Gagal memuat daftar obat.</p>';
+        return false;
     }
 }
 
