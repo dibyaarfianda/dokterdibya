@@ -41,19 +41,19 @@ async function seedFAQ() {
     const faqs = [
         {
             keywords: ['jam praktik', 'jadwal dokter', 'jadwal praktik', 'jam buka', 'kapan buka', 'jam berapa', 'praktek', 'jadwal'],
-            answer: '🕐 *Jadwal Praktik*\n\n*RSUD GAMBIRAN*\n• SELASA: 08.30-11.00\n• RABU: 08.30-11.00\n\n*RSIA MELINDA*\n• SENIN: 18.30-20.00\n• KAMIS: 18.30-20.00\n• JUMAT: 18.30-20.00\n\n*RS BHAYANGKARA*\n• SABTU: 10.00-13.00\n\n*PRAKTEK PRIBADI (POLI RSIA MELINDA)*\n• MINGGU: 09.00-16.00',
+            answer: '🕐 *Jadwal Praktik*\n\n*RSUD GAMBIRAN*\n• SELASA: 08.30-11.00\n• RABU: 08.30-11.00\n\n*RSIA MELINDA*\n• SENIN: 18.30-20.00\n• KAMIS: 18.30-20.00\n• JUMAT: 18.30-20.00\n\n*RS BHAYANGKARA*\n• SABTU: 10.00-13.00\n\n*KLINIK PRIVAT*\n• Lihat tanggal dan jam praktik yang tersedia di menu Booking Klinik Privat.',
             category: 'jadwal',
             priority: 10
         },
         {
             keywords: ['cara booking', 'cara daftar', 'cara pesan', 'daftar konsultasi', 'buat janji', 'booking', 'daftar antrian', 'mau periksa', 'pesan slot', 'reservasi'],
-            answer: '📋 *Cara Booking*\n\nPilih menu Booking, pilih tanggal, pilih jam, pilih jenis konsultasi, isi keluhan yang dirasakan, lalu konfirmasi.\n\nSelanjutnya akan ada 2x konfirmasi yaitu pukul 18.00 hari Sabtu dan pukul 05.00 WIB hari Minggu.\n\nJika sampai pukul 09.00 hari Minggu tidak ada konfirmasi, booking hangus.',
+            answer: '📋 *Cara Booking Klinik Privat*\n\nPilih menu **Booking Klinik Privat**, pilih tanggal praktik yang tersedia, pilih jam, pilih jenis konsultasi, isi keluhan yang dirasakan, lalu konfirmasi booking.\n\nUntuk konfirmasi kehadiran, ikuti petunjuk dan batas waktu yang tertera pada jadwal atau notifikasi booking Anda.',
             category: 'booking',
             priority: 10
         },
         {
             keywords: ['konfirmasi hadir', 'konfirmasi kehadiran', 'konfirmasi minggu', 'slot hangus', 'expired', 'konfirmasi'],
-            answer: '✅ *Cara Konfirmasi Kehadiran (Klinik Minggu):*\n\nSetiap Sabtu malam Anda akan mendapat pesan WhatsApp untuk konfirmasi kehadiran hari Minggu.\n\n⏰ **Deadline: Minggu pukul 05.00 WIB**\n\nJika belum konfirmasi:\n1. Buka menu **Booking**\n2. Pilih jadwal hari Minggu\n3. Tekan **Konfirmasi Hadir**',
+            answer: '✅ *Cara Konfirmasi Kehadiran Klinik Privat:*\n\n1. Buka menu **Booking Klinik Privat** atau **Riwayat Booking**\n2. Pilih jadwal konsultasi Anda\n3. Tekan **Konfirmasi Hadir**\n\nIkuti petunjuk dan batas waktu yang tertera pada jadwal atau notifikasi booking Anda.',
             category: 'booking',
             priority: 9
         },
@@ -83,7 +83,7 @@ async function seedFAQ() {
         },
         {
             keywords: ['biaya', 'tarif', 'harga', 'berapa biaya', 'bayar berapa', 'konsultasi berapa', 'biaya periksa', 'harga konsultasi'],
-            answer: '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nPraktek Minggu tidak menerima BPJS.',
+            answer: '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nKlinik Privat tidak menerima BPJS.',
             category: 'biaya',
             priority: 7
         },
@@ -152,10 +152,10 @@ async function seedFAQ() {
 }
 
 async function syncRevisedFaqAnswers() {
-    const scheduleAnswer = '🕐 *Jadwal Praktik*\n\n*RSUD GAMBIRAN*\n• SELASA: 08.30-11.00\n• RABU: 08.30-11.00\n\n*RSIA MELINDA*\n• SENIN: 18.30-20.00\n• KAMIS: 18.30-20.00\n• JUMAT: 18.30-20.00\n\n*RS BHAYANGKARA*\n• SABTU: 10.00-13.00\n\n*PRAKTEK PRIBADI (POLI RSIA MELINDA)*\n• MINGGU: 09.00-16.00';
-    const bookingAnswer = '📋 *Cara Booking*\n\nPilih menu Booking, pilih tanggal, pilih jam, pilih jenis konsultasi, isi keluhan yang dirasakan, lalu konfirmasi.\n\nSelanjutnya akan ada 2x konfirmasi yaitu pukul 18.00 hari Sabtu dan pukul 05.00 WIB hari Minggu.\n\nJika sampai pukul 09.00 hari Minggu tidak ada konfirmasi, booking hangus.';
+    const scheduleAnswer = '🕐 *Jadwal Praktik*\n\n*RSUD GAMBIRAN*\n• SELASA: 08.30-11.00\n• RABU: 08.30-11.00\n\n*RSIA MELINDA*\n• SENIN: 18.30-20.00\n• KAMIS: 18.30-20.00\n• JUMAT: 18.30-20.00\n\n*RS BHAYANGKARA*\n• SABTU: 10.00-13.00\n\n*KLINIK PRIVAT*\n• Lihat tanggal dan jam praktik yang tersedia di menu Booking Klinik Privat.';
+    const bookingAnswer = '📋 *Cara Booking Klinik Privat*\n\nPilih menu **Booking Klinik Privat**, pilih tanggal praktik yang tersedia, pilih jam, pilih jenis konsultasi, isi keluhan yang dirasakan, lalu konfirmasi booking.\n\nUntuk konfirmasi kehadiran, ikuti petunjuk dan batas waktu yang tertera pada jadwal atau notifikasi booking Anda.';
     const cancelAnswer = '❌ *Batal Booking*\n\nMasuk ke menu **Riwayat Booking**, pilih jadwal yang ingin dibatalkan, lalu tekan **Batalkan**.';
-    const feeAnswer = '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nPraktek Minggu tidak menerima BPJS.';
+    const feeAnswer = '💰 *Biaya/Tarif*\n\nBiaya tergantung lokasi dan tindakan. Untuk update biaya, hubungi klinik/staff saat booking.\n\nKlinik Privat tidak menerima BPJS.';
 
     const contractionKeywords = ['kontraksi', 'penghitung kontraksi', 'timer kontraksi', 'hitung kontraksi', 'braxton hicks', 'fase laten'];
     const contractionAnswer = '*Hitung Kontraksi*\n\nFitur ini mencatat durasi dan jarak kontraksi sebagai edukasi + alarm, bukan diagnosis fase persalinan.\n\nGunakan dari menu Aplikasi > Hitung Kontraksi. Bila ada perdarahan, air ketuban keluar, gerak bayi berkurang, nyeri menetap, gejala berat, atau kontraksi teratur sebelum 37 minggu, segera ke unit persalinan/IGD.';

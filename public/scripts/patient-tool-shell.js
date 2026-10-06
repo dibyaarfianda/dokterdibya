@@ -41,7 +41,7 @@
             ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html', 'NEW']
         ]},
         jadwal: { title: 'Jadwal', items: [
-            ['fa-solid fa-calendar-check', 'Booking Klinik Minggu', '/booking-klinik.html'],
+            ['fa-solid fa-calendar-check', 'Booking Klinik Privat', '/booking-klinik.html'],
             ['fa-solid fa-hospital', 'Jadwal Rumah Sakit', '/jadwal-rs.html'],
             ['fa-solid fa-stethoscope', 'Riwayat Kunjungan', '/riwayat-kunjungan.html'],
             ['fa-solid fa-list-ol', 'Antrian Hari Ini', '/antrian.html']
