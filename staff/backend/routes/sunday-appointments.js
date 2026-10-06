@@ -56,18 +56,19 @@ function getNextPracticeDates(availableDays, count = 8) {
         normalizedDays.push(0);
     }
 
-    // Use GMT+7 (Jakarta/Indonesian time) - getGMT7Date returns a Date object
-    const now = getGMT7Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const day = now.getDate();
-    const currentHour = now.getHours();
+    // Resolve Jakarta calendar components independently of the host timezone.
+    const now = new Date();
+    const [year, monthNumber, day] = formatDateLocal(now).split('-').map(Number);
+    const month = monthNumber - 1;
+    const currentHour = Number(new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Jakarta', hour: '2-digit', hourCycle: 'h23'
+    }).format(now));
 
     // Create date at midnight for today
-    let current = new Date(year, month, day, 0, 0, 0, 0);
+    let current = new Date(Date.UTC(year, month, day));
 
     // Check if today is a configured practice day and it's before 9 PM (21:00)
-    const isTodayPracticeDay = normalizedDays.includes(current.getDay());
+    const isTodayPracticeDay = normalizedDays.includes(current.getUTCDay());
     const isBeforeCutoff = currentHour < 21; // Before 9 PM
 
     // If today is a configured practice day and before 9 PM, include today
@@ -78,19 +79,19 @@ function getNextPracticeDates(availableDays, count = 8) {
     }
 
     // Continue from tomorrow
-    current.setDate(current.getDate() + 1);
+    current.setUTCDate(current.getUTCDate() + 1);
 
     while (practiceDates.length < count) {
-        if (normalizedDays.includes(current.getDay())) {
+        if (normalizedDays.includes(current.getUTCDay())) {
             const practiceDateUtc = new Date(Date.UTC(
-                current.getFullYear(),
-                current.getMonth(),
-                current.getDate(),
+                current.getUTCFullYear(),
+                current.getUTCMonth(),
+                current.getUTCDate(),
                 0, 0, 0, 0
             ));
             practiceDates.push(practiceDateUtc);
         }
-        current.setDate(current.getDate() + 1);
+        current.setUTCDate(current.getUTCDate() + 1);
     }
 
     return practiceDates;
@@ -236,9 +237,41 @@ router.get('/available', verifyPatientToken, async (req, res) => {
 });
 
 /**
- * GET /api/sunday-appointments/sundays
- * Get list of next available practice dates (excluding disabled dates)
+ * GET /api/sunday-appointments/practice-dates (STAFF ONLY)
+ * Next non-holiday practice date for each active booking session.
  */
+router.get('/practice-dates', verifyStaffToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    try {
+        const settings = await getSessionSettings({ strict: true });
+        if (!settings.length) return res.json({ practices: [] });
+        const candidates = getNextPracticeDates(settings.map(s => s.dayOfWeek), 366);
+        const dateStrings = candidates.map(formatDateLocal);
+        const [disabledDates] = await db.query(
+            `SELECT disabled_date FROM disabled_practice_dates
+             WHERE disabled_date IN (?) AND (location IS NULL OR location = 'klinik_privat')`,
+            [dateStrings]
+        );
+        const disabled = new Set(disabledDates.map(d => typeof d.disabled_date === 'string'
+            ? d.disabled_date.substring(0, 10) : formatDateLocal(d.disabled_date)));
+        const practices = settings.map(setting => {
+            const date = candidates.find(d => d.getUTCDay() === setting.dayOfWeek && !disabled.has(formatDateLocal(d)));
+            return {
+                session: setting.session, name: setting.name, dayOfWeek: setting.dayOfWeek,
+                date: date ? formatDateLocal(date) : null,
+                formatted: date ? date.toLocaleDateString('id-ID', {
+                    timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                }) : null
+            };
+        });
+        res.json({ practices });
+    } catch (error) {
+        console.error('Error getting staff practice dates:', error);
+        res.status(500).json({ message: 'Gagal memuat tanggal praktik' });
+    }
+});
+
+// Preserve the patient-facing dates/sundays response contract.
 router.get('/sundays', verifyPatientToken, async (req, res) => {
     try {
         const configuredDays = await getConfiguredPracticeDays();

@@ -143,17 +143,21 @@
         }
 
         /* Mobile-friendly patient schedule table */
-        #klinik-private-table-wrapper table {
+        #klinik-private-table-wrapper table,
+        #weekend-clinic-table-wrapper table {
             min-width: 700px !important;
         }
 
         #klinik-private-tbody td,
-        #klinik-private-tbody th {
+        #klinik-private-tbody th,
+        #weekend-clinic-tbody td,
+        #weekend-clinic-tbody th {
             font-size: 0.7rem !important;
             padding: 0.4rem 0.3rem !important;
         }
 
-        #klinik-private-tbody td:nth-child(5) {
+        #klinik-private-tbody td:nth-child(5),
+        #weekend-clinic-tbody td:nth-child(5) {
             white-space: normal !important;
             word-break: break-word !important;
             font-size: 0.65rem !important;
@@ -161,12 +165,14 @@
             min-width: 180px !important;
         }
 
-        #klinik-private-tbody .badge {
+        #klinik-private-tbody .badge,
+        #weekend-clinic-tbody .badge {
             font-size: 0.6rem !important;
             padding: 0.2rem 0.4rem !important;
         }
 
-        #klinik-private-tbody .btn-sm {
+        #klinik-private-tbody .btn-sm,
+        #weekend-clinic-tbody .btn-sm {
             font-size: 0.65rem !important;
             padding: 0.2rem 0.4rem !important;
         }

@@ -1,7 +1,6 @@
 const API_BASE = '/api/sunday-appointments';
 const state = {
     appointments: [],
-    selectedDate: null,
     isLoading: false,
     realtimeBound: false,
     realtimeRetryCount: 0
@@ -10,39 +9,23 @@ const state = {
 // Expose state globally for WebView onclick handlers
 window._klinikPrivateState = state;
 
-const elements = {
-    dateLabel: null,
-    countBadge: null,
-    refreshBtn: null,
-    loading: null,
-    tableWrapper: null,
-    tbody: null,
-    emptyState: null,
-    errorBox: null
-};
-
+const clinics = [
+    { key: 'weekend', prefix: 'weekend-clinic', dayOfWeek: 6, name: 'Weekend Clinic', appointments: [], elements: {} },
+    { key: 'sunday', prefix: 'klinik-private', dayOfWeek: 0, name: 'Sunday Clinic', appointments: [], elements: {} }
+];
 let hasInitialized = false;
+let loadSequence = 0;
 
 function ensureElements() {
-    if (hasInitialized) {
-        return;
+    if (hasInitialized) return;
+    for (const clinic of clinics) {
+        const suffixes = { dateLabel: 'date-label', countBadge: 'count', refreshBtn: 'refresh-btn',
+            loading: 'loading', tableWrapper: 'table-wrapper', tbody: 'tbody', emptyState: 'empty', errorBox: 'error' };
+        for (const [key, suffix] of Object.entries(suffixes)) {
+            clinic.elements[key] = document.getElementById(`${clinic.prefix}-${suffix}`);
+        }
+        clinic.elements.refreshBtn?.addEventListener('click', () => loadUpcomingAppointments({ force: true }));
     }
-
-    elements.dateLabel = document.getElementById('klinik-private-date-label');
-    elements.countBadge = document.getElementById('klinik-private-count');
-    elements.refreshBtn = document.getElementById('klinik-private-refresh-btn');
-    elements.loading = document.getElementById('klinik-private-loading');
-    elements.tableWrapper = document.getElementById('klinik-private-table-wrapper');
-    elements.tbody = document.getElementById('klinik-private-tbody');
-    elements.emptyState = document.getElementById('klinik-private-empty');
-    elements.errorBox = document.getElementById('klinik-private-error');
-
-    if (elements.refreshBtn) {
-        elements.refreshBtn.addEventListener('click', () => {
-            loadUpcomingAppointments({ force: true });
-        });
-    }
-
     hasInitialized = true;
 }
 
@@ -52,67 +35,6 @@ function getToken() {
         window.location.href = 'login.html';
     }
     return token;
-}
-
-function getUpcomingSunday(reference = new Date()) {
-    const base = new Date(reference.getTime());
-    const day = base.getDay();
-    let daysAhead = (7 - day) % 7;
-
-    // If today is Sunday and it's before 9 PM, show today's Sunday
-    if (daysAhead === 0) {
-        const currentHour = base.getHours();
-        // If it's after 9 PM on Sunday, show next Sunday
-        if (currentHour >= 21) {
-            daysAhead = 7;
-        }
-        // Otherwise show today (daysAhead = 0)
-    }
-
-    base.setDate(base.getDate() + daysAhead);
-    base.setHours(0, 0, 0, 0);
-    return base;
-}
-
-async function getNextPracticeDate(token) {
-    try {
-        const response = await fetch(`${API_BASE}/sundays`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch practice dates');
-        }
-
-        const payload = await response.json();
-        const firstDate = Array.isArray(payload.sundays) && payload.sundays.length > 0 ? payload.sundays[0].date : null;
-
-        if (!firstDate) {
-            return null;
-        }
-
-        const parsed = new Date(`${firstDate}T00:00:00`);
-        return isNaN(parsed.getTime()) ? null : parsed;
-    } catch (error) {
-        console.warn('Klinik Private: gagal mengambil tanggal praktik terdekat, fallback ke Minggu.', error);
-        return null;
-    }
-}
-
-function formatDateIso(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function formatDateLabel(date) {
-    return date.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
 }
 
 function escapeHtml(value) {
@@ -127,8 +49,8 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-function setLoading(isLoading) {
-    state.isLoading = isLoading;
+function setLoading(clinic, isLoading) {
+    const elements = clinic.elements;
     if (elements.loading) {
         elements.loading.classList.toggle('d-none', !isLoading);
     }
@@ -147,7 +69,8 @@ function setLoading(isLoading) {
     }
 }
 
-function setError(message) {
+function setError(clinic, message) {
+    const elements = clinic.elements;
     if (!elements.errorBox) return;
     elements.errorBox.textContent = message || 'Terjadi kesalahan saat memuat data.';
     elements.errorBox.classList.remove('d-none');
@@ -184,9 +107,7 @@ function setupRealtimeUpdates() {
         return;
     }
 
-    const refreshAppointments = () => {
-        loadUpcomingAppointments({ force: true });
-    };
+    const refreshAppointments = () => loadUpcomingAppointments({ force: true });
 
     window.socket.on('booking:new', refreshAppointments);
     window.socket.on('booking:update', refreshAppointments);
@@ -195,7 +116,8 @@ function setupRealtimeUpdates() {
     state.realtimeBound = true;
 }
 
-function updateCount(count) {
+function updateCount(clinic, count) {
+    const elements = clinic.elements;
     if (!elements.countBadge) return;
     const suffix = count === 1 ? 'Pasien' : 'Pasien';
     elements.countBadge.textContent = `${count} ${suffix}`;
@@ -228,7 +150,8 @@ function getStatusMeta(status) {
     return map[normalized] || { label: status || '-', className: 'badge-secondary' };
 }
 
-function renderAppointments(appointments) {
+function renderAppointments(clinic, appointments) {
+    const elements = clinic.elements;
     if (!elements.tbody || !elements.tableWrapper || !elements.emptyState) {
         return;
     }
@@ -236,16 +159,17 @@ function renderAppointments(appointments) {
     elements.tbody.innerHTML = '';
 
     if (!appointments || appointments.length === 0) {
+        elements.emptyState.querySelector?.('p')?.replaceChildren('Belum ada pasien yang terjadwal');
         elements.tableWrapper.classList.add('d-none');
         elements.emptyState.classList.remove('d-none');
-        updateCount(0);
+        updateCount(clinic, 0);
         return;
     }
 
     elements.tableWrapper.classList.remove('d-none');
     elements.emptyState.classList.add('d-none');
 
-    appointments.forEach((appointment, index) => {
+    appointments.forEach(appointment => {
         const tr = document.createElement('tr');
         // Format slot time for first column
         const time = appointment.time || '-';
@@ -270,7 +194,7 @@ function renderAppointments(appointments) {
         const isPendingConfirmation = (appointment.status || '').toLowerCase() === 'pending_confirmation';
         const confirmationAlreadySent = Boolean(appointment.confirmation_popup_enabled_at);
         const confirmationButton = isPendingConfirmation ? `
-                <button type="button" class="btn btn-sm btn-${confirmationAlreadySent ? 'success' : 'warning'} klinik-private-popup-btn ml-1" onclick="window.handleKlinikConfirmationPopup && window.handleKlinikConfirmationPopup(${index})" title="${confirmationAlreadySent ? 'Kirim ulang popup konfirmasi' : 'Kirim popup konfirmasi ke pasien'}">
+                <button type="button" class="btn btn-sm btn-${confirmationAlreadySent ? 'success' : 'warning'} klinik-private-popup-btn ml-1" onclick="window.handleKlinikConfirmationPopup && window.handleKlinikConfirmationPopup(${Number(appointment.id)})" title="${confirmationAlreadySent ? 'Kirim ulang popup konfirmasi' : 'Kirim popup konfirmasi ke pasien'}">
                     <i class="fas fa-${confirmationAlreadySent ? 'bell-slash' : 'bell'} mr-1"></i>Popup
                 </button>
             ` : '';
@@ -290,7 +214,7 @@ function renderAppointments(appointments) {
             <td class="complaint-cell">${complaint}</td>
             <td>${statusBadge}</td>
             <td class="text-center">
-                <button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn" onclick="window.handleKlinikPeriksa && window.handleKlinikPeriksa(${index})">
+                <button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn" onclick="window.handleKlinikPeriksa && window.handleKlinikPeriksa(${Number(appointment.id)})">
                     <i class="fas fa-stethoscope mr-1"></i>Periksa
                 </button>
                 ${confirmationButton}
@@ -300,7 +224,7 @@ function renderAppointments(appointments) {
         elements.tbody.appendChild(tr);
     });
 
-    updateCount(appointments.length);
+    updateCount(clinic, appointments.length);
 }
 
 async function handlePeriksa(appointment) {
@@ -312,16 +236,16 @@ async function handlePeriksa(appointment) {
     showCategoryModal(appointment);
 }
 
-// Expose handlePeriksa globally for WebView onclick - accepts index
-window.handleKlinikPeriksa = function(index) {
-    const appointment = window._klinikPrivateState.appointments[index];
+// Expose appointment-ID actions globally for WebView onclick handlers
+window.handleKlinikPeriksa = function(id) {
+    const appointment = state.appointments.find(apt => String(apt.id) === String(id));
     if (appointment) {
         handlePeriksa(appointment);
     }
 };
 
-window.handleKlinikConfirmationPopup = async function(index) {
-    const appointment = window._klinikPrivateState.appointments[index];
+window.handleKlinikConfirmationPopup = async function(id) {
+    const appointment = state.appointments.find(apt => String(apt.id) === String(id));
     if (!appointment) return;
 
     if ((appointment.status || '').toLowerCase() !== 'pending_confirmation') {
@@ -518,52 +442,63 @@ function filterAndSortAppointments(appointments) {
 async function loadUpcomingAppointments({ force = false } = {}) {
     ensureElements();
     const token = getToken();
-    if (!token) {
-        return;
-    }
-
-    if (state.isLoading && !force) {
-        return;
-    }
-
-    const practiceDate = await getNextPracticeDate(token) || getUpcomingSunday();
-    state.selectedDate = practiceDate;
-
-    if (elements.dateLabel) {
-        elements.dateLabel.textContent = formatDateLabel(practiceDate);
-    }
-
-    setLoading(true);
-
+    if (!token || (state.isLoading && !force)) return;
+    const sequence = ++loadSequence;
+    state.isLoading = true;
+    clinics.forEach(clinic => {
+        clinic.appointments = [];
+        setLoading(clinic, true);
+        updateCount(clinic, 0);
+    });
+    state.appointments = [];
+    const options = { headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }, cache: 'no-store' };
     try {
-        const response = await fetch(`${API_BASE}/list?date=${formatDateIso(practiceDate)}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                window.location.href = 'login.html';
+        const response = await fetch(`${API_BASE}/practice-dates?_t=${Date.now()}`, options);
+        if (response.status === 401) window.location.href = 'login.html';
+        if (!response.ok) throw new Error('Gagal memuat tanggal praktik');
+        const payload = await response.json();
+        if (sequence !== loadSequence) return;
+        if (!Array.isArray(payload.practices)) throw new Error('Tanggal praktik belum termuat');
+        await Promise.all(clinics.map(async clinic => {
+            const practices = payload.practices.filter(p => p.dayOfWeek === clinic.dayOfWeek && p.date)
+                .sort((a, b) => a.date.localeCompare(b.date));
+            const first = practices[0];
+            if (clinic.elements.dateLabel) clinic.elements.dateLabel.textContent = first?.formatted || 'Jadwal belum tersedia';
+            if (!first) {
+                renderAppointments(clinic, []);
+                if (clinic.elements.emptyState) clinic.elements.emptyState.querySelector?.('p')?.replaceChildren('Sesi belum aktif atau jadwal tidak tersedia');
+                setLoading(clinic, false);
                 return;
             }
-            throw new Error('Gagal memuat data daftar pasien');
-        }
-
-        const payload = await response.json();
-        const appointments = filterAndSortAppointments(payload.appointments);
-        state.appointments = appointments;
-
-        if (elements.errorBox) {
-            elements.errorBox.classList.add('d-none');
-            elements.errorBox.textContent = '';
-        }
-
-        renderAppointments(appointments);
+            try {
+                const results = await Promise.all(practices.filter(p => p.date === first.date).map(async practice => {
+                    const result = await fetch(`${API_BASE}/list?date=${practice.date}&session=${practice.session}&_t=${Date.now()}`, options);
+                    if (result.status === 401) window.location.href = 'login.html';
+                    if (!result.ok) throw new Error(`Gagal memuat pasien ${clinic.name}`);
+                    const data = await result.json();
+                    if (!Array.isArray(data.appointments)) throw new Error(`Data pasien ${clinic.name} belum termuat`);
+                    return data.appointments;
+                }));
+                if (sequence !== loadSequence) return;
+                clinic.appointments = filterAndSortAppointments(results.flat());
+                state.appointments = clinics.flatMap(c => c.appointments);
+                renderAppointments(clinic, clinic.appointments);
+            } catch (error) {
+                if (sequence !== loadSequence) return;
+                setError(clinic, error.message);
+            } finally {
+                if (sequence === loadSequence) setLoading(clinic, false);
+            }
+        }));
     } catch (error) {
-        console.error('Klinik Private: gagal memuat data', error);
-        setError(error.message || 'Gagal memuat daftar pasien.');
-        updateCount(0);
+        if (sequence !== loadSequence) return;
+        clinics.forEach(clinic => {
+            if (clinic.elements.dateLabel) clinic.elements.dateLabel.textContent = '-';
+            setError(clinic, error.message || 'Gagal memuat daftar pasien');
+            setLoading(clinic, false);
+        });
     } finally {
-        setLoading(false);
+        if (sequence === loadSequence) state.isLoading = false;
     }
 }
 

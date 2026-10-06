@@ -56,7 +56,7 @@ function getSessionSettingsVersion() {
 /**
  * Return active settings for booking; cache inactive settings too for existing-booking time resolution.
  */
-async function getSessionSettings() {
+async function getSessionSettings({ strict = false } = {}) {
     const now = Date.now();
     if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
         return sessionSettingsCache.filter(s => s.isActive);
@@ -86,6 +86,7 @@ async function getSessionSettings() {
         return sessionSettingsCache.filter(s => s.isActive);
     } catch (error) {
         console.error('Error fetching session settings:', error);
+        if (strict) throw error;
         // Fallback to default if DB fails
         return LEGACY_SESSION_SETTINGS;
     }
