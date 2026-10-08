@@ -3,7 +3,7 @@ const { JWT_SECRET } = require('../middleware/auth');
 const { ROLE_NAMES, ROLE_ID_TO_NAME } = require('../constants/roles');
 const { accessControlService: defaultAccessControlService } = require('../services/AccessControlService');
 const { socketAuthMetrics } = require('./socketAuthMetrics');
-const { permissionRoom, syncPermissionRooms, userRoom } = require('./realtimePermissions');
+const { syncPermissionRooms, userRoom } = require('./realtimePermissions');
 const expiredSockets = new WeakSet();
 
 function authError(code) {
@@ -117,8 +117,7 @@ function installSocketAccess(io, options = {}) {
 }
 
 function socketHasPermission(socket, permission) {
-    return Boolean(permission && socket.data?.access?.permissions?.has(permission)
-        && socket.rooms.has(permissionRoom(permission)));
+    return Boolean(permission && socket.data?.access?.permissions?.has(permission));
 }
 
 async function refreshUserAccessRooms(io, userId, {

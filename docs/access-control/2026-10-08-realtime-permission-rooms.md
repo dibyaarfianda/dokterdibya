@@ -24,7 +24,7 @@ Date: 2026-10-08 (Asia/Jakarta)
 ## Test evidence
 
 - Expected TDD red: the new realtime permission-room module was absent.
-- Focused realtime, socket-auth, credential, presence, and popup gate: 7 suites, 98 tests passed.
+- Focused realtime, socket-auth, credential, presence, and popup gate: 7 suites, 99 tests passed.
 - Complete backend run: 221 suites and 1,880 tests passed.
 - Twelve pre-existing baseline suites remain unrelated: nine stale static/snapshot contracts and three Assistant DAF suites missing `@simplewebauthn/server` from the shared dependency installation.
 - Syntax checks and `git diff --check` passed.

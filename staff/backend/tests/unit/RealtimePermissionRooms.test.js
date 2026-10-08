@@ -3,7 +3,7 @@ const {
     permissionForEvent,
     syncPermissionRooms
 } = require('../../security/realtimePermissions');
-const { refreshUserAccessRooms } = require('../../security/socketAccess');
+const { refreshUserAccessRooms, socketHasPermission } = require('../../security/socketAccess');
 
 test('maps clinical and operational events to stable permission rooms', () => {
     expect(permissionForEvent('patient:selected')).toBe('patients.view');
@@ -12,6 +12,15 @@ test('maps clinical and operational events to stable permission rooms', () => {
     expect(permissionForEvent('booking:new')).toBe('online_queue.view');
     expect(permissionForEvent('chat:message')).toBeNull();
     expect(permissionRoom('patients.view')).toBe('permission:patients.view');
+});
+
+test('authorization is available from the handshake snapshot before async room joins settle', () => {
+    const socket = {
+        data: { access: { permissions: new Set(['patients.view']) } },
+        rooms: new Set(['socket-a'])
+    };
+    expect(socketHasPermission(socket, 'patients.view')).toBe(true);
+    expect(socketHasPermission(socket, 'billing.view')).toBe(false);
 });
 
 test('synchronizes only permission rooms and preserves staff/chat membership', async () => {
