@@ -550,7 +550,7 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
         // If already escalated to staff, just notify staff of new message
         if (session.status === 'escalated') {
             if (global.io) {
-                global.io.to('staff').emit('support:escalated_message', {
+                global.io.to('permission:support_chat.view').emit('support:escalated_message', {
                     sessionId,
                     patientName: session.patient_name,
                     preview: msgContent.slice(0, 100)
@@ -656,7 +656,7 @@ router.post('/sessions/:id/message', verifyPatientToken, ensureSupportChatAllowe
             if (global.io) {
                 global.io.to(`support:${sessionId}`).emit('support:new_message', botReply);
                 // Broadcast to all staff online
-                global.io.to('staff').emit('support:escalated', {
+                global.io.to('permission:support_chat.view').emit('support:escalated', {
                     sessionId,
                     patientId,
                     patientName: session.patient_name,
@@ -733,7 +733,7 @@ router.post('/sessions/:id/rating', verifyPatientToken, ensureSupportChatAllowed
 
         if (global.io) {
             global.io.to(`support:${sessionId}`).emit('support:session_rated', { sessionId, rating });
-            global.io.to('staff').emit('support:session_rated', { sessionId, rating });
+            global.io.to('permission:support_chat.view').emit('support:session_rated', { sessionId, rating });
         }
 
         return res.json({
@@ -949,9 +949,9 @@ router.post('/staff/:id/reply', verifyStaffToken, async (req, res) => {
             // Deliver to patient's open widget
             global.io.to(`support:${sessionId}`).emit('support:new_message', staffMsg);
             // Notify other staff that session is being handled
-            global.io.to('staff').emit('support:staff_replied', { sessionId, staffName });
+            global.io.to('permission:support_chat.view').emit('support:staff_replied', { sessionId, staffName });
             if (justClaimed) {
-                global.io.to('staff').emit('support:session_locked', {
+                global.io.to('permission:support_chat.view').emit('support:session_locked', {
                     sessionId,
                     owner_staff_id: staffId,
                     owner_staff_name: staffName
@@ -1068,7 +1068,7 @@ router.put('/staff/:id/resolve', verifyStaffToken, async (req, res) => {
                 closingSenderName: closingMessagePayload.sender_name,
                 closingCreatedAt: closingMessagePayload.created_at
             });
-            global.io.to('staff').emit('support:session_resolved', {
+            global.io.to('permission:support_chat.view').emit('support:session_resolved', {
                 sessionId,
                 closingMessageId: closingMessagePayload.id
             });

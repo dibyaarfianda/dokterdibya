@@ -4,6 +4,7 @@
  */
 
 let io = null;
+const { permissionForEvent, permissionRoom } = require('./security/realtimePermissions');
 const PATIENT_REFRESH_EVENTS = new Set([
     'usg:patient_updated', 'document:patient_updated', 'appointment:confirmation_popup_triggered'
 ]);
@@ -26,7 +27,9 @@ function broadcast(event) {
     }
 
     try {
-        const rooms = ['staff'];
+        const permission = permissionForEvent(event?.type);
+        if (!permission) return false;
+        const rooms = [permissionRoom(permission)];
         if (PATIENT_REFRESH_EVENTS.has(event.type) && event.patient_id) rooms.push(`patient:${event.patient_id}`);
         io.to(rooms).emit(event.type, event);
         return true;
@@ -77,7 +80,7 @@ function broadcastNewBooking(booking) {
         timestamp: new Date().toISOString()
     };
 
-    io.to('staff').emit('booking:new', event);
+    io.to(permissionRoom('online_queue.view')).emit('booking:new', event);
     return true;
 }
 
@@ -103,7 +106,7 @@ function broadcastBookingUpdate(booking) {
         timestamp: new Date().toISOString()
     };
 
-    io.to('staff').emit('booking:update', event);
+    io.to(permissionRoom('online_queue.view')).emit('booking:update', event);
     return true;
 }
 
@@ -126,8 +129,21 @@ function broadcastBookingCancel(booking) {
         timestamp: new Date().toISOString()
     };
 
-    io.to('staff').emit('booking:cancel', event);
+    io.to(permissionRoom('online_queue.view')).emit('booking:cancel', event);
     return true;
+}
+
+function broadcastToStaff(type, payload = {}) {
+    if (!io) return false;
+    const permission = permissionForEvent(type);
+    if (!permission) return false;
+    const event = payload?.type ? payload : { type, ...payload };
+    io.to(permissionRoom(permission)).emit(type, event);
+    return true;
+}
+
+function broadcastCancellation(booking) {
+    return broadcastBookingCancel(booking);
 }
 
 /**
@@ -166,5 +182,7 @@ module.exports = {
     broadcastNewBooking,
     broadcastBookingUpdate,
     broadcastBookingCancel,
+    broadcastCancellation,
+    broadcastToStaff,
     broadcastPatientNotification
 };

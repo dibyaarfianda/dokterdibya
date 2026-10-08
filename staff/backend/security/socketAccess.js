@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/auth');
 const { ROLE_NAMES, ROLE_ID_TO_NAME } = require('../constants/roles');
+const { accessControlService: defaultAccessControlService } = require('../services/AccessControlService');
 const { socketAuthMetrics } = require('./socketAuthMetrics');
+const { permissionRoom, syncPermissionRooms, userRoom } = require('./realtimePermissions');
 const expiredSockets = new WeakSet();
 
 function authError(code) {
@@ -59,25 +61,44 @@ function disconnectExpiredSocket(socket, errorEvent = 'auth:error') {
 }
 
 function installSocketAccess(io, options = {}) {
-    io.use((socket, next) => {
+    const accessControlService = options.accessControlService || defaultAccessControlService;
+    io.use(async (socket, next) => {
         try {
-            const principal = resolveSocketPrincipal(socket.handshake.auth?.token, options);
+            let principal = resolveSocketPrincipal(socket.handshake.auth?.token, options);
+            let access = null;
+            if (principal?.user_type === 'staff') {
+                access = await accessControlService.getEffectiveAccess(principal.id);
+                if (!access.isActive) throw authError('ACCOUNT_INACTIVE');
+                principal = Object.freeze({
+                    ...principal,
+                    role: access.roleName || principal.role,
+                    role_id: access.roleId,
+                    is_superadmin: access.isSuperadmin
+                });
+            }
             Object.defineProperty(socket.data, 'principal', { value: principal, enumerable: true });
+            Object.defineProperty(socket.data, 'access', { value: access, enumerable: true, writable: true });
             socketAuthMetrics.accepted(principal === null);
             next();
         } catch (error) {
-            const code = error?.data?.code;
-            const stable = ['AUTH_MISSING', 'AUTH_INVALID', 'AUTH_EXPIRED', 'FORBIDDEN'].includes(code)
-                ? error : authError('AUTH_INVALID');
+            const code = error?.data?.code || error?.code;
+            const stable = ['AUTH_MISSING', 'AUTH_INVALID', 'AUTH_EXPIRED', 'FORBIDDEN', 'ACCESS_DENIED', 'ACCOUNT_INACTIVE'].includes(code)
+                ? (error?.data?.code ? error : authError(code)) : authError('AUTH_INVALID');
             socketAuthMetrics.rejected(stable.data.code);
             next(stable);
         }
     });
     // Registered before domain handlers; anonymous clients get no shared room.
-    io.on('connection', socket => {
+    io.on('connection', async socket => {
         const principal = socket.data.principal;
         if (!principal) return;
-        socket.join(principal.user_type === 'staff' ? 'staff' : `patient:${principal.id}`);
+        if (principal.user_type === 'staff') {
+            await socket.join('staff');
+            await socket.join(userRoom(principal.id));
+            await syncPermissionRooms(socket, socket.data.access.permissions);
+        } else {
+            await socket.join(`patient:${principal.id}`);
+        }
         // Only non-private announcements / room-list invalidations use this room.
         socket.join('authenticated');
         let expiryTimer;
@@ -95,11 +116,49 @@ function installSocketAccess(io, options = {}) {
     });
 }
 
+function socketHasPermission(socket, permission) {
+    return Boolean(permission && socket.data?.access?.permissions?.has(permission)
+        && socket.rooms.has(permissionRoom(permission)));
+}
+
+async function refreshUserAccessRooms(io, userId, {
+    accessControlService = defaultAccessControlService,
+    disconnectInactive = true
+} = {}) {
+    const access = await accessControlService.getEffectiveAccess(userId);
+    const room = userRoom(userId);
+    let sockets;
+    if (typeof io.in === 'function' && typeof io.in(room).fetchSockets === 'function') {
+        sockets = await io.in(room).fetchSockets();
+    } else {
+        sockets = [...(io.sockets?.sockets?.values?.() || [])]
+            .filter(socket => socket.rooms?.has(room));
+    }
+
+    for (const socket of sockets) {
+        socket.emit('access:changed', {
+            access_version: access.accessVersion,
+            active: access.isActive
+        });
+        if (!access.isActive && disconnectInactive) {
+            socket.disconnect(true);
+            continue;
+        }
+        socket.data.access = access;
+        await syncPermissionRooms(socket, access.permissions);
+    }
+    return { access, socketsUpdated: sockets.length };
+}
+
 // Domain clients may report state changes, but actor fields always come from JWT.
-function onStaffEvent(socket, event, handler) {
+function onStaffEvent(socket, event, handler, { permission = null } = {}) {
     socket.on(event, async payload => {
         const principal = requireSocketPrincipal(socket, { staffOnly: true });
         if (!principal) return;
+        if (permission && !socketHasPermission(socket, permission)) {
+            socket.emit('auth:error', { code: 'ACCESS_DENIED' });
+            return;
+        }
         if (event !== 'users:get-list' && (!payload || typeof payload !== 'object' || Array.isArray(payload))) {
             socket.emit('auth:error', { code: 'FORBIDDEN' });
             return;
@@ -125,4 +184,11 @@ function onStaffEvent(socket, event, handler) {
     });
 }
 
-module.exports = { resolveSocketPrincipal, installSocketAccess, requireSocketPrincipal, onStaffEvent };
+module.exports = {
+    installSocketAccess,
+    onStaffEvent,
+    refreshUserAccessRooms,
+    requireSocketPrincipal,
+    resolveSocketPrincipal,
+    socketHasPermission
+};

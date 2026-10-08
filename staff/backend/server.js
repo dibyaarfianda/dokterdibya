@@ -75,7 +75,8 @@ const io = new Server(server, {
     httpCompression: true // Compress polling data
 });
 
-const { installSocketAccess, onStaffEvent } = require('./security/socketAccess');
+const { installSocketAccess, onStaffEvent, socketHasPermission } = require('./security/socketAccess');
+const { emitToPermission } = require('./security/realtimePermissions');
 // First deploy quarantines anonymous clients; enable strict auth at the planned
 // cutover by setting exactly "true" and restarting the backend.
 installSocketAccess(io, { allowAnonymous: process.env.SOCKET_AUTH_REQUIRED !== 'true' });
@@ -979,7 +980,7 @@ io.on('connection', (socket) => {
         broadcastUsersList();
         
         // Send current selected patient to newly connected user (if any)
-        if (currentSelectedPatient) {
+        if (currentSelectedPatient && socketHasPermission(socket, 'patients.view')) {
             socket.emit('patient:selected', currentSelectedPatient);
         }
     });
@@ -1023,8 +1024,8 @@ io.on('connection', (socket) => {
         currentSelectedPatient = data;
 
         // Broadcast to all other clients
-        socket.to('staff').emit('patient:selected', data);
-    });
+        emitToPermission(socket, 'patients.view', 'patient:selected', data);
+    }, { permission: 'patients.view' });
     
     // Anamnesa update broadcast
     onStaffEvent(socket, 'anamnesa:update', async (data) => {
@@ -1038,8 +1039,8 @@ io.on('connection', (socket) => {
             io
         );
 
-        socket.to('staff').emit('anamnesa:updated', data);
-    });
+        emitToPermission(socket, 'anamnesa.view', 'anamnesa:updated', data);
+    }, { permission: 'anamnesa.edit' });
 
     // Physical exam update broadcast
     onStaffEvent(socket, 'physical:update', async (data) => {
@@ -1053,8 +1054,8 @@ io.on('connection', (socket) => {
             io
         );
 
-        socket.to('staff').emit('physical:updated', data);
-    });
+        emitToPermission(socket, 'physical_exam.view', 'physical:updated', data);
+    }, { permission: 'physical_exam.edit' });
 
     // USG exam update broadcast
     onStaffEvent(socket, 'usg:update', async (data) => {
@@ -1068,8 +1069,8 @@ io.on('connection', (socket) => {
             io
         );
 
-        socket.to('staff').emit('usg:updated', data);
-    });
+        emitToPermission(socket, 'usg_exam.view', 'usg:updated', data);
+    }, { permission: 'usg_exam.edit' });
 
     // Lab exam update broadcast
     onStaffEvent(socket, 'lab:update', async (data) => {
@@ -1083,8 +1084,8 @@ io.on('connection', (socket) => {
             io
         );
 
-        socket.to('staff').emit('lab:updated', data);
-    });
+        emitToPermission(socket, 'lab_exam.view', 'lab:updated', data);
+    }, { permission: 'lab_exam.edit' });
     
     // Billing update broadcast
     onStaffEvent(socket, 'billing:update', async (data) => {
@@ -1098,8 +1099,8 @@ io.on('connection', (socket) => {
             io
         );
 
-        socket.to('staff').emit('billing:updated', data);
-    });
+        emitToPermission(socket, 'billing.view', 'billing:updated', data);
+    }, { permission: 'billing.create' });
 
     // Visit completion broadcast
     onStaffEvent(socket, 'visit:complete', async (data) => {
@@ -1113,8 +1114,8 @@ io.on('connection', (socket) => {
             io
         );
 
-        socket.to('staff').emit('visit:completed', data);
-    });
+        emitToPermission(socket, 'visits.view', 'visit:completed', data);
+    }, { permission: 'visits.edit' });
     
     // Announcements are emitted only after persistence by the HTTP route.
     

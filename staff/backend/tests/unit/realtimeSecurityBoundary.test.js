@@ -5,6 +5,27 @@ const jwt = require('jsonwebtoken');
 
 jest.mock('../../db', () => ({ query: jest.fn() }));
 jest.mock('../../services/OperationalSchemaValidator', () => ({ validateOperationalSchemaScope: jest.fn() }));
+const mockRealtimePermissions = new Set([
+    'patients.view', 'anamnesa.view', 'physical_exam.view', 'usg_exam.view',
+    'lab_exam.view', 'billing.view', 'visits.view', 'online_queue.view',
+    'logs.view', 'docboard.view', 'integrations.view', 'staff_announcements.view',
+    'support_chat.view', 'medical_records.view', 'patient_documents.view',
+    'finance_analysis.view'
+]);
+const mockGetEffectiveAccess = jest.fn(async userId => ({
+    userId,
+    userType: 'staff',
+    isActive: userId !== 'staff-inactive',
+    isSuperadmin: false,
+    roleId: 2,
+    roleName: 'admin',
+    mode: userId === 'staff-zero' ? 'account' : 'legacy',
+    accessVersion: 1,
+    permissions: userId === 'staff-zero' ? new Set() : new Set(mockRealtimePermissions)
+}));
+jest.mock('../../services/AccessControlService', () => ({
+    accessControlService: { getEffectiveAccess: mockGetEffectiveAccess }
+}));
 const db = require('../../db');
 const secret = process.env.JWT_SECRET;
 const staff = { id: 'staff-a', name: 'Staff A', role: 'admin', user_type: 'staff' };
@@ -71,7 +92,7 @@ function harness() {
             }
             sockets.push(socket);
             io.sockets.sockets.set(socket.id, socket);
-            connections.forEach(fn => fn(socket));
+            await Promise.all(connections.map(fn => fn(socket)));
             return socket;
         }
     };
@@ -85,6 +106,31 @@ test('room scoping preserves broadcast cost accounting without inspecting payloa
     h.io.to('staff').emit('billing:updated', { synthetic: true });
     h.io.to('patient:example').emit('notification:new', { synthetic: true });
     expect(h.readEmissionCount()).toBe(2);
+});
+
+test('active zero-grant staff keeps chat room but receives no clinical or billing event', async () => {
+    const h = harness();
+    const full = await h.connect(token(staff));
+    const zero = await h.connect(token({ ...staff, id: 'staff-zero' }));
+
+    expect(zero.rooms.has('staff')).toBe(true);
+    expect(zero.rooms.has('user:staff-zero')).toBe(true);
+    expect([...zero.rooms].some(room => room.startsWith('permission:'))).toBe(false);
+
+    h.io.to('staff').emit('chat:message', { id: 'chat-once' });
+    h.io.to('permission:patients.view').emit('patient:selected', { id: 'patient-event' });
+    h.io.to('permission:billing.view').emit('billing:updated', { id: 'billing-event' });
+
+    expect(zero.received).toEqual([{ event: 'chat:message', payload: { id: 'chat-once' } }]);
+    expect(full.received.map(item => item.event)).toEqual([
+        'chat:message', 'patient:selected', 'billing:updated'
+    ]);
+});
+
+test('inactive staff is rejected during handshake with a stable code', async () => {
+    const h = harness();
+    const result = await h.connect(token({ ...staff, id: 'staff-inactive' }));
+    expect(result.error?.data?.code).toBe('ACCOUNT_INACTIVE');
 });
 
 test.each([undefined, 'patient'])('%s cannot forge staff registration or obtain presence/clinical data', async kind => {
@@ -290,6 +336,7 @@ test.each(emitterFiles)('%s server emitters exclude unauthorized recipients', as
     const a = await h.connect(token(patient));
     const b = await h.connect(token({ ...patient, id: 'patient-b' }));
     const s = await h.connect(token(staff));
+    const zero = await h.connect(token({ ...staff, id: 'staff-zero' }));
     a.join('support:session-a');
     a.join('community:room-a');
     s.join('community:room-a');
@@ -310,7 +357,7 @@ test.each(emitterFiles)('%s server emitters exclude unauthorized recipients', as
     walk(ast);
     expect(emitters.length).toBeGreaterThan(0);
     for (const { receiver, event } of emitters) {
-        for (const socket of [anon, a, b, s]) socket.received.length = 0;
+        for (const socket of [anon, a, b, s, zero]) socket.received.length = 0;
         const broadcaster = vm.runInNewContext(receiver, {
             io: h.io, ioRef: h.io, global: { io: h.io }, router: { io: h.io },
             req: { app: { get: () => h.io } }, sessionId: 'session-a',
@@ -320,12 +367,16 @@ test.each(emitterFiles)('%s server emitters exclude unauthorized recipients', as
         expect({ file, event, deliveries: anon.received }).toEqual({ file, event, deliveries: [] });
         if (file === 'routes/announcements.js' || (file === 'routes/polls.js' && event !== 'notification:new') || event === 'community:rooms:changed') {
             expect([a.received.length, b.received.length, s.received.length]).toEqual([1, 1, 1]);
+            expect(zero.received.length).toBe(1);
         } else if (receiver.includes('support:') || event === 'notification:new') {
             expect([a.received.length, b.received.length, s.received.length]).toEqual([1, 0, 0]);
+            expect(zero.received.length).toBe(0);
         } else if (receiver.includes('community:')) {
             expect([a.received.length, b.received.length, s.received.length]).toEqual([1, 0, 1]);
+            expect(zero.received.length).toBe(0);
         } else {
             expect([a.received.length, b.received.length, s.received.length]).toEqual([0, 0, 1]);
+            expect(zero.received.length).toBe(['routes/chat.js', 'routes/status.js'].includes(file) ? 1 : 0);
         }
     }
 });
