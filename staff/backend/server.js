@@ -605,6 +605,10 @@ app.use('/api/contraction-timer', contractionTimerRoutes);
 const rolesRoutes = require('./routes/roles');
 app.use('/', rolesRoutes);
 
+// Per-account Staff access management and activation
+const accessControlRoutes = require('./routes/access-control');
+app.use('/api/access-control', accessControlRoutes);
+
 // Role Visibility routes (menu visibility per role)
 const roleVisibilityRoutes = require('./routes/role-visibility');
 app.use('/api/role-visibility', roleVisibilityRoutes);

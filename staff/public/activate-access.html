@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aktivasi Akun Staff - dokterDIBYA</title>
+    <style>
+        :root { color-scheme: light; --blue: #0d47a1; --muted: #667085; --danger: #b42318; --success: #067647; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(135deg, #071a35, #0d47a1); font-family: Arial, sans-serif; color: #1d2939; }
+        .card { width: min(100%, 460px); background: #fff; border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,.32); overflow: hidden; }
+        .header { padding: 30px; color: #fff; background: linear-gradient(135deg, #1565c0, #0d47a1); }
+        .header h1 { font-size: 24px; margin: 0 0 8px; }
+        .header p { margin: 0; opacity: .9; }
+        .body { padding: 30px; }
+        .summary { padding: 14px 16px; margin-bottom: 22px; border: 1px solid #d0d5dd; border-radius: 10px; background: #f9fafb; }
+        .summary strong, .summary span { display: block; }
+        .summary span { margin-top: 4px; color: var(--muted); font-size: 14px; }
+        label { display: block; margin: 0 0 7px; font-weight: 700; }
+        input { width: 100%; padding: 12px 13px; border: 1px solid #98a2b3; border-radius: 9px; font: inherit; }
+        input:focus { outline: 3px solid rgba(21,101,192,.18); border-color: #1565c0; }
+        .field { margin-bottom: 18px; }
+        .help { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+        button, .login-link { width: 100%; display: inline-block; padding: 12px 16px; border: 0; border-radius: 9px; background: var(--blue); color: #fff; font: inherit; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+        button:disabled { opacity: .6; cursor: wait; }
+        .message { padding: 12px 14px; margin-bottom: 18px; border-radius: 9px; font-size: 14px; }
+        .message.error { color: var(--danger); background: #fef3f2; border: 1px solid #fecdca; }
+        .message.success { color: var(--success); background: #ecfdf3; border: 1px solid #abefc6; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <header class="header">
+            <h1>Aktivasi Akun Staff</h1>
+            <p>Buat password untuk menyelesaikan aktivasi akun.</p>
+        </header>
+        <section class="body">
+            <div id="activation-message" class="message hidden" role="alert"></div>
+            <div id="activation-loading">Memeriksa undangan...</div>
+            <form id="activation-form" class="hidden" novalidate>
+                <div class="summary">
+                    <strong id="activation-name"></strong>
+                    <span id="activation-meta"></span>
+                </div>
+                <div class="field">
+                    <label for="activation-password">Password baru</label>
+                    <input id="activation-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+                    <p class="help">Minimal 12 karakter, dengan huruf besar, huruf kecil, angka, dan simbol.</p>
+                </div>
+                <div class="field">
+                    <label for="activation-confirm">Ulangi password</label>
+                    <input id="activation-confirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" required>
+                </div>
+                <button id="activation-submit" type="submit">Aktifkan Akun</button>
+            </form>
+            <div id="activation-complete" class="hidden">
+                <div class="message success">Akun sudah aktif. Silakan masuk ke Staff Panel.</div>
+                <a class="login-link" href="/staff/public/login.html">Masuk ke Staff Panel</a>
+            </div>
+        </section>
+    </main>
+    <script>
+        (() => {
+            const params = new URLSearchParams(window.location.hash.slice(1));
+            const token = params.get('token') || '';
+            history.replaceState(null, document.title, window.location.pathname);
+
+            const loading = document.getElementById('activation-loading');
+            const form = document.getElementById('activation-form');
+            const message = document.getElementById('activation-message');
+            const complete = document.getElementById('activation-complete');
+            const submit = document.getElementById('activation-submit');
+
+            function showError(text) {
+                loading.classList.add('hidden');
+                message.className = 'message error';
+                message.textContent = text;
+            }
+
+            async function post(path, body) {
+                const response = await fetch(`/api/access-control${path}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    const error = new Error(payload.message || 'Permintaan gagal.');
+                    error.code = payload.code;
+                    throw error;
+                }
+                return payload.data;
+            }
+
+            async function validate() {
+                if (!token) return showError('Tautan aktivasi tidak valid.');
+                try {
+                    const data = await post('/invitations/validate', { token });
+                    document.getElementById('activation-name').textContent = data.name;
+                    document.getElementById('activation-meta').textContent = `${data.job_label} · ${data.email_masked}`;
+                    loading.classList.add('hidden');
+                    form.classList.remove('hidden');
+                } catch (error) {
+                    showError(error.code === 'INVITATION_EXPIRED'
+                        ? 'Undangan sudah kedaluwarsa. Minta dokter mengirim undangan baru.'
+                        : 'Undangan tidak valid atau sudah digunakan.');
+                }
+            }
+
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                message.classList.add('hidden');
+                const password = document.getElementById('activation-password').value;
+                const confirmation = document.getElementById('activation-confirm').value;
+                if (password !== confirmation) return showError('Konfirmasi password tidak sama.');
+                submit.disabled = true;
+                try {
+                    await post('/invitations/accept', { token, password });
+                    form.classList.add('hidden');
+                    message.classList.add('hidden');
+                    complete.classList.remove('hidden');
+                } catch (error) {
+                    showError(error.code === 'WEAK_PASSWORD'
+                        ? 'Password belum memenuhi syarat keamanan.'
+                        : (error.code === 'INVITATION_EXPIRED'
+                            ? 'Undangan sudah kedaluwarsa. Minta dokter mengirim undangan baru.'
+                            : 'Undangan tidak valid atau sudah digunakan.'));
+                    form.classList.remove('hidden');
+                    submit.disabled = false;
+                }
+            });
+
+            validate();
+        })();
+    </script>
+</body>
+</html>

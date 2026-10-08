@@ -1,0 +1,123 @@
+<div class="container-fluid" id="kelola-access-root">
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+        <div>
+            <h4 class="mb-1">Kelola Akses</h4>
+            <p class="text-muted mb-0">Atur akses setiap akun. Perubahan berlaku langsung setelah disimpan.</p>
+        </div>
+        <button class="btn btn-primary mt-2 mt-md-0" type="button" data-toggle="modal" data-target="#access-create-account-modal">
+            <i class="fas fa-user-plus mr-1"></i> Tambah Akun
+        </button>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4 mb-3">
+            <div class="card h-100">
+                <div class="card-header border-0">
+                    <div class="input-group input-group-sm">
+                        <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-search"></i></span></div>
+                        <input id="access-account-search" class="form-control" type="search" placeholder="Cari nama, email, atau jabatan">
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div id="access-account-list" class="list-group list-group-flush" style="max-height: 68vh; overflow-y: auto;">
+                        <div class="text-center text-muted p-4"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat akun...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-8 mb-3">
+            <div class="card h-100">
+                <div class="card-header border-0 d-flex flex-wrap align-items-center justify-content-between">
+                    <div>
+                        <h5 id="access-selected-name" class="mb-1">Pilih akun</h5>
+                        <div id="access-selected-meta" class="text-muted small">Akses akun akan tampil di sini.</div>
+                    </div>
+                    <span id="access-selected-status" class="badge badge-light mt-2 mt-md-0">-</span>
+                </div>
+                <div class="card-body">
+                    <div id="access-doctor-protected" class="alert alert-info d-none">
+                        <i class="fas fa-shield-alt mr-1"></i> Akun dokter memiliki akses penuh yang terlindungi.
+                    </div>
+                    <div id="access-editor" class="d-none">
+                        <div class="form-group mb-3">
+                            <label for="access-job-label">Label jabatan</label>
+                            <select id="access-job-label" class="form-control form-control-sm" style="max-width: 320px;"></select>
+                            <small class="form-text text-muted">Label ini dipakai untuk identitas jabatan dan badge chat.</small>
+                        </div>
+                        <div class="table-responsive">
+                            <table id="access-permission-matrix" class="table table-sm table-bordered mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Modul</th>
+                                        <th style="text-align:center!important;vertical-align:middle!important;">Baca</th>
+                                        <th style="text-align:center!important;vertical-align:middle!important;">Baca/Edit</th>
+                                        <th style="text-align:center!important;vertical-align:middle!important;">Hapus</th>
+                                        <th style="text-align:center!important;vertical-align:middle!important;">Aksi khusus</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="access-permission-matrix-body"></tbody>
+                            </table>
+                        </div>
+                        <div class="mt-4">
+                            <h6 class="mb-2">Riwayat Perubahan</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead class="thead-light">
+                                        <tr><th>Waktu</th><th>Perubahan</th><th>Oleh</th><th>Versi</th></tr>
+                                    </thead>
+                                    <tbody id="access-audit-history"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="access-editor-actions" class="card-footer d-none">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                        <div>
+                            <button id="access-toggle-status" class="btn btn-outline-secondary btn-sm mr-2" type="button"></button>
+                            <button id="access-resend-invitation" class="btn btn-outline-primary btn-sm d-none" type="button">
+                                <i class="fas fa-paper-plane mr-1"></i> Kirim Ulang Undangan
+                            </button>
+                        </div>
+                        <button id="access-save" class="btn btn-primary mt-2 mt-sm-0" type="button">
+                            <i class="fas fa-save mr-1"></i> Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="access-create-account-modal" tabindex="-1" role="dialog" aria-labelledby="access-create-account-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="access-create-account-form">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="access-create-account-title">Tambah Akun</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light border small">Akun baru mulai tanpa izin. Pemilik akun mengaktifkannya melalui tautan email yang berlaku 24 jam.</div>
+                    <div class="form-group">
+                        <label for="access-create-name">Nama</label>
+                        <input id="access-create-name" name="name" class="form-control" type="text" maxlength="120" required autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="access-create-email">Email</label>
+                        <input id="access-create-email" name="email" class="form-control" type="email" maxlength="255" required autocomplete="email">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label for="access-create-role">Label jabatan</label>
+                        <select id="access-create-role" name="role_id" class="form-control" required></select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
+                    <button id="access-create-submit" type="submit" class="btn btn-primary">Buat dan Kirim Undangan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

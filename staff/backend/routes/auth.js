@@ -53,9 +53,10 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             u.profile_completed,
             u.must_change_password,
             r.name AS resolved_role_name,
-            r.display_name AS resolved_role_display
+            COALESCE(uap.job_label, r.display_name) AS resolved_role_display
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
+        LEFT JOIN user_access_policies uap ON uap.user_id = u.new_id
         WHERE u.email = ?`,
         [email]
     );
@@ -214,9 +215,10 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
             u.is_superadmin,
             u.photo_url,
             r.name AS resolved_role_name,
-            r.display_name AS resolved_role_display
+            COALESCE(uap.job_label, r.display_name) AS resolved_role_display
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
+        LEFT JOIN user_access_policies uap ON uap.user_id = u.new_id
         WHERE u.email = ?`,
         [email]
     );
@@ -296,9 +298,10 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             u.is_active,
             u.profile_completed,
             r.name AS resolved_role_name,
-            r.display_name AS resolved_role_display
+            COALESCE(uap.job_label, r.display_name) AS resolved_role_display
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
+        LEFT JOIN user_access_policies uap ON uap.user_id = u.new_id
         WHERE u.new_id = ?`,
         [userId]
     );
@@ -380,9 +383,10 @@ router.get('/api/staff/verify', verifyStaffToken, verifyActiveStaff, asyncHandle
             u.user_type,
             u.is_superadmin,
             r.name AS resolved_role_name,
-            r.display_name AS resolved_role_display
+            COALESCE(uap.job_label, r.display_name) AS resolved_role_display
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
+        LEFT JOIN user_access_policies uap ON uap.user_id = u.new_id
         WHERE u.new_id = ?
         LIMIT 1`,
         [userId]

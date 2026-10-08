@@ -28,8 +28,9 @@ function resolveSocketPrincipal(token, { allowAnonymous = true } = {}) {
         throw authError('AUTH_INVALID');
     }
     const patient = claims.user_type === 'patient' || claims.role === 'patient';
+    const explicitStaff = claims.user_type === 'staff';
     const role = claims.role || ROLE_ID_TO_NAME[claims.role_id];
-    if (!patient && !Object.values(ROLE_NAMES).includes(role)) throw authError('FORBIDDEN');
+    if (!patient && !explicitStaff && !Object.values(ROLE_NAMES).includes(role)) throw authError('FORBIDDEN');
     if (claims.demo_mode === true) throw authError('FORBIDDEN');
     return Object.freeze({
         id: String(claims.id), name: typeof claims.name === 'string' ? claims.name : '',

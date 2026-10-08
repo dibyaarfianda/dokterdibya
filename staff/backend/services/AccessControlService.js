@@ -31,7 +31,8 @@ class AccessControlService {
                 u.role_id,
                 COALESCE(r.name, u.role) AS role_name,
                 COALESCE(uap.mode, 'legacy') AS access_mode,
-                COALESCE(uap.access_version, 1) AS access_version
+                COALESCE(uap.access_version, 1) AS access_version,
+                COALESCE(uap.job_label, r.display_name, r.name, u.role, 'Staff') AS job_label
              FROM users u
              LEFT JOIN roles r ON r.id = u.role_id
              LEFT JOIN user_access_policies uap ON uap.user_id = u.new_id
@@ -49,6 +50,7 @@ class AccessControlService {
             isSuperadmin: Number(row.is_superadmin) === 1,
             roleId: row.role_id == null ? null : Number(row.role_id),
             roleName: row.role_name || null,
+            jobLabel: row.job_label || 'Staff',
             mode: row.access_mode === 'account' ? 'account' : 'legacy',
             accessVersion: Math.max(1, Number(row.access_version) || 1)
         };
@@ -148,6 +150,7 @@ class AccessControlService {
             mode: access.mode,
             access_version: access.accessVersion,
             is_doctor_protected: access.isDoctorProtected,
+            job_label: access.jobLabel,
             permissions: [...permissions]
         };
     }

@@ -127,6 +127,36 @@ test('active zero-grant staff keeps chat room but receives no clinical or billin
     ]);
 });
 
+test('activated account token with display-only staff role keeps polling chat and no clinical rooms', async () => {
+    const h = harness();
+    const invitedAccount = await h.connect(token({
+        id: 'staff-zero',
+        name: 'Invited Staff',
+        role: 'staff',
+        role_id: null,
+        user_type: 'staff'
+    }));
+
+    expect(invitedAccount.error).toBeUndefined();
+    expect(invitedAccount.conn.transport.name).toBe('polling');
+    expect(invitedAccount.data.principal).toMatchObject({
+        id: 'staff-zero',
+        user_type: 'staff'
+    });
+    expect(invitedAccount.rooms.has('staff')).toBe(true);
+    expect(invitedAccount.rooms.has('authenticated')).toBe(true);
+    expect(invitedAccount.rooms.has('user:staff-zero')).toBe(true);
+    expect([...invitedAccount.rooms].some(room => room.startsWith('permission:'))).toBe(false);
+
+    h.io.to('staff').emit('chat:message', { id: 'invited-chat-once' });
+    h.io.to('permission:patients.view').emit('patient:selected', { id: 'private-patient-event' });
+    h.io.to('permission:billing.view').emit('billing:updated', { id: 'private-billing-event' });
+
+    expect(invitedAccount.received).toEqual([
+        { event: 'chat:message', payload: { id: 'invited-chat-once' } }
+    ]);
+});
+
 test('inactive staff is rejected during handshake with a stable code', async () => {
     const h = harness();
     const result = await h.connect(token({ ...staff, id: 'staff-inactive' }));

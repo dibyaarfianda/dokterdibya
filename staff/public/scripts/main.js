@@ -2155,22 +2155,45 @@ function showMedifySyncPage() {
     });
 }
 
+// The account matrix is shipped dark until the route/UI inventory reaches Task 11.
+const ACCESS_CONTROL_ROLLOUT_ENABLED = false;
+
+async function ensureKelolaAccessLayout() {
+    if (pages.kelolaRoles?.dataset.accessLayout === 'account') return pages.kelolaRoles;
+    const response = await fetch('/staff/public/fragments/pages/kelola-access-page.html', {
+        cache: 'no-store',
+        credentials: 'same-origin'
+    });
+    if (!response.ok) throw new Error(`Kelola Akses fragment failed: ${response.status}`);
+    pages.kelolaRoles.innerHTML = await response.text();
+    pages.kelolaRoles.dataset.accessLayout = 'account';
+    return pages.kelolaRoles;
+}
+
 async function showKelolaRolesPage() {
+    const accessControlRolloutEnabled = typeof ACCESS_CONTROL_ROLLOUT_ENABLED !== 'undefined'
+        && ACCESS_CONTROL_ROLLOUT_ENABLED;
     const navGen = reserveStaffNavigation();
-    await ensureRegisteredPage('kelola-roles');
+    if (accessControlRolloutEnabled) {
+        await ensureKelolaAccessLayout();
+    } else {
+        await ensureRegisteredPage('kelola-roles');
+    }
     if (!hideAllPages(navGen)) return;
     pages.kelolaRoles?.classList.remove('d-none');
-    setTitleAndActive('Roles Manajemen', 'management-nav-kelola-roles', 'kelola-roles');
+    setTitleAndActive(accessControlRolloutEnabled ? 'Kelola Akses' : 'Roles Manajemen', 'management-nav-kelola-roles', 'kelola-roles');
 
-    // Dynamically import and initialize the Roles Management module
-    importWithVersion('./kelola-roles.js').then(module => {
-        if (typeof window.initKelolaRoles === 'function') {
+    const modulePath = accessControlRolloutEnabled ? './kelola-access.js' : './kelola-roles.js';
+    importWithVersion(modulePath).then(module => {
+        if (accessControlRolloutEnabled && typeof module.initKelolaAccess === 'function') {
+            module.initKelolaAccess();
+        } else if (!accessControlRolloutEnabled && typeof window.initKelolaRoles === 'function') {
             window.initKelolaRoles();
         } else {
-            console.error('Kelola Roles module loaded, but initKelolaRoles function not found on window.');
+            console.error('Kelola Akses module loaded without an initializer.');
         }
     }).catch(error => {
-        console.error('Failed to load kelola-roles.js:', error);
+        console.error('Failed to load access management module:', error);
     });
 }
 

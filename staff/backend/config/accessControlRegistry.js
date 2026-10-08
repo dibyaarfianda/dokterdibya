@@ -245,7 +245,18 @@ function resolveAuthRoute(route) {
     return null;
 }
 
+function resolveAccessControlRoute(route) {
+    if (/^\/api\/access-control\/invitations\/(?:validate|accept)$/.test(route.routePath)) {
+        return { exemption: 'activation', ruleId: 'staff-access-activation' };
+    }
+    if (route.routePath === '/api/access-control/me') {
+        return { exemption: 'staff_identity', ruleId: 'staff-access-identity' };
+    }
+    return { permission: 'access.manage', ruleId: 'staff-access-management' };
+}
+
 function resolveRouteAccess(route) {
+    if (route.sourceFile === 'access-control') return resolveAccessControlRoute(route);
     if (route.sourceFile === 'chat') return { exemption: 'staff_chat', ruleId: 'staff-chat' };
     if (route.sourceFile === 'auth') {
         const authResolution = resolveAuthRoute(route);

@@ -483,6 +483,7 @@ function requireSuperadmin(req, res, next) {
     });
     return res.status(403).json({
         success: false,
+        code: 'ACCESS_DENIED',
         message: 'Superadmin access required'
     });
 }
