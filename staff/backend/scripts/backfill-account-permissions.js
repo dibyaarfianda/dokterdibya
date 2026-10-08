@@ -129,6 +129,12 @@ async function loadMigrationState(connection) {
          WHERE action = 'catalog_migration_baseline'
          ORDER BY id`
     );
+    const [permissionOverrideRows] = await connection.query(
+        `SELECT target_user_id, after_state
+         FROM user_permission_audits
+         WHERE action = 'permissions_updated'
+         ORDER BY id`
+    );
 
     const byRole = new Map();
     for (const row of rolePermissionRows) {
@@ -147,6 +153,16 @@ async function loadMigrationState(connection) {
             baselineDirectByUser.set(row.target_user_id, new Set(parsed.direct_permissions));
         }
     }
+    const auditedPermissionOverridesByUser = new Map();
+    for (const row of permissionOverrideRows) {
+        const parsed = parseJson(row.after_state);
+        if (Array.isArray(parsed?.permissions)) {
+            auditedPermissionOverridesByUser.set(
+                row.target_user_id,
+                sortedSet(parsed.permissions.filter(name => typeof name === 'string'))
+            );
+        }
+    }
     const menusByRole = new Map();
     for (const row of visibilityRows) {
         if (!menusByRole.has(row.role_name)) menusByRole.set(row.role_name, new Set());
@@ -163,11 +179,15 @@ async function loadMigrationState(connection) {
         byRole,
         currentDirectByUser,
         baselineDirectByUser,
+        auditedPermissionOverridesByUser,
         menusByRole
     };
 }
 
 function expectedForUser(state, user) {
+    if (!user.isDoctorProtected && state.auditedPermissionOverridesByUser?.has(user.userId)) {
+        return sortedSet(state.auditedPermissionOverridesByUser.get(user.userId));
+    }
     return buildExpectedGrantNames({
         user,
         rolePermissions: state.byRole.get(user.roleId) || new Set(),
@@ -175,7 +195,7 @@ function expectedForUser(state, user) {
             || state.currentDirectByUser.get(user.userId)
             || new Set(),
         visibleMenus: state.menusByRole.get(user.roleName) || new Set(),
-        catalog: PERMISSION_CATALOG
+        catalog: state.catalog || PERMISSION_CATALOG
     });
 }
 
@@ -271,6 +291,7 @@ function buildSanitizedReport(state, expectedByUser, actualByUser, mode) {
     const roles = new Map();
     let unexplained = 0;
     let migratedUsers = 0;
+    let auditedAccountOverrides = 0;
     for (const user of state.users) {
         if (user.isDoctorProtected) continue;
         migratedUsers += 1;
@@ -278,8 +299,10 @@ function buildSanitizedReport(state, expectedByUser, actualByUser, mode) {
         const actual = actualByUser.get(user.userId) || new Set();
         const parity = compareGrantParity(expected, actual);
         unexplained += parity.unexplained;
+        const hasAuditedOverride = state.auditedPermissionOverridesByUser?.has(user.userId) || false;
+        if (hasAuditedOverride) auditedAccountOverrides += 1;
         if (!roles.has(user.roleName || 'none')) {
-            roles.set(user.roleName || 'none', { users: 0, expected: 0, actual: 0, missing: 0, unexpected: 0, fingerprints: [] });
+            roles.set(user.roleName || 'none', { users: 0, expected: 0, actual: 0, missing: 0, unexpected: 0, auditedOverrides: 0, fingerprints: [] });
         }
         const summary = roles.get(user.roleName || 'none');
         summary.users += 1;
@@ -287,6 +310,7 @@ function buildSanitizedReport(state, expectedByUser, actualByUser, mode) {
         summary.actual += actual.size;
         summary.missing += parity.missing.length;
         summary.unexpected += parity.unexpected.length;
+        if (hasAuditedOverride) summary.auditedOverrides += 1;
         summary.fingerprints.push(hashNames(actual));
     }
 
@@ -296,6 +320,7 @@ function buildSanitizedReport(state, expectedByUser, actualByUser, mode) {
         catalog_permissions: PERMISSION_CATALOG.length,
         migrated_users: migratedUsers,
         protected_doctors_skipped: state.users.length - migratedUsers,
+        audited_account_overrides: auditedAccountOverrides,
         unexplained_differences: unexplained,
         explained_legacy_surface_conflicts: legacySurfaceConflicts.reduce((sum, item) => sum + item.accounts, 0),
         legacy_surface_conflicts: legacySurfaceConflicts,
@@ -305,6 +330,7 @@ function buildSanitizedReport(state, expectedByUser, actualByUser, mode) {
             actual_grants: summary.actual,
             missing: summary.missing,
             unexpected: summary.unexpected,
+            audited_overrides: summary.auditedOverrides,
             fingerprint: hashNames(summary.fingerprints)
         }]))
     };
@@ -387,5 +413,6 @@ module.exports = {
     buildLegacySurfaceConflicts,
     buildSanitizedReport,
     compareGrantParity,
+    expectedForUser,
     runBackfill
 };

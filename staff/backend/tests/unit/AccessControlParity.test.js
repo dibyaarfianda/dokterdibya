@@ -41,6 +41,25 @@ describe('legacy-to-account grant parity', () => {
         });
     });
 
+    test('uses the latest audited per-account permission assignment as the cutover source of truth', () => {
+        const { expectedForUser } = require('../../scripts/backfill-account-permissions');
+        const user = { userId: 'STAFF1', roleId: 4, roleName: 'managerial', isDoctorProtected: false };
+        const expected = expectedForUser({
+            byRole: new Map([[4, new Set(['patients.view', 'patients.edit'])]]),
+            baselineDirectByUser: new Map(),
+            currentDirectByUser: new Map([['STAFF1', new Set(['online_queue.view'])]]),
+            auditedPermissionOverridesByUser: new Map([['STAFF1', new Set(['online_queue.view'])]]),
+            menusByRole: new Map(),
+            catalog: [
+                { name: 'patients.view', legacySources: [{ kind: 'permission', value: 'patients.view' }] },
+                { name: 'patients.edit', legacySources: [{ kind: 'permission', value: 'patients.edit' }] },
+                { name: 'online_queue.view', legacySources: [] }
+            ]
+        }, user);
+
+        expect([...expected]).toEqual(['online_queue.view']);
+    });
+
     test('reports legacy menu and endpoint conflicts without account identity', () => {
         const { buildLegacySurfaceConflicts } = require('../../scripts/backfill-account-permissions');
         const conflicts = buildLegacySurfaceConflicts({
