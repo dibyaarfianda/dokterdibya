@@ -113,9 +113,9 @@
 
 **Produces:** View/write/delete/publish enforcement for Tanya Dokter, announcements, articles, support/community communication, and content tools while Staff chat remains matrix-exempt.
 
-- [ ] RED allow/deny tests for all mapped actions and explicit Staff-chat exemption.
-- [ ] Apply guards and UI checks without changing chat payloads or rendering.
-- [ ] Run communication/content, mapping, realtime, and chat gates; commit/push/deploy/verify.
+- [x] RED allow/deny tests for all mapped actions and explicit Staff-chat exemption.
+- [x] Apply guards and UI checks without changing chat payloads or rendering.
+- [x] Run communication/content, mapping, realtime, and chat gates; commit/push/deploy/verify.
 
 ## Task 10: Enforce Obat, tindakan, finance, and team
 
