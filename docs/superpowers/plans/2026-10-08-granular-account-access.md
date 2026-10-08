@@ -121,10 +121,10 @@
 
 **Produces:** View/write/delete/special enforcement for medicine/equipment, procedures, billing/payment, payroll, points, briefing, and team operations.
 
-- [ ] RED allow/deny tests for payment, export, reset, finalization, and bulk actions.
-- [ ] Apply guards and UI checks; keep protected accounting safeguards intact.
-- [ ] Verify billing/team events do not leak to zero-grant Staff.
-- [ ] Run focused, mapping, realtime, and chat gates; commit/push/deploy/verify.
+- [x] RED allow/deny tests for payment, export, reset, finalization, and bulk actions.
+- [x] Apply guards and UI checks; keep protected accounting safeguards intact.
+- [x] Verify billing/team events do not leak to zero-grant Staff.
+- [x] Run focused, mapping, realtime, and chat gates; commit/push/deploy/verify.
 
 ## Task 11: Enforce monitoring, integration, and system modules
 
