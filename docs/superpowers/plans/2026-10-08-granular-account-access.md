@@ -87,10 +87,10 @@
 
 **Produces:** Account-mode default-deny boundary and a profile/chat/no-access shell for zero-grant Staff.
 
-- [ ] RED tests for unmapped endpoint denial, explicit exemptions, zero-grant shell, direct API denial, inactive account denial, and doctor bypass.
-- [ ] Enforce the registry for account-mode users while legacy users remain reversible.
-- [ ] Update frontend access hydration and navigation to use `/api/access/me` without changing chat availability.
-- [ ] Run auth/menu/direct-call/chat gates; commit/push/deploy/verify.
+- [x] RED tests for unmapped endpoint denial, explicit exemptions, zero-grant shell, direct API denial, inactive account denial, and doctor bypass.
+- [x] Enforce the registry for account-mode users while legacy users remain reversible.
+- [x] Update frontend access hydration and navigation to use `/api/access/me` without changing chat availability.
+- [x] Run auth/menu/direct-call/chat gates; commit/push/deploy/verify.
 
 ## Task 7: Enforce Pasien and Rekam Medis
 
