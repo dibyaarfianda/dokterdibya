@@ -30,6 +30,7 @@ const EVENT_PERMISSIONS = Object.freeze({
     'newLog': 'logs.view',
     'docboard:sync': 'docboard.view',
     'medify_progress': 'integrations.view',
+    'medify_sync_progress': 'integrations.view',
     'medify_sync_complete': 'integrations.view',
     'staff-announcement:new': 'staff_announcements.view',
     'staff-announcement:updated': 'staff_announcements.view',

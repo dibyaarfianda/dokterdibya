@@ -70,10 +70,38 @@ const ACTIVE_ACCOUNT_PERMISSION_PREFIXES = Object.freeze([
     'staff_payroll.',
     'staff_points.',
     'staff_workdesk.',
-    'tanya_finance.'
+    'tanya_finance.',
+    'analytics.',
+    'assistant_daf.',
+    'clinic_monitor.',
+    'clinical_ai.',
+    'dashboard.',
+    'docboard.',
+    'integrations.',
+    'logs.',
+    'medical_import.',
+    'patient_access.',
+    'patient_activity.',
+    'patient_demo.',
+    'system.',
+    'usg_reader.'
+]);
+
+// Access administration, doctor-account mutation, and emergency recovery are
+// intentionally outside the delegable account matrix.
+const NON_DELEGABLE_ACCOUNT_PERMISSIONS = new Set([
+    'access.manage',
+    'roles.create',
+    'roles.delete',
+    'roles.edit',
+    'roles.manage_permissions',
+    'roles.view',
+    'users.manage_roles',
+    'system.reset'
 ]);
 
 function isDelegatedAccountPermission(req, requiredPermissions = []) {
+    if (req?.disableImplicitAccountDelegation) return false;
     const access = req?.accountAccess;
     const decision = req?.accountAccessResolution;
     const permission = decision?.permission;
@@ -84,8 +112,20 @@ function isDelegatedAccountPermission(req, requiredPermissions = []) {
     return access?.mode === 'account'
         && typeof permission === 'string'
         && ACTIVE_ACCOUNT_PERMISSION_PREFIXES.some(prefix => permission.startsWith(prefix))
+        && !NON_DELEGABLE_ACCOUNT_PERMISSIONS.has(permission)
         && required.includes(permission)
         && granted;
+}
+
+function runWithoutImplicitAccountDelegation(req, guard, res, next) {
+    const previous = req.disableImplicitAccountDelegation;
+    req.disableImplicitAccountDelegation = true;
+    try {
+        return guard(req, res, next);
+    } finally {
+        if (previous === undefined) delete req.disableImplicitAccountDelegation;
+        else req.disableImplicitAccountDelegation = previous;
+    }
 }
 
 /**
@@ -531,6 +571,11 @@ function requireSuperadmin(req, res, next) {
         });
     }
 
+    const routedPermission = req.accountAccessResolution?.permission;
+    if (isDelegatedAccountPermission(req, [routedPermission])) {
+        return next();
+    }
+
     if (req.user.is_superadmin || isSuperadminRole(req.user.role_id)) {
         logger.debug('Superadmin access granted', {
             requestId,
@@ -557,7 +602,7 @@ function requireSuperadmin(req, res, next) {
 function requireSuperadminOrAccountPermission(permission) {
     return function requireSuperadminOrAccountPermissionGuard(req, res, next) {
         if (isDelegatedAccountPermission(req, [permission])) return next();
-        return requireSuperadmin(req, res, next);
+        return runWithoutImplicitAccountDelegation(req, requireSuperadmin, res, next);
     };
 }
 
@@ -565,7 +610,7 @@ function requireRolesOrAccountPermission(permission, ...allowedRoles) {
     const legacyGuard = requireRoles(...allowedRoles);
     return (req, res, next) => {
         if (isDelegatedAccountPermission(req, [permission])) return next();
-        return legacyGuard(req, res, next);
+        return runWithoutImplicitAccountDelegation(req, legacyGuard, res, next);
     };
 }
 
@@ -600,6 +645,11 @@ function requireDoctorRole(req, res, next) {
         });
     }
 
+    const routedPermission = req.accountAccessResolution?.permission;
+    if (isDelegatedAccountPermission(req, [routedPermission])) {
+        return next();
+    }
+
     // Login may rewrite the role claim to "dokter" for legacy superadmin
     // compatibility. The immutable DB role_id is the only accepted source for
     // this fixed doctor-only action.
@@ -631,7 +681,7 @@ function requireDoctorRole(req, res, next) {
 function requireDoctorRoleOrAccountPermission(permission) {
     return function requireDoctorRoleOrAccountPermissionGuard(req, res, next) {
         if (isDelegatedAccountPermission(req, [permission])) return next();
-        return requireDoctorRole(req, res, next);
+        return runWithoutImplicitAccountDelegation(req, requireDoctorRole, res, next);
     };
 }
 
@@ -657,6 +707,11 @@ function requireRoles(...allowedRoles) {
                 success: false,
                 message: 'Authentication required'
             });
+        }
+
+        const routedPermission = req.accountAccessResolution?.permission;
+        if (isDelegatedAccountPermission(req, [routedPermission])) {
+            return next();
         }
 
         // Superadmin/dokter always has access

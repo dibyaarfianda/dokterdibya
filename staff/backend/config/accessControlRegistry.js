@@ -72,7 +72,7 @@ const STAFF_NAVIGATION_MAP = Object.freeze({
     'nav-kantor-saya': 'navigation.kantor_saya',
     'nav-kelola-pasien': 'navigation.kelola_pasien',
     'nav-klinik-private': 'navigation.klinik_privat',
-    'nav-medify-sync': 'integrations.sync',
+    'nav-medify-sync': 'integrations.view',
     'nav-pasien-baru': 'navigation.pasien_baru',
     'nav-patient-activity': 'patient_activity.view',
     'nav-patient-demo': 'patient_demo.manage',
@@ -255,7 +255,8 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['staff-payroll:PUT:/driver-payrolls/:month', 'staff_payroll.write'],
     ['staff-payroll:PATCH:/driver-payrolls/:month/name', 'staff_payroll.write'],
     ['staff-payroll:DELETE:/driver-payrolls/:month', 'staff_payroll.delete'],
-    ['estimasi-biaya-draft:POST:/preview', 'cost_estimates.view']
+    ['estimasi-biaya-draft:POST:/preview', 'cost_estimates.view'],
+    ['medify-batch:POST:/credentials', 'integrations.write']
 ]);
 
 const SUNDAY_CLINIC_SECTION_PERMISSIONS = Object.freeze({

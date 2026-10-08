@@ -2171,7 +2171,7 @@ function showMedifySyncPage() {
 }
 
 // The account matrix is shipped dark until the route/UI inventory reaches Task 11.
-const ACCESS_CONTROL_ROLLOUT_ENABLED = false;
+const ACCESS_CONTROL_ROLLOUT_ENABLED = true;
 
 async function ensureKelolaAccessLayout() {
     if (pages.kelolaRoles?.dataset.accessLayout === 'account') return pages.kelolaRoles;

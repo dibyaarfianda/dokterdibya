@@ -3,6 +3,11 @@ const API_ENDPOINT = '/api/patient-access-blocklist';
 let blocklistEntries = [];
 let isInitialized = false;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 function getToken() {
     if (typeof window !== 'undefined' && typeof window.getAuthToken === 'function') {
         return window.getAuthToken();
@@ -96,7 +101,7 @@ function renderBlocklistTable() {
         const statusBadge = isActive
             ? '<span class="badge badge-danger">Aktif</span>'
             : '<span class="badge badge-secondary">Nonaktif</span>';
-        const actionButton = isActive
+        const actionButton = isActive && hasAccountPermission('patient_access.manage')
             ? `<button class="btn btn-outline-danger btn-sm" onclick="deactivatePatientBlock(${entry.id})" title="Nonaktifkan"><i class="fas fa-times"></i></button>`
             : '<span class="text-muted">-</span>';
 
@@ -114,6 +119,7 @@ function renderBlocklistTable() {
 }
 
 async function loadPatientBlockList() {
+    if (!hasAccountPermission('patient_access.manage')) return;
     const tbody = document.getElementById('patient-blocklist-tbody');
     if (tbody) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
@@ -134,6 +140,7 @@ async function loadPatientBlockList() {
 
 async function savePatientBlock(event) {
     event.preventDefault();
+    if (!hasAccountPermission('patient_access.manage')) return;
 
     const typeEl = document.getElementById('patient-blocklist-type');
     const valueEl = document.getElementById('patient-blocklist-value');
@@ -166,6 +173,7 @@ async function savePatientBlock(event) {
 }
 
 async function deactivatePatientBlock(id) {
+    if (!hasAccountPermission('patient_access.manage')) return;
     const confirmed = window.Swal
         ? await window.Swal.fire({
             title: 'Nonaktifkan block?',
@@ -190,6 +198,8 @@ async function deactivatePatientBlock(id) {
 
 function initPatientBlockList() {
     const form = document.getElementById('patient-blocklist-form');
+    if (form) form.dataset.accountPermission = 'patient_access.manage';
+    window.syncAccountPermissionElements?.();
     if (form && !isInitialized) {
         form.addEventListener('submit', savePatientBlock);
         isInitialized = true;

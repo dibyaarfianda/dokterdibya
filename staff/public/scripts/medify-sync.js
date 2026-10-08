@@ -14,6 +14,17 @@ let medifyCompleteHandler = null;
 let requestScope = createPageRequestScope();
 let medifySyncActive = false;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
+function requireAccountPermission(permission) {
+    if (hasAccountPermission(permission)) return true;
+    showToast('Anda tidak memiliki izin untuk tindakan ini.', 'warning');
+    return false;
+}
+
 /**
  * Initialize MEDIFY Sync page
  */
@@ -21,6 +32,25 @@ export async function initMedifySync() {
     console.log('[MedifySync] Initializing...');
     if (requestScope.signal.aborted) requestScope = createPageRequestScope();
     medifySyncActive = true;
+
+    const canSync = hasAccountPermission('integrations.sync');
+    const canWrite = hasAccountPermission('integrations.write');
+    ['btn-sync-melinda', 'btn-sync-gambiran', 'btn-test-melinda', 'btn-test-gambiran']
+        .forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.dataset.accountPermission = 'integrations.sync';
+                element.hidden = !canSync;
+            }
+        });
+    document.querySelectorAll('[onclick*="showCredentialsModal"]')
+        .forEach(element => { element.dataset.accountPermission = 'integrations.write'; });
+    const credentialsButton = document.getElementById('btn-save-credentials');
+    if (credentialsButton) {
+        credentialsButton.dataset.accountPermission = 'integrations.write';
+        credentialsButton.hidden = !canWrite;
+    }
+    window.syncAccountPermissionElements?.();
 
     // Check credentials status
     await loadCredentialsStatus();
@@ -68,7 +98,7 @@ function updateCredentialsUI(credentials) {
     if (melindaStatus) {
         if (credentials.rsia_melinda) {
             melindaStatus.innerHTML = '<i class="fas fa-check-circle text-success"></i> Configured';
-            if (melindaBtn) melindaBtn.disabled = false;
+            if (melindaBtn) melindaBtn.disabled = !hasAccountPermission('integrations.sync');
         } else {
             melindaStatus.innerHTML = '<i class="fas fa-times-circle text-danger"></i> Not configured';
             if (melindaBtn) melindaBtn.disabled = true;
@@ -78,7 +108,7 @@ function updateCredentialsUI(credentials) {
     if (gambiranStatus) {
         if (credentials.rsud_gambiran) {
             gambiranStatus.innerHTML = '<i class="fas fa-check-circle text-success"></i> Configured';
-            if (gambiranBtn) gambiranBtn.disabled = false;
+            if (gambiranBtn) gambiranBtn.disabled = !hasAccountPermission('integrations.sync');
         } else {
             gambiranStatus.innerHTML = '<i class="fas fa-times-circle text-danger"></i> Not configured';
             if (gambiranBtn) gambiranBtn.disabled = true;
@@ -246,6 +276,7 @@ function renderHistoryTable(history) {
  * Start sync for a source
  */
 async function startSync(source) {
+    if (!requireAccountPermission('integrations.sync')) return;
     const btn = document.getElementById(`btn-sync-${source === 'rsia_melinda' ? 'melinda' : 'gambiran'}`);
     const statusContainer = document.getElementById('sync-status-container');
     const progressContainer = document.getElementById('batch-progress');
@@ -522,6 +553,7 @@ function showBatchDetailsModal(jobs) {
  * Show credentials modal
  */
 function showCredentialsModal(source) {
+    if (!requireAccountPermission('integrations.write')) return;
     const modal = document.getElementById('credentials-modal');
     const form = document.getElementById('credentials-form');
 
@@ -539,6 +571,7 @@ function showCredentialsModal(source) {
  * Save credentials
  */
 async function saveCredentials() {
+    if (!requireAccountPermission('integrations.write')) return;
     const form = document.getElementById('credentials-form');
     const source = form.dataset.source;
     const username = document.getElementById('cred-username').value;
@@ -580,6 +613,7 @@ async function saveCredentials() {
  * Test connection
  */
 async function testConnection(source) {
+    if (!requireAccountPermission('integrations.sync')) return;
     const btn = document.getElementById(`btn-test-${source === 'rsia_melinda' ? 'melinda' : 'gambiran'}`);
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -733,7 +767,7 @@ function renderReviewSection(data, batchId) {
                             Pilih Semua
                         </label>
                     </div>
-                    <button class="btn btn-primary" id="btn-send-selected"
+                    <button class="btn btn-primary" id="btn-send-selected" data-account-permission="integrations.sync"
                             onclick="window.sendSelectedToPortal('${batchId}')"
                             disabled>
                         <i class="fas fa-paper-plane mr-2"></i>
@@ -748,6 +782,7 @@ function renderReviewSection(data, batchId) {
             </div>
         </div>
     `;
+    window.syncAccountPermissionElements?.();
 }
 
 /**
@@ -794,7 +829,7 @@ function renderPatientCard(patient, batchId) {
                         ${statusBadge}
                     </div>
                     ${!patient.alreadySent ? `
-                        <button class="btn btn-sm btn-info ml-2"
+                        <button class="btn btn-sm btn-info ml-2" data-account-permission="integrations.sync"
                                 onclick="event.stopPropagation(); window.sendSingleToPortal('${batchId}', '${patient.patientId}')"
                                 id="btn-send-${patient.patientId}">
                             <i class="fas fa-paper-plane"></i> Kirim
@@ -923,6 +958,7 @@ function renderPatientPreview(preview) {
  * Send single patient to portal
  */
 async function sendSingleToPortal(batchId, patientId) {
+    if (!requireAccountPermission('integrations.sync')) return;
     const btn = document.getElementById(`btn-send-${patientId}`);
     if (!btn) return;
 
@@ -982,6 +1018,7 @@ async function sendSingleToPortal(batchId, patientId) {
  * Send selected patients to portal (bulk)
  */
 async function sendSelectedToPortal(batchId) {
+    if (!requireAccountPermission('integrations.sync')) return;
     const checkboxes = document.querySelectorAll('.patient-checkbox:checked');
     const patientIds = Array.from(checkboxes).map(cb => cb.dataset.patientId);
 

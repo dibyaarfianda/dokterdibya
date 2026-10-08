@@ -4,10 +4,16 @@ const apiHeaders = () => ({
     'Cache-Control': 'no-cache'
 });
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 function assertDoctor() {
     const { ROLE_IDS } = window.staffRoleConstants || {};
-    if (Number(window.auth?.currentUser?.role_id) !== ROLE_IDS.DOKTER) {
-        throw new Error('Halaman Portal Pasien Dummy hanya tersedia untuk dokter.');
+    const isDoctor = Number(window.auth?.currentUser?.role_id) === ROLE_IDS.DOKTER;
+    if (!isDoctor && !hasAccountPermission('patient_demo.manage')) {
+        throw new Error('Anda tidak memiliki izin untuk mengelola Portal Pasien Dummy.');
     }
 }
 
@@ -106,3 +112,9 @@ window.resetPatientDemo = async function resetPatientDemo() {
 };
 
 window.loadPatientDemoStatus = loadStatus;
+
+['patient-demo-open-btn', 'patient-demo-reset-btn'].forEach(id => {
+    const button = document.getElementById(id);
+    if (button) button.dataset.accountPermission = 'patient_demo.manage';
+});
+window.syncAccountPermissionElements?.();

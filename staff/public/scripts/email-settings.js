@@ -6,6 +6,21 @@ const ENDPOINT = `${API_BASE}/api/email-settings`;
 
 let initialized = false;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
+function isAccountMode() {
+    const user = window.currentStaffUser || window.auth?.currentUser;
+    return user?.access_mode === 'account' && !user?.is_doctor_protected;
+}
+
+async function canUsePermission(accountPermission) {
+    if (isAccountMode()) return hasAccountPermission(accountPermission);
+    return hasPermission('settings.system');
+}
+
 function getForm() {
     return document.getElementById('email-settings-form');
 }
@@ -137,6 +152,11 @@ async function loadEmailSettings() {
 async function handleSubmit(event) {
     event.preventDefault();
 
+    if (!await canUsePermission('system.write')) {
+        showWarning('Anda tidak memiliki izin untuk mengubah pengaturan email.');
+        return;
+    }
+
     const token = await getIdToken();
     if (!token) {
         showWarning('Sesi login berakhir. Silakan login ulang.');
@@ -194,14 +214,15 @@ async function initEmailSettings() {
 
     form.addEventListener('submit', handleSubmit);
 
-    const allowed = await hasPermission('settings.system');
-    if (!allowed) {
-        showWarning('Anda tidak memiliki izin untuk mengubah pengaturan email.');
+    const canView = await canUsePermission('system.monitor');
+    if (!canView) {
+        showWarning('Anda tidak memiliki izin untuk melihat pengaturan email.');
         setFormDisabled(true);
         return;
     }
 
     await loadEmailSettings();
+    if (!await canUsePermission('system.write')) setFormDisabled(true);
 }
 
 if (document.readyState === 'loading') {

@@ -168,7 +168,7 @@ describe('access-control management contracts', () => {
 });
 
 describe('Kelola Akses rollout UI', () => {
-    test('ships layout A and activation UI while the rollout flag remains disabled', () => {
+    test('ships layout A and activation UI with the rollout flag enabled after route enforcement', () => {
         for (const file of [pagePath, scriptPath, activationPath]) {
             expect(fs.existsSync(file)).toBe(true);
         }
@@ -188,7 +188,7 @@ describe('Kelola Akses rollout UI', () => {
         expect(activation).toMatch(/location\.hash/);
         expect(activation).toMatch(/invitations\/validate/);
         expect(activation).toMatch(/invitations\/accept/);
-        expect(main).toMatch(/ACCESS_CONTROL_ROLLOUT_ENABLED\s*=\s*false/);
+        expect(main).toMatch(/ACCESS_CONTROL_ROLLOUT_ENABLED\s*=\s*true/);
     });
 });
 
