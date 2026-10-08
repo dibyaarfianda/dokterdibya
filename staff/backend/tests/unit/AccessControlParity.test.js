@@ -41,6 +41,28 @@ describe('legacy-to-account grant parity', () => {
         });
     });
 
+    test('reports legacy menu and endpoint conflicts without account identity', () => {
+        const { buildLegacySurfaceConflicts } = require('../../scripts/backfill-account-permissions');
+        const conflicts = buildLegacySurfaceConflicts({
+            users: [{ userId: 'STAFF1', roleId: 4, roleName: 'managerial', isDoctorProtected: false }],
+            byRole: new Map([[4, new Set(['patients.view'])]]),
+            currentDirectByUser: new Map(),
+            baselineDirectByUser: new Map(),
+            menusByRole: new Map([['managerial', new Set()]])
+        });
+
+        expect(conflicts).toContainEqual(expect.objectContaining({
+            role: 'managerial',
+            menu_key: 'kelola_pasien',
+            permission: 'patients.view',
+            menu_visible: false,
+            endpoint_granted: true,
+            accounts: 1,
+            resolution: 'preserve_endpoint_access'
+        }));
+        expect(JSON.stringify(conflicts)).not.toContain('STAFF1');
+    });
+
     test('doctor accounts are protected and excluded from grant migration', () => {
         const { buildExpectedGrantNames } = require('../../scripts/backfill-account-permissions');
         expect([...buildExpectedGrantNames({

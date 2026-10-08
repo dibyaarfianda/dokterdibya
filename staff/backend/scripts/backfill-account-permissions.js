@@ -3,7 +3,8 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { PERMISSION_CATALOG } = require('../config/accessControlCatalog');
+const { LEGACY_PERMISSION_NAMES, PERMISSION_CATALOG } = require('../config/accessControlCatalog');
+const { MENU_PERMISSION_MAP } = require('../config/accessControlRegistry');
 const { ROLE_IDS } = require('../constants/roles');
 
 function sortedSet(values) {
@@ -61,6 +62,41 @@ function parseJson(value) {
 
 function hashNames(names) {
     return crypto.createHash('sha256').update([...names].sort().join('\n')).digest('hex');
+}
+
+function buildLegacySurfaceConflicts(state) {
+    const legacyNames = new Set(LEGACY_PERMISSION_NAMES);
+    const conflicts = new Map();
+    for (const user of state.users) {
+        if (user.isDoctorProtected) continue;
+        const rolePermissions = state.byRole.get(user.roleId) || new Set();
+        const directPermissions = state.baselineDirectByUser.get(user.userId)
+            || state.currentDirectByUser.get(user.userId)
+            || new Set();
+        const visibleMenus = state.menusByRole.get(user.roleName) || new Set();
+        for (const [menuKey, permissionName] of Object.entries(MENU_PERMISSION_MAP)) {
+            if (!legacyNames.has(permissionName)) continue;
+            const menuVisible = visibleMenus.has(menuKey);
+            const endpointGranted = rolePermissions.has(permissionName) || directPermissions.has(permissionName);
+            if (menuVisible === endpointGranted) continue;
+            const key = `${user.roleName || 'none'}|${menuKey}|${menuVisible}|${endpointGranted}`;
+            if (!conflicts.has(key)) {
+                conflicts.set(key, {
+                    role: user.roleName || 'none',
+                    menu_key: menuKey,
+                    permission: permissionName,
+                    menu_visible: menuVisible,
+                    endpoint_granted: endpointGranted,
+                    accounts: 0,
+                    resolution: endpointGranted ? 'preserve_endpoint_access' : 'preserve_menu_denial'
+                });
+            }
+            conflicts.get(key).accounts += 1;
+        }
+    }
+    return [...conflicts.values()].sort((left, right) =>
+        `${left.role}|${left.menu_key}`.localeCompare(`${right.role}|${right.menu_key}`)
+    );
 }
 
 async function loadMigrationState(connection) {
@@ -254,12 +290,15 @@ function buildSanitizedReport(state, expectedByUser, actualByUser, mode) {
         summary.fingerprints.push(hashNames(actual));
     }
 
+    const legacySurfaceConflicts = buildLegacySurfaceConflicts(state);
     return {
         mode,
         catalog_permissions: PERMISSION_CATALOG.length,
         migrated_users: migratedUsers,
         protected_doctors_skipped: state.users.length - migratedUsers,
         unexplained_differences: unexplained,
+        explained_legacy_surface_conflicts: legacySurfaceConflicts.reduce((sum, item) => sum + item.accounts, 0),
+        legacy_surface_conflicts: legacySurfaceConflicts,
         roles: Object.fromEntries([...roles.entries()].sort().map(([role, summary]) => [role, {
             users: summary.users,
             expected_grants: summary.expected,
@@ -345,6 +384,7 @@ if (require.main === module) {
 
 module.exports = {
     buildExpectedGrantNames,
+    buildLegacySurfaceConflicts,
     buildSanitizedReport,
     compareGrantParity,
     runBackfill
