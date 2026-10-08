@@ -105,9 +105,9 @@
 
 **Produces:** View/write/delete/special enforcement for clinic, schedule, booking, and online-queue paths.
 
-- [ ] RED allow/deny tests for all mapped HTTP/UI/realtime actions, including confirmation, cancellation, synchronization, and bulk actions.
-- [ ] Apply shared permission guards and UI visibility/action checks.
-- [ ] Run focused, mapping, realtime, and chat gates; commit/push/deploy/verify without synthetic clinical writes.
+- [x] RED allow/deny tests for all mapped HTTP/UI/realtime actions, including confirmation, cancellation, synchronization, and bulk actions.
+- [x] Apply shared permission guards and UI visibility/action checks.
+- [x] Run focused, mapping, realtime, and chat gates; commit/push/deploy/verify without synthetic clinical writes.
 
 ## Task 9: Enforce Tanya Dokter, communications, and content
 
