@@ -7,7 +7,7 @@ const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
 const logger = require('../utils/logger');
 const { ROLE_IDS, isSuperadminRole, isAdminRole } = require('../constants/roles');
-const { refreshRoleAccessRooms } = require('../security/socketAccess');
+const { refreshRoleAccessRooms, refreshUserAccessRooms } = require('../security/socketAccess');
 
 // ==========================================
 // ROLE MANAGEMENT ROUTES
@@ -331,16 +331,18 @@ router.put('/api/users/:userId/roles', verifyToken, requireMenuAccess('kelola_ro
             [primaryId, primaryRole.name, userId]);
 
         await connection.commit();
-        connection.release();
-
-        logger.info(`User ${userId} assigned roles [${role_ids.join(',')}] (primary: ${primaryId}) by user ${req.user.id}`);
-
-        sendSuccess(res, { assigned_roles: role_ids, primary_role_id: primaryId }, 'Roles berhasil ditetapkan');
     } catch (error) {
         await connection.rollback();
-        connection.release();
         throw error;
+    } finally {
+        connection.release();
     }
+
+    await refreshUserAccessRooms(req.app.get('io'), userId);
+
+    logger.info(`User ${userId} assigned roles [${role_ids.join(',')}] (primary: ${primaryId}) by user ${req.user.id}`);
+
+    sendSuccess(res, { assigned_roles: role_ids, primary_role_id: primaryId }, 'Roles berhasil ditetapkan');
 }));
 
 // PUT /api/users/:userId/role - Assign single role (backward compatible)
@@ -383,16 +385,18 @@ router.put('/api/users/:userId/role', verifyToken, requireMenuAccess('kelola_rol
         await connection.query('UPDATE users SET role_id = ?, role = ? WHERE new_id = ?', [role_id, role.name, userId]);
 
         await connection.commit();
-        connection.release();
-
-        logger.info(`User ${userId} assigned role ${role.name} by user ${req.user.id}`);
-
-        sendSuccess(res, null, `Role ${role.display_name} berhasil ditetapkan`);
     } catch (error) {
         await connection.rollback();
-        connection.release();
         throw error;
+    } finally {
+        connection.release();
     }
+
+    await refreshUserAccessRooms(req.app.get('io'), userId);
+
+    logger.info(`User ${userId} assigned role ${role.name} by user ${req.user.id}`);
+
+    sendSuccess(res, null, `Role ${role.display_name} berhasil ditetapkan`);
 }));
 
 // GET /api/users - Get all staff users with their roles (sorted by highest permission count)
@@ -468,6 +472,8 @@ router.put('/api/users/:userId/status', verifyToken, requireRole(ROLE_IDS.DOKTER
     }
 
     await db.query('UPDATE users SET is_active = ? WHERE new_id = ?', [is_active, userId]);
+
+    await refreshUserAccessRooms(req.app.get('io'), userId);
 
     logger.info(`User ${userId} ${is_active ? 'activated' : 'deactivated'} by user ${req.user.id}`);
 

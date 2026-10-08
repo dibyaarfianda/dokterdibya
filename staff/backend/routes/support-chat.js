@@ -8,7 +8,7 @@ const express = require('express');
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken, verifyStaffToken } = require('../middleware/auth');
-const { requireSocketPrincipal } = require('../security/socketAccess');
+const { requireSocketPrincipal, socketHasPermission } = require('../security/socketAccess');
 
 const router = express.Router();
 
@@ -1115,6 +1115,10 @@ function setupSocketHandlers(io) {
         socket.on('support:join', async (data) => {
             const principal = requireSocketPrincipal(socket, { errorEvent: 'support:error' });
             if (!principal) return;
+            if (principal.user_type === 'staff' && !socketHasPermission(socket, 'support_chat.view')) {
+                socket.emit('support:error', { code: 'ACCESS_DENIED' });
+                return;
+            }
             if (!data || !['string', 'number'].includes(typeof data.sessionId) || !String(data.sessionId).trim()) {
                 socket.emit('support:error', { code: 'FORBIDDEN' });
                 return;

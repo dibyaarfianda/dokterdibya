@@ -278,6 +278,19 @@ test('support failures and expiry during lookup cannot grant room membership', a
     expect(s.rooms.has('support:session-a')).toBe(false);
 });
 
+test('zero-grant staff cannot join a patient support room', async () => {
+    const h = harness();
+    require('../../routes/support-chat').setupSocketHandlers(h.io);
+    db.query.mockResolvedValue([[{ id: 'session-a', patient_id: patient.id }]]);
+    const zero = await h.connect(token({ ...staff, id: 'staff-zero' }));
+
+    await zero.receive('support:join', { sessionId: 'session-a' });
+
+    expect(zero.rooms.has('support:session-a')).toBe(false);
+    expect(zero.received).toContainEqual({ event: 'support:error', payload: { code: 'ACCESS_DENIED' } });
+    expect(db.query).not.toHaveBeenCalled();
+});
+
 test.each(['support:leave', 'community:leave', 'community:typing', 'community:stop-typing'])('%s cannot throw on malformed room identifiers', async event => {
     const h = harness();
     require('../../routes/support-chat').setupSocketHandlers(h.io);

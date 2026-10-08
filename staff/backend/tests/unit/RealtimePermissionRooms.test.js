@@ -203,4 +203,5 @@ test('legacy role permission writes refresh all connected users for that role', 
 
     const roleRoute = fs.readFileSync(path.resolve(__dirname, '../../routes/roles.js'), 'utf8');
     expect(roleRoute).toContain("await refreshRoleAccessRooms(req.app.get('io'), Number(id));");
+    expect(roleRoute.match(/await refreshUserAccessRooms\(req\.app\.get\('io'\), userId\);/g)).toHaveLength(3);
 });
