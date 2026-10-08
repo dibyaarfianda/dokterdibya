@@ -128,6 +128,10 @@ describe('Task 12 account cutover behavior', () => {
         expect(report).toMatchObject({ operation: 'apply', changed_accounts: 1, audits_written: 1, access_version_before: { min: 4, max: 4 }, access_version_after: { min: 5, max: 5 }, grants_unchanged: true });
         expect(fixture.connection.commit).toHaveBeenCalledTimes(1);
         expect(fixture.connection.query).toHaveBeenCalledWith(
+            expect.stringContaining('u.role_id = ?'),
+            [7]
+        );
+        expect(fixture.connection.query).toHaveBeenCalledWith(
             expect.stringContaining('UPDATE user_access_policies SET mode = ?, access_version = ?'),
             ['account', 5, 'STAFF-A']
         );

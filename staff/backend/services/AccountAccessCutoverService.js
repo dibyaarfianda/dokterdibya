@@ -3,9 +3,10 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { ROLE_IDS } = require('../constants/roles');
+const { ROLE_IDS, ROLE_NAME_TO_ID } = require('../constants/roles');
 
 const ROLE_ORDER = Object.freeze(['front_office', 'admin', 'managerial', 'bidan']);
+const ROLE_ID_ORDER = Object.freeze(ROLE_ORDER.map(roleName => ROLE_NAME_TO_ID[roleName]));
 const OPERATIONS = Object.freeze(['dry-run', 'apply', 'rollback']);
 
 function parseArguments(argv) {
@@ -125,6 +126,7 @@ async function runCutover({ db, role, operation = 'dry-run', parityChecker = def
 
     const parityReport = await parityChecker({ apply: false, db });
     const roleParity = ensureParity(parityReport, role);
+    const roleId = ROLE_NAME_TO_ID[role];
     const connection = await db.getConnection();
     await connection.beginTransaction();
     try {
@@ -132,9 +134,8 @@ async function runCutover({ db, role, operation = 'dry-run', parityChecker = def
             `INSERT IGNORE INTO user_access_policies (user_id, mode, access_version)
              SELECT u.new_id, 'legacy', 1
              FROM users u
-             LEFT JOIN roles r ON r.id = u.role_id
-             WHERE u.user_type = 'staff' AND COALESCE(r.name, u.role) = ?`,
-            [role]
+             WHERE u.user_type = 'staff' AND u.role_id = ?`,
+            [roleId]
         );
         const [states] = await connection.query(
             `SELECT COALESCE(r.name, u.role) AS role_name,
@@ -145,9 +146,9 @@ async function runCutover({ db, role, operation = 'dry-run', parityChecker = def
              LEFT JOIN roles r ON r.id = u.role_id
              INNER JOIN user_access_policies uap ON uap.user_id = u.new_id
              WHERE u.user_type = 'staff'
-               AND COALESCE(r.name, u.role) IN (?)
+               AND u.role_id IN (?)
              GROUP BY COALESCE(r.name, u.role)`,
-            [ROLE_ORDER]
+            [ROLE_ID_ORDER]
         );
         assertRoleOrder(states, role, operation);
 
@@ -155,12 +156,11 @@ async function runCutover({ db, role, operation = 'dry-run', parityChecker = def
             `SELECT u.new_id AS user_id, u.role_id, u.is_superadmin,
                     uap.mode, uap.access_version
              FROM users u
-             LEFT JOIN roles r ON r.id = u.role_id
              INNER JOIN user_access_policies uap ON uap.user_id = u.new_id
-             WHERE u.user_type = 'staff' AND COALESCE(r.name, u.role) = ?
+             WHERE u.user_type = 'staff' AND u.role_id = ?
              ORDER BY u.new_id
              FOR UPDATE`,
-            [role]
+            [roleId]
         );
         if (targets.length !== numeric(roleParity.users)) {
             throw new Error('CUTOVER_PARITY_STALE');
