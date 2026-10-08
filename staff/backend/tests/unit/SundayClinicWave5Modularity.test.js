@@ -104,8 +104,8 @@ describe('Wave 5 Sunday Clinic physical domain boundaries', () => {
         expect(routeSource).not.toContain('createRouteSlice');
         expect(declaredRoutes(routeSource)).toEqual(EXPECTED_ROUTES[domain]);
         if (domain === 'billing') {
-            expect(routeSource).toMatch(/router\.post\('\/billing\/:mrId\/cancel',\s*verifyToken,\s*requireSuperadmin,\s*requireOpenAccountingDate/);
-            expect(routeSource).toMatch(/router\.post\('\/billing\/:mrId\/additional\/:additionalBillingId\/cancel',\s*verifyToken,\s*requireSuperadmin,\s*requireOpenAccountingDate/);
+            expect(routeSource).toMatch(/router\.post\('\/billing\/:mrId\/cancel',\s*verifyToken,\s*requireSuperadminOrAccountPermission\('billing\.reset'\),\s*requireOpenAccountingDate/);
+            expect(routeSource).toMatch(/router\.post\('\/billing\/:mrId\/additional\/:additionalBillingId\/cancel',\s*verifyToken,\s*requireSuperadminOrAccountPermission\('billing\.reset'\),\s*requireOpenAccountingDate/);
         }
 
         expect(serviceSource).toMatch(/async function [A-Za-z0-9_]+\(req, res, next\)/);

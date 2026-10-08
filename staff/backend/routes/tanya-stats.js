@@ -6,25 +6,14 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
-
-// Middleware: Only superadmin can view revenue stats
-const requireSuperadmin = (req, res, next) => {
-    if (!req.user.is_superadmin) {
-        return res.status(403).json({
-            success: false,
-            message: 'Hanya superadmin yang dapat mengakses laporan revenue'
-        });
-    }
-    next();
-};
+const { verifyToken, requireSuperadminOrAccountPermission } = require('../middleware/auth');
 
 /**
  * GET /api/tanya-stats/revenue
  * Get revenue split per doctor for a specific month
  * Query params: month (YYYY-MM format, defaults to current month)
  */
-router.get('/revenue', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/revenue', verifyToken, requireSuperadminOrAccountPermission('tanya_finance.view'), async (req, res) => {
     try {
         const { month } = req.query;
 
@@ -137,7 +126,7 @@ router.get('/revenue', verifyToken, requireSuperadmin, async (req, res) => {
  * GET /api/tanya-stats/monthly-trend
  * Get revenue trend for last 6 months
  */
-router.get('/monthly-trend', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/monthly-trend', verifyToken, requireSuperadminOrAccountPermission('tanya_finance.view'), async (req, res) => {
     try {
         const months = [];
         const now = new Date();
@@ -204,7 +193,7 @@ router.get('/monthly-trend', verifyToken, requireSuperadmin, async (req, res) =>
  * Manually trigger revenue calculation for a month
  * This would normally be run by cron job
  */
-router.post('/calculate', verifyToken, requireSuperadmin, async (req, res) => {
+router.post('/calculate', verifyToken, requireSuperadminOrAccountPermission('tanya_finance.view'), async (req, res) => {
     try {
         const { month } = req.body;
 

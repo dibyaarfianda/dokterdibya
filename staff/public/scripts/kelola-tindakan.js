@@ -19,6 +19,11 @@ let serverTime = null;
 let serverTimeReceivedAt = 0;
 let priceBadgeTimer = null;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 function currentServerTime() {
     return serverTime === null ? NaN : serverTime + performance.now() - serverTimeReceivedAt;
 }
@@ -74,6 +79,7 @@ function bindFormSubmit() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+        if (!hasAccountPermission('settings.services_manage')) return;
         
         const nameInput = document.getElementById('tindakan-name');
         const categoryInput = document.getElementById('tindakan-category');
@@ -292,13 +298,14 @@ function renderServiceTable(services) {
                 <span class="badge badge-info">${service.category || '-'}</span>
             </td>
             <td>Rp ${(service.price || 0).toLocaleString('id-ID')} ${renderPriceBadge(service)}</td>
-            <td class="text-center">
+            <td class="text-center">${hasAccountPermission('settings.services_manage') ? `
                 <button class="btn btn-sm btn-warning mr-1" onclick="window.editService('${service.id}')">
                     <i class="fas fa-edit"></i> Edit
                 </button>
                 <button class="btn btn-sm btn-danger" onclick="window.deleteService('${service.id}')">
                     <i class="fas fa-trash"></i> Hapus
                 </button>
+                ` : ''}
             </td>
         </tr>
     `).join('');
@@ -310,6 +317,7 @@ function renderServiceTable(services) {
 
 // Edit service
 function editService(serviceId) {
+    if (!hasAccountPermission('settings.services_manage')) return;
     const service = allServices.find(s => s.id == serviceId);
     if (!service) return;
 
@@ -341,6 +349,7 @@ function editService(serviceId) {
 
 // Delete service via VPS API
 async function deleteService(serviceId) {
+    if (!hasAccountPermission('settings.services_manage')) return;
     console.log('🗑️ [DELETE] deleteService called with ID:', serviceId, 'Type:', typeof serviceId);
     console.log('📊 [DELETE] All services count:', allServices.length);
     console.log('🔍 [DELETE] All service IDs:', allServices.map(s => ({id: s.id, type: typeof s.id})));

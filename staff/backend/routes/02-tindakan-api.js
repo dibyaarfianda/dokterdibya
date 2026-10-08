@@ -6,7 +6,7 @@ const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireSuperadminOrAccountPermission } = require('../middleware/auth');
 const { validateTindakan } = require('../middleware/validation');
 
 function withPriceChange(row) {
@@ -261,7 +261,7 @@ router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) 
 });
 
 // ==================== DELETE TINDAKAN ====================
-router.delete('/api/tindakan/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/api/tindakan/:id', verifyToken, requireSuperadminOrAccountPermission('settings.services_manage'), async (req, res) => {
     try {
         const { id } = req.params;
         

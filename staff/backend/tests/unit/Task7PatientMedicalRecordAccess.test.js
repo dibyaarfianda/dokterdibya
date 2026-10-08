@@ -205,14 +205,15 @@ describe('Task 7 account-mode delegation through legacy guards', () => {
         expect(deniedNext).not.toHaveBeenCalled();
     });
 
-    test('delegation is active for Task 7 permissions and remains closed for later groups', () => {
+    test('delegation remains active for Task 7 permissions as later rollout groups open', () => {
         const { isDelegatedAccountPermission } = require('../../middleware/auth');
         expect(isDelegatedAccountPermission(accountRequest('patients.delete'), ['patients.delete'])).toBe(true);
         expect(isDelegatedAccountPermission(accountRequest('medical_records.finalize'), ['medical_records.finalize'])).toBe(true);
         expect(isDelegatedAccountPermission(accountRequest('patient_documents.share'), ['patient_documents.share'])).toBe(true);
         expect(isDelegatedAccountPermission(accountRequest('r2_files.delete'), ['r2_files.delete'])).toBe(true);
         expect(isDelegatedAccountPermission(accountRequest('registration_codes.create'), ['registration_codes.create'])).toBe(true);
-        expect(isDelegatedAccountPermission(accountRequest('billing.process_payment'), ['billing.process_payment'])).toBe(false);
+        expect(isDelegatedAccountPermission(accountRequest('billing.process_payment'), ['billing.process_payment'])).toBe(true);
+        expect(isDelegatedAccountPermission(accountRequest('system.reset'), ['system.reset'])).toBe(false);
     });
 
     test('section reset accepts a boundary-authorized account while retaining the legacy role gate', () => {

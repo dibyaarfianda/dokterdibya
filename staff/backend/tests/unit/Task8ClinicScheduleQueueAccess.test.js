@@ -110,7 +110,7 @@ describe('Task 8 clinic, schedule, booking, and queue route matrix', () => {
 });
 
 describe('Task 8 delegated guards and UI actions', () => {
-    test('Task 8 permissions delegate while later rollout groups remain closed', () => {
+    test('Task 8 permissions remain delegated as finance opens and system stays closed', () => {
         const { isDelegatedAccountPermission } = require('../../middleware/auth');
         for (const permission of [
             'appointments.view', 'appointments.sync', 'booking.manage', 'online_queue.write',
@@ -118,7 +118,8 @@ describe('Task 8 delegated guards and UI actions', () => {
         ]) {
             expect(isDelegatedAccountPermission(accountRequest(permission), [permission])).toBe(true);
         }
-        expect(isDelegatedAccountPermission(accountRequest('billing.process_payment'), ['billing.process_payment'])).toBe(false);
+        expect(isDelegatedAccountPermission(accountRequest('billing.process_payment'), ['billing.process_payment'])).toBe(true);
+        expect(isDelegatedAccountPermission(accountRequest('system.reset'), ['system.reset'])).toBe(false);
     });
 
     test('legacy route guards accept the exact boundary-authorized Task 8 permission', () => {

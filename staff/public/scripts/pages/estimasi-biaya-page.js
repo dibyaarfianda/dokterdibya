@@ -8,6 +8,10 @@ const el = id => document.getElementById(id);
 const esc = value => escapeHtml(String(value ?? ''));
 const money = value => value == null ? 'Harga belum tersedia' : 'Rp ' + Number(value).toLocaleString('id-ID');
 const num = value => value === '' ? null : Number(value);
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
 function status(message, tone = 'muted') {
     const node = el('estimasi-config-status');
     if (node) { node.textContent = message; node.className = 'small mb-3 text-' + tone; }
@@ -59,6 +63,11 @@ function render() {
             (meds || '<p class="text-muted">Belum ada template obat dipilih.</p>') + '<hr><h5>Layanan &amp; pemeriksaan</h5>' + acts +
             '<button type="button" class="btn btn-outline-secondary btn-sm" data-action="estimate-add-service" data-key="' + key + '">Tambah Layanan</button></div></section>';
     }).join('');
+    if (!hasAccountPermission('cost_estimates.write')) {
+        el('estimate-draft-editor').querySelectorAll('input, select, textarea, button').forEach(control => {
+            control.disabled = true;
+        });
+    }
 }
 async function load() {
     loadScope?.abort(); const scope = createPageRequestScope(); loadScope = scope;
@@ -74,7 +83,9 @@ async function load() {
         draft = saved.draft; medications = meds.data; templates = rx.data;
         services = acts.data.filter(s => ['LAYANAN', 'TINDAKAN MEDIS'].includes(s.category));
         dirty = false; ready = true; revision++; previewData = null; render();
-        el('estimasi-biaya-page').querySelector('[data-action="save-estimasi-biaya"]').disabled = false;
+        const saveButton = el('estimasi-biaya-page').querySelector('[data-action="save-estimasi-biaya"]');
+        saveButton.disabled = !hasAccountPermission('cost_estimates.write');
+        saveButton.style.display = hasAccountPermission('cost_estimates.write') ? '' : 'none';
         status(draft.updated_at ? 'Draft tersimpan: ' + new Date(draft.updated_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB.' : 'Belum ada draft tersimpan. Template belum dipilih.');
         send({ type: 'estimate-unavailable', message: 'Perbarui pratinjau untuk memuat draft ini.' });
     } catch (error) { if (error.name !== 'AbortError') status('Gagal memuat data. Klik Muat Ulang untuk mencoba lagi.', 'danger'); }
@@ -84,6 +95,7 @@ export async function showEstimasiBiayaPage() {
     if (!ready) await load();
 }
 export async function saveEstimasiBiayaPortalConfig() {
+    if (!hasAccountPermission('cost_estimates.write')) return;
     if (!ready || saveScope) return;
     const scope = createPageRequestScope(); saveScope = scope; const currentRevision = revision;
     status('Menyimpan draft...');
@@ -138,11 +150,11 @@ document.addEventListener('click', event => {
     if (action === 'estimate-phone') el('estimate-patient-frame').style.width = '390px';
     if (action === 'estimate-desktop') el('estimate-patient-frame').style.width = '100%';
     if (action === 'estimate-dummy') { previewScope?.abort(); previewData = null; send({ type: 'estimate-dummy' }); status('Data Dummy — bukan tarif klinik. Draft tetap terpisah.'); }
-    if (ready && action === 'estimate-add-service') { draft.trimesters[key].services.push({ tindakan_id: null, quantity: 1, repeats: 1 }); markDirty(); render(); }
-    if (ready && action === 'estimate-remove-service') { draft.trimesters[key].services.splice(Number(button.dataset.index), 1); markDirty(); render(); }
+    if (ready && hasAccountPermission('cost_estimates.write') && action === 'estimate-add-service') { draft.trimesters[key].services.push({ tindakan_id: null, quantity: 1, repeats: 1 }); markDirty(); render(); }
+    if (ready && hasAccountPermission('cost_estimates.write') && action === 'estimate-remove-service') { draft.trimesters[key].services.splice(Number(button.dataset.index), 1); markDirty(); render(); }
 });
 function edit(target) {
-    if (!ready || !target.closest?.('#estimasi-biaya-page') || !target.dataset.field) return;
+    if (!ready || !hasAccountPermission('cost_estimates.write') || !target.closest?.('#estimasi-biaya-page') || !target.dataset.field) return;
     const { field: type, key, index } = target.dataset; const phase = draft.trimesters[key];
     const row = phase.medications[Number(index)], service = phase.services[Number(index)];
     if (type === 'template') {

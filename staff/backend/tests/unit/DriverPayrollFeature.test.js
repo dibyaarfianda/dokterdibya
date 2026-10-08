@@ -7,7 +7,7 @@ function read(...parts) {
     return fs.readFileSync(path.join(repoRoot, ...parts), 'utf8').replace(/\r\n/g, '\n');
 }
 
-describe('doctor-only private driver payroll feature', () => {
+describe('protected private driver payroll feature', () => {
     test('places Gajian under a doctor-only Private sidebar menu', () => {
         const html = read('staff', 'public', 'index-adminlte.html');
 
@@ -28,16 +28,16 @@ describe('doctor-only private driver payroll feature', () => {
         expect(fragment).toContain('id="driver-payroll-total"');
     });
 
-    test('protects driver payroll APIs with literal doctor role and persists monthly records', () => {
+    test('protects driver payroll APIs for doctors or explicitly delegated accounts and persists monthly records', () => {
         const route = read('staff', 'backend', 'routes', 'staff-payroll.js');
         const migration = read('staff', 'backend', 'migrations', '20260812_create_staff_driver_payrolls.sql');
         const nameMigration = read('staff', 'backend', 'migrations', '20260813_add_driver_name_to_payroll.sql');
 
-        expect(route).toContain("requireDoctorRole");
+        expect(route).toContain("requireDoctorRoleOrAccountPermission");
         expect(route).not.toContain('requireSuperadmin');
-        expect(route).toMatch(/router\.get\('\/driver-payrolls',[\s\S]{0,120}requireDoctorRole/);
-        expect(route).toMatch(/router\.put\('\/driver-payrolls\/:month',[\s\S]{0,120}requireDoctorRole/);
-        expect(route).toMatch(/router\.post\('\/driver-payrolls\/:month\/finalize',[\s\S]{0,120}requireDoctorRole/);
+        expect(route).toMatch(/router\.get\('\/driver-payrolls',[\s\S]{0,140}requireDoctorRoleOrAccountPermission\('staff_payroll\.view'\)/);
+        expect(route).toMatch(/router\.put\('\/driver-payrolls\/:month',[\s\S]{0,140}requireDoctorRoleOrAccountPermission\('staff_payroll\.write'\)/);
+        expect(route).toMatch(/router\.post\('\/driver-payrolls\/:month\/finalize',[\s\S]{0,140}requireDoctorRoleOrAccountPermission\('staff_payroll\.finalize'\)/);
         expect(migration).toContain('CREATE TABLE IF NOT EXISTS staff_driver_payrolls');
         expect(migration).toContain('driver_name VARCHAR(120)');
         expect(migration).toContain('UNIQUE KEY uniq_staff_driver_payroll_month');

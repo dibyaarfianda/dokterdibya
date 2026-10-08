@@ -792,11 +792,11 @@ describe('staff panel stabilization sources', () => {
         expect(mainJs).toContain("'staff_briefing': ['nav-staff-briefing']");
         expect(mainJs).toContain("'nav-staff-briefing':                   () => showStaffBriefingPage()");
 
-        expect(staffBriefingJs).toContain("if (d.can_start !== true) {");
-        expect(staffBriefingJs).toContain("btn.innerHTML = '<i class=\"fas fa-lock mr-1\"></i> Hanya dokter';");
-        expect(staffBriefingJs).toContain("alert('Hanya dokter yang dapat memulai briefing.');");
-        expect(staffBriefingRoute).toContain('can_start: canStartBriefing(req.user)');
-        expect(staffBriefingRoute).toContain("router.post('/today/start', verifyToken, verifyStaffToken, requireSuperadmin");
+        expect(staffBriefingJs).toContain("!hasAccountPermission('staff_briefing.finalize') || d.can_start !== true");
+        expect(staffBriefingJs).toContain("btn.innerHTML = '<i class=\"fas fa-lock mr-1\"></i> Tidak diizinkan';");
+        expect(staffBriefingJs).toContain("alert('Akun ini tidak diizinkan memulai briefing.');");
+        expect(staffBriefingRoute).toContain('can_start: canStartBriefing(req)');
+        expect(staffBriefingRoute).toContain("router.post('/today/start', verifyToken, verifyStaffToken, requireSuperadminOrAccountPermission('staff_briefing.finalize')");
 
         expect(roleVisibility).toContain("{ key: 'staff_briefing', label: 'Briefing Poli Minggu'");
         expect(server).toContain("const staffBriefingRoutes = require('./routes/staff-briefing');");

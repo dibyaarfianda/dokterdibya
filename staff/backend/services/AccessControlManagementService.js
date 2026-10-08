@@ -28,6 +28,9 @@ const NON_DELEGABLE_PERMISSIONS = new Set([
 ]);
 const catalogByName = new Map(PERMISSION_CATALOG.map(item => [item.name, item]));
 const internalPermissionNames = new Set(PERMISSION_CATALOG.filter(item => item.internal).map(item => item.name));
+const EXPLICIT_PERMISSION_DEPENDENCIES = new Map([
+    ['finance_analysis.view', ['analytics.view', 'inventory.view', 'visits.view']]
+]);
 
 function accessError(message, statusCode, code) {
     const error = new Error(message);
@@ -68,6 +71,9 @@ function dependencyNames(item) {
             .filter(source => source.kind === 'permission' && source.value !== item.name)
             .map(source => source.value)
     );
+    for (const dependency of EXPLICIT_PERMISSION_DEPENDENCIES.get(item?.name) || []) {
+        dependencies.add(dependency);
+    }
     if (item && item.action !== 'view') {
         const viewPermission = `${item.name.split('.')[0]}.view`;
         if (isDelegablePermission(catalogByName.get(viewPermission))) dependencies.add(viewPermission);

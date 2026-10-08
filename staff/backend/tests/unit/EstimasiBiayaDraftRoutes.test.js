@@ -9,7 +9,7 @@ jest.mock('../../middleware/auth', () => ({
         req.testRole = token; next();
     },
     requirePermission: permission => (req, res, next) => {
-        if (permission.endsWith('.edit') && req.testRole === 'viewer') return res.status(403).end();
+        if (permission === 'cost_estimates.write' && req.testRole === 'viewer') return res.status(403).end();
         next();
     }
 }));

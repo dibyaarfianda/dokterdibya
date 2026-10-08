@@ -49,6 +49,11 @@ let additionalBillingModalState = null;
 let additionalBillingPaymentState = null;
 let billingCancellationState = null;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 function getAdditionalBillingToken() {
     return window.getToken?.();
 }
@@ -85,7 +90,11 @@ function setAdditionalBillingModalError(message = '') {
 }
 
 function canCancelBilling(billing) {
-    return isSuperadminUser(window.currentStaffIdentity)
+    const identity = window.currentStaffUser || window.currentStaffIdentity || window.auth?.currentUser;
+    const delegatedReset = identity?.access_mode === 'account'
+        && !identity?.is_doctor_protected
+        && hasAccountPermission('billing.reset');
+    return (isSuperadminUser(window.currentStaffIdentity) || delegatedReset)
         && Boolean(billing?.id)
         && (billing?.status === 'draft' || billing?.status === 'confirmed')
         && !billing?.has_pending_payment;
@@ -150,7 +159,7 @@ async function submitBillingCancellation() {
     const state = billingCancellationState;
     const reason = document.getElementById('billing-cancellation-reason').value.trim();
     const errorElement = document.getElementById('billing-cancellation-error');
-    if (!state || !isSuperadminUser(window.currentStaffIdentity)) return;
+    if (!state || !hasAccountPermission('billing.reset')) return;
     if (!reason) {
         errorElement.textContent = 'Alasan pembatalan wajib diisi.';
         errorElement.style.display = 'block';
@@ -788,10 +797,12 @@ function renderAdditionalBillingPanel(additionalBillings) {
         const hasObat = items.some(item => item.item_type === 'obat' && Number(item.quantity || 0) > 0);
         const actionButtons = [];
 
-        if (billing.status === 'draft') {
+        if (billing.status === 'draft' && hasAccountPermission('billing.create')) {
             actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-primary" data-additional-billing-action="edit" data-additional-billing-id="${billing.id}" title="Ubah draft" aria-label="Ubah draft"><i class="fas fa-edit"></i></button>`);
+        }
+        if (billing.status === 'draft' && hasAccountPermission('billing.finalize')) {
             actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-success" data-additional-billing-action="confirm" data-additional-billing-id="${billing.id}" title="Konfirmasi tagihan" aria-label="Konfirmasi tagihan"><i class="fas fa-check"></i></button>`);
-        } else if (billing.status === 'confirmed') {
+        } else if (billing.status === 'confirmed' && hasAccountPermission('billing.process_payment')) {
             actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-primary" data-additional-billing-action="mark-paid" data-additional-billing-id="${billing.id}" title="Tandai lunas" aria-label="Tandai lunas"><i class="fas fa-money-bill-wave"></i></button>`);
         }
 
@@ -799,7 +810,7 @@ function renderAdditionalBillingPanel(additionalBillings) {
             actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-danger" data-additional-billing-action="cancel" data-additional-billing-id="${billing.id}" title="Batalkan invoice" aria-label="Batalkan invoice"><i class="fas fa-ban"></i></button>`);
         }
 
-        if (billing.status === 'confirmed' || billing.status === 'paid' || billing.status === 'cancelled') {
+        if (hasAccountPermission('billing.export') && (billing.status === 'confirmed' || billing.status === 'paid' || billing.status === 'cancelled')) {
             actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-success" data-additional-billing-action="print-invoice" data-additional-billing-id="${billing.id}" title="Cetak invoice" aria-label="Cetak invoice"><i class="fas fa-receipt"></i></button>`);
             if (hasObat && billing.status !== 'cancelled') {
                 actionButtons.push(`<button type="button" class="btn btn-sm btn-outline-secondary" data-additional-billing-action="print-etiket" data-additional-billing-id="${billing.id}" title="Cetak etiket" aria-label="Cetak etiket"><i class="fas fa-tag"></i></button>`);
@@ -843,9 +854,9 @@ function renderAdditionalBillingPanel(additionalBillings) {
         <section class="pt-4 mt-4 border-top" id="additional-billing-panel">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0"><i class="fas fa-plus-circle text-primary mr-2"></i>Tagihan Tambahan</h5>
-                <button type="button" class="btn btn-primary btn-sm" id="btn-create-additional-billing">
+                ${hasAccountPermission('billing.create') ? `<button type="button" class="btn btn-primary btn-sm" id="btn-create-additional-billing">
                     <i class="fas fa-plus mr-1"></i>Buat Tagihan Tambahan
-                </button>
+                </button>` : ''}
             </div>
             ${billingContent}
         </section>
@@ -1572,7 +1583,8 @@ export default {
         const items = billing.items || [];
         const status = billing.status || 'draft';
         const hasPendingPayment = !!billing.has_pending_payment;
-        const canEditBilling = status !== 'paid' && status !== 'cancelled' && !(status === 'confirmed' && hasPendingPayment);
+        const canEditBilling = hasAccountPermission('billing.create')
+            && status !== 'paid' && status !== 'cancelled' && !(status === 'confirmed' && hasPendingPayment);
         this.currentBilling = billing;
         this.patientName = state.patientData?.fullName || state.patientData?.full_name || state.patientData?.name || billing.patient_name || '-';
 
@@ -1618,7 +1630,7 @@ export default {
             subtotal += itemTotal;
 
             // Show delete button for editable obat items.
-            const showDeleteBtn = item.item_type === 'obat' && canEditBilling;
+            const showDeleteBtn = item.item_type === 'obat' && canEditBilling && hasAccountPermission('billing.reset');
             const deleteBtn = showDeleteBtn
                 ? `<button type="button" class="btn btn-sm btn-outline-danger ml-2 delete-obat-btn"
                            data-item-id="${item.id}"
@@ -1689,34 +1701,34 @@ export default {
         if (status === 'draft') {
             actionsHtml = `
                 <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
-                    <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-confirm-billing">
+                    ${hasAccountPermission('billing.finalize') ? `<button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-confirm-billing">
                         <i class="fas fa-check mr-1"></i>Konfirmasi Tagihan
-                    </button>
+                    </button>` : ''}
                     ${cancelButtonHtml}
-                    <button type="button" class="btn btn-secondary btn-sm flex-fill" id="btn-print-etiket" disabled>
+                    ${hasAccountPermission('billing.export') ? `<button type="button" class="btn btn-secondary btn-sm flex-fill" id="btn-print-etiket" disabled>
                         <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
                     <button type="button" class="btn btn-secondary btn-sm flex-fill" id="btn-print-invoice" disabled>
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
-                    </button>
+                    </button>` : ''}
                     ${historyButtonHtml}
                 </div>`;
         } else if (status === 'confirmed') {
             actionsHtml = `
                 <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
-                    <button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid">
+                    ${hasAccountPermission('billing.process_payment') ? `<button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid">
                         <i class="fas fa-money-bill-wave mr-1"></i>Tandai Lunas
                     </button>
                     <button type="button" class="btn btn-info btn-sm flex-fill" id="btn-pay-online">
                         <i class="fas fa-qrcode mr-1"></i>Bayar Online
-                    </button>
+                    </button>` : ''}
                     ${cancelButtonHtml}
-                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
+                    ${hasAccountPermission('billing.export') ? `<button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
                         <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
                     <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
-                    </button>
+                    </button>` : ''}
                     ${historyButtonHtml}
                     ${billing.printed_at ? '<span class="small text-muted align-self-center sc-billing-printed-state">Telah dicetak</span>' : ''}
                 </div>`;
@@ -1726,21 +1738,21 @@ export default {
                     <span class="badge badge-lg badge-primary align-self-center sc-billing-paid-state">
                         <i class="fas fa-check-circle mr-1"></i>Sudah Lunas
                     </span>
-                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
+                    ${hasAccountPermission('billing.export') ? `<button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-etiket">
                         <i class="fas fa-tag mr-1"></i>Cetak Etiket
                     </button>
                     <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice
-                    </button>
+                    </button>` : ''}
                     ${historyButtonHtml}
                     ${billing.printed_at ? '<span class="small text-muted align-self-center sc-billing-printed-state">Telah dicetak</span>' : ''}
                 </div>`;
         } else if (status === 'cancelled') {
             actionsHtml = `
                 <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
-                    <button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
+                    ${hasAccountPermission('billing.export') ? `<button type="button" class="btn btn-success btn-sm flex-fill" id="btn-print-invoice">
                         <i class="fas fa-receipt mr-1"></i>Cetak Invoice Batal
-                    </button>
+                    </button>` : ''}
                     ${historyButtonHtml}
                 </div>`;
         }

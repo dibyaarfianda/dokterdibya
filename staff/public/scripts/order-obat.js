@@ -7,6 +7,9 @@ const number = value => value == null ? '—' : Number(value).toLocaleString('id
 const money = value => value == null ? 'Belum diketahui' : `Rp ${number(value)}`;
 const th = label => `<th style="text-align: center !important; vertical-align: middle !important;">${label}</th>`;
 const button = (action, label, id = '', extra = '') => `<button type="button" class="btn btn-sm btn-outline-primary mr-1" data-order-action="${action}" data-id="${e(id)}" ${extra}>${label}</button>`;
+const hasAccountPermission = permission => typeof window === 'undefined'
+    || typeof window.hasAccountPermission !== 'function'
+    || window.hasAccountPermission(permission);
 
 async function request(path, options = {}) {
     const token = await getIdToken();
@@ -143,6 +146,7 @@ function table(headers, rows) {
     return `<div class="table-responsive"><table class="table table-sm table-bordered table-hover mb-2"><thead class="bg-light"><tr>${headers.map(th).join('')}</tr></thead><tbody>${rows || `<tr><td colspan="${headers.length}" class="text-center text-muted">Tidak ada data</td></tr>`}</tbody></table></div>`;
 }
 function createOrderButton() {
+    if (!hasAccountPermission('inventory.purchase')) return '';
     return '<button type="button" class="btn btn-primary mr-2" data-order-action="create" ' + (controller.selection.size ? '' : 'disabled') + '>' + (controller.analysisChanged ? 'Saya sudah meninjau · coba simpan lagi' : 'Buat Draft Order (' + controller.selection.size + ' obat)') + '</button>';
 }
 function updateSelectionActions() {
@@ -176,7 +180,7 @@ function renderRecommendations() {
     <label for="order-notes">Catatan draft</label><textarea id="order-notes" class="form-control form-control-sm mb-2" rows="2">${e(controller.notes)}</textarea>
     ${createOrderButton()}
     <small class="text-muted">Pilihan tetap tersimpan saat mengganti filter. Jumlah dan supplier dapat diubah sebelum disimpan.</small>
-    <details class="mt-3"><summary>Pengaturan lead time & safety stock per supplier</summary><div class="mt-2">${table(['Supplier','Lead (hari)','Safety (hari)','Simpan'],controller.suppliers.map(s=>`<tr><td>${e(s.name)}</td><td><input class="form-control form-control-sm" aria-label="Lead ${e(s.name)}" type="number" min="0" max="365" step="1" data-lead="${e(s.id)}" value="${e(s.lead_days)}"></td><td><input class="form-control form-control-sm" aria-label="Safety ${e(s.name)}" type="number" min="0" max="365" step="1" data-safety="${e(s.id)}" value="${e(s.safety_days)}"></td><td>${button('settings','Simpan',s.id)}</td></tr>`).join(''))}</div></details></div></div>`;
+    ${hasAccountPermission('inventory.purchase') ? `<details class="mt-3"><summary>Pengaturan lead time & safety stock per supplier</summary><div class="mt-2">${table(['Supplier','Lead (hari)','Safety (hari)','Simpan'],controller.suppliers.map(s=>`<tr><td>${e(s.name)}</td><td><input class="form-control form-control-sm" aria-label="Lead ${e(s.name)}" type="number" min="0" max="365" step="1" data-lead="${e(s.id)}" value="${e(s.lead_days)}"></td><td><input class="form-control form-control-sm" aria-label="Safety ${e(s.name)}" type="number" min="0" max="365" step="1" data-safety="${e(s.id)}" value="${e(s.safety_days)}"></td><td>${button('settings','Simpan',s.id)}</td></tr>`).join(''))}</div></details>` : ''}</div></div>`;
 }
 async function renderDrafts() {
     const drafts = await controller.api(`/order-drafts?status=${statusFilter}`);
@@ -184,7 +188,7 @@ async function renderDrafts() {
     if (draft) renderDraftDetail();
 }
 function renderDraftDetail() {
-    const editable = draft.status === 'draft';
+    const editable = draft.status === 'draft' && hasAccountPermission('inventory.purchase');
     root.querySelector('#order-draft-detail').innerHTML = `<hr><h5>Draft #${e(draft.id)} · ${e(draft.supplier_name)}</h5><p class="small">${e(draft.status)} · versi ${e(draft.version)} · Harga merupakan estimasi; tidak mencatat pembelian.</p>
     ${table(['Obat','Jumlah','Harga estimasi','Subtotal estimasi','Bukti','Aksi'],draft.items.map(x=>`<tr><td>${e(x.name)}<small class="d-block">${e(x.code)} · ${e(x.unit)}</small></td><td><input type="number" min="1" step="1" aria-label="Jumlah draft ${e(x.name)}" class="form-control form-control-sm" data-draft-quantity="${e(x.obat_id)}" value="${e(x.quantity)}" ${editable?'':'disabled'}></td><td>${money(x.estimated_unit_cost)}</td><td>${money(x.estimated_unit_cost==null?null:x.quantity*x.estimated_unit_cost)}</td><td><details><summary>Detail</summary>${evidence(x.analysis||x)}</details></td><td>${editable?button('remove-draft-item','Hapus item',x.obat_id):'—'}</td></tr>`).join(''))}
     <label>Catatan<textarea id="order-draft-notes" class="form-control form-control-sm mb-2" ${editable?'':'disabled'}>${e(draft.notes)}</textarea></label><div>${editable?button('update-draft','Simpan perubahan')+button('archive','Arsipkan draft'):''}${button('print','Cetak data tersimpan')}${button('excel','Unduh Excel tersimpan')}${button('reload-draft','Muat ulang versi server')}</div>

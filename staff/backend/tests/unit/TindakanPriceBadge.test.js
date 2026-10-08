@@ -7,7 +7,8 @@ const request = require('supertest');
 jest.mock('../../db', () => ({ query: jest.fn(), getConnection: jest.fn() }));
 jest.mock('../../middleware/auth', () => ({
     verifyToken: (req, res, next) => next(),
-    requireSuperadmin: (req, res, next) => next()
+    requireSuperadmin: (req, res, next) => next(),
+    requireSuperadminOrAccountPermission: () => (req, res, next) => next()
 }));
 jest.mock('../../utils/pdf-generator', () => ({}));
 const db = require('../../db');

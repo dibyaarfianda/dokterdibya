@@ -21,6 +21,11 @@ let editingObatId = null;
 let editingObatActive = true;
 let initialized = false;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 // Initialize the module
 export function initKelolaObat() {
     initOrderObat();
@@ -59,6 +64,12 @@ function bindFormSubmit() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const requiredPermission = isEditMode ? 'obat_alkes.edit' : 'obat_alkes.create';
+        if (!hasAccountPermission(requiredPermission)) {
+            showWarning('Anda tidak memiliki izin untuk menyimpan perubahan obat.');
+            return;
+        }
 
         const nameInput = document.getElementById('kelola-obat-name');
         const categoryInput = document.getElementById('kelola-obat-category');
@@ -326,6 +337,17 @@ function renderObatTable(obat) {
             const stockBadge = item.stock <= item.min_stock
                 ? `<span class="badge badge-danger">${item.stock}</span>`
                 : `<span class="badge badge-success">${item.stock}</span>`;
+            const purchaseButton = hasAccountPermission('inventory.purchase') ? `
+                        <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok">
+                            <i class="fas fa-plus"></i>
+                        </button>` : '';
+            const editButtons = hasAccountPermission('obat_alkes.edit') ? `
+                        <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-xs btn-secondary" onclick="window.toggleObatStatus('${item.id}', 0)" title="Nonaktifkan">
+                            <i class="fas fa-ban"></i>
+                        </button>` : '';
             return `
                 <tr>
                     <td>${index + 1}</td>
@@ -335,15 +357,7 @@ function renderObatTable(obat) {
                     <td>Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                     <td class="text-center">${stockBadge}</td>
                     <td class="text-center">
-                        <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                        <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-xs btn-secondary" onclick="window.toggleObatStatus('${item.id}', 0)" title="Nonaktifkan">
-                            <i class="fas fa-ban"></i>
-                        </button>
+                        ${purchaseButton}${editButtons}
                     </td>
                 </tr>
             `;
@@ -362,6 +376,17 @@ function renderObatTable(obat) {
             inactiveSection.style.display = '';
             inactiveBody.innerHTML = inactiveItems.map((item, index) => {
                 const stockBadge = `<span class="badge badge-secondary">${item.stock}</span>`;
+                const editButtons = hasAccountPermission('obat_alkes.edit') ? `
+                            <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-xs btn-primary mr-1" onclick="window.toggleObatStatus('${item.id}', 1)" title="Aktifkan kembali">
+                                <i class="fas fa-check"></i>
+                            </button>` : '';
+                const deleteButton = hasAccountPermission('obat_alkes.delete') ? `
+                            <button class="btn btn-xs btn-danger" onclick="window.deleteObatPermanen('${item.id}')" title="Delete Permanen">
+                                <i class="fas fa-trash"></i>
+                            </button>` : '';
                 return `
                     <tr class="table-secondary">
                         <td class="text-muted">${index + 1}</td>
@@ -371,15 +396,7 @@ function renderObatTable(obat) {
                         <td class="text-muted">Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                         <td class="text-center">${stockBadge}</td>
                         <td class="text-center">
-                            <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-xs btn-primary mr-1" onclick="window.toggleObatStatus('${item.id}', 1)" title="Aktifkan kembali">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="btn btn-xs btn-danger" onclick="window.deleteObatPermanen('${item.id}')" title="Delete Permanen">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            ${editButtons}${deleteButton}
                         </td>
                     </tr>
                 `;
@@ -396,6 +413,7 @@ function renderObatTable(obat) {
 
 // Edit obat
 function editObat(obatId) {
+    if (!hasAccountPermission('obat_alkes.edit')) return;
     const obat = allObat.find(o => o.id == obatId);
     if (!obat) return;
 
@@ -435,6 +453,7 @@ function editObat(obatId) {
 
 // Toggle active/inactive status
 async function toggleObatStatus(obatId, newStatus) {
+    if (!hasAccountPermission('obat_alkes.edit')) return;
     const obat = allObat.find(o => o.id == obatId);
     if (!obat) return;
 
@@ -477,6 +496,7 @@ async function toggleObatStatus(obatId, newStatus) {
 
 // Delete obat permanently (must be inactive and without history)
 async function deleteObatPermanen(obatId) {
+    if (!hasAccountPermission('obat_alkes.delete')) return;
     const obat = allObat.find(o => o.id == obatId);
     if (!obat) return;
 
@@ -560,6 +580,7 @@ function resetForm() {
 }
 
 function prepareNewObat() {
+    if (!hasAccountPermission('obat_alkes.create')) return;
     const form = document.getElementById('kelola-obat-form');
     const nameInput = document.getElementById('kelola-obat-name');
 

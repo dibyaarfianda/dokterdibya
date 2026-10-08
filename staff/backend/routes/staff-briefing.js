@@ -5,7 +5,12 @@
 
 const express = require('express');
 const db = require('../db');
-const { verifyToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
+const {
+    verifyToken,
+    verifyStaffToken,
+    requireSuperadminOrAccountPermission,
+    isDelegatedAccountPermission
+} = require('../middleware/auth');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 const router = express.Router();
@@ -37,10 +42,12 @@ async function loadActiveStaff() {
     }));
 }
 
-function canStartBriefing(user) {
+function canStartBriefing(req) {
+    const user = req && req.user;
     return Boolean(
         user &&
-        (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id))
+        (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id)
+            || isDelegatedAccountPermission(req, ['staff_briefing.finalize']))
     );
 }
 
@@ -90,7 +97,7 @@ router.get('/today', verifyToken, verifyStaffToken, async (req, res) => {
             checked_staff_ids,
             started_staff_ids,
             started,
-            can_start: canStartBriefing(req.user)
+            can_start: canStartBriefing(req)
         });
 
     } catch (err) {
@@ -145,7 +152,7 @@ router.post('/today/checklist', verifyToken, verifyStaffToken, async (req, res) 
 });
 
 // POST /api/staff-briefing/today/start  body: { staff_ids: [] }
-router.post('/today/start', verifyToken, verifyStaffToken, requireSuperadmin, async (req, res) => {
+router.post('/today/start', verifyToken, verifyStaffToken, requireSuperadminOrAccountPermission('staff_briefing.finalize'), async (req, res) => {
     try {
         const today = todayLocalDate();
         const ids = Array.isArray(req.body && req.body.staff_ids) ? req.body.staff_ids : [];

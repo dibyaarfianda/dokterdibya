@@ -11,14 +11,14 @@ router.use((req, res, next) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.set('Pragma', 'no-cache'); res.set('Expires', '0'); next();
 });
-router.get('/draft', requirePermission('obat_alkes.view'), async (req, res) => {
+router.get('/draft', requirePermission('cost_estimates.view'), async (req, res) => {
     try {
         const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1', [DRAFT_KEY]);
         const draft = normalizeDraft(rows.length ? JSON.parse(rows[0].setting_value) : {});
         res.json({ success: true, draft });
     } catch (_) { res.status(500).json({ success: false, message: 'Draft gagal dimuat. Coba lagi.' }); }
 });
-router.put('/draft', requirePermission('obat_alkes.edit'), async (req, res) => {
+router.put('/draft', requirePermission('cost_estimates.write'), async (req, res) => {
     try {
         const draft = normalizeDraft(req.body || {});
         draft.updated_at = new Date().toISOString();
@@ -26,7 +26,7 @@ router.put('/draft', requirePermission('obat_alkes.edit'), async (req, res) => {
         res.json({ success: true, draft, message: 'Draft tersimpan. Belum diterbitkan ke portal pasien.' });
     } catch (_) { res.status(500).json({ success: false, message: 'Draft gagal disimpan. Coba lagi.' }); }
 });
-router.post('/preview', requirePermission('obat_alkes.view'), async (req, res) => {
+router.post('/preview', requirePermission('cost_estimates.view'), async (req, res) => {
     try {
         const draft = normalizeDraft(req.body || {});
         res.json({ success: true, preview: buildPreview(draft, await catalogFor(draft)) });

@@ -15,6 +15,11 @@ let currentSaleData = null;
 let obatOptions = [];
 // patientSearchTimeout removed - using direct text input now
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 // Hospital options
 const HOSPITALS = [
     { value: 'rsia_melinda', label: 'RSIA Melinda' },
@@ -121,9 +126,9 @@ function renderPage() {
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <button class="btn btn-primary" id="btn-new-obat-sale">
+                        ${hasAccountPermission('medications.sales_write') ? `<button class="btn btn-primary" id="btn-new-obat-sale">
                             <i class="fas fa-plus"></i> Penjualan Baru
-                        </button>
+                        </button>` : '<span></span>'}
                         <div class="d-flex gap-2 flex-wrap align-items-center">
                             <div class="input-group" style="width: auto;">
                                 <div class="input-group-prepend">
@@ -429,10 +434,12 @@ async function loadSales() {
                         <button class="btn btn-sm btn-info" onclick="window.viewObatSale(${sale.id})" title="Lihat">
                             <i class="fas fa-eye"></i>
                         </button>
-                        ${sale.status === 'draft' ? `
+                        ${sale.status === 'draft' && hasAccountPermission('medications.sales_write') ? `
                             <button class="btn btn-sm btn-warning" onclick="window.editObatSale(${sale.id})" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </button>
+                        ` : ''}
+                        ${sale.status === 'draft' && hasAccountPermission('medications.sales_delete') ? `
                             <button class="btn btn-sm btn-danger" onclick="window.deleteObatSale(${sale.id})" title="Hapus">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -827,7 +834,7 @@ window.viewObatSale = async function(id) {
         const footer = document.getElementById('view-sale-footer');
         let actions = '<button type="button" class="btn btn-secondary" onclick="hideModal(\'modal-view-sale\')">Tutup</button>';
 
-        if (sale.status === 'draft') {
+        if (sale.status === 'draft' && hasAccountPermission('billing.finalize')) {
             actions += `
                 <button type="button" class="btn btn-success" onclick="window.confirmObatSale(${sale.id})">
                     <i class="fas fa-check"></i> Confirm
@@ -835,29 +842,33 @@ window.viewObatSale = async function(id) {
             `;
         } else if (sale.status === 'confirmed') {
             // Legacy confirmed without payment method - allow setting payment method
-            actions += `
+            if (hasAccountPermission('billing.process_payment')) actions += `
                 <button type="button" class="btn btn-warning" onclick="window.setPaymentMethod(${sale.id})">
                     <i class="fas fa-credit-card"></i> Cara Pembayaran
                 </button>
                 <button type="button" class="btn btn-success" onclick="window.markObatSalePaid(${sale.id})">
                     <i class="fas fa-money-bill"></i> Mark as Paid
                 </button>
+            `;
+            if (hasAccountPermission('billing.export')) actions += `
                 <button type="button" class="btn btn-primary" onclick="window.printObatSaleInvoice(${sale.id})">
                     <i class="fas fa-print"></i> Print Invoice
                 </button>
             `;
         } else if (sale.status === 'payment_pending') {
             // Payment pending - show mark as paid and print invoice
-            actions += `
+            if (hasAccountPermission('billing.process_payment')) actions += `
                 <button type="button" class="btn btn-success" onclick="window.markObatSalePaid(${sale.id})">
                     <i class="fas fa-money-bill"></i> Mark as Paid
                 </button>
+            `;
+            if (hasAccountPermission('billing.export')) actions += `
                 <button type="button" class="btn btn-primary" onclick="window.printObatSaleInvoice(${sale.id})">
                     <i class="fas fa-print"></i> Print Invoice
                 </button>
             `;
         } else if (sale.status === 'paid') {
-            actions += `
+            if (hasAccountPermission('billing.export')) actions += `
                 <button type="button" class="btn btn-primary" onclick="window.printObatSaleInvoice(${sale.id})">
                     <i class="fas fa-print"></i> Print Invoice
                 </button>
@@ -874,6 +885,7 @@ window.viewObatSale = async function(id) {
 
 // Edit sale
 window.editObatSale = async function(id) {
+    if (!hasAccountPermission('medications.sales_write')) return;
     try {
         const data = await apiRequest(`/obat-sales/${id}`);
         openSaleModal(data.data);
@@ -885,6 +897,7 @@ window.editObatSale = async function(id) {
 
 // Delete sale
 window.deleteObatSale = async function(id) {
+    if (!hasAccountPermission('medications.sales_delete')) return;
     const confirmed = await showConfirm('Hapus Penjualan?', 'Penjualan ini akan dihapus permanen.');
     if (!confirmed) return;
 
@@ -900,6 +913,7 @@ window.deleteObatSale = async function(id) {
 
 // Confirm sale with payment method selection
 window.confirmObatSale = async function(id) {
+    if (!hasAccountPermission('billing.finalize')) return;
     if (!window.Swal) {
         showAlert('error', 'SweetAlert2 tidak tersedia');
         return;
@@ -958,6 +972,7 @@ window.confirmObatSale = async function(id) {
 
 // Set payment method for legacy confirmed sales
 window.setPaymentMethod = async function(id) {
+    if (!hasAccountPermission('billing.process_payment')) return;
     if (!window.Swal) {
         showAlert('error', 'SweetAlert2 tidak tersedia');
         return;
@@ -1002,6 +1017,7 @@ window.setPaymentMethod = async function(id) {
 
 // Mark sale as paid
 window.markObatSalePaid = async function(id) {
+    if (!hasAccountPermission('billing.process_payment')) return;
     const confirmed = await showConfirm('Tandai Lunas?', 'Pembayaran akan ditandai sebagai sudah diterima.');
     if (!confirmed) return;
 
@@ -1018,6 +1034,7 @@ window.markObatSalePaid = async function(id) {
 
 // Print invoice
 window.printObatSaleInvoice = async function(id) {
+    if (!hasAccountPermission('billing.export')) return;
     try {
         const data = await apiRequest(`/obat-sales/${id}/print-invoice`, { method: 'POST' });
         if (data.downloadUrl) {

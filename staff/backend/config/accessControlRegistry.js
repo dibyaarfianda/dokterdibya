@@ -80,7 +80,7 @@ const STAFF_NAVIGATION_MAP = Object.freeze({
     'nav-pengumuman': 'announcements.view',
     'nav-penjualan-obat': 'navigation.penjualan_obat',
     'nav-perhatian-khusus': 'patient_access.manage',
-    'nav-private': 'dashboard.view',
+    'nav-private': 'navigation.staff_payroll',
     'nav-record-history': 'navigation.kelola_pasien',
     'nav-rs-bhayangkara': 'navigation.rs_bhayangkara',
     'nav-rsia-melinda': 'navigation.rsia_melinda',
@@ -240,7 +240,22 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['sunday-clinic/records:GET:/medify-sync/jobs/:mrId', 'integrations.view'],
     ['sunday-clinic/records:GET:/medify-sync/stats', 'integrations.view'],
     ['sunday-clinic/resume-export:POST:/generate-anamnesa/:mrId', 'clinical_ai.use'],
-    ['sunday-clinic/resume-export:POST:/resume-medis/send-whatsapp', 'patient_documents.share']
+    ['sunday-clinic/resume-export:POST:/resume-medis/send-whatsapp', 'patient_documents.share'],
+    ['inventory:POST:/adjust', 'inventory.adjust'],
+    ['inventory:POST:/deduct', 'inventory.adjust'],
+    ['inventory:GET:/activity-log', 'obat_logs.view'],
+    ['obat:PATCH:/api/obat/:id/stock', 'stock.update'],
+    ['v1/obat:PATCH:/obat/:id/stock', 'stock.update'],
+    ['obat-sales:POST:/:id/invoice-base64', 'billing.export'],
+    ['obat-sales:POST:/:id/etiket-base64', 'billing.export'],
+    ['sunday-clinic/billing:POST:/billing/:mrId/cancel', 'billing.reset'],
+    ['sunday-clinic/billing:POST:/billing/:mrId/additional/:additionalBillingId/cancel', 'billing.reset'],
+    ['staff-briefing:POST:/today/start', 'staff_briefing.finalize'],
+    ['staff-payroll:GET:/driver-payrolls', 'staff_payroll.view'],
+    ['staff-payroll:PUT:/driver-payrolls/:month', 'staff_payroll.write'],
+    ['staff-payroll:PATCH:/driver-payrolls/:month/name', 'staff_payroll.write'],
+    ['staff-payroll:DELETE:/driver-payrolls/:month', 'staff_payroll.delete'],
+    ['estimasi-biaya-draft:POST:/preview', 'cost_estimates.view']
 ]);
 
 const SUNDAY_CLINIC_SECTION_PERMISSIONS = Object.freeze({

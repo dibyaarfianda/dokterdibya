@@ -52,7 +52,25 @@ const ACTIVE_ACCOUNT_PERMISSION_PREFIXES = Object.freeze([
     'patient_stories.',
     'polls.',
     'staff_announcements.',
-    'support_chat.'
+    'support_chat.',
+    'billing.',
+    'finance_analysis.',
+    'inventory.',
+    'medications.',
+    'obat_alkes.',
+    'obat_alkes_logs.',
+    'obat_logs.',
+    'services.',
+    'settings.medications_manage',
+    'settings.services_manage',
+    'stock.',
+    'suppliers.',
+    'cost_estimates.',
+    'staff_briefing.',
+    'staff_payroll.',
+    'staff_points.',
+    'staff_workdesk.',
+    'tanya_finance.'
 ]);
 
 function isDelegatedAccountPermission(req, requiredPermissions = []) {
@@ -537,7 +555,7 @@ function requireSuperadmin(req, res, next) {
 }
 
 function requireSuperadminOrAccountPermission(permission) {
-    return (req, res, next) => {
+    return function requireSuperadminOrAccountPermissionGuard(req, res, next) {
         if (isDelegatedAccountPermission(req, [permission])) return next();
         return requireSuperadmin(req, res, next);
     };
@@ -608,6 +626,13 @@ function requireDoctorRole(req, res, next) {
         code: 'DOCTOR_ROLE_REQUIRED',
         message: 'Aksi ini hanya dapat dilakukan oleh dokter.'
     });
+}
+
+function requireDoctorRoleOrAccountPermission(permission) {
+    return function requireDoctorRoleOrAccountPermissionGuard(req, res, next) {
+        if (isDelegatedAccountPermission(req, [permission])) return next();
+        return requireDoctorRole(req, res, next);
+    };
 }
 
 /**
@@ -897,6 +922,7 @@ module.exports = {
     requireRolesOrAccountPermission,
     requireMenuAccessOrAccountPermission,
     requireDoctorRole,
+    requireDoctorRoleOrAccountPermission,
     requireMenuAccess,  // New: check menu visibility from database
     requirePermission,  // Deprecated
     isDelegatedAccountPermission,

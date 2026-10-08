@@ -13,6 +13,10 @@ jest.mock('../../middleware/auth', () => ({
     requireDoctorRole: (req, res, next) => {
         if (req.user?.role !== 'dokter') return res.status(403).json({ success: false });
         return next();
+    },
+    requireDoctorRoleOrAccountPermission: () => (req, res, next) => {
+        if (req.user?.role !== 'dokter') return res.status(403).json({ success: false });
+        return next();
     }
 }));
 

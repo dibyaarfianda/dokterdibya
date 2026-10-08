@@ -113,7 +113,7 @@ describe('Task 9 communication and content route matrix', () => {
 });
 
 describe('Task 9 delegated guards, UI actions, and realtime boundaries', () => {
-    test('Task 9 permissions delegate while finance and system rollout groups remain closed', () => {
+    test('Task 9 permissions remain delegated as finance opens and system stays closed', () => {
         const { isDelegatedAccountPermission } = require('../../middleware/auth');
         for (const permission of [
             'patient_questions.write', 'articles.publish', 'community_chat.moderate',
@@ -122,7 +122,7 @@ describe('Task 9 delegated guards, UI actions, and realtime boundaries', () => {
         ]) {
             expect(isDelegatedAccountPermission(accountRequest(permission), [permission])).toBe(true);
         }
-        expect(isDelegatedAccountPermission(accountRequest('billing.process_payment'), ['billing.process_payment'])).toBe(false);
+        expect(isDelegatedAccountPermission(accountRequest('billing.process_payment'), ['billing.process_payment'])).toBe(true);
         expect(isDelegatedAccountPermission(accountRequest('system.reset'), ['system.reset'])).toBe(false);
     });
 

@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { verifyToken, requireDoctorRole } = require('../../middleware/auth');
+const { verifyToken, requireDoctorRoleOrAccountPermission } = require('../../middleware/auth');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { sundayClinicClosingSchemaGuard } = require('../../services/SundayClinicClosingSchemaValidator');
 const handlers = require('../../services/sunday-clinic/closing');
@@ -15,11 +15,12 @@ function noStore(req, res, next) {
     next();
 }
 
-const closingOnly = [noStore, verifyToken, requireDoctorRole, sundayClinicClosingSchemaGuard];
+const closingView = [noStore, verifyToken, requireDoctorRoleOrAccountPermission('billing.view'), sundayClinicClosingSchemaGuard];
+const closingFinalize = [noStore, verifyToken, requireDoctorRoleOrAccountPermission('billing.finalize'), sundayClinicClosingSchemaGuard];
 
-router.get('/closing/preview', ...closingOnly, asyncHandler(handlers.getClosingPreview));
-router.post('/closing', ...closingOnly, asyncHandler(handlers.postClosing));
-router.get('/closings', ...closingOnly, asyncHandler(handlers.getClosings));
-router.get('/closings/:id', ...closingOnly, asyncHandler(handlers.getClosingById));
+router.get('/closing/preview', ...closingView, asyncHandler(handlers.getClosingPreview));
+router.post('/closing', ...closingFinalize, asyncHandler(handlers.postClosing));
+router.get('/closings', ...closingView, asyncHandler(handlers.getClosings));
+router.get('/closings/:id', ...closingView, asyncHandler(handlers.getClosingById));
 
 module.exports = router;

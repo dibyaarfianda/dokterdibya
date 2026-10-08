@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const { verifyToken, requireDoctorRole } = require('../middleware/auth');
+const { verifyToken, requireDoctorRoleOrAccountPermission } = require('../middleware/auth');
 const { ROLE_IDS } = require('../constants/roles');
 const {
     PAYROLL_CONFIG,
@@ -166,7 +166,7 @@ function badRequest(res, message) {
     return res.status(400).json({ success: false, message });
 }
 
-router.get('/practice-dates', verifyToken, requireDoctorRole, async (req, res) => {
+router.get('/practice-dates', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), async (req, res) => {
     try {
         const practiceDates = await getLatestPracticeDates(req.query.limit);
         const latestCycle = practiceDates.slice(0, 4).sort();
@@ -183,7 +183,7 @@ router.get('/practice-dates', verifyToken, requireDoctorRole, async (req, res) =
     }
 });
 
-router.get('/batches', verifyToken, requireDoctorRole, async (req, res) => {
+router.get('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), async (req, res) => {
     try {
         const limit = Math.max(1, Math.min(50, Number.parseInt(req.query.limit, 10) || 20));
         const [rows] = await db.query(
@@ -218,7 +218,7 @@ router.get('/batches', verifyToken, requireDoctorRole, async (req, res) => {
     }
 });
 
-router.get('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
+router.get('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), async (req, res) => {
     try {
         const batch = await loadBatch(req.params.id);
         if (!batch) {
@@ -231,7 +231,7 @@ router.get('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
     }
 });
 
-router.post('/batches', verifyToken, requireDoctorRole, async (req, res) => {
+router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.write'), async (req, res) => {
     let practiceDates;
     try {
         practiceDates = req.body && req.body.practice_dates
@@ -367,7 +367,7 @@ router.post('/batches', verifyToken, requireDoctorRole, async (req, res) => {
     }
 });
 
-router.put('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
+router.put('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.write'), async (req, res) => {
     const batchId = req.params.id;
     const updates = Array.isArray(req.body && req.body.items) ? req.body.items : null;
     if (!updates) {
@@ -451,7 +451,7 @@ router.put('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
     }
 });
 
-router.post('/batches/:id/finalize', verifyToken, requireDoctorRole, async (req, res) => {
+router.post('/batches/:id/finalize', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.finalize'), async (req, res) => {
     let payrollDate = null;
     if (req.body && req.body.payroll_date) {
         try {
@@ -500,7 +500,7 @@ router.post('/batches/:id/finalize', verifyToken, requireDoctorRole, async (req,
     }
 });
 
-router.delete('/batches/:id', verifyToken, requireDoctorRole, async (req, res) => {
+router.delete('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.delete'), async (req, res) => {
     const connection = await db.getConnection();
     await connection.beginTransaction();
 
@@ -529,7 +529,7 @@ router.delete('/batches/:id', verifyToken, requireDoctorRole, async (req, res) =
     }
 });
 
-router.get('/driver-payrolls', verifyToken, requireDoctorRole, async (req, res) => {
+router.get('/driver-payrolls', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), async (req, res) => {
     try {
         const limit = Math.max(1, Math.min(60, Number.parseInt(req.query.limit, 10) || 24));
         const [rows] = await db.query(
@@ -548,7 +548,7 @@ router.get('/driver-payrolls', verifyToken, requireDoctorRole, async (req, res) 
     }
 });
 
-router.put('/driver-payrolls/:month', verifyToken, requireDoctorRole, async (req, res) => {
+router.put('/driver-payrolls/:month', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.write'), async (req, res) => {
     let payroll;
     let driverName;
     try {
@@ -634,7 +634,7 @@ router.put('/driver-payrolls/:month', verifyToken, requireDoctorRole, async (req
     }
 });
 
-router.patch('/driver-payrolls/:month/name', verifyToken, requireDoctorRole, async (req, res) => {
+router.patch('/driver-payrolls/:month/name', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.write'), async (req, res) => {
     let month;
     let driverName;
     try {
@@ -660,7 +660,7 @@ router.patch('/driver-payrolls/:month/name', verifyToken, requireDoctorRole, asy
     }
 });
 
-router.post('/driver-payrolls/:month/finalize', verifyToken, requireDoctorRole, async (req, res) => {
+router.post('/driver-payrolls/:month/finalize', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.finalize'), async (req, res) => {
     let month;
     try {
         month = normalizePayrollMonth(req.params.month);
@@ -715,7 +715,7 @@ router.post('/driver-payrolls/:month/finalize', verifyToken, requireDoctorRole, 
     }
 });
 
-router.delete('/driver-payrolls/:month', verifyToken, requireDoctorRole, async (req, res) => {
+router.delete('/driver-payrolls/:month', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.delete'), async (req, res) => {
     let month;
     try {
         month = normalizePayrollMonth(req.params.month);
@@ -742,7 +742,7 @@ router.delete('/driver-payrolls/:month', verifyToken, requireDoctorRole, async (
     }
 });
 
-router.get('/config', verifyToken, requireDoctorRole, (req, res) => {
+router.get('/config', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), (req, res) => {
     return res.json({
         success: true,
         data: {

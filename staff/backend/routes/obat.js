@@ -208,7 +208,7 @@ router.patch('/api/obat/:id/status', verifyToken, requirePermission('obat_alkes.
 });
 
 // UPDATE STOCK (for deducting after finalization or manual adjustment)
-router.patch('/api/obat/:id/stock', async (req, res) => {
+router.patch('/api/obat/:id/stock', verifyToken, requirePermission('stock.update'), async (req, res) => {
     try {
         const { quantity, adjustment } = req.body;
         
@@ -397,7 +397,7 @@ router.get('/public/obat/low-stock', async (req, res) => {
 // ==================== DOWNLOAD PRICE LIST PDF ====================
 const pdfGenerator = require('../utils/pdf-generator');
 
-router.get('/api/obat/download/price-list', verifyToken, requirePermission('obat_alkes.view'), async (req, res) => {
+router.get('/api/obat/download/price-list', verifyToken, requirePermission('obat_logs.export'), async (req, res) => {
     try {
         // Fetch all active obat
         const [rows] = await db.query(

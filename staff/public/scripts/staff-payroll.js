@@ -14,6 +14,11 @@
         currentDriverPayroll: null
     };
 
+    function hasAccountPermission(permission) {
+        return typeof window.hasAccountPermission !== 'function'
+            || window.hasAccountPermission(permission);
+    }
+
     function getToken() {
         if (typeof window.getAuthToken === 'function') return window.getAuthToken();
         return (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || '';
@@ -151,7 +156,7 @@
                 '<td class="text-right">' + escapeHtml(formatRp(item.daily_deduction)) + '</td>' +
                 '<td class="text-right font-weight-bold">' + escapeHtml(formatRp(item.total_amount)) + '</td>' +
                 '<td><span class="badge ' + badge + '">' + escapeHtml(item.status) + '</span></td>' +
-                '<td class="text-center">' + (item.status === 'finalized' ?
+                '<td class="text-center">' + (item.status === 'finalized' && hasAccountPermission('staff_payroll.export') ?
                     '<button type="button" class="btn btn-xs btn-outline-primary" data-payroll-action="driver-history-print" data-driver-slip-month="' + escapeHtml(month) + '" title="Cetak slip gaji driver"' + (state.loading || !String(item.driver_name || '').trim() ? ' disabled' : '') + '><i class="fas fa-print mr-1"></i>Cetak Slip</button>' :
                     '<span class="text-muted small">Finalize dulu</span>') + '</td>' +
                 '</tr>';
@@ -213,6 +218,12 @@
         var finalizeButton = document.querySelector('[data-payroll-action="driver-finalize"]');
         var deleteButton = document.querySelector('[data-payroll-action="driver-delete"]');
         var printButton = document.querySelector('[data-payroll-action="driver-print"]');
+        if (saveButton) saveButton.style.display = hasAccountPermission('staff_payroll.write') ? '' : 'none';
+        if (finalizeButton) finalizeButton.style.display = hasAccountPermission('staff_payroll.finalize') ? '' : 'none';
+        if (deleteButton) deleteButton.style.display = hasAccountPermission('staff_payroll.delete') ? '' : 'none';
+        if (printButton) printButton.style.display = hasAccountPermission('staff_payroll.export') ? '' : 'none';
+        absenceInput.disabled = finalized || !hasAccountPermission('staff_payroll.write');
+        nameInput.disabled = !hasAccountPermission('staff_payroll.write');
         if (saveButton) {
             saveButton.disabled = state.loading || (finalized && !stored);
             saveButton.innerHTML = finalized
@@ -226,6 +237,7 @@
     }
 
     function printDriverSlip(month) {
+        if (!hasAccountPermission('staff_payroll.export')) return;
         try {
             var selectedMonth = month || driverMonthKey(state.currentDriverPayroll && state.currentDriverPayroll.payroll_month);
             var record = state.driverPayrolls.find(function (item) {
@@ -353,7 +365,7 @@
         }
 
         var dates = batch.practice_dates || [];
-        var readonly = batch.status === 'finalized';
+        var readonly = batch.status === 'finalized' || !hasAccountPermission('staff_payroll.write');
         thead.innerHTML = dates.map(function (date) {
             return '<th class="text-center">' + escapeHtml(formatDate(date)) + '</th>';
         }).join('');
@@ -433,18 +445,19 @@
         if (batch.status === 'finalized') {
             el.innerHTML = '<span class="badge badge-success mr-2"><i class="fas fa-lock mr-1"></i>Finalized</span>' +
                 '<strong class="mr-2">Total: <span id="staff-payroll-live-total">' + escapeHtml(formatRp(batch.total_amount)) + '</span></strong>' +
-                '<button type="button" class="btn btn-sm btn-outline-primary" data-payroll-action="print-all" onclick="if(window.staffPayroll) window.staffPayroll.printAllStaffSlips()"><i class="fas fa-print mr-1"></i>Cetak Semua Slip</button>';
+                (hasAccountPermission('staff_payroll.export') ? '<button type="button" class="btn btn-sm btn-outline-primary" data-payroll-action="print-all" onclick="if(window.staffPayroll) window.staffPayroll.printAllStaffSlips()"><i class="fas fa-print mr-1"></i>Cetak Semua Slip</button>' : '');
             return;
         }
 
         el.innerHTML =
             '<strong class="mr-3">Total: <span id="staff-payroll-live-total">' + escapeHtml(formatRp(batch.total_amount)) + '</span></strong>' +
-            '<button type="button" class="btn btn-sm btn-primary mr-2" data-payroll-action="save" onclick="if(window.staffPayroll) window.staffPayroll.save()"><i class="fas fa-save mr-1"></i>Simpan Draft</button>' +
-            '<button type="button" class="btn btn-sm btn-success mr-2" data-payroll-action="finalize" onclick="if(window.staffPayroll) window.staffPayroll.finalize()"><i class="fas fa-check mr-1"></i>Finalize</button>' +
-            '<button type="button" class="btn btn-sm btn-outline-danger" data-payroll-action="delete" onclick="if(window.staffPayroll) window.staffPayroll.removeDraft()"><i class="fas fa-trash mr-1"></i>Hapus Draft</button>';
+            (hasAccountPermission('staff_payroll.write') ? '<button type="button" class="btn btn-sm btn-primary mr-2" data-payroll-action="save" onclick="if(window.staffPayroll) window.staffPayroll.save()"><i class="fas fa-save mr-1"></i>Simpan Draft</button>' : '') +
+            (hasAccountPermission('staff_payroll.finalize') ? '<button type="button" class="btn btn-sm btn-success mr-2" data-payroll-action="finalize" onclick="if(window.staffPayroll) window.staffPayroll.finalize()"><i class="fas fa-check mr-1"></i>Finalize</button>' : '') +
+            (hasAccountPermission('staff_payroll.delete') ? '<button type="button" class="btn btn-sm btn-outline-danger" data-payroll-action="delete" onclick="if(window.staffPayroll) window.staffPayroll.removeDraft()"><i class="fas fa-trash mr-1"></i>Hapus Draft</button>' : '');
     }
 
     function printStaffSlip(staffId) {
+        if (!hasAccountPermission('staff_payroll.export')) return;
         try {
             var batch = state.currentBatch;
             var item = batch && (batch.items || []).find(function (candidate) {
@@ -459,6 +472,7 @@
     }
 
     function printAllStaffSlips() {
+        if (!hasAccountPermission('staff_payroll.export')) return;
         try {
             var html = getPrintModule().buildBatchSlipDocument(state.currentBatch);
             openPrintWindow(html, 'Slip Gaji Pegawai Sunday Clinic');
@@ -499,6 +513,7 @@
     }
 
     async function saveDriver() {
+        if (!hasAccountPermission('staff_payroll.write')) return;
         setBusy(true);
         try {
             var input = collectDriverPayrollInput();
@@ -526,6 +541,7 @@
     }
 
     async function finalizeDriver() {
+        if (!hasAccountPermission('staff_payroll.finalize')) return;
         var input = collectDriverPayrollInput();
         if (!confirm('Finalize gaji driver ' + input.driver_name + ' bulan ' + input.month + '? Setelah finalized, nilai gaji tidak bisa diubah dan akan mengurangi Analisa Keuangan.')) return;
         setBusy(true);
@@ -549,6 +565,7 @@
     }
 
     async function removeDriverDraft() {
+        if (!hasAccountPermission('staff_payroll.delete')) return;
         var input = collectDriverPayrollInput();
         if (!confirm('Hapus draft gaji driver bulan ' + input.month + '?')) return;
         setBusy(true);
@@ -605,6 +622,7 @@
     }
 
     async function createDraft() {
+        if (!hasAccountPermission('staff_payroll.write')) return;
         setBusy(true);
         try {
             var result = await api('/batches', {
@@ -647,6 +665,7 @@
     }
 
     async function save() {
+        if (!hasAccountPermission('staff_payroll.write')) return;
         if (!state.currentBatch) return;
         setBusy(true);
         try {
@@ -669,6 +688,7 @@
     }
 
     async function finalize() {
+        if (!hasAccountPermission('staff_payroll.finalize')) return;
         if (!state.currentBatch) return;
         if (!confirm('Finalize gaji ini? Setelah finalized, data tidak bisa diubah dan akan mengurangi Analisa Keuangan sesuai tanggal gajian.')) return;
         setBusy(true);
@@ -697,6 +717,7 @@
     }
 
     async function removeDraft() {
+        if (!hasAccountPermission('staff_payroll.delete')) return;
         if (!state.currentBatch) return;
         if (!confirm('Hapus draft gaji ini?')) return;
         setBusy(true);
@@ -717,6 +738,8 @@
 
     async function init() {
         if (state.loading) return;
+        var createButton = document.querySelector('[data-payroll-action="create"]');
+        if (createButton) createButton.style.display = hasAccountPermission('staff_payroll.write') ? '' : 'none';
         setBusy(true);
         try {
             await loadDriverPayrolls();

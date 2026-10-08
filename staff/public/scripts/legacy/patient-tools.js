@@ -3451,12 +3451,12 @@ Apakah Anda yakin ingin melanjutkan?`;
                     <td>${s.phone || '-'}</td>
                     <td>${s.address || '-'}</td>
                     <td class="text-center">
-                        <button class="btn btn-xs btn-warning" onclick="editSupplier(${s.id})" title="Edit">
+                        ${hasAccountPermission('suppliers.edit') ? `<button class="btn btn-xs btn-warning" onclick="editSupplier(${s.id})" title="Edit">
                             <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-xs btn-danger" onclick="deleteSupplier(${s.id})" title="Hapus">
+                        </button>` : ''}
+                        ${hasAccountPermission('suppliers.delete') ? `<button class="btn btn-xs btn-danger" onclick="deleteSupplier(${s.id})" title="Hapus">
                             <i class="fas fa-trash"></i>
-                        </button>
+                        </button>` : ''}
                     </td>
                 </tr>
             `).join('');
@@ -3475,6 +3475,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     };
 
     window.editSupplier = function(id) {
+        if (!hasAccountPermission('suppliers.edit')) return;
         const supplier = suppliersCache.find(s => s.id === id);
         if (!supplier) return;
 
@@ -3486,6 +3487,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     };
 
     window.deleteSupplier = async function(id) {
+        if (!hasAccountPermission('suppliers.delete')) return;
         if (!confirm('Hapus supplier ini?')) return;
 
         try {
@@ -3512,6 +3514,8 @@ Apakah Anda yakin ingin melanjutkan?`;
                 e.preventDefault();
 
                 const id = document.getElementById('kelola-supplier-id').value;
+                const requiredPermission = id ? 'suppliers.edit' : 'suppliers.create';
+                if (!hasAccountPermission(requiredPermission)) return;
                 const name = document.getElementById('kelola-supplier-name').value.trim();
                 const phone = document.getElementById('kelola-supplier-phone').value.trim();
                 const address = document.getElementById('kelola-supplier-address').value.trim();
@@ -3552,6 +3556,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     // ============================================
 
     window.openPurchaseModal = async function(obatId, obatName) {
+        if (!hasAccountPermission('inventory.purchase')) return;
         // Set obat info
         document.getElementById('purchase-obat-id').value = obatId;
         document.getElementById('purchase-obat-name').value = obatName;
@@ -3646,6 +3651,7 @@ Apakah Anda yakin ingin melanjutkan?`;
     });
 
     window.submitPurchaseStock = async function() {
+        if (!hasAccountPermission('inventory.purchase')) return;
         const submitBtn = document.getElementById('purchase-submit-btn');
         const cancelBtn = document.getElementById('purchase-cancel-btn');
         if (submitBtn?.dataset.submitting === '1') return;

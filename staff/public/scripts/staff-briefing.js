@@ -7,6 +7,11 @@
 
     var state = { loading: false, data: null, savingChecklist: false };
 
+    function hasAccountPermission(permission) {
+        return typeof window.hasAccountPermission !== 'function'
+            || window.hasAccountPermission(permission);
+    }
+
     function getToken() {
         if (typeof window.getAuthToken === 'function') return window.getAuthToken();
         return (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || '';
@@ -59,6 +64,7 @@
         var checked = new Set((d.checked_staff_ids || []).map(String));
         var started = new Set((d.started_staff_ids || []).map(String));
         var staff = d.active_staff || [];
+        var canWrite = hasAccountPermission('staff_briefing.write');
 
         if (staff.length === 0) {
             el.innerHTML = '<div class="alert alert-warning">Belum ada staff aktif.</div>';
@@ -76,8 +82,8 @@
                 var isStarted = started.has(id);
                 var isChecked = checked.has(id) || isStarted;
                 return '<div class="col-md-6 col-lg-4 mb-2">' +
-                    '<label class="d-flex align-items-center p-2 mb-0" style="background:#f9fafb;border-radius:6px;cursor:' + (isStarted ? 'not-allowed' : 'pointer') + ';">' +
-                    '<input type="checkbox" class="staff-briefing-cb mr-2" data-staff-id="' + escapeHtml(id) + '"' + (isChecked ? ' checked' : '') + (isStarted ? ' disabled' : '') + '>' +
+                    '<label class="d-flex align-items-center p-2 mb-0" style="background:#f9fafb;border-radius:6px;cursor:' + (isStarted || !canWrite ? 'not-allowed' : 'pointer') + ';">' +
+                    '<input type="checkbox" class="staff-briefing-cb mr-2" data-staff-id="' + escapeHtml(id) + '"' + (isChecked ? ' checked' : '') + (isStarted || !canWrite ? ' disabled' : '') + '>' +
                     '<div><div style="font-weight:600;">' + escapeHtml(name) + '</div>' +
                     (role ? '<div class="text-muted" style="font-size:11px;">' + escapeHtml(role) + '</div>' : '') +
                     '</div></label></div>';
@@ -94,9 +100,9 @@
         // Update start button state
         var btn = document.getElementById('staff-briefing-start-btn');
         if (btn) {
-            if (d.can_start !== true) {
+            if (!hasAccountPermission('staff_briefing.finalize') || d.can_start !== true) {
                 btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-lock mr-1"></i> Hanya dokter';
+                btn.innerHTML = '<i class="fas fa-lock mr-1"></i> Tidak diizinkan';
                 btn.classList.remove('btn-success');
                 btn.classList.add('btn-secondary');
             } else if (d.started) {
@@ -114,6 +120,7 @@
     }
 
     async function onChecklistChange(staffId, isChecked) {
+        if (!hasAccountPermission('staff_briefing.write')) return;
         if (state.savingChecklist) return;
         state.savingChecklist = true;
         try {
@@ -140,9 +147,10 @@
     }
 
     async function start() {
+        if (!hasAccountPermission('staff_briefing.finalize')) return;
         if (!state.data) return;
         if (state.data.can_start !== true) {
-            alert('Hanya dokter yang dapat memulai briefing.');
+                alert('Akun ini tidak diizinkan memulai briefing.');
             return;
         }
         var checked = state.data.checked_staff_ids || [];

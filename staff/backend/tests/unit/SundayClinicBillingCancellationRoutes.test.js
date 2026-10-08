@@ -23,7 +23,7 @@ test.each([
 ])('%s requires doctor or superadmin before cancellation handler', path => {
     const route = router.stack.find(layer => layer.route?.path === path && layer.route.methods.post)?.route;
     expect(route).toBeDefined();
-    const authorization = route.stack.find(layer => layer.name === 'requireSuperadmin')?.handle;
+    const authorization = route.stack.find(layer => layer.name === 'requireSuperadminOrAccountPermissionGuard')?.handle;
     expect(authorization).toEqual(expect.any(Function));
 
     const patientResponse = response();

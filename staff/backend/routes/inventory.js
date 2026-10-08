@@ -8,14 +8,14 @@ const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, requireMenuAccess, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireMenuAccessOrAccountPermission, requirePermission } = require('../middleware/auth');
 const InventoryService = require('../services/InventoryService');
 
 /**
  * POST /api/inventory/purchase
  * Record a new purchase (add stock)
  */
-router.post('/purchase', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.post('/purchase', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.purchase'), async (req, res) => {
     try {
         const {
             obat_id,
@@ -92,7 +92,7 @@ router.post('/purchase', verifyToken, requireMenuAccess('obat_alkes'), async (re
  * GET /api/inventory/batches
  * List all batches with filters
  */
-router.get('/batches', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.get('/batches', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.view'), async (req, res) => {
     try {
         const { obat_id, include_empty, supplier_id } = req.query;
 
@@ -142,7 +142,7 @@ router.get('/batches', verifyToken, requireMenuAccess('obat_alkes'), async (req,
  * GET /api/inventory/batches/:obatId
  * Get batches for specific obat
  */
-router.get('/batches/:obatId', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.get('/batches/:obatId', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.view'), async (req, res) => {
     try {
         const includeEmpty = req.query.include_empty === 'true';
         const batches = await InventoryService.getBatches(req.params.obatId, includeEmpty);
@@ -164,7 +164,7 @@ router.get('/batches/:obatId', verifyToken, requireMenuAccess('obat_alkes'), asy
  * GET /api/inventory/movements/:obatId
  * Get stock movement history for an obat
  */
-router.get('/movements/:obatId', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.get('/movements/:obatId', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.view'), async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 50;
         const offset = parseInt(req.query.offset) || 0;
@@ -353,7 +353,7 @@ router.get('/activity-log', verifyToken, requirePermission('obat_logs.view'), as
  * GET /api/inventory/expiring
  * Get items expiring within N days
  */
-router.get('/expiring', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.get('/expiring', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.view'), async (req, res) => {
     try {
         const days = parseInt(req.query.days) || 60;
         const items = await InventoryService.getExpiringItems(days);
@@ -375,7 +375,7 @@ router.get('/expiring', verifyToken, requireMenuAccess('obat_alkes'), async (req
  * POST /api/inventory/adjust
  * Manual stock adjustment
  */
-router.post('/adjust', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.post('/adjust', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.adjust'), async (req, res) => {
     try {
         const { obat_id, adjustment, reason } = req.body;
 
@@ -414,7 +414,7 @@ router.post('/adjust', verifyToken, requireMenuAccess('obat_alkes'), async (req,
  * POST /api/inventory/deduct
  * Deduct stock using FIFO (for billing integration)
  */
-router.post('/deduct', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.post('/deduct', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.adjust'), async (req, res) => {
     try {
         const { obat_id, quantity, reference_type, reference_id } = req.body;
 
@@ -447,7 +447,7 @@ router.post('/deduct', verifyToken, requireMenuAccess('obat_alkes'), async (req,
  * GET /api/inventory/profit
  * Get profit analysis for a period
  */
-router.get('/profit', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.get('/profit', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.view'), async (req, res) => {
     try {
         const startDate = req.query.start_date || formatDateLocal(new Date(new Date().setDate(1)));
         const endDate = req.query.end_date || formatDateLocal(new Date());
@@ -472,7 +472,7 @@ router.get('/profit', verifyToken, requireMenuAccess('obat_alkes'), async (req, 
  * GET /api/inventory/summary
  * Get summary for dashboard
  */
-router.get('/summary', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.get('/summary', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.view'), async (req, res) => {
     try {
         const startDate = req.query.start_date || formatDateLocal(new Date(new Date().setDate(1)));
         const endDate = req.query.end_date || formatDateLocal(new Date());

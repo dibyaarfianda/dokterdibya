@@ -228,7 +228,7 @@ async function buildResponseConfig() {
     };
 }
 
-router.get('/', verifyToken, requirePermission('obat_alkes.view'), async (req, res) => {
+router.get('/', verifyToken, requirePermission('cost_estimates.view'), async (req, res) => {
     try {
         const responseConfig = await buildResponseConfig();
         res.json({
@@ -244,7 +244,7 @@ router.get('/', verifyToken, requirePermission('obat_alkes.view'), async (req, r
     }
 });
 
-router.put('/', verifyToken, requirePermission('obat_alkes.edit'), async (req, res) => {
+router.put('/', verifyToken, requirePermission('cost_estimates.write'), async (req, res) => {
     try {
         const submittedConfig = normalizeConfig(req.body || {});
         submittedConfig.updated_at = new Date().toISOString();

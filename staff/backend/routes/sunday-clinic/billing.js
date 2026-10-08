@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../../middleware/auth');
+const { verifyToken, verifyPatientToken, requireSuperadminOrAccountPermission } = require('../../middleware/auth');
 const db = require('../../db');
 const handlers = require('../../services/sunday-clinic/billing');
 const { normalizeMrId, realtimeSync } = require('../../services/sunday-clinic/shared');
@@ -69,7 +69,7 @@ async function requireOpenAccountingDateForRevision(req, res, next) {
 
 router.get('/billing/pending', verifyToken, handlers.getBillingPending);
 router.get('/billing/:mrId', verifyToken, handlers.getBillingByMrId);
-router.post('/billing/:mrId/cancel', verifyToken, requireSuperadmin, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdCancel);
+router.post('/billing/:mrId/cancel', verifyToken, requireSuperadminOrAccountPermission('billing.reset'), requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdCancel);
 router.post('/billing/:mrId', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrId);
 router.post('/billing/:mrId/obat', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdObat);
 router.post('/billing/:mrId/confirm', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdConfirm);
@@ -83,7 +83,7 @@ router.get('/billing/:mrId/additional', verifyToken, handlers.getBillingByMrIdAd
 router.post('/billing/:mrId/additional', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditional);
 router.put('/billing/:mrId/additional/:additionalBillingId', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.putBillingByMrIdAdditionalByAdditionalBillingId);
 router.post('/billing/:mrId/additional/:additionalBillingId/confirm', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditionalByAdditionalBillingIdConfirm);
-router.post('/billing/:mrId/additional/:additionalBillingId/cancel', verifyToken, requireSuperadmin, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditionalByAdditionalBillingIdCancel);
+router.post('/billing/:mrId/additional/:additionalBillingId/cancel', verifyToken, requireSuperadminOrAccountPermission('billing.reset'), requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditionalByAdditionalBillingIdCancel);
 router.post('/billing/:mrId/additional/:additionalBillingId/mark-paid', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditionalByAdditionalBillingIdMarkPaid);
 router.post('/billing/:mrId/additional/:additionalBillingId/print-invoice', verifyToken, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditionalByAdditionalBillingIdPrintInvoice);
 router.post('/billing/:mrId/additional/:additionalBillingId/print-etiket', verifyToken, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditionalByAdditionalBillingIdPrintEtiket);

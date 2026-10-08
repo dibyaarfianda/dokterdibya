@@ -8,7 +8,7 @@ test('draft routes require staff authentication and view permission',async()=>{
  const app=express();app.use('/api/inventory',require(file));
  expect((await request(app).get('/api/inventory/order-drafts')).status).toBe(401);
  expect((await request(app).get('/api/inventory/order-drafts').set('Authorization','staff')).status).toBe(403);
- const result=await request(app).get('/api/inventory/order-drafts').set('Authorization','staff').set('x-permission','obat_alkes.view');
+ const result=await request(app).get('/api/inventory/order-drafts').set('Authorization','staff').set('x-permission','inventory.view');
  expect(result.status).toBe(200);expect(result.body).toEqual({success:true,data:[{id:'draft'}]});
 });
 jest.mock('../../services/OrderRecommendationService',()=>({generate:jest.fn()}));
@@ -20,7 +20,7 @@ test('unrelated inventory paths fall through without adding order auth or cache 
 test('statusCode validation errors are returned and unexpected errors are logged without source details',async()=>{
  const engine=require('../../services/OrderRecommendationService');const logger=require('../../utils/logger');
  const app=express();app.use('/api/inventory',require('../../routes/inventory-orders'));
- const get=()=>request(app).get('/api/inventory/order-recommendations?supplier_id=999').set('Authorization','staff').set('x-permission','obat_alkes.view');
+ const get=()=>request(app).get('/api/inventory/order-recommendations?supplier_id=999').set('Authorization','staff').set('x-permission','inventory.view');
  engine.generate.mockRejectedValueOnce(Object.assign(new Error('Supplier tidak aktif'),{statusCode:400}));
  const invalid=await get();expect(invalid.status).toBe(400);expect(invalid.body.message).toBe('Supplier tidak aktif');
  engine.generate.mockRejectedValueOnce(new Error('private clinical source details'));
