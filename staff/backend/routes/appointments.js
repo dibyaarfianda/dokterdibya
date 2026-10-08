@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireSuperadminOrAccountPermission, requirePermission } = require('../middleware/auth');
 const { createSession, countMatchingFactors } = require('../services/medifyHttpService');
 
 const MEDIFY_LIVE_QUEUE_CACHE_TTL_MS = 30000;
@@ -587,7 +587,7 @@ async function runMedifyQueueRobot(location, options = {}) {
 // ==================== PUBLIC ROUTES ====================
 
 // GET all appointments (with optional filters)
-router.get('/', verifyToken, requirePermission('booking.view'), async (req, res) => {
+router.get('/', verifyToken, requirePermission('booking.view', 'appointments.view'), async (req, res) => {
     try {
         const { patient_id, start_date, end_date, status, today_only } = req.query;
         
@@ -637,7 +637,7 @@ router.get('/', verifyToken, requirePermission('booking.view'), async (req, res)
 });
 
 // GET appointments by hospital location
-router.get('/hospital/:location', verifyToken, requirePermission('booking.view'), async (req, res) => {
+router.get('/hospital/:location', verifyToken, requirePermission('booking.view', 'appointments.view'), async (req, res) => {
     try {
         const { location } = req.params;
 
@@ -685,7 +685,7 @@ router.get('/hospital/:location', verifyToken, requirePermission('booking.view')
     }
 });
 
-router.get('/hospital/:location/live-queue', verifyToken, requirePermission('booking.view'), async (req, res) => {
+router.get('/hospital/:location/live-queue', verifyToken, requirePermission('booking.view', 'appointments.view'), async (req, res) => {
     if (!MEDIFY_LIVE_QUEUE_ENABLED) {
         return res.status(503).json({
             success: false,
@@ -716,7 +716,7 @@ router.get('/hospital/:location/live-queue', verifyToken, requirePermission('boo
     }
 });
 
-router.post('/hospital/:location/run-robot', verifyToken, requirePermission('booking.view'), async (req, res) => {
+router.post('/hospital/:location/run-robot', verifyToken, requirePermission('booking.view', 'appointments.sync'), async (req, res) => {
     if (!MEDIFY_LIVE_QUEUE_ENABLED) {
         return res.status(503).json({
             success: false,
@@ -754,7 +754,7 @@ router.post('/hospital/:location/run-robot', verifyToken, requirePermission('boo
     }
 });
 
-router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePermission('booking.view'), async (req, res) => {
+router.post('/hospital/:location/resolve-queue-patient', verifyToken, requirePermission('booking.view', 'appointments.sync'), async (req, res) => {
     if (!MEDIFY_LIVE_QUEUE_ENABLED) {
         return res.status(503).json({
             success: false,
@@ -837,7 +837,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET latest appointment for a specific patient
-router.get('/patient/:patient_id/latest', verifyToken, requirePermission('booking.view'), async (req, res) => {
+router.get('/patient/:patient_id/latest', verifyToken, requirePermission('booking.view', 'appointments.view'), async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT * FROM appointments 
@@ -871,7 +871,7 @@ router.get('/patient/:patient_id/latest', verifyToken, requirePermission('bookin
 // ==================== PROTECTED ROUTES (require auth) ====================
 
 // POST new appointment
-router.post('/', verifyToken, requirePermission('booking.manage'), async (req, res) => {
+router.post('/', verifyToken, requirePermission('booking.manage', 'appointments.create'), async (req, res) => {
     try {
         const {
             patient_id,
@@ -951,7 +951,7 @@ router.post('/', verifyToken, requirePermission('booking.manage'), async (req, r
 });
 
 // PATCH update appointment status only
-router.patch('/:id/status', verifyToken, requirePermission('booking.manage'), async (req, res) => {
+router.patch('/:id/status', verifyToken, requirePermission('booking.manage', 'appointments.edit'), async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -999,7 +999,7 @@ router.patch('/:id/status', verifyToken, requirePermission('booking.manage'), as
 });
 
 // PUT update appointment
-router.put('/:id', verifyToken, requirePermission('booking.manage'), async (req, res) => {
+router.put('/:id', verifyToken, requirePermission('booking.manage', 'appointments.edit'), async (req, res) => {
     try {
         const { id } = req.params;
         const {
@@ -1093,7 +1093,7 @@ router.put('/:id', verifyToken, requirePermission('booking.manage'), async (req,
 });
 
 // DELETE appointment (Superadmin/Dokter only)
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadminOrAccountPermission('appointments.delete'), async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -1131,7 +1131,7 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
 });
 
 // HARD DELETE - Permanently remove appointment from database (Superadmin/Dokter only)
-router.delete('/:id/permanent', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/:id/permanent', verifyToken, requireSuperadminOrAccountPermission('appointments.delete'), async (req, res) => {
     try {
         const { id } = req.params;
         

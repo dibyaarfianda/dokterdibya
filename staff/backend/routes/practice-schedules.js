@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const cache = require('../utils/cache');
 const { isSuperadminRole } = require('../constants/roles');
+const { isDelegatedAccountPermission } = require('../middleware/auth');
 
 // JWT Secret - Required
 const jwt = require('jsonwebtoken');
@@ -179,7 +180,7 @@ router.delete('/:id', verifyStaffToken, async (req, res) => {
         const { id } = req.params;
 
         // Check superadmin permission
-        if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        if (!isDelegatedAccountPermission(req, ['practice_schedules.delete']) && !req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
             return res.status(403).json({ message: 'Akses ditolak. Hanya superadmin/dokter yang dapat menghapus.' });
         }
 
@@ -273,6 +274,10 @@ router.post('/disabled-dates', verifyStaffToken, async (req, res) => {
 router.delete('/disabled-dates/:id', verifyStaffToken, async (req, res) => {
     try {
         const { id } = req.params;
+
+        if (!isDelegatedAccountPermission(req, ['practice_schedules.delete']) && !req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+            return res.status(403).json({ message: 'Akses ditolak. Izin hapus jadwal diperlukan.' });
+        }
 
         const [result] = await db.query(
             'DELETE FROM disabled_practice_dates WHERE id = ?',

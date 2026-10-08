@@ -1,7 +1,7 @@
 // Core AdminLTE bootstrap for dibyaklinik
 // This module ports essential UX from index-asli.html: clock, page switching, and basic bindings.
 
-import { auth, onAuthStateChanged } from './vps-auth-v2.js';
+import { auth, onAuthStateChanged, hasPermission } from './vps-auth-v2.js';
 import { showWarning, showSuccess, showError } from './toast.js';
 import { loadSession } from './session-manager.js';
 import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
@@ -1170,7 +1170,7 @@ async function loadHospitalAppointments(location) {
                 throw new Error(liveData.message || `Data antrian ${hospitalName} tidak tersedia`);
             }
 
-            renderMedifyLiveQueue(liveData.queue, hospitalName, hospitalColor, location);
+            await renderMedifyLiveQueue(liveData.queue, hospitalName, hospitalColor, location);
             return;
         }
 
@@ -1181,7 +1181,7 @@ async function loadHospitalAppointments(location) {
         if (!response.ok) throw new Error('Gagal memuat data');
 
         const data = await response.json();
-        renderHospitalAppointmentsTable(data.appointments || [], hospitalName, hospitalColor);
+        await renderHospitalAppointmentsTable(data.appointments || [], hospitalName, hospitalColor);
 
     } catch (error) {
         console.error('Error loading hospital appointments:', error);
@@ -1193,7 +1193,7 @@ async function loadHospitalAppointments(location) {
     }
 }
 
-function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location) {
+async function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location) {
     const container = document.getElementById('hospital-appointments-container');
     if (!container) return;
 
@@ -1201,6 +1201,7 @@ function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location)
     const stats = queueData.stats || { waiting: items.length, serving: 0, total: items.length };
     const today = new Date();
     const dateLabel = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const canSyncAppointments = await hasPermission('appointments.sync');
 
     if (!items.length) {
         container.innerHTML = `
@@ -1211,9 +1212,9 @@ function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location)
                         <div class="text-white-50 small">${dateLabel} • ${escapeHtml(queueData.clinicLabel || 'Poli Obgyn')}</div>
                     </div>
                     <div class="d-flex align-items-center">
-                        <button class="btn btn-sm btn-warning mr-2" onclick="runMedifyQueueRobot(this, '${location}')">
+                        ${canSyncAppointments ? `<button class="btn btn-sm btn-warning mr-2" onclick="runMedifyQueueRobot(this, '${location}')">
                             <i class="fas fa-play mr-1"></i>Aktifkan Robot
-                        </button>
+                        </button>` : ''}
                         <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('${location}')">
                             <i class="fas fa-sync-alt mr-1"></i>Refresh
                         </button>
@@ -1234,14 +1235,14 @@ function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location)
         const safePatientName = String(item.patientName || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const safeMedicalRecordNo = String(item.medicalRecordNo || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         const ageArg = Number.isFinite(item.age) ? item.age : 'null';
-        const actionHtml = `
+        const actionHtml = canSyncAppointments ? `
                 <button type="button"
                         class="btn btn-sm ${item.medId ? 'btn-primary' : 'btn-outline-primary'}"
                         title="${item.medId ? 'Proses DRD dan auto-create pasien lokal bila belum ada' : 'Proses DRD dengan fallback nama/usia dan auto-create pasien lokal'}"
                         onclick="openMedifyQueueRecord(this, '${location}', '${safeMedId}', '${safePatientName}', ${ageArg}, '${safeMedicalRecordNo}', '${safeIdentityNik}')">
                     <i class="fas ${item.medId ? 'fa-file-medical' : 'fa-user-check'} mr-1"></i>Proses DRD
                 </button>
-            `;
+            ` : '';
 
         return `
         <tr>
@@ -1277,9 +1278,9 @@ function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, location)
                     <span class="badge badge-light mr-2">Belum Dilayani: ${stats.waiting || 0}</span>
                     <span class="badge badge-light mr-2">Dilayani: ${stats.serving || 0}</span>
                     <span class="badge badge-warning mr-3">Total: ${stats.total || items.length}</span>
-                    <button class="btn btn-sm btn-warning mr-2" onclick="runMedifyQueueRobot(this, '${location}')">
+                    ${canSyncAppointments ? `<button class="btn btn-sm btn-warning mr-2" onclick="runMedifyQueueRobot(this, '${location}')">
                         <i class="fas fa-play mr-1"></i>Aktifkan Robot
-                    </button>
+                    </button>` : ''}
                     <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('${location}')">
                         <i class="fas fa-sync-alt mr-1"></i>Refresh
                     </button>
@@ -1328,6 +1329,7 @@ async function openHospitalRecordByMrId(patientId, patientName, location, mrId) 
 }
 
 async function openMedifyQueueRecord(button, location, medId, patientName, age = null, medicalRecordNo = '', identityNik = '') {
+    if (!await hasPermission('appointments.sync')) return;
     const token = getAuthToken();
     if (!token) {
         alert('Sesi login berakhir. Silakan login ulang.');
@@ -1390,6 +1392,7 @@ async function openMedifyQueueRecord(button, location, medId, patientName, age =
 }
 
 async function runMedifyQueueRobot(button, location) {
+    if (!await hasPermission('appointments.sync')) return;
     const token = getAuthToken();
     if (!token) {
         alert('Sesi login berakhir. Silakan login ulang.');
@@ -1443,13 +1446,14 @@ async function runMedifyQueueRobot(button, location) {
     }
 }
 
-function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalColor) {
+async function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalColor) {
     const container = document.getElementById('hospital-appointments-container');
     if (!container) return;
 
     // Get today's date for display
     const today = new Date();
     const dateLabel = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const canCreateClinicRecord = await hasPermission('sunday_clinic.create');
 
     if (appointments.length === 0) {
         container.innerHTML = `
@@ -1518,9 +1522,9 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
                 <td class="complaint-cell">${complaint}</td>
                 <td>${statusBadge}</td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-primary" onclick="startHospitalExam(${apt.id}, '${apt.patient_id}', '${(apt.patient_name || '').replace(/'/g, "\\'")}')">
+                    ${canCreateClinicRecord ? `<button type="button" class="btn btn-sm btn-primary" onclick="startHospitalExam(${apt.id}, '${apt.patient_id}', '${(apt.patient_name || '').replace(/'/g, "\\'")}')">
                         <i class="fas fa-stethoscope mr-1"></i>Periksa
-                    </button>
+                    </button>` : ''}
                 </td>
             </tr>
         `;
@@ -1565,7 +1569,8 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
 }
 
 // Start hospital examination - show category modal then create/open DRD
-function startHospitalExam(appointmentId, patientId, patientName) {
+async function startHospitalExam(appointmentId, patientId, patientName) {
+    if (!await hasPermission('sunday_clinic.create')) return;
     const location = currentHospitalLocation;
     if (!location) {
         alert('Lokasi rumah sakit tidak diketahui.');
@@ -1733,6 +1738,7 @@ async function cancelHospitalAppointment(id) {
 }
 
 async function updateHospitalAppointmentStatus(id, status) {
+    if (!await hasPermission('appointments.edit')) return;
     try {
         const token = getAuthToken();
         const response = await fetch(`/api/appointments/${id}/status`, {

@@ -1,4 +1,4 @@
-import { getIdToken } from './vps-auth-v2.js';
+import { getIdToken, hasPermission } from './vps-auth-v2.js';
 import { renderOnlineQueuePageHtml } from './live-queue-dashboard-utils.js';
 
 let pageBound = false;
@@ -12,6 +12,13 @@ let lastSettings = {
     is_queue_visible: false,
     doctor_arrived: false
 };
+
+async function applyQueueWriteAccess(root) {
+    const canWrite = await hasPermission('online_queue.write');
+    root.querySelectorAll('#antrian-online-visibility-btn, #antrian-online-break-btn, #antrian-online-doctor-btn')
+        .forEach(button => { button.hidden = !canWrite; });
+    return canWrite;
+}
 
 function formatDateLabel(dateValue) {
     if (!dateValue) return 'Hari ini';
@@ -134,6 +141,7 @@ async function loadAntrianOnlineQueue(forceRefresh = false, signal) {
             isOnBreak: settings.is_on_break,
             breaks: settings.breaks
         });
+        await applyQueueWriteAccess(root);
     } catch (error) {
         if (error?.name === 'AbortError') throw error;
         console.error('[AntrianOnline] loadAntrianOnlineQueue failed:', error);
@@ -163,6 +171,7 @@ function bindPageActions() {
         const visibilityButton = event.target.closest('#antrian-online-visibility-btn');
         if (visibilityButton) {
             event.preventDefault();
+            if (!await hasPermission('online_queue.write')) return;
             if (typeof window.toggleStaffQueueVisibility === 'function') {
                 await window.toggleStaffQueueVisibility();
             }
@@ -173,6 +182,7 @@ function bindPageActions() {
         const breakButton = event.target.closest('#antrian-online-break-btn');
         if (breakButton) {
             event.preventDefault();
+            if (!await hasPermission('online_queue.write')) return;
             breakButton.disabled = true;
             try { await window.setQueueBreakStatus(!lastSettings.is_on_break); }
             finally { await loadAntrianOnlineQueue(true); breakButton.disabled = false; }
@@ -182,6 +192,7 @@ function bindPageActions() {
         const doctorButton = event.target.closest('#antrian-online-doctor-btn');
         if (doctorButton) {
             event.preventDefault();
+            if (!await hasPermission('online_queue.write')) return;
             if (typeof window.setDoctorArrivalStatus === 'function') {
                 await window.setDoctorArrivalStatus(!lastSettings.doctor_arrived);
             }

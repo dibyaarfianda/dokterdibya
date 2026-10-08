@@ -13,6 +13,10 @@ import './booking-slot-utils.js';
     let bookings = [];
     let isLoading = false;
 
+    function hasAccountPermission(permission) {
+        return typeof window.hasAccountPermission !== 'function' || window.hasAccountPermission(permission);
+    }
+
     // Get auth token
     function getToken() {
         return (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
@@ -31,6 +35,7 @@ import './booking-slot-utils.js';
         // Add new session button
         const btnAdd = document.getElementById('btn-add-session');
         if (btnAdd) {
+            btnAdd.hidden = !hasAccountPermission('booking.manage');
             btnAdd.onclick = () => openModal();
         }
 
@@ -198,7 +203,7 @@ import './booking-slot-utils.js';
                         ${s.break_start_time ? `<p class="text-center mt-3 mb-0"><i class="fas fa-coffee mr-1"></i>Istirahat ${escapeHtml(s.break_start_time)} (${Number(s.break_duration_minutes)} menit)</p>` : ''}
                         ${renderSlotPreview(s)}
                     </div>
-                    <div class="card-footer text-center">
+                    ${hasAccountPermission('booking.manage') ? `<div class="card-footer text-center">
                         <button class="btn btn-sm btn-info mr-1" onclick="window.editSession(${s.id})">
                             <i class="fas fa-edit"></i> Edit
                         </button>
@@ -208,7 +213,7 @@ import './booking-slot-utils.js';
                         <button class="btn btn-sm btn-danger" onclick="window.deleteSession(${s.id})">
                             <i class="fas fa-trash"></i>
                         </button>
-                    </div>
+                    </div>` : ''}
                 </div>
             </div>
         `).join('');
@@ -216,6 +221,7 @@ import './booking-slot-utils.js';
 
     // Open modal for add/edit
     function openModal(session = null) {
+        if (!hasAccountPermission('booking.manage')) return;
         const modal = document.getElementById('session-modal');
         const title = document.getElementById('session-modal-title');
         const form = document.getElementById('session-form');
@@ -330,6 +336,7 @@ import './booking-slot-utils.js';
     // Handle form submit
     async function handleFormSubmit(e) {
         e.preventDefault();
+        if (!hasAccountPermission('booking.manage')) return;
 
         const id = document.getElementById('session-id').value;
         const data = {
@@ -386,6 +393,7 @@ import './booking-slot-utils.js';
 
     // Edit session
     function editSession(id) {
+        if (!hasAccountPermission('booking.manage')) return;
         const session = settings.find(s => s.id === id);
         if (session) {
             openModal(session);
@@ -394,6 +402,7 @@ import './booking-slot-utils.js';
 
     // Toggle session active/inactive
     async function toggleSessionActive(id, newStatus) {
+        if (!hasAccountPermission('booking.manage')) return;
         const session = settings.find(s => s.id === id);
         if (!session) return;
 
@@ -426,6 +435,7 @@ import './booking-slot-utils.js';
 
     // Delete session
     async function deleteSession(id) {
+        if (!hasAccountPermission('booking.manage')) return;
         const session = settings.find(s => s.id === id);
         if (!session) return;
 
@@ -556,9 +566,9 @@ import './booking-slot-utils.js';
                                     <td><small>${b.chief_complaint?.substring(0, 50)}${b.chief_complaint?.length > 50 ? '...' : ''}</small></td>
                                     <td>${statusBadge(b.status)}</td>
                                     <td class="text-center">
-                                        <button class="btn btn-xs btn-danger" onclick="window.openCancelModal(${b.id})" title="Batalkan">
+                                        ${hasAccountPermission('booking.manage') ? `<button class="btn btn-xs btn-danger" onclick="window.openCancelModal(${b.id})" title="Batalkan">
                                             <i class="fas fa-times"></i> Batalkan
-                                        </button>
+                                        </button>` : ''}
                                     </td>
                                 </tr>
                             `;
@@ -573,6 +583,7 @@ import './booking-slot-utils.js';
 
     // Open cancel modal
     function openCancelModal(bookingId) {
+        if (!hasAccountPermission('booking.manage')) return;
         const booking = bookings.find(b => b.id === bookingId);
         if (!booking) return;
 
@@ -642,6 +653,7 @@ import './booking-slot-utils.js';
 
     // Force cancel booking
     async function forceCancelBooking(bookingId) {
+        if (!hasAccountPermission('booking.manage')) return;
         const reason = document.getElementById('cancel-reason')?.value?.trim();
         const notifyPatient = document.getElementById('notify-patient')?.checked;
 

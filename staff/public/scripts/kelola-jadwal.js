@@ -7,6 +7,10 @@ const API_BASE = `${VPS_API_BASE}/api/practice-schedules`;
 let schedulesTable;
 let allSchedules = [];
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function' || window.hasAccountPermission(permission);
+}
+
 const locationNames = {
     'klinik_privat': 'Klinik Privat Minggu',
     'rsud_gambiran': 'RSUD Gambiran Kediri',
@@ -42,6 +46,9 @@ function initKelolaJadwal() {
         window.location.href = 'login.html';
         return;
     }
+
+    document.querySelectorAll('#kelola-jadwal-page [onclick="showAddModal()"], #kelola-jadwal-page [onclick="showDisabledDateModal()"]')
+        .forEach(button => { button.hidden = !hasAccountPermission('practice_schedules.write'); });
 
     // Check if DataTables is available
     if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') {
@@ -126,12 +133,12 @@ function renderSchedules(schedules) {
             schedule.notes || '-',
             statusBadge,
             `
-                <button class="btn btn-xs btn-warning" onclick="editSchedule(${schedule.id})" title="Edit">
+                ${hasAccountPermission('practice_schedules.write') ? `<button class="btn btn-xs btn-warning" onclick="editSchedule(${schedule.id})" title="Edit">
                     <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-xs btn-danger" onclick="deleteSchedule(${schedule.id})" title="Hapus">
+                </button>` : ''}
+                ${hasAccountPermission('practice_schedules.delete') ? `<button class="btn btn-xs btn-danger" onclick="deleteSchedule(${schedule.id})" title="Hapus">
                     <i class="fas fa-trash"></i>
-                </button>
+                </button>` : ''}
             `
         ]);
     });
@@ -145,6 +152,7 @@ function formatTime(time) {
 }
 
 function showAddModal() {
+    if (!hasAccountPermission('practice_schedules.write')) return;
     $('#modalTitle').text('Tambah Jadwal');
     $('#schedule-id').val('');
     $('#schedule-location').val('');
@@ -157,6 +165,7 @@ function showAddModal() {
 }
 
 function editSchedule(id) {
+    if (!hasAccountPermission('practice_schedules.write')) return;
     const schedule = allSchedules.find(s => s.id === id);
     if (!schedule) return;
 
@@ -172,6 +181,7 @@ function editSchedule(id) {
 }
 
 async function saveSchedule() {
+    if (!hasAccountPermission('practice_schedules.write')) return;
     try {
         const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const scheduleId = $('#schedule-id').val();
@@ -222,6 +232,7 @@ async function saveSchedule() {
 }
 
 async function deleteSchedule(id) {
+    if (!hasAccountPermission('practice_schedules.delete')) return;
     if (!confirm('Yakin ingin menghapus jadwal ini?')) return;
 
     try {
@@ -317,9 +328,9 @@ function renderDisabledDates(dates) {
                 <td>${item.reason || '-'}</td>
                 <td>${item.created_by}</td>
                 <td>
-                    <button class="btn btn-xs btn-success" onclick="deleteDisabledDate(${item.id})" title="Aktifkan Kembali">
+                    ${hasAccountPermission('practice_schedules.delete') ? `<button class="btn btn-xs btn-success" onclick="deleteDisabledDate(${item.id})" title="Aktifkan Kembali">
                         <i class="fas fa-check"></i> Aktifkan
-                    </button>
+                    </button>` : ''}
                 </td>
             </tr>
         `);
@@ -327,6 +338,7 @@ function renderDisabledDates(dates) {
 }
 
 function showDisabledDateModal() {
+    if (!hasAccountPermission('practice_schedules.write')) return;
     // Set default date to tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -339,6 +351,7 @@ function showDisabledDateModal() {
 }
 
 async function saveDisabledDate() {
+    if (!hasAccountPermission('practice_schedules.write')) return;
     try {
         const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '') || (typeof window !== 'undefined' && typeof window.getAuthToken === 'function' ? window.getAuthToken() : '');
         const disabled_date = $('#disabled-date').val();
@@ -380,6 +393,7 @@ async function saveDisabledDate() {
 }
 
 async function deleteDisabledDate(id) {
+    if (!hasAccountPermission('practice_schedules.delete')) return;
     if (!confirm('Yakin ingin mengaktifkan kembali tanggal ini?')) return;
 
     try {

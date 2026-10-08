@@ -34,7 +34,13 @@ const ACTIVE_ACCOUNT_PERMISSION_PREFIXES = Object.freeze([
     'physical_exam.',
     'lab_exam.',
     'usg_exam.',
-    'visits.'
+    'visits.',
+    'appointments.',
+    'booking.',
+    'hospital_appointments.',
+    'online_queue.',
+    'practice_schedules.',
+    'sunday_clinic.'
 ]);
 
 function isDelegatedAccountPermission(req, requiredPermissions = []) {

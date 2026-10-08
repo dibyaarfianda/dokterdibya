@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const cache = require('../utils/cache');
-const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requirePermission, requireSuperadminOrAccountPermission } = require('../middleware/auth');
 const { createPatientNotification } = require('./patient-notifications');
 const sundayAppointmentsRoutes = require('./sunday-appointments');
 const { invalidateSessionSettingsCache, getSlotTimeFromBookingRow } = require('../services/booking-session-settings');
@@ -132,7 +132,7 @@ router.get('/public', async (req, res) => {
  * PUT /api/booking-settings/:id
  * Update a booking session setting
  */
-router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.put('/:id', verifyToken, requireSuperadminOrAccountPermission('booking.manage'), async (req, res) => {
     try {
         const { id } = req.params;
         const { session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
@@ -182,7 +182,7 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res) => {
  * POST /api/booking-settings
  * Create a new booking session
  */
-router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
+router.post('/', verifyToken, requireSuperadminOrAccountPermission('booking.manage'), async (req, res) => {
     try {
         const { session_number, session_name, day_of_week, start_time, end_time, slot_duration, max_slots, is_active } = req.body;
 
@@ -225,7 +225,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
  * DELETE /api/booking-settings/:id
  * Delete a booking session
  */
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadminOrAccountPermission('booking.manage'), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -262,7 +262,7 @@ router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
  * GET /api/booking-settings/bookings
  * Get all upcoming bookings for management
  */
-router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
+router.get('/bookings', verifyToken, requireSuperadminOrAccountPermission('booking.manage'), async (req, res) => {
     try {
         const { date, session, status } = req.query;
 
@@ -332,7 +332,7 @@ router.get('/bookings', verifyToken, requireSuperadmin, async (req, res) => {
  * POST /api/booking-settings/force-cancel/:id
  * Force cancel a booking with notification to patient
  */
-router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.post('/force-cancel/:id', verifyToken, requireSuperadminOrAccountPermission('booking.manage'), async (req, res) => {
     try {
         const { id } = req.params;
         const { reason, notify_patient } = req.body;

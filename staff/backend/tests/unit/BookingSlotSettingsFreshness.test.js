@@ -12,7 +12,8 @@ jest.mock('../../middleware/auth', () => {
         verifyPatientToken: authenticate,
         verifyStaffToken: authenticate,
         requirePermission: () => (req, res, next) => next(),
-        requireSuperadmin: (req, res, next) => next()
+        requireSuperadmin: (req, res, next) => next(),
+        requireSuperadminOrAccountPermission: () => (req, res, next) => next()
     };
 });
 

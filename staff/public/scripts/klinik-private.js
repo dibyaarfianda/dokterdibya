@@ -150,6 +150,10 @@ function getStatusMeta(status) {
     return map[normalized] || { label: status || '-', className: 'badge-secondary' };
 }
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function' || window.hasAccountPermission(permission);
+}
+
 function renderAppointments(clinic, appointments) {
     const elements = clinic.elements;
     if (!elements.tbody || !elements.tableWrapper || !elements.emptyState) {
@@ -193,7 +197,7 @@ function renderAppointments(clinic, appointments) {
         const statusBadge = `<span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>`;
         const isPendingConfirmation = (appointment.status || '').toLowerCase() === 'pending_confirmation';
         const confirmationAlreadySent = Boolean(appointment.confirmation_popup_enabled_at);
-        const confirmationButton = isPendingConfirmation ? `
+        const confirmationButton = isPendingConfirmation && hasAccountPermission('online_queue.write') ? `
                 <button type="button" class="btn btn-sm btn-${confirmationAlreadySent ? 'success' : 'warning'} klinik-private-popup-btn ml-1" onclick="window.handleKlinikConfirmationPopup && window.handleKlinikConfirmationPopup(${Number(appointment.id)})" title="${confirmationAlreadySent ? 'Kirim ulang popup konfirmasi' : 'Kirim popup konfirmasi ke pasien'}">
                     <i class="fas fa-${confirmationAlreadySent ? 'bell-slash' : 'bell'} mr-1"></i>Popup
                 </button>
@@ -214,9 +218,9 @@ function renderAppointments(clinic, appointments) {
             <td class="complaint-cell">${complaint}</td>
             <td>${statusBadge}</td>
             <td class="text-center">
-                <button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn" onclick="window.handleKlinikPeriksa && window.handleKlinikPeriksa(${Number(appointment.id)})">
+                ${hasAccountPermission('sunday_clinic.create') ? `<button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn" onclick="window.handleKlinikPeriksa && window.handleKlinikPeriksa(${Number(appointment.id)})">
                     <i class="fas fa-stethoscope mr-1"></i>Periksa
-                </button>
+                </button>` : ''}
                 ${confirmationButton}
             </td>
         `;
@@ -238,6 +242,7 @@ async function handlePeriksa(appointment) {
 
 // Expose appointment-ID actions globally for WebView onclick handlers
 window.handleKlinikPeriksa = function(id) {
+    if (!hasAccountPermission('sunday_clinic.create')) return;
     const appointment = state.appointments.find(apt => String(apt.id) === String(id));
     if (appointment) {
         handlePeriksa(appointment);
@@ -245,6 +250,7 @@ window.handleKlinikPeriksa = function(id) {
 };
 
 window.handleKlinikConfirmationPopup = async function(id) {
+    if (!hasAccountPermission('online_queue.write')) return;
     const appointment = state.appointments.find(apt => String(apt.id) === String(id));
     if (!appointment) return;
 
@@ -351,6 +357,7 @@ function showCategoryModal(appointment) {
 }
 
 async function startClinicRecord(appointment, category) {
+    if (!hasAccountPermission('sunday_clinic.create')) return;
     try {
         const token = getToken();
         if (!token) {

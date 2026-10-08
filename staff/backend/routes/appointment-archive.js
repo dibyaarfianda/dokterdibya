@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireSuperadminOrAccountPermission } = require('../middleware/auth');
 
 /**
  * GET /api/appointment-archive
@@ -284,7 +284,7 @@ router.post('/restore/:id', verifyToken, async (req, res) => {
  * DELETE /api/appointment-archive/:id
  * Permanently delete an archived appointment (Superadmin/Dokter only)
  */
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadminOrAccountPermission('appointments.delete'), async (req, res) => {
     try {
         const appointmentId = req.params.id;
 

@@ -1,5 +1,5 @@
 // appointments.js - Appointment Management
-import { auth, getIdToken } from './vps-auth-v2.js';
+import { auth, getIdToken, hasPermission } from './vps-auth-v2.js';
 import { showSuccess, showError, showWarning } from './toast.js';
 import { formatDateLocal } from './date-utils.js';
 import { loadAllPatientPages } from './patient-list-pages.js';
@@ -14,6 +14,18 @@ let isEditMode = false;
 let isLoadingPatients = false; // Guard to prevent race conditions
 let isLoadingAppointments = false; // Guard to prevent race conditions
 let isInitialized = false; // Prevent double initialization
+let appointmentAccess = { create: false, edit: false, delete: false };
+
+async function refreshAppointmentAccess() {
+    const [canCreate, canEdit, canDelete] = await Promise.all([
+        hasPermission('appointments.create'),
+        hasPermission('appointments.edit'),
+        hasPermission('appointments.delete')
+    ]);
+    appointmentAccess = { create: canCreate, edit: canEdit, delete: canDelete };
+    const addButton = document.getElementById('btn-add-appointment');
+    if (addButton) addButton.hidden = !canCreate;
+}
 
 // Helper function to get today's date in Jakarta timezone (YYYY-MM-DD format)
 function getTodayJakarta() {
@@ -34,6 +46,7 @@ export async function initAppointments() {
     bindEventListeners();
     
     // Load data
+    await refreshAppointmentAccess();
     await loadPatients();
     await loadAppointments();
 }
@@ -174,9 +187,9 @@ function renderTodayAppointments() {
                 </div>
                 <div>
                     <span class="badge badge-primary">${apt.appointment_time.substring(0, 5)}</span><br>
-                    <button class="btn btn-sm btn-warning mt-1" onclick="window.editAppointment('${apt.id}')">
+                    ${appointmentAccess.edit ? `<button class="btn btn-sm btn-warning mt-1" onclick="window.editAppointment('${apt.id}')">
                         <i class="fas fa-edit"></i>
-                    </button>
+                    </button>` : ''}
                 </div>
             </div>
             ${apt.notes ? `<p class="small mb-0 mt-2"><em>${apt.notes}</em></p>` : ''}
@@ -229,17 +242,17 @@ function renderAppointmentsList(appointments) {
                 <td><span class="badge badge-info">${apt.appointment_time.substring(0, 5)}</span></td>
                 <td>${statusBadge}</td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-warning mr-1" onclick="window.editAppointment('${apt.id}')">
+                    ${appointmentAccess.edit ? `<button class="btn btn-sm btn-warning mr-1" onclick="window.editAppointment('${apt.id}')">
                         <i class="fas fa-edit"></i>
-                    </button>
-                    ${apt.status !== 'completed' && apt.status !== 'cancelled' ? `
+                    </button>` : ''}
+                    ${appointmentAccess.edit && apt.status !== 'completed' && apt.status !== 'cancelled' ? `
                         <button class="btn btn-sm btn-danger mr-1" onclick="window.cancelAppointment('${apt.id}')">
                             <i class="fas fa-times"></i>
                         </button>
                     ` : ''}
-                    <button class="btn btn-sm btn-danger" onclick="window.permanentDeleteAppointment('${apt.id}')" title="Hapus Permanen">
+                    ${appointmentAccess.delete ? `<button class="btn btn-sm btn-danger" onclick="window.permanentDeleteAppointment('${apt.id}')" title="Hapus Permanen">
                         <i class="fas fa-trash"></i>
-                    </button>
+                    </button>` : ''}
                 </td>
             </tr>
         `;
@@ -264,6 +277,7 @@ function getStatusBadge(status) {
   console.log('🔧 [DEBUG] Defining window.openNewAppointment...');
   window.openNewAppointment = async function() {
       try {
+          if (!await hasPermission('appointments.create')) return;
           console.log('🔧 [DEBUG] ===== openNewAppointment CALLED =====');
           isEditMode = false;
           
@@ -405,7 +419,8 @@ function getStatusBadge(status) {
   };
 
 // Edit appointment
-window.editAppointment = function(appointmentId) {
+window.editAppointment = async function(appointmentId) {
+    if (!await hasPermission('appointments.edit')) return;
     const appointment = allAppointments.find(apt => apt.id == appointmentId);
     if (!appointment) return;
     
@@ -436,6 +451,8 @@ window.editAppointment = function(appointmentId) {
 
 // Save appointment
 window.saveAppointment = async function() {
+    const requiredPermission = isEditMode ? 'appointments.edit' : 'appointments.create';
+    if (!await hasPermission(requiredPermission)) return;
     const form = document.getElementById('appointment-form');
     if (!form.checkValidity()) {
         form.reportValidity();
@@ -506,6 +523,7 @@ window.saveAppointment = async function() {
 
 // Cancel appointment
 window.cancelAppointment = async function(appointmentId) {
+    if (!await hasPermission('appointments.edit')) return;
     if (!confirm('Yakin ingin membatalkan appointment ini?')) return;
     
     try {
@@ -542,6 +560,7 @@ window.cancelAppointment = async function(appointmentId) {
 
 // Permanently delete appointment from database
 window.permanentDeleteAppointment = async function(appointmentId) {
+    if (!await hasPermission('appointments.delete')) return;
     if (!confirm('⚠️ PERINGATAN: Ini akan menghapus appointment PERMANEN dari database!\n\nTidak bisa dikembalikan. Yakin ingin melanjutkan?')) return;
     
     try {

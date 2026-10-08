@@ -218,6 +218,8 @@ const INHERITED_PRIVATE_SOURCES = new Set([
 // do not advertise their intent in the URL explicit so the HTTP boundary and
 // the route-level guard always require the same permission.
 const ROUTE_PERMISSION_OVERRIDES = new Map([
+    ['appointments:POST:/hospital/:location/resolve-queue-patient', 'appointments.sync'],
+    ['sunday-appointments:POST:/:id/start-clinic-record', 'sunday_clinic.create'],
     ['patients:POST:/api/patients/fix-names', 'patients.reset'],
     ['patients:POST:/api/patients/:id/mark-delivered', 'patients.edit'],
     ['auth:GET:/api/admin/web-patients', 'patients.view'],
