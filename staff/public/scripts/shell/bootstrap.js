@@ -6,7 +6,8 @@ async function bootstrapStaffShell() {
         _pageRegistryModule,
         _pollingCoordinatorModule,
         featureLoader,
-        pageDescriptorsModule
+        pageDescriptorsModule,
+        accountAccessModule
     ] = await Promise.all([
         import('../vps-auth-v2.js'),
         import('./credentials.js'),
@@ -14,10 +15,11 @@ async function bootstrapStaffShell() {
         import('./page-registry.js'),
         import('./polling-coordinator.js'),
         import('./feature-loader.js'),
-        import('./page-descriptors.js')
+        import('./page-descriptors.js'),
+        import('./account-access.js')
     ]);
 
-    const { auth, getIdToken, initAuth: initAuthLib } = authClient;
+    const { auth, getIdToken, initAuth: initAuthLib, fetchAccountAccess } = authClient;
     const { verifyStaffCredentials, renderStaffShellError } = credentialGuard;
     const { ensureFeature } = featureLoader;
     const { createPageDescriptors } = pageDescriptorsModule;
@@ -30,6 +32,8 @@ async function bootstrapStaffShell() {
     window.staffPollingCoordinator = pollingCoordinator;
     window.ensureStaffFeature = ensureFeature;
     window.staffRoleConstants = roleConstants;
+    window.staffAccountAccess = accountAccessModule;
+    accountAccessModule.installAccountAccessListener(auth);
 
     function installLazyFeatureShim(globalName, featureName, pageKey = null) {
         const originalHandler = typeof window[globalName] === 'function' ? window[globalName] : null;
@@ -143,6 +147,8 @@ async function bootstrapStaffShell() {
 
     const serverVerifiedUser = await authInitPromise;
     const user = await verifyStaffCredentials({ auth, serverVerifiedUser });
+    const effectiveAccess = await fetchAccountAccess();
+    accountAccessModule.applyAccountAccess(user, effectiveAccess);
     const serverVerifiedToken = await getIdToken();
     window.getShellVerifiedStaffUser = async () => {
         const currentToken = await getIdToken();

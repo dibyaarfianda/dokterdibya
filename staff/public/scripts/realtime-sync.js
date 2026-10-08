@@ -1,6 +1,6 @@
 // Real-time synchronization module using Socket.io
 // Allows users to see what others are doing in real-time
-import { getIdToken } from './vps-auth-v2.js';
+import { fetchAccountAccess, getIdToken, signOut } from './vps-auth-v2.js';
 import './socket-credentials.js';
 
 const REALTIME_API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -188,6 +188,19 @@ export function initRealtimeSync(user) {
 
     state.socket.on('error', (error) => {
         console.error('🔄 [REALTIME] Socket error:', error);
+    });
+
+    state.socket.on('access:changed', async data => {
+        if (data?.active === false) {
+            window.dispatchEvent(new CustomEvent('staff:access-inactive', { detail: data }));
+            await signOut();
+            window.location.replace('/staff/public/login.html?reason=account-inactive');
+            return;
+        }
+        const access = await fetchAccountAccess();
+        if (!access) return;
+        state.currentUser = { ...state.currentUser, ...window.auth?.currentUser };
+        window.dispatchEvent(new CustomEvent('staff:access-changed', { detail: access }));
     });
 
     state.socket.on('disconnect', (reason) => {

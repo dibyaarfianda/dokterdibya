@@ -31,6 +31,7 @@ const {
     isPatientAllowedRoute,
     isPatientAuthBootstrapRoute
 } = require('./security/patientRouteAccess');
+const { createAccountModeAccessBoundary } = require('./security/accountModeAccess');
 
 const app = express();
 const server = http.createServer(app);
@@ -463,6 +464,10 @@ app.use('/api', async (req, res, next) => {
 });
 // ==================== END PATIENT ACCESS BLOCKER ====================
 
+// Account-mode Staff fail closed at the shared API boundary. Legacy Staff and
+// the protected doctor keep their existing authorization path until cutover.
+app.use('/api', createAccountModeAccessBoundary());
+
 // API v1 (modern, service-based)
 app.use('/api/v1', v1Routes);
 
@@ -608,6 +613,8 @@ app.use('/', rolesRoutes);
 // Per-account Staff access management and activation
 const accessControlRoutes = require('./routes/access-control');
 app.use('/api/access-control', accessControlRoutes);
+const accountAccessSelfRoutes = require('./routes/account-access-self');
+app.use('/api/access', accountAccessSelfRoutes);
 
 // Role Visibility routes (menu visibility per role)
 const roleVisibilityRoutes = require('./routes/role-visibility');

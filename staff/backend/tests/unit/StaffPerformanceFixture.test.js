@@ -24,6 +24,8 @@ test('loopback fixture serves the real Staff shell and synthetic read-only boot 
         const user = JSON.parse(auth.body).data.user;
         expect(user).toMatchObject({ id: 'ci-fixture', user_type: 'staff', role: 'front_office' });
         expect(user.name).not.toMatch(/@/);
+        const access = JSON.parse((await get(new URL('/api/access/me', fixture.url))).body).data;
+        expect(access).toMatchObject({ mode: 'legacy', access_version: 1 });
         expect(JSON.parse((await get(new URL('/api/patients?view=basic', fixture.url))).body).data)
             .toEqual([]);
         expect((await get(new URL('/staff/public/scripts/shell/bootstrap.js?v=v414', fixture.url))).status)
@@ -57,7 +59,7 @@ test('real Staff shell boots and measures a cached menu switch entirely on fixtu
         fixture.assertClean();
         expect(result.warm.failures).toEqual([]);
         expect(result.warm.failedRequests).toBe(0);
-        expect(result.warm.requestCount).toBeLessThanOrEqual(40);
+        expect(result.warm.requestCount).toBeLessThanOrEqual(41);
         expect(result.cachedActivationP95).toBeLessThanOrEqual(1000);
         expect(result.menuSwitches).toBe(5);
     } finally {

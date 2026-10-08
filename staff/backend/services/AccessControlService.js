@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const defaultDb = require('../db');
 const defaultLogger = require('../utils/logger');
 const { ROLE_IDS } = require('../constants/roles');
+const { STAFF_NAVIGATION_MAP } = require('../config/accessControlRegistry');
 
 function asSortedSet(values) {
     return new Set([...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b)));
@@ -146,12 +147,17 @@ class AccessControlService {
 
     toPublicAccess(access, { legacyDecision = false } = {}) {
         const permissions = legacyDecision ? access.legacyPermissions : access.permissions;
+        const navigation = Object.entries(STAFF_NAVIGATION_MAP)
+            .filter(([, permission]) => permissions.has(permission))
+            .map(([navId]) => navId)
+            .sort((a, b) => a.localeCompare(b));
         return {
             mode: access.mode,
             access_version: access.accessVersion,
             is_doctor_protected: access.isDoctorProtected,
             job_label: access.jobLabel,
-            permissions: [...permissions]
+            permissions: [...permissions],
+            navigation
         };
     }
 }

@@ -438,6 +438,15 @@ function hideAllPages(expectedGeneration = null) {
     return true;
 }
 
+function showNoAccessPage() {
+    hideAllPages();
+    const page = document.getElementById('content-no-access-page');
+    if (page) page.classList.remove('d-none');
+    const title = document.getElementById('page-title');
+    if (title) title.textContent = 'Akses Staff';
+    window.__currentPage = 'no-access';
+}
+
 let communityChatViewportSyncBound = false;
 function syncCommunityChatFrameHeight() {
     if (!document.body.classList.contains('community-chat-active')) return;
@@ -2967,6 +2976,16 @@ async function initializeApp(user) {
         // Update welcome card
         updateWelcomeCard(user);
 
+        const isZeroGrantAccount = user?.access_mode === 'account'
+            && !user?.is_doctor_protected
+            && (!Array.isArray(user.permissions) || user.permissions.length === 0);
+        if (isZeroGrantAccount) {
+            window.staffAccountAccess?.applyAccountAccess(user);
+            showNoAccessPage();
+            scheduleRealtimeStartup(user);
+            return;
+        }
+
         // Initialize queue button state
         initializeQueueButton();
 
@@ -3032,6 +3051,10 @@ function scheduleRealtimeStartup(user) {
  * Fetch menu visibility from database and apply to sidebar
  */
 async function applyMenuVisibility(user) {
+    if (user?.access_mode === 'account' && !user?.is_doctor_protected) {
+        window.staffAccountAccess?.applyAccountAccess(user);
+        return;
+    }
     // Menu key to DOM element ID mapping
     // Each menu_key from role_visibility table maps to one or more DOM elements
     const menuMapping = {
@@ -3566,6 +3589,12 @@ function resumeSavedPageIfRequested(params) {
 
 function restoreLastPage() {
     try {
+        if (window.currentStaffUser?.access_mode === 'account'
+            && !window.currentStaffUser?.is_doctor_protected
+            && (!Array.isArray(window.currentStaffUser.permissions) || window.currentStaffUser.permissions.length === 0)) {
+            showNoAccessPage();
+            return;
+        }
         const params = new URLSearchParams(window.location.search);
         const pageParam = params.get('page');
         if (pageParam === 'sunday-clinic') {
@@ -4855,6 +4884,7 @@ window.runMedifyQueueRobot = runMedifyQueueRobot;
 
 // Utility functions used by external modules (tanya-dokter.js, etc)
 window.hideAllPages = hideAllPages;
+window.showNoAccessPage = showNoAccessPage;
 // window.setActiveNav = setActiveNav; // Defined in patient-utils.js, not here
 
 // ==================== LIVE QUEUE TOGGLE ====================

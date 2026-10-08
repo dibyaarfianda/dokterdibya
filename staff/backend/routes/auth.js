@@ -319,19 +319,21 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     let accessPolicy = {
         mode: 'legacy',
         access_version: 1,
-        is_doctor_protected: false
+        is_doctor_protected: false,
+        navigation: []
     };
     if (user.user_type === 'staff') {
         if (Number(user.is_active) !== 1) {
             throw new AppError('Akun staff tidak aktif.', HTTP_STATUS.FORBIDDEN, true, 'ACCOUNT_INACTIVE');
         }
         const access = await accessControlService.getEffectiveAccess(userId);
-        const publicAccess = accessControlService.toPublicAccess(access, { legacyDecision: true });
+        const publicAccess = accessControlService.toPublicAccess(access);
         permissions = publicAccess.permissions;
         accessPolicy = {
             mode: publicAccess.mode,
             access_version: publicAccess.access_version,
-            is_doctor_protected: publicAccess.is_doctor_protected
+            is_doctor_protected: publicAccess.is_doctor_protected,
+            navigation: publicAccess.navigation
         };
     }
 
@@ -358,7 +360,8 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             permissions: permissions,
             access_mode: accessPolicy.mode,
             access_version: accessPolicy.access_version,
-            is_doctor_protected: accessPolicy.is_doctor_protected
+            is_doctor_protected: accessPolicy.is_doctor_protected,
+            navigation: accessPolicy.navigation || []
         }
     });
 }));

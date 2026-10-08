@@ -5,8 +5,8 @@ const puppeteer = require('puppeteer');
 
 const root = path.resolve(__dirname, '../../../..');
 const baseline = {
-    // Mobile Booking Setting now uses the doctor-only visibility class.
-    'staff/public/index-adminlte.html': '544e62fe5531c3e8f43eeba6e51f883f2b272b62306b00f7de3b4c87a135f990',
+    // Account-mode Staff now has a deliberate zero-grant shell in both viewports.
+    'staff/public/index-adminlte.html': '3db37f49305969cd447566c88cdd7b99b6cb82d4cbf0f8c9a598b42dc061ff61',
     'public/patient-menu.html': 'da9c28107e03efa0947adcfdda6acb081e7ed298ef7c266c41354957f1a846a3'
 };
 

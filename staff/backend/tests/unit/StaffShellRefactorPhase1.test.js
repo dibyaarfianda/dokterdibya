@@ -15,8 +15,9 @@ describe('staff shell refactor phase 1', () => {
         expect(bootstrap).toContain("import('../vps-auth-v2.js')");
         expect(bootstrap).toContain("import('./credentials.js')");
         expect(bootstrap).not.toMatch(/import\([^\n]+\?v=/);
-        expect(bootstrap).toContain('const { auth, getIdToken, initAuth: initAuthLib } = authClient;');
+        expect(bootstrap).toContain('const { auth, getIdToken, initAuth: initAuthLib, fetchAccountAccess } = authClient;');
         expect(bootstrap).toContain('const user = await verifyStaffCredentials({ auth, serverVerifiedUser });');
+        expect(bootstrap).toContain('const effectiveAccess = await fetchAccountAccess();');
         expect(bootstrap).toContain('initializeApp(user);');
 
         const verifyIndex = bootstrap.indexOf('const user = await verifyStaffCredentials({ auth, serverVerifiedUser });');

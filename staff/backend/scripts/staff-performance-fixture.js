@@ -22,8 +22,13 @@ function syntheticApi(method, pathname) {
         if (pathname === '/api/auth/me') return { success: true, data: { user: {
             id: 'ci-fixture', uid: 'ci-fixture', name: 'CI Fixture', role: ROLE_NAMES.FRONT_OFFICE,
             role_id: ROLE_IDS.FRONT_OFFICE, user_type: 'staff', is_superadmin: false,
-            profile_completed: true, photo_url: '/staff/public/android-chrome-192x192.png', permissions: []
+            profile_completed: true, photo_url: '/staff/public/android-chrome-192x192.png', permissions: [],
+            access_mode: 'legacy', access_version: 1, is_doctor_protected: false, navigation: []
         } } };
+        if (pathname === '/api/access/me') return { success: true, data: {
+            mode: 'legacy', access_version: 1, is_doctor_protected: false,
+            job_label: 'Front Office', permissions: [], navigation: []
+        } };
         if (pathname === '/api/dashboard-stats') return { success: true,
             stats: { totalPatients: 0, gynaeCases: 0, nextSundayAppointments: 0, nextSundayDate: today },
             appointments: [] };

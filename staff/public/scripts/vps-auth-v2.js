@@ -185,28 +185,43 @@ export async function initAuth() {
 // Permission checking
 let userPermissions = null;
 
+export async function fetchAccountAccess() {
+    if (!auth.currentUser) return null;
+    const token = await getIdToken();
+    if (!token) return null;
+
+    try {
+        const res = await fetch(`${API_BASE}/api/access/me`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
+        });
+        if (!res.ok) return null;
+        const result = await res.json();
+        if (!result?.success || !result.data) return null;
+        const access = result.data;
+        userPermissions = Array.isArray(access.permissions) ? access.permissions : [];
+        Object.assign(auth.currentUser, {
+            permissions: userPermissions,
+            navigation: Array.isArray(access.navigation) ? access.navigation : [],
+            access_mode: access.mode,
+            access_version: access.access_version,
+            is_doctor_protected: Boolean(access.is_doctor_protected),
+            role_display_name: access.job_label || auth.currentUser.role_display_name
+        });
+        return access;
+    } catch (err) {
+        console.error('fetchAccountAccess error', err);
+        return null;
+    }
+}
+
 export async function fetchUserPermissions() {
     if (!auth.currentUser) return [];
     
     const token = await getIdToken();
     if (!token) return [];
     
-    try {
-        const res = await fetch(`${API_BASE}/api/users/${auth.currentUser.id}/permissions`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!res.ok) return [];
-        
-        const data = await res.json();
-        if (data && data.success && data.data) {
-            userPermissions = data.data.permissions || [];
-            return userPermissions;
-        }
-    } catch (err) {
-        console.error('fetchUserPermissions error', err);
-    }
-    return [];
+    const access = await fetchAccountAccess();
+    return access?.permissions || [];
 }
 
 export async function hasPermission(permissionName) {
@@ -224,7 +239,8 @@ export async function hasPermission(permissionName) {
         && auth.currentUser.role !== 'patient';
 
     // Billing entry is intentionally available to every staff role.
-    if (isStaffUser && ['services.select', 'medications.select'].includes(permissionName)) {
+    if (isStaffUser && auth.currentUser?.access_mode !== 'account'
+        && ['services.select', 'medications.select'].includes(permissionName)) {
         return true;
     }
 
