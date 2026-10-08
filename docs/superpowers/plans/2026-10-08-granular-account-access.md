@@ -130,10 +130,10 @@
 
 **Produces:** View/write/delete/special enforcement for monitoring, external integrations, operational tools, and all remaining Staff routes; rollout flag becomes eligible.
 
-- [ ] RED allow/deny tests for sync, reset, export, maintenance, and other sensitive actions.
-- [ ] Eliminate all unmapped Staff routes except named profile/chat/activation/health exemptions.
-- [ ] Enable Kelola Akses UI after the complete route and frontend inventory is green.
-- [ ] Run full unit/integration/static/staff/realtime/chat suites; commit/push/deploy/verify.
+- [x] RED allow/deny tests for sync, reset, export, maintenance, and other sensitive actions.
+- [x] Eliminate all unmapped Staff routes except named profile/chat/activation/health exemptions.
+- [x] Enable Kelola Akses UI after the complete route and frontend inventory is green.
+- [x] Run full unit/integration/static/staff/realtime/chat suites; commit/push/deploy/verify.
 
 ## Task 12: Reversible cutover of existing accounts
 
