@@ -67,11 +67,11 @@
 
 **Produces:** Permission-derived socket rooms, private access-version room, clinical-event room routing, and unchanged `staff` chat/presence behavior.
 
-- [ ] RED tests for two polling-only Staff clients, exactly-once chat, history, presence, reconnect, credential refresh, and zero-permission clinical isolation.
-- [ ] Join active Staff to `staff` plus `user:<id>` and current permission rooms derived by `AccessControlService`.
-- [ ] Move patient, record, billing, queue, and operational broadcasts from `staff` to named permission rooms.
-- [ ] Notify all active sessions through the private user room when access changes and refresh room membership without reconnecting chat.
-- [ ] Run full realtime/security/chat gate; commit/push/deploy/verify.
+- [x] RED tests for two polling-only Staff clients, exactly-once chat, history, presence, reconnect, credential refresh, and zero-permission clinical isolation.
+- [x] Join active Staff to `staff` plus `user:<id>` and current permission rooms derived by `AccessControlService`.
+- [x] Move patient, record, billing, queue, and operational broadcasts from `staff` to named permission rooms.
+- [x] Notify all active sessions through the private user room when access changes and refresh room membership without reconnecting chat.
+- [x] Run full realtime/security/chat gate; commit/push/deploy/verify.
 
 ## Task 5: Kelola Akses UI and invitation lifecycle
 

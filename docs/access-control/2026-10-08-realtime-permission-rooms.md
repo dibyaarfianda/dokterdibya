@@ -36,4 +36,10 @@ Application rollback restores the previous commit. All accounts remain in `legac
 
 ## Production verification
 
-Pending deployment evidence.
+- Commit `24ca2720d814dad6b9b9277abb3f9c9f18aafde1` was pushed to `main`, fast-forwarded on the VPS, and loaded through the established PM2 ecosystem process.
+- `dibyaklinik-backend` remained online in cluster mode. `/api/health` returned healthy with a connected database after reload, and operational schema validation completed successfully.
+- Two authenticated production Staff sessions completed real Engine.IO polling handshakes, registered presence, and each received the authoritative `users:list`. Both sessions closed cleanly.
+- Read-only Staff chat history and `/api/auth/me` access hydration succeeded. No production chat or clinical record was written.
+- The focused exactly-once chat and zero-grant clinical-isolation cases passed locally; production did not broadcast a synthetic message to active users.
+- Current and immutable `v423` realtime assets matched on both production domains. The live chat popup and lazy-loader assets also matched across both origins.
+- No new PM2 error entry appeared after deployment. The retained error log entries predated this release.
