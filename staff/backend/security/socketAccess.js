@@ -136,14 +136,26 @@ function socketHasPermission(socket, permission) {
 }
 
 async function applySocketAccess(socket, access) {
-    socket.data.access = access;
     const permissions = new Set(access.permissions);
     const previous = socket.data.accessRoomSync || Promise.resolve();
     const next = previous
         .catch(() => undefined)
-        .then(() => syncPermissionRooms(socket, permissions));
+        .then(async () => {
+            const appliedVersion = Number(socket.data.accessRoomAppliedVersion || 0);
+            const nextVersion = Number(access.accessVersion || 0);
+            if (nextVersion < appliedVersion) return false;
+            socket.data.access = access;
+            await syncPermissionRooms(socket, permissions);
+            if (!permissions.has('support_chat.view')) {
+                await Promise.all([...socket.rooms]
+                    .filter(room => room.startsWith('support:'))
+                    .map(room => socket.leave(room)));
+            }
+            socket.data.accessRoomAppliedVersion = nextVersion;
+            return true;
+        });
     socket.data.accessRoomSync = next;
-    await next;
+    return next;
 }
 
 async function socketsForUser(io, userId) {
@@ -170,15 +182,25 @@ async function refreshUserAccessRooms(io, userId, {
     const sockets = await socketsForUser(io, userId);
 
     for (const socket of sockets) {
-        socket.emit('access:changed', {
-            access_version: access.accessVersion,
-            active: access.isActive
-        });
+        const appliedVersion = Number(socket.data.accessRoomAppliedVersion || 0);
+        if (Number(access.accessVersion || 0) < appliedVersion) continue;
         if (!access.isActive && disconnectInactive) {
+            socket.data.access = access;
+            socket.data.accessRoomAppliedVersion = Number(access.accessVersion || 0);
+            socket.emit('access:changed', {
+                access_version: access.accessVersion,
+                active: false
+            });
             socket.disconnect(true);
             continue;
         }
-        await applySocketAccess(socket, access);
+        const applied = await applySocketAccess(socket, access);
+        if (applied) {
+            socket.emit('access:changed', {
+                access_version: access.accessVersion,
+                active: true
+            });
+        }
     }
     return { access, socketsUpdated: sockets.length };
 }

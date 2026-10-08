@@ -176,6 +176,19 @@ router.put('/api/roles/:id/permissions', verifyToken, requireMenuAccess('kelola_
             );
         }
 
+        await connection.query(
+            `INSERT IGNORE INTO user_access_policies (user_id, mode, access_version)
+             SELECT new_id, 'legacy', 1 FROM users WHERE role_id = ? AND user_type = 'staff'`,
+            [id]
+        );
+        await connection.query(
+            `UPDATE user_access_policies uap
+             INNER JOIN users u ON u.new_id = uap.user_id
+             SET uap.access_version = uap.access_version + 1
+             WHERE u.role_id = ?`,
+            [id]
+        );
+
         await connection.commit();
     } catch (error) {
         await connection.rollback();
@@ -329,6 +342,15 @@ router.put('/api/users/:userId/roles', verifyToken, requireMenuAccess('kelola_ro
         const primaryRole = validRoles.find(r => r.id === primaryId);
         await connection.query('UPDATE users SET role_id = ?, role = ? WHERE new_id = ?',
             [primaryId, primaryRole.name, userId]);
+        await connection.query(
+            `INSERT IGNORE INTO user_access_policies (user_id, mode, access_version)
+             VALUES (?, 'legacy', 1)`,
+            [userId]
+        );
+        await connection.query(
+            'UPDATE user_access_policies SET access_version = access_version + 1 WHERE user_id = ?',
+            [userId]
+        );
 
         await connection.commit();
     } catch (error) {
@@ -383,6 +405,15 @@ router.put('/api/users/:userId/role', verifyToken, requireMenuAccess('kelola_rol
 
         // Update users table for backward compatibility
         await connection.query('UPDATE users SET role_id = ?, role = ? WHERE new_id = ?', [role_id, role.name, userId]);
+        await connection.query(
+            `INSERT IGNORE INTO user_access_policies (user_id, mode, access_version)
+             VALUES (?, 'legacy', 1)`,
+            [userId]
+        );
+        await connection.query(
+            'UPDATE user_access_policies SET access_version = access_version + 1 WHERE user_id = ?',
+            [userId]
+        );
 
         await connection.commit();
     } catch (error) {
@@ -471,7 +502,26 @@ router.put('/api/users/:userId/status', verifyToken, requireRole(ROLE_IDS.DOKTER
         throw new AppError('Anda tidak dapat menonaktifkan akun sendiri', HTTP_STATUS.FORBIDDEN);
     }
 
-    await db.query('UPDATE users SET is_active = ? WHERE new_id = ?', [is_active, userId]);
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+    try {
+        await connection.query(
+            `INSERT IGNORE INTO user_access_policies (user_id, mode, access_version)
+             VALUES (?, 'legacy', 1)`,
+            [userId]
+        );
+        await connection.query('UPDATE users SET is_active = ? WHERE new_id = ?', [is_active, userId]);
+        await connection.query(
+            'UPDATE user_access_policies SET access_version = access_version + 1 WHERE user_id = ?',
+            [userId]
+        );
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
 
     await refreshUserAccessRooms(req.app.get('io'), userId);
 

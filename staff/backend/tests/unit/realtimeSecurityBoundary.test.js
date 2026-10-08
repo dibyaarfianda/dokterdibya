@@ -291,6 +291,22 @@ test('zero-grant staff cannot join a patient support room', async () => {
     expect(db.query).not.toHaveBeenCalled();
 });
 
+test('support permission is checked again after session lookup before room join', async () => {
+    const h = harness();
+    require('../../routes/support-chat').setupSocketHandlers(h.io);
+    const staffSocket = await h.connect(token(staff));
+    let finishLookup;
+    db.query.mockImplementationOnce(() => new Promise(resolve => { finishLookup = resolve; }));
+
+    const pending = staffSocket.receive('support:join', { sessionId: 'session-a' });
+    staffSocket.data.access.permissions.delete('support_chat.view');
+    finishLookup([[{ id: 'session-a', patient_id: patient.id }]]);
+    await pending;
+
+    expect(staffSocket.rooms.has('support:session-a')).toBe(false);
+    expect(staffSocket.received).toContainEqual({ event: 'support:error', payload: { code: 'ACCESS_DENIED' } });
+});
+
 test.each(['support:leave', 'community:leave', 'community:typing', 'community:stop-typing'])('%s cannot throw on malformed room identifiers', async event => {
     const h = harness();
     require('../../routes/support-chat').setupSocketHandlers(h.io);

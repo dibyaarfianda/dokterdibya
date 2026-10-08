@@ -177,6 +177,69 @@ test('overlapping access refreshes serialize room writes so the newest grant set
     expect(socket.rooms.has('staff')).toBe(true);
 });
 
+test('a slower stale database read cannot overwrite a newer access version', async () => {
+    let resolveOld;
+    const oldAccess = new Promise(resolve => { resolveOld = resolve; });
+    const socket = {
+        id: 'socket-version-race',
+        data: { principal: { id: 'staff-a' }, access: { roleId: 2, permissions: new Set() } },
+        rooms: new Set(['socket-version-race', 'staff', 'user:staff-a']),
+        join: jest.fn(async room => socket.rooms.add(room)),
+        leave: jest.fn(async room => socket.rooms.delete(room)),
+        emit: jest.fn(),
+        disconnect: jest.fn()
+    };
+    const io = {
+        sockets: { sockets: new Map([[socket.id, socket]]) },
+        in: () => ({ fetchSockets: async () => [socket] })
+    };
+    const service = {
+        getEffectiveAccess: jest.fn()
+            .mockReturnValueOnce(oldAccess)
+            .mockResolvedValueOnce({ roleId: 2, isActive: true, accessVersion: 3, permissions: new Set(['patients.view']) })
+    };
+
+    const slowOld = refreshUserAccessRooms(io, 'staff-a', { accessControlService: service });
+    const fastNew = refreshUserAccessRooms(io, 'staff-a', { accessControlService: service });
+    await fastNew;
+    resolveOld({ roleId: 2, isActive: true, accessVersion: 2, permissions: new Set(['billing.view']) });
+    await slowOld;
+
+    expect(socket.data.access.accessVersion).toBe(3);
+    expect(socket.rooms.has('permission:patients.view')).toBe(true);
+    expect(socket.rooms.has('permission:billing.view')).toBe(false);
+});
+
+test('revoking support view evicts existing patient support-room subscriptions', async () => {
+    const socket = {
+        id: 'socket-support',
+        data: {
+            principal: { id: 'staff-a' },
+            access: { roleId: 2, accessVersion: 1, permissions: new Set(['support_chat.view']) },
+            accessRoomAppliedVersion: 1
+        },
+        rooms: new Set(['socket-support', 'staff', 'user:staff-a', 'permission:support_chat.view', 'support:session-a']),
+        join: jest.fn(async room => socket.rooms.add(room)),
+        leave: jest.fn(async room => socket.rooms.delete(room)),
+        emit: jest.fn(),
+        disconnect: jest.fn()
+    };
+    const io = {
+        sockets: { sockets: new Map([[socket.id, socket]]) },
+        in: () => ({ fetchSockets: async () => [socket] })
+    };
+    const service = {
+        getEffectiveAccess: jest.fn(async () => ({
+            roleId: 2, isActive: true, accessVersion: 2, permissions: new Set()
+        }))
+    };
+
+    await refreshUserAccessRooms(io, 'staff-a', { accessControlService: service });
+
+    expect(socket.rooms.has('support:session-a')).toBe(false);
+    expect(socket.rooms.has('staff')).toBe(true);
+});
+
 test('legacy role permission writes refresh all connected users for that role', async () => {
     const sockets = ['staff-a', 'staff-b', 'staff-other'].map((id, index) => ({
         id: `socket-${index}`,
@@ -204,4 +267,5 @@ test('legacy role permission writes refresh all connected users for that role', 
     const roleRoute = fs.readFileSync(path.resolve(__dirname, '../../routes/roles.js'), 'utf8');
     expect(roleRoute).toContain("await refreshRoleAccessRooms(req.app.get('io'), Number(id));");
     expect(roleRoute.match(/await refreshUserAccessRooms\(req\.app\.get\('io'\), userId\);/g)).toHaveLength(3);
+    expect(roleRoute.match(/access_version \+ 1/g)).toHaveLength(4);
 });

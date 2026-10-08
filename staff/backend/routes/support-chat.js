@@ -1139,6 +1139,10 @@ function setupSocketHandlers(io) {
                     return;
                 }
                 if (!requireSocketPrincipal(socket, { errorEvent: 'support:error' })) return;
+                if (principal.user_type === 'staff' && !socketHasPermission(socket, 'support_chat.view')) {
+                    socket.emit('support:error', { code: 'ACCESS_DENIED' });
+                    return;
+                }
                 await socket.join(`support:${session.id}`);
             } catch (_) {
                 socket.emit('support:error', { code: 'FORBIDDEN' });
