@@ -7,6 +7,7 @@ const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
 const logger = require('../utils/logger');
 const { ROLE_IDS, isSuperadminRole, isAdminRole } = require('../constants/roles');
+const { refreshRoleAccessRooms } = require('../security/socketAccess');
 
 // ==========================================
 // ROLE MANAGEMENT ROUTES
@@ -176,16 +177,18 @@ router.put('/api/roles/:id/permissions', verifyToken, requireMenuAccess('kelola_
         }
 
         await connection.commit();
-        connection.release();
-
-        logger.info(`Role permissions updated for ${role.name} (ID: ${id}) by user ${req.user.id}`);
-
-        sendSuccess(res, null, 'Permission role berhasil diperbarui');
     } catch (error) {
         await connection.rollback();
-        connection.release();
         throw error;
+    } finally {
+        connection.release();
     }
+
+    await refreshRoleAccessRooms(req.app.get('io'), Number(id));
+
+    logger.info(`Role permissions updated for ${role.name} (ID: ${id}) by user ${req.user.id}`);
+
+    sendSuccess(res, null, 'Permission role berhasil diperbarui');
 }));
 
 // ==========================================

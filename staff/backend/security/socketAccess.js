@@ -92,15 +92,30 @@ function installSocketAccess(io, options = {}) {
     io.on('connection', async socket => {
         const principal = socket.data.principal;
         if (!principal) return;
-        if (principal.user_type === 'staff') {
-            await socket.join('staff');
-            await socket.join(userRoom(principal.id));
-            await syncPermissionRooms(socket, socket.data.access.permissions);
-        } else {
-            await socket.join(`patient:${principal.id}`);
+        try {
+            if (principal.user_type === 'staff') {
+                await socket.join('staff');
+                await socket.join(userRoom(principal.id));
+                const latestAccess = await accessControlService.getEffectiveAccess(principal.id);
+                if (!latestAccess.isActive) {
+                    socket.emit('access:changed', {
+                        access_version: latestAccess.accessVersion,
+                        active: false
+                    });
+                    socket.disconnect(true);
+                    return;
+                }
+                await applySocketAccess(socket, latestAccess);
+            } else {
+                await socket.join(`patient:${principal.id}`);
+            }
+            // Only non-private announcements / room-list invalidations use this room.
+            await socket.join('authenticated');
+        } catch (_) {
+            socket.emit('auth:error', { code: 'ACCESS_DENIED' });
+            socket.disconnect(true);
+            return;
         }
-        // Only non-private announcements / room-list invalidations use this room.
-        socket.join('authenticated');
         let expiryTimer;
         const expire = () => {
             const remaining = principal.exp * 1000 - Date.now();
@@ -120,19 +135,39 @@ function socketHasPermission(socket, permission) {
     return Boolean(permission && socket.data?.access?.permissions?.has(permission));
 }
 
+async function applySocketAccess(socket, access) {
+    socket.data.access = access;
+    const permissions = new Set(access.permissions);
+    const previous = socket.data.accessRoomSync || Promise.resolve();
+    const next = previous
+        .catch(() => undefined)
+        .then(() => syncPermissionRooms(socket, permissions));
+    socket.data.accessRoomSync = next;
+    await next;
+}
+
+async function socketsForUser(io, userId) {
+    const key = String(userId);
+    const sockets = new Map();
+    for (const socket of io.sockets?.sockets?.values?.() || []) {
+        if (String(socket.data?.principal?.id || '') === key) sockets.set(socket.id, socket);
+    }
+    const room = userRoom(userId);
+    if (typeof io.in === 'function') {
+        const operator = io.in(room);
+        if (typeof operator?.fetchSockets === 'function') {
+            for (const socket of await operator.fetchSockets()) sockets.set(socket.id, socket);
+        }
+    }
+    return [...sockets.values()];
+}
+
 async function refreshUserAccessRooms(io, userId, {
     accessControlService = defaultAccessControlService,
     disconnectInactive = true
 } = {}) {
     const access = await accessControlService.getEffectiveAccess(userId);
-    const room = userRoom(userId);
-    let sockets;
-    if (typeof io.in === 'function' && typeof io.in(room).fetchSockets === 'function') {
-        sockets = await io.in(room).fetchSockets();
-    } else {
-        sockets = [...(io.sockets?.sockets?.values?.() || [])]
-            .filter(socket => socket.rooms?.has(room));
-    }
+    const sockets = await socketsForUser(io, userId);
 
     for (const socket of sockets) {
         socket.emit('access:changed', {
@@ -143,10 +178,23 @@ async function refreshUserAccessRooms(io, userId, {
             socket.disconnect(true);
             continue;
         }
-        socket.data.access = access;
-        await syncPermissionRooms(socket, access.permissions);
+        await applySocketAccess(socket, access);
     }
     return { access, socketsUpdated: sockets.length };
+}
+
+async function refreshRoleAccessRooms(io, roleId, options = {}) {
+    const userIds = new Set();
+    for (const socket of io.sockets?.sockets?.values?.() || []) {
+        if (Number(socket.data?.access?.roleId) === Number(roleId) && socket.data?.principal?.id) {
+            userIds.add(String(socket.data.principal.id));
+        }
+    }
+    const results = [];
+    for (const userId of userIds) {
+        results.push(await refreshUserAccessRooms(io, userId, options));
+    }
+    return { usersUpdated: userIds.size, socketsUpdated: results.reduce((sum, item) => sum + item.socketsUpdated, 0) };
 }
 
 // Domain clients may report state changes, but actor fields always come from JWT.
@@ -186,6 +234,7 @@ function onStaffEvent(socket, event, handler, { permission = null } = {}) {
 module.exports = {
     installSocketAccess,
     onStaffEvent,
+    refreshRoleAccessRooms,
     refreshUserAccessRooms,
     requireSocketPrincipal,
     resolveSocketPrincipal,

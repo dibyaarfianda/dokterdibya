@@ -24,10 +24,11 @@ Date: 2026-10-08 (Asia/Jakarta)
 ## Test evidence
 
 - Expected TDD red: the new realtime permission-room module was absent.
-- Focused realtime, socket-auth, credential, presence, and popup gate: 7 suites, 99 tests passed.
-- Complete backend run: 221 suites and 1,880 tests passed.
+- Focused realtime, socket-auth, credential, presence, popup, and metric gate: 8 suites, 105 tests passed.
+- Complete backend run: 221 suites and 1,884 tests passed.
 - Twelve pre-existing baseline suites remain unrelated: nine stale static/snapshot contracts and three Assistant DAF suites missing `@simplewebauthn/server` from the shared dependency installation.
 - Syntax checks and `git diff --check` passed.
+- Independent review found two important races before deployment. The final implementation refreshes legacy role changes immediately, discovers sockets before private-room join completion, reloads access once more on connection, and serializes overlapping room updates so the newest access version wins.
 
 ## Rollback
 
