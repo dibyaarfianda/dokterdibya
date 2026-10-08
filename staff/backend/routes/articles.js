@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyPatientToken, verifyStaffToken, requireRoles } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireRolesOrAccountPermission } = require('../middleware/auth');
 const { ROLE_NAMES } = require('../constants/roles');
 const logger = require('../utils/logger');
 
@@ -166,7 +166,7 @@ router.get('/:id', async (req, res) => {
 /**
  * GET /api/articles/admin/all - Get all articles including unpublished (admin only)
  */
-router.get('/admin/all', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.get('/admin/all', verifyStaffToken, requireRolesOrAccountPermission('articles.view', ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { category, status, limit = 50, offset = 0 } = req.query;
 
@@ -207,7 +207,7 @@ router.get('/admin/all', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), asyn
 /**
  * POST /api/articles - Create new article
  */
-router.post('/', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.post('/', verifyStaffToken, requireRolesOrAccountPermission('articles.write', ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
         const normalizedIcon = typeof icon === 'string' ? icon.trim() : null;
@@ -249,7 +249,7 @@ router.post('/', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, 
 /**
  * PUT /api/articles/:id - Update article
  */
-router.put('/:id', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.put('/:id', verifyStaffToken, requireRolesOrAccountPermission('articles.write', ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { id } = req.params;
         const { title, summary, content, category, icon, color, source, is_published } = req.body;
@@ -295,7 +295,7 @@ router.put('/:id', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req
 /**
  * DELETE /api/articles/:id - Delete article
  */
-router.delete('/:id', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.delete('/:id', verifyStaffToken, requireRolesOrAccountPermission('articles.delete', ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -320,7 +320,7 @@ router.delete('/:id', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (
 /**
  * PATCH /api/articles/:id/publish - Toggle publish status
  */
-router.patch('/:id/publish', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) => {
+router.patch('/:id/publish', verifyStaffToken, requireRolesOrAccountPermission('articles.publish', ROLE_NAMES.DOKTER), async (req, res) => {
     try {
         const { id } = req.params;
         const { is_published } = req.body;

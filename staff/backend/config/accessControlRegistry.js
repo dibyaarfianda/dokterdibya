@@ -220,6 +220,7 @@ const INHERITED_PRIVATE_SOURCES = new Set([
 const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['appointments:POST:/hospital/:location/resolve-queue-patient', 'appointments.sync'],
     ['sunday-appointments:POST:/:id/start-clinic-record', 'sunday_clinic.create'],
+    ['staff-announcements:POST:/:id/read', 'staff_announcements.view'],
     ['patients:POST:/api/patients/fix-names', 'patients.reset'],
     ['patients:POST:/api/patients/:id/mark-delivered', 'patients.edit'],
     ['auth:GET:/api/admin/web-patients', 'patients.view'],

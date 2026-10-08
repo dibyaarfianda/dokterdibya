@@ -40,7 +40,19 @@ const ACTIVE_ACCOUNT_PERMISSION_PREFIXES = Object.freeze([
     'hospital_appointments.',
     'online_queue.',
     'practice_schedules.',
-    'sunday_clinic.'
+    'sunday_clinic.',
+    'announcements.',
+    'articles.',
+    'birth_classes.',
+    'community_chat.',
+    'greeting_cards.',
+    'notifications.',
+    'patient_feedback.',
+    'patient_questions.',
+    'patient_stories.',
+    'polls.',
+    'staff_announcements.',
+    'support_chat.'
 ]);
 
 function isDelegatedAccountPermission(req, requiredPermissions = []) {
@@ -531,6 +543,22 @@ function requireSuperadminOrAccountPermission(permission) {
     };
 }
 
+function requireRolesOrAccountPermission(permission, ...allowedRoles) {
+    const legacyGuard = requireRoles(...allowedRoles);
+    return (req, res, next) => {
+        if (isDelegatedAccountPermission(req, [permission])) return next();
+        return legacyGuard(req, res, next);
+    };
+}
+
+function requireMenuAccessOrAccountPermission(menuKey, permission) {
+    const legacyGuard = requireMenuAccess(menuKey);
+    return (req, res, next) => {
+        if (isDelegatedAccountPermission(req, [permission])) return next();
+        return legacyGuard(req, res, next);
+    };
+}
+
 /**
  * Require the literal dokter role.
  *
@@ -866,6 +894,8 @@ module.exports = {
     requireRoles,
     requireSuperadmin,
     requireSuperadminOrAccountPermission,
+    requireRolesOrAccountPermission,
+    requireMenuAccessOrAccountPermission,
     requireDoctorRole,
     requireMenuAccess,  // New: check menu visibility from database
     requirePermission,  // Deprecated

@@ -3,6 +3,11 @@ const API_BASE = '/api/birth-classes';
 let isInitialized = false;
 let editingSessionId = null;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 function getToken() {
     return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
         ? window.getAuthToken()
@@ -314,6 +319,7 @@ function hideSessionModal() {
 }
 
 function openNewSessionModal() {
+    if (!hasAccountPermission('birth_classes.write')) return;
     resetSessionForm();
     showSessionModal();
 }
@@ -355,6 +361,7 @@ function resetSessionForm() {
 }
 
 function fillSessionForm(session) {
+    if (!hasAccountPermission('birth_classes.write')) return;
     editingSessionId = session.id;
 
     const title = document.getElementById('birth-class-session-form-title');
@@ -416,15 +423,17 @@ async function loadSessions() {
                     </td>
                     <td>${activeBadge}</td>
                     <td class="text-right text-nowrap" style="width: 8%; min-width: 8%;">
+                        ${hasAccountPermission('birth_classes.write') ? `
                         <button class="btn btn-xs btn-info" data-action="edit-session" data-id="${session.id}">
                             <i class="fas fa-edit"></i>
                         </button>
                         <button class="btn btn-xs ${Number(session.is_active) === 1 ? 'btn-warning' : 'btn-success'}" data-action="toggle-session" data-id="${session.id}" data-active="${Number(session.is_active) === 1 ? 0 : 1}">
                             <i class="fas ${Number(session.is_active) === 1 ? 'fa-toggle-off' : 'fa-toggle-on'}"></i>
-                        </button>
+                        </button>` : ''}
+                        ${hasAccountPermission('birth_classes.delete') ? `
                         <button class="btn btn-xs btn-danger" data-action="delete-session" data-id="${session.id}" title="Hapus sesi kelas">
                             <i class="fas fa-trash"></i>
-                        </button>
+                        </button>` : ''}
                     </td>
                 </tr>
             `;
@@ -480,38 +489,38 @@ async function loadRegistrations() {
                     <strong>${formatRupiah(row.payment_amount || 0)}</strong><br>
                     ${getPaymentStatusBadge(row.payment_status || 'pending')}<br>
                     <div class="input-group input-group-sm mt-1">
-                        <select class="form-control" id="registration-payment-status-${row.id}">
+                        <select class="form-control" id="registration-payment-status-${row.id}" ${hasAccountPermission('birth_classes.write') ? '' : 'disabled'}>
                             <option value="pending" ${(row.payment_status || 'pending') === 'pending' ? 'selected' : ''}>Menunggu</option>
                             <option value="paid" ${row.payment_status === 'paid' ? 'selected' : ''}>Lunas</option>
                             <option value="waived" ${row.payment_status === 'waived' ? 'selected' : ''}>Gratis</option>
                         </select>
-                        <div class="input-group-append">
+                        ${hasAccountPermission('birth_classes.write') ? `<div class="input-group-append">
                             <button class="btn btn-success" data-action="save-payment-status" data-id="${row.id}" title="Simpan status pembayaran">
                                 <i class="fas fa-money-check-alt"></i>
                             </button>
-                        </div>
+                        </div>` : ''}
                     </div>
                 </td>
                 <td>${getStatusBadge(row.status)}</td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <select class="form-control" id="registration-status-${row.id}">
+                        <select class="form-control" id="registration-status-${row.id}" ${hasAccountPermission('birth_classes.write') ? '' : 'disabled'}>
                             <option value="registered" ${row.status === 'registered' ? 'selected' : ''}>Terdaftar</option>
                             <option value="confirmed" ${row.status === 'confirmed' ? 'selected' : ''}>Dikonfirmasi</option>
                             <option value="attended" ${row.status === 'attended' ? 'selected' : ''}>Hadir</option>
                             <option value="cancelled" ${row.status === 'cancelled' ? 'selected' : ''}>Batal</option>
                         </select>
-                        <div class="input-group-append">
+                        ${hasAccountPermission('birth_classes.write') ? `<div class="input-group-append">
                             <button class="btn btn-primary" data-action="save-registration-status" data-id="${row.id}">
                                 <i class="fas fa-save"></i>
                             </button>
-                        </div>
+                        </div>` : ''}
                     </div>
                 </td>
                 <td class="text-right text-nowrap" style="width: 8%; min-width: 8%;">
-                    <button class="btn btn-sm btn-danger" data-action="delete-registration" data-id="${row.id}" title="Hapus peserta">
+                    ${hasAccountPermission('birth_classes.delete') ? `<button class="btn btn-sm btn-danger" data-action="delete-registration" data-id="${row.id}" title="Hapus peserta">
                         <i class="fas fa-trash"></i>
-                    </button>
+                    </button>` : ''}
                 </td>
             </tr>
         `).join('');
@@ -523,6 +532,7 @@ async function loadRegistrations() {
 
 async function saveSession(event) {
     event.preventDefault();
+    if (!hasAccountPermission('birth_classes.write')) return;
 
     const payload = {
         class_title: document.getElementById('birth-class-title')?.value?.trim(),
@@ -569,6 +579,7 @@ async function saveSession(event) {
 }
 
 async function updateSessionStatus(sessionId, isActive) {
+    if (!hasAccountPermission('birth_classes.write')) return;
     try {
         await apiRequest(`/sessions/${sessionId}/status`, {
             method: 'PATCH',
@@ -583,6 +594,7 @@ async function updateSessionStatus(sessionId, isActive) {
 }
 
 async function updateRegistrationStatus(registrationId) {
+    if (!hasAccountPermission('birth_classes.write')) return;
     const statusEl = document.getElementById(`registration-status-${registrationId}`);
     if (!statusEl) return;
 
@@ -603,6 +615,7 @@ async function updateRegistrationStatus(registrationId) {
 }
 
 async function updatePaymentStatus(registrationId) {
+    if (!hasAccountPermission('birth_classes.write')) return;
     const statusEl = document.getElementById(`registration-payment-status-${registrationId}`);
     if (!statusEl) return;
 
@@ -623,6 +636,7 @@ async function updatePaymentStatus(registrationId) {
 }
 
 async function deleteSession(sessionId) {
+    if (!hasAccountPermission('birth_classes.delete')) return;
     if (!sessionId) return;
     if (!confirm('Hapus sesi kelas ini? Jika masih ada peserta, sesi tidak bisa dihapus.')) return;
 
@@ -643,6 +657,7 @@ async function deleteSession(sessionId) {
 }
 
 async function deleteRegistration(registrationId) {
+    if (!hasAccountPermission('birth_classes.delete')) return;
     if (!registrationId) return;
     if (!confirm('Hapus peserta ini dari daftar kelas?')) return;
 
@@ -727,6 +742,11 @@ function initKelasPersalinan() {
         renderSkeleton();
         bindEvents();
         isInitialized = true;
+    }
+
+    const openButton = document.getElementById('birth-class-open-session-modal-btn');
+    if (openButton) {
+        openButton.classList.toggle('d-none', !hasAccountPermission('birth_classes.write'));
     }
 
     resetSessionForm();

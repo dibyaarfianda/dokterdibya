@@ -434,7 +434,15 @@ router.get('/rooms', verifyToken, async (req, res) => {
     try {
         const userId = String(req.user.id);
         const userType = isPatientUser(req.user) ? 'patient' : 'staff';
-        const canCreate = await canCreateRoom(req.user);
+        const accountMode = userType === 'staff' && req.accountAccess?.mode === 'account';
+        const accountPermissions = req.accountAccess?.permissions instanceof Set
+            ? req.accountAccess.permissions
+            : new Set(req.accountAccess?.permissions || []);
+        const hasAccountPermission = permission => !accountMode || accountPermissions.has(permission);
+        const canWrite = hasAccountPermission('community_chat.write');
+        const canDelete = hasAccountPermission('community_chat.delete');
+        const canModerate = hasAccountPermission('community_chat.moderate');
+        const canCreate = canWrite && await canCreateRoom(req.user);
         const isVip = isPatientUser(req.user) ? await isVipPatient(userId) : null;
         const accessClause = userType === 'patient'
             ? '(r.is_direct = 0 OR r.direct_patient_id = ?)'
@@ -490,9 +498,15 @@ router.get('/rooms', verifyToken, async (req, res) => {
 
         res.json({
             success: true,
-            rooms: rows.map((row) => mapRoom(row, userType, userId)),
+            rooms: rows.map((row) => {
+                const room = mapRoom(row, userType, userId);
+                return { ...room, can_archive: room.can_archive && canModerate };
+            }),
             permissions: {
                 can_create_room: canCreate,
+                can_write: canWrite,
+                can_delete: canDelete,
+                can_moderate: canModerate,
                 is_vip: isVip
             }
         });

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
-const { verifyStaffToken, optionalAuth, requireMenuAccess } = require('../middleware/auth');
+const { verifyStaffToken, optionalAuth, requireMenuAccessOrAccountPermission } = require('../middleware/auth');
 
 let tablesReady = false;
 const BIRTH_CLASS_QRIS_URL = '/images/payment/kelas-dr-dibya-qris.jpg';
@@ -248,7 +248,7 @@ router.post('/register', optionalAuth, async (req, res) => {
 });
 
 // Staff: list sessions (active + inactive)
-router.get('/sessions', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.get('/sessions', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.view'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -280,7 +280,7 @@ router.get('/sessions', verifyStaffToken, requireMenuAccess('klinik_privat'), as
 });
 
 // Staff: create session
-router.post('/sessions', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.post('/sessions', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.write'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -364,7 +364,7 @@ router.post('/sessions', verifyStaffToken, requireMenuAccess('klinik_privat'), a
 });
 
 // Staff: update session
-router.put('/sessions/:id', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.put('/sessions/:id', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.write'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -471,7 +471,7 @@ router.put('/sessions/:id', verifyStaffToken, requireMenuAccess('klinik_privat')
 });
 
 // Staff: toggle active session
-router.patch('/sessions/:id/status', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.patch('/sessions/:id/status', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.write'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -504,7 +504,7 @@ router.patch('/sessions/:id/status', verifyStaffToken, requireMenuAccess('klinik
 });
 
 // Staff: delete session
-router.delete('/sessions/:id', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.delete('/sessions/:id', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.delete'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -555,7 +555,7 @@ router.delete('/sessions/:id', verifyStaffToken, requireMenuAccess('klinik_priva
 });
 
 // Staff: list registrations
-router.get('/registrations', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.get('/registrations', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.view'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -603,7 +603,7 @@ router.get('/registrations', verifyStaffToken, requireMenuAccess('klinik_privat'
 });
 
 // Staff: update registration status
-router.patch('/registrations/:id/status', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.patch('/registrations/:id/status', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.write'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -645,7 +645,7 @@ router.patch('/registrations/:id/status', verifyStaffToken, requireMenuAccess('k
 });
 
 // Staff: update registration payment status
-router.patch('/registrations/:id/payment-status', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.patch('/registrations/:id/payment-status', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.write'), async (req, res) => {
     try {
         await ensureTables();
 
@@ -690,7 +690,7 @@ router.patch('/registrations/:id/payment-status', verifyStaffToken, requireMenuA
 });
 
 // Staff: delete registration
-router.delete('/registrations/:id', verifyStaffToken, requireMenuAccess('klinik_privat'), async (req, res) => {
+router.delete('/registrations/:id', verifyStaffToken, requireMenuAccessOrAccountPermission('klinik_privat', 'birth_classes.delete'), async (req, res) => {
     try {
         await ensureTables();
 

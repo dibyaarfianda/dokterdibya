@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const NodeCache = require('node-cache');
-const { verifyPatientToken, verifyStaffToken } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, isDelegatedAccountPermission } = require('../middleware/auth');
 
 // Short-lived cache for badge count (polled every ~10s by staff panel)
 const pqCountCache = new NodeCache({ stdTTL: 30, checkperiod: 10, useClones: false });
@@ -42,10 +42,11 @@ const upload = multer({
 });
 
 // Middleware: Only dokter can reply/close
-const requireDokter = (req, res, next) => {
-    if (req.user.role !== 'dokter') {
+const requireAccountPermissionOrDokter = permission => (req, res, next) => {
+    if (!isDelegatedAccountPermission(req, [permission]) && req.user.role !== 'dokter') {
         return res.status(403).json({
             success: false,
+            code: 'ACCESS_DENIED',
             message: 'Hanya dokter yang dapat menjawab pertanyaan'
         });
     }
@@ -640,7 +641,7 @@ router.get('/staff/:id', verifyStaffToken, async (req, res) => {
  * Doctor sends reply (DOKTER ONLY)
  * Only assigned doctor (or superadmin) can reply
  */
-router.post('/staff/:id/reply', verifyStaffToken, requireDokter, upload.single('image'), async (req, res) => {
+router.post('/staff/:id/reply', verifyStaffToken, requireAccountPermissionOrDokter('patient_questions.write'), upload.single('image'), async (req, res) => {
     try {
         const questionId = req.params.id;
         const currentUser = req.user;
@@ -672,9 +673,11 @@ router.post('/staff/:id/reply', verifyStaffToken, requireDokter, upload.single('
 
         const question = questions[0];
 
-        // Check if current user is assigned doctor or superadmin
+        // Legacy dokter stay scoped to their assigned question. Account-mode
+        // staff with the explicit write grant are intentionally delegated.
         const currentUserId = currentUser.new_id || currentUser.id;
-        if (!currentUser.is_superadmin && question.assigned_doctor_id !== currentUserId) {
+        const delegatedAccount = isDelegatedAccountPermission(req, ['patient_questions.write']);
+        if (!currentUser.is_superadmin && !delegatedAccount && question.assigned_doctor_id !== currentUserId) {
             return res.status(403).json({
                 success: false,
                 message: 'Anda tidak dapat membalas pertanyaan ini. Pertanyaan ditujukan untuk dokter lain.'
@@ -718,7 +721,7 @@ router.post('/staff/:id/reply', verifyStaffToken, requireDokter, upload.single('
         }
 
         // Send push notification to patient with actual doctor name
-        const doctorName = question.doctor_name || currentUser.name || 'Dokter';
+        const doctorName = currentUser.name || question.doctor_name || 'Tim Dokter';
         try {
             await db.query(
                 `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)
@@ -744,7 +747,7 @@ router.post('/staff/:id/reply', verifyStaffToken, requireDokter, upload.single('
  * Close thread (DOKTER ONLY)
  * Only assigned doctor (or superadmin) can close
  */
-router.post('/staff/:id/close', verifyStaffToken, requireDokter, async (req, res) => {
+router.post('/staff/:id/close', verifyStaffToken, requireAccountPermissionOrDokter('patient_questions.finalize'), async (req, res) => {
     try {
         const questionId = req.params.id;
         const currentUser = req.user;
@@ -767,9 +770,11 @@ router.post('/staff/:id/close', verifyStaffToken, requireDokter, async (req, res
 
         const question = questions[0];
 
-        // Check if current user is assigned doctor or superadmin
+        // Legacy dokter stay scoped to their assigned question. Account-mode
+        // staff with the explicit finalize grant are intentionally delegated.
         const currentUserId = currentUser.new_id || currentUser.id;
-        if (!currentUser.is_superadmin && question.assigned_doctor_id !== currentUserId) {
+        const delegatedAccount = isDelegatedAccountPermission(req, ['patient_questions.finalize']);
+        if (!currentUser.is_superadmin && !delegatedAccount && question.assigned_doctor_id !== currentUserId) {
             return res.status(403).json({
                 success: false,
                 message: 'Anda tidak dapat menutup pertanyaan ini. Pertanyaan ditujukan untuk dokter lain.'
@@ -790,7 +795,7 @@ router.post('/staff/:id/close', verifyStaffToken, requireDokter, async (req, res
         );
 
         // Notify patient with actual doctor name
-        const doctorName = question.doctor_name || currentUser.name || 'Dokter';
+        const doctorName = currentUser.name || question.doctor_name || 'Tim Dokter';
         try {
             await db.query(
                 `INSERT INTO patient_notifications (patient_id, type, title, message, link, created_at)

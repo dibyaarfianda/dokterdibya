@@ -6,6 +6,21 @@
 (function() {
     'use strict';
 
+    function hasAccountPermission(permission) {
+        return typeof window.hasAccountPermission !== 'function'
+            || window.hasAccountPermission(permission);
+    }
+
+    function canUseTanyaPermission(permission) {
+        const user = window.currentStaffUser || window.auth?.currentUser;
+        const roleHelper = window.staffRoleConstants?.isSuperadminUser;
+        const isDokter = typeof roleHelper === 'function'
+            ? roleHelper(user)
+            : Boolean(user?.is_superadmin || user?.is_doctor_protected);
+        const usesAccountPolicy = user?.access_mode === 'account' && !user?.is_doctor_protected;
+        return isDokter || (usesAccountPolicy && hasAccountPermission(permission));
+    }
+
     // State
     let allQuestions = [];
     let currentFilter = 'all';
@@ -330,11 +345,15 @@
             ${repliesHtml}
         `;
 
-        // Footer with reply form (dokter only)
+        // Footer actions follow the per-account matrix after account-mode cutover.
         const roleHelper = window.staffRoleConstants?.isSuperadminUser;
         const isDokter = typeof roleHelper === 'function'
             ? roleHelper(window.auth?.currentUser)
             : Boolean(window.auth?.currentUser?.is_superadmin);
+        const usesAccountPolicy = window.auth?.currentUser?.access_mode === 'account'
+            && !window.auth?.currentUser?.is_doctor_protected;
+        const canReply = isDokter || (usesAccountPolicy && hasAccountPermission('patient_questions.write'));
+        const canFinalize = isDokter || (usesAccountPolicy && hasAccountPermission('patient_questions.finalize'));
 
         if (question.status === 'closed') {
             document.getElementById('tanya-thread-footer').innerHTML = `
@@ -342,19 +361,19 @@
                     <i class="fas fa-check-circle text-success"></i> Percakapan ini sudah ditutup
                 </div>
             `;
-        } else if (isDokter) {
+        } else if (canReply || canFinalize) {
             document.getElementById('tanya-thread-footer').innerHTML = `
                 <div class="w-100">
-                    <div class="form-group mb-2">
+                    ${canReply ? `<div class="form-group mb-2">
                         <textarea id="tanya-reply-text" class="form-control" rows="3" placeholder="Tulis balasan Anda..."></textarea>
-                    </div>
+                    </div>` : ''}
                     <div class="d-flex justify-content-between">
-                        <button type="button" class="btn btn-outline-secondary" onclick="closeTanyaThread('${question.id}')">
+                        ${canFinalize ? `<button type="button" class="btn btn-outline-secondary" onclick="closeTanyaThread('${question.id}')">
                             <i class="fas fa-check-circle"></i> Tutup Thread
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="sendTanyaReply('${question.id}')">
+                        </button>` : '<span></span>'}
+                        ${canReply ? `<button type="button" class="btn btn-primary" onclick="sendTanyaReply('${question.id}')">
                             <i class="fas fa-paper-plane"></i> Kirim Balasan
-                        </button>
+                        </button>` : ''}
                     </div>
                 </div>
             `;
@@ -371,6 +390,7 @@
      * Send reply (dokter only)
      */
     window.sendTanyaReply = async function(questionId) {
+        if (!canUseTanyaPermission('patient_questions.write')) return;
         const token = getAuthToken();
         const replyText = document.getElementById('tanya-reply-text').value.trim();
 
@@ -408,6 +428,7 @@
      * Close thread (dokter only)
      */
     window.closeTanyaThread = async function(questionId) {
+        if (!canUseTanyaPermission('patient_questions.finalize')) return;
         if (!confirm('Apakah Anda yakin ingin menutup thread ini?')) {
             return;
         }

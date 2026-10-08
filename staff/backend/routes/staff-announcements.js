@@ -8,7 +8,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireSuperadminOrAccountPermission } = require('../middleware/auth');
 
 const STAFF_ANNOUNCEMENT_COLUMNS = [
     'id',
@@ -53,7 +53,7 @@ router.get('/', verifyToken, async (req, res, next) => {
  * GET /api/staff-announcements/all
  * Get all staff announcements including inactive (for management)
  */
-router.get('/all', verifyToken, requireSuperadmin, async (req, res, next) => {
+router.get('/all', verifyToken, requireSuperadminOrAccountPermission('staff_announcements.view'), async (req, res, next) => {
     try {
         const [announcements] = await db.query(
             `SELECT ${STAFF_ANNOUNCEMENT_SELECT} FROM staff_announcements
@@ -93,7 +93,7 @@ router.get('/:id', verifyToken, async (req, res, next) => {
  * POST /api/staff-announcements
  * Create new staff announcement (dokter only)
  */
-router.post('/', verifyToken, requireSuperadmin, async (req, res, next) => {
+router.post('/', verifyToken, requireSuperadminOrAccountPermission('staff_announcements.write'), async (req, res, next) => {
     try {
         const { title, message, priority, status } = req.body;
 
@@ -141,7 +141,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res, next) => {
  * PUT /api/staff-announcements/:id
  * Update staff announcement (dokter only)
  */
-router.put('/:id', verifyToken, requireSuperadmin, async (req, res, next) => {
+router.put('/:id', verifyToken, requireSuperadminOrAccountPermission('staff_announcements.write'), async (req, res, next) => {
     try {
         const { title, message, priority, status } = req.body;
         const { id } = req.params;
@@ -213,7 +213,7 @@ router.post('/:id/read', verifyToken, async (req, res, next) => {
  * DELETE /api/staff-announcements/:id
  * Delete staff announcement (dokter only)
  */
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res, next) => {
+router.delete('/:id', verifyToken, requireSuperadminOrAccountPermission('staff_announcements.delete'), async (req, res, next) => {
     try {
         const [result] = await db.query(
             'DELETE FROM staff_announcements WHERE id = ?',

@@ -17,6 +17,11 @@ const patientStoryStatusLabels = {
 let patientStoriesAdminCache = [];
 let previewTimeout = null;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
 function startRequestScope(key) {
     requestScopes.get(key)?.abort('Request replaced');
     const scope = createPageRequestScope();
@@ -74,6 +79,9 @@ export async function showArtikelKesehatanPage() {
     await ensureMarkdownFeature();
     await window.activateRegisteredStaffPage?.('artikel-kesehatan');
     initArticleMarkdownPreview();
+    document.querySelectorAll('[data-action="article-add"]').forEach(button => {
+        button.classList.toggle('d-none', !hasAccountPermission('articles.write'));
+    });
     await loadArticlesAdmin();
 }
 
@@ -115,9 +123,9 @@ export async function loadArticlesAdmin() {
                     <td><i class="fas fa-thumbs-up text-primary"></i> ${Number(article.like_count || 0)}</td>
                     <td><small>${escapeHtml(formatDate(article.updated_at))}</small></td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-info" data-action="article-edit" data-article-id="${escapeAttribute(articleId)}" title="Edit"><i class="fas fa-edit"></i></button>
-                        <button type="button" class="btn btn-sm ${published ? 'btn-warning' : 'btn-success'}" data-action="article-publish" data-article-id="${escapeAttribute(articleId)}" data-publish="${published ? 'false' : 'true'}" title="${published ? 'Unpublish' : 'Publish'}"><i class="fas ${published ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
-                        <button type="button" class="btn btn-sm btn-danger" data-action="article-delete" data-article-id="${escapeAttribute(articleId)}" title="Hapus"><i class="fas fa-trash"></i></button>
+                        ${hasAccountPermission('articles.write') ? `<button type="button" class="btn btn-sm btn-info" data-action="article-edit" data-article-id="${escapeAttribute(articleId)}" title="Edit"><i class="fas fa-edit"></i></button>` : ''}
+                        ${hasAccountPermission('articles.publish') ? `<button type="button" class="btn btn-sm ${published ? 'btn-warning' : 'btn-success'}" data-action="article-publish" data-article-id="${escapeAttribute(articleId)}" data-publish="${published ? 'false' : 'true'}" title="${published ? 'Unpublish' : 'Publish'}"><i class="fas ${published ? 'fa-eye-slash' : 'fa-eye'}"></i></button>` : ''}
+                        ${hasAccountPermission('articles.delete') ? `<button type="button" class="btn btn-sm btn-danger" data-action="article-delete" data-article-id="${escapeAttribute(articleId)}" title="Hapus"><i class="fas fa-trash"></i></button>` : ''}
                     </td>
                 </tr>`;
         }).join('');
@@ -129,6 +137,7 @@ export async function loadArticlesAdmin() {
 }
 
 export async function showAddArticleModal() {
+    if (!hasAccountPermission('articles.write')) return;
     await ensureMarkdownFeature();
     const form = document.getElementById('articleForm');
     if (!form) return;
@@ -143,6 +152,7 @@ export async function showAddArticleModal() {
 }
 
 export async function editArticle(id) {
+    if (!hasAccountPermission('articles.write')) return;
     await ensureMarkdownFeature();
     const scope = startRequestScope('article-detail');
     try {
@@ -171,6 +181,7 @@ export async function editArticle(id) {
 }
 
 export async function saveArticle() {
+    if (!hasAccountPermission('articles.write')) return;
     const id = document.getElementById('article-id')?.value || '';
     const data = {
         title: document.getElementById('article-title')?.value.trim() || '',
@@ -204,6 +215,7 @@ export async function saveArticle() {
 }
 
 export async function togglePublishArticle(id, publish) {
+    if (!hasAccountPermission('articles.publish')) return;
     const scope = startRequestScope('article-publish');
     try {
         await scope.request(`/api/articles/${encodeURIComponent(id)}/publish`, {
@@ -220,6 +232,7 @@ export async function togglePublishArticle(id, publish) {
 }
 
 export async function deleteArticle(id) {
+    if (!hasAccountPermission('articles.delete')) return;
     if (!window.confirm('Yakin ingin menghapus artikel ini?')) return;
     const scope = startRequestScope('article-delete');
     try {
@@ -257,8 +270,9 @@ export async function loadPatientStoriesAdmin() {
         tbody.innerHTML = patientStoriesAdminCache.map(story => {
             const storyId = String(story.id ?? '');
             const preview = String(story.body || '').substring(0, 90);
-            const actionButton = (action, className, icon, title) =>
-                `<button type="button" class="btn btn-sm ${className}" data-action="story-moderate" data-story-id="${escapeAttribute(storyId)}" data-moderation="${action}" title="${title}"><i class="fas ${icon}"></i></button>`;
+            const actionButton = (action, className, icon, title) => hasAccountPermission('patient_stories.write')
+                ? `<button type="button" class="btn btn-sm ${className}" data-action="story-moderate" data-story-id="${escapeAttribute(storyId)}" data-moderation="${action}" title="${title}"><i class="fas ${icon}"></i></button>`
+                : '';
             return `
                 <tr>
                     <td>
@@ -301,8 +315,9 @@ export function previewPatientStory(id) {
     const actions = document.getElementById('patientStoryPreviewActions');
     if (actions) {
         const storyId = escapeAttribute(story.id);
-        const button = (action, className, icon, label) =>
-            `<button type="button" class="btn ${className}" data-action="story-moderate" data-story-id="${storyId}" data-moderation="${action}"><i class="fas ${icon} mr-1"></i>${label}</button>`;
+        const button = (action, className, icon, label) => hasAccountPermission('patient_stories.write')
+            ? `<button type="button" class="btn ${className}" data-action="story-moderate" data-story-id="${storyId}" data-moderation="${action}"><i class="fas ${icon} mr-1"></i>${label}</button>`
+            : '';
         actions.innerHTML = `
             ${story.status !== 'published' ? button('approve', 'btn-success', 'fa-check', 'Approve') : ''}
             ${story.status !== 'rejected' ? button('reject', 'btn-warning', 'fa-times', 'Reject') : ''}
@@ -313,6 +328,7 @@ export function previewPatientStory(id) {
 }
 
 export async function moderatePatientStory(id, action) {
+    if (!hasAccountPermission('patient_stories.write')) return;
     const allowedActions = new Set(['approve', 'reject', 'archive']);
     if (!allowedActions.has(action)) return;
     const note = action === 'reject' || action === 'archive'

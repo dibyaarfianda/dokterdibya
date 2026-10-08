@@ -2189,6 +2189,9 @@
     let typingTimeout = null;
     let isStaff = false;
     let canCreateRoomPermission = false;
+    let canWritePermission = true;
+    let canDeletePermission = true;
+    let canModeratePermission = true;
     let patientSearchTimer = null;
     let directPatientResults = [];
     let selectedDirectPatient = null;
@@ -2354,10 +2357,10 @@
         }
 
         if (el.menuDirectRoom) {
-            el.menuDirectRoom.hidden = !isStaff;
+            el.menuDirectRoom.hidden = !isStaff || !canWritePermission;
         }
 
-        const canArchive = !!(isStaff && activeRoom && activeRoom.can_archive);
+        const canArchive = !!(isStaff && canModeratePermission && activeRoom && activeRoom.can_archive);
         if (el.menuArchiveRoom) {
             el.menuArchiveRoom.hidden = !canArchive;
             el.menuArchiveRoom.disabled = !canArchive;
@@ -2365,7 +2368,7 @@
     }
 
     function updateModeratorUi() {
-        const canManageModerators = !!(isStaff && activeRoom && !activeRoom.is_direct);
+        const canManageModerators = !!(isStaff && canModeratePermission && activeRoom && !activeRoom.is_direct);
         el.moderatorPanel.classList.toggle('show', canManageModerators);
 
         if (!canManageModerators) {
@@ -3591,7 +3594,7 @@
     }
 
     async function sendMessage() {
-        if (!activeRoom || sending) return;
+        if (!canWritePermission || !activeRoom || sending) return;
         const outgoing = mentionComposer.payload();
         if (!outgoing.message) return;
         const slug = activeRoom.slug, draft = el.messageInput.value, quote = quotedMessage;
@@ -3660,6 +3663,12 @@
         const data = await api('/rooms');
         rooms = data.rooms || [];
         canCreateRoomPermission = !!(data.permissions && data.permissions.can_create_room);
+        canWritePermission = data.permissions?.can_write !== false;
+        canDeletePermission = data.permissions?.can_delete !== false;
+        canModeratePermission = data.permissions?.can_moderate !== false;
+        if (el.messageInput) el.messageInput.disabled = !canWritePermission;
+        if (el.sendBtn) el.sendBtn.hidden = !canWritePermission;
+        if (el.emojiToggle) el.emojiToggle.hidden = !canWritePermission;
         applyCreateRoomPermission();
         syncDirectRoomActions();
         renderRooms();

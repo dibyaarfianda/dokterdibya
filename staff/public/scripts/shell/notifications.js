@@ -13,6 +13,22 @@ const NOTIFICATION_COUNT_ERROR_BACKOFF_MS = 60000;
 const NOTIFICATION_ICON_PATTERN = /^(?:fas|far|fab)\s+fa-[a-z0-9-]+$/;
 const NOTIFICATION_COLOR_PATTERN = /^text-(?:primary|secondary|success|danger|warning|info|muted|dark)$/;
 
+function hasAccountPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
+function canManageStaffAnnouncements(permission) {
+    const user = window.currentStaffUser || window.auth?.currentUser;
+    const usesAccountPolicy = user?.access_mode === 'account' && !user?.is_doctor_protected;
+    if (usesAccountPolicy) return hasAccountPermission(permission);
+
+    const roleHelper = window.staffRoleConstants?.isSuperadminUser;
+    return typeof roleHelper === 'function'
+        ? roleHelper(user)
+        : Boolean(user?.is_superadmin || user?.is_doctor_protected);
+}
+
 function normalizeNotificationId(value) {
     const id = Number.parseInt(value, 10);
     return Number.isSafeInteger(id) && id > 0 ? id : null;
@@ -365,6 +381,14 @@ async function loadStaffAnnouncements() {
     const container = document.getElementById('staff-announcements-list');
     if (!container) return;
 
+    const canWrite = canManageStaffAnnouncements('staff_announcements.write');
+    const canDelete = canManageStaffAnnouncements('staff_announcements.delete');
+    const createButton = document.querySelector('button[onclick="showCreateStaffAnnouncement()"]');
+    if (createButton) {
+        createButton.classList.toggle('d-none', !canWrite);
+        createButton.disabled = !canWrite;
+    }
+
     try {
         const data = await staffApiRequest('/api/staff-announcements');
         const announcements = data.data || [];
@@ -373,8 +397,6 @@ async function loadStaffAnnouncements() {
             container.innerHTML = '<div class="text-muted text-center py-3"><i class="fas fa-info-circle mr-2"></i>Tidak ada pengumuman staff.</div>';
             return;
         }
-
-        const isDokter = window.staffRoleConstants?.isSuperadminUser?.(window.auth?.currentUser) === true;
 
         container.innerHTML = announcements.map(a => {
             const announcementId = normalizeNotificationId(a.id);
@@ -388,14 +410,14 @@ async function loadStaffAnnouncements() {
                 <div class="callout ${priorityClass} mb-2" data-announcement-id="${announcementId}">
                     <div class="d-flex justify-content-between">
                         <h6 class="mb-1"><i class="fas ${priorityIcon} mr-2"></i>${escapeHtml(a.title)}${priorityBadge}</h6>
-                        ${isDokter ? `
+                        ${canWrite || canDelete ? `
                             <div class="btn-group btn-group-sm">
-                                <button class="btn btn-outline-secondary btn-xs" onclick="editStaffAnnouncement(${announcementId})" title="Edit">
+                                ${canWrite ? `<button class="btn btn-outline-secondary btn-xs" onclick="editStaffAnnouncement(${announcementId})" title="Edit">
                                     <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-outline-danger btn-xs" onclick="deleteStaffAnnouncement(${announcementId})" title="Hapus">
+                                </button>` : ''}
+                                ${canDelete ? `<button class="btn btn-outline-danger btn-xs" onclick="deleteStaffAnnouncement(${announcementId})" title="Hapus">
                                     <i class="fas fa-trash"></i>
-                                </button>
+                                </button>` : ''}
                             </div>
                         ` : ''}
                     </div>
@@ -412,6 +434,7 @@ async function loadStaffAnnouncements() {
 }
 
 function showCreateStaffAnnouncement() {
+    if (!canManageStaffAnnouncements('staff_announcements.write')) return;
     document.getElementById('staff-announcement-id').value = '';
     document.getElementById('staff-announcement-title').value = '';
     document.getElementById('staff-announcement-message').value = '';
@@ -422,6 +445,7 @@ function showCreateStaffAnnouncement() {
 }
 
 async function editStaffAnnouncement(id) {
+    if (!canManageStaffAnnouncements('staff_announcements.write')) return;
     try {
         const announcementId = normalizeNotificationId(id);
         if (!announcementId) throw new Error('ID pengumuman tidak valid');
@@ -442,6 +466,7 @@ async function editStaffAnnouncement(id) {
 }
 
 async function saveStaffAnnouncement() {
+    if (!canManageStaffAnnouncements('staff_announcements.write')) return;
     const id = document.getElementById('staff-announcement-id').value;
     const title = document.getElementById('staff-announcement-title').value.trim();
     const message = document.getElementById('staff-announcement-message').value.trim();
@@ -475,6 +500,7 @@ async function saveStaffAnnouncement() {
 }
 
 async function deleteStaffAnnouncement(id) {
+    if (!canManageStaffAnnouncements('staff_announcements.delete')) return;
     const result = await Swal.fire({
         title: 'Hapus Pengumuman?',
         text: 'Pengumuman akan dihapus permanen.',

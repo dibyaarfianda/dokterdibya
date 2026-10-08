@@ -11,6 +11,11 @@
     let initialized = false;
     let pollsById = new Map();
 
+    function hasAccountPermission(permission) {
+        return typeof window.hasAccountPermission !== 'function'
+            || window.hasAccountPermission(permission);
+    }
+
     function getToken() {
         return typeof window !== 'undefined' && typeof window.getAuthToken === 'function'
             ? window.getAuthToken()
@@ -327,6 +332,7 @@
     }
 
     function openVotingEditPoll(pollId) {
+        if (!hasAccountPermission('polls.write')) return;
         const poll = pollsById.get(Number(pollId));
         if (!poll) {
             toastr.warning('Data voting tidak ditemukan. Silakan refresh.');
@@ -366,6 +372,7 @@
 
     async function saveVotingEdit(event) {
         event.preventDefault();
+        if (!hasAccountPermission('polls.write')) return;
 
         const pollIdEl = document.getElementById('voting-edit-poll-id');
         const titleEl = document.getElementById('voting-edit-title');
@@ -488,7 +495,7 @@
                 <div class="card-body py-3">
                     ${poll.description ? `<p class="text-muted mb-3">${escapeHtml(poll.description)}</p>` : ''}
                     ${optionsHtml || '<div class="text-muted small">Belum ada opsi.</div>'}
-                    <div class="mt-2 d-flex flex-wrap" style="gap:8px;">
+                    ${hasAccountPermission('polls.write') ? `<div class="mt-2 d-flex flex-wrap" style="gap:8px;">
                         <button class="btn btn-sm btn-outline-warning" onclick="window.openVotingEditPoll(${poll.id})">
                             <i class="fas fa-edit mr-1"></i>Edit Voting
                         </button>
@@ -500,7 +507,7 @@
                                 <i class="fas fa-stop-circle mr-1"></i>Tutup Voting
                             </button>
                         ` : ''}
-                    </div>
+                    </div>` : ''}
                 </div>
             </div>
         `;
@@ -508,6 +515,7 @@
 
     async function createVoting(event) {
         event.preventDefault();
+        if (!hasAccountPermission('polls.write')) return;
 
         const titleEl = document.getElementById('voting-title');
         const descriptionEl = document.getElementById('voting-description');
@@ -621,6 +629,7 @@
     }
 
     async function closeVotingPoll(pollId) {
+        if (!hasAccountPermission('polls.write')) return;
         const confirmed = window.confirm('Tutup voting ini? Pasien tidak bisa vote lagi setelah ditutup.');
         if (!confirmed) return;
 
@@ -646,6 +655,7 @@
     }
 
     async function sendVotingNotification(pollId) {
+        if (!hasAccountPermission('polls.write')) return;
         const poll = pollsById.get(Number(pollId));
         const pollTitle = poll && poll.title ? `\n\nJudul: ${poll.title}` : '';
         const confirmed = window.confirm(`Kirim push notifikasi untuk voting ini ke semua pasien?${pollTitle}`);
@@ -678,6 +688,10 @@
 
         const formEl = document.getElementById('voting-create-form');
         const refreshBtn = document.getElementById('btn-refresh-voting');
+
+        if (formEl) {
+            formEl.classList.toggle('d-none', !hasAccountPermission('polls.write'));
+        }
 
         if (formEl && !formEl.dataset.boundVoting) {
             formEl.addEventListener('submit', createVoting);

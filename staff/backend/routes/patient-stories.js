@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyPatientToken, verifyStaffToken, requireRoles } = require('../middleware/auth');
+const { verifyPatientToken, verifyStaffToken, requireRolesOrAccountPermission } = require('../middleware/auth');
 const { ROLE_NAMES } = require('../constants/roles');
 const logger = require('../utils/logger');
 
@@ -199,7 +199,7 @@ router.get('/my', verifyPatientToken, async (req, res) => {
     }
 });
 
-router.get('/admin/all', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), async (req, res) => {
+router.get('/admin/all', verifyStaffToken, requireRolesOrAccountPermission('patient_stories.view', ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), async (req, res) => {
     try {
         const { limit, offset } = getLimitOffset(req.query, 50, 100);
         const status = STATUS_VALUES.has(req.query.status) ? req.query.status : null;
@@ -407,15 +407,15 @@ async function updateStoryStatus(req, res, nextStatus) {
     }
 }
 
-router.patch('/admin/:id/approve', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), (req, res) => {
+router.patch('/admin/:id/approve', verifyStaffToken, requireRolesOrAccountPermission('patient_stories.write', ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), (req, res) => {
     updateStoryStatus(req, res, 'published');
 });
 
-router.patch('/admin/:id/reject', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), (req, res) => {
+router.patch('/admin/:id/reject', verifyStaffToken, requireRolesOrAccountPermission('patient_stories.write', ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), (req, res) => {
     updateStoryStatus(req, res, 'rejected');
 });
 
-router.patch('/admin/:id/archive', verifyStaffToken, requireRoles(ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), (req, res) => {
+router.patch('/admin/:id/archive', verifyStaffToken, requireRolesOrAccountPermission('patient_stories.write', ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN), (req, res) => {
     updateStoryStatus(req, res, 'archived');
 });
 

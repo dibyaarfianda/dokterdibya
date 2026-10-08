@@ -20,6 +20,11 @@
         sendingReply: false
     };
 
+    function hasAccountPermission(permission) {
+        return typeof window.hasAccountPermission !== 'function'
+            || window.hasAccountPermission(permission);
+    }
+
     function sameSessionId(a, b) {
         return String(a || '') === String(b || '');
     }
@@ -294,7 +299,7 @@
         var lock = sessionLockState(session);
 
         var headerActions = '';
-        if (!lock.locked || lock.isOwner) {
+        if (hasAccountPermission('support_chat.write') && (!lock.locked || lock.isOwner)) {
             headerActions = '    <button class="btn btn-sm btn-success" onclick="window.supportChatStaff.resolveSession(' + resolveSessionExpr + ')" title="Selesaikan"><i class="fa fa-check"></i> Selesai</button>';
         }
 
@@ -306,7 +311,13 @@
         }
 
         var inputArea;
-        if (lock.locked && !lock.isOwner) {
+        if (!hasAccountPermission('support_chat.write')) {
+            inputArea = [
+                '<div class="sc-staff-input-area" style="background:#f8f9fa;padding:14px 16px;text-align:center;color:#6c757d;font-size:13px;">',
+                '  <i class="fa fa-eye" style="margin-right:6px;"></i>Mode baca saja.',
+                '</div>'
+            ].join('');
+        } else if (lock.locked && !lock.isOwner) {
             inputArea = [
                 '<div class="sc-staff-input-area" style="background:#f8f9fa;padding:14px 16px;text-align:center;color:#6c757d;font-size:13px;">',
                 '  <i class="fa fa-lock" style="margin-right:6px;"></i>',
@@ -396,6 +407,7 @@
 
     // ==================== ACTIONS ====================
     async function sendReply() {
+        if (!hasAccountPermission('support_chat.write')) return;
         if (!state.activeSessionId) return;
         if (state.sendingReply) return;
 
@@ -456,6 +468,7 @@
     }
 
     async function resolveSession(sessionId) {
+        if (!hasAccountPermission('support_chat.write')) return;
         if (!confirm('Tandai sesi ini sebagai selesai?')) return;
 
         try {

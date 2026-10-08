@@ -8,7 +8,7 @@ const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
 const db = require('../db');
 const NodeCache = require('node-cache');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireSuperadminOrAccountPermission } = require('../middleware/auth');
 
 // Per-user notification count cache (10 second TTL — reduces DB load from 30s polling)
 const notifCountCache = new NodeCache({ stdTTL: 30, checkperiod: 10, useClones: false });
@@ -219,7 +219,7 @@ router.post('/read-all', verifyToken, async (req, res) => {
  * POST /api/notifications
  * Create a new notification (superadmin only)
  */
-router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
+router.post('/', verifyToken, requireSuperadminOrAccountPermission('notifications.write'), async (req, res) => {
     try {
         const { type, title, message, link, icon, icon_color, user_id, role_id } = req.body;
 
@@ -257,7 +257,7 @@ router.post('/', verifyToken, requireSuperadmin, async (req, res) => {
  * DELETE /api/notifications/:id
  * Delete a notification (superadmin only)
  */
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadminOrAccountPermission('notifications.delete'), async (req, res) => {
     try {
         const { id } = req.params;
 
