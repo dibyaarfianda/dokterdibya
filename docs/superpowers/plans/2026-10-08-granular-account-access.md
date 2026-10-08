@@ -77,11 +77,11 @@
 
 **Produces:** Layout A account list/matrix, create/resend/deactivate controls, one-time email activation, audit history, and doctor-only access management.
 
-- [ ] RED API/UI tests for catalog/users/detail/save/status/invite/resend/validate/accept and all specified failure codes.
-- [ ] Implement doctor-only access-control APIs with optimistic versioning and doctor-account protection.
-- [ ] Store invitation hashes only, expire at 24 hours, place raw token in URL fragment, require strong password, and keep failed-email accounts pending with resend.
-- [ ] Replace Kelola Roles content with Kelola Akses layout A; role is an editable job label only.
-- [ ] Keep rollout flag disabled in production until Task 11; run UI/API/invitation/chat gates; commit/push/deploy/apply migration/verify.
+- [x] RED API/UI tests for catalog/users/detail/save/status/invite/resend/validate/accept and all specified failure codes.
+- [x] Implement doctor-only access-control APIs with optimistic versioning and doctor-account protection.
+- [x] Store invitation hashes only, expire at 24 hours, place raw token in URL fragment, require strong password, and keep failed-email accounts pending with resend.
+- [x] Replace Kelola Roles content with Kelola Akses layout A; role is an editable job label only.
+- [x] Keep rollout flag disabled in production until Task 11; run UI/API/invitation/chat gates; commit/push/deploy/apply migration/verify.
 
 ## Task 6: Deny-by-default for new account-mode Staff
 
