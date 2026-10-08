@@ -271,6 +271,16 @@ let headerRegistrationCodeTimer = null;
 let headerRegistrationVisibilityBound = false;
 const HEADER_REGISTRATION_CODE_REFRESH_MS = 5 * 60 * 1000;
 
+function hasRegistrationPermission(permission) {
+    return typeof window.hasAccountPermission !== 'function'
+        || window.hasAccountPermission(permission);
+}
+
+function denyRegistrationAction(message) {
+    if (window.Swal?.fire) window.Swal.fire('Akses ditolak', message, 'warning');
+    else alert(message);
+}
+
 // Legacy function - redirects to main page function
 async function loadRegistrationCodes(page = 1) {
     if (typeof loadNewPatients === 'function') {
@@ -279,9 +289,15 @@ async function loadRegistrationCodes(page = 1) {
 }
 
 async function openGenerateCodeModal() {
+    if (!hasRegistrationPermission('registration_codes.view')) {
+        denyRegistrationAction('Anda tidak memiliki izin untuk melihat kode registrasi.');
+        return;
+    }
     document.getElementById('generated-code-result').style.display = 'none';
     document.getElementById('current-public-code').style.display = 'none';
-    document.getElementById('btn-generate-code').style.display = 'inline-block';
+    document.getElementById('btn-generate-code').style.display = hasRegistrationPermission('registration_codes.create')
+        ? 'inline-block'
+        : 'none';
     $('#generateCodeModal').modal('show');
 
     // Check for existing public code
@@ -303,6 +319,10 @@ async function openGenerateCodeModal() {
 }
 
 async function generatePublicCode() {
+    if (!hasRegistrationPermission('registration_codes.create')) {
+        denyRegistrationAction('Anda tidak memiliki izin untuk membuat kode registrasi.');
+        return;
+    }
     const btn = document.getElementById('btn-generate-code');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
@@ -361,6 +381,11 @@ function updateRegistrationCodeDisplay(code, expiresAt) {
 }
 
 async function loadHeaderRegistrationCode() {
+    if (!hasRegistrationPermission('registration_codes.view')) {
+        const container = document.getElementById('header-registration-code-container');
+        if (container) container.style.display = 'none';
+        return null;
+    }
     try {
         const token = (window.getAuthToken ? window.getAuthToken() : '');
         if (!token) return;
@@ -389,6 +414,14 @@ async function loadHeaderRegistrationCode() {
 }
 
 function initHeaderRegistrationCode() {
+    const container = document.getElementById('header-registration-code-container');
+    if (!hasRegistrationPermission('registration_codes.view')) {
+        if (headerRegistrationCodeTimer) clearInterval(headerRegistrationCodeTimer);
+        headerRegistrationCodeTimer = null;
+        if (container) container.style.display = 'none';
+        return;
+    }
+    if (container) container.style.display = '';
     void loadHeaderRegistrationCode();
 
     if (headerRegistrationCodeTimer) clearInterval(headerRegistrationCodeTimer);
@@ -407,6 +440,7 @@ window.openGenerateCodeModal = openGenerateCodeModal;
 window.initHeaderRegistrationCode = initHeaderRegistrationCode;
 window.loadHeaderRegistrationCode = loadHeaderRegistrationCode;
 window.loadDashboardCurrentCode = loadHeaderRegistrationCode;
+window.addEventListener('staff:access-changed', initHeaderRegistrationCode);
 
 async function sendCodeWhatsApp() {
     if (!currentGeneratedCode || !currentGeneratedPhone) {
@@ -481,6 +515,10 @@ async function resendCodeWhatsApp(code, phone, patientName) {
 }
 
 async function deleteCode(codeId) {
+    if (!hasRegistrationPermission('registration_codes.delete')) {
+        denyRegistrationAction('Anda tidak memiliki izin untuk menghapus kode registrasi.');
+        return;
+    }
     if (!confirm('Hapus kode registrasi ini?')) return;
 
     try {

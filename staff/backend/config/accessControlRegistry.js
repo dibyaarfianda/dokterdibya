@@ -174,6 +174,13 @@ const SOURCE_POLICIES = Object.freeze({
     status: CRUD('system.monitor', 'system.monitor', 'system.monitor', 'system.reset'),
     'sunday-appointments': CRUD('online_queue.view', 'online_queue.write', 'online_queue.write', 'online_queue.delete', { sync: 'online_queue.sync', reset: 'online_queue.delete' }),
     'sunday-clinic': CRUD('sunday_clinic.view', 'sunday_clinic.create', 'sunday_clinic.edit', 'medical_records.delete', { export: 'medical_records.export', reset: 'medical_records.reset_section', finalize: 'medical_records.finalize' }),
+    'sunday-clinic/closing': CRUD('billing.view', 'billing.finalize', 'billing.finalize', 'billing.reset', { finalize: 'billing.finalize' }),
+    'sunday-clinic/queue': CRUD('online_queue.view', 'online_queue.write', 'online_queue.write', 'online_queue.delete', { sync: 'online_queue.sync' }),
+    'sunday-clinic/records': CRUD('medical_records.view', 'medical_records.create', 'medical_records.edit', 'medical_records.delete', { sync: 'integrations.sync' }),
+    'sunday-clinic/billing': CRUD('billing.view', 'billing.create', 'billing.create', 'billing.reset', { payment: 'billing.process_payment', export: 'billing.export', finalize: 'billing.finalize', reset: 'billing.reset' }),
+    'sunday-clinic/prescription': CRUD('medications.view', 'medications.select', 'medications.select', 'medications.select'),
+    'sunday-clinic/resume-export': CRUD('medical_records.view', 'medical_records.export', 'medical_records.export', 'medical_records.export', { export: 'medical_records.export' }),
+    'sunday-clinic/visit-walk-in': CRUD('visits.view', 'visits.create', 'visits.edit', 'visits.delete'),
     suppliers: CRUD('suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete'),
     'support-chat': CRUD('support_chat.view', 'support_chat.write', 'support_chat.write', 'support_chat.delete', { finalize: 'support_chat.write' }),
     surgery: CRUD('medical_records.view', 'medical_records.create', 'medical_records.edit', 'medical_records.delete', { finalize: 'medical_records.finalize', export: 'medical_records.export' }),
@@ -184,7 +191,9 @@ const SOURCE_POLICIES = Object.freeze({
     'usg-photos': CRUD('usg_exam.view', 'usg_exam.create', 'usg_exam.edit', 'usg_exam.delete', { export: 'medical_records.export' }),
     'usg-reader': CRUD('usg_reader.use', 'usg_reader.use', 'usg_reader.use', 'usg_reader.use'),
     'visit-invoices': CRUD('billing.view', 'billing.create', 'billing.create', 'billing.reset', { payment: 'billing.process_payment', export: 'billing.export', finalize: 'billing.finalize' }),
-    visits: CRUD('visits.view', 'visits.create', 'visits.edit', 'visits.delete', { export: 'patients.export', merge: 'patients.merge' })
+    visits: CRUD('visits.view', 'visits.create', 'visits.edit', 'visits.delete', { export: 'patients.export', merge: 'patients.merge' }),
+    'v1/patients': CRUD('patients.view', 'patients.create', 'patients.edit', 'patients.delete'),
+    'v1/obat': CRUD('obat_alkes.view', 'obat_alkes.create', 'obat_alkes.edit', 'obat_alkes.delete', { reset: 'stock.update' })
 });
 
 const PATIENT_DEFAULT_SOURCES = new Set([
@@ -201,8 +210,57 @@ const INTEGRATION_SOURCES = new Set([
 // These routers are mounted below a verified private parent router. Their local
 // declarations intentionally omit duplicate JWT middleware.
 const INHERITED_PRIVATE_SOURCES = new Set([
-    'assistant-daf', 'assistant-daf-ai', 'gambiran-resumes', 'morbid-cases', 'surgery'
+    'assistant-daf', 'assistant-daf-ai', 'gambiran-resumes', 'morbid-cases', 'surgery',
+    'sunday-clinic/closing'
 ]);
+
+// Method/path inference covers ordinary CRUD routes. Keep semantic actions that
+// do not advertise their intent in the URL explicit so the HTTP boundary and
+// the route-level guard always require the same permission.
+const ROUTE_PERMISSION_OVERRIDES = new Map([
+    ['patients:POST:/api/patients/fix-names', 'patients.reset'],
+    ['patients:POST:/api/patients/:id/mark-delivered', 'patients.edit'],
+    ['auth:GET:/api/admin/web-patients', 'patients.view'],
+    ['auth:GET:/api/admin/web-patients/:id', 'patients.view'],
+    ['auth:PATCH:/api/admin/web-patients/:id/status', 'patients.edit'],
+    ['auth:DELETE:/api/admin/web-patients/:id', 'patients.delete'],
+    ['auth:POST:/api/admin/sync-web-patients', 'patients.reset'],
+    ['medical-records:POST:/api/medical-records/generate-resume', 'medical_records.export'],
+    ['medical-records:DELETE:/api/medical-records/by-type/:recordType', 'medical_records.reset_section'],
+    ['patient-documents:POST:/:id/create-share-link', 'patient_documents.share'],
+    ['patient-documents:POST:/notify-whatsapp', 'patient_documents.share'],
+    ['registration-codes:PUT:/settings', 'registration_codes.create'],
+    ['usg-bulk-upload:POST:/bot/run', 'usg_exam.sync'],
+    ['usg-bulk-upload:POST:/bot/schedule/run-now', 'usg_exam.sync'],
+    ['sunday-clinic/records:GET:/directory', 'patients.view'],
+    ['sunday-clinic/records:POST:/records/:mrId/:section', 'medical_records.edit'],
+    ['sunday-clinic/records:GET:/medify-sync/jobs/:mrId', 'integrations.view'],
+    ['sunday-clinic/records:GET:/medify-sync/stats', 'integrations.view'],
+    ['sunday-clinic/resume-export:POST:/generate-anamnesa/:mrId', 'clinical_ai.use'],
+    ['sunday-clinic/resume-export:POST:/resume-medis/send-whatsapp', 'patient_documents.share']
+]);
+
+const SUNDAY_CLINIC_SECTION_PERMISSIONS = Object.freeze({
+    anamnesa: 'anamnesa.edit',
+    physical_exam: 'physical_exam.edit',
+    pemeriksaan_obstetri: 'physical_exam.edit',
+    pemeriksaan_ginekologi: 'physical_exam.edit',
+    usg: 'usg_exam.edit',
+    penunjang: 'lab_exam.edit',
+    diagnosis: 'medical_records.edit',
+    planning: 'medical_records.edit',
+    resume_medis: 'medical_records.edit'
+});
+
+function resolveRequestPathOverride(method, requestPath) {
+    if (String(method).toUpperCase() !== 'POST') return null;
+    const match = /^\/api\/sunday-clinic\/records\/[^/]+\/([^/?]+)\/?$/.exec(requestPath);
+    if (!match) return null;
+    const permission = SUNDAY_CLINIC_SECTION_PERMISSIONS[match[1]];
+    return permission
+        ? { permission, ruleId: 'staff-sunday-clinic/record-section' }
+        : null;
+}
 
 function isAuthenticated(route) {
     return /\bverify(?:Token|StaffToken|PatientToken)\b|\brequire(?:Permission|Role|Roles|Superadmin|MenuAccess)\b|\bauthenticate\b/.test(`${route.fileMiddleware} ${route.handlerPrefix}`);
@@ -263,6 +321,10 @@ function resolveRouteAccess(route) {
         const authResolution = resolveAuthRoute(route);
         if (authResolution) return authResolution;
     }
+    if (route.sourceFile === 'v1/auth') {
+        if (route.routePath === '/login') return { exemption: 'activation', ruleId: 'v1-auth-login' };
+        return { exemption: route.routePath === '/me' ? 'staff_identity' : 'staff_profile', ruleId: 'v1-auth-self-service' };
+    }
     if (route.sourceFile === 'role-visibility') {
         return { exemption: 'legacy_access_adapter', ruleId: 'legacy-role-visibility' };
     }
@@ -285,7 +347,8 @@ function resolveRouteAccess(route) {
 
     const policy = SOURCE_POLICIES[route.sourceFile];
     if (!policy) return null;
-    const requiredPermission = resolvePolicyPermission(route, policy);
+    const overrideKey = `${route.sourceFile}:${route.method}:${route.routePath}`;
+    const requiredPermission = ROUTE_PERMISSION_OVERRIDES.get(overrideKey) || resolvePolicyPermission(route, policy);
     if (!requiredPermission) return null;
     return {
         permission: requiredPermission,
@@ -297,8 +360,11 @@ module.exports = {
     MENU_PERMISSION_MAP,
     LEGACY_MENU_MODULE_MAP,
     NAMED_EXEMPTIONS,
+    ROUTE_PERMISSION_OVERRIDES,
+    SUNDAY_CLINIC_SECTION_PERMISSIONS,
     SOURCE_POLICIES,
     STAFF_NAVIGATION_MAP,
     resolveRouteAccess,
+    resolveRequestPathOverride,
     specialAction
 };

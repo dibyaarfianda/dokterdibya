@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
-const { verifyToken, verifyStaffToken, requirePermission } = require('../middleware/auth');
+const { verifyToken, verifyStaffToken, requirePermission, isDelegatedAccountPermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const medicalRecordService = require('../services/MedicalRecordService');
 const { mutateSundayClinicDocuments, afterSundayClinicSave } = require('../services/SundayClinicSaveEffects');
@@ -306,7 +306,8 @@ async function resetSection(req, res) {
         const result = await medicalRecordService.reset({
             mrId: legacy ? req.query.mrId : req.params.mrId,
             patientId: legacy ? req.query.patientId : req.body.patientId,
-            recordType: req.params.recordType, ifMatch: req.get('If-Match'), actor: req.user
+            recordType: req.params.recordType, ifMatch: req.get('If-Match'), actor: req.user,
+            delegatedPermission: isDelegatedAccountPermission(req, ['medical_records.reset_section'])
         });
         return versionResponse(res, result);
     } catch (error) { return mutationFailure(res, error); }
@@ -314,7 +315,9 @@ async function resetSection(req, res) {
 
 function requireSectionResetRole(req, res, next) {
     try {
-        medicalRecordService.assertResetRole(req.user);
+        medicalRecordService.assertResetRole(req.user, {
+            delegatedPermission: isDelegatedAccountPermission(req, ['medical_records.reset_section'])
+        });
         return next();
     } catch (error) { return mutationFailure(res, error); }
 }

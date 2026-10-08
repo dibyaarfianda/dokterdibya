@@ -9,10 +9,16 @@ const cache = require('../utils/cache');
 const multer = require('multer');
 const sharp = require('sharp');
 const r2Storage = require('../services/r2Storage');
-const { verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
+const {
+    verifyPatientToken,
+    verifyStaffToken,
+    requireSuperadminOrAccountPermission,
+    isDelegatedAccountPermission
+} = require('../middleware/auth');
 const { validatePatient } = require('../middleware/validation');
 const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
+const { ROLE_NAMES } = require('../constants/roles');
 const PatientListService = require('../services/PatientListService');
 const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
@@ -95,7 +101,7 @@ function sendPatientMergeError(res, error) {
 
 // Doctor-only candidate search includes quarantined duplicates so old manual
 // quarantine records can be completed through the permanent merge workflow.
-router.get('/api/patients/merge/candidates', verifyStaffToken, requireSuperadmin, async (req, res) => {
+router.get('/api/patients/merge/candidates', verifyStaffToken, requireSuperadminOrAccountPermission('patients.merge'), async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
         const data = await patientMergeService.getCandidates(req.query.search, req.query.limit);
@@ -106,7 +112,7 @@ router.get('/api/patients/merge/candidates', verifyStaffToken, requireSuperadmin
     }
 });
 
-router.post('/api/patients/merge/preview', verifyStaffToken, requireSuperadmin, async (req, res) => {
+router.post('/api/patients/merge/preview', verifyStaffToken, requireSuperadminOrAccountPermission('patients.merge'), async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
         const preview = await patientMergeService.preview(
@@ -124,7 +130,7 @@ router.post('/api/patients/merge/preview', verifyStaffToken, requireSuperadmin, 
     }
 });
 
-router.post('/api/patients/merge', verifyStaffToken, requireSuperadmin, async (req, res) => {
+router.post('/api/patients/merge', verifyStaffToken, requireSuperadminOrAccountPermission('patients.merge'), async (req, res) => {
     try {
         const result = await patientMergeService.mergePatients({
             targetPatientId: req.body?.target_patient_id,
@@ -174,7 +180,7 @@ function sendBulkPatientDeleteError(res, error) {
     });
 }
 
-router.post('/api/patients/bulk-delete/preview', verifyStaffToken, requireSuperadmin, async (req, res) => {
+router.post('/api/patients/bulk-delete/preview', verifyStaffToken, requireSuperadminOrAccountPermission('patients.bulk_delete'), async (req, res) => {
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
         const preview = await bulkPatientDeletionService.preview(req.body?.patient_ids);
@@ -189,7 +195,7 @@ router.post('/api/patients/bulk-delete/preview', verifyStaffToken, requireSupera
     }
 });
 
-router.post('/api/patients/bulk-delete', verifyStaffToken, requireSuperadmin, async (req, res) => {
+router.post('/api/patients/bulk-delete', verifyStaffToken, requireSuperadminOrAccountPermission('patients.bulk_delete'), async (req, res) => {
     try {
         const result = await bulkPatientDeletionService.deletePatients(
             req.body?.patient_ids,
@@ -1012,7 +1018,8 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
 router.post('/api/patients/fix-names', verifyStaffToken, async (req, res) => {
     try {
         // Only allow admin/dokter roles
-        if (!['dokter', 'admin', 'managerial'].includes(req.user.role)) {
+        if (!isDelegatedAccountPermission(req, ['patients.reset'])
+            && ![ROLE_NAMES.DOKTER, ROLE_NAMES.ADMIN, ROLE_NAMES.MANAGERIAL].includes(req.user.role)) {
             return res.status(403).json({
                 success: false,
                 message: 'Only admin or dokter can perform this action'

@@ -7,7 +7,12 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
-const { verifyPatientToken, verifyStaffToken, requireSuperadmin } = require('../middleware/auth');
+const {
+    verifyPatientToken,
+    verifyStaffToken,
+    requireSuperadminOrAccountPermission,
+    isDelegatedAccountPermission
+} = require('../middleware/auth');
 const db = require('../db');
 const { getGMT7Timestamp } = require('../utils/idGenerator');
 const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
@@ -20,7 +25,11 @@ let encryptionWarningLogged = false;
 const VALID_INTAKE_CATEGORIES = new Set(['obstetri', 'gyn_repro', 'gyn_special', 'admin_followup']);
 
 // Helper: Check if user can access patient intake data
-function canAccessPatientIntake(user, patientId) {
+function canAccessPatientIntake(req, patientId) {
+    const user = req.user;
+    if (isDelegatedAccountPermission(req, ['anamnesa.view'])) {
+        return true;
+    }
     // Superadmin/dokter can access all records
     if (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id)) {
         return true;
@@ -1180,7 +1189,7 @@ router.get('/api/patient-intake/by-patient/:patientId', verifyStaffToken, async 
     }
 
     // Access control check
-    if (!canAccessPatientIntake(req.user, patientId)) {
+    if (!canAccessPatientIntake(req, patientId)) {
         logger.warn(`Unauthorized patient intake access attempt: User ${req.user.id} tried to access patient ${patientId}`);
         return res.status(403).json({
             success: false,
@@ -1270,7 +1279,7 @@ router.get('/api/patient-intake/patient/:patientId/latest', verifyStaffToken, as
     }
 
     // Access control check
-    if (!canAccessPatientIntake(req.user, patientId)) {
+    if (!canAccessPatientIntake(req, patientId)) {
         logger.warn(`Unauthorized patient intake latest access attempt: User ${req.user.id} tried to access patient ${patientId}`);
         return res.status(403).json({
             success: false,
@@ -1428,7 +1437,8 @@ router.put('/api/patient-intake/:submissionId/review', verifyStaffToken, async (
     }
 });
 
-router.delete('/api/patient-intake/:submissionId', verifyStaffToken, requireSuperadmin, async (req, res, next) => {
+router.delete('/api/patient-intake/:submissionId', verifyStaffToken,
+    requireSuperadminOrAccountPermission('medical_records.delete'), async (req, res, next) => {
     const { submissionId } = req.params;
 
     if (!submissionId || typeof submissionId !== 'string') {

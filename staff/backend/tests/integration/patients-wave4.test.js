@@ -12,7 +12,9 @@ jest.mock('../../middleware/auth', () => ({
     verifyToken: (req, res, next) => { req.user = { id: 1, role_id: 1 }; next(); },
     verifyPatientToken: (req, res, next) => next(),
     verifyStaffToken: (req, res, next) => { req.user = { id: 1, role_id: 1 }; next(); },
-    requireSuperadmin: (req, res, next) => next()
+    requireSuperadmin: (req, res, next) => next(),
+    requireSuperadminOrAccountPermission: () => (req, res, next) => next(),
+    isDelegatedAccountPermission: () => false
 }));
 jest.mock('../../services/r2Storage', () => ({}));
 jest.mock('../../services/patientDeletion', () => ({

@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const PatientService = require('../../services/PatientService');
-const { verifyToken, requireSuperadmin } = require('../../middleware/auth');
+const { verifyToken, requireSuperadminOrAccountPermission } = require('../../middleware/auth');
 const { validatePatient } = require('../../middleware/validation');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { sendSuccess, sendCreated, sendError } = require('../../utils/response');
@@ -41,7 +41,7 @@ router.put('/patients/:id', verifyToken, validatePatient, asyncHandler(async (re
 }));
 
 // DELETE PATIENT (superadmin/dokter only)
-router.delete('/patients/:id', verifyToken, requireSuperadmin, asyncHandler(async (req, res) => {
+router.delete('/patients/:id', verifyToken, requireSuperadminOrAccountPermission('patients.delete'), asyncHandler(async (req, res) => {
     await PatientService.deletePatient(req.params.id);
     sendSuccess(res, null, 'Patient deleted successfully');
 }));

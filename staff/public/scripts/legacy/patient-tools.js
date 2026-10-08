@@ -1,3 +1,7 @@
+    function hasAccountPermission(permission) {
+        return typeof window.hasAccountPermission !== 'function' || window.hasAccountPermission(permission);
+    }
+
     function onPatientToolsReady(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', callback, { once: true });
@@ -5,6 +9,14 @@
         }
         callback();
     }
+
+    function syncPatientResetAction() {
+        document.querySelectorAll('[onclick="fixPatientNames()"]')
+            .forEach(button => { button.hidden = !hasAccountPermission('patients.reset'); });
+    }
+
+    onPatientToolsReady(syncPatientResetAction);
+    window.addEventListener('staff:access-changed', syncPatientResetAction);
 
     function hideLegacyStaffPages() {
         if (typeof window.hideAllPages === 'function') {
@@ -135,6 +147,7 @@
 
     // Auto-fix patient names to proper title case
     window.fixPatientNames = async function() {
+        if (!hasAccountPermission('patients.reset')) return;
         const confirmed = await Swal.fire({
             title: 'Auto-Fix Nama Pasien?',
             html: `
@@ -857,6 +870,7 @@
     }
 
     window.openPatientMergeModal = async function() {
+        if (!hasAccountPermission('patients.merge')) return;
         try {
             const initialCandidates = await searchPatientMergeCandidates('');
             const candidateCache = new Map(initialCandidates.map(patient => [String(patient.id), patient]));
@@ -1324,6 +1338,7 @@
     }
 
     window.openBulkPatientDeleteModal = async function() {
+        if (!hasAccountPermission('patients.bulk_delete')) return;
         const patientIds = [...bulkDeletePatientSelection.keys()];
         if (patientIds.length === 0) {
             await Swal.fire({ icon: 'info', title: 'Belum Ada Pilihan', text: 'Centang pasien yang ingin dihapus terlebih dahulu.' });
@@ -1473,26 +1488,38 @@
         } else if (patient.has_delivered) {
             hplCell = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
         }
+        const canEdit = hasAccountPermission('patients.edit');
+        const canDelete = hasAccountPermission('patients.delete');
+        const canBulkDelete = hasAccountPermission('patients.bulk_delete');
         let deliveryButton = '';
-        if (patient.is_obstetri && !patient.has_delivered) {
-            deliveryButton = `<button type="button" class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+        if (canEdit && patient.is_obstetri && !patient.has_delivered) {
+            deliveryButton = `<button type="button" class="btn btn-sm btn-success" data-account-permission="patients.edit" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
         }
+        const bulkDeleteCheckbox = canBulkDelete
+            ? `<input type="checkbox" class="patient-bulk-delete-check mr-1" data-account-permission="patients.bulk_delete" data-patient-id="${escapeHtmlSafe(patient.id)}" data-patient-name="${escapeHtmlSafe(patient.full_name || patient.id)}" onchange="togglePatientBulkSelection(this)" aria-label="Pilih ${escapeHtmlSafe(patient.full_name || patient.id)} untuk dihapus">`
+            : '';
+        const statusButton = canEdit
+            ? `<button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}" data-account-permission="patients.edit"
+                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${escapedName}', this)"
+                    title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
+                    <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
+                </button>`
+            : '';
+        const deleteButton = canDelete
+            ? `<button type="button" class="btn btn-sm btn-danger" data-account-permission="patients.delete" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
+                    <i class="fas fa-trash"></i>
+                </button>`
+            : '';
         return `
             <tr>
                 <td class="text-nowrap">
-                    <input type="checkbox" class="patient-bulk-delete-check mr-1" data-patient-id="${escapeHtmlSafe(patient.id)}" data-patient-name="${escapeHtmlSafe(patient.full_name || patient.id)}" onchange="togglePatientBulkSelection(this)" aria-label="Pilih ${escapeHtmlSafe(patient.full_name || patient.id)} untuk dihapus">
+                    ${bulkDeleteCheckbox}
                     <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                         <i class="fas fa-eye"></i>
                     </button>
                     ${deliveryButton}
-                    <button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
-                            onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${escapedName}', this)"
-                            title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
-                        <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    ${statusButton}
+                    ${deleteButton}
                 </td>
                 <td>${nameCell}</td>
                 <td>${formatPatientType(patient.last_visit_type)}</td>
@@ -1747,6 +1774,8 @@
     window.performAdvancedSearch = performAdvancedSearch;
 
     window.deletePatient = async function(patientId, patientName, event) {
+        if (!hasAccountPermission('patients.delete')) return;
+
         // Get button reference from event if provided
         const deleteBtn = event ? event.target.closest('button') : null;
         const originalHtml = deleteBtn ? deleteBtn.innerHTML : '';
@@ -1851,6 +1880,8 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     // Mark patient as delivered (create birth_congratulations entry)
     window.markAsDelivered = async function(patientId, patientName, btnEl) {
+        if (!hasAccountPermission('patients.edit')) return;
+
         const confirmResult = await Swal.fire({
             title: 'Tandai Sudah Melahirkan?',
             text: `Tandai "${patientName}" sudah melahirkan? Ini akan menghapus pasien dari daftar monitoring kehamilan.`,
@@ -1916,6 +1947,8 @@ Apakah Anda yakin ingin melanjutkan?`;
     };
 
     window.togglePatientStatus = async function(patientId, currentStatus, patientName, btnEl) {
+        if (!hasAccountPermission('patients.edit')) return;
+
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
 

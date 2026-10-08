@@ -15,10 +15,10 @@ const logger = require('../utils/logger');
 const PatientPasswordService = require('../services/PatientPasswordService');
 const PatientPasswordResetService = require('../services/PatientPasswordResetService');
 const PatientPortalSettingsService = require('../services/PatientPortalSettingsService');
-const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
+const { ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
-const { verifyStaffToken } = require('../middleware/auth');
+const { verifyStaffToken, isDelegatedAccountPermission } = require('../middleware/auth');
 const {
     BLOCKED_PATIENT_MESSAGE,
     isPatientIdentityBlocked,
@@ -1866,7 +1866,8 @@ router.get('/all', verifyStaffToken, async (req, res) => {
 // Delete web patient (Superadmin/Dokter only)
 router.delete('/:id', verifyStaffToken, async (req, res) => {
     try {
-        if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        if (!isDelegatedAccountPermission(req, ['patients.delete'])
+            && !req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
             return res.status(403).json({ message: 'Unauthorized. Superadmin access required.' });
         }
 
@@ -1910,7 +1911,8 @@ router.patch('/:id/status', verifyStaffToken, async (req, res) => {
         }
 
         // Check if user is admin/superadmin
-        if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
+        if (!isDelegatedAccountPermission(req, ['patients.edit'])
+            && !req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
             return res.status(403).json({
                 success: false,
                 message: 'Akses ditolak. Hanya admin yang dapat melakukan ini.'

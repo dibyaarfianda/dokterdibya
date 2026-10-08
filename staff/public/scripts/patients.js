@@ -1,4 +1,4 @@
-import { auth, getIdToken } from './vps-auth-v2.js';
+import { auth, getIdToken, hasPermission } from './vps-auth-v2.js';
 import { broadcastPatientSelection } from './realtime-sync.js';
 import { showSuccess, showError, showConfirm } from './toast.js';
 import { setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
@@ -169,6 +169,7 @@ function hideDetails() {
 
 async function showDetails(p) {
     if (!detailsEl) return;
+    const canEditPatient = await hasPermission('patients.edit');
     
     // Set current selected patient
     currentlySelectedPatientId = p.id;
@@ -197,7 +198,7 @@ async function showDetails(p) {
         </div>
         <div class="mt-2">
             <button class="btn btn-sm btn-primary mr-2" id="btn-use-patient">Gunakan untuk Tagihan</button>
-            <button class="btn btn-sm btn-warning" id="btn-edit-patient">Edit Data</button>
+            ${canEditPatient ? '<button class="btn btn-sm btn-warning" id="btn-edit-patient" data-account-permission="patients.edit">Edit Data</button>' : ''}
             <!-- Tombol Hapus dihilangkan - hanya tersedia di Kelola Pasien -->
         </div>
     `;
@@ -214,7 +215,9 @@ async function showDetails(p) {
     
     const btnEdit = document.getElementById('btn-edit-patient');
     if (btnEdit) {
-        btnEdit.addEventListener('click', () => editPatient(p));
+        btnEdit.addEventListener('click', async () => {
+            if (await hasPermission('patients.edit')) editPatient(p);
+        });
     }
     
     // Tombol delete dihapus dari detail pasien
@@ -440,6 +443,11 @@ export async function initPatients() {
         e.preventDefault();
         const isEditMode = quickForm.dataset.editMode === 'true';
         const editId = quickForm.dataset.editId;
+        const requiredPermission = isEditMode ? 'patients.edit' : 'patients.create';
+        if (!await hasPermission(requiredPermission)) {
+            showError('Akses ditolak untuk menyimpan data pasien.');
+            return;
+        }
         
         const id5 = quickIdEl?.value || generateUniqueIdLocal();
         const name = quickNameEl?.value.trim() || '';
@@ -615,6 +623,11 @@ function editPatient(p) {
 }
 
 async function deletePatient(p) {
+    if (!await hasPermission('patients.delete')) {
+        showError('Akses ditolak untuk menghapus pasien.');
+        return;
+    }
+
     const confirmDelete = await showConfirm(
         `Apakah Anda yakin ingin menghapus pasien <strong>"${p.name}"</strong>?<br><br><span class="text-danger">Data yang dihapus tidak dapat dikembalikan!</span>`,
         'Konfirmasi Hapus Pasien'

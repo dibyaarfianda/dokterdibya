@@ -42,7 +42,7 @@ describe('Sunday Clinic closing payment correctness', () => {
         expect(paymentRouter).toMatch(/router\.post\('\/:mrId\/create-card-charge',\s*verifyToken,\s*requireOpenAccountingDate,/);
         expect(patientPaymentRouter).toMatch(/router\.post\('\/:billingId\/create-payment',\s*requireOpenAccountingDate,/);
         expect(patientPaymentRouter).toMatch(/router\.post\('\/:billingId\/create-insurance-payment',\s*requireOpenAccountingDate,/);
-        expect(recordsRouter).toMatch(/router\.delete\('\/records\/:mrId',\s*verifyToken,\s*requireSuperadmin,\s*requireOpenAccountingDate,/);
+        expect(recordsRouter).toMatch(/router\.delete\('\/records\/:mrId',\s*verifyToken,\s*requireSuperadminOrAccountPermission\('medical_records\.delete'\),\s*requireOpenAccountingDate,/);
         expect(walkInRouter).toMatch(/router\.post\('\/start-walk-in',\s*verifyStaffToken,\s*requireOpenAccountingDate,/);
         expect(appointmentRouter).toMatch(/router\.post\('\/:id\/start-clinic-record',\s*verifyStaffToken,\s*requireOpenSundayClinicAccountingDate,/);
         expect(patientPaymentRouter).toContain('patientId: req.user.id');

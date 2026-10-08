@@ -8,7 +8,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyStaffToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
+const {
+    verifyStaffToken,
+    requirePermission,
+    requireSuperadminOrAccountPermission
+} = require('../middleware/auth');
 const { generatePublicCodeNow } = require('../services/appointmentScheduler');
 
 /**
@@ -140,7 +144,7 @@ router.post('/generate-public', verifyStaffToken, requirePermission('registratio
  * Manually trigger scheduler code generation (Superadmin only)
  * Used when midnight scheduler was missed
  */
-router.post('/generate-now', verifyStaffToken, requireSuperadmin, async (req, res) => {
+router.post('/generate-now', verifyStaffToken, requireSuperadminOrAccountPermission('registration_codes.create'), async (req, res) => {
     try {
         const result = await generatePublicCodeNow();
         res.json({
@@ -391,16 +395,8 @@ router.get('/settings', async (req, res) => {
  * PUT /api/registration-codes/settings
  * Update registration code settings (Staff only)
  */
-router.put('/settings', verifyStaffToken, async (req, res) => {
+router.put('/settings', verifyStaffToken, requireSuperadminOrAccountPermission('registration_codes.create'), async (req, res) => {
     try {
-        // Only superadmin can change this setting
-        if (!req.user.is_superadmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Hanya superadmin yang dapat mengubah pengaturan ini'
-            });
-        }
-
         const { registration_code_required } = req.body;
 
         await db.query(

@@ -7,6 +7,7 @@ import { MR_CATEGORIES, SECTIONS } from './utils/constants.js';
 import apiClient from './utils/api-client.js';
 import stateManager from './utils/state-manager.js';
 import { isSuperadminUser } from '../role-constants.js';
+import { auth, hasPermission } from '../vps-auth-v2.js';
 
 function applySundayClinicPwaPrimitives(container) {
     if (!container) return;
@@ -131,6 +132,70 @@ class SundayClinicApp {
 
     isMedifyLocation(location = this.currentLocation) {
         return location === 'rsia_melinda' || location === 'rsud_gambiran';
+    }
+
+    async requireAccountPermission(permission, message = 'Akses ditolak untuk tindakan ini.') {
+        const allowed = await hasPermission(permission);
+        const user = auth.currentUser;
+        const usesAccountPolicy = user?.access_mode === 'account' && !user?.is_doctor_protected;
+        if (!usesAccountPolicy || allowed) return true;
+        this.showError(message);
+        return false;
+    }
+
+    sectionWritePermission(section) {
+        const permissions = {
+            [SECTIONS.ANAMNESA]: 'anamnesa.edit',
+            [SECTIONS.PHYSICAL_EXAM]: 'physical_exam.edit',
+            [SECTIONS.PEMERIKSAAN_OBSTETRI]: 'physical_exam.edit',
+            [SECTIONS.PEMERIKSAAN_GINEKOLOGI]: 'physical_exam.edit',
+            [SECTIONS.USG]: 'usg_exam.edit',
+            [SECTIONS.PENUNJANG]: 'lab_exam.edit',
+            [SECTIONS.DIAGNOSIS]: 'medical_records.edit',
+            [SECTIONS.PLAN]: 'medical_records.edit',
+            [SECTIONS.RESUME_MEDIS]: 'medical_records.edit'
+        };
+        return permissions[section] || null;
+    }
+
+    async applyActiveSectionAccess(section, container) {
+        // hasPermission also refreshes /api/access/me when the module was opened directly.
+        await hasPermission('medical_records.view');
+        const user = auth.currentUser;
+        if (user?.access_mode !== 'account' || user?.is_doctor_protected) return;
+
+        const writePermission = this.sectionWritePermission(section);
+        if (writePermission && !await hasPermission(writePermission)) {
+            container.querySelectorAll('input, textarea, select').forEach(field => {
+                field.disabled = true;
+                field.setAttribute('aria-readonly', 'true');
+            });
+            container.querySelectorAll(
+                '.section-container .btn-primary, .section-container .btn-warning, '
+                + '.section-container button[id^="save-"], .section-container button[id^="btn-save"], '
+                + '.section-container button[id^="btn-update"]'
+            ).forEach(button => {
+                if (!button.hasAttribute('data-account-permission')) button.hidden = true;
+            });
+        }
+
+        const exactActions = [
+            ['.sc-category-edit', ['medical_records.edit']],
+            ['.sc-category-delete', ['medical_records.delete']],
+            ['#btn-generate-resume', ['medical_records.export', 'medical_records.edit', 'medical_records.finalize']],
+            ['#btn-download-pdf', ['medical_records.export']],
+            ['#btn-send-whatsapp', ['patient_documents.share']],
+            ['#btn-send-to-patient', ['patient_documents.create']],
+            ['#btn-reset-resume', ['medical_records.reset_section']]
+        ];
+        for (const [selector, permissions] of exactActions) {
+            const allowed = (await Promise.all(permissions.map(permission => hasPermission(permission))))
+                .every(Boolean);
+            container.querySelectorAll(selector).forEach(element => {
+                element.hidden = !allowed;
+                element.classList.toggle('d-none', !allowed);
+            });
+        }
     }
 
     getImportSourceLabel() {
@@ -424,6 +489,7 @@ class SundayClinicApp {
 
         // Attach event listeners
         this.attachEventListeners();
+        await this.applyActiveSectionAccess(activeSection, container);
 
         // Store current section
         stateManager.setActiveSection(activeSection);
@@ -472,7 +538,8 @@ class SundayClinicApp {
 
         // Edit category button
         const editCategoryBtn = `
-            <button type="button" class="btn btn-outline-secondary btn-sm sc-category-action-btn"
+            <button type="button" class="btn btn-outline-secondary btn-sm sc-category-action-btn sc-category-edit"
+                    data-account-permission="medical_records.edit"
                     onclick="window.SundayClinicApp.editCategory()" title="Ubah Kategori"
                     data-record-id="${recordId || ''}">
                 <i class="fas fa-pencil-alt"></i>
@@ -480,15 +547,16 @@ class SundayClinicApp {
             </button>
         `;
 
-        // Delete button - only for dokter
-        const deleteBtn = isDokter ? `
-            <button type="button" class="btn btn-outline-danger btn-sm sc-category-action-btn"
+        // Legacy non-doctors keep the button hidden; account mode may reveal it by exact grant.
+        const deleteBtn = `
+            <button type="button" class="btn btn-outline-danger btn-sm sc-category-action-btn sc-category-delete ${isDokter ? '' : 'd-none'}"
+                    data-account-permission="medical_records.delete"
                     onclick="window.SundayClinicApp.deleteMedicalRecord('${this.currentMrId}')"
                     title="Hapus Rekam Medis">
                 <i class="fas fa-trash"></i>
                 <span class="sc-category-action-label">Hapus</span>
             </button>
-        ` : '';
+        `;
 
         // Current section label (shown only on mobile)
         const activeSec = activeSection || state.activeSection || null;
@@ -756,6 +824,8 @@ class SundayClinicApp {
      * Delete medical record (Dokter/Superadmin only)
      */
     async deleteMedicalRecord(mrId) {
+        if (!await this.requireAccountPermission('medical_records.delete', 'Akses ditolak untuk menghapus rekam medis.')) return;
+
         const state = stateManager.getState();
         const recordStatus = state.recordData?.record?.status || state.recordData?.status || 'draft';
         const isFinalized = recordStatus === 'finalized';
@@ -828,6 +898,8 @@ class SundayClinicApp {
      * Edit category - show dropdown to select new category
      */
     async editCategory(recordId = null) {
+        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk mengubah rekam medis.')) return;
+
         const state = stateManager.getState();
         const resolvedRecordId = recordId
             || state.recordData?.record?.id
@@ -1272,6 +1344,8 @@ class SundayClinicApp {
      * Save all sections
      */
     async saveAll() {
+        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk menyimpan rekam medis.')) return;
+
         try {
             this.showLoading('Menyimpan...');
 
@@ -1317,6 +1391,8 @@ class SundayClinicApp {
      * Save Planning for obstetri category (old format)
      */
     async savePlanningObstetri() {
+        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk menyimpan planning.')) return;
+
         // Prevent double submission
         if (this._savingPlanning) {
             console.warn('[SundayClinic] Planning save already in progress, ignoring duplicate call');
@@ -1382,6 +1458,8 @@ class SundayClinicApp {
      * Save Pemeriksaan Obstetri
      */
     async savePemeriksaanObstetri() {
+        if (!await this.requireAccountPermission('physical_exam.edit', 'Akses ditolak untuk menyimpan pemeriksaan.')) return;
+
         // Prevent double submission
         if (this._savingPemeriksaanObstetri) {
             console.warn('[SundayClinic] Pemeriksaan Obstetri save already in progress, ignoring duplicate call');
@@ -1446,6 +1524,8 @@ class SundayClinicApp {
      * Save USG for obstetri category
      */
     async saveUSGExam() {
+        if (!await this.requireAccountPermission('usg_exam.edit', 'Akses ditolak untuk menyimpan USG.')) return;
+
         // Prevent double submission
         if (this._savingUSG) {
             console.warn('[SundayClinic] USG save already in progress, ignoring duplicate call');
@@ -1622,6 +1702,8 @@ class SundayClinicApp {
      * Save Physical Exam for obstetri category (old format)
      */
     async savePhysicalExam() {
+        if (!await this.requireAccountPermission('physical_exam.edit', 'Akses ditolak untuk menyimpan pemeriksaan fisik.')) return;
+
         // Prevent double submission
         if (this._savingPhysicalExam) {
             console.warn('[SundayClinic] Physical Exam save already in progress, ignoring duplicate call');
@@ -1739,6 +1821,8 @@ class SundayClinicApp {
      * Save Anamnesa
      */
     async saveAnamnesa() {
+        if (!await this.requireAccountPermission('anamnesa.edit', 'Akses ditolak untuk menyimpan anamnesa.')) return;
+
         // Prevent double submission
         if (this._savingAnamnesa) {
             console.warn('[SundayClinic] Anamnesa save already in progress, ignoring duplicate call');
@@ -1935,6 +2019,8 @@ class SundayClinicApp {
      * Save Diagnosis
      */
     async saveDiagnosis() {
+        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk menyimpan diagnosis.')) return;
+
         // Prevent double submission
         if (this._savingDiagnosis) {
             console.warn('[SundayClinic] Diagnosis save already in progress, ignoring duplicate call');
@@ -2069,6 +2155,10 @@ class SundayClinicApp {
      * Generate Resume Medis using AI
      */
     async generateResumeMedis() {
+        for (const permission of ['medical_records.export', 'medical_records.edit', 'medical_records.finalize']) {
+            if (!await this.requireAccountPermission(permission, 'Izin membuat dan memfinalisasi resume medis belum diberikan.')) return;
+        }
+
         if (this._generatingResume) {
             console.warn('[SundayClinic] Resume generation already in progress');
             return;
@@ -2159,22 +2249,24 @@ class SundayClinicApp {
             const buttonGroup = document.getElementById('resume-button-group');
             if (buttonGroup && !document.getElementById('btn-download-pdf')) {
                 buttonGroup.innerHTML = `
-                    <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
+                    <button type="button" class="btn btn-primary" id="btn-generate-resume" data-account-permission="medical_records.export" onclick="window.generateResumeMedis()">
                         <i class="fas fa-magic mr-2"></i>Generate Resume AI
                     </button>
-                    <button type="button" class="btn btn-danger ml-2" id="btn-download-pdf" onclick="window.downloadResumePDF()">
+                    <button type="button" class="btn btn-danger ml-2" id="btn-download-pdf" data-account-permission="medical_records.export" onclick="window.downloadResumePDF()">
                         <i class="fas fa-file-pdf"></i> PDF
                     </button>
-                    <button type="button" class="btn btn-success ml-2" id="btn-send-whatsapp" onclick="window.openWhatsAppModal()">
+                    <button type="button" class="btn btn-success ml-2" id="btn-send-whatsapp" data-account-permission="patient_documents.share" onclick="window.openWhatsAppModal()">
                         <i class="fab fa-whatsapp"></i> WhatsApp
                     </button>
-                    <button type="button" class="btn btn-info ml-2" id="btn-send-to-patient" onclick="window.openSendToPatientModal()">
+                    <button type="button" class="btn btn-info ml-2" id="btn-send-to-patient" data-account-permission="patient_documents.create" onclick="window.openSendToPatientModal()">
                         <i class="fas fa-share-alt"></i> Kirim ke Pasien
                     </button>
-                    <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
+                    <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" data-account-permission="medical_records.reset_section" onclick="window.resetResumeMedis()">
                         <i class="fas fa-redo"></i> Reset
                     </button>
                 `;
+                const content = document.getElementById('sunday-clinic-content');
+                if (content) await this.applyActiveSectionAccess(SECTIONS.RESUME_MEDIS, content);
             }
 
             if (completion.success) {
@@ -2201,6 +2293,8 @@ class SundayClinicApp {
      * Save Resume Medis
      */
     async saveResumeMedis(options = {}) {
+        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk menyimpan resume medis.')) return;
+
         const {
             resumeText = null,
             silent = false,
@@ -2284,6 +2378,10 @@ class SundayClinicApp {
      * Set appointment status to completed if still pending.
      */
     async completeExaminationStatus(options = {}) {
+        if (!await this.requireAccountPermission('medical_records.finalize', 'Akses ditolak untuk memfinalisasi pemeriksaan.')) {
+            return { success: false, reason: 'access_denied' };
+        }
+
         const { silent = false } = options;
         const state = stateManager.getState();
         const appointment = state.appointmentData;
@@ -2330,6 +2428,8 @@ class SundayClinicApp {
      * Reset Resume Medis (clear generated content and delete from database)
      */
     async resetResumeMedis() {
+        if (!await this.requireAccountPermission('medical_records.reset_section', 'Akses ditolak untuk mereset resume medis.')) return;
+
         const confirmed = confirm('Apakah Anda yakin ingin mereset resume medis? Semua resume medis untuk visit ini akan dihapus dari database.');
         if (!confirmed) return;
 
@@ -2448,13 +2548,17 @@ class SundayClinicApp {
      * "Periksa Pasien" action — sets status to diperiksa and starts stopwatch.
      */
     async startExamination() {
+        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk memulai pemeriksaan.')) return;
+
         const mrId = this.currentMrId;
         if (!mrId) {
             window.showToast && window.showToast('error', 'Buka DRD pasien terlebih dahulu');
             return;
         }
         const isDokter = isSuperadminUser(window.currentStaffIdentity);
-        if (!isDokter) {
+        const isDelegatedAccount = auth.currentUser?.access_mode === 'account'
+            && !auth.currentUser?.is_doctor_protected;
+        if (!isDokter && !isDelegatedAccount) {
             window.showToast && window.showToast('error', 'Hanya dokter yang bisa memulai pemeriksaan');
             return;
         }
@@ -2738,7 +2842,11 @@ class SundayClinicApp {
             const isPrivat = rec.visit_location === 'klinik_private';
             if (btn) {
                 const isDokter = isSuperadminUser(window.currentStaffIdentity);
-                const canStart = isPrivat && isDokter && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
+                const isDelegatedAccount = auth.currentUser?.access_mode === 'account'
+                    && !auth.currentUser?.is_doctor_protected
+                    && await hasPermission('medical_records.edit');
+                const canStart = isPrivat && (isDokter || isDelegatedAccount)
+                    && qs !== 'diperiksa' && qs !== 'selesai_periksa' && qs !== 'lunas';
                 if (canStart) {
                     resetStartExaminationButton(btn);
                     btn.style.display = '';
@@ -3013,6 +3121,8 @@ window.savePemeriksaanObstetri = () => app.savePemeriksaanObstetri();
 
 // Copy TB/BB from last visit
 window.copyLastTbBb = async () => {
+    if (!await app.requireAccountPermission('physical_exam.edit', 'Akses ditolak untuk mengubah pemeriksaan fisik.')) return;
+
     const state = stateManager.getState();
     const patientId = state.patientData?.id;
     const currentMrId = state.currentMrId;
@@ -3085,6 +3195,8 @@ window.markExaminationCompleted = async () => {
 
 // PDF Download function
 window.downloadResumePDF = async () => {
+    if (!await app.requireAccountPermission('medical_records.export', 'Akses ditolak untuk mengekspor resume medis.')) return;
+
     const state = stateManager.getState();
     const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
 
@@ -3135,7 +3247,8 @@ window.downloadResumePDF = async () => {
 };
 
 // Open WhatsApp Modal
-window.openWhatsAppModal = () => {
+window.openWhatsAppModal = async () => {
+    if (!await app.requireAccountPermission('patient_documents.share', 'Akses ditolak untuk membagikan resume melalui WhatsApp.')) return;
     const modal = document.getElementById('whatsappResumeModal');
     if (modal) {
         // Pre-fill phone from patient data if available
@@ -3151,6 +3264,7 @@ window.openWhatsAppModal = () => {
 
 // Send Resume via WhatsApp
 window.sendResumeWhatsApp = async () => {
+    if (!await app.requireAccountPermission('patient_documents.share', 'Akses ditolak untuk membagikan resume melalui WhatsApp.')) return;
     const state = stateManager.getState();
     const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
     const phone = document.getElementById('whatsapp-resume-phone')?.value?.trim();

@@ -22,6 +22,36 @@ const LOCK_TIME_MS = parseInt(process.env.LOGIN_LOCK_TIME_MS) || 15 * 60 * 1000;
 const menuAccessCache = new Map();
 const MENU_ACCESS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Account-mode delegation is activated one rollout group at a time. Later
+// modules remain behind their legacy guard until their dedicated task passes.
+const ACTIVE_ACCOUNT_PERMISSION_PREFIXES = Object.freeze([
+    'patients.',
+    'patient_documents.',
+    'r2_files.',
+    'registration_codes.',
+    'medical_records.',
+    'anamnesa.',
+    'physical_exam.',
+    'lab_exam.',
+    'usg_exam.',
+    'visits.'
+]);
+
+function isDelegatedAccountPermission(req, requiredPermissions = []) {
+    const access = req?.accountAccess;
+    const decision = req?.accountAccessResolution;
+    const permission = decision?.permission;
+    const required = Array.isArray(requiredPermissions) ? requiredPermissions : [requiredPermissions];
+    const granted = access?.permissions instanceof Set
+        ? access.permissions.has(permission)
+        : Array.isArray(access?.permissions) && access.permissions.includes(permission);
+    return access?.mode === 'account'
+        && typeof permission === 'string'
+        && ACTIVE_ACCOUNT_PERMISSION_PREFIXES.some(prefix => permission.startsWith(prefix))
+        && required.includes(permission)
+        && granted;
+}
+
 /**
  * Record failed login attempt
  */
@@ -488,6 +518,13 @@ function requireSuperadmin(req, res, next) {
     });
 }
 
+function requireSuperadminOrAccountPermission(permission) {
+    return (req, res, next) => {
+        if (isDelegatedAccountPermission(req, [permission])) return next();
+        return requireSuperadmin(req, res, next);
+    };
+}
+
 /**
  * Require the literal dokter role.
  *
@@ -633,6 +670,13 @@ function requirePermission(...requiredPermissions) {
                 userId: req.user.id,
                 permissions: requiredPermissions
             }));
+            return next();
+        }
+
+        // The global account-mode boundary has already reloaded canonical
+        // grants and matched this exact route. Do not consult role tables for
+        // rollout groups that have completed per-account enforcement.
+        if (isDelegatedAccountPermission(req, requiredPermissions)) {
             return next();
         }
 
@@ -815,9 +859,11 @@ module.exports = {
     requireRole,
     requireRoles,
     requireSuperadmin,
+    requireSuperadminOrAccountPermission,
     requireDoctorRole,
     requireMenuAccess,  // New: check menu visibility from database
     requirePermission,  // Deprecated
+    isDelegatedAccountPermission,
     optionalAuth,
     recordFailedAttempt,
     isAccountLocked,

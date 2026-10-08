@@ -4,8 +4,18 @@
  */
 
 import stateManager from '../../utils/state-manager.js';
+import { auth, hasPermission } from '../../../vps-auth-v2.js';
 
 const SendToPatient = {
+    async requirePermission(permission, message) {
+        const allowed = await hasPermission(permission);
+        const accountMode = auth.currentUser?.access_mode === 'account'
+            && !auth.currentUser?.is_doctor_protected;
+        if (!accountMode || allowed) return true;
+        window.showSundayClinicNotice?.('error', message);
+        return false;
+    },
+
     /**
      * Render the send to patient modal
      */
@@ -114,7 +124,8 @@ const SendToPatient = {
     /**
      * Open the send to patient modal
      */
-    openModal() {
+    async openModal() {
+        if (!await this.requirePermission('patient_documents.create', 'Akses ditolak untuk mengirim dokumen ke pasien.')) return;
         const state = stateManager.getState();
 
         // Get patient info
@@ -205,6 +216,7 @@ const SendToPatient = {
      * Confirm and send documents to patient
      */
     async confirmSend() {
+        if (!await this.requirePermission('patient_documents.create', 'Akses ditolak untuk mengirim dokumen ke pasien.')) return;
         const state = stateManager.getState();
         const statusEl = document.getElementById('send-status-message');
         const sendBtn = document.getElementById('btn-confirm-send');

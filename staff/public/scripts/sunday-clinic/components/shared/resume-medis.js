@@ -48,20 +48,20 @@ export default {
                             ${hasSentDocuments ? `<i class="fas fa-check-circle"></i> ${sentStatusText}` : (savedResume ? 'Resume sudah tersedia' : 'Belum ada resume')}
                         </small>
                         <div class="button-group" id="resume-button-group">
-                            <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
+                            <button type="button" class="btn btn-primary" id="btn-generate-resume" data-account-permission="medical_records.export" onclick="window.generateResumeMedis()">
                                 <i class="fas fa-magic"></i> Generate AI
                             </button>
                             ${savedResume ? `
-                                <button type="button" class="btn btn-danger ml-2" id="btn-download-pdf" onclick="window.downloadResumePDF()">
+                                <button type="button" class="btn btn-danger ml-2" id="btn-download-pdf" data-account-permission="medical_records.export" onclick="window.downloadResumePDF()">
                                     <i class="fas fa-file-pdf"></i> PDF
                                 </button>
-                                <button type="button" class="btn btn-success ml-2" id="btn-send-whatsapp" onclick="window.openWhatsAppModal()">
+                                <button type="button" class="btn btn-success ml-2" id="btn-send-whatsapp" data-account-permission="patient_documents.share" onclick="window.openWhatsAppModal()">
                                     <i class="fab fa-whatsapp"></i> WhatsApp
                                 </button>
-                                <button type="button" class="btn btn-info ml-2" id="btn-send-to-patient" onclick="window.openSendToPatientModal()">
+                                <button type="button" class="btn btn-info ml-2" id="btn-send-to-patient" data-account-permission="patient_documents.create" onclick="window.openSendToPatientModal()">
                                     <i class="fas fa-share-alt"></i> Kirim ke Pasien
                                 </button>
-                                <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
+                                <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" data-account-permission="medical_records.reset_section" onclick="window.resetResumeMedis()">
                                     <i class="fas fa-redo"></i> Reset
                                 </button>
                             ` : ''}

@@ -1126,7 +1126,7 @@ io.on('connection', (socket) => {
         );
 
         emitToPermission(socket, 'visits.view', 'visit:completed', data);
-    }, { permission: 'visits.edit' });
+    }, { permission: 'medical_records.finalize' });
     
     // Announcements are emitted only after persistence by the HTTP route.
     

@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const { accessControlService: defaultAccessControlService } = require('../services/AccessControlService');
 const defaultLogger = require('../utils/logger');
 const { inventoryRouteDeclarations } = require('./accessRouteInventory');
-const { resolveRouteAccess } = require('../config/accessControlRegistry');
+const { resolveRouteAccess, resolveRequestPathOverride } = require('../config/accessControlRegistry');
 const { ROLE_IDS } = require('../constants/roles');
 
 function normalizeMountPath(value) {
@@ -98,6 +98,41 @@ function inventoryServerMounts(serverFile) {
     return mounts;
 }
 
+function inventoryNestedRouterMounts(routesDir, parentSource) {
+    let parentFile = path.join(routesDir, `${parentSource}.js`);
+    let nestedPrefix = '';
+    if (!fs.existsSync(parentFile)) {
+        parentFile = path.join(routesDir, parentSource, 'index.js');
+        nestedPrefix = `${parentSource}/`;
+    }
+    if (!fs.existsSync(parentFile)) return [];
+    const source = fs.readFileSync(parentFile, 'utf8');
+    const mounts = [];
+    const pattern = /router\.use\(\s*(?:(['"])([^'"]*)\1\s*,\s*)?require\(['"]\.\/([^'"]+)['"]\)\s*\)/g;
+    let match;
+    while ((match = pattern.exec(source)) !== null) {
+        mounts.push({
+            mountPath: match[2] || '/',
+            sourceFile: match[3],
+            order: source.slice(0, match.index).split(/\r?\n/).length
+        });
+    }
+    const imports = new Map();
+    for (const importMatch of source.matchAll(/const\s+([A-Za-z_$][\w$]*)\s*=\s*require\(['"]\.\/([^'"]+)['"]\)/g)) {
+        imports.set(importMatch[1], `${nestedPrefix}${importMatch[2]}`);
+    }
+    const variablePattern = /router\.use\(\s*(['"])([^'"]*)\1\s*,\s*([A-Za-z_$][\w$]*)\s*\)/g;
+    while ((match = variablePattern.exec(source)) !== null) {
+        if (!imports.has(match[3])) continue;
+        mounts.push({
+            mountPath: match[2] || '/',
+            sourceFile: imports.get(match[3]),
+            order: source.slice(0, match.index).split(/\r?\n/).length
+        });
+    }
+    return mounts;
+}
+
 function buildRuntimeAccessRules({ serverFile, routesDir }) {
     const mounts = inventoryServerMounts(serverFile);
     const routesBySource = new Map();
@@ -106,15 +141,33 @@ function buildRuntimeAccessRules({ serverFile, routesDir }) {
         routesBySource.get(route.sourceFile).push(route);
     }
 
-    return mounts.flatMap(mount => (routesBySource.get(mount.sourceFile) || []).map(route => ({
-        method: route.method,
-        fullPath: joinRoutePaths(mount.mountPath, route.routePath),
-        matcher: compileRoutePattern(joinRoutePaths(mount.mountPath, route.routePath)),
-        resolution: resolveRouteAccess(route),
-        mountOrder: mount.order,
-        routeOrder: route.line,
-        sourceFile: route.sourceFile
-    }))).sort((left, right) => left.mountOrder - right.mountOrder || left.routeOrder - right.routeOrder);
+    return mounts.flatMap(mount => {
+        const direct = (routesBySource.get(mount.sourceFile) || []).map(route => ({
+            route,
+            nestedMountPath: '/',
+            nestedOrder: 0
+        }));
+        const nested = inventoryNestedRouterMounts(routesDir, mount.sourceFile).flatMap(nestedMount => (
+            (routesBySource.get(nestedMount.sourceFile) || []).map(route => ({
+                route,
+                nestedMountPath: nestedMount.mountPath,
+                nestedOrder: nestedMount.order
+            }))
+        ));
+        return [...direct, ...nested].map(({ route, nestedMountPath, nestedOrder }) => {
+            const nestedPath = joinRoutePaths(nestedMountPath, route.routePath);
+            const fullPath = joinRoutePaths(mount.mountPath, nestedPath);
+            return {
+                method: route.method,
+                fullPath,
+                matcher: compileRoutePattern(fullPath),
+                resolution: resolveRouteAccess(route),
+                mountOrder: mount.order,
+                routeOrder: (nestedOrder * 10000) + route.line,
+                sourceFile: route.sourceFile
+            };
+        });
+    }).sort((left, right) => left.mountOrder - right.mountOrder || left.routeOrder - right.routeOrder);
 }
 
 function createRuntimeAccessResolver({
@@ -125,6 +178,8 @@ function createRuntimeAccessResolver({
     return (method, requestPath) => {
         const normalizedMethod = String(method || 'GET').toUpperCase() === 'HEAD' ? 'GET' : String(method || 'GET').toUpperCase();
         const pathname = normalizeMountPath(String(requestPath || '/').split('?')[0]);
+        const pathOverride = resolveRequestPathOverride(normalizedMethod, pathname);
+        if (pathOverride) return pathOverride;
         const rule = rules.find(candidate => candidate.method === normalizedMethod && candidate.matcher.test(pathname));
         return rule?.resolution || null;
     };
@@ -212,5 +267,6 @@ module.exports = {
     createAccountModeAccessBoundary,
     createRuntimeAccessResolver,
     inventoryServerMounts,
+    inventoryNestedRouterMounts,
     joinRoutePaths
 };

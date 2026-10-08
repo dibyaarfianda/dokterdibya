@@ -6,6 +6,11 @@ function hasNoGrantedAccess(user) {
     return isAccountMode(user) && (!Array.isArray(user.permissions) || user.permissions.length === 0);
 }
 
+export function hasAccountPermission(permission, user = window.currentStaffUser || window.auth?.currentUser) {
+    if (!isAccountMode(user)) return true;
+    return Array.isArray(user.permissions) && user.permissions.includes(permission);
+}
+
 function setElementVisible(element, visible) {
     if (!element) return;
     element.style.display = visible ? '' : 'none';
@@ -29,6 +34,18 @@ function syncSidebarHeaders() {
     });
 }
 
+function syncAccountPermissionElements(user) {
+    document.querySelectorAll('[data-account-permission]').forEach(element => {
+        setElementVisible(element, hasAccountPermission(element.dataset.accountPermission, user));
+    });
+}
+
+window.hasAccountPermission = permission => hasAccountPermission(permission);
+window.syncAccountPermissionElements = () => {
+    const user = window.currentStaffUser || window.auth?.currentUser;
+    if (user) syncAccountPermissionElements(user);
+};
+
 export function applyAccountAccess(user, access = null) {
     if (access) {
         user.permissions = Array.isArray(access.permissions) ? access.permissions : [];
@@ -44,6 +61,7 @@ export function applyAccountAccess(user, access = null) {
     document.querySelectorAll('.nav-sidebar .nav-item[id]').forEach(item => {
         setElementVisible(item, allowedNavigation.has(item.id));
     });
+    syncAccountPermissionElements(user);
     syncSidebarHeaders();
 
     // Profile remains available from the navbar even when the account has no grants.

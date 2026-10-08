@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROUTE_DECLARATION = /\b(router|app)\.(get|post|put|patch|delete)\s*\(\s*(['"])([^'"]+)\3\s*,/g;
+const INVENTORIED_ROUTE_SUBDIRECTORIES = Object.freeze(['sunday-clinic', 'v1']);
 
 function declarationPrefix(source, startIndex) {
     const candidate = source.slice(startIndex, startIndex + 1400);
@@ -15,6 +16,8 @@ function declarationPrefix(source, startIndex) {
         /,\s*[A-Za-z_$][\w$]*\s*=>/
     ];
     let end = candidate.length;
+    const statementEnd = candidate.indexOf(');');
+    if (statementEnd >= 0) end = statementEnd + 2;
     for (const marker of handlerMarkers) {
         const match = marker.exec(candidate);
         if (match && match.index < end) end = match.index;
@@ -22,9 +25,9 @@ function declarationPrefix(source, startIndex) {
     return candidate.slice(0, end);
 }
 
-function inventoryRouteFile(filePath) {
+function inventoryRouteFile(filePath, options = {}) {
     const source = fs.readFileSync(filePath, 'utf8');
-    const sourceFile = path.basename(filePath, path.extname(filePath));
+    const sourceFile = options.sourceFile || path.basename(filePath, path.extname(filePath));
     const fileMiddleware = [...source.matchAll(/router\.use\s*\(([^\n;]+)[\n;]?/g)]
         .map(match => match[1])
         .join(' ');
@@ -45,10 +48,21 @@ function inventoryRouteFile(filePath) {
 }
 
 function inventoryRouteDeclarations(routesDir) {
-    return fs.readdirSync(routesDir)
+    const rootRoutes = fs.readdirSync(routesDir)
         .filter(name => name.endsWith('.js'))
         .sort()
         .flatMap(name => inventoryRouteFile(path.join(routesDir, name)));
+    const nestedRoutes = INVENTORIED_ROUTE_SUBDIRECTORIES.flatMap(directory => {
+        const nestedDir = path.join(routesDir, directory);
+        if (!fs.existsSync(nestedDir)) return [];
+        return fs.readdirSync(nestedDir)
+            .filter(name => name.endsWith('.js') && name !== 'index.js')
+            .sort()
+            .flatMap(name => inventoryRouteFile(path.join(nestedDir, name), {
+                sourceFile: `${directory}/${path.basename(name, path.extname(name))}`
+            }));
+    });
+    return [...rootRoutes, ...nestedRoutes];
 }
 
 module.exports = {

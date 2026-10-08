@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const surgeryService = require('../services/SurgeryService');
 const docboardPush = require('../services/DocBoardPushService');
 const whatsapp = require('../services/whatsappService');
-const { requireRoles } = require('../middleware/auth');
+const { requireSuperadminOrAccountPermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 // All routes inherit verifyStaffToken from parent router (docboard.js)
@@ -575,7 +575,7 @@ router.get('/:id/outcome', async (req, res) => {
  * PUT /:id/outcome
  * Save/update post-op outcome (doctor only)
  */
-router.put('/:id/outcome', requireRoles('dokter'), async (req, res) => {
+router.put('/:id/outcome', requireSuperadminOrAccountPermission('medical_records.edit'), async (req, res) => {
   try {
     const outcome = await surgeryService.saveOutcome(req.params.id, req.body, req.user?.id);
     res.json({ success: true, outcome });
@@ -700,7 +700,7 @@ router.patch('/:id/status', async (req, res) => {
 /**
  * DELETE /:id (doctor only)
  */
-router.delete('/:id', requireRoles('dokter'), async (req, res) => {
+router.delete('/:id', requireSuperadminOrAccountPermission('medical_records.delete'), async (req, res) => {
   try {
     await surgeryService.deleteSurgery(req.params.id);
     res.json({ success: true });

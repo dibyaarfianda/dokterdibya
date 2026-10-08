@@ -148,10 +148,11 @@ class MedicalRecordService {
             name: actor.name || null };
     }
 
-    assertResetRole(principal) {
+    assertResetRole(principal, { delegatedPermission = false } = {}) {
         this.actor(principal);
+        if (delegatedPermission) return;
         // Fixed clinical policy: JWT role_id is authoritative. Neither rewritten
-        // role names, configurable grants nor is_superadmin extend reset access.
+        // role names nor is_superadmin extend legacy-mode reset access.
         if (![ROLE_IDS.DOKTER, ROLE_IDS.BIDAN].includes(principal.role_id)) {
             fail(403, 'CLINICAL_RESET_ROLE_REQUIRED', 'Section reset requires a doctor or midwife role');
         }
@@ -376,8 +377,8 @@ class MedicalRecordService {
         });
     }
 
-    async reset({ mrId, patientId, recordType, ifMatch, actor: principal }) {
-        this.assertResetRole(principal);
+    async reset({ mrId, patientId, recordType, ifMatch, actor: principal, delegatedPermission = false }) {
+        this.assertResetRole(principal, { delegatedPermission });
         mrId = normalizeMrId(mrId);
         if (typeof patientId !== 'string' || !patientId.trim()) fail(400, 'PATIENT_REQUIRED', 'Exact patient scope required');
         if (!owns(RESET_DOCUMENT_TYPES, recordType)) fail(400, 'INVALID_RESET_TYPE', 'Only USG and resume may be reset');
