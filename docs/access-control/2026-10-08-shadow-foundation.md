@@ -14,7 +14,7 @@ Date: 2026-10-08 (Asia/Jakarta)
 ## Migration validation
 
 - Migration: `staff/backend/migrations/20261008_account_access_foundation.sql`
-- Candidate SHA-256: `66ca769dbd6a7cc37e369b0172cd2806f42bdcad8ea34cad4b1321563fe4ea35`
+- Committed migration SHA-256: `fccad5a99e209aeb7e09baac283324ee0f39ac9439e3b3bc24b6557078a7d0fd`
 - Applied twice to a temporary restored database to prove idempotence.
 - Verified three new tables, fourteen initial Staff policy rows, two immutable audit triggers, and rejection of an audit update.
 - Temporary validation database was dropped after the checks.
