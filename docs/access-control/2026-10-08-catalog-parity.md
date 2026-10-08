@@ -43,3 +43,14 @@ The backfill preserves each menu result in `navigation.*` and each API result in
 ## Evidence retention and rollback
 
 Sanitized dry-run and parity reports are stored with mode `0600` under `/root/dokterdibya-access-backup-20261008T094607Z`. They contain role-level counts and hashes only. The verified authorization dump and checksum remain unchanged. During shadow mode, application rollback only requires restoring the previous commit; additive catalog rows, per-account grants, and immutable audits can remain dormant because all accounts still use `legacy` mode.
+
+## Production verification
+
+- Implementation and evidence commit `6418a8ead06a36ec1cfe44336f4dab24f0856d3f` was pushed to `main` and deployed.
+- Production dry-run, transactional apply, and post-apply dry-run matched the restored-database drill: 215 permissions, 1,282 grants, 178 navigation grants, 24 migration audits, zero doctor grants, zero account-mode users, and zero unexplained differences.
+- Legacy tables remained unchanged at 283 role-permission rows and 110 role-visibility rows.
+- `/api/auth/me` returned all 215 permissions for the protected doctor, 109 for a managerial account, and 83 for the bidan account, all still in `legacy` mode at access version 1.
+- The four legacy menu/API conflicts were verified directly in the returned permission sets. Navigation and endpoint decisions remained independent and unchanged.
+- A read-only analytics permission probe returned 200 for managerial and 403 for bidan. Read-only Staff chat history also succeeded.
+- `dibyaklinik-backend` remained online after restart, public health was healthy, and the current and immutable `v423` realtime/chat assets matched on both production domains.
+- The unchanged `/api/analytics/dashboard` aggregate route returned its existing generic 500 response during probing; `/api/analytics/demographics` supplied the stable allow/deny authorization proof. No analytics implementation or analytics data changed in this task.

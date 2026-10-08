@@ -57,11 +57,11 @@
 
 **Produces:** Complete module/action catalog, route registry with named exemptions, migrated per-account grants, and a zero-unexplained-difference parity report.
 
-- [ ] RED tests that every Staff route is mapped or explicitly exempt and every UI menu/action resolves to catalog permissions.
-- [ ] Define `view`, `write`, `delete`, and named special actions for all Staff modules.
-- [ ] Add an idempotent migration/backfill that copies each non-doctor account’s effective legacy access into `user_permission_grants`.
-- [ ] Produce sanitized parity tooling and require zero unexplained differences before release.
-- [ ] Run full mapping/parity/chat gates; commit/push/deploy/apply migration/verify.
+- [x] RED tests that every Staff route is mapped or explicitly exempt and every UI menu/action resolves to catalog permissions.
+- [x] Define `view`, `write`, `delete`, and named special actions for all Staff modules.
+- [x] Add an idempotent migration/backfill that copies each non-doctor account’s effective legacy access into `user_permission_grants`.
+- [x] Produce sanitized parity tooling and require zero unexplained differences before release.
+- [x] Run full mapping/parity/chat gates; commit/push/deploy/apply migration/verify.
 
 ## Task 4: Realtime permission rooms with chat preservation
 
