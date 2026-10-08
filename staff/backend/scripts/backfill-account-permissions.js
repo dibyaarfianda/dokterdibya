@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { LEGACY_PERMISSION_NAMES, PERMISSION_CATALOG } = require('../config/accessControlCatalog');
-const { MENU_PERMISSION_MAP } = require('../config/accessControlRegistry');
+const { LEGACY_MENU_MODULE_MAP } = require('../config/accessControlRegistry');
 const { ROLE_IDS } = require('../constants/roles');
 
 function sortedSet(values) {
@@ -74,7 +74,7 @@ function buildLegacySurfaceConflicts(state) {
             || state.currentDirectByUser.get(user.userId)
             || new Set();
         const visibleMenus = state.menusByRole.get(user.roleName) || new Set();
-        for (const [menuKey, permissionName] of Object.entries(MENU_PERMISSION_MAP)) {
+        for (const [menuKey, permissionName] of Object.entries(LEGACY_MENU_MODULE_MAP)) {
             if (!legacyNames.has(permissionName)) continue;
             const menuVisible = visibleMenus.has(menuKey);
             const endpointGranted = rolePermissions.has(permissionName) || directPermissions.has(permissionName);
@@ -88,7 +88,7 @@ function buildLegacySurfaceConflicts(state) {
                     menu_visible: menuVisible,
                     endpoint_granted: endpointGranted,
                     accounts: 0,
-                    resolution: endpointGranted ? 'preserve_endpoint_access' : 'preserve_menu_denial'
+                    resolution: 'separate_navigation_and_endpoint_grants'
                 });
             }
             conflicts.get(key).accounts += 1;

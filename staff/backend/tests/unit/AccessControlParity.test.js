@@ -58,7 +58,7 @@ describe('legacy-to-account grant parity', () => {
             menu_visible: false,
             endpoint_granted: true,
             accounts: 1,
-            resolution: 'preserve_endpoint_access'
+            resolution: 'separate_navigation_and_endpoint_grants'
         }));
         expect(JSON.stringify(conflicts)).not.toContain('STAFF1');
     });

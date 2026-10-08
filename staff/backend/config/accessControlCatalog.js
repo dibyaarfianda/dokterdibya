@@ -98,11 +98,46 @@ function permission(name, displayName, category, action, legacySources, options 
         description: options.description || displayName,
         action,
         legacySources,
-        protected: Boolean(options.protected)
+        protected: Boolean(options.protected),
+        internal: Boolean(options.internal)
     };
 }
 
+function navigationPermission(key, displayName, source = { kind: 'menu', value: key }) {
+    return permission(
+        `navigation.${key.replace(/-/g, '_').replace(/\./g, '_')}`,
+        `Navigasi ${displayName}`,
+        'Navigasi Internal',
+        'view',
+        [source],
+        { internal: true }
+    );
+}
+
+const NAVIGATION_PERMISSIONS = [
+    navigationPermission('kantor_saya', 'Kantor Saya'),
+    navigationPermission('dashboard', 'Dashboard'),
+    navigationPermission('kelola_pasien', 'Kelola Pasien'),
+    navigationPermission('pasien_baru', 'Pasien Baru'),
+    navigationPermission('penjualan-obat', 'Penjualan Obat'),
+    navigationPermission('klinik_privat', 'Klinik Privat'),
+    navigationPermission('rsia_melinda', 'RSIA Melinda'),
+    navigationPermission('rsud_gambiran', 'RSUD Gambiran'),
+    navigationPermission('rs_bhayangkara', 'RS Bhayangkara'),
+    navigationPermission('obat_alkes', 'Obat dan Alkes'),
+    navigationPermission('keuangan', 'Keuangan'),
+    navigationPermission('kelola_roles', 'Kelola Akses'),
+    navigationPermission('ucapan_kelahiran', 'Ucapan Kelahiran'),
+    navigationPermission('staff_points', 'Poin Staff'),
+    navigationPermission('staff_briefing', 'Briefing Staff'),
+    navigationPermission('staff_payroll', 'Gajian Staff'),
+    navigationPermission('bulk-upload-usg', 'Bulk Upload USG'),
+    navigationPermission('registration_codes.view', 'Kode Registrasi'),
+    navigationPermission('ruang_cerita', 'Ruang Cerita', { kind: 'all_staff' })
+];
+
 const NEW_PERMISSIONS = [
+    ...NAVIGATION_PERMISSIONS,
     permission('access.manage', 'Kelola akses per akun', 'Kelola Akses', 'write', [{ kind: 'doctor' }], { protected: true }),
     permission('clinical_ai.use', 'Gunakan bantuan AI klinis', 'Rekam Medis', 'write', [{ kind: 'permission', value: 'medical_records.edit' }]),
     permission('appointments.archive', 'Arsipkan atau pulihkan janji', 'Klinik dan Jadwal', 'finalize', [{ kind: 'permission', value: 'appointments.edit' }]),
