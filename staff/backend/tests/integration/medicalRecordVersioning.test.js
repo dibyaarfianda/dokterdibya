@@ -385,7 +385,7 @@ describe('review round 1 fixed reset role boundary and request privacy', () => {
         const query = mockDb.query;
         // Simulate an accidental policy grant: fixed clinical role policy must
         // deny these principals even if the configurable permission grants access.
-        mockDb.query = async (sql, params) => sql.includes('FROM role_permissions')
+        mockDb.query = async (sql, params) => sql.includes('FROM user_permission_grants upg')
             ? [[{ name: 'medical_records.reset_section' }]] : query(sql, params);
         try {
             for (const actor of cases) {
@@ -423,7 +423,7 @@ describe('review round 1 fixed reset role boundary and request privacy', () => {
         mockDb.state().visits[0] = { id: 1, mr_id: mrMarker, patient_id: patientMarker };
         expect((await create({ mrId: mrMarker, patientId: patientMarker })).status).toBe(201);
         const query = mockDb.query;
-        mockDb.query = async (sql, params) => sql.includes('FROM role_permissions') ? [[]] : query(sql, params);
+        mockDb.query = async (sql, params) => sql.includes('FROM user_permission_grants upg') ? [[]] : query(sql, params);
         const attempts = [
             [undefined, 401],
             [{ id: patientMarker, role: 'patient', user_type: 'patient' }, 403],

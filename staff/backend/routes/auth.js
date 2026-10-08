@@ -79,7 +79,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const userId = user.new_id;
 
     // Set role based on user type and superadmin status
-    // Use actual role from DB (e.g., managerial, bidan, front_office) for role_visibility to work
+    // Preserve the actual job label for identity and chat badges.
     const resolvedRole = user.is_superadmin ? 'dokter' :
                          user.role || user.resolved_role_name || 'viewer';
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;

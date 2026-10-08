@@ -218,7 +218,7 @@ function createAccountModeAccessBoundary({
             const account = await accessControlService.getStaffAccountState(claims.id);
             if (!account || account.userType !== 'staff') return next();
             if (!account.isActive) return deny(res, 'ACCOUNT_INACTIVE', 'Akun staff tidak aktif.');
-            if (account.isSuperadmin || account.roleId === ROLE_IDS.DOKTER || account.mode !== 'account') return next();
+            if (account.isSuperadmin || account.roleId === ROLE_IDS.DOKTER) return next();
 
             const requestPath = req.originalUrl || req.url || req.path || '/';
             const resolution = resolveRequestAccess(req.method, requestPath);

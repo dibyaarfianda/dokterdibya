@@ -2170,40 +2170,16 @@ function showMedifySyncPage() {
     });
 }
 
-// The account matrix is shipped dark until the route/UI inventory reaches Task 11.
-const ACCESS_CONTROL_ROLLOUT_ENABLED = true;
-
-async function ensureKelolaAccessLayout() {
-    if (pages.kelolaRoles?.dataset.accessLayout === 'account') return pages.kelolaRoles;
-    const response = await fetch('/staff/public/fragments/pages/kelola-access-page.html', {
-        cache: 'no-store',
-        credentials: 'same-origin'
-    });
-    if (!response.ok) throw new Error(`Kelola Akses fragment failed: ${response.status}`);
-    pages.kelolaRoles.innerHTML = await response.text();
-    pages.kelolaRoles.dataset.accessLayout = 'account';
-    return pages.kelolaRoles;
-}
-
 async function showKelolaRolesPage() {
-    const accessControlRolloutEnabled = typeof ACCESS_CONTROL_ROLLOUT_ENABLED !== 'undefined'
-        && ACCESS_CONTROL_ROLLOUT_ENABLED;
     const navGen = reserveStaffNavigation();
-    if (accessControlRolloutEnabled) {
-        await ensureKelolaAccessLayout();
-    } else {
-        await ensureRegisteredPage('kelola-roles');
-    }
+    await ensureRegisteredPage('kelola-roles');
     if (!hideAllPages(navGen)) return;
     pages.kelolaRoles?.classList.remove('d-none');
-    setTitleAndActive(accessControlRolloutEnabled ? 'Kelola Akses' : 'Roles Manajemen', 'management-nav-kelola-roles', 'kelola-roles');
+    setTitleAndActive('Kelola Akses', 'management-nav-kelola-roles', 'kelola-roles');
 
-    const modulePath = accessControlRolloutEnabled ? './kelola-access.js' : './kelola-roles.js';
-    importWithVersion(modulePath).then(module => {
-        if (accessControlRolloutEnabled && typeof module.initKelolaAccess === 'function') {
+    importWithVersion('./kelola-access.js').then(module => {
+        if (typeof module.initKelolaAccess === 'function') {
             module.initKelolaAccess();
-        } else if (!accessControlRolloutEnabled && typeof window.initKelolaRoles === 'function') {
-            window.initKelolaRoles();
         } else {
             console.error('Kelola Akses module loaded without an initializer.');
         }
@@ -2880,84 +2856,19 @@ async function updateWelcomeCard(user) {
     // Update daily greeting
     updateDailyGreeting(user);
 
-    try {
-        // Fetch user's roles with descriptions (cached 5 minutes in localStorage)
-        const token = getAuthToken();
-        const rolesCacheKey = `user_roles_${user.id}`;
-        const rolesCacheTTL = 5 * 60 * 1000; // 5 minutes
-        let roles = null;
-
-        const storedRoles = localStorage.getItem(rolesCacheKey);
-        if (storedRoles) {
-            try {
-                const { ts, data: cachedData } = JSON.parse(storedRoles);
-                if (Date.now() - ts < rolesCacheTTL && Array.isArray(cachedData)) {
-                    roles = cachedData;
-                }
-            } catch (e) { /* invalid cache */ }
-        }
-
-        if (!roles) {
-            const response = await fetch(`/api/users/${user.id}/roles`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch roles');
-
-            const data = await response.json();
-            roles = data.data || [];
-            localStorage.setItem(rolesCacheKey, JSON.stringify({ ts: Date.now(), data: roles }));
-        }
-
-        if (roles.length === 0) {
-            rolesDescList.innerHTML = '<p style="color: #6c757d;"><em>Tidak ada deskripsi role tersedia.</em></p>';
-            // Update navbar role to empty
-            if (navbarUserRole) {
-                navbarUserRole.textContent = 'No Role';
-            }
-            return;
-        }
-
-        // Sort by is_primary DESC, then by permission_count DESC
-        roles.sort((a, b) => {
-            if (b.is_primary !== a.is_primary) return b.is_primary - a.is_primary;
-            return (b.permission_count || 0) - (a.permission_count || 0);
-        });
-
-        // Update navbar role badge with primary role
-        if (navbarUserRole && roles.length > 0) {
-            const primaryRole = roles.find(r => r.is_primary) || roles[0];
-            navbarUserRole.textContent = primaryRole.display_name || primaryRole.name || 'User';
-        }
-
-        // Build role descriptions HTML - deferred to idle (non-critical render)
-        let descriptionsHtml = '';
-        roles.forEach((role, index) => {
-            const isPrimary = role.is_primary;
-            const description = role.description || 'Tidak ada deskripsi untuk role ini.';
-
-            descriptionsHtml += `
-                <div style="background: #fff; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; border: 1px solid #dee2e6;">
-                    <div style="font-weight: 600; color: #343a40; margin-bottom: 6px; font-size: 14px;">
-                        ${role.display_name || role.name}
-                        ${isPrimary ? '<span style="font-size: 11px; background: #e9ecef; color: #495057; padding: 2px 8px; border-radius: 10px; margin-left: 8px;">Primary</span>' : ''}
-                    </div>
-                    <div style="color: #495057; font-size: 13px; line-height: 1.5;">${parseMarkdown(description)}</div>
-                </div>
-            `;
-        });
-
-        const applyRolesHtml = () => { rolesDescList.innerHTML = descriptionsHtml; };
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(applyRolesHtml, { timeout: 2000 });
-        } else {
-            setTimeout(applyRolesHtml, 0);
-        }
-
-    } catch (error) {
-        console.error('Error loading role descriptions:', error);
-        rolesDescList.innerHTML = '<p style="color: #6c757d;"><em>Gagal memuat deskripsi role.</em></p>';
-    }
+    const jobLabel = user.role_display_name || user.role || 'Staff';
+    if (navbarUserRole) navbarUserRole.textContent = jobLabel;
+    rolesDescList.textContent = '';
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:10px;border:1px solid #dee2e6;';
+    const title = document.createElement('div');
+    title.style.cssText = 'font-weight:600;color:#343a40;margin-bottom:6px;font-size:14px;';
+    title.textContent = jobLabel;
+    const description = document.createElement('div');
+    description.style.cssText = 'color:#495057;font-size:13px;line-height:1.5;';
+    description.textContent = 'Label jabatan untuk identitas akun dan badge chat.';
+    card.append(title, description);
+    rolesDescList.append(card);
 }
 
 async function initializeApp(user) {
@@ -2982,9 +2893,8 @@ async function initializeApp(user) {
         // Update welcome card
         updateWelcomeCard(user);
 
-        const isZeroGrantAccount = user?.access_mode === 'account'
-            && !user?.is_doctor_protected
-            && (!Array.isArray(user.permissions) || user.permissions.length === 0);
+        const isZeroGrantAccount = window.staffAccountAccess?.hasNoGrantedAccess(user)
+            ?? (!user?.is_doctor_protected && (!Array.isArray(user.permissions) || user.permissions.length === 0));
         if (isZeroGrantAccount) {
             window.staffAccountAccess?.applyAccountAccess(user);
             showNoAccessPage();
@@ -3054,34 +2964,10 @@ function scheduleRealtimeStartup(user) {
 }
 
 /**
- * Fetch menu visibility from database and apply to sidebar
+ * Apply account navigation. Protected doctors retain the complete shell.
  */
 async function applyMenuVisibility(user) {
-    if (user?.access_mode === 'account' && !user?.is_doctor_protected) {
-        window.staffAccountAccess?.applyAccountAccess(user);
-        return;
-    }
-    // Menu key to DOM element ID mapping
-    // Each menu_key from role_visibility table maps to one or more DOM elements
-    const menuMapping = {
-        'kantor_saya': ['nav-kantor-saya'],
-        'dashboard': null, // Dashboard always visible
-        'kelola_pasien': ['nav-kelola-pasien', 'nav-record-history'],
-        'pasien_baru': ['nav-pasien-baru'],
-        'klinik_privat': ['nav-klinik-private', 'nav-voting', 'nav-birth-class'],
-        'rsia_melinda': ['nav-rsia-melinda'],
-        'rsud_gambiran': ['nav-rsud-gambiran'],
-        'rs_bhayangkara': ['nav-rs-bhayangkara'],
-        'obat_alkes': ['management-nav-kelola-obat', 'management-nav-kelola-tindakan'],
-        'keuangan': ['nav-invoice-history'],
-        'kelola_roles': ['management-nav-kelola-roles'],
-        'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
-        'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials'],
-        'ruang_cerita': ['nav-ruang-cerita'],
-        'staff_points': ['nav-staff-points'],
-        'staff_briefing': ['nav-staff-briefing'],
-        'staff_payroll': ['nav-staff-payroll']
-    };
+    if (window.staffAccountAccess?.applyAccountAccess(user)) return;
 
     // Closing finance is deliberately stricter than generic doctor/superadmin UI.
     // Only the canonical doctor role id may see its launchers; backend repeats this guard.
@@ -3117,57 +3003,6 @@ async function applyMenuVisibility(user) {
         return; // All menus visible
     }
 
-    try {
-        const token = getAuthToken();
-        const response = await fetch('/api/role-visibility/my/menus', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            console.error('Failed to fetch menu visibility');
-            return;
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-            console.error('Menu visibility API error:', result.message);
-            return;
-        }
-
-        const visibility = result.data;
-
-        // Apply visibility to each menu
-        for (const [menuKey, elementIds] of Object.entries(menuMapping)) {
-            if (!elementIds) continue; // Skip dashboard
-
-            const isVisible = visibility[menuKey] !== false;
-
-            for (const elementId of elementIds) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    if (!isVisible) {
-                        element.style.display = 'none';
-                    } else {
-                        element.style.display = '';
-                        // Also remove d-none class if present
-                        if (!element.classList.contains('sidebar-widgetized')) {
-                            element.classList.remove('d-none');
-                            element.removeAttribute('hidden');
-                        }
-                    }
-                }
-            }
-        }
-
-        // Hide klinik privat section header if all sub-items are hidden
-        const klinikPrivatSection = document.getElementById('nav-section-klinik-privat');
-        if (klinikPrivatSection && visibility['klinik_privat'] === false) {
-            klinikPrivatSection.style.display = 'none';
-        }
-
-    } catch (error) {
-        console.error('Error fetching menu visibility:', error);
-    }
 }
 
 // -------------------- FORCE PASSWORD CHANGE --------------------

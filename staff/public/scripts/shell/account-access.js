@@ -1,5 +1,5 @@
 function isAccountMode(user) {
-    return user?.access_mode === 'account' && !user?.is_doctor_protected;
+    return Boolean(user) && !user?.is_doctor_protected && user?.user_type !== 'patient';
 }
 
 function hasNoGrantedAccess(user) {

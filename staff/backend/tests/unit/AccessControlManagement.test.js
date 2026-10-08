@@ -168,7 +168,7 @@ describe('access-control management contracts', () => {
 });
 
 describe('Kelola Akses rollout UI', () => {
-    test('ships layout A and activation UI with the rollout flag enabled after route enforcement', () => {
+    test('ships layout A and activation UI as the only access-management layout', () => {
         for (const file of [pagePath, scriptPath, activationPath]) {
             expect(fs.existsSync(file)).toBe(true);
         }
@@ -188,7 +188,8 @@ describe('Kelola Akses rollout UI', () => {
         expect(activation).toMatch(/location\.hash/);
         expect(activation).toMatch(/invitations\/validate/);
         expect(activation).toMatch(/invitations\/accept/);
-        expect(main).toMatch(/ACCESS_CONTROL_ROLLOUT_ENABLED\s*=\s*true/);
+        expect(main).toContain("importWithVersion('./kelola-access.js')");
+        expect(main).not.toContain('ACCESS_CONTROL_ROLLOUT_ENABLED');
     });
 });
 

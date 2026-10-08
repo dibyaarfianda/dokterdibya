@@ -279,6 +279,18 @@ describe('requirePermission', () => {
         jest.clearAllMocks();
     });
 
+    const activeAccountRow = (userId = 1) => ({
+        new_id: userId,
+        user_type: 'staff',
+        is_active: 1,
+        is_superadmin: 0,
+        role_id: ROLE_IDS.ADMIN,
+        role_name: ROLE_NAMES.ADMIN,
+        access_mode: 'account',
+        access_version: 1,
+        job_label: 'Administrasi'
+    });
+
     it('allows superadmin without querying DB', async () => {
         req.user.role = ROLE_NAMES.DOKTER;
         req.user.role_id = ROLE_IDS.DOKTER;
@@ -291,7 +303,9 @@ describe('requirePermission', () => {
     });
 
     it('allows when user has required permission', async () => {
-        db.query.mockResolvedValueOnce([[{ name: 'patients:read' }]]);
+        db.query
+            .mockResolvedValueOnce([[activeAccountRow()]])
+            .mockResolvedValueOnce([[{ name: 'patients:read' }]]);
         const middleware = requirePermission('patients:read');
 
         await middleware(req, res, next);
@@ -300,7 +314,9 @@ describe('requirePermission', () => {
     });
 
     it('denies when user lacks permission', async () => {
-        db.query.mockResolvedValueOnce([[]]);
+        db.query
+            .mockResolvedValueOnce([[activeAccountRow()]])
+            .mockResolvedValueOnce([[]]);
         const middleware = requirePermission('patients:write');
 
         await middleware(req, res, next);
@@ -310,14 +326,18 @@ describe('requirePermission', () => {
         expect(next).not.toHaveBeenCalled();
     });
 
-    it('checks a user grant as well as the role grant', async () => {
+    it('uses the final per-account grant as the sole non-doctor permission source', async () => {
         req.user.id = 'LCBRGLMAMX';
-        db.query.mockResolvedValueOnce([[{ name: 'medical_records.anamnesa_write' }]]);
+        db.query
+            .mockResolvedValueOnce([[activeAccountRow('LCBRGLMAMX')]])
+            .mockResolvedValueOnce([[{ name: 'medical_records.anamnesa_write' }]]);
         await requirePermission('medical_records.anamnesa_write')(req, res, next);
-        expect(db.query).toHaveBeenCalledWith(
+        expect(db.query).toHaveBeenNthCalledWith(
+            2,
             expect.stringContaining('user_permission_grants'),
-            expect.arrayContaining(['LCBRGLMAMX', 'medical_records.anamnesa_write'])
+            ['LCBRGLMAMX']
         );
+        expect(db.query.mock.calls.some(([sql]) => sql.includes('role_permissions'))).toBe(false);
         expect(next).toHaveBeenCalled();
     });
 });

@@ -141,11 +141,12 @@ describe('Task 11 delegated guards and protected actions', () => {
 });
 
 describe('Task 11 management UI and action visibility', () => {
-    test('Layout A rollout is enabled and system navigation opens with read access', () => {
+    test('Layout A is the permanent access UI and system navigation opens with read access', () => {
         const main = fs.readFileSync(path.join(publicRoot, 'scripts/main.js'), 'utf8');
         const shell = fs.readFileSync(path.join(publicRoot, 'index-adminlte.html'), 'utf8');
         const registry = require('../../config/accessControlRegistry');
-        expect(main).toContain('const ACCESS_CONTROL_ROLLOUT_ENABLED = true;');
+        expect(main).toContain("importWithVersion('./kelola-access.js')");
+        expect(main).not.toContain('ACCESS_CONTROL_ROLLOUT_ENABLED');
         expect(registry.STAFF_NAVIGATION_MAP['nav-medify-sync']).toBe('integrations.view');
         expect(registry.STAFF_NAVIGATION_MAP['management-nav-kelola-roles']).toBe('navigation.kelola_roles');
         expect(shell).toMatch(/<li class="nav-item dokter-only d-none" id="nav-medify-sync">/);

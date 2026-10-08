@@ -464,8 +464,8 @@ app.use('/api', async (req, res, next) => {
 });
 // ==================== END PATIENT ACCESS BLOCKER ====================
 
-// Account-mode Staff fail closed at the shared API boundary. Legacy Staff and
-// the protected doctor keep their existing authorization path until cutover.
+// Every active non-doctor Staff account fails closed at the shared API boundary.
+// Protected doctor accounts retain full access independently of stored rollout mode.
 app.use('/api', createAccountModeAccessBoundary());
 
 // API v1 (modern, service-based)

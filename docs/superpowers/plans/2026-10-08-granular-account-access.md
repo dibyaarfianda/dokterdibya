@@ -148,8 +148,8 @@
 
 **Produces:** Per-account-only runtime, retired legacy writes, compatibility read adapters for one asset cycle, preserved old tables/backups, and final verified release.
 
-- [ ] RED tests proving no runtime authorization reads `role_visibility` or `role_permissions`, legacy writes return 410, and read adapters reflect account grants.
-- [ ] Remove old role-permission/menu-visibility UI and runtime calls; keep role only as label/badge.
+- [x] RED tests proving no runtime authorization reads `role_visibility` or `role_permissions`, legacy writes return 410, and read adapters reflect account grants.
+- [x] Remove old role-permission/menu-visibility UI and runtime calls; keep role only as label/badge.
 - [ ] Preserve all old tables, backup/checksum, restore procedure, and rollback documentation.
 - [ ] Run complete backend/frontend/realtime/chat/invitation/cutover/rollback suites and final whole-branch review.
 - [ ] Commit/push/deploy final release; verify PM2, health, migrations, current/versioned assets, live UI, parity, account-mode users, and chat without production clinical writes.

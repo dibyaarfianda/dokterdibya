@@ -102,11 +102,15 @@ describe('account-mode default-deny boundary', () => {
         }
     });
 
-    test('keeps legacy Staff reversible and protected doctors unrestricted', async () => {
-        const legacy = boundaryHarness({ state: account({ mode: 'legacy' }) });
+    test('enforces account grants for non-doctors regardless of stored rollback mode and keeps protected doctors unrestricted', async () => {
+        const legacy = boundaryHarness({
+            state: account({ mode: 'legacy' }),
+            resolution: { permission: 'patients.view', ruleId: 'staff-patients' }
+        });
         await legacy.middleware(legacy.req, legacy.res, legacy.next);
-        expect(legacy.next).toHaveBeenCalledTimes(1);
-        expect(legacy.service.getEffectiveAccess).not.toHaveBeenCalled();
+        expect(legacy.res.status).toHaveBeenCalledWith(403);
+        expect(legacy.next).not.toHaveBeenCalled();
+        expect(legacy.service.getEffectiveAccess).toHaveBeenCalledTimes(1);
 
         const doctor = boundaryHarness({ state: account({ roleId: 1, isSuperadmin: true }) });
         await doctor.middleware(doctor.req, doctor.res, doctor.next);
@@ -168,7 +172,7 @@ describe('account access identity and zero-grant shell', () => {
         expect(shell).toContain('Akses belum diberikan');
         expect(accountUi).toContain('navbar-profile-btn');
         expect(accountUi).not.toContain('chat-popup-container');
-        expect(main).toMatch(/user\?\.access_mode === 'account'/);
+        expect(main).toContain('window.staffAccountAccess?.hasNoGrantedAccess(user)');
         expect(main).toMatch(/showNoAccessPage/);
         expect(shell).toContain('id="content-no-access-page"');
         expect(shell).toContain('id="chat-popup-container"');

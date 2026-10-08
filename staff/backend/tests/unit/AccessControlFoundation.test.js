@@ -34,8 +34,7 @@ function accountRow(overrides = {}) {
 
 function permissionRows() {
     return [
-        { name: 'patients.view', legacy_granted: 1, account_granted: 0 },
-        { name: 'announcements.edit', legacy_granted: 1, account_granted: 1 }
+        { name: 'announcements.edit' }
     ];
 }
 
@@ -68,7 +67,7 @@ describe('account access foundation migration', () => {
 });
 
 describe('AccessControlService', () => {
-    test('legacy mode keeps role plus direct grants authoritative while exposing account-only grants separately', async () => {
+    test('a non-doctor policy still marked legacy uses only per-account grants after final cutover', async () => {
         const query = jest.fn()
             .mockResolvedValueOnce([[accountRow()]])
             .mockResolvedValueOnce([permissionRows()]);
@@ -77,11 +76,11 @@ describe('AccessControlService', () => {
 
         const access = await service.getEffectiveAccess('STAFF0001');
 
-        expect(access.mode).toBe('legacy');
+        expect(access.mode).toBe('account');
         expect(access.accessVersion).toBe(1);
-        expect([...access.legacyPermissions]).toEqual(['announcements.edit', 'patients.view']);
+        expect([...access.legacyPermissions]).toEqual(['announcements.edit']);
         expect([...access.accountPermissions]).toEqual(['announcements.edit']);
-        expect([...access.permissions]).toEqual(['announcements.edit', 'patients.view']);
+        expect([...access.permissions]).toEqual(['announcements.edit']);
         expect(access.isDoctorProtected).toBe(false);
     });
 
@@ -118,7 +117,7 @@ describe('AccessControlService', () => {
         expect([...access.accountPermissions]).toEqual(['billing.pay', 'patients.view']);
     });
 
-    test('shadow difference logs a stable fingerprint and permission names without raw account identity', async () => {
+    test('final account evaluation does not emit legacy shadow differences', async () => {
         logger.info.mockClear();
         const query = jest.fn()
             .mockResolvedValueOnce([[accountRow()]])
@@ -128,11 +127,7 @@ describe('AccessControlService', () => {
 
         await service.getEffectiveAccess('STAFF0001');
 
-        expect(logger.info).toHaveBeenCalledWith('Access control shadow difference', expect.objectContaining({
-            subject: expect.stringMatching(/^[a-f0-9]{12}$/),
-            legacyOnly: ['patients.view'],
-            accountOnly: []
-        }));
+        expect(logger.info).not.toHaveBeenCalledWith('Access control shadow difference', expect.anything());
         expect(JSON.stringify(logger.info.mock.calls)).not.toContain('STAFF0001');
     });
 });

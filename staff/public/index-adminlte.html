@@ -8,16 +8,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v431';
+        window.STAFF_CACHE_VERSION = 'v432';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v431">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v431">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v431">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v431">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v432">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v432">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v432">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v432">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v431">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v432">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -25,7 +25,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v431">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v432">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -54,7 +54,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v431"></script>
+    <script src="scripts/error-handler.js?v=v432"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -69,10 +69,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v431">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v432">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v431">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v432">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -664,7 +664,7 @@
                     <li class="nav-item dokter-only d-none" id="management-nav-kelola-roles">
                         <a href="#" class="nav-link" data-staff-call="showKelolaRolesPage">
                             <i class="nav-icon fas fa-user-shield"></i>
-                            <p>Users / Roles</p>
+                            <p>Kelola Akses</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-booking-settings">
@@ -2100,80 +2100,8 @@
                     </div>
                 </div>
 
-                <!-- KELOLA ROLES PAGE -->
-                <div id="kelola-roles-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/kelola-roles-page.html"></div>
-
-                <!-- Role Modal -->
-                <div class="modal fade" id="role-modal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary">
-                                <h5 class="modal-title" id="role-modal-title">Tambah Role Baru</h5>
-                                <button type="button" class="close text-white" data-dismiss="modal">
-                                    <span>&times;</span>
-                                </button>
-                            </div>
-                            <form id="role-form">
-                                <div class="modal-body">
-                                    <input type="hidden" id="role-id">
-                                    <div class="form-group">
-                                        <label for="role-name">Nama Role <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="role-name" required
-                                               pattern="[a-z_]+" title="Hanya huruf kecil dan underscore">
-                                        <small class="text-muted">Hanya huruf kecil dan underscore (contoh: admin_klinik)</small>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="role-display-name">Display Name <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="role-display-name" required>
-                                        <small class="text-muted">Nama yang ditampilkan (contoh: Admin Klinik)</small>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="role-description">Deskripsi</label>
-                                        <textarea class="form-control" id="role-description" rows="3"></textarea>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                    <button type="submit" class="btn btn-primary" id="btn-save-role">
-                                        <i class="fas fa-save"></i> Simpan
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Role Assignment Modal -->
-                <div class="modal fade" id="user-roles-modal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-info">
-                                <h5 class="modal-title">
-                                    <i class="fas fa-user-tag mr-2"></i>Kelola Roles: <span id="user-roles-modal-name"></span>
-                                </h5>
-                                <button type="button" class="close text-white" data-dismiss="modal">
-                                    <span>&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <input type="hidden" id="user-roles-user-id">
-                                <p class="text-muted mb-3">
-                                    <i class="fas fa-info-circle"></i>
-                                    Pilih satu atau lebih role untuk user ini. Permission akan digabungkan dari semua role yang dipilih.
-                                </p>
-                                <div id="user-roles-checkboxes">
-                                    <!-- Checkboxes will be loaded here -->
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                <button type="button" class="btn btn-info" id="btn-save-user-roles">
-                                    <i class="fas fa-save"></i> Simpan Roles
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- KELOLA AKSES PAGE -->
+                <div id="kelola-roles-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/kelola-access-page.html"></div>
 
                 <!-- BOOKING SETTINGS PAGE (Superadmin Only) -->
                 <div id="booking-settings-page" class="d-none">
@@ -3819,9 +3747,9 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/actions.js?v=v431"></script>
-<script defer src="scripts/shell/compact-sidebar.js?v=v431"></script>
-<script defer src="scripts/patient-demo-manager.js?v=v431"></script>
+<script defer src="scripts/shell/actions.js?v=v432"></script>
+<script defer src="scripts/shell/compact-sidebar.js?v=v432"></script>
+<script defer src="scripts/patient-demo-manager.js?v=v432"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3901,8 +3829,8 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v431" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v431" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v432" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v432" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3914,7 +3842,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v431"></script>
+<script defer src="scripts/rum.js?v=v432"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4177,7 +4105,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v431"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v432"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4330,7 +4258,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v431"></script>
+ <script src="scripts/mobile-helper.js?v=v432"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4342,8 +4270,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v431"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v431"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v432"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v432"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

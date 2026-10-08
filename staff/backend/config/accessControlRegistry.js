@@ -335,6 +335,14 @@ function resolveAccessControlRoute(route) {
 function resolveRouteAccess(route) {
     if (route.sourceFile === 'access-control') return resolveAccessControlRoute(route);
     if (route.sourceFile === 'account-access-self') return { exemption: 'staff_identity', ruleId: 'staff-access-identity' };
+    if (route.sourceFile === 'roles'
+        && route.method === 'GET'
+        && /^\/api\/users\/:userId\/(?:permissions|roles)$/.test(route.routePath)) {
+        return { exemption: 'legacy_access_adapter', ruleId: 'legacy-account-self-read' };
+    }
+    if (route.sourceFile === 'roles') {
+        return { permission: 'access.manage', ruleId: 'legacy-role-adapter-protected' };
+    }
     if (route.sourceFile === 'chat') return { exemption: 'staff_chat', ruleId: 'staff-chat' };
     if (route.sourceFile === 'auth') {
         const authResolution = resolveAuthRoute(route);

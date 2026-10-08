@@ -240,7 +240,7 @@ test('revoking support view evicts existing patient support-room subscriptions',
     expect(socket.rooms.has('staff')).toBe(true);
 });
 
-test('legacy role permission writes refresh all connected users for that role', async () => {
+test('role-room refresh remains safe while legacy role writes are permanently disabled', async () => {
     const sockets = ['staff-a', 'staff-b', 'staff-other'].map((id, index) => ({
         id: `socket-${index}`,
         data: {
@@ -265,7 +265,8 @@ test('legacy role permission writes refresh all connected users for that role', 
     expect(service.getEffectiveAccess).toHaveBeenCalledTimes(2);
 
     const roleRoute = fs.readFileSync(path.resolve(__dirname, '../../routes/roles.js'), 'utf8');
-    expect(roleRoute).toContain("await refreshRoleAccessRooms(req.app.get('io'), Number(id));");
-    expect(roleRoute.match(/await refreshUserAccessRooms\(req\.app\.get\('io'\), userId\);/g)).toHaveLength(3);
-    expect(roleRoute.match(/access_version \+ 1/g)).toHaveLength(4);
+    expect(roleRoute).toContain("code: 'LEGACY_ACCESS_DISABLED'");
+    expect(roleRoute).not.toContain('refreshRoleAccessRooms');
+    expect(roleRoute).not.toContain('refreshUserAccessRooms');
+    expect(roleRoute).not.toContain('access_version + 1');
 });

@@ -1,6 +1,5 @@
 'use strict';
 
-const crypto = require('crypto');
 const defaultDb = require('../db');
 const defaultLogger = require('../utils/logger');
 const { ROLE_IDS } = require('../constants/roles');
@@ -8,10 +7,6 @@ const { STAFF_NAVIGATION_MAP } = require('../config/accessControlRegistry');
 
 function asSortedSet(values) {
     return new Set([...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b)));
-}
-
-function difference(left, right) {
-    return [...left].filter(value => !right.has(value));
 }
 
 class AccessControlService {
@@ -67,73 +62,37 @@ class AccessControlService {
         }
 
         const isDoctorProtected = account.isSuperadmin || account.roleId === ROLE_IDS.DOKTER;
-        let legacyPermissions;
         let accountPermissions;
 
         if (isDoctorProtected) {
             const [rows] = await this.db.query('SELECT name FROM permissions ORDER BY name');
-            const fullCatalog = asSortedSet(rows.map(row => row.name));
-            legacyPermissions = fullCatalog;
-            accountPermissions = fullCatalog;
+            accountPermissions = asSortedSet(rows.map(row => row.name));
         } else {
             const [rows] = await this.db.query(
-                `SELECT
-                    p.name,
-                    CASE WHEN
-                        EXISTS (
-                            SELECT 1 FROM role_permissions rp
-                            WHERE rp.permission_id = p.id AND rp.role_id = ?
-                        )
-                        OR EXISTS (
-                            SELECT 1 FROM user_permission_grants upg
-                            WHERE upg.permission_id = p.id AND upg.user_id = ?
-                        )
-                    THEN 1 ELSE 0 END AS legacy_granted,
-                    CASE WHEN EXISTS (
-                        SELECT 1 FROM user_permission_grants upg
-                        WHERE upg.permission_id = p.id AND upg.user_id = ?
-                    ) THEN 1 ELSE 0 END AS account_granted
-                 FROM permissions p
-                 WHERE EXISTS (
-                        SELECT 1 FROM role_permissions rp
-                        WHERE rp.permission_id = p.id AND rp.role_id = ?
-                    )
-                    OR EXISTS (
-                        SELECT 1 FROM user_permission_grants upg
-                        WHERE upg.permission_id = p.id AND upg.user_id = ?
-                    )
+                `SELECT p.name
+                 FROM user_permission_grants upg
+                 INNER JOIN permissions p ON p.id = upg.permission_id
+                 WHERE upg.user_id = ?
                  ORDER BY p.name`,
-                [account.roleId, userId, userId, account.roleId, userId]
+                [userId]
             );
-            legacyPermissions = asSortedSet(
-                rows.filter(row => Number(row.legacy_granted) === 1).map(row => row.name)
-            );
-            accountPermissions = asSortedSet(
-                rows.filter(row => Number(row.account_granted) === 1).map(row => row.name)
-            );
-
-            const legacyOnly = difference(legacyPermissions, accountPermissions);
-            const accountOnly = difference(accountPermissions, legacyPermissions);
-            if (legacyOnly.length || accountOnly.length) {
-                this.logger.info('Access control shadow difference', {
-                    subject: crypto.createHash('sha256').update(String(userId)).digest('hex').slice(0, 12),
-                    roleId: account.roleId,
-                    accessMode: account.mode,
-                    legacyOnly,
-                    accountOnly
-                });
-            }
+            accountPermissions = asSortedSet(rows.map(row => row.name));
         }
 
-        const permissions = isDoctorProtected || account.mode === 'legacy'
-            ? legacyPermissions
-            : accountPermissions;
+        // After the final cutover, the stored mode is retained only for audited
+        // rollback with an older application release. Current non-doctor
+        // authorization always uses the per-account assignment table.
+        const permissions = accountPermissions;
+        const effectiveMode = isDoctorProtected ? account.mode : 'account';
 
         return {
             ...account,
+            mode: effectiveMode,
             isDoctorProtected,
             permissions,
-            legacyPermissions,
+            // Keep these aliases for one compatibility cycle. They intentionally
+            // expose the same account decision and never consult legacy tables.
+            legacyPermissions: accountPermissions,
             accountPermissions
         };
     }
@@ -145,8 +104,8 @@ class AccessControlService {
         return requiredPermissions.some(permission => access.permissions.has(permission));
     }
 
-    toPublicAccess(access, { legacyDecision = false } = {}) {
-        const permissions = legacyDecision ? access.legacyPermissions : access.permissions;
+    toPublicAccess(access) {
+        const permissions = access.permissions;
         const navigation = Object.entries(STAFF_NAVIGATION_MAP)
             .filter(([, permission]) => permissions.has(permission))
             .map(([navId]) => navId)

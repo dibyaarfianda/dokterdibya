@@ -169,7 +169,7 @@ describe('staff panel stabilization sources', () => {
 
     test('staff sidebar exposes patient engagement menus', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
-        const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
+        const accessRegistry = readRepoFile('staff', 'backend', 'config', 'accessControlRegistry.js');
 
         expect(html).toContain('id="nav-voting"');
         expect(html).toContain('data-staff-call="showVotingPage"');
@@ -187,8 +187,10 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('data-staff-call="showBirthTestimonialsPage"');
         expect(html).toContain('<p>Testimoni Pasien</p>');
 
-        expect(mainJs).toContain("'klinik_privat': ['nav-klinik-private', 'nav-voting', 'nav-birth-class']");
-        expect(mainJs).toContain("'ucapan_kelahiran': ['nav-birth-congrats', 'nav-birth-testimonials']");
+        expect(accessRegistry).toContain("'nav-voting': 'navigation.klinik_privat'");
+        expect(accessRegistry).toContain("'nav-birth-class': 'navigation.klinik_privat'");
+        expect(accessRegistry).toContain("'nav-birth-congrats': 'navigation.ucapan_kelahiran'");
+        expect(accessRegistry).toContain("'nav-birth-testimonials': 'navigation.ucapan_kelahiran'");
     });
 
     test('staff panel canonicalizes Sunday Clinic to the embedded staff route', () => {
@@ -746,6 +748,7 @@ describe('staff panel stabilization sources', () => {
         const featureLoader = readRepoFile('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
         const mainJs = readRepoFile('staff', 'public', 'scripts', 'main.js');
         const roleVisibility = readRepoFile('staff', 'backend', 'routes', 'role-visibility.js');
+        const accessRegistry = readRepoFile('staff', 'backend', 'config', 'accessControlRegistry.js');
         const server = readRepoFile('staff', 'backend', 'server.js');
 
         expect(html).toContain('id="nav-staff-payroll"');
@@ -760,7 +763,7 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('window.showStaffPayrollPage = showStaffPayrollPage;');
 
         expect(mainJs).toContain("pages.staffPayroll = grab('content-staff-payroll');");
-        expect(mainJs).toContain("'staff_payroll': ['nav-staff-payroll']");
+        expect(accessRegistry).toContain("'nav-staff-payroll': 'navigation.staff_payroll'");
         expect(mainJs).toContain("'nav-staff-payroll':                    () => showStaffPayrollPage()");
 
         expect(roleVisibility).toContain("{ key: 'staff_payroll', label: 'Gajian'");
@@ -776,6 +779,7 @@ describe('staff panel stabilization sources', () => {
         const staffBriefingJs = readRepoFile('staff', 'public', 'scripts', 'staff-briefing.js');
         const staffBriefingRoute = readRepoFile('staff', 'backend', 'routes', 'staff-briefing.js');
         const roleVisibility = readRepoFile('staff', 'backend', 'routes', 'role-visibility.js');
+        const accessRegistry = readRepoFile('staff', 'backend', 'config', 'accessControlRegistry.js');
         const server = readRepoFile('staff', 'backend', 'server.js');
 
         expect(html).toContain('id="nav-staff-briefing"');
@@ -789,7 +793,7 @@ describe('staff panel stabilization sources', () => {
         expect(html).toContain('window.showStaffBriefingPage = showStaffBriefingPage;');
 
         expect(mainJs).toContain("pages.staffBriefing = grab('content-staff-briefing');");
-        expect(mainJs).toContain("'staff_briefing': ['nav-staff-briefing']");
+        expect(accessRegistry).toContain("'nav-staff-briefing': 'navigation.staff_briefing'");
         expect(mainJs).toContain("'nav-staff-briefing':                   () => showStaffBriefingPage()");
 
         expect(staffBriefingJs).toContain("!hasAccountPermission('staff_briefing.finalize') || d.can_start !== true");
