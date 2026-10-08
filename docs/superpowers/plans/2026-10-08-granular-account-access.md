@@ -96,10 +96,10 @@
 
 **Produces:** View/write/delete/special enforcement for patient and medical-record HTTP/UI/realtime paths.
 
-- [ ] RED allow/deny tests for every mapped route and action, including export, reset, finalization, merge, and bulk delete.
-- [ ] Replace applicable role/menu guards with account permissions and hide/disable matching UI actions.
-- [ ] Verify no patient/record event leaks to zero-grant Staff.
-- [ ] Run clinical authorization, mapping, frontend, realtime, and chat gates; commit/push/deploy/verify without synthetic clinical writes.
+- [x] RED allow/deny tests for every mapped route and action, including export, reset, finalization, merge, and bulk delete.
+- [x] Replace applicable role/menu guards with account permissions and hide/disable matching UI actions.
+- [x] Verify no patient/record event leaks to zero-grant Staff.
+- [x] Run clinical authorization, mapping, frontend, realtime, and chat gates; commit/push/deploy/verify without synthetic clinical writes.
 
 ## Task 8: Enforce Klinik, Jadwal, and Antrian Online
 
