@@ -139,10 +139,10 @@
 
 **Produces:** Production account-mode cutover in order `front_office`, `admin`, `managerial`, `bidan`, with per-group rollback evidence.
 
-- [ ] Add dry-run/apply/rollback tooling with sanitized counts and access-version audits.
-- [ ] For each non-empty group: verify parity, switch to account mode, monitor unexpected 403/realtime/chat indicators, and prove rollback to legacy without changing grants.
-- [ ] Stop on unexplained access failure, increased unexpected 403, or chat regression.
-- [ ] Commit/push/deploy tooling first, then perform and verify each production group cutover.
+- [x] Add dry-run/apply/rollback tooling with sanitized counts and access-version audits.
+- [x] For each non-empty group: verify parity, switch to account mode, monitor unexpected 403/realtime/chat indicators, and prove rollback to legacy without changing grants.
+- [x] Stop on unexplained access failure, increased unexpected 403, or chat regression.
+- [x] Commit/push/deploy tooling first, then perform and verify each production group cutover.
 
 ## Task 13: Disable legacy runtime and remove old UI
 
