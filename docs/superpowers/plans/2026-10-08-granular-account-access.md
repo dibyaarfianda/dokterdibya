@@ -38,20 +38,20 @@
 
 **Produces:** Sanitized baseline evidence, a root-only production dump with SHA-256 checksum, successful temporary-database restore evidence, and baseline auth/menu/realtime/chat results.
 
-- [ ] Record repository, production commit, PM2 state, health, Staff asset version, and old authorization schema/counts without exposing secrets or patient data.
-- [ ] Dump `users`, `roles`, `user_roles`, `permissions`, `role_permissions`, `role_visibility`, and `user_permission_grants` to a timestamped 0700/0600 root-only directory.
-- [ ] Write and verify SHA-256; restore into a temporary database; compare table row counts and schema presence; drop only the verified temporary database.
-- [ ] Run auth, role/menu, realtime, socket credential, Staff shell, and chat popup baseline suites.
-- [ ] Commit/push/deploy the baseline evidence and verify production remains healthy with `v423` current/versioned assets.
+- [x] Record repository, production commit, PM2 state, health, Staff asset version, and old authorization schema/counts without exposing secrets or patient data.
+- [x] Dump `users`, `roles`, `user_roles`, `permissions`, `role_permissions`, `role_visibility`, and `user_permission_grants` to a timestamped 0700/0600 root-only directory.
+- [x] Write and verify SHA-256; restore into a temporary database; compare table row counts and schema presence; drop only the verified temporary database.
+- [x] Run auth, role/menu, realtime, socket credential, Staff shell, and chat popup baseline suites.
+- [x] Commit/push/deploy the baseline evidence and verify production remains healthy with `v423` current/versioned assets.
 
 ## Task 2: Shadow-mode access foundation
 
 **Produces:** Additive schema, `AccessControlService`, `verifyActiveStaff`, shared permission evaluation, and shadow-difference logging while legacy decisions remain authoritative.
 
-- [ ] RED tests for schema contract, doctor full access, inactive JWT denial, account grant resolution, legacy resolution, and sanitized shadow differences.
-- [ ] Add migrations and services without changing user-visible access.
-- [ ] Use the service in HTTP helpers and `/auth/me` shadow computation; keep legacy decision official.
-- [ ] Run focused and full backend suites plus chat gate; commit/push/deploy/apply migration/verify.
+- [x] RED tests for schema contract, doctor full access, inactive JWT denial, account grant resolution, legacy resolution, and sanitized shadow differences.
+- [x] Add migrations and services without changing user-visible access.
+- [x] Use the service in HTTP helpers and `/auth/me` shadow computation; keep legacy decision official.
+- [x] Run focused and full backend suites plus chat gate; commit/push/deploy/apply migration/verify.
 
 ## Task 3: Permission catalog, endpoint registry, and parity migration
 

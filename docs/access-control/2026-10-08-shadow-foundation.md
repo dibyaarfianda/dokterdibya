@@ -31,3 +31,13 @@ Date: 2026-10-08 (Asia/Jakarta)
 ## Rollback
 
 The verified root-only authorization backup from Task 1 remains at `/root/dokterdibya-access-backup-20261008T094607Z`. Rollback for this additive release is to return the application to the previous commit while retaining the new unused tables. No legacy authorization data needs to be restored unless an independent data change is detected.
+
+## Production verification
+
+- Implementation commit `03ebddd8e331f333a18a20250bde5a8211eb4f6b` and checksum correction `f8fb45e70823d41a82f2353c4bf3fbe2421862a1` were pushed to `main` and deployed.
+- Production contains all three foundation tables, fourteen Staff policy rows, two audit immutability triggers, and zero account-mode users.
+- Legacy counts remain unchanged: 283 role grants, 110 menu visibility rows, and zero direct user grants.
+- PM2 reported `dibyaklinik-backend` online after restart and the public health route returned healthy.
+- An active protected doctor identity returned `legacy` mode, access version 1, doctor protection, and all 87 catalog permissions through `/api/auth/me`.
+- `/api/staff/verify` and read-only chat history succeeded. No chat message or clinical record was written.
+- Current and immutable `v423` realtime, popup, and lazy-loader assets had matching hashes on both `dokterdibya.com` and `www.dokterdibya.com`.
