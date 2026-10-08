@@ -21,7 +21,11 @@ function medicalRecordDatabase() {
         sql = sql.replace(/\s+/g, ' ').trim();
         events.push({ kind: 'query', sql, params: clone(p), tx: !!tx });
         if (database.failure && sql.includes(database.failure)) throw new Error('Injected database failure');
-        if (sql.includes('FROM role_permissions')) return [[22].includes(p[0]) ? p.slice(1).map(name => ({ name })) : []];
+        if (sql.includes('FROM role_permissions')) {
+            const roleId = p[p.length - 2];
+            const permissionNames = p.slice(0, -2);
+            return [Number(roleId) === 22 ? permissionNames.map(name => ({ name })) : []];
+        }
         if (sql.includes('FROM patients WHERE id = ? FOR UPDATE')) {
             if (!tx) throw new Error('Patient lock outside transaction');
             return [clone(state.patients.filter(row => String(row.id) === String(p[0])))];

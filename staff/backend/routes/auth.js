@@ -4,7 +4,7 @@ const router = express.Router();
 const db = require('../db');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { verifyToken, JWT_SECRET } = require('../middleware/auth');
+const { verifyToken, verifyStaffToken, verifyActiveStaff, JWT_SECRET } = require('../middleware/auth');
 const { validateLogin, validatePasswordChange } = require('../middleware/validation');
 const { asyncHandler, AppError, handleDatabaseError } = require('../middleware/errorHandler');
 const { sendSuccess, sendError } = require('../utils/response');
@@ -17,6 +17,7 @@ const PatientPasswordService = require('../services/PatientPasswordService');
 const PatientPasswordResetService = require('../services/PatientPasswordResetService');
 const sharp = require('sharp');
 const { resolveStaffIdentity, decodeDataImageUrl } = require('../utils/staffIdentity');
+const { accessControlService } = require('../services/AccessControlService');
 const {
     BLOCKED_PATIENT_MESSAGE,
     isPatientIdentityBlocked,
@@ -48,6 +49,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             UNIX_TIMESTAMP(u.updated_at) AS avatar_version,
             u.user_type,
             u.is_superadmin,
+            u.is_active,
             u.profile_completed,
             u.must_change_password,
             r.name AS resolved_role_name,
@@ -86,6 +88,10 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
 
     if (!isPasswordValid) {
         throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    if (user.is_active !== undefined && Number(user.is_active) !== 1) {
+        throw new AppError('Akun staff tidak aktif.', HTTP_STATUS.FORBIDDEN, true, 'ACCOUNT_INACTIVE');
     }
 
     // Prevent patients from accessing admin panel
@@ -287,6 +293,7 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             UNIX_TIMESTAMP(u.updated_at) AS avatar_version,
             u.user_type,
             u.is_superadmin,
+            u.is_active,
             u.profile_completed,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
@@ -305,24 +312,24 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
     const roleForClient = resolvedRole || 'viewer';
 
-    // Get user permissions based on role_id
     let permissions = [];
-    if (user.role_id) {
-        const [permRows] = await db.query(
-            `SELECT p.name FROM permissions p
-             WHERE EXISTS (SELECT 1 FROM role_permissions rp
-                           WHERE rp.permission_id = p.id AND rp.role_id = ?)
-                OR EXISTS (SELECT 1 FROM user_permission_grants upg
-                           WHERE upg.permission_id = p.id AND upg.user_id = ?)`,
-            [user.role_id, user.new_id]
-        );
-        permissions = permRows.map(p => p.name);
-    }
-    
-    // Superadmin has all permissions
-    if (user.is_superadmin || user.role === 'dokter') {
-        const [allPerms] = await db.query('SELECT name FROM permissions');
-        permissions = allPerms.map(p => p.name);
+    let accessPolicy = {
+        mode: 'legacy',
+        access_version: 1,
+        is_doctor_protected: false
+    };
+    if (user.user_type === 'staff') {
+        if (Number(user.is_active) !== 1) {
+            throw new AppError('Akun staff tidak aktif.', HTTP_STATUS.FORBIDDEN, true, 'ACCOUNT_INACTIVE');
+        }
+        const access = await accessControlService.getEffectiveAccess(userId);
+        const publicAccess = accessControlService.toPublicAccess(access, { legacyDecision: true });
+        permissions = publicAccess.permissions;
+        accessPolicy = {
+            mode: publicAccess.mode,
+            access_version: publicAccess.access_version,
+            is_doctor_protected: publicAccess.is_doctor_protected
+        };
     }
 
     const staffIdentity = resolveStaffIdentity({
@@ -345,13 +352,16 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false,
             profile_completed: user.profile_completed || false,
-            permissions: permissions
+            permissions: permissions,
+            access_mode: accessPolicy.mode,
+            access_version: accessPolicy.access_version,
+            is_doctor_protected: accessPolicy.is_doctor_protected
         }
     });
 }));
 
 // GET /api/staff/verify - Verify staff token (for Sunday Clinic and other staff apps)
-router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
+router.get('/api/staff/verify', verifyStaffToken, verifyActiveStaff, asyncHandler(async (req, res) => {
     const userId = req.user?.id;
 
     if (!userId) {

@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const { ROLE_IDS, ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 const { requestAuditFields } = require('../utils/requestAudit');
+const { accessControlService } = require('../services/AccessControlService');
 
 // Ensure JWT_SECRET is set - fail fast if not
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -266,6 +267,74 @@ function verifyPatientToken(req, res, next) {
         return res.status(401).json({
             success: false,
             message: 'Invalid token'
+        });
+    }
+}
+
+/**
+ * Reload the Staff account state for every protected request.
+ * JWT claims establish identity only; current role and active status come from DB.
+ */
+async function verifyActiveStaff(req, res, next) {
+    const requestId = req.context?.requestId || 'unknown';
+    const userId = req.user?.id;
+
+    if (!userId) {
+        return res.status(401).json({
+            success: false,
+            code: 'AUTH_REQUIRED',
+            message: 'Authentication required'
+        });
+    }
+
+    try {
+        const account = await accessControlService.getStaffAccountState(userId);
+        if (!account || account.userType !== 'staff') {
+            logger.warn('Staff account access denied', requestAuditFields(req, {
+                requestId,
+                reason: 'not_staff'
+            }));
+            return res.status(403).json({
+                success: false,
+                code: 'ACCESS_DENIED',
+                message: 'Akses ditolak. Endpoint ini hanya untuk staff.'
+            });
+        }
+
+        if (!account.isActive) {
+            logger.warn('Inactive Staff account denied', requestAuditFields(req, {
+                requestId,
+                reason: 'inactive'
+            }));
+            return res.status(403).json({
+                success: false,
+                code: 'ACCOUNT_INACTIVE',
+                message: 'Akun staff tidak aktif.'
+            });
+        }
+
+        req.user = {
+            ...req.user,
+            role: account.roleName || req.user.role || null,
+            role_id: account.roleId,
+            user_type: 'staff',
+            is_superadmin: account.isSuperadmin,
+            is_active: true
+        };
+        req.accessPolicy = {
+            mode: account.mode,
+            access_version: account.accessVersion
+        };
+        return next();
+    } catch (error) {
+        logger.error('Active Staff verification failed', requestAuditFields(req, {
+            requestId,
+            error: error.message
+        }));
+        return res.status(500).json({
+            success: false,
+            code: 'ACCESS_CHECK_FAILED',
+            message: 'Gagal memeriksa status akun.'
         });
     }
 }
@@ -598,6 +667,15 @@ function requirePermission(...requiredPermissions) {
                 [...requiredPermissions, roleId, req.user.id]
             );
 
+            try {
+                await accessControlService.getEffectiveAccess(req.user.id);
+            } catch (shadowError) {
+                logger.warn('Access control shadow evaluation unavailable', requestAuditFields(req, {
+                    requestId,
+                    error: shadowError.message
+                }));
+            }
+
             if (rows.length === 0) {
                 logger.warn('Permission denied', requestAuditFields(req, {
                     userId: req.user.id, roleId, requiredPermissions, path: req.path
@@ -732,6 +810,7 @@ module.exports = {
     verifyToken,
     verifyPatientToken,
     verifyStaffToken,  // Block patients from staff routes
+    verifyActiveStaff,
     requireRole,
     requireRoles,
     requireSuperadmin,
