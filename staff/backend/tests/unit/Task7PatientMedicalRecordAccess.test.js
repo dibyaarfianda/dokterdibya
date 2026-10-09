@@ -265,9 +265,10 @@ describe('Task 7 HTTP, realtime, and UI wiring', () => {
         expect(accessUi).toContain('window.hasAccountPermission');
         expect(shell).toContain('data-account-permission="patients.merge"');
         expect(shell).toContain('data-account-permission="patients.bulk_delete"');
-        expect(patientTools).toContain("hasAccountPermission('patients.reset')");
+        expect(patientTools).toContain('window.hasAccountPermission(permission)');
+        expect(patientTools).toContain("hasPatientToolsPermission('patients.reset')");
         for (const permission of ['patients.edit', 'patients.delete', 'patients.bulk_delete']) {
-            expect(patientTools).toContain(`hasAccountPermission('${permission}')`);
+            expect(patientTools).toContain(`hasPatientToolsPermission('${permission}')`);
         }
         for (const permission of ['patients.create', 'patients.edit', 'patients.delete']) {
             expect(patientsUi).toContain(`'${permission}'`);
