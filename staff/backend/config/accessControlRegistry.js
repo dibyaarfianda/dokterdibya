@@ -63,6 +63,7 @@ const STAFF_NAVIGATION_MAP = Object.freeze({
     'nav-bulk-upload-usg': 'navigation.bulk_upload_usg',
     'nav-community-chat': 'community_chat.view',
     'nav-dashboard': 'navigation.dashboard',
+    'nav-docboard': 'docboard.view',
     'nav-estimasi-biaya': 'navigation.penjualan_obat',
     'nav-finance-analysis': 'finance_analysis.view',
     'nav-guest-activity': 'logs.view',
