@@ -78,6 +78,7 @@ describe('access-control management contracts', () => {
         }
         expect(sql).toMatch(/UPDATE\s+user_access_policies/i);
         expect(sql).toMatch(/COALESCE\(u\.role_id,\s*0\)\s*<>/i);
+        expect(sql).toMatch(/COALESCE\(uap\.job_label,[\s\S]+?\)\)\s+COLLATE\s+utf8mb4_unicode_ci\)\s+IN/i);
         expect(sql).not.toMatch(/UPDATE\s+users\s+SET/i);
         expect(sql).not.toMatch(/role_permissions|role_visibility/i);
     });

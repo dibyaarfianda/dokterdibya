@@ -6,16 +6,16 @@ INNER JOIN users u ON u.new_id = uap.user_id
 LEFT JOIN roles r ON r.id = u.role_id
 SET
     uap.job_label = CASE
-        WHEN LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) IN
+        WHEN (LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) COLLATE utf8mb4_unicode_ci) IN
             ('owner', 'admin', 'administrasi', 'administrator')
             THEN 'Owner'
-        WHEN LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) IN
+        WHEN (LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) COLLATE utf8mb4_unicode_ci) IN
             ('koordinator', 'coordinator', 'manager', 'managerial')
             THEN 'Koordinator'
-        WHEN LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) IN
+        WHEN (LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) COLLATE utf8mb4_unicode_ci) IN
             ('farmasi', 'pharmacy')
             THEN 'Farmasi'
-        WHEN LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) IN
+        WHEN (LOWER(TRIM(COALESCE(uap.job_label, r.display_name, r.name, u.role, ''))) COLLATE utf8mb4_unicode_ci) IN
             ('observer', 'pengamat')
             THEN 'Observer'
         ELSE 'Staff'
