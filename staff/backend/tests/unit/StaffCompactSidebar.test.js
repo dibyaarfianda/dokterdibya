@@ -7,6 +7,7 @@ const html = fs.readFileSync(path.join(repoRoot, 'staff/public/index-adminlte.ht
 const sidebar = html.match(/<aside class="main-sidebar[\s\S]*?<\/aside>/)?.[0];
 const scriptPath = path.join(repoRoot, 'staff/public/scripts/shell/compact-sidebar.js');
 const shellCss = fs.readFileSync(path.join(repoRoot, 'staff/public/styles/staff-shell.css'), 'utf8');
+const accountAccessSource = fs.readFileSync(path.join(repoRoot, 'staff/public/scripts/shell/account-access.js'), 'utf8');
 
 describe('compact desktop staff sidebar', () => {
     let browser;
@@ -60,7 +61,7 @@ describe('compact desktop staff sidebar', () => {
         });
         expect(result.initialized).toBe(true);
         expect(result.shortcuts).toEqual([
-            'nav-dashboard', 'nav-klinik-private', 'nav-antrian-online', 'nav-tanya-dokter'
+            'nav-dashboard', 'nav-docboard', 'nav-klinik-private', 'nav-antrian-online', 'nav-tanya-dokter'
         ]);
         expect(result.groups).toEqual([
             'klinik', 'pasien', 'percakapan', 'konten', 'operasional', 'keuangan', 'monitoring', 'sistem'
@@ -117,7 +118,7 @@ describe('compact desktop staff sidebar', () => {
             };
         });
         expect(result.shortcuts).toEqual([
-            'nav-dashboard', 'nav-kantor-saya', 'nav-antrian-online', 'nav-pasien-baru'
+            'nav-dashboard', 'nav-kantor-saya', 'nav-docboard', 'nav-antrian-online', 'nav-pasien-baru'
         ]);
         expect(result.deniedSearchVisible).toBe(false);
         expect(result.uploadGroupOpen).toBe(true);
@@ -269,6 +270,203 @@ describe('compact desktop staff sidebar', () => {
         });
         expect(result.after).toEqual(result.before);
         expect(result.searchAdded).toBe(false);
+    });
+
+    test('desktop hides the legacy menu until the compact menu is ready', async () => {
+        expect(html.indexOf("document.documentElement.classList.add('staff-compact-pending')"))
+            .toBeLessThan(html.indexOf('<body'));
+        await page.evaluate(() => document.documentElement.classList.add('staff-compact-pending'));
+        const before = await page.$eval('.main-sidebar .nav-sidebar', element => ({
+            visibility: getComputedStyle(element).visibility,
+            pending: document.documentElement.classList.contains('staff-compact-pending')
+        }));
+        const after = await page.evaluate(() => {
+            window.staffCompactSidebar.init({ role_id: 1 });
+            const nav = document.querySelector('.main-sidebar .nav-sidebar');
+            return {
+                visibility: getComputedStyle(nav).visibility,
+                pending: document.documentElement.classList.contains('staff-compact-pending'),
+                compact: document.querySelector('.main-sidebar').classList.contains('staff-compact-enabled')
+            };
+        });
+
+        expect(before).toEqual({ visibility: 'hidden', pending: true });
+        expect(after).toEqual({ visibility: 'visible', pending: false, compact: true });
+    });
+
+    test('mobile app mode never hides the original sidebar behind the desktop pending guard', async () => {
+        const result = await page.evaluate(() => {
+            document.documentElement.classList.add('mobile-app-mode', 'staff-compact-pending');
+            const nav = document.querySelector('.main-sidebar .nav-sidebar');
+            return {
+                visibility: getComputedStyle(nav).visibility,
+                initialized: window.staffCompactSidebar.init({ role_id: 1 }),
+                pending: document.documentElement.classList.contains('staff-compact-pending')
+            };
+        });
+
+        expect(result).toEqual({ visibility: 'visible', initialized: false, pending: false });
+    });
+
+    test('a zero-grant account receives its compact menu immediately when access is granted', async () => {
+        const encodedAccountAccess = Buffer.from(accountAccessSource).toString('base64');
+        const result = await page.evaluate(async encoded => {
+            const accountAccess = await import(`data:text/javascript;base64,${encoded}`);
+            const auth = {
+                currentUser: {
+                    id: 'STAFF-ZERO',
+                    user_type: 'staff',
+                    access_mode: 'account',
+                    access_version: 1,
+                    is_doctor_protected: false,
+                    permissions: [],
+                    navigation: []
+                }
+            };
+            window.currentStaffUser = auth.currentUser;
+            window.__currentPage = 'no-access';
+            window.dashboardVisits = 0;
+            window.showNoAccessPage = () => { window.__currentPage = 'no-access'; };
+            window.showDashboardPage = () => {
+                window.__currentPage = 'dashboard';
+                window.dashboardVisits += 1;
+            };
+            accountAccess.applyAccountAccess(auth.currentUser);
+            document.documentElement.classList.add('staff-compact-pending');
+            accountAccess.installAccountAccessListener(auth);
+
+            window.dispatchEvent(new CustomEvent('staff:access-changed', {
+                detail: {
+                    mode: 'account',
+                    access_version: 2,
+                    is_doctor_protected: false,
+                    permissions: ['navigation.dashboard'],
+                    navigation: ['nav-dashboard']
+                }
+            }));
+            await Promise.resolve();
+
+            return {
+                pending: document.documentElement.classList.contains('staff-compact-pending'),
+                compact: document.querySelector('.main-sidebar').classList.contains('staff-compact-enabled'),
+                dashboardVisits: window.dashboardVisits,
+                currentPage: window.__currentPage,
+                dashboardVisible: getComputedStyle(document.getElementById('nav-dashboard')).display !== 'none'
+            };
+        }, encodedAccountAccess);
+
+        expect(result).toEqual({
+            pending: false,
+            compact: true,
+            dashboardVisits: 1,
+            currentPage: 'dashboard',
+            dashboardVisible: true
+        });
+    });
+
+    test('a non-dashboard grant opens its first allowed page without requesting Dashboard', async () => {
+        const encodedAccountAccess = Buffer.from(accountAccessSource).toString('base64');
+        const result = await page.evaluate(async encoded => {
+            const accountAccess = await import(`data:text/javascript;base64,${encoded}`);
+            const auth = {
+                currentUser: {
+                    id: 'STAFF-PATIENTS', user_type: 'staff', access_mode: 'account', access_version: 1,
+                    is_doctor_protected: false, permissions: [], navigation: []
+                }
+            };
+            window.currentStaffUser = auth.currentUser;
+            window.__currentPage = 'no-access';
+            window.dashboardVisits = 0;
+            window.patientVisits = 0;
+            window.showNoAccessPage = () => { window.__currentPage = 'no-access'; };
+            window.showDashboardPage = () => {
+                window.__currentPage = 'dashboard';
+                window.dashboardVisits += 1;
+            };
+            document.querySelector('#nav-kelola-pasien .nav-link').addEventListener('click', event => {
+                event.preventDefault();
+                window.__currentPage = 'patients';
+                window.patientVisits += 1;
+            });
+            accountAccess.applyAccountAccess(auth.currentUser);
+            accountAccess.installAccountAccessListener(auth);
+            window.dispatchEvent(new CustomEvent('staff:access-changed', {
+                detail: {
+                    mode: 'account', access_version: 2, is_doctor_protected: false,
+                    permissions: ['patients.view'], navigation: ['nav-kelola-pasien']
+                }
+            }));
+            await Promise.resolve();
+            return {
+                currentPage: window.__currentPage,
+                dashboardVisits: window.dashboardVisits,
+                patientVisits: window.patientVisits
+            };
+        }, encodedAccountAccess);
+
+        expect(result).toEqual({ currentPage: 'patients', dashboardVisits: 0, patientVisits: 1 });
+    });
+
+    test('mobile zero-grant access refresh shows only granted quick navigation', async () => {
+        const encodedAccountAccess = Buffer.from(accountAccessSource).toString('base64');
+        const result = await page.evaluate(async encoded => {
+            const bar = document.createElement('div');
+            bar.id = 'mobile-action-bar';
+            bar.innerHTML = [
+                ['mobile-btn-dashboard', 'dashboard'], ['mobile-btn-klinik', 'klinik'],
+                ['mobile-btn-docboard', 'docboard'], ['mobile-btn-pasien', 'pasien'],
+                ['mobile-btn-tanya', 'tanya'], ['mobile-btn-more', 'more']
+            ].map(([id, nav]) => `<button id="${id}" data-mobile-nav="${nav}">${nav}</button>`).join('');
+            document.body.appendChild(bar);
+            document.documentElement.classList.add('mobile-app-mode', 'staff-compact-pending');
+            const accountAccess = await import(`data:text/javascript;base64,${encoded}`);
+            const auth = {
+                currentUser: {
+                    id: 'STAFF-MOBILE', user_type: 'staff', access_mode: 'account', access_version: 1,
+                    is_doctor_protected: false, permissions: [], navigation: []
+                }
+            };
+            window.currentStaffUser = auth.currentUser;
+            window.__currentPage = 'no-access';
+            window.showNoAccessPage = () => { window.__currentPage = 'no-access'; };
+            document.querySelector('#nav-kelola-pasien .nav-link').addEventListener('click', event => {
+                event.preventDefault();
+                window.__currentPage = 'patients';
+            });
+            accountAccess.applyAccountAccess(auth.currentUser);
+            const hiddenBeforeGrant = bar.hidden && bar.style.display === 'none';
+            accountAccess.installAccountAccessListener(auth);
+            window.dispatchEvent(new CustomEvent('staff:access-changed', {
+                detail: {
+                    mode: 'account', access_version: 2, is_doctor_protected: false,
+                    permissions: ['patients.view'], navigation: ['nav-kelola-pasien']
+                }
+            }));
+            await Promise.resolve();
+            const visible = id => {
+                const button = document.getElementById(id);
+                return !button.hidden && button.style.display !== 'none' && !button.classList.contains('d-none');
+            };
+            return {
+                hiddenBeforeGrant,
+                barVisible: !bar.hidden && bar.style.display !== 'none' && !bar.classList.contains('d-none'),
+                dashboardVisible: visible('mobile-btn-dashboard'),
+                patientVisible: visible('mobile-btn-pasien'),
+                moreVisible: visible('mobile-btn-more'),
+                currentPage: window.__currentPage,
+                pending: document.documentElement.classList.contains('staff-compact-pending')
+            };
+        }, encodedAccountAccess);
+
+        expect(result).toEqual({
+            hiddenBeforeGrant: true,
+            barVisible: true,
+            dashboardVisible: false,
+            patientVisible: true,
+            moreVisible: false,
+            currentPage: 'patients',
+            pending: false
+        });
     });
 
     test.each([854, 640, 390])('small desktop starts with compact navigation at %s pixels', async width => {

@@ -32,10 +32,17 @@
     const SYSTEM_IDS = new Set(['nav-jadwal-booking']);
     const HIDDEN_GROUPS = new Set(['klinik']);
 
+    function revealSidebar() {
+        document.documentElement.classList.remove('staff-compact-pending');
+    }
+
     const nav = document.querySelector('.main-sidebar .nav-sidebar');
     const sidebar = document.querySelector('.main-sidebar .sidebar');
     const aside = document.querySelector('.main-sidebar');
-    if (!nav || !sidebar || !aside) return;
+    if (!nav || !sidebar || !aside) {
+        revealSidebar();
+        return;
+    }
 
     const originalNodes = Array.from(nav.children);
     const originalItems = originalNodes.filter(node => node.classList?.contains('nav-item'));
@@ -190,7 +197,14 @@
     }
 
     function attach() {
-        if (attached || !isDesktop()) return false;
+        if (attached) {
+            revealSidebar();
+            return false;
+        }
+        if (!isDesktop()) {
+            revealSidebar();
+            return false;
+        }
         attached = true;
         aside.classList.add('staff-compact-enabled');
         makeControls();
@@ -250,6 +264,7 @@
             });
         });
         refresh();
+        revealSidebar();
         return true;
     }
 
@@ -343,7 +358,10 @@
     }
 
     function detach() {
-        if (!attached) return;
+        if (!attached) {
+            revealSidebar();
+            return;
+        }
         attached = false;
         badgeObserver?.disconnect();
         activeObserver?.disconnect();
@@ -364,6 +382,7 @@
         onlineButton?.remove();
         sidebar.classList.remove('staff-compact-online-open');
         aside.classList.remove('staff-compact-enabled');
+        revealSidebar();
     }
 
     function syncViewport() {

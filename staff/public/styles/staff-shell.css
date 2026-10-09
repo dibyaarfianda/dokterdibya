@@ -1576,6 +1576,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
 /* Compact Staff Panel navigation is applied only to desktop. Original menu nodes stay intact. */
 @media (min-width: 992px), (hover: hover) and (pointer: fine) {
+    html.staff-compact-pending:not(.mobile-app-mode) .main-sidebar .nav-sidebar {
+        visibility: hidden !important;
+    }
     .main-sidebar.staff-compact-enabled {
         margin-left: 0 !important;
     }

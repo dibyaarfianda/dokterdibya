@@ -2,7 +2,7 @@ const fragmentPages = [
     ['sunday-clinic', 'sunday-clinic-page', 'nav-sunday-clinic', 'Sunday Clinic'],
     ['anamnesa', 'anamnesa-page', 'nav-anamnesa', 'Anamnesa'],
     ['usg', 'usg-exam-page', 'nav-usg', 'Pemeriksaan USG'],
-    ['kelola-roles', 'kelola-roles-page', 'management-nav-kelola-roles', 'Kelola Akses'],
+    ['kelola-roles', 'kelola-roles-page', 'management-nav-kelola-roles', 'Kelola Akses', 'kelola-access-page'],
     ['template-resep', 'template-resep-page', 'nav-template-resep', 'Template Resep'],
     ['estimasi-biaya', 'estimasi-biaya-page', 'nav-estimasi-biaya', 'Estimasi Biaya Kehamilan'],
     ['finance-analysis', 'finance-analysis-page', 'nav-finance-analysis', 'Finance Analysis'],
@@ -49,12 +49,12 @@ export function createPageDescriptors() {
             activate: null,
             deactivate: null
         },
-        ...fragmentPages.map(([key, containerId, navId, title]) => ({
+        ...fragmentPages.map(([key, containerId, navId, title, fragmentId = containerId]) => ({
             key,
             containerId,
             navId,
             title,
-            fragment: `/staff/public/fragments/pages/${containerId}.html`,
+            fragment: `/staff/public/fragments/pages/${fragmentId}.html`,
             load: null,
             activate: null,
             deactivate: null

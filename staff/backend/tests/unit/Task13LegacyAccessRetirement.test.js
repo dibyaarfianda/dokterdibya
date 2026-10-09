@@ -137,6 +137,9 @@ describe('Task 13 legacy access retirement', () => {
         expect(main).not.toContain("'./kelola-roles.js'");
         expect(main).not.toContain('/api/role-visibility');
         expect(descriptors).toContain("'Kelola Akses'");
+        expect(descriptors).toContain("['kelola-roles', 'kelola-roles-page', 'management-nav-kelola-roles', 'Kelola Akses', 'kelola-access-page']");
+        expect(descriptors).toContain('fragmentId = containerId');
+        expect(descriptors).toContain('pages/${fragmentId}.html');
         expect(fs.existsSync(path.join(publicRoot, 'scripts/kelola-roles.js'))).toBe(false);
         expect(fs.existsSync(path.join(publicRoot, 'fragments/pages/kelola-roles-page.html'))).toBe(false);
     });
