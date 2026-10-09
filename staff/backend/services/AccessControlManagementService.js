@@ -31,6 +31,111 @@ const internalPermissionNames = new Set(PERMISSION_CATALOG.filter(item => item.i
 const EXPLICIT_PERMISSION_DEPENDENCIES = new Map([
     ['finance_analysis.view', ['analytics.view', 'inventory.view', 'visits.view']]
 ]);
+const ACCESS_TEMPLATE_METADATA = Object.freeze([
+    Object.freeze({
+        key: 'owner',
+        label: 'Owner',
+        description: 'Seluruh izin yang dapat didelegasikan oleh dokter.'
+    }),
+    Object.freeze({
+        key: 'coordinator',
+        label: 'Koordinator',
+        description: 'Operasional klinik, pasien, rekam medis, jadwal, komunikasi, dan tim.'
+    }),
+    Object.freeze({
+        key: 'pharmacy',
+        label: 'Farmasi',
+        description: 'Obat, inventori, pemasok, penjualan obat, dan keuangan terkait.'
+    }),
+    Object.freeze({
+        key: 'staff',
+        label: 'Staff',
+        description: 'Operasional harian pasien, kunjungan, jadwal, antrean, dan komunikasi.'
+    }),
+    Object.freeze({
+        key: 'observer',
+        label: 'Observer',
+        description: 'Akses baca tanpa edit, hapus, atau aksi khusus.'
+    })
+]);
+const ACCESS_TEMPLATE_METADATA_BY_KEY = new Map(
+    ACCESS_TEMPLATE_METADATA.map(template => [template.key, template])
+);
+const COORDINATOR_CATEGORIES = new Set([
+    'Analitik',
+    'Antrian Online',
+    'Dashboard',
+    'Klinik dan Jadwal',
+    'Komunikasi dan Konten',
+    'Pasien',
+    'Rekam Medis',
+    'Tim',
+    'Tindakan'
+]);
+const COORDINATOR_BLOCKED_ACTIONS = new Set([
+    'bulk_delete',
+    'delete',
+    'export',
+    'finalize',
+    'merge',
+    'payment',
+    'publish',
+    'reset',
+    'sync'
+]);
+const STAFF_PREFIXES = new Set([
+    'announcements',
+    'appointments',
+    'booking',
+    'dashboard',
+    'greeting_cards',
+    'hospital_appointments',
+    'notifications',
+    'online_queue',
+    'patient_documents',
+    'patients',
+    'practice_schedules',
+    'r2_files',
+    'registration_codes',
+    'services',
+    'staff_announcements',
+    'staff_briefing',
+    'staff_workdesk',
+    'sunday_clinic',
+    'visits'
+]);
+const PHARMACY_FINANCE_PERMISSIONS = new Set([
+    'billing.create',
+    'billing.export',
+    'billing.finalize',
+    'billing.process_payment',
+    'billing.view',
+    'cost_estimates.view',
+    'cost_estimates.write',
+    'dashboard.view',
+    'finance_analysis.view',
+    'patients.view',
+    'services.view',
+    'visits.view'
+]);
+const TEMPLATE_LABEL_ALIASES = new Map([
+    ['owner', 'owner'],
+    ['admin', 'owner'],
+    ['administrasi', 'owner'],
+    ['administrator', 'owner'],
+    ['koordinator', 'coordinator'],
+    ['coordinator', 'coordinator'],
+    ['manager', 'coordinator'],
+    ['managerial', 'coordinator'],
+    ['farmasi', 'pharmacy'],
+    ['pharmacy', 'pharmacy'],
+    ['staff', 'staff'],
+    ['bidan', 'staff'],
+    ['front office', 'staff'],
+    ['front_office', 'staff'],
+    ['observer', 'observer'],
+    ['pengamat', 'observer']
+]);
 
 function accessError(message, statusCode, code) {
     const error = new Error(message);
@@ -96,6 +201,53 @@ function getDelegableCatalog() {
             left.category.localeCompare(right.category, 'id')
             || left.display_name.localeCompare(right.display_name, 'id')
         ));
+}
+
+function templateIncludesPermission(templateKey, item) {
+    if (templateKey === 'owner') return true;
+    if (templateKey === 'observer') return item.action === 'view';
+    if (templateKey === 'coordinator') {
+        return COORDINATOR_CATEGORIES.has(item.category)
+            && !COORDINATOR_BLOCKED_ACTIONS.has(item.action);
+    }
+    if (templateKey === 'pharmacy') {
+        return (
+            item.category === 'Obat dan Inventori'
+            || PHARMACY_FINANCE_PERMISSIONS.has(item.name)
+        ) && !['bulk_delete', 'delete', 'reset'].includes(item.action);
+    }
+    if (templateKey === 'staff') {
+        return STAFF_PREFIXES.has(item.name.split('.')[0])
+            && ['view', 'write'].includes(item.action);
+    }
+    return false;
+}
+
+function getAccessTemplates() {
+    const catalog = getDelegableCatalog();
+    return ACCESS_TEMPLATE_METADATA.map(template => {
+        const selectedPermissions = catalog
+            .filter(permissionItem => templateIncludesPermission(template.key, permissionItem))
+            .map(permissionItem => permissionItem.name);
+        return {
+            ...template,
+            permissions: resolveSelectedPermissions(selectedPermissions)
+        };
+    });
+}
+
+function resolveAccessTemplate(templateKey) {
+    const normalized = typeof templateKey === 'string' ? templateKey.trim().toLowerCase() : '';
+    const template = getAccessTemplates().find(item => item.key === normalized);
+    if (!template) {
+        throw accessError('Template akses tidak valid.', 400, 'INVALID_ACCESS_TEMPLATE');
+    }
+    return template;
+}
+
+function templateKeyForJobLabel(jobLabel) {
+    const normalized = typeof jobLabel === 'string' ? jobLabel.trim().toLowerCase() : '';
+    return TEMPLATE_LABEL_ALIASES.get(normalized) || null;
 }
 
 function assertAccessVersion(expectedVersion, actualVersion) {
@@ -198,11 +350,15 @@ function escapeHtml(value) {
 function publicUser(row) {
     const active = Number(row.is_active) === 1;
     const pending = !active && Number(row.has_password || 0) === 0;
+    const sourceJobLabel = row.job_label || row.role_display || row.role || 'Staff';
+    const templateKey = templateKeyForJobLabel(sourceJobLabel);
+    const template = templateKey ? ACCESS_TEMPLATE_METADATA_BY_KEY.get(templateKey) : null;
     return {
         id: row.id || row.new_id,
         name: row.name,
         email: row.email,
-        job_label: row.job_label || row.role_display || row.role || 'Staff',
+        job_label: template?.label || sourceJobLabel,
+        template_key: templateKey,
         role_id: row.job_role_id == null
             ? (row.role_id == null ? null : Number(row.role_id))
             : Number(row.job_role_id),
@@ -233,19 +389,13 @@ class AccessControlManagementService {
     }
 
     async getCatalog() {
-        const [roles] = await this.db.query(
-            `SELECT id, name, display_name
-             FROM roles
-             WHERE id <> ?
-             ORDER BY display_name ASC`,
-            [ROLE_IDS.DOKTER]
-        );
+        const templates = getAccessTemplates();
         return {
             permissions: getDelegableCatalog(),
-            job_labels: roles.map(role => ({
-                role_id: Number(role.id),
-                name: role.name,
-                label: role.display_name || role.name
+            templates,
+            job_labels: templates.map(template => ({
+                name: template.key,
+                label: template.label
             }))
         };
     }
@@ -395,7 +545,12 @@ class AccessControlManagementService {
                 ? null
                 : normalizeJobLabel(input.job_label);
             let nextJobRoleId = null;
-            if (input?.role_id !== undefined && input?.role_id !== null) {
+            let nextTemplateKey = null;
+            if (input?.template_key !== undefined) {
+                const template = resolveAccessTemplate(input.template_key);
+                nextJobLabel = template.label;
+                nextTemplateKey = template.key;
+            } else if (input?.role_id !== undefined && input?.role_id !== null) {
                 const role = await this._loadJobLabel(connection, input.role_id);
                 nextJobLabel = role.display_name || role.name;
                 nextJobRoleId = Number(role.id);
@@ -434,10 +589,20 @@ class AccessControlManagementService {
                 action: 'permissions_updated',
                 accessVersion: nextVersion,
                 beforeState: { permissions: beforePermissions },
-                afterState: { permissions: assigned, job_label: nextJobLabel || undefined }
+                afterState: {
+                    permissions: assigned,
+                    job_label: nextJobLabel || undefined,
+                    template_key: nextTemplateKey || undefined
+                }
             });
             await connection.commit();
-            return { access_version: nextVersion, permissions: resolved, job_label: nextJobLabel, role_id: nextJobRoleId };
+            return {
+                access_version: nextVersion,
+                permissions: resolved,
+                job_label: nextJobLabel,
+                role_id: nextJobRoleId,
+                template_key: nextTemplateKey
+            };
         } catch (error) {
             await connection.rollback();
             throw error;
@@ -543,9 +708,14 @@ class AccessControlManagementService {
         try {
             const [existing] = await connection.query('SELECT new_id FROM users WHERE LOWER(email) = ? LIMIT 1', [email]);
             if (existing.length) throw accessError('Email sudah digunakan.', 409, 'EMAIL_EXISTS');
-            role = input?.role_id !== undefined
-                ? await this._loadJobLabel(connection, input.role_id)
-                : { id: null, name: 'staff', display_name: normalizeJobLabel(input?.job_label) };
+            if (input?.template_key !== undefined) {
+                const template = resolveAccessTemplate(input.template_key);
+                role = { id: null, name: template.key, display_name: template.label, template_key: template.key };
+            } else {
+                role = input?.role_id !== undefined
+                    ? await this._loadJobLabel(connection, input.role_id)
+                    : { id: null, name: 'staff', display_name: normalizeJobLabel(input?.job_label) };
+            }
             userId = await this._generateUniqueStaffId(connection);
             invitation = this._newInvitationToken();
 
@@ -596,7 +766,8 @@ class AccessControlManagementService {
                 access_mode: 'account',
                 access_version: 1,
                 permission_count: 0,
-                is_doctor_protected: false
+                is_doctor_protected: false,
+                template_key: role.template_key || templateKeyForJobLabel(role.display_name || role.name)
             },
             email_sent: emailSent,
             invitation_expires_in_hours: INVITATION_TTL_HOURS
@@ -759,9 +930,11 @@ module.exports = {
     assertMutableStaffAccount,
     buildInvitationLink,
     deriveNavigationPermissions,
+    getAccessTemplates,
     getDelegableCatalog,
     hashInvitationToken,
     normalizeJobLabel,
+    resolveAccessTemplate,
     resolveSelectedPermissions,
     validateStrongPassword
 };

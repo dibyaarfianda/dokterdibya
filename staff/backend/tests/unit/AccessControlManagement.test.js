@@ -12,6 +12,7 @@ const pagePath = path.resolve(__dirname, '../../../public/fragments/pages/kelola
 const scriptPath = path.resolve(__dirname, '../../../public/scripts/kelola-access.js');
 const activationPath = path.resolve(__dirname, '../../../public/activate-access.html');
 const jobLabelMigrationPath = path.resolve(__dirname, '../../migrations/20261008_account_access_job_label.sql');
+const accessTemplateLabelMigrationPath = path.resolve(__dirname, '../../migrations/20261009_access_template_labels.sql');
 
 function codedError(code, statusCode, message = code) {
     const error = new Error(message);
@@ -30,7 +31,7 @@ function createApiTestApp({ management = {}, auth = {} } = {}) {
     const managementService = {
         validateInvitation: jest.fn().mockResolvedValue({ valid: true }),
         acceptInvitation: jest.fn().mockResolvedValue({ accepted: true }),
-        getCatalog: jest.fn().mockResolvedValue({ permissions: [], job_labels: [] }),
+        getCatalog: jest.fn().mockResolvedValue({ permissions: [], templates: [], job_labels: [] }),
         listUsers: jest.fn().mockResolvedValue([]),
         getUser: jest.fn().mockResolvedValue({ id: 'STAFF0001' }),
         savePermissions: jest.fn().mockResolvedValue({ access_version: 2 }),
@@ -67,6 +68,18 @@ describe('access-control management contracts', () => {
         expect(sql).toMatch(/ALTER TABLE user_access_policies[\s\S]+job_label VARCHAR\(80\)[\s\S]+job_role_id INT/i);
         expect(sql).toMatch(/COALESCE\(r\.display_name, r\.name, u\.role, 'Staff'\)/i);
         expect(sql).not.toMatch(/UPDATE\s+users\s+SET\s+(?:role|role_id)/i);
+    });
+
+    test('migrates legacy staff labels to the five approved templates without changing authorization roles', () => {
+        const sql = fs.readFileSync(accessTemplateLabelMigrationPath, 'utf8');
+
+        for (const label of ['Owner', 'Koordinator', 'Farmasi', 'Staff', 'Observer']) {
+            expect(sql).toContain(`'${label}'`);
+        }
+        expect(sql).toMatch(/UPDATE\s+user_access_policies/i);
+        expect(sql).toMatch(/COALESCE\(u\.role_id,\s*0\)\s*<>/i);
+        expect(sql).not.toMatch(/UPDATE\s+users\s+SET/i);
+        expect(sql).not.toMatch(/role_permissions|role_visibility/i);
     });
 
     test('exposes the approved catalog and invitation endpoints', () => {
@@ -133,6 +146,82 @@ describe('access-control management contracts', () => {
         expect(names.has('system.reset')).toBe(false);
     });
 
+    test('provides the five fixed access templates with approved safety boundaries', () => {
+        const {
+            getAccessTemplates,
+            getDelegableCatalog,
+            resolveSelectedPermissions
+        } = require('../../services/AccessControlManagementService');
+        const catalog = getDelegableCatalog();
+        const templates = getAccessTemplates();
+        const byKey = new Map(templates.map(template => [template.key, template]));
+
+        expect(templates.map(template => template.label)).toEqual([
+            'Owner',
+            'Koordinator',
+            'Farmasi',
+            'Staff',
+            'Observer'
+        ]);
+        expect(byKey.get('owner').permissions).toHaveLength(catalog.length);
+        expect(byKey.get('owner').permissions).not.toContain('access.manage');
+        expect(byKey.get('owner').permissions).not.toContain('system.reset');
+
+        expect(byKey.get('coordinator').permissions).toEqual(expect.arrayContaining([
+            'patients.edit',
+            'medical_records.edit',
+            'online_queue.write',
+            'staff_briefing.write'
+        ]));
+        expect(byKey.get('coordinator').permissions).not.toEqual(expect.arrayContaining([
+            'patients.bulk_delete',
+            'settings.system'
+        ]));
+
+        expect(byKey.get('pharmacy').permissions).toEqual(expect.arrayContaining([
+            'inventory.view',
+            'inventory.purchase',
+            'medications.sales_write',
+            'billing.view'
+        ]));
+        expect(byKey.get('pharmacy').permissions).not.toContain('medical_records.edit');
+
+        expect(byKey.get('staff').permissions).toEqual(expect.arrayContaining([
+            'patients.edit',
+            'appointments.edit',
+            'online_queue.write'
+        ]));
+        expect(byKey.get('staff').permissions).not.toContain('patients.delete');
+        expect(byKey.get('staff').permissions).not.toContain('medical_records.edit');
+
+        const catalogByName = new Map(catalog.map(permission => [permission.name, permission]));
+        expect(byKey.get('observer').permissions.length).toBeGreaterThan(0);
+        expect(byKey.get('observer').permissions.every(name => catalogByName.get(name).action === 'view')).toBe(true);
+        expect(byKey.get('observer').permissions).toContain('patients.view');
+        expect(byKey.get('observer').permissions).not.toContain('patients.edit');
+
+        for (const template of templates) {
+            expect(resolveSelectedPermissions(template.permissions)).toEqual(template.permissions);
+        }
+    });
+
+    test('serves templates and fixed job labels without reading legacy roles', async () => {
+        const { AccessControlManagementService } = require('../../services/AccessControlManagementService');
+        const db = { query: jest.fn().mockRejectedValue(new Error('legacy roles must not be read')) };
+        const service = new AccessControlManagementService({ db });
+
+        const catalog = await service.getCatalog();
+
+        expect(db.query).not.toHaveBeenCalled();
+        expect(catalog.templates.map(template => template.label)).toEqual([
+            'Owner', 'Koordinator', 'Farmasi', 'Staff', 'Observer'
+        ]);
+        expect(catalog.job_labels).toEqual(catalog.templates.map(template => ({
+            name: template.key,
+            label: template.label
+        })));
+    });
+
     test('derives navigation from selected module access without granting access management', () => {
         const { deriveNavigationPermissions, resolveSelectedPermissions } = require('../../services/AccessControlManagementService');
         const selected = resolveSelectedPermissions(['patients.edit', 'online_queue.write']);
@@ -182,9 +271,15 @@ describe('Kelola Akses rollout UI', () => {
         expect(page).toMatch(/access-permission-matrix/);
         expect(page).toMatch(/access-audit-history/);
         expect(page).toMatch(/Tambah Akun/);
+        expect(page).toMatch(/access-template/);
+        expect(page).toMatch(/access-template-apply/);
+        expect(page).toMatch(/access-check-all/);
+        expect(page).toMatch(/access-uncheck-all/);
         expect(script).toMatch(/API_ROOT\s*=\s*['"]\/api\/access-control['"]/);
         expect(script).toMatch(/request\(['"]\/catalog['"]\)/);
         expect(script).toMatch(/access_version/);
+        expect(script).toMatch(/applySelectedTemplate/);
+        expect(script).toMatch(/setAllPermissionsChecked/);
         expect(activation).toMatch(/location\.hash/);
         expect(activation).toMatch(/invitations\/validate/);
         expect(activation).toMatch(/invitations\/accept/);
@@ -207,7 +302,7 @@ describe('access-control API behavior', () => {
         await request(app).patch('/api/access-control/users/STAFF0001/status')
             .send({ is_active: false, access_version: 1 }).expect(200);
         await request(app).post('/api/access-control/invitations')
-            .send({ name: 'Staff Baru', email: 'staff@example.test', role_id: 22 }).expect(201);
+            .send({ name: 'Staff Baru', email: 'staff@example.test', template_key: 'staff' }).expect(201);
         await request(app).post('/api/access-control/users/STAFF0001/invitations').send({}).expect(200);
         await request(app).post('/api/access-control/invitations/validate').send({ token: 'x'.repeat(32) }).expect(200);
         await request(app).post('/api/access-control/invitations/accept')
@@ -220,7 +315,7 @@ describe('access-control API behavior', () => {
             'DOCTOR001'
         );
         expect(managementService.createInvitation).toHaveBeenCalledWith(
-            expect.objectContaining({ email: 'staff@example.test' }),
+            expect.objectContaining({ email: 'staff@example.test', template_key: 'staff' }),
             'DOCTOR001'
         );
     });
@@ -267,7 +362,6 @@ describe('invitation lifecycle service', () => {
     test('creates a zero-permission pending account even when email delivery fails and never returns the raw token', async () => {
         const connection = fakeConnection([
             [[]],
-            [[{ id: 22, name: 'bidan', display_name: 'Bidan' }]],
             [[]],
             [{ affectedRows: 1 }],
             [{ affectedRows: 1 }],
@@ -285,7 +379,7 @@ describe('invitation lifecycle service', () => {
         const result = await service.createInvitation({
             name: 'Staff Baru',
             email: 'STAFF@EXAMPLE.TEST',
-            role_id: 22
+            template_key: 'staff'
         }, 'DOCTOR001');
 
         expect(result).toEqual(expect.objectContaining({
@@ -296,7 +390,9 @@ describe('invitation lifecycle service', () => {
                 status: 'pending',
                 access_mode: 'account',
                 permission_count: 0,
-                role_id: 22
+                role_id: null,
+                template_key: 'staff',
+                job_label: 'Staff'
             })
         }));
         expect(JSON.stringify(result)).not.toMatch(/token|activate-access/i);
@@ -307,7 +403,7 @@ describe('invitation lifecycle service', () => {
         const userInsert = connection.query.mock.calls.find(call => /INSERT INTO users/.test(call[0]));
         expect(userInsert[1]).toEqual(expect.arrayContaining(['staff', null]));
         const policyInsert = connection.query.mock.calls.find(call => /INSERT INTO user_access_policies/.test(call[0]));
-        expect(policyInsert[1]).toEqual([result.user.id, 'Bidan', 22]);
+        expect(policyInsert[1]).toEqual([result.user.id, 'Staff', null]);
         const invitationInsert = connection.query.mock.calls.find(call => /INSERT INTO staff_access_invitations/.test(call[0]));
         expect(invitationInsert[1][1]).toMatch(/^[a-f0-9]{64}$/);
         expect(invitationInsert[1][1]).not.toContain('zc3N');

@@ -2,7 +2,7 @@ const API_ROOT = '/api/access-control';
 
 const state = {
     catalog: [],
-    jobLabels: [],
+    templates: [],
     users: [],
     selected: null,
     initialized: false
@@ -148,14 +148,45 @@ function renderAuditHistory() {
     </tr>`).join('') : '<tr><td colspan="4" class="text-center text-muted">Belum ada perubahan.</td></tr>';
 }
 
-function renderJobLabels(selectedRoleId) {
-    const options = state.jobLabels.map(role => (
-        `<option value="${role.role_id}"${Number(selectedRoleId) === role.role_id ? ' selected' : ''}>${escapeHtml(role.label)}</option>`
+function renderTemplateOptions(selectedKey) {
+    const options = state.templates.map(template => (
+        `<option value="${escapeHtml(template.key)}"${selectedKey === template.key ? ' selected' : ''}>${escapeHtml(template.label)}</option>`
     )).join('');
-    const editor = document.getElementById('access-job-label');
-    const create = document.getElementById('access-create-role');
-    if (editor) editor.innerHTML = options;
-    if (create) create.innerHTML = `<option value="">Pilih label jabatan</option>${options.replace(/ selected/g, '')}`;
+    const editor = document.getElementById('access-template');
+    const create = document.getElementById('access-create-template');
+    if (editor) editor.innerHTML = `<option value="">Pilih template</option>${options}`;
+    if (create) create.innerHTML = `<option value="">Pilih template</option>${options.replace(/ selected/g, '')}`;
+    updateTemplateDescription();
+}
+
+function updateTemplateDescription() {
+    const select = document.getElementById('access-template');
+    const description = document.getElementById('access-template-description');
+    if (!description) return;
+    const template = state.templates.find(item => item.key === select?.value);
+    description.textContent = template
+        ? `${template.description} Klik Terapkan Template untuk mengisi matriks.`
+        : 'Pilih template, terapkan ke matriks, lalu simpan.';
+}
+
+function setAllPermissionsChecked(checked) {
+    document.querySelectorAll('#access-permission-matrix-body [data-permission]').forEach(input => {
+        input.checked = checked;
+    });
+}
+
+function applySelectedTemplate() {
+    const templateKey = document.getElementById('access-template')?.value;
+    const template = state.templates.find(item => item.key === templateKey);
+    if (!template) {
+        notify('warning', 'Pilih template', 'Pilih salah satu template akses terlebih dahulu.');
+        return;
+    }
+    const selectedPermissions = new Set(template.permissions);
+    document.querySelectorAll('#access-permission-matrix-body [data-permission]').forEach(input => {
+        input.checked = selectedPermissions.has(input.dataset.permission);
+    });
+    updateTemplateDescription();
 }
 
 function renderSelected() {
@@ -172,9 +203,7 @@ function renderSelected() {
     document.getElementById('access-editor-actions').classList.toggle('d-none', user.is_doctor_protected);
     if (user.is_doctor_protected) return;
 
-    renderJobLabels(user.role_id);
-    const roleSelect = document.getElementById('access-job-label');
-    roleSelect.disabled = false;
+    renderTemplateOptions(user.template_key);
     renderMatrix();
     renderAuditHistory();
     const toggle = document.getElementById('access-toggle-status');
@@ -208,6 +237,11 @@ async function loadUsers(preferredId) {
 
 async function savePermissions() {
     if (!state.selected || state.selected.is_doctor_protected) return;
+    const templateKey = document.getElementById('access-template')?.value;
+    if (!templateKey) {
+        notify('warning', 'Template belum dipilih', 'Pilih template akses sebelum menyimpan.');
+        return;
+    }
     const button = document.getElementById('access-save');
     button.disabled = true;
     try {
@@ -215,9 +249,9 @@ async function savePermissions() {
             .map(input => input.dataset.permission);
         const payload = {
             permissions,
-            access_version: state.selected.access_version
+            access_version: state.selected.access_version,
+            template_key: templateKey
         };
-        payload.role_id = Number(document.getElementById('access-job-label').value);
         await request(`/users/${encodeURIComponent(state.selected.id)}/permissions`, {
             method: 'PUT',
             body: JSON.stringify(payload)
@@ -286,7 +320,7 @@ async function createAccount(event) {
             body: JSON.stringify({
                 name: formData.get('name'),
                 email: formData.get('email'),
-                role_id: Number(formData.get('role_id'))
+                template_key: formData.get('template_key')
             })
         });
         window.jQuery?.('#access-create-account-modal').modal('hide');
@@ -313,13 +347,17 @@ export async function initKelolaAccess() {
         document.getElementById('access-toggle-status').addEventListener('click', toggleStatus);
         document.getElementById('access-resend-invitation').addEventListener('click', resendInvitation);
         document.getElementById('access-create-account-form').addEventListener('submit', createAccount);
+        document.getElementById('access-template').addEventListener('change', updateTemplateDescription);
+        document.getElementById('access-template-apply').addEventListener('click', applySelectedTemplate);
+        document.getElementById('access-check-all').addEventListener('click', () => setAllPermissionsChecked(true));
+        document.getElementById('access-uncheck-all').addEventListener('click', () => setAllPermissionsChecked(false));
         state.initialized = true;
     }
     try {
         const catalog = await request('/catalog');
         state.catalog = catalog.permissions;
-        state.jobLabels = catalog.job_labels;
-        renderJobLabels(null);
+        state.templates = catalog.templates;
+        renderTemplateOptions(null);
         await loadUsers();
     } catch (error) {
         notify('error', 'Kelola Akses tidak dapat dimuat', error.message);
