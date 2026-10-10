@@ -124,4 +124,144 @@ describe('persistent access templates', () => {
         expect(source.indexOf('router.use(auth.verifyToken, auth.verifyActiveStaff, auth.requireSuperadmin)'))
             .toBeLessThan(source.indexOf("router.put('/templates/:key'"));
     });
+
+    test('bulk apply targets only explicit non-doctor members and increments each account version', async () => {
+        const { AccessTemplateService } = require('../../services/AccessTemplateService');
+        const {
+            deriveNavigationPermissions,
+            resolveStaffPermissions
+        } = require('../../services/AccessControlManagementService');
+        const templatePermissions = resolveStaffPermissions(['patients.view']);
+        const assigned = [...new Set([
+            ...templatePermissions,
+            ...deriveNavigationPermissions(templatePermissions)
+        ])].sort((left, right) => left.localeCompare(right));
+        const connection = fakeConnection([
+            [[{ template_version: 7, is_customized: 1 }]],
+            [[{ name: 'patients.view' }]],
+            [{ affectedRows: 1 }],
+            [templatePermissions.map((name, index) => ({ id: index + 1, name }))],
+            [{ affectedRows: templatePermissions.length }],
+            [{ affectedRows: 1 }],
+            [[{ user_id: 'STAFF0001', access_version: 3 }]],
+            [assigned.map((name, index) => ({ id: index + 100, name }))],
+            [[{ name: 'patients.view' }]],
+            [{ affectedRows: 1 }],
+            [{ affectedRows: assigned.length }],
+            [{ affectedRows: 1 }],
+            [{ affectedRows: 1 }],
+            [{ affectedRows: 1 }]
+        ]);
+        const service = new AccessTemplateService({
+            db: { getConnection: jest.fn().mockResolvedValue(connection) }
+        });
+
+        const result = await service.saveTemplate('staff', {
+            permissions: ['patients.view'],
+            template_version: 7
+        }, 'DOCTOR001', { applyToAccounts: true });
+
+        expect(result.affected_user_ids).toEqual(['STAFF0001']);
+        expect(result.affected_count).toBe(1);
+        const targetSelect = connection.query.mock.calls.find(call => /FROM user_access_policies uap/.test(call[0]));
+        expect(targetSelect[0]).toMatch(/uap\.template_key = \?/i);
+        expect(targetSelect[0]).toMatch(/u\.is_superadmin, 0\) = 0/i);
+        expect(targetSelect[0]).toMatch(/u\.role_id, 0\) <> \?/i);
+        expect(targetSelect[1]).toEqual(['staff', 1]);
+        expect(connection.query.mock.calls.some(call => (
+            /UPDATE user_access_policies SET access_version = \?/.test(call[0])
+            && call[1][0] === 4
+            && call[1][1] === 'STAFF0001'
+        ))).toBe(true);
+        expect(connection.query.mock.calls.some(call => (
+            /INSERT INTO user_permission_audits/.test(call[0])
+            && call[1][1] === 'STAFF0001'
+            && call[1][2] === 4
+        ))).toBe(true);
+        expect(connection.commit).toHaveBeenCalledTimes(1);
+    });
+
+    test('bulk apply rolls back template and account changes together on any write failure', async () => {
+        const { AccessTemplateService } = require('../../services/AccessTemplateService');
+        const { resolveStaffPermissions } = require('../../services/AccessControlManagementService');
+        const templatePermissions = resolveStaffPermissions(['patients.view']);
+        const connection = fakeConnection([
+            [[{ template_version: 1, is_customized: 0 }]],
+            [{ affectedRows: 1 }],
+            [templatePermissions.map((name, index) => ({ id: index + 1, name }))],
+            [{ affectedRows: templatePermissions.length }],
+            [{ affectedRows: 1 }],
+            [[{ user_id: 'STAFF0001', access_version: 2 }]]
+        ]);
+        connection.query.mockImplementationOnce(async () => [[{ template_version: 1, is_customized: 0 }]])
+            .mockImplementationOnce(async () => [{ affectedRows: 1 }])
+            .mockImplementationOnce(async () => [templatePermissions.map((name, index) => ({ id: index + 1, name }))])
+            .mockImplementationOnce(async () => [{ affectedRows: templatePermissions.length }])
+            .mockImplementationOnce(async () => [{ affectedRows: 1 }])
+            .mockImplementationOnce(async () => [[{ user_id: 'STAFF0001', access_version: 2 }]])
+            .mockRejectedValueOnce(new Error('permission lookup failed'));
+        const service = new AccessTemplateService({
+            db: { getConnection: jest.fn().mockResolvedValue(connection) }
+        });
+
+        await expect(service.saveTemplate('staff', {
+            permissions: ['patients.view'],
+            template_version: 1
+        }, 'DOCTOR001', { applyToAccounts: true })).rejects.toThrow('permission lookup failed');
+        expect(connection.rollback).toHaveBeenCalledTimes(1);
+        expect(connection.commit).not.toHaveBeenCalled();
+    });
+});
+
+describe('template-backed staff invitations', () => {
+    test('assigns the latest persisted template before the invited account is activated', async () => {
+        const { AccessControlManagementService } = require('../../services/AccessControlManagementService');
+        const {
+            deriveNavigationPermissions,
+            resolveStaffPermissions
+        } = require('../../services/AccessControlManagementService');
+        const templatePermissions = resolveStaffPermissions(['patients.view']);
+        const assigned = [...new Set([
+            ...templatePermissions,
+            ...deriveNavigationPermissions(templatePermissions)
+        ])].sort((left, right) => left.localeCompare(right));
+        const connection = fakeConnection([
+            [[]],
+            [[]],
+            [{ affectedRows: 1 }],
+            [{ affectedRows: 1 }],
+            [assigned.map((name, index) => ({ id: index + 1, name }))],
+            [{ affectedRows: assigned.length }],
+            [{ affectedRows: 1 }],
+            [{ affectedRows: 1 }]
+        ]);
+        const templateService = {
+            getTemplate: jest.fn().mockResolvedValue({
+                key: 'staff',
+                label: 'Staff',
+                permissions: templatePermissions,
+                template_version: 9
+            })
+        };
+        const service = new AccessControlManagementService({
+            db: { getConnection: jest.fn().mockResolvedValue(connection) },
+            templateService,
+            notificationService: { sendEmail: jest.fn().mockResolvedValue({ success: true }) },
+            randomBytes: size => Buffer.alloc(size, size === 6 ? 0xab : 0xcd)
+        });
+
+        const result = await service.createInvitation({
+            name: 'Staff Baru',
+            email: 'staff@example.test',
+            template_key: 'staff'
+        }, 'DOCTOR001');
+
+        expect(templateService.getTemplate).toHaveBeenCalledWith('staff', connection);
+        const policyInsert = connection.query.mock.calls.find(call => /INSERT INTO user_access_policies/.test(call[0]));
+        expect(policyInsert[0]).toMatch(/template_key/i);
+        expect(policyInsert[1]).toEqual([result.user.id, 'Staff', null, 'staff']);
+        const grantsInsert = connection.query.mock.calls.find(call => /INSERT INTO user_permission_grants/.test(call[0]));
+        expect(grantsInsert[1][0]).toHaveLength(assigned.length);
+        expect(result.user.permission_count).toBe(assigned.length);
+    });
 });

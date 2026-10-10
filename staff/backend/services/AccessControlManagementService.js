@@ -387,7 +387,7 @@ function publicUser(row) {
     const active = Number(row.is_active) === 1;
     const pending = !active && Number(row.has_password || 0) === 0;
     const sourceJobLabel = row.job_label || row.role_display || row.role || 'Staff';
-    const templateKey = templateKeyForJobLabel(sourceJobLabel);
+    const templateKey = row.template_key || templateKeyForJobLabel(sourceJobLabel);
     const template = templateKey ? ACCESS_TEMPLATE_METADATA_BY_KEY.get(templateKey) : null;
     return {
         id: row.id || row.new_id,
@@ -413,6 +413,7 @@ class AccessControlManagementService {
         logger = defaultLogger,
         notificationService = defaultNotificationService,
         bcryptImpl = bcrypt,
+        templateService = null,
         randomBytes = crypto.randomBytes,
         activationUrl = `${String(process.env.PUBLIC_BASE_URL || 'https://dokterdibya.com').replace(/\/$/, '')}/staff/public/activate-access.html`
     } = {}) {
@@ -420,8 +421,14 @@ class AccessControlManagementService {
         this.logger = logger;
         this.notificationService = notificationService;
         this.bcrypt = bcryptImpl;
+        this.templateService = templateService;
         this.randomBytes = randomBytes;
         this.activationUrl = activationUrl;
+    }
+
+    _getTemplateService() {
+        if (this.templateService) return this.templateService;
+        return require('./AccessTemplateService').accessTemplateService;
     }
 
     async getCatalog() {
@@ -445,6 +452,7 @@ class AccessControlManagementService {
                 u.role,
                 u.role_id,
                 uap.job_role_id,
+                uap.template_key,
                 u.is_active,
                 u.is_superadmin,
                 CASE WHEN u.password_hash IS NULL OR u.password_hash = '' THEN 0 ELSE 1 END AS has_password,
@@ -459,7 +467,7 @@ class AccessControlManagementService {
              WHERE u.user_type = 'staff'
              GROUP BY u.new_id, u.name, u.email, u.role, u.role_id, u.is_active,
                       u.is_superadmin, u.password_hash, r.display_name, r.name,
-                      uap.mode, uap.access_version, uap.job_label, uap.job_role_id
+                      uap.mode, uap.access_version, uap.job_label, uap.job_role_id, uap.template_key
              ORDER BY (u.is_superadmin = 1 OR u.role_id = ?) DESC, u.is_active DESC, u.name ASC`,
             [ROLE_IDS.DOKTER]
         );
@@ -475,6 +483,7 @@ class AccessControlManagementService {
                 u.role,
                 u.role_id,
                 uap.job_role_id,
+                uap.template_key,
                 u.is_active,
                 u.is_superadmin,
                 CASE WHEN u.password_hash IS NULL OR u.password_hash = '' THEN 0 ELSE 1 END AS has_password,
@@ -526,7 +535,7 @@ class AccessControlManagementService {
         const [rows] = await connection.query(
             `SELECT u.new_id, u.user_type, u.role_id, u.role, u.is_superadmin, u.is_active,
                     CASE WHEN u.password_hash IS NULL OR u.password_hash = '' THEN 0 ELSE 1 END AS has_password,
-                    uap.mode, uap.access_version
+                    uap.mode, uap.access_version, uap.template_key
              FROM users u
              INNER JOIN user_access_policies uap ON uap.user_id = u.new_id
              WHERE u.new_id = ?
@@ -601,7 +610,7 @@ class AccessControlManagementService {
             let nextJobRoleId = null;
             let nextTemplateKey = null;
             if (input?.template_key !== undefined) {
-                const template = resolveAccessTemplate(input.template_key);
+                const template = await this._getTemplateService().getTemplate(input.template_key, connection);
                 nextJobLabel = template.label;
                 nextTemplateKey = template.key;
             } else if (input?.role_id !== undefined && input?.role_id !== null) {
@@ -611,8 +620,8 @@ class AccessControlManagementService {
             }
             if (nextJobLabel) {
                 await connection.query(
-                    'UPDATE user_access_policies SET job_label = ?, job_role_id = ? WHERE user_id = ?',
-                    [nextJobLabel, nextJobRoleId, userId]
+                    'UPDATE user_access_policies SET job_label = ?, job_role_id = ?, template_key = ? WHERE user_id = ?',
+                    [nextJobLabel, nextJobRoleId, nextTemplateKey, userId]
                 );
             }
 
@@ -760,12 +769,15 @@ class AccessControlManagementService {
         let userId;
         let role;
         let invitation;
+        let assignedPermissions = [];
         try {
             const [existing] = await connection.query('SELECT new_id FROM users WHERE LOWER(email) = ? LIMIT 1', [email]);
             if (existing.length) throw accessError('Email sudah digunakan.', 409, 'EMAIL_EXISTS');
+            let templatePermissions = [];
             if (input?.template_key !== undefined) {
-                const template = resolveAccessTemplate(input.template_key);
+                const template = await this._getTemplateService().getTemplate(input.template_key, connection);
                 role = { id: null, name: template.key, display_name: template.label, template_key: template.key };
+                templatePermissions = template.permissions;
             } else {
                 role = input?.role_id !== undefined
                     ? await this._loadJobLabel(connection, input.role_id)
@@ -782,10 +794,29 @@ class AccessControlManagementService {
                 [userId, email, name, 'staff', null]
             );
             await connection.query(
-                `INSERT INTO user_access_policies (user_id, mode, access_version, job_label, job_role_id)
-                 VALUES (?, 'account', 1, ?, ?)`,
-                [userId, role.display_name || role.name, role.id]
+                `INSERT INTO user_access_policies
+                    (user_id, mode, access_version, job_label, job_role_id, template_key)
+                 VALUES (?, 'account', 1, ?, ?, ?)`,
+                [userId, role.display_name || role.name, role.id, role.template_key || null]
             );
+            if (role.template_key) {
+                const resolved = resolveStaffPermissions(templatePermissions);
+                assignedPermissions = [...new Set([
+                    ...resolved,
+                    ...deriveNavigationPermissions(resolved)
+                ])].sort((left, right) => left.localeCompare(right));
+                const [permissionRows] = await connection.query(
+                    'SELECT id, name FROM permissions WHERE name IN (?)',
+                    [assignedPermissions]
+                );
+                if (permissionRows.length !== assignedPermissions.length) {
+                    throw accessError('Katalog izin belum sinkron dengan database.', 500, 'PERMISSION_CATALOG_MISMATCH');
+                }
+                await connection.query(
+                    'INSERT INTO user_permission_grants (user_id, permission_id) VALUES ?',
+                    [permissionRows.map(permission => [userId, permission.id])]
+                );
+            }
             await connection.query(
                 `INSERT INTO staff_access_invitations
                     (user_id, token_hash, expires_at, created_by)
@@ -798,7 +829,13 @@ class AccessControlManagementService {
                 action: 'account_invited',
                 accessVersion: 1,
                 beforeState: null,
-                afterState: { is_active: false, mode: 'account', permissions: [], job_label: role.display_name || role.name }
+                afterState: {
+                    is_active: false,
+                    mode: 'account',
+                    permissions: assignedPermissions,
+                    job_label: role.display_name || role.name,
+                    template_key: role.template_key || null
+                }
             });
             await connection.commit();
         } catch (error) {
@@ -820,7 +857,7 @@ class AccessControlManagementService {
                 status: 'pending',
                 access_mode: 'account',
                 access_version: 1,
-                permission_count: 0,
+                permission_count: assignedPermissions.length,
                 is_doctor_protected: false,
                 template_key: role.template_key || templateKeyForJobLabel(role.display_name || role.name)
             },
@@ -994,5 +1031,6 @@ module.exports = {
     resolveAccessTemplate,
     resolveSelectedPermissions,
     resolveStaffPermissions,
+    templateKeyForJobLabel,
     validateStrongPassword
 };

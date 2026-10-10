@@ -351,13 +351,17 @@ describe('access-control API behavior', () => {
     const request = require('supertest');
 
     test('serves catalog, account detail, mutations, invitations and current access', async () => {
-        const { app, managementService } = createApiTestApp();
+        const { app, managementService, templateService } = createApiTestApp();
 
         await request(app).get('/api/access-control/catalog').expect(200);
         await request(app).get('/api/access-control/users').expect(200);
         await request(app).get('/api/access-control/users/STAFF0001').expect(200);
         await request(app).put('/api/access-control/users/STAFF0001/permissions')
             .send({ permissions: ['patients.view'], access_version: 1 }).expect(200);
+        await request(app).put('/api/access-control/templates/staff')
+            .send({ permissions: ['patients.view'], template_version: 1 }).expect(200);
+        await request(app).post('/api/access-control/templates/staff/apply')
+            .send({ permissions: ['patients.view'], template_version: 1 }).expect(200);
         await request(app).patch('/api/access-control/users/STAFF0001/status')
             .send({ is_active: false, access_version: 1 }).expect(200);
         await request(app).post('/api/access-control/invitations')
@@ -376,6 +380,20 @@ describe('access-control API behavior', () => {
         expect(managementService.createInvitation).toHaveBeenCalledWith(
             expect.objectContaining({ email: 'staff@example.test', template_key: 'staff' }),
             'DOCTOR001'
+        );
+        expect(templateService.saveTemplate).toHaveBeenNthCalledWith(
+            1,
+            'staff',
+            expect.objectContaining({ template_version: 1 }),
+            'DOCTOR001',
+            { applyToAccounts: false }
+        );
+        expect(templateService.saveTemplate).toHaveBeenNthCalledWith(
+            2,
+            'staff',
+            expect.objectContaining({ template_version: 1 }),
+            'DOCTOR001',
+            { applyToAccounts: true }
         );
     });
 
@@ -418,12 +436,20 @@ describe('invitation lifecycle service', () => {
         };
     }
 
-    test('creates a zero-permission pending account even when email delivery fails and never returns the raw token', async () => {
+    test('creates a template-backed pending account even when email delivery fails and never returns the raw token', async () => {
+        const { deriveNavigationPermissions, resolveStaffPermissions } = require('../../services/AccessControlManagementService');
+        const templatePermissions = resolveStaffPermissions(['patients.view']);
+        const assigned = [...new Set([
+            ...templatePermissions,
+            ...deriveNavigationPermissions(templatePermissions)
+        ])].sort((left, right) => left.localeCompare(right));
         const connection = fakeConnection([
             [[]],
             [[]],
             [{ affectedRows: 1 }],
             [{ affectedRows: 1 }],
+            [assigned.map((name, index) => ({ id: index + 1, name }))],
+            [{ affectedRows: assigned.length }],
             [{ affectedRows: 1 }],
             [{ affectedRows: 1 }]
         ]);
@@ -431,6 +457,11 @@ describe('invitation lifecycle service', () => {
         const service = new AccessControlManagementService({
             db: { getConnection: jest.fn().mockResolvedValue(connection) },
             notificationService,
+            templateService: {
+                getTemplate: jest.fn().mockResolvedValue({
+                    key: 'staff', label: 'Staff', permissions: templatePermissions
+                })
+            },
             logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
             randomBytes: size => Buffer.alloc(size, size === 6 ? 0xab : 0xcd)
         });
@@ -448,7 +479,7 @@ describe('invitation lifecycle service', () => {
                 is_active: false,
                 status: 'pending',
                 access_mode: 'account',
-                permission_count: 0,
+                permission_count: assigned.length,
                 role_id: null,
                 template_key: 'staff',
                 job_label: 'Staff'
@@ -462,7 +493,7 @@ describe('invitation lifecycle service', () => {
         const userInsert = connection.query.mock.calls.find(call => /INSERT INTO users/.test(call[0]));
         expect(userInsert[1]).toEqual(expect.arrayContaining(['staff', null]));
         const policyInsert = connection.query.mock.calls.find(call => /INSERT INTO user_access_policies/.test(call[0]));
-        expect(policyInsert[1]).toEqual([result.user.id, 'Staff', null]);
+        expect(policyInsert[1]).toEqual([result.user.id, 'Staff', null, 'staff']);
         const invitationInsert = connection.query.mock.calls.find(call => /INSERT INTO staff_access_invitations/.test(call[0]));
         expect(invitationInsert[1][1]).toMatch(/^[a-f0-9]{64}$/);
         expect(invitationInsert[1][1]).not.toContain('zc3N');
