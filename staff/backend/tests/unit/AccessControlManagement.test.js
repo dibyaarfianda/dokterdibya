@@ -13,6 +13,7 @@ const scriptPath = path.resolve(__dirname, '../../../public/scripts/kelola-acces
 const activationPath = path.resolve(__dirname, '../../../public/activate-access.html');
 const jobLabelMigrationPath = path.resolve(__dirname, '../../migrations/20261008_account_access_job_label.sql');
 const accessTemplateLabelMigrationPath = path.resolve(__dirname, '../../migrations/20261009_access_template_labels.sql');
+const requiredDrdAccessMigrationPath = path.resolve(__dirname, '../../migrations/20261010_required_staff_drd_access.sql');
 
 function codedError(code, statusCode, message = code) {
     const error = new Error(message);
@@ -149,9 +150,11 @@ describe('access-control management contracts', () => {
 
     test('provides the five fixed access templates with approved safety boundaries', () => {
         const {
+            REQUIRED_STAFF_DRD_PERMISSIONS,
             getAccessTemplates,
             getDelegableCatalog,
-            resolveSelectedPermissions
+            resolveSelectedPermissions,
+            resolveStaffPermissions
         } = require('../../services/AccessControlManagementService');
         const catalog = getDelegableCatalog();
         const templates = getAccessTemplates();
@@ -185,7 +188,7 @@ describe('access-control management contracts', () => {
             'medications.sales_write',
             'billing.view'
         ]));
-        expect(byKey.get('pharmacy').permissions).not.toContain('medical_records.edit');
+        expect(byKey.get('pharmacy').permissions).toContain('medical_records.edit');
 
         expect(byKey.get('staff').permissions).toEqual(expect.arrayContaining([
             'patients.edit',
@@ -193,17 +196,59 @@ describe('access-control management contracts', () => {
             'online_queue.write'
         ]));
         expect(byKey.get('staff').permissions).not.toContain('patients.delete');
-        expect(byKey.get('staff').permissions).not.toContain('medical_records.edit');
+        expect(byKey.get('staff').permissions).toContain('medical_records.edit');
 
         const catalogByName = new Map(catalog.map(permission => [permission.name, permission]));
         expect(byKey.get('observer').permissions.length).toBeGreaterThan(0);
-        expect(byKey.get('observer').permissions.every(name => catalogByName.get(name).action === 'view')).toBe(true);
+        expect(byKey.get('observer').permissions
+            .filter(name => !REQUIRED_STAFF_DRD_PERMISSIONS.has(name))
+            .every(name => catalogByName.get(name).action === 'view')).toBe(true);
         expect(byKey.get('observer').permissions).toContain('patients.view');
         expect(byKey.get('observer').permissions).not.toContain('patients.edit');
 
         for (const template of templates) {
+            expect(template.permissions).toEqual(expect.arrayContaining([...REQUIRED_STAFF_DRD_PERMISSIONS]));
             expect(resolveSelectedPermissions(template.permissions)).toEqual(template.permissions);
         }
+
+        const required = resolveStaffPermissions([]);
+        expect(required).toEqual(expect.arrayContaining([
+            'medical_records.create',
+            'medical_records.edit',
+            'medical_records.view',
+            'anamnesa.edit',
+            'physical_exam.edit',
+            'usg_exam.edit',
+            'lab_exam.edit',
+            'visits.create',
+            'visits.edit'
+        ]));
+        expect(required).not.toEqual(expect.arrayContaining([
+            'medical_records.delete',
+            'medical_records.reset_section',
+            'medical_records.finalize',
+            'medical_records.merge',
+            'medical_records.export',
+            'billing.process_payment',
+            'access.manage'
+        ]));
+    });
+
+    test('marks mandatory DRD permissions in the catalog and migrates every active non-doctor staff account', () => {
+        const { REQUIRED_STAFF_DRD_PERMISSIONS, getDelegableCatalog } = require('../../services/AccessControlManagementService');
+        const catalog = getDelegableCatalog();
+        for (const permission of catalog) {
+            expect(permission.mandatory_for_staff).toBe(REQUIRED_STAFF_DRD_PERMISSIONS.has(permission.name));
+        }
+
+        const sql = fs.readFileSync(requiredDrdAccessMigrationPath, 'utf8');
+        expect(sql).toMatch(/INSERT\s+IGNORE\s+INTO\s+user_permission_grants/i);
+        expect(sql).toMatch(/u\.user_type\s*=\s*'staff'/i);
+        expect(sql).toMatch(/u\.is_active\s*=\s*1/i);
+        expect(sql).toMatch(/u\.is_superadmin\s*=\s*0/i);
+        expect(sql).toMatch(/medical_records\.edit/i);
+        expect(sql).toMatch(/usg_exam\.edit/i);
+        expect(sql).not.toMatch(/DELETE\s+FROM\s+user_permission_grants/i);
     });
 
     test('serves templates and fixed job labels without reading legacy roles', async () => {
@@ -281,6 +326,8 @@ describe('Kelola Akses rollout UI', () => {
         expect(script).toMatch(/access_version/);
         expect(script).toMatch(/applySelectedTemplate/);
         expect(script).toMatch(/setAllPermissionsChecked/);
+        expect(script).toMatch(/mandatory_for_staff/);
+        expect(script).toMatch(/Wajib untuk semua staff/);
         expect(activation).toMatch(/location\.hash/);
         expect(activation).toMatch(/invitations\/validate/);
         expect(activation).toMatch(/invitations\/accept/);
@@ -463,6 +510,15 @@ describe('invitation lifecycle service', () => {
     });
 
     test('accepts a valid invitation once with a bcrypt hash and activates the account', async () => {
+        const {
+            deriveNavigationPermissions,
+            resolveStaffPermissions
+        } = require('../../services/AccessControlManagementService');
+        const required = resolveStaffPermissions([]);
+        const requiredWithNavigation = [...new Set([
+            ...required,
+            ...deriveNavigationPermissions(required)
+        ])].sort((left, right) => left.localeCompare(right));
         const invitation = {
             id: 91,
             user_id: 'STAFF0001',
@@ -481,6 +537,8 @@ describe('invitation lifecycle service', () => {
         const connection = fakeConnection([
             [[invitation]],
             [{ affectedRows: 1 }],
+            [requiredWithNavigation.map((name, index) => ({ id: index + 1, name }))],
+            [{ affectedRows: requiredWithNavigation.length }],
             [{ affectedRows: 1 }],
             [{ affectedRows: 1 }],
             [{ affectedRows: 1 }]
@@ -495,6 +553,8 @@ describe('invitation lifecycle service', () => {
         expect(bcryptImpl.hash).toHaveBeenCalledWith('Strong-Password9!', 12);
         const passwordUpdate = connection.query.mock.calls.find(call => /SET password_hash = \?, is_active = 1/.test(call[0]));
         expect(passwordUpdate[1]).toEqual(['bcrypt-hash-only', 'STAFF0001']);
+        const grantInsert = connection.query.mock.calls.find(call => /INSERT IGNORE INTO user_permission_grants/.test(call[0]));
+        expect(grantInsert[1][0]).toHaveLength(requiredWithNavigation.length);
         expect(connection.query.mock.calls.some(call => /SET used_at = NOW/.test(call[0]))).toBe(true);
         expect(connection.commit).toHaveBeenCalledTimes(1);
     });

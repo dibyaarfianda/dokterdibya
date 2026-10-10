@@ -2395,3 +2395,24 @@ User confirmed with "good job" after sortable column headers were added to the i
 **Lesson:**
 - For client-side sort on staff tables, store raw API data in a `window.__rawData` variable at fetch time, then sort a copy with `[...array].sort(...)` and re-render. This avoids extra API calls and keeps sort state across renders.
 - Frontend-only changes only need `git pull` on VPS, not `pm2 restart`.
+
+### 59. Session Log - 10 October 2026
+
+**Granular Access Templates and Bulk Controls (User Confirmed Success)**
+
+The user confirmed the account access editor worked after the old role visibility runtime was retired and the five fixed job templates were introduced.
+
+**What worked:**
+
+1. Keep `permissions` plus `user_permission_grants` as the runtime authorization source; retain legacy role tables only for rollback compatibility.
+2. Use five fixed display templates: Owner, Koordinator, Farmasi, Staff, and Observer.
+3. Apply templates to the per-account matrix and save the resulting grants, with access-version conflict protection.
+4. Provide Check All and Uncheck All controls in the matrix while keeping protected access-management permissions non-delegable.
+5. Normalize legacy staff labels through an additive migration without modifying authorization roles.
+6. Bump both the Staff shell cache version and service-worker version after frontend access changes.
+
+**Verification pattern:**
+
+- Run access-control unit tests and realtime/chat regression tests.
+- Verify the live catalog, template counts, account labels, current/versioned assets, PM2 health, and rollback backup.
+- Confirm the migration does not modify doctor protection or legacy role tables.

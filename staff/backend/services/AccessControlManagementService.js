@@ -26,6 +26,31 @@ const NON_DELEGABLE_PERMISSIONS = new Set([
     ...ACCESS_MANAGEMENT_PERMISSIONS,
     'system.reset'
 ]);
+const REQUIRED_STAFF_DRD_PERMISSIONS = new Set([
+    'patients.view',
+    'visits.view',
+    'visits.create',
+    'visits.edit',
+    'sunday_clinic.view',
+    'sunday_clinic.create',
+    'sunday_clinic.edit',
+    'medical_records.view',
+    'medical_records.create',
+    'medical_records.edit',
+    'medical_records.anamnesa_write',
+    'anamnesa.view',
+    'anamnesa.create',
+    'anamnesa.edit',
+    'physical_exam.view',
+    'physical_exam.create',
+    'physical_exam.edit',
+    'usg_exam.view',
+    'usg_exam.create',
+    'usg_exam.edit',
+    'lab_exam.view',
+    'lab_exam.create',
+    'lab_exam.edit'
+]);
 const catalogByName = new Map(PERMISSION_CATALOG.map(item => [item.name, item]));
 const internalPermissionNames = new Set(PERMISSION_CATALOG.filter(item => item.internal).map(item => item.name));
 const EXPLICIT_PERMISSION_DEPENDENCIES = new Map([
@@ -55,7 +80,7 @@ const ACCESS_TEMPLATE_METADATA = Object.freeze([
     Object.freeze({
         key: 'observer',
         label: 'Observer',
-        description: 'Akses baca tanpa edit, hapus, atau aksi khusus.'
+        description: 'Akses baca untuk modul lain; pengisian DRD tetap tersedia untuk seluruh staff.'
     })
 ]);
 const ACCESS_TEMPLATE_METADATA_BY_KEY = new Map(
@@ -195,7 +220,8 @@ function getDelegableCatalog() {
             category: item.category,
             description: item.description,
             action: item.action,
-            dependencies: dependencyNames(item)
+            dependencies: dependencyNames(item),
+            mandatory_for_staff: REQUIRED_STAFF_DRD_PERMISSIONS.has(item.name)
         }))
         .sort((left, right) => (
             left.category.localeCompare(right.category, 'id')
@@ -231,7 +257,7 @@ function getAccessTemplates() {
             .map(permissionItem => permissionItem.name);
         return {
             ...template,
-            permissions: resolveSelectedPermissions(selectedPermissions)
+            permissions: resolveStaffPermissions(selectedPermissions)
         };
     });
 }
@@ -297,6 +323,16 @@ function resolveSelectedPermissions(selectedPermissions) {
     }
 
     return [...resolved].sort((left, right) => left.localeCompare(right));
+}
+
+function resolveStaffPermissions(selectedPermissions) {
+    if (!Array.isArray(selectedPermissions)) {
+        throw accessError('permissions harus berupa array.', 400, 'INVALID_PERMISSIONS');
+    }
+    return resolveSelectedPermissions([
+        ...selectedPermissions,
+        ...REQUIRED_STAFF_DRD_PERMISSIONS
+    ]);
 }
 
 function deriveNavigationPermissions(permissionNames) {
@@ -513,6 +549,24 @@ class AccessControlManagementService {
         return rows.map(row => row.name);
     }
 
+    async _grantRequiredDrdAccess(connection, userId) {
+        const required = resolveStaffPermissions([]);
+        const navigation = deriveNavigationPermissions(required);
+        const assigned = [...new Set([...required, ...navigation])].sort((left, right) => left.localeCompare(right));
+        const [permissionRows] = await connection.query(
+            'SELECT id, name FROM permissions WHERE name IN (?)',
+            [assigned]
+        );
+        if (permissionRows.length !== assigned.length) {
+            throw accessError('Katalog izin DRD belum sinkron dengan database.', 500, 'PERMISSION_CATALOG_MISMATCH');
+        }
+        await connection.query(
+            'INSERT IGNORE INTO user_permission_grants (user_id, permission_id) VALUES ?',
+            [permissionRows.map(permission => [userId, permission.id])]
+        );
+        return assigned;
+    }
+
     async _writeAudit(connection, { actorUserId, targetUserId, action, accessVersion, beforeState, afterState }) {
         await connection.query(
             `INSERT INTO user_permission_audits
@@ -530,7 +584,7 @@ class AccessControlManagementService {
     }
 
     async savePermissions(userId, input, actorUserId) {
-        const resolved = resolveSelectedPermissions(input?.permissions);
+        const resolved = resolveStaffPermissions(input?.permissions);
         const navigation = deriveNavigationPermissions(resolved);
         const assigned = [...new Set([...resolved, ...navigation])].sort((left, right) => left.localeCompare(right));
         const connection = await this.db.getConnection();
@@ -628,6 +682,7 @@ class AccessControlManagementService {
             if (input.is_active && Number(target.has_password) !== 1) {
                 throw accessError('Akun harus menerima undangan sebelum dapat diaktifkan.', 409, 'INVITATION_NOT_ACCEPTED');
             }
+            if (input.is_active) await this._grantRequiredDrdAccess(connection, userId);
             const nextVersion = Number(target.access_version) + 1;
             await connection.query('UPDATE users SET is_active = ? WHERE new_id = ?', [input.is_active ? 1 : 0, userId]);
             await connection.query('UPDATE user_access_policies SET access_version = ? WHERE user_id = ?', [nextVersion, userId]);
@@ -897,6 +952,7 @@ class AccessControlManagementService {
                  WHERE new_id = ?`,
                 [passwordHash, target.user_id]
             );
+            const assigned = await this._grantRequiredDrdAccess(connection, target.user_id);
             await connection.query('UPDATE staff_access_invitations SET used_at = NOW(6) WHERE id = ?', [target.id]);
             await connection.query('UPDATE user_access_policies SET access_version = ? WHERE user_id = ?', [nextVersion, target.user_id]);
             await this._writeAudit(connection, {
@@ -905,7 +961,7 @@ class AccessControlManagementService {
                 action: 'invitation_accepted',
                 accessVersion: nextVersion,
                 beforeState: { is_active: false },
-                afterState: { is_active: true }
+                afterState: { is_active: true, required_drd_permissions: assigned }
             });
             await connection.commit();
             return { accepted: true };
@@ -924,6 +980,7 @@ module.exports = {
     ACCESS_MANAGEMENT_PERMISSIONS,
     INVITATION_TTL_HOURS,
     NON_DELEGABLE_PERMISSIONS,
+    REQUIRED_STAFF_DRD_PERMISSIONS,
     AccessControlManagementService,
     accessControlManagementService,
     assertAccessVersion,
@@ -936,5 +993,6 @@ module.exports = {
     normalizeJobLabel,
     resolveAccessTemplate,
     resolveSelectedPermissions,
+    resolveStaffPermissions,
     validateStrongPassword
 };

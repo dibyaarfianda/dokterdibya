@@ -93,9 +93,14 @@ function moduleLabel(permission) {
 }
 
 function checkbox(permission) {
-    const checked = state.selected.permissions.includes(permission.name) ? ' checked' : '';
+    const mandatory = permission.mandatory_for_staff === true;
+    const checked = mandatory || state.selected.permissions.includes(permission.name) ? ' checked' : '';
+    const disabled = mandatory ? ' disabled' : '';
+    const mandatoryLabel = mandatory
+        ? ' <span class="badge badge-info ml-1">Wajib untuk semua staff</span>'
+        : '';
     return `<label class="d-block small font-weight-normal mb-1" title="${escapeHtml(permission.description)}">
-        <input type="checkbox" data-permission="${escapeHtml(permission.name)}"${checked}> ${escapeHtml(permission.display_name)}
+        <input type="checkbox" data-permission="${escapeHtml(permission.name)}"${checked}${disabled}> ${escapeHtml(permission.display_name)}${mandatoryLabel}
     </label>`;
 }
 
@@ -171,7 +176,7 @@ function updateTemplateDescription() {
 
 function setAllPermissionsChecked(checked) {
     document.querySelectorAll('#access-permission-matrix-body [data-permission]').forEach(input => {
-        input.checked = checked;
+        if (!input.disabled) input.checked = checked;
     });
 }
 
@@ -184,7 +189,7 @@ function applySelectedTemplate() {
     }
     const selectedPermissions = new Set(template.permissions);
     document.querySelectorAll('#access-permission-matrix-body [data-permission]').forEach(input => {
-        input.checked = selectedPermissions.has(input.dataset.permission);
+        input.checked = input.disabled || selectedPermissions.has(input.dataset.permission);
     });
     updateTemplateDescription();
 }
