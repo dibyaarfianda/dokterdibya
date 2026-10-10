@@ -6,7 +6,7 @@ const puppeteer = require('puppeteer');
 const root = path.resolve(__dirname, '../../../..');
 const baseline = {
     // Account-mode Staff now has a deliberate zero-grant shell in both viewports.
-    'staff/public/index-adminlte.html': 'b00603485641305fa46a10e71b384d598cc62e9241b09710c61af7410ccb8b33',
+    'staff/public/index-adminlte.html': 'f201848c3ec1bb81dc9cc150030df4059a903bdc6e0303a0c015bea8ceb9023d',
     'public/patient-menu.html': 'da9c28107e03efa0947adcfdda6acb081e7ed298ef7c266c41354957f1a846a3'
 };
 

@@ -265,10 +265,22 @@ router.get('/practice-dates', verifyStaffToken, async (req, res) => {
              WHERE disabled_date IN (?) AND (location IS NULL OR location = 'klinik_privat')`,
             [dateStrings]
         );
+        const [closedDates] = await db.query(
+            `SELECT clinic_date FROM sunday_clinic_closings
+             WHERE clinic_date IN (?)`,
+            [dateStrings]
+        );
         const disabled = new Set(disabledDates.map(d => typeof d.disabled_date === 'string'
             ? d.disabled_date.substring(0, 10) : formatDateLocal(d.disabled_date)));
+        const closed = new Set(closedDates.map(d => typeof d.clinic_date === 'string'
+            ? d.clinic_date.substring(0, 10) : formatDateLocal(d.clinic_date)));
         const practices = settings.map(setting => {
-            const date = candidates.find(d => d.getUTCDay() === setting.dayOfWeek && !disabled.has(formatDateLocal(d)));
+            const date = candidates.find(d => {
+                const dateOnly = formatDateLocal(d);
+                return d.getUTCDay() === setting.dayOfWeek
+                    && !disabled.has(dateOnly)
+                    && !closed.has(dateOnly);
+            });
             return {
                 session: setting.session, name: setting.name, dayOfWeek: setting.dayOfWeek,
                 date: date ? formatDateLocal(date) : null,
@@ -276,7 +288,7 @@ router.get('/practice-dates', verifyStaffToken, async (req, res) => {
                     timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 }) : null
             };
-        });
+        }).sort((left, right) => (left.date || '9999-12-31').localeCompare(right.date || '9999-12-31'));
         res.json({ practices });
     } catch (error) {
         console.error('Error getting staff practice dates:', error);

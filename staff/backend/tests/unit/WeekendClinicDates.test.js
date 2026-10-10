@@ -16,17 +16,23 @@ app.use('/api/sunday-appointments', require('../../routes/sunday-appointments'))
 
 describe('staff Weekend Clinic practice dates', () => {
     let disabled;
+    let closed;
     let rows;
     beforeEach(() => {
         jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
         jest.setSystemTime(new Date('2026-10-06T13:00:00Z'));
         settings.invalidateSessionSettingsCache();
         disabled = [];
+        closed = [];
         rows = [
             { session_number: 1, session_name: 'Sunday Clinic', day_of_week: 0, start_time: '09:00', end_time: '17:15', slot_duration: 15, max_slots: 25, is_active: 1 },
             { session_number: 2, session_name: 'Weekend Clinic', day_of_week: 6, start_time: '13:00', end_time: '18:00', slot_duration: 15, max_slots: 20, is_active: 1 }
         ];
-        db.query.mockImplementation(async sql => [sql.includes('FROM booking_settings') ? rows : disabled]);
+        db.query.mockImplementation(async sql => {
+            if (sql.includes('FROM booking_settings')) return [rows];
+            if (sql.includes('FROM sunday_clinic_closings')) return [closed];
+            return [disabled];
+        });
     });
     afterEach(() => jest.useRealTimers());
     const dates = () => request(app).get('/api/sunday-appointments/practice-dates').set('Authorization', 'staff');
@@ -56,6 +62,17 @@ describe('staff Weekend Clinic practice dates', () => {
         rows[1].is_active = 0;
         settings.invalidateSessionSettingsCache();
         expect((await dates().expect(200)).body.practices.map(p => p.session)).toEqual([1]);
+    });
+    test('skips a closed clinic date and returns the chronologically upcoming clinic first', async () => {
+        jest.setSystemTime(new Date('2026-10-10T12:00:00Z'));
+        closed = [{ clinic_date: '2026-10-10' }];
+
+        const result = await dates().expect(200);
+
+        expect(result.body.practices.map(practice => ({ session: practice.session, date: practice.date }))).toEqual([
+            { session: 1, date: '2026-10-11' },
+            { session: 2, date: '2026-10-17' }
+        ]);
     });
     test('patient dates remain available with both compatible response keys', async () => {
         const result = await request(app).get('/api/sunday-appointments/sundays').set('Authorization', 'patient').expect(200);

@@ -10,8 +10,8 @@ const state = {
 window._klinikPrivateState = state;
 
 const clinics = [
-    { key: 'weekend', prefix: 'weekend-clinic', dayOfWeek: 6, name: 'Weekend Clinic', appointments: [], elements: {} },
-    { key: 'sunday', prefix: 'klinik-private', dayOfWeek: 0, name: 'Sunday Clinic', appointments: [], elements: {} }
+    { key: 'weekend', prefix: 'weekend-clinic', dayOfWeek: 6, name: 'Weekend Clinic', practiceDate: null, appointments: [], loadFailed: false, elements: {} },
+    { key: 'sunday', prefix: 'klinik-private', dayOfWeek: 0, name: 'Sunday Clinic', practiceDate: null, appointments: [], loadFailed: false, elements: {} }
 ];
 let hasInitialized = false;
 let loadSequence = 0;
@@ -19,7 +19,7 @@ let loadSequence = 0;
 function ensureElements() {
     if (hasInitialized) return;
     for (const clinic of clinics) {
-        const suffixes = { dateLabel: 'date-label', countBadge: 'count', refreshBtn: 'refresh-btn',
+        const suffixes = { cardRow: 'card-row', dateLabel: 'date-label', countBadge: 'count', refreshBtn: 'refresh-btn',
             loading: 'loading', tableWrapper: 'table-wrapper', tbody: 'tbody', emptyState: 'empty', errorBox: 'error' };
         for (const [key, suffix] of Object.entries(suffixes)) {
             clinic.elements[key] = document.getElementById(`${clinic.prefix}-${suffix}`);
@@ -112,6 +112,7 @@ function setupRealtimeUpdates() {
     window.socket.on('booking:new', refreshAppointments);
     window.socket.on('booking:update', refreshAppointments);
     window.socket.on('booking:cancel', refreshAppointments);
+    window.socket.on('sunday_clinic_closing_updated', refreshAppointments);
 
     state.realtimeBound = true;
 }
@@ -446,6 +447,28 @@ function filterAndSortAppointments(appointments) {
         });
 }
 
+function arrangeClinicCards() {
+    const scheduledClinics = clinics
+        .filter(clinic => clinic.practiceDate)
+        .sort((left, right) => left.practiceDate.localeCompare(right.practiceDate));
+    const primaryClinic = scheduledClinics[0] || clinics[0];
+    const container = scheduledClinics
+        .map(clinic => clinic.elements.cardRow?.parentNode)
+        .find(Boolean);
+
+    if (container) {
+        scheduledClinics.forEach(clinic => container.appendChild(clinic.elements.cardRow));
+    }
+
+    clinics.forEach(clinic => {
+        if (!clinic.elements.cardRow) return;
+        const shouldShow = clinic === primaryClinic
+            || clinic.appointments.length > 0
+            || clinic.loadFailed;
+        clinic.elements.cardRow.classList.toggle('d-none', !shouldShow);
+    });
+}
+
 async function loadUpcomingAppointments({ force = false } = {}) {
     ensureElements();
     const token = getToken();
@@ -453,7 +476,9 @@ async function loadUpcomingAppointments({ force = false } = {}) {
     const sequence = ++loadSequence;
     state.isLoading = true;
     clinics.forEach(clinic => {
+        clinic.practiceDate = null;
         clinic.appointments = [];
+        clinic.loadFailed = false;
         setLoading(clinic, true);
         updateCount(clinic, 0);
     });
@@ -470,6 +495,7 @@ async function loadUpcomingAppointments({ force = false } = {}) {
             const practices = payload.practices.filter(p => p.dayOfWeek === clinic.dayOfWeek && p.date)
                 .sort((a, b) => a.date.localeCompare(b.date));
             const first = practices[0];
+            clinic.practiceDate = first?.date || null;
             if (clinic.elements.dateLabel) clinic.elements.dateLabel.textContent = first?.formatted || 'Jadwal belum tersedia';
             if (!first) {
                 renderAppointments(clinic, []);
@@ -492,18 +518,22 @@ async function loadUpcomingAppointments({ force = false } = {}) {
                 renderAppointments(clinic, clinic.appointments);
             } catch (error) {
                 if (sequence !== loadSequence) return;
+                clinic.loadFailed = true;
                 setError(clinic, error.message);
             } finally {
                 if (sequence === loadSequence) setLoading(clinic, false);
             }
         }));
+        if (sequence === loadSequence) arrangeClinicCards();
     } catch (error) {
         if (sequence !== loadSequence) return;
         clinics.forEach(clinic => {
+            clinic.loadFailed = true;
             if (clinic.elements.dateLabel) clinic.elements.dateLabel.textContent = '-';
             setError(clinic, error.message || 'Gagal memuat daftar pasien');
             setLoading(clinic, false);
         });
+        arrangeClinicCards();
     } finally {
         if (sequence === loadSequence) state.isLoading = false;
     }
