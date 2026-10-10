@@ -45,6 +45,16 @@ describe('Sunday Clinic closing launcher from Klinik Privat', () => {
         expect(launcher).not.toMatch(/\bdokter-only\b/);
     });
 
+    test('places the same doctor-only Closing Klinik launcher on Weekend Clinic', () => {
+        expect(clinicPage).toContain('id="weekend-clinic-closing-btn"');
+
+        const launcher = extractElementById(clinicPage, 'weekend-clinic-closing-btn');
+        expect(launcher).toMatch(/\bsunday-clinic-closing-doctor-only\b/);
+        expect(launcher).toMatch(/\bd-none\b/);
+        expect(launcher).not.toMatch(/\bdokter-only\b/);
+        expect(launcher).toContain('data-shell-action="show-sunday-clinic-closing"');
+    });
+
     test('wires launcher visibility to the fixed doctor role id contract', () => {
         expect(main).toContain("import { ROLE_IDS, isSuperadminUser } from './role-constants.js'");
         expect(main).toContain('Number(user?.role_id) === ROLE_IDS.DOKTER');
