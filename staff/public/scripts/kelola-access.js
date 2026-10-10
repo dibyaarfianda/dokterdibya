@@ -5,6 +5,8 @@ const state = {
     templates: [],
     users: [],
     selected: null,
+    selectedTemplateKey: null,
+    activeView: 'accounts',
     initialized: false
 };
 
@@ -92,9 +94,9 @@ function moduleLabel(permission) {
         .replace(/\s+/g, ' ');
 }
 
-function checkbox(permission) {
+function checkbox(permission, selectedPermissions) {
     const mandatory = permission.mandatory_for_staff === true;
-    const checked = mandatory || state.selected.permissions.includes(permission.name) ? ' checked' : '';
+    const checked = mandatory || selectedPermissions.has(permission.name) ? ' checked' : '';
     const disabled = mandatory ? ' disabled' : '';
     const mandatoryLabel = mandatory
         ? ' <span class="badge badge-info ml-1">Wajib untuk semua staff</span>'
@@ -104,9 +106,10 @@ function checkbox(permission) {
     </label>`;
 }
 
-function renderMatrix() {
-    const body = document.getElementById('access-permission-matrix-body');
-    if (!body || !state.selected) return;
+function renderPermissionMatrix(bodyId, permissionNames) {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    const selectedPermissions = new Set(permissionNames || []);
     const groups = new Map();
     for (const permission of state.catalog) {
         const prefix = permission.name.split('.')[0];
@@ -122,7 +125,7 @@ function renderMatrix() {
             ? `<tr class="bg-light"><th colspan="5">${escapeHtml(group.category)}</th></tr>`
             : '';
         previousCategory = group.category;
-        const cell = name => group.cells[name].map(checkbox).join('') || '<span class="text-muted">—</span>';
+        const cell = name => group.cells[name].map(permission => checkbox(permission, selectedPermissions)).join('') || '<span class="text-muted">—</span>';
         return `${categoryRow}<tr>
             <th class="align-middle">${escapeHtml(group.label)}</th>
             <td class="align-middle">${cell('view')}</td>
@@ -131,6 +134,11 @@ function renderMatrix() {
             <td class="align-middle">${cell('special')}</td>
         </tr>`;
     }).join('');
+}
+
+function renderMatrix() {
+    if (!state.selected) return;
+    renderPermissionMatrix('access-permission-matrix-body', state.selected.permissions);
 }
 
 function renderAuditHistory() {
@@ -159,8 +167,14 @@ function renderTemplateOptions(selectedKey) {
     )).join('');
     const editor = document.getElementById('access-template');
     const create = document.getElementById('access-create-template');
+    const templateEditor = document.getElementById('access-template-editor-select');
     if (editor) editor.innerHTML = `<option value="">Pilih template</option>${options}`;
     if (create) create.innerHTML = `<option value="">Pilih template</option>${options.replace(/ selected/g, '')}`;
+    if (templateEditor) {
+        templateEditor.innerHTML = state.templates.map(template => (
+            `<option value="${escapeHtml(template.key)}"${state.selectedTemplateKey === template.key ? ' selected' : ''}>${escapeHtml(template.label)}</option>`
+        )).join('');
+    }
     updateTemplateDescription();
 }
 
@@ -174,10 +188,19 @@ function updateTemplateDescription() {
         : 'Pilih template, terapkan ke matriks, lalu simpan.';
 }
 
-function setAllPermissionsChecked(checked) {
-    document.querySelectorAll('#access-permission-matrix-body [data-permission]').forEach(input => {
+function setMatrixPermissionsChecked(bodyId, checked) {
+    document.querySelectorAll(`#${bodyId} [data-permission]`).forEach(input => {
         if (!input.disabled) input.checked = checked;
     });
+}
+
+function setAllPermissionsChecked(checked) {
+    setMatrixPermissionsChecked('access-permission-matrix-body', checked);
+}
+
+function checkedPermissions(bodyId) {
+    return [...document.querySelectorAll(`#${bodyId} [data-permission]:checked`)]
+        .map(input => input.dataset.permission);
 }
 
 function applySelectedTemplate() {
@@ -192,6 +215,95 @@ function applySelectedTemplate() {
         input.checked = input.disabled || selectedPermissions.has(input.dataset.permission);
     });
     updateTemplateDescription();
+}
+
+function renderTemplateEditor(preferredKey) {
+    const selected = state.templates.find(template => template.key === (preferredKey || state.selectedTemplateKey))
+        || state.templates[0];
+    state.selectedTemplateKey = selected?.key || null;
+    renderTemplateOptions(state.selected?.template_key || null);
+    const select = document.getElementById('access-template-editor-select');
+    if (select && selected) select.value = selected.key;
+    const description = document.getElementById('access-template-editor-description');
+    if (description) {
+        description.textContent = selected
+            ? `${selected.description} Izin wajib pengisian DRD tidak dapat dilepas.`
+            : 'Template belum tersedia.';
+    }
+    const version = document.getElementById('access-template-version');
+    if (version) version.textContent = selected ? `Versi ${selected.template_version}` : 'Versi -';
+    renderPermissionMatrix('access-template-permission-matrix-body', selected?.permissions || []);
+}
+
+function selectAccessView(view) {
+    state.activeView = view === 'templates' ? 'templates' : 'accounts';
+    document.getElementById('access-accounts-view')?.classList.toggle('d-none', state.activeView !== 'accounts');
+    document.getElementById('access-template-editor')?.classList.toggle('d-none', state.activeView !== 'templates');
+    document.querySelectorAll('[data-access-view]').forEach(button => {
+        const active = button.dataset.accessView === state.activeView;
+        button.classList.toggle('active', active);
+        button.classList.toggle('btn-primary', active);
+        button.classList.toggle('btn-outline-primary', !active);
+    });
+    if (state.activeView === 'templates') renderTemplateEditor(state.selectedTemplateKey);
+}
+
+async function saveAccessTemplate(applyToAccounts = false) {
+    const template = state.templates.find(item => item.key === state.selectedTemplateKey);
+    if (!template) return;
+    if (applyToAccounts) {
+        const options = {
+            icon: 'warning',
+            title: 'Terapkan ke semua akun?',
+            text: `Semua akun non-dokter dengan jabatan ${template.label} akan disamakan dengan matriks ini.`,
+            showCancelButton: true,
+            confirmButtonText: 'Terapkan ke Semua Akun',
+            cancelButtonText: 'Batal'
+        };
+        const confirmed = window.Swal
+            ? (await window.Swal.fire(options)).isConfirmed
+            : window.confirm(`${options.title}\n${options.text}`);
+        if (!confirmed) return;
+    }
+
+    const saveButton = document.getElementById('access-template-save');
+    const applyButton = document.getElementById('access-template-apply-all');
+    saveButton.disabled = true;
+    applyButton.disabled = true;
+    try {
+        const payload = {
+            permissions: checkedPermissions('access-template-permission-matrix-body'),
+            template_version: template.template_version
+        };
+        const suffix = applyToAccounts ? '/apply' : '';
+        const result = await request(`/templates/${encodeURIComponent(template.key)}${suffix}`, {
+            method: applyToAccounts ? 'POST' : 'PUT',
+            body: JSON.stringify(payload)
+        });
+        const catalog = await request('/catalog');
+        state.catalog = catalog.permissions;
+        state.templates = catalog.templates;
+        renderTemplateEditor(template.key);
+        if (applyToAccounts) await loadUsers(state.selected?.id);
+        notify(
+            'success',
+            applyToAccounts ? 'Template diterapkan' : 'Template tersimpan',
+            applyToAccounts
+                ? `${result.affected_count} akun diperbarui.`
+                : 'Akun yang sudah ada tidak berubah.'
+        );
+    } catch (error) {
+        if (error.code === 'ACCESS_VERSION_CONFLICT') {
+            const catalog = await request('/catalog');
+            state.catalog = catalog.permissions;
+            state.templates = catalog.templates;
+            renderTemplateEditor(template.key);
+        }
+        notify('error', 'Template tidak tersimpan', error.message);
+    } finally {
+        saveButton.disabled = false;
+        applyButton.disabled = false;
+    }
 }
 
 function renderSelected() {
@@ -250,8 +362,7 @@ async function savePermissions() {
     const button = document.getElementById('access-save');
     button.disabled = true;
     try {
-        const permissions = [...document.querySelectorAll('#access-permission-matrix-body [data-permission]:checked')]
-            .map(input => input.dataset.permission);
+        const permissions = checkedPermissions('access-permission-matrix-body');
         const payload = {
             permissions,
             access_version: state.selected.access_version,
@@ -356,14 +467,31 @@ export async function initKelolaAccess() {
         document.getElementById('access-template-apply').addEventListener('click', applySelectedTemplate);
         document.getElementById('access-check-all').addEventListener('click', () => setAllPermissionsChecked(true));
         document.getElementById('access-uncheck-all').addEventListener('click', () => setAllPermissionsChecked(false));
+        document.querySelectorAll('[data-access-view]').forEach(button => {
+            button.addEventListener('click', () => selectAccessView(button.dataset.accessView));
+        });
+        document.getElementById('access-template-editor-select').addEventListener('change', event => {
+            renderTemplateEditor(event.currentTarget.value);
+        });
+        document.getElementById('access-template-check-all').addEventListener('click', () => {
+            setMatrixPermissionsChecked('access-template-permission-matrix-body', true);
+        });
+        document.getElementById('access-template-uncheck-all').addEventListener('click', () => {
+            setMatrixPermissionsChecked('access-template-permission-matrix-body', false);
+        });
+        document.getElementById('access-template-save').addEventListener('click', () => saveAccessTemplate(false));
+        document.getElementById('access-template-apply-all').addEventListener('click', () => saveAccessTemplate(true));
         state.initialized = true;
     }
     try {
         const catalog = await request('/catalog');
         state.catalog = catalog.permissions;
         state.templates = catalog.templates;
+        state.selectedTemplateKey = state.selectedTemplateKey || state.templates[0]?.key || null;
         renderTemplateOptions(null);
+        renderTemplateEditor(state.selectedTemplateKey);
         await loadUsers();
+        selectAccessView(state.activeView);
     } catch (error) {
         notify('error', 'Kelola Akses tidak dapat dimuat', error.message);
     }

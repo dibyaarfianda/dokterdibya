@@ -9,7 +9,16 @@
         </button>
     </div>
 
-    <div class="row">
+    <div class="btn-group btn-group-sm mb-3" role="group" aria-label="Tampilan kelola akses">
+        <button class="btn btn-primary active" type="button" data-access-view="accounts">
+            <i class="fas fa-users mr-1"></i> Akun Staff
+        </button>
+        <button class="btn btn-outline-primary" type="button" data-access-view="templates">
+            <i class="fas fa-layer-group mr-1"></i> Template Jabatan
+        </button>
+    </div>
+
+    <div id="access-accounts-view" class="row">
         <div class="col-xl-4 mb-3">
             <div class="card h-100">
                 <div class="card-header border-0">
@@ -103,6 +112,67 @@
             </div>
         </div>
     </div>
+
+    <div id="access-template-editor" class="d-none">
+        <div class="card">
+            <div class="card-header border-0">
+                <div class="d-flex flex-wrap align-items-start justify-content-between">
+                    <div>
+                        <h5 class="mb-1">Template Jabatan</h5>
+                        <p class="text-muted mb-0">Atur izin bawaan untuk akun baru dan penerapan template berikutnya.</p>
+                    </div>
+                    <span id="access-template-version" class="badge badge-light mt-2 mt-md-0">Versi -</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <strong>Simpan Template</strong> tidak mengubah akun yang sudah ada. Gunakan <strong>Terapkan ke Semua Akun</strong> hanya bila seluruh akun dengan jabatan ini harus disamakan.
+                </div>
+                <div class="border rounded bg-light p-3 mb-3">
+                    <div class="d-flex flex-wrap align-items-end justify-content-between">
+                        <div class="form-group mb-2 mr-3" style="min-width: 240px; max-width: 420px; flex: 1 1 320px;">
+                            <label for="access-template-editor-select" class="mb-1">Jabatan</label>
+                            <select id="access-template-editor-select" class="form-control form-control-sm"></select>
+                        </div>
+                        <div class="mb-2">
+                            <button id="access-template-check-all" class="btn btn-outline-success btn-sm mr-1" type="button">
+                                <i class="fas fa-check-square mr-1"></i> Check All
+                            </button>
+                            <button id="access-template-uncheck-all" class="btn btn-outline-secondary btn-sm" type="button">
+                                <i class="far fa-square mr-1"></i> Uncheck All
+                            </button>
+                        </div>
+                    </div>
+                    <small id="access-template-editor-description" class="form-text text-muted mb-0"></small>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Modul</th>
+                                <th style="text-align:center!important;vertical-align:middle!important;">Baca</th>
+                                <th style="text-align:center!important;vertical-align:middle!important;">Baca/Edit</th>
+                                <th style="text-align:center!important;vertical-align:middle!important;">Hapus</th>
+                                <th style="text-align:center!important;vertical-align:middle!important;">Aksi khusus</th>
+                            </tr>
+                        </thead>
+                        <tbody id="access-template-permission-matrix-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex flex-wrap justify-content-end">
+                    <button id="access-template-save" class="btn btn-primary btn-sm mr-2" type="button">
+                        <i class="fas fa-save mr-1"></i> Simpan Template
+                    </button>
+                    <button id="access-template-apply-all" class="btn btn-danger btn-sm" type="button">
+                        <i class="fas fa-users-cog mr-1"></i> Terapkan ke Semua Akun
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="modal fade" id="access-create-account-modal" tabindex="-1" role="dialog" aria-labelledby="access-create-account-title" aria-hidden="true">
@@ -114,7 +184,7 @@
                     <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-light border small">Akun baru mulai tanpa izin. Pemilik akun mengaktifkannya melalui tautan email yang berlaku 24 jam.</div>
+                    <div class="alert alert-light border small">Akun baru menerima izin dari template jabatan yang dipilih. Pemilik akun mengaktifkannya melalui tautan email yang berlaku 24 jam.</div>
                     <div class="form-group">
                         <label for="access-create-name">Nama</label>
                         <input id="access-create-name" name="name" class="form-control" type="text" maxlength="120" required autocomplete="name">
@@ -126,7 +196,7 @@
                     <div class="form-group mb-0">
                         <label for="access-create-template">Template dan label jabatan</label>
                         <select id="access-create-template" name="template_key" class="form-control" required></select>
-                        <small class="form-text text-muted">Akun tetap mulai tanpa izin sampai template diterapkan dan disimpan.</small>
+                        <small class="form-text text-muted">Izin template tersimpan sebelum akun diaktifkan.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
