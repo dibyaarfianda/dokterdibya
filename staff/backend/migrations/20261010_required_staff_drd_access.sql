@@ -18,7 +18,8 @@ LEFT JOIN roles r ON r.id = u.role_id
 WHERE u.user_type = 'staff'
   AND u.is_active = 1
   AND u.is_superadmin = 0
-  AND COALESCE(r.name, u.role, '') <> 'dokter'
+  AND CONVERT(COALESCE(r.name, u.role, '') USING utf8mb4) COLLATE utf8mb4_unicode_ci
+      <> _utf8mb4'dokter' COLLATE utf8mb4_unicode_ci
   AND EXISTS (
       SELECT 1
       FROM permissions required_permission

@@ -246,6 +246,7 @@ describe('access-control management contracts', () => {
         expect(sql).toMatch(/u\.user_type\s*=\s*'staff'/i);
         expect(sql).toMatch(/u\.is_active\s*=\s*1/i);
         expect(sql).toMatch(/u\.is_superadmin\s*=\s*0/i);
+        expect(sql).toMatch(/COLLATE\s+utf8mb4_unicode_ci/i);
         expect(sql).toMatch(/medical_records\.edit/i);
         expect(sql).toMatch(/usg_exam\.edit/i);
         expect(sql).not.toMatch(/DELETE\s+FROM\s+user_permission_grants/i);
