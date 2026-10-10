@@ -2416,3 +2416,25 @@ The user confirmed the account access editor worked after the old role visibilit
 - Run access-control unit tests and realtime/chat regression tests.
 - Verify the live catalog, template counts, account labels, current/versioned assets, PM2 health, and rollback backup.
 - Confirm the migration does not modify doctor protection or legacy role tables.
+
+### 60. Session Log - 10 October 2026
+
+**Mandatory DRD Entry Access for All Staff (User Confirmed Success)**
+
+The user confirmed that DRD entry worked after mandatory clinical-entry permissions were applied to every active non-doctor staff account.
+
+**What worked:**
+
+1. Define one mandatory DRD permission baseline for patients view, visits, Sunday Clinic, medical records, anamnesis, physical/obstetric/gynecologic examinations, USG, and laboratory sections.
+2. Add that baseline in backend permission resolution so templates, Check All, Uncheck All, and direct permission saves cannot remove it.
+3. Mark mandatory permissions in the access catalog and render them checked, disabled, and labeled `Wajib untuk semua staff` in Kelola Akses.
+4. Grant the baseline and required navigation permissions to active non-doctor staff with an idempotent, audited migration; apply it again whenever an account is activated or accepts an invitation.
+5. Keep deletion, reset, finalization, merge, export, payment, access management, and the protected doctor account outside the mandatory baseline.
+6. Publish the matching immutable Staff asset release after bumping both Staff cache versions.
+
+**Verified production result:**
+
+- All 9 active non-doctor staff accounts had every required DRD grant; missing count was zero.
+- Sensitive-grant count remained unchanged and no doctor account was targeted by the migration audit.
+- Access, DRD, realtime, and chat tests passed; PM2, health, database, and both production asset origins were healthy.
+- No synthetic clinical record was written during verification.
