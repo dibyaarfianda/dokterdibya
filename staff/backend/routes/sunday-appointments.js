@@ -450,9 +450,11 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         const crypto = require('crypto');
         const confirmationToken = crypto.randomBytes(32).toString('hex');
 
-        // Sunday bookings require attendance confirmation by the weekend cron flow.
-        const appointmentDayOfWeekForBooking = new Date(appointment_date + 'T00:00:00Z').getUTCDay();
-        const requiresConfirmation = appointmentDayOfWeekForBooking === 0; // 0 = Sunday
+        // Weekend Clinic is the only session that is confirmed immediately.
+        // Every other configured clinic keeps the attendance-confirmation flow,
+        // regardless of which day it is scheduled.
+        const isWeekendClinic = String(sessionSetting.name || '').trim().toLowerCase() === 'weekend clinic';
+        const requiresConfirmation = !isWeekendClinic;
         const bookingStatus = requiresConfirmation ? 'pending_confirmation' : 'confirmed';
 
         // Create appointment

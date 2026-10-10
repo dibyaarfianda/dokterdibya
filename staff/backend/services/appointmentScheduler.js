@@ -379,12 +379,13 @@ async function ensureSundayConfirmationSchema() {
 }
 
 /**
- * Saturday 18:00 WIB and Sunday 07:00 WIB — enable the in-app confirmation popup.
+ * Daily at 18:00 WIB for tomorrow and 07:00 WIB for today — enable the
+ * in-app confirmation popup for every booking that requires confirmation.
  */
-function startSundayConfirmationSender() {
-    async function enableSundayConfirmationPopup(targetDateSql, scheduleLabel) {
+function startPracticeConfirmationSender() {
+    async function enablePracticeConfirmationPopup(targetDateSql, scheduleLabel) {
         try {
-            logger.info(`[Scheduler] Enabling Sunday confirmation popup (${scheduleLabel})...`);
+            logger.info(`[Scheduler] Enabling practice confirmation popup (${scheduleLabel})...`);
 
             const [result] = await db.query(
                 `UPDATE sunday_appointments
@@ -393,30 +394,30 @@ function startSundayConfirmationSender() {
                    AND appointment_date = ${targetDateSql}`
             );
 
-            logger.info(`[Scheduler] Sunday confirmation popup enabled for ${result.affectedRows || 0} appointment(s)`);
+            logger.info(`[Scheduler] Practice confirmation popup enabled for ${result.affectedRows || 0} appointment(s)`);
         } catch (error) {
-            logger.error('[Scheduler] Error enabling Sunday confirmation popup:', error);
+            logger.error('[Scheduler] Error enabling practice confirmation popup:', error);
         }
     }
 
-    cron.schedule('0 18 * * 6', async () => {
-        await enableSundayConfirmationPopup('DATE_ADD(CURDATE(), INTERVAL 1 DAY)', 'Saturday 18:00');
+    cron.schedule('0 18 * * *', async () => {
+        await enablePracticeConfirmationPopup('DATE_ADD(CURDATE(), INTERVAL 1 DAY)', 'previous day 18:00');
     }, { timezone: 'Asia/Jakarta' });
 
-    cron.schedule('0 7 * * 0', async () => {
-        await enableSundayConfirmationPopup('CURDATE()', 'Sunday 07:00');
+    cron.schedule('0 7 * * *', async () => {
+        await enablePracticeConfirmationPopup('CURDATE()', 'practice day 07:00');
     }, { timezone: 'Asia/Jakarta' });
 
-    logger.info('[Scheduler] Sunday confirmation popup scheduler started (runs Saturdays at 18:00 and Sundays at 07:00 WIB)');
+    logger.info('[Scheduler] Practice confirmation popup scheduler started (runs daily at 18:00 and 07:00 WIB)');
 }
 
 /**
- * Sunday 09:00 WIB — expire all unconfirmed pending_confirmation appointments
+ * Daily at 09:00 WIB — expire all unconfirmed pending_confirmation appointments.
  */
-function startSundayExpiryJob() {
-    cron.schedule('0 9 * * 0', async () => {
+function startPracticeConfirmationExpiryJob() {
+    cron.schedule('0 9 * * *', async () => {
         try {
-            logger.info('[Scheduler] Running Sunday expiry job...');
+            logger.info('[Scheduler] Running practice confirmation expiry job...');
 
             const [expiring] = await db.query(
                 `SELECT id, patient_id, patient_name, session, slot_number
@@ -471,19 +472,19 @@ function startSundayExpiryJob() {
                 const realtimeSync = require('../realtime-sync');
                 realtimeSync.broadcastToStaff('booking:slots_released', {
                     count: ids.length,
-                    reason: 'Sunday expiry job'
+                    reason: 'Practice confirmation expiry job'
                 });
             } catch (rtErr) {
                 logger.warn('[Scheduler] Failed to broadcast slot release:', rtErr.message);
             }
 
-            logger.info(`[Scheduler] Sunday expiry job: ${ids.length} appointments cancelled`);
+            logger.info(`[Scheduler] Practice confirmation expiry job: ${ids.length} appointments cancelled`);
         } catch (error) {
-            logger.error('[Scheduler] Error in Sunday expiry job:', error);
+            logger.error('[Scheduler] Error in practice confirmation expiry job:', error);
         }
     }, { timezone: 'Asia/Jakarta' });
 
-    logger.info('[Scheduler] Sunday expiry job started (runs Sundays at 09:00 WIB)');
+    logger.info('[Scheduler] Practice confirmation expiry job started (runs daily at 09:00 WIB)');
 }
 
 /**
@@ -528,8 +529,8 @@ function initSchedulers() {
     startPolicyLogCleanupScheduler();
     startRuleExecCleanupScheduler();
     startDailyMetricsScheduler();
-    startSundayConfirmationSender();
-    startSundayExpiryJob();
+    startPracticeConfirmationSender();
+    startPracticeConfirmationExpiryJob();
 
     // Run async migrations + seed (non-blocking)
     ensureSundayConfirmationSchema().catch(err =>
