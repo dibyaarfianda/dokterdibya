@@ -139,6 +139,19 @@ function getCategoryLabel(category) {
     return labels[category] || category || '-';
 }
 
+function normalizeAppointmentDate(value) {
+    return formatDateLocal(value);
+}
+
+function formatAppointmentDateId(value, options = {}) {
+    const dateOnly = normalizeAppointmentDate(value);
+    if (!dateOnly) return '-';
+    return new Date(`${dateOnly}T12:00:00+07:00`).toLocaleDateString('id-ID', {
+        timeZone: 'Asia/Jakarta',
+        ...options
+    });
+}
+
 function calculateAge(birthDate) {
     if (!(birthDate instanceof Date) || isNaN(birthDate.getTime())) {
         return null;
@@ -508,16 +521,19 @@ router.get('/my-bookings', verifyPatientToken, async (req, res) => {
         const [bookings] = await db.query(query, params);
         const sessionSettings = await getSessionSettings();
 
-        const formatted = bookings.map(b => ({
-            ...b,
-            appointment_date: b.appointment_date,
-            slot_time: getSlotTimeFromSettings(sessionSettings, b.session, b.slot_number),
-            sessionLabel: getSessionLabelFromSettings(sessionSettings, b.session),
-            categoryLabel: getCategoryLabel(b.consultation_category),
-            dateFormatted: new Date(b.appointment_date).toLocaleDateString('id-ID', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-            })
-        }));
+        const formatted = bookings.map(b => {
+            const appointmentDate = normalizeAppointmentDate(b.appointment_date);
+            return {
+                ...b,
+                appointment_date: appointmentDate,
+                slot_time: getSlotTimeFromSettings(sessionSettings, b.session, b.slot_number),
+                sessionLabel: getSessionLabelFromSettings(sessionSettings, b.session),
+                categoryLabel: getCategoryLabel(b.consultation_category),
+                dateFormatted: formatAppointmentDateId(appointmentDate, {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                })
+            };
+        });
 
         res.json({ success: true, bookings: formatted });
 
@@ -545,18 +561,14 @@ router.get('/patient', verifyPatientToken, async (req, res) => {
 
         const formatted = appointments.map(apt => {
             const slotTime = getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number);
+            const dateStr = normalizeAppointmentDate(apt.appointment_date);
 
             let startDateTime = null;
             let arrivalTime = null;
             let arrivalTimeFormatted = null;
-            let isPast = new Date(apt.appointment_date) < new Date();
+            let isPast = new Date(`${dateStr}T00:00:00+07:00`) < new Date();
 
             if (slotTime && /^\d{2}:\d{2}$/.test(slotTime)) {
-                // MySQL DATE is returned as UTC midnight, but represents local date
-                // Add 7 hours to get correct GMT+7 date, then extract date part
-                const aptDate = new Date(apt.appointment_date);
-                const gmt7Offset = aptDate.getTime() + (7 * 60 * 60 * 1000);
-                const dateStr = formatDateLocal(new Date(gmt7Offset));
                 const start = new Date(`${dateStr}T${slotTime}:00+07:00`); // Create date in GMT+7
                 if (!isNaN(start.getTime())) {
                     startDateTime = start.toISOString();
@@ -570,7 +582,8 @@ router.get('/patient', verifyPatientToken, async (req, res) => {
                 
             return {
                 ...apt,
-                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                appointment_date: dateStr,
+                dateFormatted: formatAppointmentDateId(dateStr, {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -927,7 +940,7 @@ router.get('/by-token/:token', async (req, res) => {
                 appointment: {
                     id: apt.id,
                     patient_name: apt.patient_name,
-                    appointment_date: apt.appointment_date,
+                    appointment_date: normalizeAppointmentDate(apt.appointment_date),
                     session_label: getSessionLabelFromSettings(sessionSettings, apt.session),
                     slot_time: getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number),
                     chief_complaint: apt.chief_complaint,
@@ -943,7 +956,7 @@ router.get('/by-token/:token', async (req, res) => {
             appointment: {
                 id: apt.id,
                 patient_name: apt.patient_name,
-                appointment_date: apt.appointment_date,
+                appointment_date: normalizeAppointmentDate(apt.appointment_date),
                 session_label: getSessionLabelFromSettings(sessionSettings, apt.session),
                 slot_time: getSlotTimeFromSettings(sessionSettings, apt.session, apt.slot_number),
                 chief_complaint: apt.chief_complaint,

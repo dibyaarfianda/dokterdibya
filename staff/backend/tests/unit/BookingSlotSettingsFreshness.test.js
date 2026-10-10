@@ -107,6 +107,52 @@ describe('booking slot setting freshness', () => {
         });
     });
 
+    test('patient bookings serialize MySQL DATE values as the Jakarta calendar date', async () => {
+        const app = makeApp();
+        const bookingSetting = {
+            session_number: 1,
+            session_name: 'Minggu',
+            day_of_week: 0,
+            start_time: '09:00:00',
+            end_time: '17:15:00',
+            slot_duration: 15,
+            max_slots: 25
+        };
+
+        db.query.mockImplementation(async (sql) => {
+            if (sql.includes('FROM booking_settings ORDER BY')) {
+                return [[bookingSetting]];
+            }
+
+            if (sql.includes('FROM sunday_appointments') && sql.includes('WHERE patient_id = ?')) {
+                return [[{
+                    id: 303,
+                    appointment_date: new Date('2026-10-10T17:00:00.000Z'),
+                    session: 1,
+                    slot_number: 1,
+                    chief_complaint: 'Kontrol',
+                    consultation_category: 'obstetri',
+                    status: 'pending_confirmation',
+                    notes: null,
+                    created_at: '2026-10-01 08:00:00'
+                }]];
+            }
+
+            return [[]];
+        });
+
+        const response = await request(app)
+            .get('/api/sunday-appointments/my-bookings?status=pending_confirmation')
+            .set('Authorization', authHeader('patient-1'))
+            .expect(200);
+
+        expect(response.body.bookings[0]).toMatchObject({
+            id: 303,
+            appointment_date: '2026-10-11',
+            dateFormatted: expect.stringContaining('Minggu')
+        });
+    });
+
     test('booking setting updates invalidate Sunday appointment slot calculations immediately', async () => {
         const app = makeApp();
         let bookingSetting = {
