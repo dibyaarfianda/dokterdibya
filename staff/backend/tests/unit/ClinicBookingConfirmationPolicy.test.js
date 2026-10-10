@@ -35,8 +35,9 @@ const SESSION_ROWS = [
     { session_number: 3, session_name: 'Klinik Rabu', day_of_week: 3, start_time: '16:00', end_time: '18:00', slot_duration: 15, max_slots: 8, is_active: 1 }
 ];
 
-function installBookingDatabaseFixture() {
+function installBookingDatabaseFixture({ insertAffectedRows = 1 } = {}) {
     let insertedStatus = null;
+    let insertCall = null;
 
     db.query.mockImplementation(async (sql, params = []) => {
         if (sql.includes('FROM booking_settings')) return [SESSION_ROWS];
@@ -49,18 +50,26 @@ function installBookingDatabaseFixture() {
         if (sql.includes('DELETE FROM sunday_appointments')) return [{ affectedRows: 0 }];
         if (sql.includes('INSERT INTO sunday_appointments')) {
             insertedStatus = params[8];
-            return [{ insertId: 901 }];
+            insertCall = { sql, params };
+            return [{ insertId: insertAffectedRows ? 901 : 0, affectedRows: insertAffectedRows }];
         }
         throw new Error(`Unexpected SQL in booking fixture: ${sql}`);
     });
 
-    return { getInsertedStatus: () => insertedStatus };
+    return {
+        getInsertedStatus: () => insertedStatus,
+        getInsertCall: () => insertCall
+    };
 }
 
 describe('private clinic booking confirmation policy', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         settings.invalidateSessionSettingsCache();
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
     });
 
     test.each([
@@ -84,5 +93,92 @@ describe('private clinic booking confirmation policy', () => {
 
         expect(response.body).toMatchObject({ status: expectedStatus, requiresConfirmation });
         expect(fixture.getInsertedStatus()).toBe(expectedStatus);
+    });
+
+    test('same-day confirmation booking after 07:00 WIB enables its popup immediately', async () => {
+        jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+        jest.setSystemTime(new Date('2026-10-11T00:30:00Z')); // 07:30 WIB
+        const fixture = installBookingDatabaseFixture();
+
+        await request(app)
+            .post('/api/sunday-appointments/book')
+            .set('Authorization', 'patient')
+            .send({
+                appointment_date: '2026-10-11',
+                session: 1,
+                slot_number: 1,
+                chief_complaint: 'Keluhan simulasi',
+                consultation_category: 'obstetri'
+            })
+            .expect(201);
+
+        expect(fixture.getInsertCall().sql).toContain('confirmation_popup_enabled_at');
+        expect(fixture.getInsertCall().params[10]).toBe(true);
+        expect(fixture.getInsertCall().params.slice(-2)).toEqual([true, true]);
+    });
+
+    test('same-day confirmation booking is rejected at the 09:00 WIB cutoff', async () => {
+        jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+        jest.setSystemTime(new Date('2026-10-11T02:00:00Z')); // 09:00 WIB
+        const fixture = installBookingDatabaseFixture();
+
+        const response = await request(app)
+            .post('/api/sunday-appointments/book')
+            .set('Authorization', 'patient')
+            .send({
+                appointment_date: '2026-10-11',
+                session: 1,
+                slot_number: 1,
+                chief_complaint: 'Keluhan simulasi',
+                consultation_category: 'obstetri'
+            })
+            .expect(400);
+
+        expect(response.body.message).toContain('09.00 WIB');
+        expect(fixture.getInsertedStatus()).toBeNull();
+    });
+
+    test('database cutoff rejects a same-day booking that crosses 09:00 during processing', async () => {
+        jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+        jest.setSystemTime(new Date('2026-10-11T01:59:00Z')); // 08:59 WIB at request validation
+        const fixture = installBookingDatabaseFixture({ insertAffectedRows: 0 });
+
+        const response = await request(app)
+            .post('/api/sunday-appointments/book')
+            .set('Authorization', 'patient')
+            .send({
+                appointment_date: '2026-10-11',
+                session: 1,
+                slot_number: 1,
+                chief_complaint: 'Keluhan simulasi',
+                consultation_category: 'obstetri'
+            })
+            .expect(400);
+
+        expect(fixture.getInsertCall().sql).toContain("CURTIME() < '09:00:00'");
+        expect(response.body.message).toContain('09.00 WIB');
+    });
+
+    test.each([
+        ['patient portal', '/api/sunday-appointments/501/confirm-attendance', 'patient'],
+        ['confirmation token', `/api/sunday-appointments/by-token/${'a'.repeat(64)}/confirm`, null]
+    ])('%s confirmation cannot resurrect a booking changed at the cutoff', async (_label, path, authorization) => {
+        db.query.mockImplementation(async (sql) => {
+            if (sql.includes('FROM sunday_appointments')) {
+                return [[{ id: 501, patient_id: 'PATIENT-1', patient_name: 'Pasien Simulasi', session: 1, slot_number: 1, status: 'pending_confirmation' }]];
+            }
+            if (sql.includes('FROM booking_settings')) return [SESSION_ROWS];
+            if (sql.includes('UPDATE sunday_appointments')) return [{ affectedRows: 0 }];
+            throw new Error(`Unexpected SQL in confirmation race fixture: ${sql}`);
+        });
+
+        const call = request(app).post(path);
+        if (authorization) call.set('Authorization', authorization);
+        const response = await call.expect(409);
+
+        expect(response.body.message).toContain('tidak dapat dikonfirmasi');
+        const confirmationUpdate = db.query.mock.calls.find(([sql]) => sql.includes('UPDATE sunday_appointments'));
+        expect(confirmationUpdate[0]).toContain("status = 'pending_confirmation'");
+        expect(confirmationUpdate[0]).toContain("CURTIME() < '09:00:00'");
     });
 });

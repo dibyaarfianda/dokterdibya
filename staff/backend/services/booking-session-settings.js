@@ -106,6 +106,14 @@ function findSessionSetting(settings, session) {
 }
 
 /**
+ * Weekend Clinic is the sole booking session that bypasses attendance
+ * confirmation. Unknown sessions fail safely by requiring confirmation.
+ */
+function requiresAttendanceConfirmation(setting) {
+    return String(setting?.name || '').trim().toLowerCase() !== 'weekend clinic';
+}
+
+/**
  * Session label ("08:00 - 10:30 (Pagi)"), or null when the session is unknown.
  */
 function getSessionLabelFromSettings(settings, session) {
@@ -168,6 +176,7 @@ module.exports = {
     invalidateSessionSettingsCache,
     getSessionSettingsVersion,
     findSessionSetting,
+    requiresAttendanceConfirmation,
     getSessionLabelFromSettings,
     getSlotTimeFromSettings,
     getSlotTimeFromBookingRow

@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('./auth');
 const PatientDemoService = require('../services/PatientDemoService');
+const {
+    findSessionSetting,
+    getSessionSettings,
+    requiresAttendanceConfirmation
+} = require('../services/booking-session-settings');
 
 const SAFE_PUBLIC_GET_PREFIXES = [
     '/api/articles',
@@ -209,24 +214,28 @@ async function handleMutation(req, res, state, pathname, sessionId) {
         return res.json({ success: true, message: 'Dokumen dummy ditandai sudah dibaca.' });
     }
     if (pathname === '/api/sunday-appointments/book' && req.method === 'POST') {
+        const sessionSettings = await getSessionSettings();
+        const session = req.body?.session || 'morning';
+        const requiresConfirmation = requiresAttendanceConfirmation(findSessionSetting(sessionSettings, session));
+        const bookingStatus = requiresConfirmation ? 'pending_confirmation' : 'confirmed';
         const next = await PatientDemoService.updateState(sessionId, 'booking_created', (draft) => {
             const id = `DEMO-BOOKING-${Date.now()}`;
             draft.bookings.push({
                 id,
                 appointment_date: sanitizeText(req.body?.date || req.body?.appointment_date, 10),
                 date: sanitizeText(req.body?.date || req.body?.appointment_date, 10),
-                session: sanitizeText(req.body?.session || 'morning', 20),
+                session: sanitizeText(session, 20),
                 slot_number: Number(req.body?.slot_number || req.body?.slot || 1),
                 slot_time: sanitizeText(req.body?.slot_time || '09:00', 5),
                 chief_complaint: sanitizeText(req.body?.chief_complaint || 'Booking simulasi'),
                 category: sanitizeText(req.body?.category || 'general', 40),
-                status: 'pending_confirmation',
+                status: bookingStatus,
                 is_demo: true
             });
             return draft;
         });
         const appointment = next.bookings[next.bookings.length - 1];
-        return res.status(201).json({ success: true, appointmentId: appointment.id, status: appointment.status, requiresConfirmation: true, details: appointment });
+        return res.status(201).json({ success: true, appointmentId: appointment.id, status: appointment.status, requiresConfirmation, details: appointment });
     }
     const bookingAction = pathname.match(/^\/api\/sunday-appointments\/([^/]+)\/(cancel|confirm-attendance|cancel-attendance)$/);
     if (bookingAction && ['PUT', 'POST'].includes(req.method)) {

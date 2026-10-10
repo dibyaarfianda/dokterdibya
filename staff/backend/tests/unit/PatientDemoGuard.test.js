@@ -8,8 +8,13 @@ jest.mock('../../services/PatientDemoService', () => ({
     updateState: jest.fn(),
     audit: jest.fn()
 }));
+jest.mock('../../services/booking-session-settings', () => {
+    const actual = jest.requireActual('../../services/booking-session-settings');
+    return { ...actual, getSessionSettings: jest.fn() };
+});
 
 const service = require('../../services/PatientDemoService');
+const bookingSettings = require('../../services/booking-session-settings');
 const guard = require('../../middleware/patientDemoGuard');
 
 function response() {
@@ -52,6 +57,10 @@ describe('patientDemoGuard', () => {
             trackers: { kick_counter: {}, contraction_timer: {}, fertility_calendar: {}, vitamins: [] },
             queue: { settings: {}, items: [] }
         });
+        bookingSettings.getSessionSettings.mockResolvedValue([
+            { session: 1, name: 'Sunday Clinic' },
+            { session: 2, name: 'Weekend Clinic' }
+        ]);
     });
 
     test.each([
@@ -91,6 +100,24 @@ describe('patientDemoGuard', () => {
         await guard(request('/api/patients/profile'), res, next);
         expect(res.body.user.id).toBe('DEMO-PATIENT');
         expect(next).not.toHaveBeenCalled();
+    });
+
+    test.each([
+        [1, 'pending_confirmation', true],
+        [2, 'confirmed', false]
+    ])('demo booking session %s mirrors the production confirmation policy', async (session, status, requiresConfirmation) => {
+        service.updateState.mockImplementation(async (_sessionId, _action, update) => update({ bookings: [] }));
+        const res = response();
+
+        await guard(request('/api/sunday-appointments/book', 'POST', demoToken(), {
+            appointment_date: '2026-10-18',
+            session,
+            slot_number: 1,
+            chief_complaint: 'Keluhan simulasi'
+        }), res, jest.fn());
+
+        expect(res.statusCode).toBe(201);
+        expect(res.body).toMatchObject({ status, requiresConfirmation });
     });
 
     test.each([

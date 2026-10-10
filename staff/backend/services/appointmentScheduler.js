@@ -431,21 +431,33 @@ function startPracticeConfirmationExpiryJob() {
                 return;
             }
 
-            const ids = expiring.map(a => a.id);
-            await db.query(
-                `UPDATE sunday_appointments
-                 SET status = 'cancelled',
-                     cancelled_by = 'system',
-                     cancellation_reason = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB',
-                     cancelled_at = NOW()
-                 WHERE id IN (?)`,
-                [ids]
-            );
+            const cancelledAppointments = [];
+            for (const appointment of expiring) {
+                const [result] = await db.query(
+                    `UPDATE sunday_appointments
+                     SET status = 'cancelled',
+                         cancelled_by = 'system',
+                         cancellation_reason = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB',
+                         cancelled_at = NOW()
+                     WHERE id = ?
+                       AND status = 'pending_confirmation'
+                       AND appointment_date = CURDATE()`,
+                    [appointment.id]
+                );
+                if (result.affectedRows === 1) cancelledAppointments.push(appointment);
+            }
+
+            if (cancelledAppointments.length === 0) {
+                logger.info('[Scheduler] No appointments remained pending at expiry update time');
+                return;
+            }
+
+            const ids = cancelledAppointments.map(a => a.id);
 
             // Notify each patient
             try {
                 const { createPatientNotification } = require('../routes/patient-notifications');
-                for (const apt of expiring) {
+                for (const apt of cancelledAppointments) {
                     try {
                         const sessionLabel = apt.session === 1 ? 'Pagi' :
                                             apt.session === 2 ? 'Siang' :

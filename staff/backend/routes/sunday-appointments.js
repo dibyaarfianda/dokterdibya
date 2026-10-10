@@ -17,6 +17,7 @@ const {
     getSessionSettings,
     getCachedSessionSettings,
     invalidateSessionSettingsCache,
+    requiresAttendanceConfirmation,
     getSessionLabelFromSettings: getSessionLabelFromSettingsBase,
     getSlotTimeFromSettings,
     getSlotTimeFromBookingRow
@@ -380,6 +381,26 @@ router.post('/book', verifyPatientToken, async (req, res) => {
             });
         }
 
+        // Weekend Clinic is the only session that is confirmed immediately.
+        // Every other configured clinic keeps the attendance-confirmation flow,
+        // regardless of which day it is scheduled.
+        const requiresConfirmation = requiresAttendanceConfirmation(sessionSetting);
+        const nowWib = getGMT7Date();
+        const currentWibMinutes = (nowWib.getHours() * 60) + nowWib.getMinutes();
+        const isSameDayBooking = appointment_date === formatDateLocal(new Date());
+
+        if (requiresConfirmation && isSameDayBooking && currentWibMinutes >= (9 * 60)) {
+            return res.status(400).json({
+                message: 'Booking klinik yang memerlukan konfirmasi hanya dapat dibuat sebelum pukul 09.00 WIB pada hari praktik. Silakan pilih tanggal berikutnya.'
+            });
+        }
+
+        // The scheduled 07:00 popup run may already have completed, so a
+        // same-day booking created afterward must enable its own popup.
+        const enableConfirmationPopupNow = requiresConfirmation
+            && isSameDayBooking
+            && currentWibMinutes >= (7 * 60);
+
         // Check if date is disabled
         const [disabledCheck] = await db.query(
             `SELECT id, reason FROM disabled_practice_dates
@@ -450,20 +471,36 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         const crypto = require('crypto');
         const confirmationToken = crypto.randomBytes(32).toString('hex');
 
-        // Weekend Clinic is the only session that is confirmed immediately.
-        // Every other configured clinic keeps the attendance-confirmation flow,
-        // regardless of which day it is scheduled.
-        const isWeekendClinic = String(sessionSetting.name || '').trim().toLowerCase() === 'weekend clinic';
-        const requiresConfirmation = !isWeekendClinic;
         const bookingStatus = requiresConfirmation ? 'pending_confirmation' : 'confirmed';
 
         // Create appointment
         const [result] = await db.query(
             `INSERT INTO sunday_appointments
-             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category, bookingStatus, confirmationToken]
+             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token, confirmation_popup_enabled_at)
+             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(?, NOW(), NULL)
+             WHERE (? = 0 OR ? = 0 OR CURTIME() < '09:00:00')`,
+            [
+                patient.id,
+                patient.full_name,
+                patient.phone,
+                appointment_date,
+                session,
+                slot_number,
+                chief_complaint,
+                category,
+                bookingStatus,
+                confirmationToken,
+                enableConfirmationPopupNow,
+                requiresConfirmation,
+                isSameDayBooking
+            ]
         );
+
+        if (result.affectedRows !== 1) {
+            return res.status(400).json({
+                message: 'Booking hari ini sudah melewati batas konfirmasi pukul 09.00 WIB. Silakan pilih jadwal praktik berikutnya.'
+            });
+        }
 
         // Broadcast new booking to all connected staff
         realtimeSync.broadcastNewBooking({
@@ -839,12 +876,21 @@ router.post('/:id/confirm-attendance', verifyPatientToken, async (req, res) => {
             return res.status(404).json({ success: false, message: 'Jadwal tidak ditemukan atau sudah dikonfirmasi' });
         }
 
-        await db.query(
+        const [confirmationResult] = await db.query(
             `UPDATE sunday_appointments
-             SET status = 'confirmed', confirmed_at = NOW()
-             WHERE id = ?`,
-            [id]
+             SET status = 'confirmed', confirmed_at = NOW(), updated_at = NOW()
+             WHERE id = ? AND patient_id = ? AND status = 'pending_confirmation'
+               AND (appointment_date > CURDATE()
+                    OR (appointment_date = CURDATE() AND CURTIME() < '09:00:00'))`,
+            [id, req.user.id]
         );
+
+        if (confirmationResult.affectedRows !== 1) {
+            return res.status(409).json({
+                success: false,
+                message: 'Jadwal tidak dapat dikonfirmasi karena batas waktu telah lewat atau statusnya sudah berubah'
+            });
+        }
 
         // Broadcast to staff
         try {
@@ -1006,12 +1052,21 @@ router.post('/by-token/:token/confirm', async (req, res) => {
         const apt = rows[0];
         const sessionSettings = await getSessionSettings();
 
-        await db.query(
+        const [confirmationResult] = await db.query(
             `UPDATE sunday_appointments
-             SET status = 'confirmed', confirmed_at = NOW()
-             WHERE id = ?`,
+             SET status = 'confirmed', confirmed_at = NOW(), updated_at = NOW()
+             WHERE id = ? AND status = 'pending_confirmation'
+               AND (appointment_date > CURDATE()
+                    OR (appointment_date = CURDATE() AND CURTIME() < '09:00:00'))`,
             [apt.id]
         );
+
+        if (confirmationResult.affectedRows !== 1) {
+            return res.status(409).json({
+                success: false,
+                message: 'Jadwal tidak dapat dikonfirmasi karena batas waktu telah lewat atau statusnya sudah berubah'
+            });
+        }
 
         // Create in-app notification
         try {
