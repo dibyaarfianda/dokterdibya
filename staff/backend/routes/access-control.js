@@ -9,6 +9,7 @@ const {
 } = require('../middleware/auth');
 const { accessControlService } = require('../services/AccessControlService');
 const { accessControlManagementService } = require('../services/AccessControlManagementService');
+const { accessTemplateService } = require('../services/AccessTemplateService');
 const { refreshUserAccessRooms } = require('../security/socketAccess');
 
 function sendData(res, data, statusCode = 200) {
@@ -17,6 +18,7 @@ function sendData(res, data, statusCode = 200) {
 
 function createAccessControlRouter({
     managementService = accessControlManagementService,
+    templateService = accessTemplateService,
     effectiveAccessService = accessControlService,
     refreshAccessRooms = refreshUserAccessRooms,
     auth = { verifyToken, verifyActiveStaff, requireSuperadmin }
@@ -49,7 +51,30 @@ function createAccessControlRouter({
     router.use(auth.verifyToken, auth.verifyActiveStaff, auth.requireSuperadmin);
 
     router.get('/catalog', asyncHandler(async (_req, res) => {
-        return sendData(res, await managementService.getCatalog());
+        const catalog = await managementService.getCatalog();
+        const templates = await templateService.listTemplates();
+        return sendData(res, {
+            ...catalog,
+            templates,
+            job_labels: templates.map(template => ({ name: template.key, label: template.label }))
+        });
+    }));
+
+    router.put('/templates/:key', asyncHandler(async (req, res) => {
+        const data = await templateService.saveTemplate(req.params.key, req.body, req.user.id, {
+            applyToAccounts: false
+        });
+        return sendData(res, data);
+    }));
+
+    router.post('/templates/:key/apply', asyncHandler(async (req, res) => {
+        const data = await templateService.saveTemplate(req.params.key, req.body, req.user.id, {
+            applyToAccounts: true
+        });
+        await Promise.all(data.affected_user_ids.map(userId => (
+            refreshAccessRooms(req.app.get('io'), userId)
+        )));
+        return sendData(res, data);
     }));
 
     router.get('/users', asyncHandler(async (_req, res) => {

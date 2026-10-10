@@ -23,7 +23,7 @@ function codedError(code, statusCode, message = code) {
     return error;
 }
 
-function createApiTestApp({ management = {}, auth = {} } = {}) {
+function createApiTestApp({ management = {}, templates = {}, auth = {} } = {}) {
     const express = require('express');
     const { createAccessControlRouter } = require('../../routes/access-control');
     const app = express();
@@ -49,8 +49,18 @@ function createApiTestApp({ management = {}, auth = {} } = {}) {
         getEffectiveAccess: jest.fn().mockResolvedValue({}),
         toPublicAccess: jest.fn().mockReturnValue({ mode: 'legacy', access_version: 1, permissions: [] })
     };
+    const templateService = {
+        listTemplates: jest.fn().mockResolvedValue([]),
+        saveTemplate: jest.fn().mockResolvedValue({
+            template: { key: 'staff', template_version: 2 },
+            affected_user_ids: [],
+            affected_count: 0
+        }),
+        ...templates
+    };
     app.use('/api/access-control', createAccessControlRouter({
         managementService,
+        templateService,
         effectiveAccessService,
         refreshAccessRooms: jest.fn().mockResolvedValue(undefined),
         auth: { verifyToken: pass, verifyActiveStaff: pass, requireSuperadmin: pass, ...auth }
@@ -60,7 +70,7 @@ function createApiTestApp({ management = {}, auth = {} } = {}) {
         code: error.code,
         message: error.message
     }));
-    return { app, managementService, effectiveAccessService };
+    return { app, managementService, effectiveAccessService, templateService };
 }
 
 describe('access-control management contracts', () => {
