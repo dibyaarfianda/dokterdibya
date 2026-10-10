@@ -73,7 +73,7 @@ function formatDate(value, includeTime = false) {
     }).format(date);
 }
 
-function getLatestSundayWib(now = new Date()) {
+function getTodayWib(now = new Date()) {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Jakarta',
         year: 'numeric',
@@ -81,13 +81,7 @@ function getLatestSundayWib(now = new Date()) {
         day: '2-digit'
     }).formatToParts(now);
     const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
-    const calendarDate = new Date(Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day)));
-    calendarDate.setUTCDate(calendarDate.getUTCDate() - calendarDate.getUTCDay());
-    return [
-        calendarDate.getUTCFullYear(),
-        String(calendarDate.getUTCMonth() + 1).padStart(2, '0'),
-        String(calendarDate.getUTCDate()).padStart(2, '0')
-    ].join('-');
+    return `${values.year}-${values.month}-${values.day}`;
 }
 
 async function requestClosing(endpoint, options = {}, controller = null) {
@@ -468,7 +462,7 @@ async function submitClosing() {
                 fingerprint: preview.fingerprint
             })
         });
-        setAlert('success', 'Closing Sunday Clinic berhasil disimpan sebagai snapshot final.');
+        setAlert('success', 'Closing Klinik berhasil disimpan sebagai snapshot final.');
         renderPreview({ ...data, status: 'closed', can_close: false, closed_record: data.closed_record || data.closing || data });
         await loadHistory();
     } catch (error) {
@@ -584,7 +578,11 @@ function bindDomEvents() {
         modal.dataset.closingBound = '1';
         window.jQuery(modal).on('shown.bs.modal.sundayClosing', () => {
             const dateInput = byId(DOM_IDS.date);
-            if (dateInput) dateInput.value = getLatestSundayWib();
+            if (dateInput) {
+                const today = getTodayWib();
+                dateInput.max = today;
+                dateInput.value = today;
+            }
             bindSocket();
             loadPreview(dateInput?.value || '');
         });

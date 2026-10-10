@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const repoRoot = path.resolve(__dirname, '../../../..');
 const readRepoFile = (...segments) => {
@@ -31,7 +32,10 @@ describe('Sunday Clinic doctor-only closing frontend', () => {
         expect(footerIndex).toBeGreaterThan(queueListCloseIndex);
         expect(fragment).toContain('id="btn-open-sunday-clinic-closing"');
         expect(fragment).toContain('id="sundayClinicClosingModal"');
-        expect(fragment).toContain('Closing Hari Minggu');
+        expect(fragment).toContain('Closing Klinik');
+        expect(fragment).toContain('Tanggal praktik');
+        expect(fragment).not.toContain('Closing Hari Minggu');
+        expect(fragment).not.toContain('Tanggal praktik Minggu');
     });
 
     test('uses the fixed doctor role contract and never role_visibility', () => {
@@ -55,8 +59,30 @@ describe('Sunday Clinic doctor-only closing frontend', () => {
         expect(closing).toContain('fingerprint');
         expect(closing).toContain('can_close');
         expect(closing).toContain('Tidak tercatat');
-        expect(closing).toContain('getLatestSundayWib');
-        expect(closing).toContain('dateInput.value = getLatestSundayWib()');
+        expect(closing).toContain('getTodayWib');
+        expect(closing).toContain('dateInput.value = today');
+        expect(closing).toContain('dateInput.max = today');
+    });
+
+    test('derives the default closing date from the Asia/Jakarta calendar day', () => {
+        const executable = closing
+            .replace(/^import .*;\r?\n/gm, '')
+            .replace(/^export default \{/m, 'const closingDefault = {')
+            .replace(/^export /gm, '');
+        const context = vm.createContext({
+            document: {},
+            window: {},
+            ROLE_IDS: { DOKTER: 1 },
+            getIdToken() {},
+            Intl,
+            Date,
+            Number,
+            String,
+            AbortController
+        });
+        vm.runInContext(`${executable}\nglobalThis.getTodayWibForTest = getTodayWib;`, context);
+
+        expect(context.getTodayWibForTest(new Date('2026-10-09T17:30:00.000Z'))).toBe('2026-10-10');
     });
 
     test('initializes idempotently and cleans requests/listeners when inactive', () => {

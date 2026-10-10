@@ -40,11 +40,34 @@ function paidAdditional(overrides = {}) {
 }
 
 describe('SundayClinicClosingService', () => {
-    test('only accepts a non-future Sunday date', () => {
-        expect(parseClinicDate('2026-07-19', { today: '2026-07-20' })).toBe('2026-07-19');
-        expect(() => parseClinicDate('2026-07-20', { today: '2026-07-20' })).toThrow(/hari Minggu/i);
-        expect(() => parseClinicDate('2026-07-26', { today: '2026-07-20' })).toThrow(/masa depan/i);
+    test('accepts any non-future clinic date and defaults to today', () => {
+        expect(parseClinicDate('2026-10-10', { today: '2026-10-12' })).toBe('2026-10-10'); // Saturday
+        expect(parseClinicDate('2026-10-11', { today: '2026-10-12' })).toBe('2026-10-11'); // Sunday
+        expect(parseClinicDate('2026-10-12', { today: '2026-10-12' })).toBe('2026-10-12'); // Monday
+        expect(parseClinicDate(null, { today: '2026-10-12' })).toBe('2026-10-12');
+        expect(() => parseClinicDate('2026-10-13', { today: '2026-10-12' })).toThrow(/masa depan/i);
         expect(() => parseClinicDate('19-07-2026', { today: '2026-07-20' })).toThrow(/YYYY-MM-DD/i);
+    });
+
+    test('blocks a final closing when the clinic date has no clinical or billing activity', () => {
+        const preview = buildClosingPreview({
+            clinicDate: '2026-10-10',
+            records: [],
+            mainBillings: [],
+            mainItems: [],
+            additionalBillings: [],
+            additionalItems: [],
+            pendingPayments: [],
+            pendingRevisions: []
+        });
+
+        expect(preview.can_close).toBe(false);
+        expect(preview.blockers).toEqual([
+            expect.objectContaining({
+                code: 'NO_CLINIC_ACTIVITY',
+                message: 'Tidak ada kunjungan atau tagihan Klinik Privat pada tanggal ini.'
+            })
+        ]);
     });
 
     test('classifies S01-S04 as administrative even when stored as tindakan', () => {

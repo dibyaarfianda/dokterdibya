@@ -32,9 +32,10 @@ describe('Sunday Clinic closing launcher from Klinik Privat', () => {
         ? html.slice(clinicPageStart, clinicPageEnd)
         : '';
 
-    test('places a default-hidden Closing Hari Minggu launcher directly on Klinik Privat', () => {
+    test('places a default-hidden Closing Klinik launcher directly on Klinik Privat', () => {
         expect(clinicPage).toContain('id="klinik-private-closing-btn"');
-        expect(clinicPage).toContain('Closing Hari Minggu');
+        expect(clinicPage).toContain('Closing Klinik');
+        expect(clinicPage).not.toContain('Closing Hari Minggu');
 
         const launcher = extractElementById(clinicPage, 'klinik-private-closing-btn');
         expect(launcher).toMatch(/\bd-none\b/);

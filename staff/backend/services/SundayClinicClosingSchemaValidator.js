@@ -95,7 +95,7 @@ async function validateSundayClinicClosingSchema() {
         const missing = collectMissingClosingSchema(rows);
         if (missing.length > 0) {
             const error = new AppError(
-                `Sunday Clinic closing schema is incomplete. Run staff/backend/migrations/${CLOSING_MIGRATION_NAME}, add_billing_revisions.sql, and the invoice cancellation migration. Missing: ${missing.join(', ')}`,
+                `Closing Klinik schema is incomplete. Run staff/backend/migrations/${CLOSING_MIGRATION_NAME}, add_billing_revisions.sql, and the invoice cancellation migration. Missing: ${missing.join(', ')}`,
                 503,
                 true,
                 'SUNDAY_CLINIC_CLOSING_SCHEMA_MISSING'

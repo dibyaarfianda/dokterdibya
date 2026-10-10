@@ -14,7 +14,7 @@ function compact(sql) {
     return String(sql).replace(/\s+/g, ' ').trim();
 }
 
-function closingRow(fingerprint) {
+function closingRow(fingerprint, overrides = {}) {
     return {
         id: 7,
         clinic_date: '2026-07-19',
@@ -36,7 +36,8 @@ function closingRow(fingerprint) {
         closed_by_name: 'Dokter Test',
         closed_by_role: 'dokter',
         closed_at: '2026-07-19 14:00:00',
-        created_at: '2026-07-19 14:00:00'
+        created_at: '2026-07-19 14:00:00',
+        ...overrides
     };
 }
 
@@ -66,8 +67,84 @@ describe('Sunday Clinic closing persistence', () => {
     });
 
     test('creates one immutable snapshot under a named lock and transaction', async () => {
-        const preview = buildClosingPreview({ clinicDate: '2026-07-19' });
-        const header = closingRow(preview.fingerprint);
+        const clinicDate = '2026-10-10';
+        const paidBilling = {
+            id: 11,
+            mr_id: 'DRD0011',
+            patient_id: 'P0011',
+            patient_name: 'Pasien Sabtu',
+            total: 135000,
+            status: 'paid',
+            paid_at: '2026-10-10 12:00:00',
+            paid_by: 'Dokter Test'
+        };
+        const paidItem = {
+            id: 1,
+            billing_id: 11,
+            item_type: 'tindakan',
+            item_name: 'USG',
+            quantity: 1,
+            price: 135000,
+            total: 135000
+        };
+        const preview = buildClosingPreview({
+            clinicDate,
+            records: [{ mr_id: 'DRD0011', patient_id: 'P0011', patient_name: 'Pasien Sabtu', billing_id: 11 }],
+            mainBillings: [paidBilling],
+            mainItems: [paidItem]
+        });
+        const header = closingRow(preview.fingerprint, {
+            clinic_date: clinicDate,
+            main_total: '135000.00',
+            grand_total: '135000.00',
+            patient_count: 1,
+            transaction_count: 1,
+            summary_json: JSON.stringify(preview.summary),
+            breakdown_json: JSON.stringify(preview.breakdown)
+        });
+        const connection = {
+            beginTransaction: jest.fn().mockResolvedValue(),
+            commit: jest.fn().mockResolvedValue(),
+            rollback: jest.fn().mockResolvedValue(),
+            release: jest.fn(),
+            query: jest.fn(async sql => {
+                const query = compact(sql);
+                if (query.startsWith('SELECT GET_LOCK')) return [[{ acquired: 1 }], []];
+                if (query.includes('FROM sunday_clinic_closings') && query.includes('WHERE clinic_date')) return [[], []];
+                if (query.includes('FROM sunday_clinic_records scr')) return [[{ mr_id: 'DRD0011', patient_id: 'P0011', patient_name: 'Pasien Sabtu', billing_id: 11 }], []];
+                if (query.includes('FROM sunday_clinic_billings b')) return [[paidBilling], []];
+                if (query.includes('FROM sunday_clinic_additional_billings ab')) return [[], []];
+                if (query.includes('FROM sunday_clinic_billing_items')) return [[paidItem], []];
+                if (query.includes('FROM tagihan_payments tp')) return [[], []];
+                if (query.includes('FROM sunday_clinic_billing_revisions br')) return [[], []];
+                if (query.startsWith('INSERT INTO sunday_clinic_closings')) return [{ insertId: 7 }, []];
+                if (query.startsWith('INSERT INTO sunday_clinic_closing_entries')) return [{ affectedRows: 1 }, []];
+                if (query.includes('FROM sunday_clinic_closings') && query.includes('WHERE id')) return [[header], []];
+                if (query.includes('FROM sunday_clinic_closing_entries')) return [[], []];
+                if (query.startsWith('SELECT RELEASE_LOCK')) return [[{ released: 1 }], []];
+                throw new Error(`Unexpected SQL: ${query}`);
+            })
+        };
+        const pool = { getConnection: jest.fn().mockResolvedValue(connection) };
+
+        const result = await createClosing(pool, {
+            date: clinicDate,
+            fingerprint: preview.fingerprint,
+            actor: { userId: 'doctor-1', name: 'Dokter Test', role: 'dokter' }
+        });
+
+        expect(result).toMatchObject({ id: 7, status: 'closed', created: true, idempotent: false });
+        expect(connection.beginTransaction).toHaveBeenCalledTimes(1);
+        expect(connection.commit).toHaveBeenCalledTimes(1);
+        expect(connection.rollback).not.toHaveBeenCalled();
+        expect(connection.query.mock.calls.some(([sql]) => compact(sql).startsWith('SELECT GET_LOCK'))).toBe(true);
+        expect(connection.query.mock.calls.some(([sql]) => compact(sql).startsWith('SELECT RELEASE_LOCK'))).toBe(true);
+        expect(connection.query.mock.calls.filter(([sql]) => compact(sql).startsWith('INSERT INTO sunday_clinic_closings'))).toHaveLength(1);
+        expect(connection.release).toHaveBeenCalledTimes(1);
+    });
+
+    test('rejects an empty clinic date before inserting a final snapshot', async () => {
+        const preview = buildClosingPreview({ clinicDate: '2026-10-09' });
         const connection = {
             beginTransaction: jest.fn().mockResolvedValue(),
             commit: jest.fn().mockResolvedValue(),
@@ -81,29 +158,20 @@ describe('Sunday Clinic closing persistence', () => {
                 if (query.includes('FROM sunday_clinic_billings b')) return [[], []];
                 if (query.includes('FROM sunday_clinic_additional_billings ab')) return [[], []];
                 if (query.includes('FROM sunday_clinic_billing_revisions br')) return [[], []];
-                if (query.startsWith('INSERT INTO sunday_clinic_closings')) return [{ insertId: 7 }, []];
-                if (query.includes('FROM sunday_clinic_closings') && query.includes('WHERE id')) return [[header], []];
-                if (query.includes('FROM sunday_clinic_closing_entries')) return [[], []];
                 if (query.startsWith('SELECT RELEASE_LOCK')) return [[{ released: 1 }], []];
                 throw new Error(`Unexpected SQL: ${query}`);
             })
         };
-        const pool = { getConnection: jest.fn().mockResolvedValue(connection) };
 
-        const result = await createClosing(pool, {
-            date: '2026-07-19',
+        await expect(createClosing({ getConnection: async () => connection }, {
+            date: '2026-10-09',
             fingerprint: preview.fingerprint,
             actor: { userId: 'doctor-1', name: 'Dokter Test', role: 'dokter' }
-        });
+        })).rejects.toMatchObject({ statusCode: 409, code: 'CLOSING_BLOCKED' });
 
-        expect(result).toMatchObject({ id: 7, status: 'closed', created: true, idempotent: false });
-        expect(connection.beginTransaction).toHaveBeenCalledTimes(1);
-        expect(connection.commit).toHaveBeenCalledTimes(1);
-        expect(connection.rollback).not.toHaveBeenCalled();
-        expect(connection.query.mock.calls.some(([sql]) => compact(sql).startsWith('SELECT GET_LOCK'))).toBe(true);
-        expect(connection.query.mock.calls.some(([sql]) => compact(sql).startsWith('SELECT RELEASE_LOCK'))).toBe(true);
-        expect(connection.query.mock.calls.filter(([sql]) => compact(sql).startsWith('INSERT INTO sunday_clinic_closings'))).toHaveLength(1);
-        expect(connection.release).toHaveBeenCalledTimes(1);
+        expect(connection.rollback).toHaveBeenCalledTimes(1);
+        expect(connection.commit).not.toHaveBeenCalled();
+        expect(connection.query.mock.calls.some(([sql]) => compact(sql).startsWith('INSERT INTO'))).toBe(false);
     });
 
     test('same fingerprint is idempotent and never inserts another closing', async () => {

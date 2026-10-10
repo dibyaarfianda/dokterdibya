@@ -18,7 +18,7 @@ function getActor(req) {
 
 async function getClosingPreview(req, res) {
     const data = await SundayClinicClosingService.getClosingPreview(db, req.query.date || null);
-    return sendSuccess(res, data, 'Preview closing Sunday Clinic berhasil dimuat.');
+    return sendSuccess(res, data, 'Preview Closing Klinik berhasil dimuat.');
 }
 
 async function postClosing(req, res) {
@@ -42,14 +42,14 @@ async function postClosing(req, res) {
             closedBy: data.closed_record?.closed_by_name || null,
             timestamp: new Date().toISOString()
         });
-        return sendCreated(res, data, 'Closing Sunday Clinic berhasil disimpan.');
+        return sendCreated(res, data, 'Closing Klinik berhasil disimpan.');
     }
-    return sendSuccess(res, data, 'Closing Sunday Clinic sudah tersimpan sebelumnya.');
+    return sendSuccess(res, data, 'Closing Klinik sudah tersimpan sebelumnya.');
 }
 
 async function getClosings(req, res) {
     const data = await SundayClinicClosingService.listClosings(db, { limit: req.query.limit });
-    return sendSuccess(res, data, 'Riwayat closing Sunday Clinic berhasil dimuat.');
+    return sendSuccess(res, data, 'Riwayat Closing Klinik berhasil dimuat.');
 }
 
 async function getClosingById(req, res) {
@@ -58,7 +58,7 @@ async function getClosingById(req, res) {
         throw new AppError('ID closing tidak valid.', 400, true, 'INVALID_CLOSING_ID');
     }
     const data = await SundayClinicClosingService.getClosingDetailWithReconciliation(db, id);
-    return sendSuccess(res, data, 'Detail closing Sunday Clinic berhasil dimuat.');
+    return sendSuccess(res, data, 'Detail Closing Klinik berhasil dimuat.');
 }
 
 module.exports = {

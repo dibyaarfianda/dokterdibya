@@ -782,7 +782,7 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
         setSundayClinicStylesActive(true);
         pages.sundayClinic?.classList.remove('d-none');
         setTitleAndActive(
-            closingOnly ? 'Closing Sunday Clinic' : 'Sunday Clinic',
+            closingOnly ? 'Closing Klinik' : 'Sunday Clinic',
             null,
             'sunday-clinic'
         );
@@ -802,7 +802,7 @@ async function showSundayClinicPage(mrIdOrOptions = null, section = 'identitas')
             if (closingOnly && initialized !== false) {
                 const opened = typeof window.openSundayClinicClosingModal === 'function'
                     && window.openSundayClinicClosingModal();
-                if (!opened) showWarning('Closing Sunday Clinic hanya dapat diakses oleh dokter.');
+                if (!opened) showWarning('Closing Klinik hanya dapat diakses oleh dokter.');
             }
         } else {
             throw new Error('Sunday Clinic module belum siap');

@@ -24,20 +24,9 @@ function normalizeDateOnly(value) {
     return formatDateLocal(value) || null;
 }
 
-function latestSunday(dateValue) {
-    const [year, month, day] = dateValue.split('-').map(Number);
-    const date = new Date(Date.UTC(year, month - 1, day));
-    date.setUTCDate(date.getUTCDate() - date.getUTCDay());
-    return [
-        date.getUTCFullYear(),
-        String(date.getUTCMonth() + 1).padStart(2, '0'),
-        String(date.getUTCDate()).padStart(2, '0')
-    ].join('-');
-}
-
 function parseClinicDate(value, options = {}) {
     const today = options.today || formatDateLocal();
-    const candidate = value || latestSunday(today);
+    const candidate = value || today;
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(candidate))) {
         throw new AppError('Tanggal closing harus menggunakan format YYYY-MM-DD.', 400, true, 'INVALID_CLOSING_DATE');
@@ -55,10 +44,6 @@ function parseClinicDate(value, options = {}) {
     if (candidate > today) {
         throw new AppError('Tanggal closing tidak boleh berada di masa depan.', 400, true, 'FUTURE_CLOSING_DATE');
     }
-    if (parsed.getUTCDay() !== 0) {
-        throw new AppError('Closing Sunday Clinic hanya dapat dibuat untuk hari Minggu.', 400, true, 'CLOSING_DATE_NOT_SUNDAY');
-    }
-
     return String(candidate);
 }
 
@@ -174,6 +159,13 @@ function buildClosingPreview({
     const additionalItemsByBilling = new Map();
     const blockers = [];
     const anomalies = [];
+
+    if (records.length === 0 && mainBillings.length === 0 && additionalBillings.length === 0) {
+        blockers.push(createIssue(
+            'NO_CLINIC_ACTIVITY',
+            'Tidak ada kunjungan atau tagihan Klinik Privat pada tanggal ini.'
+        ));
+    }
 
     for (const item of mainItems) {
         const key = String(item.billing_id);
@@ -711,7 +703,7 @@ async function assertSundayClinicAccountingDateOpen(client = db, identifiers = {
         );
         if (rows.length > 0) {
             const error = new AppError(
-                `Transaksi Sunday Clinic tanggal ${clinicDate} sudah di-closing dan tidak dapat diubah.`,
+                `Transaksi Klinik Privat tanggal ${clinicDate} sudah di-closing dan tidak dapat diubah.`,
                 409,
                 true,
                 'SUNDAY_CLINIC_CLOSED'
@@ -722,7 +714,7 @@ async function assertSundayClinicAccountingDateOpen(client = db, identifiers = {
     } catch (error) {
         if (error.code === 'ER_NO_SUCH_TABLE' || error.errno === 1146) {
             throw new AppError(
-                'Schema closing Sunday Clinic belum tersedia. Jalankan migration 20260720_create_sunday_clinic_closings.sql.',
+                'Schema Closing Klinik belum tersedia. Jalankan migration 20260720_create_sunday_clinic_closings.sql.',
                 503,
                 true,
                 'SUNDAY_CLINIC_CLOSING_SCHEMA_MISSING'

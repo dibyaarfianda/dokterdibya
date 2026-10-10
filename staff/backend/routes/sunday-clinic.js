@@ -16,7 +16,7 @@ validateSundayClinicSchema().catch((error) => {
     });
 });
 validateSundayClinicClosingSchema().catch((error) => {
-    logger.error('Sunday Clinic closing schema validation failed', {
+    logger.error('Closing Klinik schema validation failed', {
         code: error.code,
         error: error.message
     });
