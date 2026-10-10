@@ -381,9 +381,8 @@ router.post('/book', verifyPatientToken, async (req, res) => {
             });
         }
 
-        // Weekend Clinic is the only session that is confirmed immediately.
-        // Every other configured clinic keeps the attendance-confirmation flow,
-        // regardless of which day it is scheduled.
+        // Every configured private-clinic session requires attendance
+        // confirmation, regardless of its name or practice day.
         const requiresConfirmation = requiresAttendanceConfirmation(sessionSetting);
         const nowWib = getGMT7Date();
         const currentWibMinutes = (nowWib.getHours() * 60) + nowWib.getMinutes();
@@ -516,9 +515,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         // Track booking activity (fire-and-forget)
         patientActivityLogger.logActivity(req.user.id, patientActivityLogger.EVENTS.BOOKING, { detail: 'Booking ' + appointment_date + ' Sesi ' + session }, req);
 
-        const responseMessage = requiresConfirmation
-            ? 'Booking berhasil! Konfirmasi kehadiran Anda di hari-H sebelum jam 09.00 WIB agar nama Anda muncul di antrian.'
-            : 'Janji temu berhasil dibuat dan langsung terkonfirmasi!';
+        const responseMessage = 'Booking berhasil! Konfirmasi kehadiran Anda di hari-H sebelum jam 09.00 WIB agar nama Anda muncul di antrian.';
 
         res.status(201).json({
             message: responseMessage,

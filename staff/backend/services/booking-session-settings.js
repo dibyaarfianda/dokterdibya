@@ -106,11 +106,11 @@ function findSessionSetting(settings, session) {
 }
 
 /**
- * Weekend Clinic is the sole booking session that bypasses attendance
- * confirmation. Unknown sessions fail safely by requiring confirmation.
+ * Every private-clinic session requires attendance confirmation.
+ * Keep this helper centralized so production and demo bookings cannot drift.
  */
-function requiresAttendanceConfirmation(setting) {
-    return String(setting?.name || '').trim().toLowerCase() !== 'weekend clinic';
+function requiresAttendanceConfirmation() {
+    return true;
 }
 
 /**

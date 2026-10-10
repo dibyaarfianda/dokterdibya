@@ -74,7 +74,7 @@ describe('private clinic booking confirmation policy', () => {
 
     test.each([
         ['Sunday Clinic', '2026-10-11', 1, 'pending_confirmation', true],
-        ['Weekend Clinic', '2026-10-10', 2, 'confirmed', false],
+        ['Weekend Clinic', '2026-10-17', 2, 'pending_confirmation', true],
         ['clinic on another weekday', '2026-10-14', 3, 'pending_confirmation', true]
     ])('%s creates the expected confirmation state', async (_label, appointmentDate, session, expectedStatus, requiresConfirmation) => {
         const fixture = installBookingDatabaseFixture();

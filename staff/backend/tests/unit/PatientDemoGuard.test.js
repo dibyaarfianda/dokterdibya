@@ -104,7 +104,7 @@ describe('patientDemoGuard', () => {
 
     test.each([
         [1, 'pending_confirmation', true],
-        [2, 'confirmed', false]
+        [2, 'pending_confirmation', true]
     ])('demo booking session %s mirrors the production confirmation policy', async (session, status, requiresConfirmation) => {
         service.updateState.mockImplementation(async (_sessionId, _action, update) => update({ bookings: [] }));
         const res = response();
