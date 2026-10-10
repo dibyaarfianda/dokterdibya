@@ -164,7 +164,7 @@ The verifier checks **both existing production origins**; `www` serves the Staff
 
 After the routing gate passes, fast-forward the active checkout using the established non-destructive production procedure and reload PM2 exactly once. Reload from the ecosystem file, not only the process name: the active PM2 daemon otherwise retains its old 5-second `kill_timeout` even when the checked-out file says 330 seconds.
 
-Before that cutover, install a dedicated status-only Nginx log for the HTTPS site. It records only epoch time and status code, including proxy-generated 502/504 and locations previously configured with `access_log off`; it does **not** record URLs or patient identifiers. Run the preparation script from the reviewed target worktree against the observed regular site file. Use a new, empty 0700 preparation directory and a separate exact backup; inspect the candidate diff and stop on any unexpected site change. Install the format snippet and candidate site via same-directory staging names, require `nginx -t`, reload Nginx, and repeat the two-origin pre-cutover verifier. On a syntax, reload, or routing failure, atomically restore this exact site backup and remove only the newly installed status-format snippet; keep the pre-existing immutable bridge. Do not cut over the application until this status log is verified to receive a status-only line from a read-only health request.
+Before that cutover, install a dedicated privacy-safe Nginx timing log for the HTTPS site. It records epoch time, status, total/upstream timing, and numeric connection counters, including proxy-generated 502/504 and locations previously configured with `access_log off`; it does **not** record URLs, addresses, tokens, or patient identifiers. Run the preparation script from the reviewed target worktree against the observed regular site file. Use a new, empty 0700 preparation directory and a separate exact backup; inspect the candidate diff and stop on any unexpected site change. Install the format snippet and candidate site via same-directory staging names, require `nginx -t`, reload Nginx, and repeat the two-origin pre-cutover verifier. On a syntax, reload, or routing failure, atomically restore this exact site backup and remove only the newly installed status-format snippet; keep the pre-existing immutable bridge. Do not cut over the application until this log is verified to receive a privacy-safe timing line from a read-only health request.
 
 ```sh
 STATUS_FORMAT=/etc/nginx/snippets/dokterdibya-status-log-format.conf
@@ -219,7 +219,7 @@ for ORIGIN in https://dokterdibya.com https://www.dokterdibya.com; do
 done
 curl -fsS -o /dev/null https://dokterdibya.com/api/health
 test -f /var/log/nginx/dokterdibya-status.log
-tail -n 1 /var/log/nginx/dokterdibya-status.log | grep -Eq '^[0-9]{10}\.[0-9]{3} [1-5][0-9]{2}$'
+tail -n 1 /var/log/nginx/dokterdibya-status.log | grep -Eq '^[0-9]{10}\.[0-9]{3}\|[1-5][0-9]{2}\|[0-9]+\.[0-9]{3}\|'
 ```
 
 The status logger is a separate Nginx precondition, not a substitute for the immutable-route test. Its live five-minute rate must be checked after cutover with the reviewed `check-nginx-release-status.js` script; the Express aggregate alone cannot detect proxy-generated 502/504.
@@ -261,7 +261,7 @@ for target in "$UPSTREAM_STAGE" "$UPSTREAM_RESTORE"; do
 done
 test "$(sha256sum "$SITE" | cut -d ' ' -f 1)" = "$UPSTREAM_SHA"
 STATUS_LINES_BEFORE="$(wc -l < /var/log/nginx/dokterdibya-status.log)"
-STATUS_ERRORS_BEFORE="$(grep -Ec ' 5[0-9][0-9]$' /var/log/nginx/dokterdibya-status.log || true)"
+STATUS_ERRORS_BEFORE="$(grep -Ec '^[0-9]{10}\.[0-9]{3}( |\|)5[0-9][0-9](\||$)' /var/log/nginx/dokterdibya-status.log || true)"
 restore_upstream_nginx() {
   install -m 0644 "$UPSTREAM_BACKUP" "$UPSTREAM_RESTORE" || return 1
   mv -Tf -- "$UPSTREAM_RESTORE" "$SITE" || return 1
@@ -288,11 +288,11 @@ for ORIGIN in https://dokterdibya.com https://www.dokterdibya.com; do
   curl -fsS -o /dev/null "$ORIGIN/api/health" || fail_upstream_gate
 done
 STATUS_LINES_AFTER="$(wc -l < /var/log/nginx/dokterdibya-status.log)"
-STATUS_ERRORS_AFTER="$(grep -Ec ' 5[0-9][0-9]$' /var/log/nginx/dokterdibya-status.log || true)"
+STATUS_ERRORS_AFTER="$(grep -Ec '^[0-9]{10}\.[0-9]{3}( |\|)5[0-9][0-9](\||$)' /var/log/nginx/dokterdibya-status.log || true)"
 test "$STATUS_LINES_AFTER" -gt "$STATUS_LINES_BEFORE" || fail_upstream_gate
 test "$STATUS_ERRORS_AFTER" = "$STATUS_ERRORS_BEFORE" || fail_upstream_gate
 tail -n "$((STATUS_LINES_AFTER - STATUS_LINES_BEFORE))" /var/log/nginx/dokterdibya-status.log |
-  grep -Eq '^[0-9]{10}\.[0-9]{3} 200$' || fail_upstream_gate
+  grep -Eq '^[0-9]{10}\.[0-9]{3}( 200$|\|200\|)' || fail_upstream_gate
 ```
 
 For a resumed attempt where the active checkout already serves v414 (as `b0d79acb` did), use `--expected-current-version v414` in every **pre-cutover** verifier instead of the original v413 example above. Do not overwrite the already verified immutable v414 snapshot; compare the target `staff/public` tree to the snapshot source commit before reusing it.
@@ -341,7 +341,7 @@ If the workflow cannot obtain OIDC, cannot verify the aggregate response, detect
 
 Compare equal-size, post-stabilization samples: warm fixture network requests ≤40, genuine failures 0, cached Dashboard↔Pasien activation p95 ≤1000 ms, and live Staff production p75 at least 25% better than baseline with p95 no more than 5% worse. The in-memory aggregate counter resets on PM2 reload and may need legitimate Staff traffic before its sample-count gate is meaningful; never generate synthetic patient calls to fill it. Over five minutes, require Nginx 5xx ≤1%, Socket.IO auth rejection ≤2% of handshake attempts, and no unplanned PM2 restart. Read the Socket.IO ratio as rejected / attempts from the numeric-only CI OIDC aggregate; expiry after an accepted connection is reported separately, not in this handshake numerator. Do not copy raw request URLs, tokens, or patient fields into release evidence.
 
-Capture `CUTOVER_MS` before moving the application checkout or reloading PM2. After at least 300 seconds, check the dedicated Nginx log on the VPS. The checker scores the **first** five minutes beginning at that captured instant, even if invoked later; it fails closed if that window has no observations at its beginning/end, the log contains anything besides timestamp and status, or the 5xx rate exceeds 1%:
+Capture `CUTOVER_MS` before moving the application checkout or reloading PM2. After at least 300 seconds, check the dedicated Nginx log on the VPS. The checker scores the **first** five minutes beginning at that captured instant, even if invoked later; it fails closed if that window has no observations at its beginning/end, the log contains anything besides the legacy status record or the approved numeric timing record, or the 5xx rate exceeds 1%:
 
 ```sh
 node "$WORKTREE/staff/backend/scripts/check-nginx-release-status.js" --cutover-ms "$CUTOVER_MS"

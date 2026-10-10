@@ -1,6 +1,44 @@
 const STATUS_LOG = '/var/log/nginx/dokterdibya-status.log';
 const STATUS_FORMAT_INCLUDE = '/etc/nginx/snippets/dokterdibya-status-log-format.conf';
 const STATUS_DIRECTIVE = `access_log ${STATUS_LOG} dokterdibya_status;`;
+const STATUS_FORMAT_FIELDS = [
+    '$msec',
+    '$status',
+    '$request_time',
+    '$upstream_connect_time',
+    '$upstream_header_time',
+    '$upstream_response_time',
+    '$connection',
+    '$connection_requests'
+];
+
+function validateStatusLogFormat(source) {
+    if (typeof source !== 'string') throw new Error('Unsafe or incomplete Nginx status log format');
+    const match = /log_format\s+dokterdibya_status\s+'([^']+)'\s*;/.exec(source);
+    const fields = match && match[1].split('|');
+    if (!fields || fields.length !== STATUS_FORMAT_FIELDS.length
+        || fields.some((field, index) => field !== STATUS_FORMAT_FIELDS[index])
+        || /\$(?:request_uri|uri|args|remote_addr|http_|cookie|request_body)/.test(source)) {
+        throw new Error('Unsafe or incomplete Nginx status log format');
+    }
+    return true;
+}
+
+function parseStatusLogLine(line) {
+    const legacy = /^(\d{10}(?:\.\d{3})?) ([1-5]\d\d)$/.exec(line);
+    if (legacy) return { timestampSeconds: Number(legacy[1]), status: Number(legacy[2]) };
+
+    const fields = line.split('|');
+    if (fields.length !== 8
+        || !/^\d{10}(?:\.\d{3})?$/.test(fields[0])
+        || !/^[1-5]\d\d$/.test(fields[1])
+        || !/^\d+(?:\.\d+)?$/.test(fields[2])
+        || !fields.slice(3, 6).every(value => /^(?:-|[0-9.,: ]+)$/.test(value))
+        || !fields.slice(6).every(value => /^\d+$/.test(value))) {
+        throw new Error('Nginx status log is not privacy-safe timing data');
+    }
+    return { timestampSeconds: Number(fields[0]), status: Number(fields[1]) };
+}
 
 function instrumentStatusLogging(source) {
     if (typeof source !== 'string' || source.includes(STATUS_FORMAT_INCLUDE)
@@ -40,12 +78,11 @@ function scoreNginxStatusLog(contents, { now = Date.now(), cutover, maxErrorRate
     let last = -Infinity;
     for (const line of contents.split(/\r?\n/)) {
         if (!line) continue;
-        const match = /^(\d{10}(?:\.\d{3})?) ([1-5]\d\d)$/.exec(line);
-        if (!match) throw new Error('Nginx status log is not status-only');
-        const at = Math.round(Number(match[1]) * 1000);
+        const parsed = parseStatusLogLine(line);
+        const at = Math.round(parsed.timestampSeconds * 1000);
         if (at < start || at >= end) continue;
         total++;
-        if (Number(match[2]) >= 500) serverErrors++;
+        if (parsed.status >= 500) serverErrors++;
         first = Math.min(first, at);
         last = Math.max(last, at);
     }
@@ -57,4 +94,11 @@ function scoreNginxStatusLog(contents, { now = Date.now(), cutover, maxErrorRate
     return { total, serverErrors, errorRatePercent, windowSeconds: 300 };
 }
 
-module.exports = { instrumentStatusLogging, scoreNginxStatusLog, STATUS_LOG, STATUS_FORMAT_INCLUDE };
+module.exports = {
+    instrumentStatusLogging,
+    scoreNginxStatusLog,
+    validateStatusLogFormat,
+    parseStatusLogLine,
+    STATUS_LOG,
+    STATUS_FORMAT_INCLUDE
+};

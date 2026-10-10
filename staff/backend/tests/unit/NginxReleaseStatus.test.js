@@ -1,4 +1,8 @@
-const { instrumentStatusLogging, scoreNginxStatusLog } = require('../../services/nginxReleaseStatus');
+const {
+    instrumentStatusLogging,
+    scoreNginxStatusLog,
+    validateStatusLogFormat
+} = require('../../services/nginxReleaseStatus');
 const fs = require('fs');
 const path = require('path');
 
@@ -50,6 +54,33 @@ test('Nginx release gate cannot forget errors at the start of cutover when check
     expect(() => scoreNginxStatusLog(lines, { now, cutover, maxErrorRatePercent: 1 })).toThrow();
 });
 
+test('Nginx release gate accepts mixed legacy and privacy-safe latency records', () => {
+    const cutover = 1800000000000;
+    const now = cutover + 300000;
+    const lines = [
+        `${cutover / 1000} 200`,
+        `${(cutover + 1000) / 1000}|502|2.640|0.001|0.004|2.639|991|4`,
+        `${(cutover + 299000) / 1000}|200|0.140|-|-|0.139|992|1`
+    ].join('\n');
+
+    expect(scoreNginxStatusLog(lines, { now, cutover })).toMatchObject({
+        total: 3,
+        serverErrors: 1
+    });
+});
+
+test('Nginx latency format records timing and connection counters without request identity', () => {
+    const template = fs.readFileSync(
+        path.resolve(__dirname, '../../../../deployment/nginx/dokterdibya-status-log-format.conf'),
+        'utf8'
+    );
+
+    expect(validateStatusLogFormat(template)).toBe(true);
+    expect(() => validateStatusLogFormat(
+        "log_format dokterdibya_status '$msec|$status|$request_time|$request_uri';"
+    )).toThrow('Unsafe or incomplete Nginx status log format');
+});
+
 test('release runbook records the observation start before the PM2 cutover command', () => {
     const runbook = fs.readFileSync(path.resolve(__dirname, '../../../../deployment/STAFF_ASSET_RELEASES.md'), 'utf8');
     const capture = runbook.indexOf('CUTOVER_MS="$(date +%s%3N)"');
@@ -60,6 +91,6 @@ test('release runbook records the observation start before the PM2 cutover comma
     expect(runbook).toContain('UPSTREAM_STAGE="$SITE.stage-upstream-$UPSTREAM_STAMP"');
     expect(runbook).toContain('restore_upstream_nginx()');
     expect(runbook).toContain('test ! -e "$UPSTREAM_BACKUP" && test ! -L "$UPSTREAM_BACKUP"');
-    expect(runbook).toMatch(/```sh\nset -Eeuo pipefail\nSITE=\/etc\/nginx\/sites-enabled\/dokterdibya\.com\nUPSTREAM_STAMP=/);
-    expect(runbook).toMatch(/```sh\nset -Eeuo pipefail\nCURRENT_ASSET_VERSION=/);
+    expect(runbook).toMatch(/```sh\r?\nset -Eeuo pipefail\r?\nSITE=\/etc\/nginx\/sites-enabled\/dokterdibya\.com\r?\nUPSTREAM_STAMP=/);
+    expect(runbook).toMatch(/```sh\r?\nset -Eeuo pipefail\r?\nCURRENT_ASSET_VERSION=/);
 });

@@ -9,6 +9,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const logger = require('./utils/logger');
+const { createPersistentPerformanceRecorder } = require('./services/PersistentPerformanceRecorder');
 const { requestAuditFields, requestAuditUrl } = require('./utils/requestAudit');
 const {
     BLOCKED_PATIENT_MESSAGE,
@@ -35,6 +36,7 @@ const { createAccountModeAccessBoundary } = require('./security/accountModeAcces
 
 const app = express();
 const server = http.createServer(app);
+let performanceRecorder = null;
 
 const configuredCorsOrigins = (process.env.CORS_ORIGIN || '')
     .split(',')
@@ -836,10 +838,7 @@ app.use(createSystemRoutes({
     getCoalesceStats,
     getPdfQueueStats: () => pdfQueue.getStats(),
     getEnrichmentStats: () => patientsRoutes.getEnrichmentStats ? patientsRoutes.getEnrichmentStats() : {},
-    getSocketStats: () => ({
-        socketEventsEmitted: _socketEmitCount,
-        activeSocketConnections: io.sockets.sockets.size
-    }),
+    getSocketStats: collectSocketStats,
     verifyToken,
     requireSuperadmin
 }));
@@ -901,6 +900,29 @@ const USER_DISCONNECT_GRACE_MS = Number.parseInt(process.env.SOCKET_DISCONNECT_G
 const userSocketIds = new Map();
 const userProfiles = new Map();
 const userDisconnectTimers = new Map();
+
+function collectSocketStats() {
+    const sockets = Array.from(io.of('/').sockets.values());
+    let pollingConnections = 0;
+    let websocketConnections = 0;
+    for (const socket of sockets) {
+        const transport = socket.conn && socket.conn.transport && socket.conn.transport.name;
+        if (transport === 'polling') pollingConnections++;
+        if (transport === 'websocket') websocketConnections++;
+    }
+    let registeredUserSockets = 0;
+    for (const socketIds of userSocketIds.values()) registeredUserSockets += socketIds.size;
+
+    return {
+        socketEventsEmitted: _socketEmitCount,
+        activeSocketConnections: sockets.length,
+        activeEngineClients: Number(io.engine && io.engine.clientsCount) || 0,
+        pollingConnections,
+        websocketConnections,
+        registeredUserSockets,
+        pendingDisconnectUsers: userDisconnectTimers.size
+    };
+}
 
 // Never put base64 profile photos into Socket.IO presence payloads. A single
 // photo can be hundreds of KB and is broadcast to every polling client, which
@@ -1183,6 +1205,12 @@ server.listen(PORT, process.env.BIND_HOST || '127.0.0.1', () => {
     logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
     logger.info('Socket.io real-time enabled');
 
+    performanceRecorder = createPersistentPerformanceRecorder({
+        getDbStats,
+        getSocketStats: collectSocketStats
+    });
+    performanceRecorder.start();
+
     // Signal PM2 that the process is ready (for zero-downtime reload)
     if (typeof process.send === 'function') {
         process.send('ready');
@@ -1204,9 +1232,13 @@ function gracefulShutdown(signal) {
     require('./services/clinicMonitorRuntime').stopWorker();
     require('./services/sundayClinicMedifySyncQueue').stopWorker();
     logger.info(`${signal} received, closing server...`);
+    const recorderStopped = performanceRecorder
+        ? performanceRecorder.stop()
+        : Promise.resolve();
     server.close(async () => {
         logger.info('HTTP server closed');
         try {
+            await recorderStopped;
             await pool.end();
             logger.info('Database connections closed');
         } catch (err) {

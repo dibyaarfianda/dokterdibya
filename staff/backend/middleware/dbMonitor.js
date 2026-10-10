@@ -24,6 +24,13 @@ const state = {
     totalConnectionCheckouts: 0,
     totalConnectionReleases: 0,
     longHeldConnectionCount: 0,
+    waitingConnectionCount: 0,
+    maxWaitingConnectionCount: 0,
+    totalConnectionWaitMs: 0,
+    totalConnectionWaitCount: 0,
+    maxConnectionWaitMs: 0,
+    connectionWaitSamples: [],
+    monitoredPool: null,
     activeConnections: new Map(),
     nextCheckoutId: 1,
 };
@@ -80,7 +87,25 @@ function wrapConnectionCheckout(pool, options) {
     );
 
     pool.getConnection = async function (...args) {
-        const connection = await originalGetConnection(...args);
+        const waitStartedAt = Date.now();
+        state.waitingConnectionCount++;
+        state.maxWaitingConnectionCount = Math.max(
+            state.maxWaitingConnectionCount,
+            state.waitingConnectionCount
+        );
+
+        let connection;
+        try {
+            connection = await originalGetConnection(...args);
+        } finally {
+            const waitMs = Math.max(0, Date.now() - waitStartedAt);
+            state.waitingConnectionCount = Math.max(0, state.waitingConnectionCount - 1);
+            state.totalConnectionWaitMs += waitMs;
+            state.totalConnectionWaitCount++;
+            state.maxConnectionWaitMs = Math.max(state.maxConnectionWaitMs, waitMs);
+            state.connectionWaitSamples.push(waitMs);
+            if (state.connectionWaitSamples.length > 100) state.connectionWaitSamples.shift();
+        }
         const checkoutId = state.nextCheckoutId++;
         const entry = {
             checkoutId,
@@ -133,6 +158,8 @@ function wrapDbPool(pool, options = {}) {
     if (!pool || typeof pool.query !== 'function') {
         return pool;
     }
+
+    state.monitoredPool = pool;
 
     if (pool.__dbMonitorQueryWrapped) {
         wrapConnectionCheckout(pool, options);
@@ -207,6 +234,15 @@ function getDbStats() {
         ? state.queriesPerMinute
         : [state.currentMinuteCount];
     const avgQpm = Math.round(qpmArr.reduce((a, b) => a + b, 0) / qpmArr.length);
+    const sortedWaits = [...state.connectionWaitSamples].sort((a, b) => a - b);
+    const p95WaitIndex = Math.max(0, Math.ceil(sortedWaits.length * 0.95) - 1);
+    const averageWait = state.totalConnectionWaitCount
+        ? Math.round(state.totalConnectionWaitMs / state.totalConnectionWaitCount)
+        : 0;
+    const rawPool = state.monitoredPool && (state.monitoredPool.pool || state.monitoredPool);
+    const collectionLength = collection => Number.isFinite(Number(collection && collection.length))
+        ? Number(collection.length)
+        : 0;
 
     return {
         totalQueries: state.totalQueries,
@@ -221,6 +257,14 @@ function getDbStats() {
         totalConnectionReleases: state.totalConnectionReleases,
         activeConnectionCount: state.activeConnections.size,
         longHeldConnectionCount: state.longHeldConnectionCount,
+        waitingConnectionCount: state.waitingConnectionCount,
+        maxWaitingConnectionCount: state.maxWaitingConnectionCount,
+        avgConnectionWaitMs: averageWait,
+        p95ConnectionWaitMs: sortedWaits.length ? sortedWaits[p95WaitIndex] : 0,
+        maxConnectionWaitMs: state.maxConnectionWaitMs,
+        poolAllConnections: collectionLength(rawPool && rawPool._allConnections),
+        poolFreeConnections: collectionLength(rawPool && rawPool._freeConnections),
+        poolQueuedRequests: collectionLength(rawPool && rawPool._connectionQueue),
         activeConnections: summarizeActiveConnections().slice(0, 10)
     };
 }
@@ -238,6 +282,13 @@ function __resetDbMonitorForTests() {
     state.totalConnectionCheckouts = 0;
     state.totalConnectionReleases = 0;
     state.longHeldConnectionCount = 0;
+    state.waitingConnectionCount = 0;
+    state.maxWaitingConnectionCount = 0;
+    state.totalConnectionWaitMs = 0;
+    state.totalConnectionWaitCount = 0;
+    state.maxConnectionWaitMs = 0;
+    state.connectionWaitSamples = [];
+    state.monitoredPool = null;
     state.activeConnections.clear();
     state.nextCheckoutId = 1;
 }

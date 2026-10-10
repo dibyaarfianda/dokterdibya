@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
-const { instrumentStatusLogging } = require('../services/nginxReleaseStatus');
+const { instrumentStatusLogging, validateStatusLogFormat } = require('../services/nginxReleaseStatus');
 
 function flag(name) {
     const index = process.argv.indexOf(name);
@@ -21,6 +21,7 @@ async function main() {
     const prepared = instrumentStatusLogging(source);
     const formatSource = path.resolve(__dirname, '../../../deployment/nginx/dokterdibya-status-log-format.conf');
     const template = await fs.promises.readFile(formatSource, 'utf8');
+    validateStatusLogFormat(template);
     await fs.promises.writeFile(candidate, prepared, { flag: 'wx', mode: 0o600 });
     try { await fs.promises.writeFile(format, template, { flag: 'wx', mode: 0o600 }); }
     catch (error) { await fs.promises.unlink(candidate); throw error; }
