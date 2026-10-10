@@ -42,11 +42,11 @@
 - Produces: `AccessTemplateService.listTemplates(client?)`, `getTemplate(key, client?)`, and `saveTemplate(key, input, actorUserId, { applyToAccounts })`.
 - Produces: `GET /api/access-control/catalog`, `PUT /api/access-control/templates/:key`, and `POST /api/access-control/templates/:key/apply` contracts.
 
-- [ ] **Step 1: Write failing migration, service, and API tests** for the additive tables, default fallback, customized permissions, stale version rejection, save-only isolation, and protected routes.
-- [ ] **Step 2: Run the focused suite and verify failures are caused by the missing migration/service/routes.**
-- [ ] **Step 3: Implement the migration, template service, and save-only endpoint with template audit records.**
-- [ ] **Step 4: Run the focused suite and verify Task 1 tests pass.**
-- [ ] **Step 5: Commit Task 1.**
+- [x] **Step 1: Write failing migration, service, and API tests** for the additive tables, default fallback, customized permissions, stale version rejection, save-only isolation, and protected routes.
+- [x] **Step 2: Run the focused suite and verify failures are caused by the missing migration/service/routes.**
+- [x] **Step 3: Implement the migration, template service, and save-only endpoint with template audit records.**
+- [x] **Step 4: Run the focused suite and verify Task 1 tests pass.**
+- [x] **Step 5: Commit Task 1.**
 
 ### Task 2: Explicit account-template identity and bulk application
 
@@ -61,11 +61,11 @@
 - Consumes: persisted template definitions and template versions from Task 1.
 - Produces: `user_access_policies.template_key`, template-backed invitation grants, and apply results `{ template, affected_user_ids, affected_count }`.
 
-- [ ] **Step 1: Write failing tests** for migrated template identity, new-account grants from the persisted template, bulk target filtering, mandatory/dependency resolution, account version increments, per-account audits, and rollback on failure.
-- [ ] **Step 2: Run the focused suite and verify the new behavioral tests fail for the expected missing behavior.**
-- [ ] **Step 3: Integrate template identity into account reads/writes and implement transactional apply-to-all.**
-- [ ] **Step 4: Run the focused and access-control regression suites.**
-- [ ] **Step 5: Commit Task 2.**
+- [x] **Step 1: Write failing tests** for migrated template identity, new-account grants from the persisted template, bulk target filtering, mandatory/dependency resolution, account version increments, per-account audits, and rollback on failure.
+- [x] **Step 2: Run the focused suite and verify the new behavioral tests fail for the expected missing behavior.**
+- [x] **Step 3: Integrate template identity into account reads/writes and implement transactional apply-to-all.**
+- [x] **Step 4: Run the focused and access-control regression suites.**
+- [x] **Step 5: Commit Task 2.**
 
 ### Task 3: Kelola Akses template editor
 
@@ -81,11 +81,11 @@
 - Consumes: Task 1 template catalog/version and Task 2 save/apply endpoints.
 - Produces: separate Akun Staff and Template Jabatan views, reusable permission matrix rendering, save-only, and confirmed apply-to-all UI actions.
 
-- [ ] **Step 1: Write failing frontend behavior tests** for view switching, template matrix rendering, mandatory locks, save payload, confirmation-gated apply payload, refresh, and conflict recovery.
-- [ ] **Step 2: Run the focused suite and verify it fails because the editor is absent.**
-- [ ] **Step 3: Implement the UI and bump both Staff cache versions.**
-- [ ] **Step 4: Run focused frontend, structural, static, and access-control tests.**
-- [ ] **Step 5: Commit Task 3.**
+- [x] **Step 1: Write failing frontend behavior tests** for view switching, template matrix rendering, mandatory locks, save payload, confirmation-gated apply payload, refresh, and conflict recovery.
+- [x] **Step 2: Run the focused suite and verify it fails because the editor is absent.**
+- [x] **Step 3: Implement the UI and bump both Staff cache versions.**
+- [x] **Step 4: Run focused frontend, structural, static, and access-control tests.**
+- [x] **Step 5: Commit Task 3.**
 
 ### Task 4: Release and production verification
 
@@ -96,8 +96,8 @@
 - Consumes: all prior tasks.
 - Produces: backup/migration/release evidence and live read-only UI verification.
 
-- [ ] **Step 1: Run the full backend suite and document every unrelated failure by name.**
-- [ ] **Step 2: Review the complete branch diff against the spec and resolve Critical/Important findings through RED-GREEN tests.**
-- [ ] **Step 3: Commit release evidence, push the branch and `main`, create a verified database backup, apply the additive migration, deploy through the established immutable release flow, and restart safely.**
-- [ ] **Step 4: Verify schema, health/DB, PM2, both origins, immutable/current assets, doctor-only catalog, and live Template Jabatan UI without saving or applying production permissions.**
-- [ ] **Step 5: Record final evidence and commit/push the documentation update.**
+- [x] **Step 1: Run the full backend suite and document every unrelated failure by name.**
+- [x] **Step 2: Review the complete branch diff against the spec and resolve Critical/Important findings through RED-GREEN tests.**
+- [x] **Step 3: Commit release evidence, push the branch and `main`, create a verified database backup, apply the additive migration, deploy through the established immutable release flow, and restart safely.**
+- [x] **Step 4: Verify schema, health/DB, PM2, both origins, immutable/current assets, doctor-only catalog, and live Template Jabatan UI without saving or applying production permissions.**
+- [x] **Step 5: Record final evidence and commit/push the documentation update.**
