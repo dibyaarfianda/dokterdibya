@@ -265,6 +265,7 @@ function buildClosingPreview({
             source_id: sourceId,
             parent_billing_id: billing.parent_billing_id || null,
             mr_id: billing.mr_id,
+            accounting_date: normalizeDateOnly(billing.accounting_date),
             patient_id: billing.patient_id || record.patient_id || null,
             patient_name: billing.patient_name || record.patient_name || '-',
             reference_number: billing.reference_number || billing.mr_id || String(sourceId),
@@ -390,8 +391,8 @@ function privateClinicFilter(alias = 'scr') {
     return `${alias}.visit_location = '${PRIVATE_CLINIC_LOCATION}'`;
 }
 
-function serviceDateSql(recordAlias = 'scr', appointmentAlias = 'sa') {
-    return `COALESCE(${appointmentAlias}.appointment_date, DATE(${recordAlias}.created_at))`;
+function accountingDateSql(billingAlias, recordAlias = 'scr', appointmentAlias = 'sa') {
+    return `COALESCE(${billingAlias}.accounting_date, ${appointmentAlias}.appointment_date, DATE(${recordAlias}.created_at))`;
 }
 
 async function queryRows(client, sql, params = []) {
@@ -412,7 +413,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         LEFT JOIN sunday_clinic_billings b
                ON b.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id
         WHERE ${privateClinicFilter('scr')}
-          AND ${serviceDateSql('scr', 'sa')} = ?
+          AND ${accountingDateSql('b', 'scr', 'sa')} = ?
           AND ${inactiveUnbilledRecordSql('sa', 'b')}
         ORDER BY scr.mr_id${lockClause}
     `, [clinicDate]);
@@ -420,7 +421,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
     const mainBillings = await queryRows(client, `
         SELECT b.id, b.mr_id, b.patient_id, b.subtotal, b.total, b.status,
                b.pending_changes,
-               b.confirmed_at, b.confirmed_by, b.paid_at, b.paid_by,
+               b.confirmed_at, b.confirmed_by, b.paid_at, b.paid_by, b.accounting_date,
                b.last_modified_at, b.updated_at,
                b.cancellation_reason, b.cancelled_at, b.cancelled_by, b.cancelled_by_name,
                COALESCE(NULLIF(p.full_name, ''), NULLIF(sa.patient_name, ''), b.patient_id) AS patient_name,
@@ -437,7 +438,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
         LEFT JOIN patients p ON p.id = scr.patient_id
         WHERE ${privateClinicFilter('scr')}
-          AND ${serviceDateSql('scr', 'sa')} = ?
+          AND ${accountingDateSql('b', 'scr', 'sa')} = ?
         ORDER BY b.id${lockClause}
     `, [clinicDate]);
 
@@ -445,7 +446,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         SELECT ab.id, ab.parent_billing_id, ab.mr_id, ab.patient_id,
                ab.reference_number, ab.subtotal, ab.total, ab.status,
                ab.payment_method, ab.confirmed_at, ab.confirmed_by,
-               ab.paid_at, ab.paid_by, ab.last_modified_at, ab.updated_at,
+               ab.paid_at, ab.paid_by, ab.accounting_date, ab.last_modified_at, ab.updated_at,
                ab.cancellation_reason, ab.cancelled_at, ab.cancelled_by, ab.cancelled_by_name,
                COALESCE(NULLIF(p.full_name, ''), NULLIF(sa.patient_name, ''), ab.patient_id) AS patient_name
         FROM sunday_clinic_additional_billings ab
@@ -454,7 +455,7 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
         LEFT JOIN patients p ON p.id = scr.patient_id
         WHERE ${privateClinicFilter('scr')}
-          AND ${serviceDateSql('scr', 'sa')} = ?
+          AND ${accountingDateSql('ab', 'scr', 'sa')} = ?
         ORDER BY ab.id${lockClause}
     `, [clinicDate]);
 
@@ -495,9 +496,11 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         FROM sunday_clinic_billing_revisions br
         JOIN sunday_clinic_records scr
           ON br.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id
+        LEFT JOIN sunday_clinic_billings b
+          ON b.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id
         LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
         WHERE ${privateClinicFilter('scr')}
-          AND ${serviceDateSql('scr', 'sa')} = ?
+          AND ${accountingDateSql('b', 'scr', 'sa')} = ?
           AND br.status = 'pending'
         ORDER BY br.id${lockClause}
     `, [clinicDate]);
@@ -651,7 +654,7 @@ async function resolveServiceDate(client = db, identifiers = {}) {
         `, [identifiers.appointmentId]);
     } else if (identifiers.additionalBillingId) {
         rows = await queryRows(client, `
-            SELECT DATE_FORMAT(${serviceDateSql('scr', 'sa')}, '%Y-%m-%d') AS clinic_date
+            SELECT DATE_FORMAT(${accountingDateSql('ab', 'scr', 'sa')}, '%Y-%m-%d') AS clinic_date
             FROM sunday_clinic_additional_billings ab
             JOIN sunday_clinic_records scr
               ON ab.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id
@@ -664,7 +667,7 @@ async function resolveServiceDate(client = db, identifiers = {}) {
             : [identifiers.additionalBillingId]);
     } else if (identifiers.billingId) {
         rows = await queryRows(client, `
-            SELECT DATE_FORMAT(${serviceDateSql('scr', 'sa')}, '%Y-%m-%d') AS clinic_date
+            SELECT DATE_FORMAT(${accountingDateSql('b', 'scr', 'sa')}, '%Y-%m-%d') AS clinic_date
             FROM sunday_clinic_billings b
             JOIN sunday_clinic_records scr
               ON b.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id
@@ -677,8 +680,10 @@ async function resolveServiceDate(client = db, identifiers = {}) {
             : [identifiers.billingId]);
     } else if (identifiers.mrId) {
         rows = await queryRows(client, `
-            SELECT DATE_FORMAT(${serviceDateSql('scr', 'sa')}, '%Y-%m-%d') AS clinic_date
+            SELECT DATE_FORMAT(${accountingDateSql('b', 'scr', 'sa')}, '%Y-%m-%d') AS clinic_date
             FROM sunday_clinic_records scr
+            LEFT JOIN sunday_clinic_billings b
+              ON b.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id
             LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
             WHERE scr.mr_id = ? AND ${privateClinicFilter('scr')}
               ${patientId ? 'AND scr.patient_id = ?' : ''}

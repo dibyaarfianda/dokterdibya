@@ -36,6 +36,7 @@ const BILLING_COLUMNS = [
     'change_requests', 'last_modified_by', 'last_modified_at', 'billing_data',
     'confirmed_at', 'confirmed_by', 'printed_at', 'printed_by', 'invoice_url',
     'etiket_url', 'created_at', 'updated_at', 'paid_at', 'paid_by',
+    'accounting_date',
     'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
 ].join(', ');
 

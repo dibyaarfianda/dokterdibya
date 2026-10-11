@@ -44,10 +44,10 @@ const CLOSING_REQUIRED_SCHEMA = Object.freeze({
         'created_at'
     ],
     sunday_clinic_billings: [
-        'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
+        'accounting_date', 'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
     ],
     sunday_clinic_additional_billings: [
-        'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
+        'accounting_date', 'cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name'
     ],
     tagihan_payments: [
         'reconciliation_required', 'reconciliation_reason'

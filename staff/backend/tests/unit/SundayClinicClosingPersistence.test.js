@@ -42,7 +42,7 @@ function closingRow(fingerprint, overrides = {}) {
 }
 
 describe('Sunday Clinic closing persistence', () => {
-    test('financial source SQL is scoped to Klinik Privat and resolves collation drift explicitly', async () => {
+    test('financial source SQL honors an explicit accounting date without changing the visit date', async () => {
         const calls = [];
         const client = {
             query: jest.fn(async (sql, params) => {
@@ -55,7 +55,8 @@ describe('Sunday Clinic closing persistence', () => {
 
         const sql = calls.map(call => call.sql).join('\n');
         expect(sql).toContain("scr.visit_location = 'klinik_private'");
-        expect(sql).toContain('COALESCE(sa.appointment_date, DATE(scr.created_at)) = ?');
+        expect(sql).toContain('COALESCE(b.accounting_date, sa.appointment_date, DATE(scr.created_at)) = ?');
+        expect(sql).toContain('COALESCE(ab.accounting_date, sa.appointment_date, DATE(scr.created_at)) = ?');
         expect(sql).toContain('b.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id');
         expect(sql).toContain('ab.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id');
         expect(sql).toContain('sa.status AS appointment_status');
@@ -248,6 +249,7 @@ describe('Sunday Clinic closing persistence', () => {
 
         const [sql, params] = client.query.mock.calls[0];
         expect(compact(sql)).toContain('AND b.patient_id = ?');
+        expect(compact(sql)).toContain('COALESCE(b.accounting_date, sa.appointment_date, DATE(scr.created_at))');
         expect(params).toEqual([11, 'P0011']);
     });
 

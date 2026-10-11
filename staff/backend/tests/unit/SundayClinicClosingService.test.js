@@ -339,4 +339,19 @@ describe('SundayClinicClosingService', () => {
 
         expect(buildPreview('Nama Lama').fingerprint).toBe(buildPreview('Nama Baru').fingerprint);
     });
+
+    test('preserves an explicit accounting date in the closing transaction snapshot', () => {
+        const result = buildClosingPreview({
+            clinicDate: '2026-10-11',
+            records: [{ mr_id: 'DRD0011', patient_id: 'P0011', patient_name: 'Pasien Tambahan', billing_id: 11 }],
+            mainBillings: [paidMain({ accounting_date: '2026-10-11' })],
+            mainItems: [
+                { id: 1, billing_id: 11, item_type: 'tindakan', item_code: 'T01', item_name: 'USG', quantity: 1, price: 135000, total: 135000 }
+            ]
+        });
+
+        expect(result.transactions).toEqual([
+            expect.objectContaining({ accounting_date: '2026-10-11', source_id: 11, total: 135000 })
+        ]);
+    });
 });

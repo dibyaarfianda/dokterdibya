@@ -80,6 +80,11 @@ describe('cancelled invoice accounting', () => {
         expect(CLOSING_REQUIRED_SCHEMA.sunday_clinic_additional_billings).toEqual(expect.arrayContaining(['cancellation_reason', 'cancelled_at', 'cancelled_by', 'cancelled_by_name']));
         expect(CLOSING_REQUIRED_SCHEMA.tagihan_payments).toEqual(expect.arrayContaining(['reconciliation_required', 'reconciliation_reason']));
     });
+
+    test('closing schema requires explicit accounting dates for main and additional billings', () => {
+        expect(CLOSING_REQUIRED_SCHEMA.sunday_clinic_billings).toContain('accounting_date');
+        expect(CLOSING_REQUIRED_SCHEMA.sunday_clinic_additional_billings).toContain('accounting_date');
+    });
     test('retains independent main and additional cancellations outside income', () => {
         const result = preview();
         expect(result.can_close).toBe(true);
