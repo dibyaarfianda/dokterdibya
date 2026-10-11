@@ -36,6 +36,12 @@ import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js';
 import patientSidebar from './components/patient-history-sidebar.js';
+import {
+    buildDocBoardScheduleRequest,
+    createScheduleIdempotencyKey,
+    hasUnsavedPlanning,
+    validateDocBoardSchedule
+} from './utils/docboard-planning.js';
 
 const QUEUE_STATUS_TIMEOUT_MS = 12000;
 
@@ -128,6 +134,8 @@ class SundayClinicApp {
         this.recordVisibilityHandler = null;
         this.billingRefreshTimer = null;
         this.formDirtyTrackingBound = false;
+        this.docBoardScheduleState = null;
+        this.docBoardScheduleSubmitting = false;
     }
 
     isMedifyLocation(location = this.currentLocation) {
@@ -1242,13 +1250,15 @@ class SundayClinicApp {
         const resetTindakanBtn = document.getElementById('btn-reset-tindakan');
         const resetTerapiBtn = document.getElementById('btn-reset-terapi');
         const savePlanBtn = document.getElementById('save-plan');
+        const docBoardPlanBtn = document.getElementById('btn-planning-docboard');
 
         console.log('[SundayClinic] Planning buttons found:', {
             inputTindakan: !!inputTindakanBtn,
             inputTerapi: !!inputTerapiBtn,
             resetTindakan: !!resetTindakanBtn,
             resetTerapi: !!resetTerapiBtn,
-            savePlan: !!savePlanBtn
+            savePlan: !!savePlanBtn,
+            docBoard: !!docBoardPlanBtn
         });
 
         console.log('[SundayClinic] Planning functions available:', {
@@ -1271,6 +1281,9 @@ class SundayClinicApp {
         if (savePlanBtn) {
             console.log('[SundayClinic] Attaching savePlanningObstetri listener');
             bindOnce(savePlanBtn, 'SavePlanning', () => this.savePlanningObstetri());
+        }
+        if (docBoardPlanBtn) {
+            bindOnce(docBoardPlanBtn, 'DocBoardSchedule', () => this.openDocBoardSchedule());
         }
 
         // Render terapi items list if container exists
@@ -1390,13 +1403,351 @@ class SundayClinicApp {
     /**
      * Save Planning for obstetri category (old format)
      */
-    async savePlanningObstetri() {
-        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk menyimpan planning.')) return;
+    getPlanningFormData() {
+        const recordDatetime = document.getElementById('planning-datetime')?.value || '';
+        return {
+            record_datetime: recordDatetime,
+            record_date: recordDatetime.split('T')[0] || '',
+            record_time: recordDatetime.split('T')[1] || '',
+            tindakan: document.getElementById('planning-tindakan')?.value || '',
+            terapi: document.getElementById('planning-terapi')?.value || '',
+            rencana: document.getElementById('planning-rencana')?.value || ''
+        };
+    }
+
+    getPersistedPlanningData() {
+        return stateManager.get('persistedMedicalRecords')?.byType?.planning?.data || {};
+    }
+
+    escapeDocBoardHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    showDocBoardModal() {
+        const modal = document.getElementById('drd-docboard-modal');
+        if (!modal) throw new Error('Modal DocBoard belum tersedia. Buka ulang bagian Planning.');
+        const jquery = window.jQuery || window.$;
+        if (!jquery?.fn?.modal) throw new Error('Komponen modal belum siap. Muat ulang halaman.');
+        jquery(modal).modal({ backdrop: 'static', keyboard: false, show: true });
+        return modal;
+    }
+
+    setDocBoardModalContent(bodyHtml, footerHtml = '') {
+        const body = document.getElementById('drd-docboard-modal-body');
+        const footer = document.getElementById('drd-docboard-modal-footer');
+        if (!body || !footer) return false;
+        body.innerHTML = bodyHtml;
+        footer.innerHTML = footerHtml;
+        return true;
+    }
+
+    async openDocBoardSchedule() {
+        if (!await this.requireAccountPermission('docboard.view', 'Akses ditolak untuk membuka DocBoard.')) return;
+        try {
+            this.docBoardScheduleState = null;
+            this.docBoardScheduleSubmitting = false;
+            this.showDocBoardModal();
+            const currentPlanning = this.getPlanningFormData();
+            const persistedPlanning = this.getPersistedPlanningData();
+            if (hasUnsavedPlanning(currentPlanning, persistedPlanning)) {
+                this.setDocBoardModalContent(`
+                    <div class="sc-docboard-save-prompt">
+                        <div class="sc-docboard-prompt-icon"><i class="fas fa-save"></i></div>
+                        <h6>Planning belum disimpan</h6>
+                        <p class="mb-0">DocBoard hanya membaca Rencana resmi yang sudah tersimpan pada DRD. Simpan Planning terlebih dahulu untuk melanjutkan.</p>
+                    </div>
+                `, `
+                    <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="save-planning-then-docboard">
+                        <i class="fas fa-save mr-1"></i>Simpan Planning &amp; lanjut
+                    </button>
+                `);
+                document.getElementById('save-planning-then-docboard')?.addEventListener('click', async (event) => {
+                    const button = event.currentTarget;
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm mr-1"></span>Menyimpan...';
+                    const saved = await this.savePlanningObstetri({ successMessage: 'Planning tersimpan. Memuat DocBoard...' });
+                    if (saved) await this.loadDocBoardPreview();
+                    else {
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-save mr-1"></i>Simpan Planning &amp; lanjut';
+                    }
+                }, { once: true });
+                return;
+            }
+            await this.loadDocBoardPreview();
+        } catch (error) {
+            console.error('[SundayClinic] Open DocBoard schedule failed:', error);
+            this.showError(error.message || 'Gagal membuka jadwal DocBoard.');
+        }
+    }
+
+    async loadDocBoardPreview(scheduleDate = '', preserveForm = false) {
+        const state = stateManager.getState();
+        const mrId = state.currentMrId;
+        if (!mrId) throw new Error('DRD tidak ditemukan.');
+        const prior = preserveForm ? this.docBoardScheduleState?.form : null;
+        this.setDocBoardModalContent(`
+            <div class="sc-docboard-loading">
+                <span class="spinner-border text-info" role="status"></span>
+                <span>Membaca data resmi DRD...</span>
+            </div>
+        `);
+        try {
+            const response = await apiClient.post('/api/docboard/from-drd/preview', {
+                mr_id: mrId,
+                ...(scheduleDate ? { schedule_date: scheduleDate } : {})
+            });
+            const preview = response.preview;
+            const suggestions = preview.suggestions || {};
+            this.docBoardScheduleState = {
+                preview,
+                idempotencyKey: this.docBoardScheduleState?.idempotencyKey || createScheduleIdempotencyKey(mrId),
+                form: prior ? {
+                    ...prior,
+                    schedule_date: scheduleDate || prior.schedule_date
+                } : {
+                    kind: suggestions.kind || 'surgery',
+                    schedule_date: suggestions.scheduleDate || '',
+                    schedule_time: suggestions.scheduleTime || '',
+                    location: suggestions.location || '',
+                    procedure_category: suggestions.procedureCategory || '',
+                    operation_type_ids: Array.isArray(suggestions.operationTypeIds)
+                        ? suggestions.operationTypeIds.map(Number)
+                        : [],
+                    operation_type_other: ''
+                }
+            };
+            this.renderDocBoardScheduleForm();
+        } catch (error) {
+            console.error('[SundayClinic] DRD DocBoard preview failed:', error);
+            this.setDocBoardModalContent(`
+                <div class="alert alert-danger mb-0" role="alert">
+                    <i class="fas fa-exclamation-circle mr-1"></i>${this.escapeDocBoardHtml(error.message || 'Gagal memuat data DRD.')}
+                </div>
+            `, `
+                <button type="button" class="btn btn-light" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-outline-primary" id="retry-docboard-preview">Coba lagi</button>
+            `);
+            document.getElementById('retry-docboard-preview')?.addEventListener('click', () => this.loadDocBoardPreview(scheduleDate, preserveForm), { once: true });
+        }
+    }
+
+    renderDocBoardScheduleForm() {
+        const state = this.docBoardScheduleState;
+        if (!state?.preview || !state.form) return;
+        const { preview, form } = state;
+        const escape = value => this.escapeDocBoardHtml(value);
+        const operationTypes = preview.options?.operation_types || [];
+        const procedureCategories = preview.options?.procedure_categories || [];
+        const locations = preview.options?.locations || [];
+        const selectedIds = new Set((form.operation_type_ids || []).map(Number));
+        const warnings = preview.warnings || [];
+
+        const operationHtml = form.kind === 'surgery' ? `
+            <div class="form-group">
+                <label class="font-weight-bold">Jenis operasi <span class="text-danger">*</span></label>
+                <small class="text-muted d-block mb-2">Bisa memilih lebih dari satu.</small>
+                <input type="search" class="form-control form-control-sm mb-2" id="drd-docboard-operation-search"
+                       placeholder="Cari SC, kuret, TAH, BSO, dan lainnya">
+                <div class="sc-docboard-operation-list" id="drd-docboard-operation-list">
+                    ${operationTypes.map(type => {
+                        const label = type.code || type.name_id || type.name || '';
+                        const search = [type.code, type.name_id, type.name, type.category].filter(Boolean).join(' ');
+                        return `<button type="button" class="sc-docboard-operation-chip${selectedIds.has(Number(type.id)) ? ' selected' : ''}"
+                                    data-operation-id="${escape(type.id)}" data-operation-search="${escape(search.toLowerCase())}">
+                                    ${escape(label)}
+                                </button>`;
+                    }).join('')}
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="drd-docboard-operation-other">Operasi lain yang belum ada di daftar</label>
+                <textarea class="form-control" rows="2" id="drd-docboard-operation-other"
+                          placeholder="Satu jenis per baris">${escape(form.operation_type_other)}</textarea>
+            </div>
+        ` : `
+            <div class="form-group">
+                <label class="font-weight-bold" for="drd-docboard-procedure">Jenis tindakan <span class="text-danger">*</span></label>
+                <select class="form-control" id="drd-docboard-procedure">
+                    <option value="">Pilih tindakan</option>
+                    ${procedureCategories.map(category => `<option value="${escape(category)}"${form.procedure_category === category ? ' selected' : ''}>${escape(category)}</option>`).join('')}
+                </select>
+            </div>
+        `;
+
+        this.setDocBoardModalContent(`
+            <div class="sc-docboard-readonly-grid">
+                <div><span>Pasien</span><strong>${escape(preview.patient?.name || '-')}</strong></div>
+                <div><span>DRD</span><strong>${escape(preview.mr_id)}</strong></div>
+                <div><span>Kunjungan</span><strong>${escape(preview.visit?.location || '-')}</strong></div>
+            </div>
+            <div class="form-group mt-3">
+                <label class="font-weight-bold">Diagnosis dari DRD</label>
+                <textarea class="form-control sc-docboard-readonly" rows="4" readonly>${escape(preview.diagnosis || 'Diagnosis belum tersimpan')}</textarea>
+                <small class="text-muted">Untuk mengoreksi diagnosis, simpan perubahan terlebih dahulu pada bagian Diagnosis DRD.</small>
+            </div>
+            ${warnings.length ? `<div class="alert alert-warning py-2"><ul class="mb-0 pl-3">${warnings.map(item => `<li>${escape(item)}</li>`).join('')}</ul></div>` : ''}
+            <div class="sc-docboard-kind" role="radiogroup" aria-label="Jenis jadwal DocBoard">
+                <label class="${form.kind === 'surgery' ? 'selected' : ''}">
+                    <input type="radio" name="drd-docboard-kind" value="surgery"${form.kind === 'surgery' ? ' checked' : ''}> Operasi
+                </label>
+                <label class="${form.kind === 'procedure' ? 'selected' : ''}">
+                    <input type="radio" name="drd-docboard-kind" value="procedure"${form.kind === 'procedure' ? ' checked' : ''}> Tindakan
+                </label>
+            </div>
+            ${operationHtml}
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label class="font-weight-bold" for="drd-docboard-date">Tanggal <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="drd-docboard-date" min="${escape(preview.today)}" value="${escape(form.schedule_date)}">
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="font-weight-bold" for="drd-docboard-time">Jam <span class="text-danger">*</span></label>
+                    <input type="time" class="form-control" id="drd-docboard-time" value="${escape(form.schedule_time)}">
+                </div>
+                <div class="form-group col-md-4">
+                    <label class="font-weight-bold" for="drd-docboard-location">Lokasi <span class="text-danger">*</span></label>
+                    <select class="form-control" id="drd-docboard-location">
+                        <option value="">Pilih lokasi</option>
+                        ${locations.map(location => `<option value="${escape(location.value)}"${form.location === location.value ? ' selected' : ''}>${escape(location.label)}</option>`).join('')}
+                    </select>
+                </div>
+            </div>
+        `, `
+            <button type="button" class="btn btn-light" data-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-info" id="submit-drd-docboard"${preview.can_create ? '' : ' disabled'}>
+                <i class="fas fa-calendar-check mr-1"></i>Simpan ke DocBoard
+            </button>
+        `);
+        this.bindDocBoardScheduleForm();
+    }
+
+    bindDocBoardScheduleForm() {
+        const state = this.docBoardScheduleState;
+        if (!state) return;
+        document.querySelectorAll('input[name="drd-docboard-kind"]').forEach(input => {
+            input.addEventListener('change', event => {
+                state.form.kind = event.currentTarget.value;
+                this.renderDocBoardScheduleForm();
+            });
+        });
+        document.getElementById('drd-docboard-date')?.addEventListener('change', event => {
+            state.form.schedule_date = event.currentTarget.value;
+            this.loadDocBoardPreview(state.form.schedule_date, true);
+        });
+        document.getElementById('drd-docboard-time')?.addEventListener('input', event => {
+            state.form.schedule_time = event.currentTarget.value;
+        });
+        document.getElementById('drd-docboard-location')?.addEventListener('change', event => {
+            state.form.location = event.currentTarget.value;
+        });
+        document.getElementById('drd-docboard-procedure')?.addEventListener('change', event => {
+            state.form.procedure_category = event.currentTarget.value;
+        });
+        document.getElementById('drd-docboard-operation-other')?.addEventListener('input', event => {
+            state.form.operation_type_other = event.currentTarget.value;
+        });
+        document.querySelectorAll('[data-operation-id]').forEach(button => {
+            button.addEventListener('click', event => {
+                const operationId = Number(event.currentTarget.dataset.operationId);
+                const selected = new Set((state.form.operation_type_ids || []).map(Number));
+                if (selected.has(operationId)) selected.delete(operationId);
+                else selected.add(operationId);
+                state.form.operation_type_ids = [...selected];
+                this.renderDocBoardScheduleForm();
+            });
+        });
+        document.getElementById('drd-docboard-operation-search')?.addEventListener('input', event => {
+            const query = event.currentTarget.value.toLowerCase().trim();
+            document.querySelectorAll('[data-operation-search]').forEach(button => {
+                button.hidden = Boolean(query) && !button.dataset.operationSearch.includes(query);
+            });
+        });
+        document.getElementById('submit-drd-docboard')?.addEventListener('click', () => this.submitDocBoardSchedule());
+    }
+
+    async submitDocBoardSchedule() {
+        if (this.docBoardScheduleSubmitting) return;
+        if (!await this.requireAccountPermission('docboard.write', 'Akses ditolak untuk membuat jadwal DocBoard.')) return;
+        const state = this.docBoardScheduleState;
+        if (!state?.preview?.can_create) {
+            this.showError('Diagnosis DRD belum disimpan. Simpan bagian Diagnosis terlebih dahulu.');
+            return;
+        }
+        const errors = validateDocBoardSchedule(state.form, {
+            today: state.preview.today,
+            procedureCategories: state.preview.options?.procedure_categories || [],
+            operationTypeIds: (state.preview.options?.operation_types || []).map(type => Number(type.id))
+        });
+        if (errors.length) {
+            this.showError(errors[0]);
+            return;
+        }
+
+        const button = document.getElementById('submit-drd-docboard');
+        this.docBoardScheduleSubmitting = true;
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm mr-1"></span>Menyimpan...';
+        }
+        try {
+            const payload = buildDocBoardScheduleRequest(
+                state.form,
+                state.preview.mr_id,
+                state.idempotencyKey
+            );
+            const result = await apiClient.post('/api/docboard/from-drd', payload);
+            const typeLabel = result.kind === 'surgery' ? 'Operasi' : 'Tindakan';
+            const status = document.getElementById('planning-docboard-status');
+            if (status) {
+                status.textContent = result.created
+                    ? `${typeLabel} sudah masuk DocBoard.`
+                    : `${typeLabel} yang sama sudah ada di DocBoard.`;
+                status.className = 'text-success';
+            }
+            this.setDocBoardModalContent(`
+                <div class="sc-docboard-result">
+                    <div class="sc-docboard-result-icon"><i class="fas fa-check"></i></div>
+                    <h5>${result.created ? 'Jadwal berhasil dibuat' : 'Jadwal sudah tersedia'}</h5>
+                    <p>${this.escapeDocBoardHtml(typeLabel)} untuk ${this.escapeDocBoardHtml(state.preview.patient?.name || '')}</p>
+                    <dl>
+                        <dt>Tanggal</dt><dd>${this.escapeDocBoardHtml(state.form.schedule_date)}</dd>
+                        <dt>Jam</dt><dd>${this.escapeDocBoardHtml(state.form.schedule_time)}</dd>
+                        <dt>DRD</dt><dd>${this.escapeDocBoardHtml(state.preview.mr_id)}</dd>
+                    </dl>
+                </div>
+            `, `
+                <button type="button" class="btn btn-light" data-dismiss="modal">Tutup</button>
+                <a class="btn btn-info" href="${this.escapeDocBoardHtml(result.href)}" target="_blank" rel="noopener">
+                    <i class="fas fa-external-link-alt mr-1"></i>Buka di DocBoard
+                </a>
+            `);
+            this.showSuccess(result.created ? 'Jadwal berhasil dimasukkan ke DocBoard.' : 'Jadwal yang sama sudah tersedia di DocBoard.');
+        } catch (error) {
+            console.error('[SundayClinic] Create DocBoard schedule failed:', error);
+            this.showError(error.message || 'Gagal membuat jadwal DocBoard.');
+            if (button) {
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-calendar-check mr-1"></i>Simpan ke DocBoard';
+            }
+        } finally {
+            this.docBoardScheduleSubmitting = false;
+        }
+    }
+
+    async savePlanningObstetri(options = {}) {
+        if (!await this.requireAccountPermission('medical_records.edit', 'Akses ditolak untuk menyimpan planning.')) return false;
 
         // Prevent double submission
         if (this._savingPlanning) {
             console.warn('[SundayClinic] Planning save already in progress, ignoring duplicate call');
-            return;
+            return false;
         }
         this._savingPlanning = true;
 
@@ -1406,18 +1757,13 @@ class SundayClinicApp {
             if (!recordDatetime) {
                 window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
                 this._savingPlanning = false;
-                return;
+                return false;
             }
 
             this.showLoading('Menyimpan Planning...');
 
             const data = {
-                record_datetime: recordDatetime,
-                record_date: recordDatetime.split('T')[0] || '',
-                record_time: recordDatetime.split('T')[1] || '',
-                tindakan: document.getElementById('planning-tindakan')?.value || '',
-                terapi: document.getElementById('planning-terapi')?.value || '',
-                rencana: document.getElementById('planning-rencana')?.value || '',
+                ...this.getPlanningFormData(),
                 saved_at: new Date().toISOString()
             };
 
@@ -1440,14 +1786,16 @@ class SundayClinicApp {
             const result = await apiClient.saveSection(mrId, 'planning', data);
             console.log('[SundayClinic] Planning saved successfully:', result);
 
-            this.showSuccess('Planning berhasil disimpan!');
+            this.showSuccess(options.successMessage || 'Planning berhasil disimpan!');
 
             // Refresh metadata in background to keep save flow snappy.
             this.scheduleMetadataRefresh();
+            return true;
 
         } catch (error) {
             console.error('[SundayClinic] Save Planning failed:', error);
             this.showError(error.message);
+            return false;
         } finally {
             this.hideLoading();
             this._savingPlanning = false;

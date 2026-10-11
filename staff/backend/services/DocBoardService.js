@@ -36,6 +36,10 @@ function normalizeLoc(loc) {
   return LOCATION_NORMALIZE[loc] || loc;
 }
 
+function canEditPatientLinkedSchedule(schedule) {
+  return !schedule?.patient_ref_value || schedule.patient_ref_type === 'drd';
+}
+
 class DocBoardService {
   constructor() {
     this.spaceScheduleTableReady = false;
@@ -152,17 +156,23 @@ class DocBoardService {
     return days;
   }
 
-  async createSpaceSchedule(userId, data) {
+  async createSpaceSchedule(userId, data, options = {}) {
     await this.ensureSpaceScheduleTable();
     const space = normalizeSpace(data.space);
+    const trustedPatientRef = options.trustedPatientRef === true;
     const [result] = await pool.query(
       `INSERT INTO docboard_space_schedules
-       (user_id, space, agenda, category, schedule_date, start_time, end_time, location, participants, notes, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (user_id, space, agenda, category, schedule_date, start_time, end_time, location, participants, notes, status,
+        patient_ref_type, patient_ref_value, patient_facility, patient_name)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         String(userId || ''), space, data.agenda, data.category, data.schedule_date,
         data.start_time || null, data.end_time || null, data.location || null,
-        data.participants || null, data.notes || null, data.status || 'scheduled'
+        data.participants || null, data.notes || null, data.status || 'scheduled',
+        trustedPatientRef ? data.patient_ref_type || null : null,
+        trustedPatientRef ? data.patient_ref_value || null : null,
+        trustedPatientRef ? data.patient_facility || null : null,
+        trustedPatientRef ? data.patient_name || null : null
       ]
     );
     return this.getSpaceSchedule(userId, result.insertId);
@@ -171,16 +181,19 @@ class DocBoardService {
   async updateSpaceSchedule(userId, id, data) {
     await this.ensureSpaceScheduleTable();
     const current = await this.getSpaceSchedule(userId, id);
-    if (current?.patient_ref_value) {
+    if (!canEditPatientLinkedSchedule(current)) {
       throw new Error('Ubah jadwal beridentitas pasien melalui Asisten DAF agar nomor RM dan fasilitas diperiksa kembali.');
     }
+    const agenda = current?.patient_ref_type === 'drd' && current.patient_ref_value
+      ? (current.patient_name ? `${data.category} - ${current.patient_name}` : current.agenda)
+      : data.agenda;
     await pool.query(
       `UPDATE docboard_space_schedules
        SET agenda = ?, category = ?, schedule_date = ?, start_time = ?, end_time = ?, location = ?, participants = ?, notes = ?
        WHERE id = ?
          AND (space IN ('ilmiah', 'tindakan') OR (space = 'pribadi' AND user_id = ?))`,
       [
-        data.agenda, data.category, data.schedule_date, data.start_time || null,
+        agenda, data.category, data.schedule_date, data.start_time || null,
         data.end_time || null, data.location || null, data.participants || null,
         data.notes || null, id, String(userId || '')
       ]
@@ -770,3 +783,5 @@ class DocBoardService {
 }
 
 module.exports = new DocBoardService();
+module.exports.DocBoardService = DocBoardService;
+module.exports.canEditPatientLinkedSchedule = canEditPatientLinkedSchedule;

@@ -2051,3 +2051,154 @@ body.patient-sidebar-open .main-header {
     display: block;
     min-width: 0;
 }
+/* Planning -> DocBoard quick schedule */
+.sc-docboard-plan-actions {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 0.65rem !important;
+}
+
+.sc-docboard-modal .modal-content {
+    max-height: 650px !important;
+    min-height: 420px !important;
+}
+
+.sc-docboard-modal .modal-body {
+    max-height: 520px !important;
+    min-height: 260px !important;
+    overflow-y: auto !important;
+}
+
+.sc-docboard-loading,
+.sc-docboard-save-prompt,
+.sc-docboard-result {
+    min-height: 210px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.75rem !important;
+    text-align: center !important;
+}
+
+.sc-docboard-prompt-icon,
+.sc-docboard-result-icon {
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 50% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: #e0f2fe !important;
+    color: #0284c7 !important;
+    font-size: 1.25rem !important;
+}
+
+.sc-docboard-result-icon {
+    background: #dcfce7 !important;
+    color: #16a34a !important;
+}
+
+.sc-docboard-readonly-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 0.75rem !important;
+}
+
+.sc-docboard-readonly-grid > div {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 10px !important;
+    padding: 0.75rem !important;
+    background: #f8fafc !important;
+}
+
+.sc-docboard-readonly-grid span {
+    display: block !important;
+    color: #64748b !important;
+    font-size: 0.75rem !important;
+    margin-bottom: 0.2rem !important;
+}
+
+.sc-docboard-readonly {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+.sc-docboard-kind {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.65rem !important;
+    margin-bottom: 1rem !important;
+}
+
+.sc-docboard-kind label {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 10px !important;
+    padding: 0.7rem 0.9rem !important;
+    cursor: pointer !important;
+    margin: 0 !important;
+}
+
+.sc-docboard-kind label.selected {
+    border-color: #0ea5e9 !important;
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+}
+
+.sc-docboard-operation-list {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.45rem !important;
+    max-height: 170px !important;
+    overflow-y: auto !important;
+    padding: 0.25rem !important;
+}
+
+.sc-docboard-operation-chip {
+    border: 1px solid #cbd5e1 !important;
+    background: #fff !important;
+    color: #334155 !important;
+    border-radius: 999px !important;
+    padding: 0.35rem 0.7rem !important;
+    font-size: 0.8rem !important;
+}
+
+.sc-docboard-operation-chip.selected {
+    border-color: #0284c7 !important;
+    background: #0284c7 !important;
+    color: #fff !important;
+}
+
+.sc-docboard-result dl {
+    display: grid !important;
+    grid-template-columns: auto auto !important;
+    gap: 0.3rem 1rem !important;
+    text-align: left !important;
+    margin: 0 !important;
+}
+
+.sc-docboard-result dt,
+.sc-docboard-result dd {
+    margin: 0 !important;
+}
+
+@media (max-width: 767.98px) {
+    .sc-docboard-modal .modal-dialog {
+        margin: 0.5rem !important;
+    }
+
+    .sc-docboard-modal .modal-content {
+        max-height: 600px !important;
+        min-height: 400px !important;
+    }
+
+    .sc-docboard-modal .modal-body {
+        max-height: 450px !important;
+        min-height: 250px !important;
+    }
+
+    .sc-docboard-readonly-grid {
+        grid-template-columns: 1fr !important;
+    }
+}

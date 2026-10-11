@@ -258,6 +258,31 @@
   margin: 0 16px 16px;
 }
 
+.space-patient-reference {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border: 1px solid #BAE6FD;
+  border-radius: var(--radius-sm);
+  background: #F0F9FF;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.space-patient-reference strong {
+  width: 100%;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.space-patient-reference small {
+  width: 100%;
+  color: var(--text-tertiary);
+}
+
 .space-form-card textarea,
 .space-form-card select {
   width: 100%;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docboard-pwa-20260929-3';
+const CACHE_NAME = 'docboard-pwa-20261011-1';
 const APP_SHELL = [
   '/docboard/',
   '/docboard/index.html',

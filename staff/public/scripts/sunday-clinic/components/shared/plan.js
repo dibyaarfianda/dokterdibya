@@ -333,12 +333,33 @@ export default {
                                       placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(planData.rencana)}</textarea>
                             ${showPreviousControl ? renderPreviousPlanningPanel('rencana') : ''}
                         </div>
+                        <div class="sc-docboard-plan-actions mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-info" id="btn-planning-docboard">
+                                <i class="fas fa-calendar-plus mr-1"></i>Masukkan ke DocBoard
+                            </button>
+                            <small class="text-muted" id="planning-docboard-status" aria-live="polite"></small>
+                        </div>
                     </div>
 
                     <div class="text-right mt-3">
                         <button type="button" class="btn btn-primary" id="save-plan">
                             <i class="fas fa-save mr-2"></i>Simpan Planning
                         </button>
+                    </div>
+                </div>
+                <div class="modal fade sc-docboard-modal" id="drd-docboard-modal" tabindex="-1"
+                     role="dialog" aria-labelledby="drd-docboard-modal-title" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="drd-docboard-modal-title">Masukkan ke DocBoard</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body" id="drd-docboard-modal-body"></div>
+                            <div class="modal-footer" id="drd-docboard-modal-footer"></div>
+                        </div>
                     </div>
                 </div>
             </div>

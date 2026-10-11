@@ -158,7 +158,19 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
     }
     setLoading(true);
     listSpaceSchedules(space).then((items) => {
-      if (active) setSchedules(items);
+      if (active) {
+        setSchedules(items);
+        const requestedSchedule = new URLSearchParams(window.location.search).get('schedule');
+        const requestedItem = requestedSchedule
+          ? items.find((item) => String(item.id) === String(requestedSchedule))
+          : null;
+        if (requestedItem) {
+          setExpandedId(requestedItem.id);
+          if (space === 'tindakan' && isArchivedProcedure(requestedItem, getJakartaNow())) {
+            setProcedureView('archive');
+          }
+        }
+      }
     }).finally(() => {
       if (active) setLoading(false);
     });
@@ -185,6 +197,9 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
   }, [schedules, space, clock]);
 
   const visibleSchedules = space === 'tindakan' ? procedureSchedules[procedureView] : schedules;
+  const editingSchedule = editingId
+    ? schedules.find((item) => String(item.id) === String(editingId))
+    : null;
 
   const stats = useMemo(() => {
     const todayDate = today();
@@ -359,9 +374,18 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
       {showForm && (
         <form class="space-form-card" onSubmit={handleSubmit}>
           <div class="form-section-title">{editingId ? 'Edit agenda' : config.action}</div>
+          {editingSchedule?.patient_ref_value && (
+            <div class="space-patient-reference">
+              <strong>{editingSchedule.patient_name || 'Pasien DRD'}</strong>
+              <span>{editingSchedule.patient_ref_type === 'drd' ? 'DRD' : 'RM'} {editingSchedule.patient_ref_value}</span>
+              {editingSchedule.patient_facility && <span>Sumber: {editingSchedule.patient_facility}</span>}
+              <small>Identitas pasien dikunci; tanggal, jam, lokasi, tindakan, dan catatan tetap dapat diubah.</small>
+            </div>
+          )}
           <div class="form-group">
-            <label>Agenda</label>
-            <input value={form.agenda} onInput={handleChange('agenda')} placeholder={config.agendaPlaceholder} required />
+            <label>{editingSchedule?.patient_ref_type === 'drd' ? 'Agenda (mengikuti tindakan dan pasien)' : 'Agenda'}</label>
+            <input value={form.agenda} onInput={handleChange('agenda')} placeholder={config.agendaPlaceholder}
+              readOnly={editingSchedule?.patient_ref_type === 'drd'} required />
           </div>
 
           <div class="space-form-row">
@@ -456,6 +480,12 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
                       </div>
                       {(item.creator_display_name || item.creator_name) && (
                         <div class="space-agenda-submeta">Entry oleh {item.creator_display_name || item.creator_name}</div>
+                      )}
+                      {item.patient_ref_value && (
+                        <div class="space-agenda-submeta">
+                          {item.patient_name ? `${item.patient_name} · ` : ''}
+                          {item.patient_ref_type === 'drd' ? 'DRD' : 'RM'} {item.patient_ref_value}
+                        </div>
                       )}
                       {space !== 'tindakan' && item.participants && <div class="space-agenda-submeta">{item.participants}</div>}
                       {isExpanded && item.notes && <div class="space-agenda-notes">{item.notes}</div>}

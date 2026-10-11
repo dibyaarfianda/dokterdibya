@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyStaffToken } = require('../middleware/auth');
+const { verifyStaffToken, requirePermission } = require('../middleware/auth');
 const { requireRoles } = require('../middleware/auth');
 const docboardService = require('../services/DocBoardService');
 const docboardPush = require('../services/DocBoardPushService');
@@ -18,6 +18,8 @@ const logger = require('../utils/logger');
 const operationAudit = new OperationAuditService();
 const operationPathology = new OperationPathologyService();
 const operationDoctorJourney = new OperationDoctorJourneyService();
+const { DrdDocBoardScheduleService } = require('../services/DrdDocBoardScheduleService');
+const drdDocBoardSchedule = new DrdDocBoardScheduleService();
 
 const SCHEDULE_COMPLETION_ALLOWED_EMAILS = ['nanda.arfianda@gmail.com'];
 const SCHEDULE_COMPLETION_ALLOWED_USER_IDS = ['UDZAQUCQWZ'];
@@ -95,6 +97,51 @@ router.use('/gambiran-resumes', (req, res, next) => {
   next();
 });
 router.use('/gambiran-resumes', gambiranResumeRoutes);
+
+/**
+ * POST /api/docboard/from-drd/preview
+ * Read a canonical DRD snapshot and build conservative schedule suggestions.
+ */
+router.post(
+  '/from-drd/preview',
+  requirePermission('medical_records.view'),
+  requirePermission('docboard.view'),
+  async (req, res) => {
+    try {
+      const preview = await drdDocBoardSchedule.preview(req.body || {});
+      const { _snapshot, ...publicPreview } = preview;
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.json({ success: true, preview: publicPreview });
+    } catch (error) {
+      logger.error('DocBoard DRD preview error:', { code: error.code, error: error.message });
+      res.status(error.statusCode || 500).json({
+        success: false,
+        code: error.code || 'DRD_PREVIEW_FAILED',
+        message: error.statusCode ? error.message : 'Gagal membaca data DRD untuk DocBoard.'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/docboard/from-drd
+ * Create one operation or procedure schedule from server-owned DRD data.
+ */
+router.post('/from-drd', requirePermission('docboard.write'), async (req, res) => {
+  try {
+    const result = await drdDocBoardSchedule.create(req.body || {}, req.user?.id);
+    res.status(result.created ? 201 : 200).json({ success: true, ...result });
+  } catch (error) {
+    logger.error('DocBoard DRD schedule create error:', { code: error.code, error: error.message });
+    res.status(error.statusCode || 500).json({
+      success: false,
+      code: error.code || 'DRD_SCHEDULE_FAILED',
+      message: error.statusCode ? error.message : 'Gagal membuat jadwal DocBoard dari DRD.'
+    });
+  }
+});
 
 router.get('/users', async (req, res) => {
   try {

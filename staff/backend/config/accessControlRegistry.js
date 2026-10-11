@@ -257,7 +257,8 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['staff-payroll:PATCH:/driver-payrolls/:month/name', 'staff_payroll.write'],
     ['staff-payroll:DELETE:/driver-payrolls/:month', 'staff_payroll.delete'],
     ['estimasi-biaya-draft:POST:/preview', 'cost_estimates.view'],
-    ['medify-batch:POST:/credentials', 'integrations.write']
+    ['medify-batch:POST:/credentials', 'integrations.write'],
+    ['docboard:POST:/from-drd/preview', 'docboard.view']
 ]);
 
 const SUNDAY_CLINIC_SECTION_PERMISSIONS = Object.freeze({
