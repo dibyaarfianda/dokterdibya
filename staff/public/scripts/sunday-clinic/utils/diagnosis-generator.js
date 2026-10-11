@@ -3,7 +3,7 @@
  * Called after saveAnamnesa() and saveUSGExam()
  *
  * Output format:
- *   G5 P2112 30 6/7 minggu T/H
+ *   G5 P2112 30+6 T/H
  *   Letak Sungsang
  *   Bekas SC 2x
  */
@@ -47,7 +47,7 @@ export function generateObstetricDiagnosis(state) {
         const days = parseInt(gaMatch[2]);
         const fetusCount = t3.fetus_count || t2.fetus_count || t1.embryo_count;
         const fetusStr = fetusCount === 'multiple' ? 'G/H/H' : 'T/H';
-        gaStr = ` ${weeks} ${days}/7 minggu ${fetusStr}`;
+        gaStr = ` ${weeks}+${days} ${fetusStr}`;
     }
 
     // --- Line 1 ---
