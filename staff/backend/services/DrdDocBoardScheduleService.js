@@ -44,6 +44,26 @@ const PROCEDURE_PATTERNS = Object.freeze([
   ['USG Poli', /\busg\s+poli\b/i],
 ]);
 
+const PROCEDURE_ONLY_OPERATION_CODES = new Set([
+  'P-IUD', 'L-IUD', 'LP-IUD', 'IUD',
+  'P-IMP', 'L-IMP', 'LP-IMP', 'IMP',
+  'CUCI-VAGINA', 'PAP-SMEAR', 'IVA',
+  'STRIPPING', 'STRIPPING-MEMBRANE',
+  'FOLEY', 'FOLEY-BALLOON',
+  'USG-VK', 'USG-POLI',
+]);
+
+const PROCEDURE_ONLY_OPERATION_LABELS = Object.freeze([
+  /^(?:pasang|lepas|lepas pasang)\s+iud$/,
+  /^iud$/,
+  /^(?:pasang|lepas|lepas pasang)\s+implan(?:t)?$/,
+  /^cuci vagina$/,
+  /^(?:pap smear(?: iva)?|iva)$/,
+  /^stripping(?: of)? membrane$/,
+  /^(?:induksi )?foley(?: balon| balloon)?$/,
+  /^usg (?:vk|poli)$/,
+]);
+
 const LOCATION_FROM_PARSER = Object.freeze({
   'Klinik Privat': 'klinik_private',
   Melinda: 'rsia_melinda',
@@ -375,6 +395,26 @@ function isOtherOperationType(type) {
   return String(type?.code || '').trim().toUpperCase() === 'OTHER-OP';
 }
 
+function normalizeOperationLabel(value) {
+  return textValue(value).toLowerCase()
+    .replace(/[_/\\-]+/g, ' ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isProcedureOnlyOperationLabel(value) {
+  const label = normalizeOperationLabel(value);
+  return Boolean(label) && PROCEDURE_ONLY_OPERATION_LABELS.some((pattern) => pattern.test(label));
+}
+
+function isProcedureOnlyOperationType(type) {
+  const code = String(type?.code || '').trim().toUpperCase();
+  return PROCEDURE_ONLY_OPERATION_CODES.has(code)
+    || isProcedureOnlyOperationLabel(type?.name)
+    || isProcedureOnlyOperationLabel(type?.name_id);
+}
+
 class DrdDocBoardScheduleService {
   constructor(options = {}) {
     this.repository = options.repository || new DrdDocBoardRepository(options.db || db);
@@ -428,7 +468,9 @@ class DrdDocBoardScheduleService {
       options: {
         locations: LOCATIONS,
         procedure_categories: PROCEDURE_CATEGORIES,
-        operation_types: snapshot.operationTypes.filter((type) => !isOtherOperationType(type)),
+        operation_types: snapshot.operationTypes.filter((type) => (
+          !isOtherOperationType(type) && !isProcedureOnlyOperationType(type)
+        )),
       },
       warnings: [...new Set(warnings)],
       can_create: Boolean(baseDiagnosis),
@@ -465,16 +507,19 @@ class DrdDocBoardScheduleService {
 
     if (data.kind === 'surgery') {
       const activeIds = new Set(snapshot.operationTypes
-        .filter((type) => !isOtherOperationType(type))
+        .filter((type) => !isOtherOperationType(type) && !isProcedureOnlyOperationType(type))
         .map((type) => Number(type.id)));
       const selectedIds = [...new Set((Array.isArray(data.operation_type_ids) ? data.operation_type_ids : [])
         .map(Number).filter((id) => Number.isInteger(id) && activeIds.has(id)))];
       const customLabels = String(data.operation_type_other || '').split(/\r?\n|\+/)
         .map((value) => value.trim()).filter(Boolean);
-      if (!selectedIds.length && !customLabels.length) fail(400, 'OPERATION_REQUIRED', 'Jenis operasi wajib dipilih atau ditulis.');
+      if (customLabels.some(isProcedureOnlyOperationLabel)) {
+        fail(400, 'INVALID_OPERATION', 'Kategori tindakan DocBoard harus dijadwalkan sebagai Tindakan, bukan Operasi.');
+      }
       const invalidRequested = (Array.isArray(data.operation_type_ids) ? data.operation_type_ids : [])
         .map(Number).some((id) => !activeIds.has(id));
-      if (invalidRequested) fail(400, 'INVALID_OPERATION', 'Jenis operasi tidak aktif atau tidak valid.');
+      if (invalidRequested) fail(400, 'INVALID_OPERATION', 'Jenis operasi tidak aktif, tidak valid, atau merupakan kategori tindakan DocBoard.');
+      if (!selectedIds.length && !customLabels.length) fail(400, 'OPERATION_REQUIRED', 'Jenis operasi wajib dipilih atau ditulis.');
 
       const duplicate = await this.repository.findExistingSurgery({
         mrId: preview.mr_id, scheduleDate: data.schedule_date, location: data.location,

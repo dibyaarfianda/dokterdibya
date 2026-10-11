@@ -183,6 +183,42 @@ describe('DRD to DocBoard canonical schedule service', () => {
     expect(preview.options.operation_types.map((type) => type.code)).toEqual(['SC']);
   });
 
+  test('keeps DocBoard procedure categories out of surgery choices and rejects bypass attempts', async () => {
+    const operationTypes = [
+      { id: 1, code: 'SC', name: 'Sectio Caesarea', name_id: 'SC' },
+      { id: 2, code: 'P-IUD', name: 'Pasang IUD', name_id: 'Pasang IUD' },
+      { id: 3, code: 'L-IUD', name: 'Lepas IUD', name_id: 'Lepas IUD' },
+      { id: 4, code: 'LP-IUD', name: 'Lepas Pasang IUD', name_id: 'Lepas Pasang IUD' },
+      { id: 5, code: 'P-IMP', name: 'Pasang Implant', name_id: 'Pasang Implant' },
+      { id: 6, code: 'STRIPPING', name: 'Stripping of Membrane', name_id: 'Stripping Membrane' },
+      { id: 7, code: 'FOLEY', name: 'Induksi Foley Balloon', name_id: 'Induksi Foley Balon' },
+      { id: 99, code: 'OTHER-OP', name: 'Other', name_id: 'Lainnya' },
+    ];
+    const createSurgery = jest.fn();
+    const service = new DrdDocBoardScheduleService({
+      repository: {
+        loadSnapshot: jest.fn().mockResolvedValue(canonicalSnapshot({ operationTypes })),
+        findExistingSurgery: jest.fn().mockResolvedValue(null),
+      },
+      surgeryService: { createSurgery }, docboardService: {}, pushService: {}, rulesService: {}, now: () => NOW,
+    });
+
+    const preview = await service.preview({ mr_id: 'DRD1001', schedule_date: '2026-10-20' });
+    expect(preview.options.operation_types.map((type) => type.code)).toEqual(['SC']);
+
+    await expect(service.create({
+      mr_id: 'DRD1001', kind: 'surgery', schedule_date: '2026-10-20', schedule_time: '08:30',
+      location: 'rsia_melinda', operation_type_ids: [2], idempotency_key: 'procedure-as-operation-id',
+    }, 'STAFF01')).rejects.toMatchObject({ code: 'INVALID_OPERATION' });
+
+    await expect(service.create({
+      mr_id: 'DRD1001', kind: 'surgery', schedule_date: '2026-10-20', schedule_time: '08:30',
+      location: 'rsia_melinda', operation_type_ids: [], operation_type_other: 'Induksi Foley Balon',
+      idempotency_key: 'procedure-as-custom-operation',
+    }, 'STAFF01')).rejects.toMatchObject({ code: 'INVALID_OPERATION' });
+    expect(createSurgery).not.toHaveBeenCalled();
+  });
+
   test('uses OTHER-OP only as the backend fallback for a typed custom operation', async () => {
     const createSurgery = jest.fn().mockResolvedValue({ id: 78 });
     const service = new DrdDocBoardScheduleService({
