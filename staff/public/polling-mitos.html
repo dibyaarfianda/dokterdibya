@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Polling Mitos · Admin</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f4f5f7; --card: #ffffff; --border: #e3e5e8; --text: #111827; --muted: #6b7280;
+            --accent: #111827; --accent-fg: #fff; --danger: #dc2626; --ok: #16a34a; --warn: #d97706; --bar: #374151;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 'Inter', system-ui, sans-serif; }
+        header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 5; }
+        header h1 { font-size: 17px; margin: 0; flex: 1; }
+        header a { color: var(--muted); text-decoration: none; }
+        .layout { display: grid; grid-template-columns: 280px 1fr; gap: 16px; padding: 16px; max-width: 1280px; margin: 0 auto; }
+        @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+        .card h2 { font-size: 15px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+        .card h2 .spacer { flex: 1; }
+        .poll-item { padding: 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; margin-bottom: 4px; }
+        .poll-item:hover { background: var(--bg); }
+        .poll-item.active { border-color: var(--accent); background: var(--bg); }
+        .poll-item .meta { color: var(--muted); font-size: 12px; }
+        label.f { display: block; font-weight: 600; margin: 12px 0 4px; }
+        label.f small { font-weight: 400; color: var(--muted); }
+        input[type=text], textarea, select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font: inherit; background: #fff; }
+        textarea { min-height: 70px; resize: vertical; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 600px) { .row { grid-template-columns: 1fr; } }
+        .btn { border: 1px solid var(--border); background: #fff; color: var(--text); border-radius: 8px; padding: 7px 12px; font: inherit; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+        .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+        .btn.danger { color: var(--danger); }
+        .btn.sm { padding: 4px 8px; font-size: 12px; }
+        .btn:disabled { opacity: .5; cursor: default; }
+        .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+        .cat-row { display: grid; grid-template-columns: 1fr 1.6fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
+        @media (max-width: 600px) { .cat-row { grid-template-columns: 1fr; } }
+        .cat-row textarea { min-height: 38px; }
+        .muted { color: var(--muted); }
+        .hidden { display: none !important; }
+        .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--bg); border: 1px solid var(--border); }
+        .badge.active { color: var(--ok); border-color: var(--ok); }
+        .badge.closed { color: var(--muted); }
+        .badge.draft { color: var(--warn); border-color: var(--warn); }
+        .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; margin: 2px 4px 2px 0; }
+        .bar-row { margin-bottom: 10px; }
+        .bar-row .lbl { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+        .bar { height: 10px; background: var(--bg); border-radius: 999px; overflow: hidden; margin-top: 4px; }
+        .bar > span { display: block; height: 100%; background: var(--bar); border-radius: 999px; }
+        .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .stat { background: var(--bg); border-radius: 8px; padding: 8px 12px; }
+        .stat b { display: block; font-size: 18px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 8px 6px; border-top: 1px solid var(--border); vertical-align: top; }
+        th { font-size: 12px; color: var(--muted); font-weight: 600; }
+        td.ans { max-width: 420px; white-space: pre-wrap; word-break: break-word; }
+        .table-wrap { overflow-x: auto; }
+        .img-preview { max-width: 100%; max-height: 180px; border-radius: 8px; display: block; margin: 8px 0; }
+        .qr-preview { width: 180px; height: 180px; border: 1px solid var(--border); border-radius: 8px; display: block; margin: 8px 0; }
+        .link-box { display: flex; gap: 8px; }
+        .link-box input { flex: 1; }
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 10px 16px; border-radius: 8px; z-index: 50; max-width: 90vw; }
+        .toast.err { background: var(--danger); }
+        .override-box { margin-top: 6px; padding: 8px; background: var(--bg); border-radius: 8px; }
+        .override-box label { display: block; font-size: 13px; }
+        .warn { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; padding: 8px 12px; border-radius: 8px; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+<header>
+    <a href="index-adminlte.html" title="Kembali ke panel"><i class="fas fa-arrow-left"></i></a>
+    <h1>Polling Mitos (sisiwanita.id)</h1>
+    <button class="btn primary" id="btn-new"><i class="fas fa-plus"></i> Polling baru</button>
+</header>
+
+<div class="layout">
+    <aside>
+        <div class="card">
+            <h2>Daftar polling</h2>
+            <div id="poll-list" class="muted">Memuat...</div>
+        </div>
+        <div class="card muted" id="ai-info" style="font-size:12px"></div>
+    </aside>
+
+    <main>
+        <div id="empty" class="card muted">Pilih polling di kiri, atau buat polling baru.</div>
+
+        <section id="editor" class="hidden">
+            <div class="card">
+                <h2><span id="editor-title">Polling baru</span><span class="spacer"></span>
+                    <button class="btn sm" id="btn-template" type="button"><i class="fas fa-magic"></i> Isi contoh IUD</button>
+                </h2>
+                <div class="row">
+                    <div>
+                        <label class="f" for="f-title">Judul</label>
+                        <input type="text" id="f-title" maxlength="200">
+                    </div>
+                    <div>
+                        <label class="f" for="f-slug">Kode link <small>(huruf kecil, angka, minus)</small></label>
+                        <input type="text" id="f-slug" maxlength="63" placeholder="mitos-iud">
+                    </div>
+                </div>
+                <label class="f" for="f-question">Pertanyaan</label>
+                <textarea id="f-question" maxlength="2000"></textarea>
+                <label class="f" for="f-description">Keterangan <small>(opsional, tampil di bawah judul)</small></label>
+                <textarea id="f-description" maxlength="2000"></textarea>
+                <div class="row">
+                    <div>
+                        <label class="f" for="f-type">Tipe jawaban</label>
+                        <select id="f-type">
+                            <option value="text">Isian bebas (textarea) + klasifikasi AI</option>
+                            <option value="single">Pilih satu opsi</option>
+                            <option value="multiple">Pilih beberapa opsi</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="f" for="f-status">Status</label>
+                        <select id="f-status">
+                            <option value="draft">Draft (belum bisa diakses)</option>
+                            <option value="active">Aktif (menerima jawaban)</option>
+                            <option value="closed">Ditutup</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="options-block" class="hidden">
+                    <label class="f" for="f-options">Opsi jawaban <small>(satu per baris)</small></label>
+                    <textarea id="f-options" style="min-height:120px"></textarea>
+                </div>
+                <div id="placeholder-block">
+                    <label class="f" for="f-placeholder">Contoh isian di kotak jawaban <small>(opsional)</small></label>
+                    <input type="text" id="f-placeholder" maxlength="255">
+                </div>
+                <label class="f" for="f-thanks">Pesan terima kasih <small>(opsional)</small></label>
+                <textarea id="f-thanks" maxlength="2000"></textarea>
+                <label class="f" style="font-weight:500">
+                    <input type="checkbox" id="f-one-ip" checked> Batasi satu jawaban per IP
+                </label>
+                <div class="muted" style="font-size:12px">Kalau dimatikan, pembatasan pakai penanda perangkat (IP tetap dicatat). Matikan kalau QR dipasang di ruang tunggu yang semua pasiennya memakai WiFi klinik yang sama.</div>
+
+                <div id="categories-block">
+                    <label class="f">Kategori mitos <small>(AI memetakan tiap jawaban ke kategori ini; keterangan berisi contoh ungkapan pasien)</small></label>
+                    <div id="cat-list"></div>
+                    <button class="btn sm" type="button" id="btn-add-cat"><i class="fas fa-plus"></i> Tambah kategori</button>
+                    <label class="f" for="f-ai">Catatan tambahan untuk AI <small>(opsional)</small></label>
+                    <textarea id="f-ai" maxlength="2000" placeholder="Misal: kalau pasien menyebut 'spiral', itu sama dengan IUD."></textarea>
+                </div>
+
+                <div class="actions">
+                    <button class="btn primary" id="btn-save" type="button"><i class="fas fa-save"></i> Simpan</button>
+                    <button class="btn danger hidden" id="btn-delete" type="button"><i class="fas fa-trash"></i> Hapus polling</button>
+                </div>
+            </div>
+
+            <div class="card hidden" id="share-card">
+                <h2>Gambar, link &amp; QR</h2>
+                <div class="row">
+                    <div>
+                        <label class="f">Gambar header <small>(otomatis diperkecil)</small></label>
+                        <img id="img-preview" class="img-preview hidden" alt="Gambar header">
+                        <input type="file" id="f-image" accept="image/jpeg,image/png,image/webp,image/gif">
+                        <div class="actions" style="margin-top:8px">
+                            <button class="btn sm" id="btn-upload" type="button"><i class="fas fa-upload"></i> Unggah</button>
+                            <button class="btn sm danger" id="btn-remove-img" type="button">Hapus gambar</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="f">Link publik</label>
+                        <div class="link-box">
+                            <input type="text" id="public-url" readonly>
+                            <button class="btn sm" id="btn-copy" type="button"><i class="fas fa-copy"></i></button>
+                            <a class="btn sm" id="btn-open" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i></a>
+                        </div>
+                        <img id="qr-preview" class="qr-preview" alt="QR code">
+                        <button class="btn sm" id="btn-qr" type="button"><i class="fas fa-download"></i> Unduh QR (PNG 1024px)</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card hidden" id="summary-card">
+                <h2>Rekap<span class="spacer"></span>
+                    <button class="btn sm" id="btn-refresh" type="button"><i class="fas fa-sync"></i></button>
+                </h2>
+                <div id="summary"></div>
+            </div>
+
+            <div class="card hidden" id="responses-card">
+                <h2>Jawaban masuk<span class="spacer"></span>
+                    <select id="resp-filter" style="width:auto">
+                        <option value="">Semua</option>
+                        <option value="done">Sudah diklasifikasi</option>
+                        <option value="pending">Menunggu AI</option>
+                        <option value="failed">Gagal</option>
+                    </select>
+                </h2>
+                <div class="table-wrap"><table>
+                    <thead><tr><th>Waktu</th><th>Jawaban</th><th>Kategori</th><th>IP</th><th></th></tr></thead>
+                    <tbody id="resp-body"></tbody>
+                </table></div>
+                <div class="actions"><button class="btn sm hidden" id="btn-more" type="button">Muat lebih banyak</button></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script type="module">
+    import { getIdToken } from './scripts/vps-auth-v2.js';
+
+    const API = '/api/public-polls/admin';
+    const $ = (id) => document.getElementById(id);
+    const state = { polls: [], current: null, responses: [], responsesTotal: 0, qrUrl: null, imgUrl: null, aiConfigured: false };
+
+    const IUD_TEMPLATE = {
+        title: 'Kenapa ragu pasang KB IUD?',
+        slug: 'mitos-iud',
+        question: 'Apa yang membuat Anda takut atau ragu memakai KB IUD (spiral)? Tulis dengan bahasa Anda sendiri.',
+        description: 'Jawaban anonim. Tidak perlu login atau email. Jawaban Anda membantu kami menyusun edukasi yang tepat.',
+        placeholder: 'Contoh: takut spiralnya pindah ke perut...',
+        thank_you_message: 'Terima kasih! Jawaban Anda sangat membantu.\nSilakan tanyakan langsung ke dokter saat pemeriksaan.',
+        ai_instructions: 'Spiral = IUD = AKDR. Jawaban yang menyebut efek samping nyata (misal haid lebih banyak/nyeri) tetap dipetakan ke kategorinya walau bukan mitos murni.',
+        categories: [
+            { name: 'IUD jalan-jalan', description: 'IUD pindah tempat, hilang, masuk ke perut/jantung/otak, lepas sendiri tanpa terasa' },
+            { name: 'IUD bikin mandul', description: 'Takut tidak bisa hamil lagi setelah IUD dilepas' },
+            { name: 'IUD menempel pada bayi', description: 'Hamil dengan IUD lalu bayi lahir memegang spiral, IUD melukai janin' },
+            { name: 'IUD mengganggu hubungan suami istri', description: 'Suami merasa tertusuk/terganggu, nyeri saat berhubungan' },
+            { name: 'IUD sebabkan kanker / infeksi', description: 'Spiral bikin kanker serviks/rahim, keputihan, infeksi, karat' },
+            { name: 'Takut nyeri / malu saat pemasangan', description: 'Takut sakit waktu dipasang atau dilepas, malu diperiksa dalam' },
+            { name: 'Haid lebih banyak / nyeri haid', description: 'Takut haid jadi deras, lama, flek, atau nyeri' },
+            { name: 'Larangan agama / keluarga', description: 'Dianggap haram, aborsi, tidak diizinkan suami atau orang tua' },
+            { name: 'Kenaikan berat badan', description: 'Takut gemuk karena KB' }
+        ]
+    };
+
+    function toast(message, isError = false) {
+        const el = document.createElement('div');
+        el.className = 'toast' + (isError ? ' err' : '');
+        el.textContent = message;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3500);
+    }
+
+    function esc(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    async function api(path, options = {}) {
+        const token = await getIdToken();
+        if (!token) {
+            window.location.href = 'login.html';
+            throw new Error('Sesi habis');
+        }
+        const headers = { Authorization: `Bearer ${token}`, ...(options.headers || {}) };
+        if (options.body && !(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+        const res = await fetch(API + path, { ...options, headers });
+        if (options.raw) {
+            if (!res.ok) throw new Error('Gagal memuat');
+            return res;
+        }
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+            window.location.href = 'login.html';
+            throw new Error('Sesi habis');
+        }
+        if (!res.ok || body.success === false) throw new Error(body.message || `Error ${res.status}`);
+        return body;
+    }
+
+    // ---------- list ----------
+    async function loadPolls(selectId) {
+        try {
+            const body = await api('/polls');
+            state.polls = body.data;
+            state.aiConfigured = body.ai_configured;
+            $('ai-info').innerHTML = body.ai_configured
+                ? `<i class="fas fa-robot"></i> Klasifikasi AI aktif (${esc(body.ai_model)}).`
+                : '<div class="warn" style="margin:0"><i class="fas fa-exclamation-triangle"></i> ANTHROPIC_API_KEY belum diset di server. Jawaban tetap tersimpan, klasifikasi AI menunggu sampai key diset.</div>';
+            renderList();
+            if (selectId) selectPoll(selectId);
+        } catch (error) {
+            $('poll-list').textContent = error.message;
+        }
+    }
+
+    function renderList() {
+        if (!state.polls.length) {
+            $('poll-list').innerHTML = '<span class="muted">Belum ada polling.</span>';
+            return;
+        }
+        $('poll-list').innerHTML = state.polls.map((poll) => `
+            <div class="poll-item ${state.current?.id === poll.id ? 'active' : ''}" data-id="${poll.id}">
+                <div><b>${esc(poll.title)}</b></div>
+                <div class="meta"><span class="badge ${esc(poll.status)}">${esc(poll.status)}</span> · ${poll.response_count} jawaban · /${esc(poll.slug)}</div>
+            </div>`).join('');
+        document.querySelectorAll('.poll-item').forEach((el) => el.addEventListener('click', () => selectPoll(Number(el.dataset.id))));
+    }
+
+    // ---------- editor ----------
+    function addCategoryRow(category = {}) {
+        const row = document.createElement('div');
+        row.className = 'cat-row';
+        row.dataset.id = category.id || '';
+        row.innerHTML = `
+            <input type="text" class="cat-name" maxlength="150" placeholder="Nama kategori, mis. IUD jalan-jalan" value="${esc(category.name)}">
+            <textarea class="cat-desc" maxlength="1000" placeholder="Contoh ungkapan pasien">${esc(category.description)}</textarea>
+            <button class="btn sm danger" type="button" title="Hapus"><i class="fas fa-times"></i></button>`;
+        row.querySelector('button').addEventListener('click', () => row.remove());
+        $('cat-list').appendChild(row);
+    }
+
+    function fillForm(poll) {
+        $('f-title').value = poll.title || '';
+        $('f-slug').value = poll.slug || '';
+        $('f-question').value = poll.question || '';
+        $('f-description').value = poll.description || '';
+        $('f-type').value = poll.answer_type || 'text';
+        $('f-status').value = poll.status || 'draft';
+        $('f-options').value = (poll.options || []).join('\n');
+        $('f-placeholder').value = poll.placeholder || '';
+        $('f-thanks').value = poll.thank_you_message || '';
+        $('f-ai').value = poll.ai_instructions || '';
+        $('f-one-ip').checked = poll.one_per_ip !== false;
+        $('cat-list').innerHTML = '';
+        (poll.categories || []).forEach(addCategoryRow);
+        syncTypeVisibility();
+    }
+
+    function syncTypeVisibility() {
+        const isText = $('f-type').value === 'text';
+        $('options-block').classList.toggle('hidden', isText);
+        $('placeholder-block').classList.toggle('hidden', !isText);
+        $('categories-block').classList.toggle('hidden', !isText);
+    }
+
+    function readForm() {
+        return {
+            title: $('f-title').value,
+            slug: $('f-slug').value,
+            question: $('f-question').value,
+            description: $('f-description').value,
+            answer_type: $('f-type').value,
+            status: $('f-status').value,
+            options: $('f-options').value.split('\n'),
+            placeholder: $('f-placeholder').value,
+            thank_you_message: $('f-thanks').value,
+            ai_instructions: $('f-ai').value,
+            one_per_ip: $('f-one-ip').checked,
+            categories: [...document.querySelectorAll('#cat-list .cat-row')].map((row) => ({
+                id: row.dataset.id ? Number(row.dataset.id) : null,
+                name: row.querySelector('.cat-name').value,
+                description: row.querySelector('.cat-desc').value
+            }))
+        };
+    }
+
+    function newPoll() {
+        state.current = null;
+        renderList();
+        $('empty').classList.add('hidden');
+        $('editor').classList.remove('hidden');
+        $('editor-title').textContent = 'Polling baru';
+        ['share-card', 'summary-card', 'responses-card', 'btn-delete'].forEach((id) => $(id).classList.add('hidden'));
+        fillForm({ answer_type: 'text', status: 'draft', one_per_ip: true, categories: [] });
+    }
+
+    async function selectPoll(id) {
+        try {
+            const body = await api(`/polls/${id}`);
+            state.current = body.data;
+            renderList();
+            $('empty').classList.add('hidden');
+            $('editor').classList.remove('hidden');
+            $('editor-title').textContent = 'Edit polling';
+            ['share-card', 'summary-card', 'responses-card', 'btn-delete'].forEach((key) => $(key).classList.remove('hidden'));
+            fillForm(state.current);
+            renderShare();
+            loadSummary();
+            loadResponses(true);
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    async function savePoll() {
+        const button = $('btn-save');
+        button.disabled = true;
+        try {
+            const payload = readForm();
+            const body = state.current
+                ? await api(`/polls/${state.current.id}`, { method: 'PUT', body: JSON.stringify(payload) })
+                : await api('/polls', { method: 'POST', body: JSON.stringify(payload) });
+            toast('Polling tersimpan');
+            await loadPolls(body.data.id);
+        } catch (error) {
+            toast(error.message, true);
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    async function deletePoll() {
+        if (!state.current) return;
+        if (!confirm(`Hapus polling "${state.current.title}" beserta SEMUA jawabannya? Tidak bisa dibatalkan.`)) return;
+        try {
+            await api(`/polls/${state.current.id}`, { method: 'DELETE' });
+            toast('Polling dihapus');
+            state.current = null;
+            $('editor').classList.add('hidden');
+            $('empty').classList.remove('hidden');
+            loadPolls();
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    // ---------- image / link / QR ----------
+    async function renderShare() {
+        const poll = state.current;
+        $('public-url').value = poll.public_url;
+        $('btn-open').href = poll.public_url;
+        const img = $('img-preview');
+        img.classList.add('hidden');
+        if (poll.has_image) {
+            try {
+                const res = await api(`/polls/${poll.id}/image`, { raw: true });
+                if (state.imgUrl) URL.revokeObjectURL(state.imgUrl);
+                state.imgUrl = URL.createObjectURL(await res.blob());
+                img.src = state.imgUrl;
+                img.classList.remove('hidden');
+            } catch (error) {
+                // preview is optional
+            }
+        }
+        try {
+            const res = await api(`/polls/${poll.id}/qr.png?size=512`, { raw: true });
+            if (state.qrUrl) URL.revokeObjectURL(state.qrUrl);
+            state.qrUrl = URL.createObjectURL(await res.blob());
+            $('qr-preview').src = state.qrUrl;
+        } catch (error) {
+            $('qr-preview').removeAttribute('src');
+        }
+    }
+
+    async function uploadImage() {
+        const file = $('f-image').files[0];
+        if (!file) return toast('Pilih file gambar dulu', true);
+        const form = new FormData();
+        form.append('image', file);
+        try {
+            await api(`/polls/${state.current.id}/image`, { method: 'POST', body: form });
+            toast('Gambar terunggah');
+            $('f-image').value = '';
+            selectPoll(state.current.id);
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    async function removeImage() {
+        try {
+            await api(`/polls/${state.current.id}/image`, { method: 'DELETE' });
+            toast('Gambar dihapus');
+            selectPoll(state.current.id);
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    async function downloadQr() {
+        try {
+            const res = await api(`/polls/${state.current.id}/qr.png?size=1024`, { raw: true });
+            const url = URL.createObjectURL(await res.blob());
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `qr-polling-${state.current.slug}.png`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    // ---------- summary ----------
+    async function loadSummary() {
+        if (!state.current) return;
+        try {
+            const { data } = await api(`/polls/${state.current.id}/summary`);
+            const isText = state.current.answer_type === 'text';
+            const s = data.status_counts;
+            let html = `<div class="stats">
+                <div class="stat"><b>${data.total_responses}</b>jawaban</div>
+                ${isText ? `<div class="stat"><b>${s.done}</b>terklasifikasi</div>
+                <div class="stat"><b>${s.pending}</b>menunggu AI</div>
+                <div class="stat"><b>${s.failed}</b>gagal</div>` : ''}
+            </div>`;
+            if (isText) {
+                html += data.categories.map((c) => barRow(c.name, c.count, c.percent)).join('');
+                html += barRow('Tidak masuk kategori mana pun', data.uncategorized, data.classified ? Math.round(data.uncategorized / data.classified * 1000) / 10 : 0, true);
+                html += `<div class="muted" style="font-size:12px">Persentase dari jawaban yang sudah diklasifikasi. Satu jawaban bisa masuk lebih dari satu kategori.</div>
+                <div class="actions">
+                    <button class="btn sm" id="btn-classify-pending" ${state.aiConfigured ? '' : 'disabled'}><i class="fas fa-robot"></i> Klasifikasi yang menunggu/gagal</button>
+                    <button class="btn sm" id="btn-classify-all" ${state.aiConfigured ? '' : 'disabled'}><i class="fas fa-redo"></i> Klasifikasi ulang semua</button>
+                </div>`;
+            } else {
+                html += data.options.map((o) => barRow(o.option, o.count, o.percent)).join('');
+            }
+            $('summary').innerHTML = html;
+            $('btn-classify-pending')?.addEventListener('click', () => classify('pending'));
+            $('btn-classify-all')?.addEventListener('click', () => {
+                if (confirm('Klasifikasi ulang semua jawaban (kecuali yang dikoreksi manual)? Ini memanggil AI untuk setiap jawaban.')) classify('all');
+            });
+        } catch (error) {
+            $('summary').textContent = error.message;
+        }
+    }
+
+    function barRow(label, count, percent, muted = false) {
+        return `<div class="bar-row ${muted ? 'muted' : ''}">
+            <div class="lbl"><span>${esc(label)}</span><span><b>${count}</b> · ${percent}%</span></div>
+            <div class="bar"><span style="width:${Math.min(percent, 100)}%"></span></div>
+        </div>`;
+    }
+
+    async function classify(scope) {
+        try {
+            const body = await api(`/polls/${state.current.id}/classify`, { method: 'POST', body: JSON.stringify({ scope }) });
+            toast(`${body.queued} jawaban masuk antrean AI. Muat ulang rekap sebentar lagi.`);
+            setTimeout(() => { loadSummary(); loadResponses(true); }, 4000);
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    // ---------- responses ----------
+    function categoryName(id) {
+        return state.current.categories.find((c) => c.id === id)?.name || `#${id}`;
+    }
+
+    async function loadResponses(reset) {
+        if (!state.current) return;
+        if (reset) state.responses = [];
+        const status = $('resp-filter').value;
+        try {
+            const body = await api(`/polls/${state.current.id}/responses?limit=100&offset=${state.responses.length}${status ? `&status=${status}` : ''}`);
+            state.responses = state.responses.concat(body.data);
+            state.responsesTotal = body.total;
+            renderResponses();
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    function renderResponses() {
+        const isText = state.current.answer_type === 'text';
+        const statusLabel = { pending: 'menunggu AI', failed: 'gagal', skipped: '-', done: '' };
+        $('resp-body').innerHTML = state.responses.map((r) => {
+            const answer = isText ? r.answer_text : [r.selected_options.join(', '), r.answer_text].filter(Boolean).join('\n');
+            let cats = '';
+            if (isText) {
+                cats = r.ai_status === 'done'
+                    ? (r.category_ids.length ? r.category_ids.map((id) => `<span class="chip">${esc(categoryName(id))}</span>`).join('') : '<span class="muted">tidak masuk kategori</span>')
+                    : `<span class="badge">${esc(statusLabel[r.ai_status] || r.ai_status)}</span>`;
+                const meta = [r.manual_override ? 'manual' : r.ai_confidence, r.ai_reason].filter(Boolean).join(' · ');
+                if (meta) cats += `<div class="muted" style="font-size:12px">${esc(meta)}</div>`;
+                cats += `<div class="override-box hidden" data-box="${r.id}">
+                    ${state.current.categories.map((c) => `<label><input type="checkbox" value="${c.id}" ${r.category_ids.includes(c.id) ? 'checked' : ''}> ${esc(c.name)}</label>`).join('')}
+                    <button class="btn sm primary" data-save="${r.id}" style="margin-top:6px">Simpan koreksi</button>
+                </div>`;
+            }
+            return `<tr>
+                <td class="muted" style="white-space:nowrap">${esc(new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+                <td class="ans">${esc(answer)}</td>
+                <td>${cats}</td>
+                <td class="muted">${esc(r.ip_address)}</td>
+                <td style="white-space:nowrap">
+                    ${isText ? `<button class="btn sm" data-edit="${r.id}" title="Koreksi kategori"><i class="fas fa-tag"></i></button>` : ''}
+                    <button class="btn sm danger" data-del="${r.id}" title="Hapus jawaban"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('') || '<tr><td colspan="5" class="muted">Belum ada jawaban.</td></tr>';
+        $('btn-more').classList.toggle('hidden', state.responses.length >= state.responsesTotal);
+
+        document.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
+            document.querySelector(`[data-box="${b.dataset.edit}"]`).classList.toggle('hidden');
+        }));
+        document.querySelectorAll('[data-save]').forEach((b) => b.addEventListener('click', () => saveOverride(Number(b.dataset.save))));
+        document.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => deleteResponse(Number(b.dataset.del))));
+    }
+
+    async function saveOverride(responseId) {
+        const ids = [...document.querySelectorAll(`[data-box="${responseId}"] input:checked`)].map((i) => Number(i.value));
+        try {
+            await api(`/responses/${responseId}/categories`, { method: 'PUT', body: JSON.stringify({ category_ids: ids }) });
+            toast('Kategori dikoreksi');
+            loadSummary();
+            loadResponses(true);
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    async function deleteResponse(responseId) {
+        if (!confirm('Hapus jawaban ini? Orang dari IP/perangkat tersebut bisa mengisi lagi.')) return;
+        try {
+            await api(`/responses/${responseId}`, { method: 'DELETE' });
+            loadSummary();
+            loadResponses(true);
+        } catch (error) {
+            toast(error.message, true);
+        }
+    }
+
+    // ---------- wiring ----------
+    $('btn-new').addEventListener('click', newPoll);
+    $('btn-template').addEventListener('click', () => {
+        const current = readForm();
+        const hasContent = current.question.trim() || current.categories.some((c) => c.name.trim());
+        if (hasContent && !confirm('Timpa isi form dengan contoh polling mitos IUD?')) return;
+        fillForm({ ...IUD_TEMPLATE, answer_type: 'text', status: $('f-status').value, one_per_ip: $('f-one-ip').checked,
+            categories: IUD_TEMPLATE.categories.map((c, i) => ({ ...c, id: current.categories[i]?.id || null })) });
+    });
+    $('f-type').addEventListener('change', syncTypeVisibility);
+    $('btn-add-cat').addEventListener('click', () => addCategoryRow());
+    $('btn-save').addEventListener('click', savePoll);
+    $('btn-delete').addEventListener('click', deletePoll);
+    $('btn-upload').addEventListener('click', uploadImage);
+    $('btn-remove-img').addEventListener('click', removeImage);
+    $('btn-qr').addEventListener('click', downloadQr);
+    $('btn-copy').addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText($('public-url').value); toast('Link disalin'); } catch (e) { $('public-url').select(); }
+    });
+    $('btn-refresh').addEventListener('click', () => { loadSummary(); loadResponses(true); });
+    $('resp-filter').addEventListener('change', () => loadResponses(true));
+    $('btn-more').addEventListener('click', () => loadResponses(false));
+
+    loadPolls();
+</script>
+</body>
+</html>

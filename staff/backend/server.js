@@ -638,6 +638,10 @@ app.use('/api/patient-notifications', patientNotificationsRoutes);
 const pollsRoutes = require('./routes/polls');
 app.use('/api/polls', pollsRoutes);
 
+// Public anonymous polls (sisiwanita.id/polling.html, QR access, no login) + dokter admin
+const publicPollsRoutes = require('./routes/public-polls');
+app.use('/api/public-polls', publicPollsRoutes);
+
 // Patient Activity routes (aggregated patient activities for admin dashboard)
 const patientActivityRoutes = require('./routes/patient-activity');
 app.use('/api/patient-activity', patientActivityRoutes);

@@ -57,6 +57,14 @@ const OPERATIONAL_SCHEMA_SCOPES = Object.freeze({
         poll_comments: ['id', 'poll_id', 'patient_id', 'comment_text'],
         poll_comment_likes: ['id', 'comment_id', 'patient_id']
     },
+    publicPolls: {
+        public_polls: ['id', 'slug', 'answer_type', 'options_json', 'header_image', 'status', 'one_per_ip'],
+        public_poll_categories: ['id', 'poll_id', 'name', 'description', 'sort_order'],
+        public_poll_responses: [
+            'id', 'poll_id', 'answer_text', 'selected_options', 'ip_address', 'dedupe_key',
+            'category_ids', 'ai_status', 'ai_confidence', 'ai_reason', 'manual_override'
+        ]
+    },
     staffWorkdesk: {
         staff_workdesk_layouts: ['user_id', 'layout_json', 'updated_at']
     },
@@ -76,13 +84,18 @@ const OPERATIONAL_SCHEMA_SCOPES = Object.freeze({
     }
 });
 
+// Scopes introduced after wave 6 ship their own migration file.
+const SCOPE_MIGRATION_NAMES = Object.freeze({
+    publicPolls: '20261012_public_polls.sql'
+});
+
 const scopeValidationPromises = new Map();
 let allValidationPromise = null;
 
 function schemaError(scopeName, missing) {
     const error = new Error(
         `Operational schema scope "${scopeName}" is incomplete: ${missing.join(', ')}. ` +
-        `Run migration ${MIGRATION_NAME}.`
+        `Run migration ${SCOPE_MIGRATION_NAMES[scopeName] || MIGRATION_NAME}.`
     );
     error.code = 'OPERATIONAL_SCHEMA_MISSING';
     error.statusCode = 503;
