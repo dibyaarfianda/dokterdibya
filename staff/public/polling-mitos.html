@@ -93,7 +93,7 @@
         <section id="editor" class="hidden">
             <div class="card">
                 <h2><span id="editor-title">Polling baru</span><span class="spacer"></span>
-                    <button class="btn sm" id="btn-template" type="button"><i class="fas fa-magic"></i> Isi contoh IUD</button>
+                    <button class="btn sm" id="btn-template" type="button"><i class="fas fa-magic"></i> Isi 6 mitos presentasi</button>
                 </h2>
                 <div class="row">
                     <div>
@@ -214,24 +214,23 @@
     const $ = (id) => document.getElementById(id);
     const state = { polls: [], current: null, responses: [], responsesTotal: 0, qrUrl: null, imgUrl: null, aiConfigured: false };
 
+    // Six myths from the "Jarak adalah Bentuk Kasih Sayang" talk (slides 6-11),
+    // question from slide 14.
     const IUD_TEMPLATE = {
-        title: 'Kenapa ragu pasang KB IUD?',
+        title: 'Apa yang masih membuat Ibu ragu?',
         slug: 'mitos-iud',
-        question: 'Apa yang membuat Anda takut atau ragu memakai KB IUD (spiral)? Tulis dengan bahasa Anda sendiri.',
-        description: 'Jawaban anonim. Tidak perlu login atau email. Jawaban Anda membantu kami menyusun edukasi yang tepat.',
+        question: 'Apa yang masih membuat Ibu ragu menggunakan IUD (spiral) atau implan (susuk)? Ceritakan dengan bahasa Ibu sendiri.',
+        description: 'Jawaban anonim. Tidak perlu login atau email.',
         placeholder: 'Contoh: takut spiralnya pindah ke perut...',
-        thank_you_message: 'Terima kasih! Jawaban Anda sangat membantu.\nSilakan tanyakan langsung ke dokter saat pemeriksaan.',
-        ai_instructions: 'Spiral = IUD = AKDR. Jawaban yang menyebut efek samping nyata (misal haid lebih banyak/nyeri) tetap dipetakan ke kategorinya walau bukan mitos murni.',
+        thank_you_message: 'Matur nuwun, Bu! Jawaban Ibu sangat membantu.\nJangan ragu bertanya ke bidan atau dokter.',
+        ai_instructions: 'Spiral = IUD = AKDR. Implan = susuk = KB tanam. Pasien sering menulis dalam bahasa Jawa. Keluhan yang tidak termasuk enam mitos ini (misal takut nyeri saat dipasang, haid berubah, biaya) biarkan tanpa kategori.',
         categories: [
-            { name: 'IUD jalan-jalan', description: 'IUD pindah tempat, hilang, masuk ke perut/jantung/otak, lepas sendiri tanpa terasa' },
-            { name: 'IUD bikin mandul', description: 'Takut tidak bisa hamil lagi setelah IUD dilepas' },
-            { name: 'IUD menempel pada bayi', description: 'Hamil dengan IUD lalu bayi lahir memegang spiral, IUD melukai janin' },
-            { name: 'IUD mengganggu hubungan suami istri', description: 'Suami merasa tertusuk/terganggu, nyeri saat berhubungan' },
-            { name: 'IUD sebabkan kanker / infeksi', description: 'Spiral bikin kanker serviks/rahim, keputihan, infeksi, karat' },
-            { name: 'Takut nyeri / malu saat pemasangan', description: 'Takut sakit waktu dipasang atau dilepas, malu diperiksa dalam' },
-            { name: 'Haid lebih banyak / nyeri haid', description: 'Takut haid jadi deras, lama, flek, atau nyeri' },
-            { name: 'Larangan agama / keluarga', description: 'Dianggap haram, aborsi, tidak diizinkan suami atau orang tua' },
-            { name: 'Kenaikan berat badan', description: 'Takut gemuk karena KB' }
+            { name: 'IUD jalan-jalan', description: 'IUD/spiral pindah tempat, hilang, masuk ke perut, jantung, atau otak, lari-lari di dalam tubuh' },
+            { name: 'Bikin mandul', description: 'IUD atau implan bikin tidak bisa hamil lagi setelah dilepas, rahim kering' },
+            { name: 'Bikin gemuk', description: 'Implan atau IUD bikin berat badan naik, nafsu makan bertambah, menimbun lemak' },
+            { name: 'Mengganggu suami', description: 'Benang IUD terasa atau menusuk suami, mengganggu hubungan suami istri' },
+            { name: 'Bayi memegang IUD', description: 'Hamil saat pakai IUD lalu bayi lahir memegang spiral, IUD melukai atau menempel pada janin' },
+            { name: 'Menggugurkan', description: 'KB spiral dianggap aborsi, menggugurkan bakal janin, dosa atau haram karena menggugurkan' }
         ]
     };
 
@@ -620,7 +619,7 @@
     $('btn-template').addEventListener('click', () => {
         const current = readForm();
         const hasContent = current.question.trim() || current.categories.some((c) => c.name.trim());
-        if (hasContent && !confirm('Timpa isi form dengan contoh polling mitos IUD?')) return;
+        if (hasContent && !confirm('Timpa isi form dengan 6 mitos dari presentasi?')) return;
         fillForm({ ...IUD_TEMPLATE, answer_type: 'text', status: $('f-status').value, one_per_ip: $('f-one-ip').checked,
             categories: IUD_TEMPLATE.categories.map((c, i) => ({ ...c, id: current.categories[i]?.id || null })) });
     });
