@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#ffffff">
+    <title>Polling SISIwanita</title>
+    <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --surface: #fafafa;
+            --border: #e5e5e5;
+            --text: #0a0a0a;
+            --body: #262626;
+            --muted: #666666;
+            --accent: #0a0a0a;
+            --accent-fg: #ffffff;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --radius: 18px;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
+        body {
+            background: var(--bg);
+            color: var(--body);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100%;
+        }
+        .wrap {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 20px 16px calc(32px + env(safe-area-inset-bottom));
+        }
+        .brand {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-weight: 800;
+            font-size: 15px;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+        .brand span { font-weight: 600; color: var(--muted); }
+        .hero {
+            width: 100%;
+            border-radius: var(--radius);
+            display: block;
+            margin-bottom: 20px;
+            background: var(--surface);
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+        h1 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 26px;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            margin: 0 0 8px;
+        }
+        .desc { color: var(--muted); margin: 0 0 20px; white-space: pre-line; }
+        .question {
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--text);
+            margin: 0 0 12px;
+            white-space: pre-line;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            font: inherit;
+            font-size: 16px; /* prevents iOS zoom */
+            color: var(--text);
+            background: var(--bg);
+            resize: vertical;
+        }
+        textarea:focus { outline: none; border-color: var(--accent); }
+        .counter { text-align: right; font-size: 13px; color: var(--muted); margin-top: 4px; }
+        .options { display: grid; gap: 10px; }
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 14px;
+            cursor: pointer;
+            background: var(--bg);
+            min-height: 52px;
+        }
+        .option input { width: 20px; height: 20px; accent-color: var(--accent); flex-shrink: 0; margin: 0; }
+        .option:has(input:checked) { border-color: var(--accent); background: var(--surface); }
+        .btn {
+            margin-top: 20px;
+            width: 100%;
+            border: 0;
+            border-radius: 999px;
+            padding: 16px;
+            font: inherit;
+            font-weight: 600;
+            font-size: 16px;
+            background: var(--accent);
+            color: var(--accent-fg);
+            cursor: pointer;
+        }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+        .note { font-size: 13px; color: var(--muted); margin-top: 12px; text-align: center; }
+        .error { color: var(--danger); font-size: 14px; margin-top: 12px; min-height: 1em; }
+        .state {
+            text-align: center;
+            padding: 48px 8px;
+        }
+        .state .icon {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: grid; place-items: center;
+            background: var(--surface);
+            font-size: 30px;
+        }
+        .state.ok .icon { background: #dcfce7; color: var(--success); }
+        .state h2 { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); margin: 0 0 8px; font-size: 22px; }
+        .state p { color: var(--muted); margin: 0; white-space: pre-line; }
+        .hidden { display: none !important; }
+        .skeleton { height: 24px; border-radius: 8px; background: var(--surface); margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+<main class="wrap">
+    <div class="brand">SISIwanita <span>· polling</span></div>
+
+    <div id="loading">
+        <div class="skeleton" style="height:180px"></div>
+        <div class="skeleton" style="width:70%"></div>
+        <div class="skeleton" style="width:90%"></div>
+    </div>
+
+    <form id="poll-form" class="hidden" novalidate>
+        <img id="poll-image" class="hero hidden" alt="">
+        <h1 id="poll-title"></h1>
+        <p id="poll-desc" class="desc hidden"></p>
+        <p id="poll-question" class="question"></p>
+
+        <div id="text-answer" class="hidden">
+            <textarea id="answer-text" maxlength="1000" placeholder="Tulis jawaban Anda di sini..."></textarea>
+            <div class="counter"><span id="char-count">0</span>/1000</div>
+        </div>
+        <div id="option-answer" class="options hidden"></div>
+
+        <div id="form-error" class="error" role="alert"></div>
+        <button type="submit" id="submit-btn" class="btn">Kirim jawaban</button>
+        <p class="note">Anonim. Tidak perlu login atau email.</p>
+    </form>
+
+    <section id="state" class="state hidden">
+        <div class="icon" id="state-icon"></div>
+        <h2 id="state-title"></h2>
+        <p id="state-text"></p>
+    </section>
+</main>
+
+<script>
+(function () {
+    'use strict';
+
+    var params = new URLSearchParams(window.location.search);
+    var slug = (params.get('p') || '').trim().toLowerCase();
+    var poll = null;
+
+    var el = function (id) { return document.getElementById(id); };
+
+    function getDeviceToken() {
+        var key = 'sisiwanita_poll_device';
+        try {
+            var token = localStorage.getItem(key);
+            if (!token) {
+                var bytes = new Uint8Array(16);
+                (window.crypto || window.msCrypto).getRandomValues(bytes);
+                token = Array.prototype.map.call(bytes, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+                localStorage.setItem(key, token);
+            }
+            return token;
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function showState(kind, title, text) {
+        el('loading').classList.add('hidden');
+        el('poll-form').classList.add('hidden');
+        var state = el('state');
+        state.classList.remove('hidden');
+        state.classList.toggle('ok', kind === 'ok');
+        el('state-icon').textContent = kind === 'ok' ? '✓' : (kind === 'closed' ? '⏸' : '!');
+        el('state-title').textContent = title;
+        el('state-text').textContent = text || '';
+    }
+
+    function renderOptions() {
+        var container = el('option-answer');
+        var inputType = poll.answer_type === 'multiple' ? 'checkbox' : 'radio';
+        container.innerHTML = '';
+        poll.options.forEach(function (option, index) {
+            var label = document.createElement('label');
+            label.className = 'option';
+            var input = document.createElement('input');
+            input.type = inputType;
+            input.name = 'poll-option';
+            input.value = option;
+            input.id = 'opt-' + index;
+            var span = document.createElement('span');
+            span.textContent = option;
+            label.appendChild(input);
+            label.appendChild(span);
+            container.appendChild(label);
+        });
+        container.classList.remove('hidden');
+    }
+
+    function renderPoll() {
+        document.title = poll.title + ' · SISIwanita';
+        el('poll-title').textContent = poll.title;
+        el('poll-question').textContent = poll.question;
+        if (poll.description) {
+            el('poll-desc').textContent = poll.description;
+            el('poll-desc').classList.remove('hidden');
+        }
+        if (poll.has_image) {
+            var img = el('poll-image');
+            img.src = '/api/public-polls/' + encodeURIComponent(poll.slug) + '/image?v=' + (poll.image_version || '');
+            img.classList.remove('hidden');
+        }
+        if (poll.answer_type === 'text') {
+            if (poll.placeholder) el('answer-text').placeholder = poll.placeholder;
+            el('text-answer').classList.remove('hidden');
+        } else {
+            renderOptions();
+        }
+        el('loading').classList.add('hidden');
+        el('poll-form').classList.remove('hidden');
+    }
+
+    function load() {
+        if (!slug) {
+            showState('error', 'Link polling tidak lengkap', 'Silakan scan ulang QR code.');
+            return;
+        }
+        var url = '/api/public-polls/' + encodeURIComponent(slug) + '?device=' + encodeURIComponent(getDeviceToken()) + '&_t=' + Date.now();
+        fetch(url, { headers: { 'Cache-Control': 'no-cache' } })
+            .then(function (res) { return res.json().then(function (body) { return { status: res.status, body: body }; }); })
+            .then(function (result) {
+                if (result.status === 404) {
+                    showState('error', 'Polling tidak ditemukan', 'Link mungkin salah atau polling belum dibuka.');
+                    return;
+                }
+                if (!result.body.success) throw new Error(result.body.message);
+                poll = result.body.data;
+                if (poll.status === 'closed') {
+                    showState('closed', poll.title, 'Polling ini sudah ditutup. Terima kasih atas perhatiannya.');
+                    return;
+                }
+                if (poll.already_answered) {
+                    showState('ok', 'Jawaban Anda sudah kami terima', 'Setiap orang cukup mengisi satu kali. Terima kasih!');
+                    return;
+                }
+                renderPoll();
+            })
+            .catch(function () {
+                showState('error', 'Gagal memuat polling', 'Periksa koneksi internet lalu muat ulang halaman.');
+            });
+    }
+
+    el('answer-text').addEventListener('input', function () {
+        el('char-count').textContent = this.value.length;
+    });
+
+    el('poll-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        var errorBox = el('form-error');
+        errorBox.textContent = '';
+
+        var payload = { device_token: getDeviceToken() };
+        if (poll.answer_type === 'text') {
+            payload.answer_text = el('answer-text').value.trim();
+            if (payload.answer_text.length < 2) {
+                errorBox.textContent = 'Tulis jawaban Anda dulu ya.';
+                return;
+            }
+        } else {
+            payload.selected_options = Array.prototype.map.call(
+                document.querySelectorAll('input[name="poll-option"]:checked'),
+                function (input) { return input.value; }
+            );
+            if (!payload.selected_options.length) {
+                errorBox.textContent = 'Pilih salah satu jawaban dulu ya.';
+                return;
+            }
+        }
+
+        var button = el('submit-btn');
+        button.disabled = true;
+        button.textContent = 'Mengirim...';
+
+        fetch('/api/public-polls/' + encodeURIComponent(poll.slug) + '/responses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(function (res) { return res.json().then(function (body) { return { status: res.status, body: body }; }); })
+            .then(function (result) {
+                if (result.body.success) {
+                    showState('ok', 'Terima kasih!', result.body.message);
+                    return;
+                }
+                if (result.body.code === 'ALREADY_ANSWERED') {
+                    showState('ok', 'Jawaban sudah tercatat', result.body.message);
+                    return;
+                }
+                if (result.body.code === 'POLL_CLOSED') {
+                    showState('closed', 'Polling ditutup', result.body.message);
+                    return;
+                }
+                throw new Error(result.body.message || 'Gagal mengirim');
+            })
+            .catch(function (error) {
+                errorBox.textContent = error.message || 'Gagal mengirim jawaban. Coba lagi.';
+                button.disabled = false;
+                button.textContent = 'Kirim jawaban';
+            });
+    });
+
+    load();
+})();
+</script>
+</body>
+</html>
