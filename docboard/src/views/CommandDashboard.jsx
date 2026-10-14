@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'preact/hooks';
 import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS } from '../utils/constants';
-import { userRole } from '../stores/auth';
+import { hasPermission } from '../stores/auth';
 
 export default function CommandDashboard() {
   const [data, setData] = useState(null);
@@ -36,7 +36,7 @@ export default function CommandDashboard() {
   if (loading) return (<div class="loading-state"><div class="spinner" /></div>);
   if (error) return (<div class="empty-state"><p>{error}</p></div>);
 
-  var isDokter = userRole.value === 'dokter';
+  const canManage = hasPermission('docboard.write');
 
   return (
     <div class="view-command-dashboard">
@@ -45,7 +45,7 @@ export default function CommandDashboard() {
       {!flags.phase5_dashboard ? (
         <div class="detail-card" style="text-align:center;padding:24px">
           <p style="color:var(--text-muted)">Dashboard belum diaktifkan</p>
-          {isDokter && (<button class="btn-primary" onClick={async function() { await api.setFeatureFlag('phase5_dashboard', true); load(); }}>Aktifkan Dashboard</button>)}
+          {canManage && (<button class="btn-primary" onClick={async function() { await api.setFeatureFlag('phase5_dashboard', true); load(); }}>Aktifkan Dashboard</button>)}
         </div>
       ) : data ? (
         <>
@@ -114,7 +114,7 @@ export default function CommandDashboard() {
         </div>
       )}
 
-      {isDokter && (
+      {canManage && (
         <div style="padding:0 16px;margin-top:8px">
           <div class="detail-card">
             <div class="detail-label">Feature Flags</div>

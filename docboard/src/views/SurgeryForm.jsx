@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
+import { surgeryPermissions } from '../stores/auth';
 import { LOCATIONS } from '../utils/constants';
 import DatePickerCalendar from '../components/DatePickerCalendar';
 import { normalizeDateInput, formatDateShort } from '../utils/date';
@@ -23,6 +24,7 @@ function operationDataLocation(facility) {
 
 export default function SurgeryForm({ id }) {
   const isEdit = !!id;
+  const canSave = isEdit ? surgeryPermissions.value.canEditSurgery : surgeryPermissions.value.canCreateSurgery;
 
   const [form, setForm] = useState({
     patient_name: '',
@@ -431,6 +433,10 @@ export default function SurgeryForm({ id }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!canSave) {
+      setError('Akun ini tidak memiliki izin mengelola jadwal DocBoard.');
+      return;
+    }
     setError('');
 
     if (!form.patient_name || !form.diagnosis || (!form.operation_type_ids.length && !form.operation_type_other.trim()) || !form.surgery_date) {
@@ -539,6 +545,7 @@ export default function SurgeryForm({ id }) {
       </div>
 
       <form onSubmit={handleSubmit} class="surgery-form">
+        {!canSave && <div class="form-error" role="status">Akun ini tidak memiliki izin mengelola jadwal DocBoard.</div>}
         {error && <div class="form-error">{error}</div>}
 
         {/* Templates */}
@@ -903,7 +910,7 @@ export default function SurgeryForm({ id }) {
         </div>
 
         {/* Submit */}
-        <button type="submit" class="btn-primary btn-full btn-lg" disabled={saving}>
+        <button type="submit" class="btn-primary btn-full btn-lg" disabled={saving || !canSave}>
           {saving ? 'Menyimpan...' : (isEdit ? 'Update' : 'Simpan Jadwal')}
         </button>
         {!isEdit && (

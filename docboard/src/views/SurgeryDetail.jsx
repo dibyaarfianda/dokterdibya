@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
-import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY, COMPLICATION_GRADES, WOUND_CLASSES, getRolePermissions } from '../utils/constants';
-import { userRole } from '../stores/auth';
+import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY, COMPLICATION_GRADES, WOUND_CLASSES } from '../utils/constants';
+import { surgeryPermissions } from '../stores/auth';
 import PostOpNotesForm from '../components/PostOpNotesForm';
 import { getDayName, formatDateDisplay } from '../utils/date';
 
@@ -33,7 +33,7 @@ export default function SurgeryDetail({ id }) {
   const [showOutcome, setShowOutcome] = useState(false);
   const [outcomeForm, setOutcomeForm] = useState(null);
   const [savingOutcome, setSavingOutcome] = useState(false);
-  const perms = getRolePermissions(userRole.value);
+  const perms = surgeryPermissions.value;
 
   useEffect(() => { loadSurgery(); }, [id]);
 
@@ -158,7 +158,7 @@ export default function SurgeryDetail({ id }) {
         </button>
         <div class="detail-header-actions">
           {perms.canEditSurgery && (
-            <button class="btn-icon" onClick={() => route(`/docboard/surgery/edit/${id}`)}>
+            <button class="btn-icon" aria-label="Edit jadwal operasi" onClick={() => route(`/docboard/surgery/edit/${id}`)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -314,7 +314,7 @@ export default function SurgeryDetail({ id }) {
               <div class="checklist-items">
                 {checklist.items.map(item => (
                   <label key={item.key} class={`checklist-item ${item.checked ? 'checked' : ''}`}>
-                    <input type="checkbox" checked={item.checked} onChange={() => toggleChecklistItem(item.key)} />
+                    <input type="checkbox" checked={item.checked} disabled={!perms.canEditChecklist} onChange={() => toggleChecklistItem(item.key)} />
                     <span class="checklist-label">{item.label}</span>
                   </label>
                 ))}
@@ -348,6 +348,7 @@ export default function SurgeryDetail({ id }) {
           <PostOpNotesForm
             surgeryId={id}
             existingNotes={s.post_op_notes}
+            canSave={perms.canEditClinical}
             onSaved={() => {
               setShowPostOpForm(false);
               loadSurgery();
@@ -358,17 +359,17 @@ export default function SurgeryDetail({ id }) {
           <div class="detail-card">
             <div class="postop-header">
               <div class="detail-label" style="margin-bottom:0">Catatan Post-Op</div>
-              <button class="btn-postop-edit" onClick={() => setShowPostOpForm(true)}>
+              {perms.canEditClinical && <button class="btn-postop-edit" onClick={() => setShowPostOpForm(true)}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
                 Edit
-              </button>
+              </button>}
             </div>
             {renderPostOpNotes(s.post_op_notes)}
           </div>
-        ) : (
+        ) : perms.canEditClinical ? (
           <div class="detail-card">
             <button class="btn-add-postop" onClick={() => setShowPostOpForm(true)}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -377,7 +378,7 @@ export default function SurgeryDetail({ id }) {
               Tambah Catatan Post-Op
             </button>
           </div>
-        )
+        ) : null
       )}
 
       {/* Post-Op Outcome */}

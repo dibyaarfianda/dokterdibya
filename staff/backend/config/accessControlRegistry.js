@@ -258,7 +258,13 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['staff-payroll:DELETE:/driver-payrolls/:month', 'staff_payroll.delete'],
     ['estimasi-biaya-draft:POST:/preview', 'cost_estimates.view'],
     ['medify-batch:POST:/credentials', 'integrations.write'],
-    ['docboard:POST:/from-drd/preview', 'docboard.view']
+    ['docboard:POST:/from-drd/preview', 'docboard.view'],
+    // Scheduling belongs to DocBoard; clinical notes/outcomes retain their
+    // medical-record permissions from the surgery source policy.
+    ['surgery:POST:/', 'docboard.write'],
+    ['surgery:PUT:/:id', 'docboard.write'],
+    ['surgery:PATCH:/:id/status', 'docboard.write'],
+    ['surgery:DELETE:/:id', 'docboard.delete']
 ]);
 
 const SUNDAY_CLINIC_SECTION_PERMISSIONS = Object.freeze({

@@ -23,7 +23,7 @@ import SpaceSchedule from './views/SpaceSchedule';
 import CommandDashboard from './views/CommandDashboard';
 import Login from './views/Login';
 import Confidential from './views/Confidential';
-import { initAuth, isLoggedIn, isLoading, user } from './stores/auth';
+import { initAuth, isLoggedIn, isLoading, user, accessError, refreshAccountAccess } from './stores/auth';
 import { startUnreadPolling, stopUnreadPolling } from './stores/notifications';
 import { queueCount, syncState } from './services/api';
 import { canAccessScientificSchedule, isNandaUser } from './utils/access';
@@ -33,6 +33,7 @@ export const currentUrl = signal(typeof window !== 'undefined' ? window.location
 
 function handleRoute(e) {
   currentUrl.value = e.url;
+  refreshAccountAccess();
 }
 
 function NandaOnlyRoute({ component: Component, ...props }) {
@@ -46,6 +47,17 @@ function ScientificScheduleRoute(props) {
 export default function App() {
   useEffect(() => {
     initAuth();
+    const refresh = () => {
+      if (document.visibilityState !== 'hidden') refreshAccountAccess();
+    };
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   }, []);
 
   // Start polling unread count when logged in
@@ -72,6 +84,12 @@ export default function App() {
 
   return (
     <div class="app-shell">
+      {accessError.value && (
+        <div class="offline-banner" role="status">
+          {accessError.value}
+          <button type="button" onClick={() => refreshAccountAccess()}>Muat ulang akses</button>
+        </div>
+      )}
       {queueCount.value > 0 && (
         <div class={`offline-banner ${syncState.value === 'conflict' ? 'conflict' : ''}`}>
           {syncState.value === 'syncing' ? 'Menyinkronkan...' :

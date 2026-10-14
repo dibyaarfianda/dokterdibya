@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const surgeryService = require('../services/SurgeryService');
 const docboardPush = require('../services/DocBoardPushService');
 const whatsapp = require('../services/whatsappService');
-const { requireSuperadminOrAccountPermission } = require('../middleware/auth');
+const { requireSuperadminOrAccountPermission, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 // All routes inherit verifyStaffToken from parent router (docboard.js)
@@ -618,7 +618,7 @@ router.get('/:id', async (req, res) => {
 /**
  * POST /  (create surgery)
  */
-router.post('/', async (req, res) => {
+router.post('/', requirePermission('medical_records.create'), async (req, res) => {
   try {
     const payload = sanitizeSurgeryPayload(req.body);
     const { patient_name, diagnosis, operation_type_id, operation_type_other, location, surgery_date } = payload;
@@ -653,7 +653,7 @@ router.post('/', async (req, res) => {
 /**
  * PUT /:id  (update surgery)
  */
-router.put('/:id', async (req, res) => {
+router.put('/:id', requirePermission('medical_records.edit'), async (req, res) => {
   try {
     const surgery = await surgeryService.updateSurgery(req.params.id, sanitizeSurgeryPayload(req.body), req.user?.id);
     res.json({ success: true, surgery });
@@ -698,9 +698,9 @@ router.patch('/:id/status', async (req, res) => {
 });
 
 /**
- * DELETE /:id (doctor only)
+ * DELETE /:id (delegated DocBoard deletion permission)
  */
-router.delete('/:id', requireSuperadminOrAccountPermission('medical_records.delete'), async (req, res) => {
+router.delete('/:id', requireSuperadminOrAccountPermission('docboard.delete'), async (req, res) => {
   try {
     await surgeryService.deleteSurgery(req.params.id);
     res.json({ success: true });

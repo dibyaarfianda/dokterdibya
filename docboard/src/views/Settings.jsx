@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
-import { user, logout } from '../stores/auth';
+import { user, userRole, logout } from '../stores/auth';
 import { api } from '../services/api';
 import { LOCATIONS, SYNC_STATUS } from '../utils/constants';
 import { relativeTime } from '../utils/date';
@@ -238,7 +238,7 @@ export default function Settings({ mode = 'menu' }) {
             </div>
             <div class="profile-info">
               <div class="profile-name">{user.value?.name || 'User'}</div>
-              <div class="profile-role">{user.value?.role || ''}</div>
+              <div class="profile-role">{userRole.value}</div>
             </div>
           </div>
         </div>
@@ -284,7 +284,7 @@ export default function Settings({ mode = 'menu' }) {
           </div>
           <div class="profile-info">
             <div class="profile-name">{user.value?.name || 'User'}</div>
-            <div class="profile-role">{user.value?.role || ''}</div>
+            <div class="profile-role">{userRole.value}</div>
           </div>
         </div>
       </div>

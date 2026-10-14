@@ -7,7 +7,7 @@ const KOMPLIKASI_OPTIONS = [
   { value: 'mayor', label: 'Mayor' }
 ];
 
-export default function PostOpNotesForm({ surgeryId, existingNotes, onSaved, onCancel }) {
+export default function PostOpNotesForm({ surgeryId, existingNotes, canSave = false, onSaved, onCancel }) {
   // Parse existing notes if available
   const parsed = existingNotes ? parseNotes(existingNotes) : {};
 
@@ -31,6 +31,7 @@ export default function PostOpNotesForm({ surgeryId, existingNotes, onSaved, onC
   }
 
   async function handleSave() {
+    if (!canSave) return;
     if (!prosedur.trim()) {
       setError('Prosedur yang dilakukan wajib diisi');
       return;
@@ -148,7 +149,7 @@ export default function PostOpNotesForm({ surgeryId, existingNotes, onSaved, onC
         <button class="btn-secondary" onClick={onCancel} disabled={saving}>
           Batal
         </button>
-        <button class="btn-primary" onClick={handleSave} disabled={saving}>
+        <button class="btn-primary" onClick={handleSave} disabled={saving || !canSave}>
           {saving ? 'Menyimpan...' : 'Simpan Catatan'}
         </button>
       </div>

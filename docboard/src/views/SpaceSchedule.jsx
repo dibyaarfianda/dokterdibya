@@ -7,7 +7,7 @@ import {
   updateSpaceSchedule,
   updateSpaceScheduleStatus,
 } from '../services/api';
-import { user } from '../stores/auth';
+import { user, hasPermission } from '../stores/auth';
 import { formatDateDisplay, getDayName, today } from '../utils/date';
 import { isNandaUser } from '../utils/access';
 import { getJakartaNow, isArchivedProcedure } from '../utils/scheduleArchive';
@@ -131,8 +131,11 @@ function sortSchedules(schedules) {
 
 export default function SpaceSchedule({ space = 'ilmiah' }) {
   const config = spaces[space] || spaces.ilmiah;
-  const canFinalizeSchedule = hasAllowedEmail(user.value, SCHEDULE_COMPLETION_ALLOWED_EMAILS)
+  const canWriteSchedule = hasPermission('docboard.write');
+  const isScheduleOwner = hasAllowedEmail(user.value, SCHEDULE_COMPLETION_ALLOWED_EMAILS)
     || String(user.value?.id || '') === 'UDZAQUCQWZ';
+  const canFinalizeSchedule = isScheduleOwner && canWriteSchedule;
+  const canDeleteSchedule = isScheduleOwner && hasPermission('docboard.delete');
   const canViewPrivateSchedule = isNandaUser(user.value);
   const [schedules, setSchedules] = useState([]);
   const [form, setForm] = useState(() => createEmptyForm(config));
@@ -233,6 +236,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!canWriteSchedule) return;
     const payload = {
       agenda: form.agenda.trim(),
       category: form.category,
@@ -266,6 +270,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
   };
 
   const openCreateForm = () => {
+    if (!canWriteSchedule) return;
     setForm(createEmptyForm(config));
     setEditingId(null);
     setShowForm(true);
@@ -279,6 +284,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   const handleEdit = (event, item) => {
     event.stopPropagation();
+    if (!canWriteSchedule) return;
     setForm(createFormFromSchedule(item, config));
     setEditingId(item.id);
     setShowForm(true);
@@ -287,7 +293,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   const handleDelete = async (event, item) => {
     event.stopPropagation();
-    if (!canFinalizeSchedule) {
+    if (!canDeleteSchedule) {
       window.alert('Hanya nanda.arfianda@gmail.com yang bisa menghapus jadwal.');
       return;
     }
@@ -304,6 +310,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
   const handleStatus = async (event, id, status) => {
     event.stopPropagation();
+    if (!canWriteSchedule) return;
     if (status === 'done' && !canFinalizeSchedule) {
       window.alert('Hanya nanda.arfianda@gmail.com yang bisa menyelesaikan jadwal.');
       return;
@@ -327,11 +334,11 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
       <div class="view-header space-view-header">
         <h1>{config.title}</h1>
         <div class="view-header-actions">
-          <button class="btn-icon-primary" onClick={openCreateForm} aria-label={config.action}>
+          {canWriteSchedule && <button class="btn-icon-primary" onClick={openCreateForm} aria-label={config.action}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -441,7 +448,7 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
 
           <div class="space-form-actions">
             <button class="btn-secondary" type="button" onClick={closeForm}>Batal</button>
-            <button class="btn-primary" type="submit">{editingId ? 'Update' : 'Simpan'}</button>
+            <button class="btn-primary" type="submit" disabled={!canWriteSchedule}>{editingId ? 'Update' : 'Simpan'}</button>
           </div>
         </form>
       )}
@@ -491,13 +498,13 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
                       {isExpanded && item.notes && <div class="space-agenda-notes">{item.notes}</div>}
                       {isExpanded && (
                         <div class="space-status-actions">
-                          <button type="button" onClick={(event) => handleEdit(event, item)}>Edit</button>
-                          <button type="button" onClick={(event) => handleStatus(event, item.id, 'confirmed')}>Konfirmasi</button>
+                          {canWriteSchedule && <button type="button" onClick={(event) => handleEdit(event, item)}>Edit</button>}
+                          {canWriteSchedule && <button type="button" onClick={(event) => handleStatus(event, item.id, 'confirmed')}>Konfirmasi</button>}
                           {canFinalizeSchedule && (
                             <button type="button" onClick={(event) => handleStatus(event, item.id, 'done')}>Selesai</button>
                           )}
-                          <button type="button" onClick={(event) => handleStatus(event, item.id, 'cancelled')}>Batal</button>
-                          {canFinalizeSchedule && (
+                          {canWriteSchedule && <button type="button" onClick={(event) => handleStatus(event, item.id, 'cancelled')}>Batal</button>}
+                          {canDeleteSchedule && (
                             <button type="button" class="danger" onClick={(event) => handleDelete(event, item)}>Hapus</button>
                           )}
                         </div>
@@ -516,11 +523,11 @@ export default function SpaceSchedule({ space = 'ilmiah' }) {
         </div>
       )}
 
-      <button class="fab" onClick={openCreateForm} aria-label={config.action}>
+      {canWriteSchedule && <button class="fab" onClick={openCreateForm} aria-label={config.action}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-      </button>
+      </button>}
     </div>
   );
 }

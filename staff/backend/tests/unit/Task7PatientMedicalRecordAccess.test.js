@@ -66,7 +66,7 @@ describe('Task 7 patient and medical-record route matrix', () => {
         ['POST', '/api/patient-documents/generate-resume-pdf', 'patient_documents.share'],
         ['DELETE', '/api/patient-documents/42', 'r2_files.delete'],
         ['PUT', '/api/docboard/surgery/9/outcome', 'medical_records.edit'],
-        ['DELETE', '/api/docboard/surgery/9', 'medical_records.delete'],
+        ['DELETE', '/api/docboard/surgery/9', 'docboard.delete'],
         ['GET', '/api/registration-codes/public', 'registration_codes.view'],
         ['POST', '/api/registration-codes/generate-public', 'registration_codes.create'],
         ['POST', '/api/registration-codes/generate-now', 'registration_codes.create'],
@@ -96,7 +96,8 @@ describe('Task 7 account-mode delegation through legacy guards', () => {
             serverFile: path.join(backendRoot, 'server.js'),
             routesDir: path.join(backendRoot, 'routes')
         }).filter(route => TASK7_PERMISSION_PREFIXES.some(prefix => route.resolution?.permission?.startsWith(prefix)));
-        expect(routes.length).toBeGreaterThanOrEqual(175);
+        // Four scheduling routes now belong to the DocBoard permission matrix.
+        expect(routes.length).toBeGreaterThanOrEqual(171);
 
         const state = {
             userId: 'STAFF-ACCOUNT', userType: 'staff', isActive: true, isSuperadmin: false,
@@ -242,7 +243,7 @@ describe('Task 7 HTTP, realtime, and UI wiring', () => {
         expect(documents).toContain("requireSuperadminOrAccountPermission('r2_files.delete')");
         expect(registrationCodes).toContain("requireSuperadminOrAccountPermission('registration_codes.create')");
         expect(surgery).toContain("requireSuperadminOrAccountPermission('medical_records.edit')");
-        expect(surgery).toContain("requireSuperadminOrAccountPermission('medical_records.delete')");
+        expect(surgery).toContain("requireSuperadminOrAccountPermission('docboard.delete')");
     });
 
     test('visit finalization and patient/record events use permission gates', () => {

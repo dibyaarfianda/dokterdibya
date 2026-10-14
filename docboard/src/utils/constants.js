@@ -62,50 +62,6 @@ export const OP_CATEGORY = {
   onkologi_ginekologi: { label: 'Onkologi', color: '#EF4444' }
 };
 
-// DocBoard role permissions
-// dokter = full access, admin = secretary (scheduling), bidan = anesthesiologist view
-export const ROLE_PERMISSIONS = {
-  dokter: {
-    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: true,
-    canChangeStatus: true, canEditClinical: true, canEditAnesthesia: true,
-    canEditOutcome: true, canEditChecklist: true
-  },
-  admin: {
-    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
-    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canEditChecklist: true
-  },
-  managerial: {
-    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
-    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canEditChecklist: true
-  },
-  front_office: {
-    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
-    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canEditChecklist: true
-  },
-  user: {
-    canCreateSurgery: true, canEditSurgery: true, canDeleteSurgery: false,
-    canChangeStatus: true, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canEditChecklist: true
-  },
-  bidan: {
-    canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
-    canChangeStatus: false, canEditClinical: false, canEditAnesthesia: true,
-    canEditOutcome: false, canEditChecklist: true
-  },
-  docboard_viewer: {
-    canCreateSurgery: false, canEditSurgery: false, canDeleteSurgery: false,
-    canChangeStatus: false, canEditClinical: false, canEditAnesthesia: false,
-    canEditOutcome: false, canEditChecklist: false
-  }
-};
-
-export function getRolePermissions(role) {
-  return ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS.bidan;
-}
-
 // Outcome constants
 export const COMPLICATION_GRADES = {
   none: { label: 'Tidak Ada', color: '#22C55E' },

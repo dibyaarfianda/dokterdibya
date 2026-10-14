@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
-import { LOCATIONS, SURGERY_STATUS, getRolePermissions } from '../utils/constants';
+import { LOCATIONS, SURGERY_STATUS } from '../utils/constants';
 import { today, normalizeDateInput, getDayName, formatDateShort } from '../utils/date';
-import { userRole } from '../stores/auth';
+import { surgeryPermissions } from '../stores/auth';
 import ExportButton from '../components/ExportButton';
 
 export default function SurgeryList() {
   const [surgeries, setSurgeries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [completingId, setCompletingId] = useState(null);
-  const canChangeStatus = getRolePermissions(userRole.value).canChangeStatus;
+  const { canCreateSurgery, canChangeStatus } = surgeryPermissions.value;
 
   useEffect(() => { loadUpcoming(); }, []);
 
@@ -58,11 +58,11 @@ export default function SurgeryList() {
         </div>
         <div class="view-header-actions">
           <ExportButton />
-          <button class="btn-icon-primary" onClick={() => route('/docboard/surgery/new')}>
+          {canCreateSurgery && <button class="btn-icon-primary" aria-label="Tambah jadwal operasi" onClick={() => route('/docboard/surgery/new')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -77,9 +77,9 @@ export default function SurgeryList() {
             <path d="M3 10h18" /><path d="M8 2v4" /><path d="M16 2v4" />
           </svg>
           <p>Belum ada jadwal operasi</p>
-          <button class="btn-primary" onClick={() => route('/docboard/surgery/new')}>
+          {canCreateSurgery && <button class="btn-primary" onClick={() => route('/docboard/surgery/new')}>
             + Tambah Jadwal
-          </button>
+          </button>}
         </div>
       ) : (
         <div class="surgery-groups">
@@ -105,11 +105,11 @@ export default function SurgeryList() {
       )}
 
       {/* FAB */}
-      <button class="fab" onClick={() => route('/docboard/surgery/new')}>
+      {canCreateSurgery && <button class="fab" aria-label="Tambah jadwal operasi" onClick={() => route('/docboard/surgery/new')}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
         </svg>
-      </button>
+      </button>}
     </div>
   );
 }
