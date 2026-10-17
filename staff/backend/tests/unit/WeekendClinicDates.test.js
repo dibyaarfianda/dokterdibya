@@ -36,6 +36,14 @@ describe('staff Weekend Clinic practice dates', () => {
     });
     afterEach(() => jest.useRealTimers());
     const dates = () => request(app).get('/api/sunday-appointments/practice-dates').set('Authorization', 'staff');
+    test.each([
+        ['2026-10-17T06:59:59Z', true],
+        ['2026-10-17T07:00:00Z', false]
+    ])('patient date selection respects the 14:00 WIB booking deadline at %s', async (now, includesToday) => {
+        jest.setSystemTime(new Date(now));
+        const result = await request(app).get('/api/sunday-appointments/sundays').set('Authorization', 'patient').expect(200);
+        expect(result.body.dates.some(d => d.date === '2026-10-17')).toBe(includesToday);
+    });
     test('returns next date for each active session and rejects patient access', async () => {
         const result = await dates().expect(200);
         expect(result.body.practices).toEqual(expect.arrayContaining([

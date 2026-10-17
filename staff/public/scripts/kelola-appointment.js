@@ -2,6 +2,7 @@
 (function() {
 const API_BASE = '/api/sunday-appointments';
 const AUTO_NO_CONFIRMATION_REASON = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB';
+const AUTO_NO_CONFIRMATION_REASONS = [AUTO_NO_CONFIRMATION_REASON, 'Tidak konfirmasi kehadiran sebelum jam 14.00 WIB'];
 let appointmentsTable;
 let allAppointments = [];
 
@@ -27,7 +28,7 @@ function isManuallyConfirmable(appointment) {
     return ['pending', 'pending_confirmation'].includes(appointment.status)
         || (appointment.status === 'cancelled'
             && appointment.cancelled_by === 'system'
-            && appointment.cancellation_reason === AUTO_NO_CONFIRMATION_REASON);
+            && AUTO_NO_CONFIRMATION_REASONS.includes(appointment.cancellation_reason));
 }
 
 function initKelolaAppointment() {

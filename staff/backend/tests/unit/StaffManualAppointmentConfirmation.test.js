@@ -53,7 +53,7 @@ describe('staff manual appointment confirmation', () => {
         );
 
         expect(routeSource).toContain('a.cancelled_by = ?');
-        expect(routeSource).toContain('a.cancellation_reason = ?');
-        expect(routeSource).toContain("params.push('cancelled', 'cancelled', 'system', AUTO_NO_CONFIRMATION_REASON)");
+        expect(routeSource).toContain('a.cancellation_reason IN (?, ?)');
+        expect(routeSource).toContain("params.push('cancelled', 'cancelled', 'system', ...AUTO_NO_CONFIRMATION_REASONS)");
     });
 });

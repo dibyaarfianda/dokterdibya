@@ -24,6 +24,7 @@ const {
 } = require('../services/booking-session-settings');
 
 const AUTO_NO_CONFIRMATION_REASON = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB';
+const AUTO_NO_CONFIRMATION_REASONS = [AUTO_NO_CONFIRMATION_REASON, 'Tidak konfirmasi kehadiran sebelum jam 14.00 WIB'];
 
 async function requireOpenSundayClinicAccountingDate(req, res, next) {
     try {
@@ -45,7 +46,7 @@ async function requireOpenSundayClinicAccountingDate(req, res, next) {
 }
 
 // Helper function to get next available practice dates based on configured days
-function getNextPracticeDates(availableDays, count = 8) {
+function getNextPracticeDates(availableDays, count = 8, cutoffHour = 21) {
     const practiceDates = [];
     const normalizedDays = Array.from(new Set(
         availableDays
@@ -68,11 +69,11 @@ function getNextPracticeDates(availableDays, count = 8) {
     // Create date at midnight for today
     let current = new Date(Date.UTC(year, month, day));
 
-    // Check if today is a configured practice day and it's before 9 PM (21:00)
+    // Staff keeps today's clinic visible until 21:00; patient booking closes at 14:00.
     const isTodayPracticeDay = normalizedDays.includes(current.getUTCDay());
-    const isBeforeCutoff = currentHour < 21; // Before 9 PM
+    const isBeforeCutoff = currentHour < cutoffHour;
 
-    // If today is a configured practice day and before 9 PM, include today
+    // Include today only while the caller's cutoff is still open.
     if (isTodayPracticeDay && isBeforeCutoff) {
         // Create UTC date for API response
         const todayUtc = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
@@ -299,9 +300,12 @@ router.get('/practice-dates', verifyStaffToken, async (req, res) => {
 
 // Preserve the patient-facing dates/sundays response contract.
 router.get('/sundays', verifyPatientToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     try {
         const configuredDays = await getConfiguredPracticeDays();
-        const practiceDates = getNextPracticeDates(configuredDays, 8);
+        const practiceDates = getNextPracticeDates(configuredDays, 8, 14);
         const formattedSundays = practiceDates.map(date => ({
             date: formatDateLocal(date),
             formatted: date.toLocaleDateString('id-ID', {
@@ -388,9 +392,9 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         const currentWibMinutes = (nowWib.getHours() * 60) + nowWib.getMinutes();
         const isSameDayBooking = appointment_date === formatDateLocal(new Date());
 
-        if (requiresConfirmation && isSameDayBooking && currentWibMinutes >= (9 * 60)) {
+        if (requiresConfirmation && isSameDayBooking && currentWibMinutes >= (14 * 60)) {
             return res.status(400).json({
-                message: 'Booking klinik yang memerlukan konfirmasi hanya dapat dibuat sebelum pukul 09.00 WIB pada hari praktik. Silakan pilih tanggal berikutnya.'
+                message: 'Booking klinik yang memerlukan konfirmasi hanya dapat dibuat sebelum pukul 14.00 WIB pada hari praktik. Silakan pilih tanggal berikutnya.'
             });
         }
 
@@ -477,7 +481,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
             `INSERT INTO sunday_appointments
              (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token, confirmation_popup_enabled_at)
              SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(?, NOW(), NULL)
-             WHERE (? = 0 OR ? = 0 OR CURTIME() < '09:00:00')`,
+             WHERE (? = 0 OR ? = 0 OR CURTIME() < '14:00:00')`,
             [
                 patient.id,
                 patient.full_name,
@@ -497,7 +501,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
 
         if (result.affectedRows !== 1) {
             return res.status(400).json({
-                message: 'Booking hari ini sudah melewati batas konfirmasi pukul 09.00 WIB. Silakan pilih jadwal praktik berikutnya.'
+                message: 'Booking hari ini sudah melewati batas konfirmasi pukul 14.00 WIB. Silakan pilih jadwal praktik berikutnya.'
             });
         }
 
@@ -515,7 +519,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         // Track booking activity (fire-and-forget)
         patientActivityLogger.logActivity(req.user.id, patientActivityLogger.EVENTS.BOOKING, { detail: 'Booking ' + appointment_date + ' Sesi ' + session }, req);
 
-        const responseMessage = 'Booking berhasil! Konfirmasi kehadiran Anda di hari-H sebelum jam 09.00 WIB agar nama Anda muncul di antrian.';
+        const responseMessage = 'Booking berhasil! Konfirmasi kehadiran Anda di hari-H sebelum jam 14.00 WIB agar nama Anda muncul di antrian.';
 
         res.status(201).json({
             message: responseMessage,
@@ -809,7 +813,7 @@ router.post('/:id/manual-confirm', verifyStaffToken, async (req, res) => {
         const appointment = rows[0];
         const expiredByNoConfirmation = appointment.status === 'cancelled'
             && appointment.cancelled_by === 'system'
-            && appointment.cancellation_reason === AUTO_NO_CONFIRMATION_REASON;
+            && AUTO_NO_CONFIRMATION_REASONS.includes(appointment.cancellation_reason);
         if (!['pending', 'pending_confirmation'].includes(appointment.status) && !expiredByNoConfirmation) {
             return res.status(400).json({
                 success: false,
@@ -878,7 +882,7 @@ router.post('/:id/confirm-attendance', verifyPatientToken, async (req, res) => {
              SET status = 'confirmed', confirmed_at = NOW(), updated_at = NOW()
              WHERE id = ? AND patient_id = ? AND status = 'pending_confirmation'
                AND (appointment_date > CURDATE()
-                    OR (appointment_date = CURDATE() AND CURTIME() < '09:00:00'))`,
+                    OR (appointment_date = CURDATE() AND CURTIME() < '14:00:00'))`,
             [id, req.user.id]
         );
 
@@ -1054,7 +1058,7 @@ router.post('/by-token/:token/confirm', async (req, res) => {
              SET status = 'confirmed', confirmed_at = NOW(), updated_at = NOW()
              WHERE id = ? AND status = 'pending_confirmation'
                AND (appointment_date > CURDATE()
-                    OR (appointment_date = CURDATE() AND CURTIME() < '09:00:00'))`,
+                    OR (appointment_date = CURDATE() AND CURTIME() < '14:00:00'))`,
             [apt.id]
         );
 
@@ -1357,10 +1361,10 @@ router.get('/list', verifyStaffToken, async (req, res) => {
                 a.status != ? OR (
                     a.status = ?
                     AND a.cancelled_by = ?
-                    AND a.cancellation_reason = ?
+                    AND a.cancellation_reason IN (?, ?)
                 )
             )`;
-            params.push('cancelled', 'cancelled', 'system', AUTO_NO_CONFIRMATION_REASON);
+            params.push('cancelled', 'cancelled', 'system', ...AUTO_NO_CONFIRMATION_REASONS);
         }
         
         if (session) {

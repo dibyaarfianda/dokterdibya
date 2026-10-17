@@ -37,14 +37,14 @@ test('attendance confirmation jobs run every practice day in Asia/Jakarta', () =
     expect(registeredSchedules).toEqual(expect.arrayContaining([
         { expression: '0 18 * * *', timezone: 'Asia/Jakarta' },
         { expression: '0 7 * * *', timezone: 'Asia/Jakarta' },
-        { expression: '0 9 * * *', timezone: 'Asia/Jakarta' }
+        { expression: '0 14 * * *', timezone: 'Asia/Jakarta' }
     ]));
 });
 
 test('expiry only cancels and notifies appointments that are still pending at update time', async () => {
     initSchedulers();
     await new Promise(setImmediate);
-    const expiryCallback = cron.schedule.mock.calls.find(([expression]) => expression === '0 9 * * *')[1];
+    const expiryCallback = cron.schedule.mock.calls.find(([expression]) => expression === '0 14 * * *')[1];
     const expiring = [
         { id: 101, patient_id: 'P-101', patient_name: 'Pasien Pending', session: 1, slot_number: 1 },
         { id: 102, patient_id: 'P-102', patient_name: 'Pasien Race', session: 1, slot_number: 2 }
@@ -64,6 +64,6 @@ test('expiry only cancels and notifies appointments that are still pending at up
     expect(updates).toHaveLength(2);
     expect(updates.every(([sql]) => sql.includes("status = 'pending_confirmation'"))).toBe(true);
     expect(createPatientNotification).toHaveBeenCalledTimes(1);
-    expect(createPatientNotification).toHaveBeenCalledWith(expect.objectContaining({ patient_id: 'P-101' }));
+    expect(createPatientNotification).toHaveBeenCalledWith(expect.objectContaining({ patient_id: 'P-101', message: expect.stringContaining('14.00 WIB') }));
     expect(realtimeSync.broadcastToStaff).toHaveBeenCalledWith('booking:slots_released', expect.objectContaining({ count: 1 }));
 });
