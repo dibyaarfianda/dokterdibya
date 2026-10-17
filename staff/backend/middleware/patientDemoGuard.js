@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('./auth');
 const PatientDemoService = require('../services/PatientDemoService');
+const bookingPolicy = require('../../../public/scripts/clinic-booking-policy');
 const {
     findSessionSetting,
     getSessionSettings,
@@ -214,6 +215,8 @@ async function handleMutation(req, res, state, pathname, sessionId) {
         return res.json({ success: true, message: 'Dokumen dummy ditandai sudah dibaca.' });
     }
     if (pathname === '/api/sunday-appointments/book' && req.method === 'POST') {
+        const acknowledgement = bookingPolicy.acknowledgement(req.body, req.headers);
+        if (acknowledgement.error) return res.status(400).json(acknowledgement.error);
         const sessionSettings = await getSessionSettings();
         const session = req.body?.session || 'morning';
         const requiresConfirmation = requiresAttendanceConfirmation(findSessionSetting(sessionSettings, session));
@@ -230,6 +233,8 @@ async function handleMutation(req, res, state, pathname, sessionId) {
                 chief_complaint: sanitizeText(req.body?.chief_complaint || 'Booking simulasi'),
                 category: sanitizeText(req.body?.category || 'general', 40),
                 status: bookingStatus,
+                booking_policy_acknowledged_at: acknowledgement.accepted ? new Date().toISOString() : null,
+                booking_policy_version: acknowledgement.version,
                 is_demo: true
             });
             return draft;

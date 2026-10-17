@@ -991,6 +991,7 @@
     </style>
     <script>window.__patientPortalHeaderInstalled = true;</script>
 <script src="/scripts/booking-break-display.js?v=20260923-1"></script>
+<script src="/scripts/clinic-booking-policy.js?v=20261017confirmation1"></script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit booking-klinik-page" data-tool-shell-active="jadwal" data-tool-kicker="Booking Klinik" data-tool-title="Atur janji klinik." data-tool-copy="Pilih tanggal praktik, slot waktu, jenis konsultasi, lalu kirim permintaan booking ke staff klinik." data-tool-meta-label="Alur" data-tool-meta-value="4 langkah">
     <!-- Top Bar -->
@@ -1112,10 +1113,12 @@
                 </div>
             </div>
 
-            <div class="info-box">
-                <i class="fa-solid fa-circle-info"></i>
-                Setelah konfirmasi, staff klinik akan mengkonfirmasi janji temu Anda. Mohon datang 10 menit lebih awal.
-            </div>
+            <div id="booking-policy-notice"></div>
+            <label style="display:flex;align-items:flex-start;gap:10px;line-height:1.6;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="booking-policy-acknowledgement" required style="margin-top:4px;min-width:18px;min-height:18px;">
+                <span>Saya memahami jadwal dan batas konfirmasi kehadiran, serta pembatalan otomatis jika tidak mengonfirmasi.</span>
+            </label>
+            <p style="font-size:12px;margin-top:12px;">Mohon datang 10 menit sebelum waktu kunjungan.</p>
         </div>
 
         <!-- Navigation Buttons -->
@@ -1126,7 +1129,7 @@
             <button class="btn-next" id="btn-next" disabled>
                 Lanjut <i class="fa-solid fa-arrow-right"></i>
             </button>
-            <button class="btn-submit" id="btn-submit" style="display: none;">
+            <button class="btn-submit" id="btn-submit" style="display: none;" disabled>
                 <i class="fa-solid fa-check"></i> Konfirmasi Booking
             </button>
         </div>
@@ -1157,6 +1160,10 @@
 
         const token = getToken();
         const API_BASE = '/api/sunday-appointments';
+        const bookingPolicy = window.ClinicBookingPolicy;
+        const policyCheckbox = document.getElementById('booking-policy-acknowledgement');
+        policyCheckbox.checked = false;
+        document.getElementById('booking-policy-notice').innerHTML = bookingPolicy.noticeHtml();
 
         // Booking state
         let currentStep = 1;
@@ -1187,6 +1194,7 @@
             document.getElementById('btn-back').addEventListener('click', prevStep);
             document.getElementById('btn-submit').addEventListener('click', submitBooking);
             document.getElementById('chief-complaint').addEventListener('input', validateComplaint);
+            policyCheckbox.addEventListener('change', () => validateStep(4));
 
             // Category selection
             document.querySelectorAll('.category-card').forEach(card => {
@@ -1386,12 +1394,13 @@
                     isValid = bookingData.chiefComplaint && bookingData.chiefComplaint.length >= 10;
                     break;
                 case 4:
-                    isValid = true;
+                    isValid = policyCheckbox.checked;
                     break;
             }
 
             if (step === currentStep) {
                 document.getElementById('btn-next').disabled = !isValid;
+                if (step === 4) document.getElementById('btn-submit').disabled = !isValid;
             }
 
             return isValid;
@@ -1441,6 +1450,7 @@
         }
 
         function showSummary() {
+            policyCheckbox.checked = false;
             document.getElementById('summary-date').textContent = bookingData.dateFormatted;
             document.getElementById('summary-session').textContent = `Sesi ${bookingData.session}`;
             document.getElementById('summary-time').textContent = bookingData.slotTime;
@@ -1449,6 +1459,10 @@
         }
 
         async function submitBooking() {
+            if (!policyCheckbox.checked) {
+                showAlert('Harap baca ketentuan dan centang pemahaman jadwal serta batas konfirmasi kehadiran.', 'warning');
+                return;
+            }
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
@@ -1461,6 +1475,8 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        booking_policy_acknowledged: policyCheckbox.checked,
+                        booking_policy_version: bookingPolicy.version,
                         appointment_date: bookingData.date,
                         session: bookingData.session,
                         slot_number: bookingData.slot,
@@ -1498,6 +1514,7 @@
                     Tanggal: ${data.details.date}<br>
                     Waktu: ${data.details.time}<br><br>
                     Status: <strong>Menunggu Konfirmasi</strong><br>
+                    ${bookingPolicy.noticeHtml()}<br>
                     Anda akan dialihkan ke portal...
                 `, 'success');
 

@@ -1,3 +1,4 @@
+import './clinic-booking-policy.js?v=20261017confirmation1';
 import { startCommunityBadge } from './community-chat-badge.js?v=20260924realtime2';
 import { createPortalNicknameStore } from './patient-shell/portal-nickname.js?v=20260917nickname1';
 import {
@@ -18,7 +19,7 @@ import {
     getGuestNavigationUrl,
     isGuestLoginRoute,
     PATIENT_MENU_DATA
-} from './patient-shell/routes.js?v=20261006privateclinic1';
+} from './patient-shell/routes.js?v=20261017confirmation1';
 import { createPatientSheetController } from './patient-shell/sheet-controller.js';
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';
@@ -1772,6 +1773,11 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
         async function checkActiveBooking() {
             const panel = document.getElementById('quick-status');
+            const confirmationReminder = document.getElementById('booking-confirmation-reminder');
+            if (confirmationReminder) {
+                confirmationReminder.hidden = true;
+                confirmationReminder.innerHTML = '';
+            }
             const cancelButton = document.getElementById('booking-cancel-btn');
             panel.classList.remove('show', 'warning');
             cancelButton.style.display = 'none';
@@ -1789,7 +1795,13 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                 document.getElementById('booking-status-desc').textContent = dateStr + ' - ' + (booking.slot_time || '-');
                 panel.classList.add('show');
                 requestAnimationFrame(updateHomeActionGap);
-                if (booking.status === 'pending' || booking.status === 'pending_confirmation') panel.classList.add('warning');
+                if (booking.status === 'pending' || booking.status === 'pending_confirmation') {
+                    panel.classList.add('warning');
+                    if (confirmationReminder) {
+                        confirmationReminder.innerHTML = window.ClinicBookingPolicy.noticeHtml();
+                        confirmationReminder.hidden = false;
+                    }
+                }
                 if (['confirmed', 'pending', 'pending_confirmation'].includes(booking.status)) {
                     cancelButton.dataset.appointmentId = String(booking.id);
                     cancelButton.style.display = 'inline-flex';
@@ -2732,6 +2744,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             overlay.innerHTML = '<div class="modal-card active" style="pointer-events:auto;">' +
                 '<div class="modal-head"><div><div class="section-kicker">Konfirmasi</div><h2>Kehadiran Klinik</h2></div><button class="close-btn soundable" onclick="closeAttendanceConfirmationPopup()"><i class="fa-solid fa-xmark"></i></button></div>' +
                 '<p style="color:var(--muted);font-size:12px;line-height:1.55;margin-bottom:12px;">' + dateStr + '<br>' + escapeHtml(apt.session_label || '') + ' • Slot ' + escapeHtml(apt.slot_number || '-') + ' (' + escapeHtml(apt.slot_time || '-') + ')</p>' +
+                window.ClinicBookingPolicy.noticeHtml(true) +
                 '<div class="modal-actions"><button class="primary-action soundable" onclick="submitAttendanceConfirmation(' + apt.id + ',\'confirm\')"><i class="fa-solid fa-circle-check"></i> Datang</button><button class="ghost-action soundable" style="color:#b91c1c;" onclick="submitAttendanceConfirmation(' + apt.id + ',\'cancel\')"><i class="fa-solid fa-circle-xmark"></i> Batal</button></div>' +
                 '</div>';
             document.body.appendChild(overlay);

@@ -34,6 +34,7 @@ const SESSION_ROWS = [
     { session_number: 2, session_name: 'Weekend Clinic', day_of_week: 6, start_time: '13:00', end_time: '18:00', slot_duration: 15, max_slots: 20, is_active: 1 },
     { session_number: 3, session_name: 'Klinik Rabu', day_of_week: 3, start_time: '16:00', end_time: '18:00', slot_duration: 15, max_slots: 8, is_active: 1 }
 ];
+const ACKNOWLEDGEMENT = { booking_policy_acknowledged: true, booking_policy_version: '20261017-confirmation-v1' };
 
 function installBookingDatabaseFixture({ insertAffectedRows = 1 } = {}) {
     let insertedStatus = null;
@@ -85,6 +86,7 @@ describe('private clinic booking confirmation policy', () => {
             .post('/api/sunday-appointments/book')
             .set('Authorization', 'patient')
             .send({
+                ...ACKNOWLEDGEMENT,
                 appointment_date: appointmentDate,
                 session,
                 slot_number: 1,
@@ -106,6 +108,7 @@ describe('private clinic booking confirmation policy', () => {
             .post('/api/sunday-appointments/book')
             .set('Authorization', 'patient')
             .send({
+                ...ACKNOWLEDGEMENT,
                 appointment_date: '2026-10-11',
                 session: 1,
                 slot_number: 1,
@@ -129,7 +132,7 @@ describe('private clinic booking confirmation policy', () => {
         const response = await request(app)
             .post('/api/sunday-appointments/book')
             .set('Authorization', 'patient')
-            .send({ appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .send({ ...ACKNOWLEDGEMENT, appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
             .expect(201);
         expect(response.body).toMatchObject({ status: 'pending_confirmation', requiresConfirmation: true });
         expect(response.body.message).toContain('14.00 WIB');
@@ -145,6 +148,7 @@ describe('private clinic booking confirmation policy', () => {
             .post('/api/sunday-appointments/book')
             .set('Authorization', 'patient')
             .send({
+                ...ACKNOWLEDGEMENT,
                 appointment_date: '2026-10-11',
                 session: 1,
                 slot_number: 1,
@@ -161,7 +165,7 @@ describe('private clinic booking confirmation policy', () => {
         jest.setSystemTime(new Date('2026-10-17T07:30:00Z')); // 14:30 WIB
         const fixture = installBookingDatabaseFixture();
         await request(app).post('/api/sunday-appointments/book').set('Authorization', 'patient')
-            .send({ appointment_date: '2026-10-18', session: 1, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .send({ ...ACKNOWLEDGEMENT, appointment_date: '2026-10-18', session: 1, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
             .expect(201);
         expect(fixture.getInsertedStatus()).toBe('pending_confirmation');
         expect(fixture.getInsertCall().params.slice(-2)).toEqual([true, false]);
@@ -176,6 +180,7 @@ describe('private clinic booking confirmation policy', () => {
             .post('/api/sunday-appointments/book')
             .set('Authorization', 'patient')
             .send({
+                ...ACKNOWLEDGEMENT,
                 appointment_date: '2026-10-11',
                 session: 1,
                 slot_number: 1,
@@ -186,6 +191,70 @@ describe('private clinic booking confirmation policy', () => {
 
         expect(fixture.getInsertCall().sql).toContain("CURTIME() < '14:00:00'");
         expect(response.body.message).toContain('14.00 WIB');
+    });
+
+    test.each([undefined, false, 'true', 1])('booking rejects missing or non-boolean acknowledgement %s before accessing the database', async (acknowledged) => {
+        installBookingDatabaseFixture();
+        const response = await request(app).post('/api/sunday-appointments/book').set('Authorization', 'patient')
+            .send({ ...ACKNOWLEDGEMENT, booking_policy_acknowledged: acknowledged, appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .expect(400);
+        expect(response.body.code).toBe('BOOKING_POLICY_ACK_REQUIRED');
+        expect(db.query).not.toHaveBeenCalled();
+    });
+
+    test('a stale notice version must be re-read instead of silently accepted', async () => {
+        const response = await request(app).post('/api/sunday-appointments/book').set('Authorization', 'patient')
+            .send({ ...ACKNOWLEDGEMENT, booking_policy_version: 'old-version', appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .expect(400);
+        expect(response.body.code).toBe('BOOKING_POLICY_UPDATED');
+        expect(db.query).not.toHaveBeenCalled();
+    });
+
+    test('a booking stores the accepted policy version and a server timestamp in the same insert', async () => {
+        const fixture = installBookingDatabaseFixture();
+        await request(app).post('/api/sunday-appointments/book').set('Authorization', 'patient')
+            .send({ ...ACKNOWLEDGEMENT, booking_policy_acknowledged_at: '1900-01-01', appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .expect(201);
+        const inserted = fixture.getInsertCall();
+        expect(inserted.sql).toContain('booking_policy_acknowledged_at');
+        expect(inserted.sql).toContain('booking_policy_version');
+        expect(inserted.sql).toMatch(/IF\(\?, NOW\(\), NULL\), IF\(\?, NOW\(\), NULL\), \?/);
+        expect(inserted.params[11]).toBe(true);
+        expect(inserted.params[12]).toBe('20261017-confirmation-v1');
+        expect(inserted.params).not.toContain('1900-01-01');
+    });
+
+    test('legacy native bookings remain compatible without inventing acknowledgement evidence', async () => {
+        const fixture = installBookingDatabaseFixture();
+        await request(app).post('/api/sunday-appointments/book').set('Authorization', 'patient')
+            .send({ appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .expect(201);
+        expect(fixture.getInsertCall().params[11]).toBe(false);
+        expect(fixture.getInsertCall().params[12]).toBeNull();
+    });
+
+    test('a browser cannot omit both acknowledgement fields to skip the checkbox', async () => {
+        installBookingDatabaseFixture();
+        const response = await request(app).post('/api/sunday-appointments/book').set('Authorization', 'patient')
+            .set('Origin', 'https://sisiwanita.id')
+            .send({ appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .expect(400);
+        expect(response.body.code).toBe('BOOKING_POLICY_ACK_REQUIRED');
+        expect(db.query).not.toHaveBeenCalled();
+    });
+
+    test.each([
+        ['2026-10-17T10:59:00Z', false],
+        ['2026-10-17T11:00:00Z', true],
+        ['2026-10-17T13:00:00Z', true],
+        ['2026-10-17T17:30:00Z', true]
+    ])('new bookings do not miss an already-open confirmation popup window at %s', async (now, expectedPopup) => {
+        jest.setSystemTime(new Date(now));
+        const fixture = installBookingDatabaseFixture();
+        await request(app).post('/api/sunday-appointments/book').set('Authorization', 'patient')
+            .send({ ...ACKNOWLEDGEMENT, appointment_date: '2026-10-18', session: 1, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
+            .expect(201);
+        expect(fixture.getInsertCall().params[10]).toBe(expectedPopup);
     });
 
     test.each([

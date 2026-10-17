@@ -120,6 +120,29 @@ describe('patientDemoGuard', () => {
         expect(res.body).toMatchObject({ status, requiresConfirmation });
     });
 
+    test('demo browser booking enforces the same acknowledgement as the real portal', async () => {
+        const req = request('/api/sunday-appointments/book', 'POST', demoToken(), { appointment_date: '2026-10-18', session: 1 });
+        req.headers.origin = 'https://sisiwanita.id';
+        const res = response();
+        await guard(req, res, jest.fn());
+        expect(res.statusCode).toBe(400);
+        expect(res.body.code).toBe('BOOKING_POLICY_ACK_REQUIRED');
+        expect(service.updateState).not.toHaveBeenCalled();
+    });
+
+    test('demo booking stores simulated policy evidence only after explicit acceptance', async () => {
+        service.updateState.mockImplementation(async (_sessionId, _action, update) => update({ bookings: [] }));
+        const req = request('/api/sunday-appointments/book', 'POST', demoToken(), {
+            appointment_date: '2026-10-18', session: 1,
+            booking_policy_acknowledged: true, booking_policy_version: '20261017-confirmation-v1'
+        });
+        const res = response();
+        await guard(req, res, jest.fn());
+        expect(res.statusCode).toBe(201);
+        expect(res.body.details.booking_policy_version).toBe('20261017-confirmation-v1');
+        expect(res.body.details.booking_policy_acknowledged_at).toBeTruthy();
+    });
+
     test.each([
         '/api/patient-billing/payment',
         '/api/usg-photos/upload',

@@ -25,6 +25,7 @@ const {
 
 const AUTO_NO_CONFIRMATION_REASON = 'Tidak konfirmasi kehadiran sebelum jam 09.00 WIB';
 const AUTO_NO_CONFIRMATION_REASONS = [AUTO_NO_CONFIRMATION_REASON, 'Tidak konfirmasi kehadiran sebelum jam 14.00 WIB'];
+const bookingPolicy = require('../../../public/scripts/clinic-booking-policy');
 
 async function requireOpenSundayClinicAccountingDate(req, res, next) {
     try {
@@ -360,6 +361,9 @@ router.post('/book', verifyPatientToken, async (req, res) => {
             return res.status(400).json({ message: 'Semua field harus diisi' });
         }
 
+        const acknowledgement = bookingPolicy.acknowledgement(req.body, req.headers);
+        if (acknowledgement.error) return res.status(400).json(acknowledgement.error);
+
         // Get dynamic session settings for validation
         const sessionSettings = await getSessionSettings();
         const sessionSetting = sessionSettings.find(s => s.session === parseInt(session));
@@ -398,11 +402,10 @@ router.post('/book', verifyPatientToken, async (req, res) => {
             });
         }
 
-        // The scheduled 07:00 popup run may already have completed, so a
-        // same-day booking created afterward must enable its own popup.
+        // New bookings must not miss an activation batch that already ran.
+        const isNextDayBooking = appointment_date === formatDateLocal(new Date(Date.now() + 86400000));
         const enableConfirmationPopupNow = requiresConfirmation
-            && isSameDayBooking
-            && currentWibMinutes >= (7 * 60);
+            && (isSameDayBooking || (isNextDayBooking && currentWibMinutes >= (18 * 60)));
 
         // Check if date is disabled
         const [disabledCheck] = await db.query(
@@ -479,8 +482,8 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         // Create appointment
         const [result] = await db.query(
             `INSERT INTO sunday_appointments
-             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token, confirmation_popup_enabled_at)
-             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(?, NOW(), NULL)
+             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status, confirmation_token, confirmation_popup_enabled_at, booking_policy_acknowledged_at, booking_policy_version)
+             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, IF(?, NOW(), NULL), IF(?, NOW(), NULL), ?
              WHERE (? = 0 OR ? = 0 OR CURTIME() < '14:00:00')`,
             [
                 patient.id,
@@ -494,6 +497,8 @@ router.post('/book', verifyPatientToken, async (req, res) => {
                 bookingStatus,
                 confirmationToken,
                 enableConfirmationPopupNow,
+                acknowledgement.accepted,
+                acknowledgement.version,
                 requiresConfirmation,
                 isSameDayBooking
             ]
@@ -554,9 +559,13 @@ router.post('/book', verifyPatientToken, async (req, res) => {
  * Supports ?status=confirmed,pending filter
  */
 router.get('/my-bookings', verifyPatientToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     try {
         let query = `SELECT id, appointment_date, session, slot_number, chief_complaint,
-                            consultation_category, status, notes, created_at
+                            consultation_category, status, notes, created_at,
+                            booking_policy_acknowledged_at, booking_policy_version
                      FROM sunday_appointments
                      WHERE patient_id = ?`;
         const params = [req.user.id];
