@@ -6706,3 +6706,68 @@ input { font-family: inherit; }
     grid-template-columns: 1fr;
   }
 }
+
+/* Laptop layout inside Staff: use the iframe, while retaining phone/PWA sizing. */
+@media (min-width: 768px) {
+  html.docboard-embedded { --nav-height: 72px; }
+
+  .docboard-embedded .app-shell {
+    width: 100%;
+    max-width: none;
+  }
+
+  .docboard-embedded .app-content {
+    padding: 20px 24px calc(var(--nav-height) + var(--safe-bottom) + 28px);
+  }
+
+  .docboard-embedded .bottom-nav { max-width: none; }
+  .docboard-embedded .bottom-nav-label { font-size: 13px; }
+  .docboard-embedded .bottom-nav-icon svg { width: 24px; height: 24px; }
+  .docboard-embedded .page-title { font-size: 26px; }
+  .docboard-embedded .form-group label { font-size: 14px; }
+  .docboard-embedded .form-group input,
+  .docboard-embedded .form-group select,
+  .docboard-embedded .form-group textarea { font-size: 16px; }
+
+  .docboard-embedded .view-calendar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px 20px;
+    align-items: start;
+  }
+
+  .docboard-embedded .today-summary,
+  .docboard-embedded .today-alarm-shortcut {
+    min-height: 80px;
+    margin: 0;
+  }
+
+  .docboard-embedded .today-label { font-size: 13px; }
+  .docboard-embedded .today-count { font-size: 26px; }
+  .docboard-embedded .location-chip { font-size: 13px; }
+  .docboard-embedded .today-alarm-shortcut strong { font-size: 16px; }
+  .docboard-embedded .today-alarm-shortcut small { font-size: 13px; }
+  .docboard-embedded .view-toggle,
+  .docboard-embedded .month-nav { margin: 0; align-self: center; }
+  .docboard-embedded .view-toggle-btn { font-size: 15px; }
+  .docboard-embedded .month-nav-title { font-size: 20px; }
+  .docboard-embedded .calendar-grid,
+  .docboard-embedded .skeleton-calendar,
+  .docboard-embedded .week-view,
+  .docboard-embedded .location-legend { grid-column: 1 / -1; min-width: 0; }
+  .docboard-embedded .calendar-grid { padding: 14px; }
+  .docboard-embedded .calendar-header-cell { font-size: 14px; padding: 9px 0; }
+  .docboard-embedded .calendar-body { grid-template-rows: repeat(6, minmax(clamp(68px, 9vh, 88px), 1fr)); gap: 4px; }
+  .docboard-embedded .calendar-cell { min-height: 68px; gap: 4px; }
+  .docboard-embedded .calendar-day-number { font-size: 18px; font-weight: 600; margin-top: 9px; }
+  .docboard-embedded .calendar-dot { width: 7px; height: 7px; }
+  .docboard-embedded .calendar-patient-count { font-size: 12px; line-height: 1; right: 8px; bottom: 7px; }
+  .docboard-embedded .calendar-event-bars { width: calc(100% - 46px); align-self: flex-start; margin: 0 0 0 10px; gap: 2px; }
+  .docboard-embedded .calendar-event-bar { height: 4px; }
+  .docboard-embedded .location-legend { margin-top: 0; }
+  .docboard-embedded .legend-label { font-size: 13px; }
+  .docboard-embedded .week-day-name { font-size: 13px; }
+  .docboard-embedded .week-day-number { font-size: 24px; }
+  .docboard-embedded .week-day-patients,
+  .docboard-embedded .week-day-empty { font-size: 15px; }
+}

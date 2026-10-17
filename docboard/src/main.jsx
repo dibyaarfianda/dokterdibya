@@ -3,7 +3,11 @@ import App from './app';
 import './index.css';
 import { playAlarmSound } from './utils/alarmSound';
 
-const DOCBOARD_PWA_VERSION = '20261014-1';
+const DOCBOARD_PWA_VERSION = '20261017-embed1';
+// The iframe remains embedded after client-side navigation drops ?embed=.
+if (new URLSearchParams(window.location.search).has('embed') || window.self !== window.top) {
+  document.documentElement.classList.add('docboard-embedded');
+}
 let reloadingForWorkerUpdate = false;
 
 function showUpdatePrompt(registration) {
