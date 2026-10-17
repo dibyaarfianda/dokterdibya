@@ -676,15 +676,8 @@ describe('staff panel stabilization sources', () => {
         expect(chatPopup).not.toContain('.chat-close-btn:hover { background: rgba(255,255,255,.3); transform: rotate(90deg); }');
     });
 
-    test('closing mobile chat restores the FAB frame and releases the page overlay', () => {
-        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
-
-        expect(chatPopup).toContain('function restoreChatFabAfterClose(cont, btn)');
-        expect(chatPopup).toContain('document.activeElement.blur();');
-        expect(chatPopup).toContain('ensureFAB();');
-        expect((chatPopup.match(/restoreChatFabAfterClose\(cont, /g) || []).length).toBeGreaterThanOrEqual(4);
-        expect(chatPopup).toContain('if (!isChatOpen) return;');
-    });
+    // Fullscreen, animated close, saved FAB position and scroll restoration are
+    // exercised against the widget in StaffTeamChatPanel.test.js.
 
     test('mobile additional billing uses readable cards and a dedicated empty state', () => {
         const billing = readRepoFile('staff', 'public', 'scripts', 'sunday-clinic', 'components', 'shared', 'billing.js');
@@ -721,25 +714,6 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 6px) !important;');
         expect(sundayClinicCss).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 10px) !important;');
         expect(sundayClinicCss).not.toMatch(/#chat-toggle-btn,[\s\S]{0,160}bottom:\s*calc\(84px/);
-    });
-
-    test('Sunday Clinic mobile chat uses half viewport width and two-thirds height without scaling text', () => {
-        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
-        const sundayClinicCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
-
-        expect(chatPopup).toContain('function getSundayClinicChatFrame(');
-        expect(chatPopup).toContain('var frameWidth = Math.round(viewportWidth * 0.5);');
-        expect(chatPopup).toContain('var targetHeight = Math.round(viewportHeight * (2 / 3));');
-        expect(chatPopup).toContain("document.body.classList.contains('sunday-clinic-embedded-active')");
-        expect(chatPopup).toContain("cont.style.setProperty('width', clinicFrame.width + 'px', 'important');");
-        expect(chatPopup).toContain("cont.style.setProperty('height', clinicFrame.height + 'px', 'important');");
-        expect(chatPopup).toContain("if (!isVisibleBottomNav(embeddedNav)) return '0px';");
-        expect(chatPopup).not.toContain("cont.style.setProperty('transform', 'scale(");
-        expect(sundayClinicCss).toContain('font-size: var(--sc-pwa-font-body) !important;');
-        expect(sundayClinicCss).toContain('font-size: var(--sc-pwa-font-control) !important;');
-        expect(sundayClinicCss).toContain('#chat-popup-container.chat-is-open .chat-header-content');
-        expect(sundayClinicCss).toContain('#chat-popup-container.chat-is-open :is(.chat-header-online, #online-names)');
-        expect(sundayClinicCss).toContain('text-overflow: ellipsis !important;');
     });
 
     test('staff panel exposes Gajian payroll menu and script', () => {

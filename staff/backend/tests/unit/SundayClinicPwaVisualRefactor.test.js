@@ -135,7 +135,6 @@ describe('Sunday Clinic PWA visual refactor', () => {
 
     test('wave 3 aligns directory, history sidebar, and chat to the same visual scale', () => {
         const pwaCss = readRepoFile('staff', 'public', 'styles', 'sunday-clinic-pwa.css');
-        const chatPopup = readRepoFile('staff', 'public', 'scripts', 'chat-popup.js');
         const wave3 = pwaCss.slice(pwaCss.indexOf('/* Wave 3: canonical modal, overlay, sidebar, and chat rules. */'));
 
         expect(wave3).toContain('.sc-directory {');
@@ -144,10 +143,6 @@ describe('Sunday Clinic PWA visual refactor', () => {
         expect(wave3).toContain('#chat-send-btn {');
         expect(wave3).toContain('font-size: var(--sc-pwa-font-body) !important;');
         expect(wave3).toContain('bottom: calc(var(--sc-pwa-bottom-nav-height) + 6px) !important;');
-        expect(chatPopup).toContain("var isSundayClinic = document.body.classList.contains('sunday-clinic-embedded-active');");
-        expect(chatPopup).toContain('var clinicInsetPx = isSundayClinic ? 6 : 0;');
-        expect(chatPopup).toContain('var clinicFrame = getSundayClinicChatFrame(');
-        expect(chatPopup).toContain("var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '8px' : '0';");
     });
 
     test('wave 3 replaces fixed inline form sizing with shared semantic hooks', () => {

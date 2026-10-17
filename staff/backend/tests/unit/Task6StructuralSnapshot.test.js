@@ -6,7 +6,8 @@ const puppeteer = require('puppeteer');
 const root = path.resolve(__dirname, '../../../..');
 const baseline = {
     // Account-mode Staff now has a deliberate zero-grant shell in both viewports.
-    'staff/public/index-adminlte.html': 'f201848c3ec1bb81dc9cc150030df4059a903bdc6e0303a0c015bea8ceb9023d',
+    // Team Chat launcher is now a keyboard-accessible button with dialog state.
+    'staff/public/index-adminlte.html': '8e41984eb887142cd996d7960f0a928cf264c0b7f842d3257939d58f8c1f29d9',
     'public/patient-menu.html': 'da9c28107e03efa0947adcfdda6acb081e7ed298ef7c266c41354957f1a846a3'
 };
 

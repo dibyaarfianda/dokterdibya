@@ -146,78 +146,107 @@ import { ROLE_IDS } from './role-constants.js';
     }, 180);
   }
 
-  function getReservedBottomPx() {
-    if (isChatKeyboardModeActive()) {
-      var embeddedNav = document.querySelector('body.sunday-clinic-embedded-active .sc-staff-section-nav');
-      if (!isVisibleBottomNav(embeddedNav)) return '0px';
+  // Layout is shared by the early UI and the authenticated UI on every screen.
+  var chatPanelOpen = false;
+  var chatCloseTimer = null;
+  var savedPageOverflow = null;
+  const CHAT_FAB_POSITION_KEY = 'staff_team_chat_fab_position_v1';
+  var chatFabPosition = null;
+  try {
+    var storedFabPosition = JSON.parse(window.localStorage.getItem(CHAT_FAB_POSITION_KEY));
+    if (storedFabPosition && Number.isFinite(storedFabPosition.x) && Number.isFinite(storedFabPosition.y)) {
+      chatFabPosition = {
+        x: Math.max(0, Math.min(1, storedFabPosition.x)),
+        y: Math.max(0, Math.min(1, storedFabPosition.y))
+      };
     }
-    return getNavBottomPx();
+  } catch (_) { /* Storage can be unavailable; the in-memory position still works. */ }
+
+  function applyMobileViewportFrame(cont) {
+    cont.style.setProperty('position', 'fixed', 'important');
+    cont.style.setProperty('top', getMobileViewportTop() + 'px', 'important');
+    cont.style.setProperty('left', getMobileViewportLeft() + 'px', 'important');
+    cont.style.setProperty('right', 'auto', 'important');
+    cont.style.setProperty('bottom', 'auto', 'important');
+    cont.style.setProperty('width', getMobileViewportWidth() + 'px', 'important');
+    cont.style.setProperty('height', getMobileViewportHeight() + 'px', 'important');
   }
 
-  function getMobileChatHeightPx(navPx, insetPx) {
-    var viewportHeight = getMobileViewportHeight();
-    var safeNavPx = Number(navPx);
-    if (isNaN(safeNavPx)) safeNavPx = 65;
-    var safeInsetPx = Number(insetPx);
-    if (isNaN(safeInsetPx)) safeInsetPx = 0;
-    return Math.max(304, viewportHeight - safeNavPx - (safeInsetPx * 2)) + 'px';
-  }
-
-  function getSundayClinicChatFrame(viewportTop, viewportLeft, viewportWidth, viewportHeight, navPx, insetPx) {
-    var safeNavPx = Math.max(0, Number(navPx) || 0);
-    var safeInsetPx = Math.max(0, Number(insetPx) || 0);
-    var frameWidth = Math.round(viewportWidth * 0.5);
-    var targetHeight = Math.round(viewportHeight * (2 / 3));
-    var availableHeight = Math.max(0, viewportHeight - safeNavPx - (safeInsetPx * 2));
-    var frameHeight = Math.min(targetHeight, availableHeight);
-    var frameLeft = Math.max(
-      viewportLeft + safeInsetPx,
-      viewportLeft + viewportWidth - safeInsetPx - frameWidth
-    );
-    var frameTop = Math.max(
-      viewportTop + safeInsetPx,
-      viewportTop + viewportHeight - safeNavPx - safeInsetPx - frameHeight
-    );
+  function getFabBounds(btn) {
+    var rect = btn.getBoundingClientRect();
+    var width = getMobileViewportWidth();
+    var height = getMobileViewportHeight();
+    var insetX = Math.min(8, Math.max(0, (width - rect.width) / 2));
+    var insetY = Math.min(8, Math.max(0, (height - rect.height) / 2));
     return {
-      top: Math.round(frameTop),
-      left: Math.round(frameLeft),
-      width: Math.max(0, frameWidth),
-      height: Math.max(0, frameHeight)
+      left: getMobileViewportLeft() + insetX,
+      top: getMobileViewportTop() + insetY,
+      travelX: Math.max(0, width - rect.width - insetX * 2),
+      travelY: Math.max(0, height - rect.height - insetY * 2)
     };
   }
 
-  function applyMobileViewportFrame(cont, reservedBottomPx) {
-    var viewportTop = getMobileViewportTop();
-    var viewportLeft = getMobileViewportLeft();
-    var viewportWidth = getMobileViewportWidth();
-    var isSundayClinic = document.body.classList.contains('sunday-clinic-embedded-active');
-    var clinicInsetPx = isSundayClinic ? 6 : 0;
-    if (isSundayClinic) {
-      var clinicFrame = getSundayClinicChatFrame(
-        viewportTop,
-        viewportLeft,
-        viewportWidth,
-        getMobileViewportHeight(),
-        reservedBottomPx,
-        clinicInsetPx
-      );
-      cont.style.setProperty('position', 'fixed', 'important');
-      cont.style.setProperty('top', clinicFrame.top + 'px', 'important');
-      cont.style.setProperty('left', clinicFrame.left + 'px', 'important');
-      cont.style.setProperty('right', 'auto', 'important');
-      cont.style.setProperty('bottom', 'auto', 'important');
-      cont.style.setProperty('width', clinicFrame.width + 'px', 'important');
-      cont.style.setProperty('height', clinicFrame.height + 'px', 'important');
-      return;
-    }
-    var chatHeight = getMobileChatHeightPx(reservedBottomPx, clinicInsetPx);
-    cont.style.setProperty('position', 'fixed', 'important');
-    cont.style.setProperty('top', (viewportTop + clinicInsetPx) + 'px', 'important');
-    cont.style.setProperty('left', (viewportLeft + clinicInsetPx) + 'px', 'important');
+  function applyFabPosition(cont, btn) {
+    if (!chatFabPosition || !btn) return;
+    var bounds = getFabBounds(btn);
+    cont.style.setProperty('left', Math.round(bounds.left + chatFabPosition.x * bounds.travelX) + 'px', 'important');
+    cont.style.setProperty('top', Math.round(bounds.top + chatFabPosition.y * bounds.travelY) + 'px', 'important');
     cont.style.setProperty('right', 'auto', 'important');
     cont.style.setProperty('bottom', 'auto', 'important');
-    cont.style.setProperty('width', Math.max(0, viewportWidth - (clinicInsetPx * 2)) + 'px', 'important');
-    cont.style.setProperty('height', chatHeight, 'important');
+  }
+
+  function bindFabDrag(btn) {
+    if (!btn || btn.__teamChatDragBound) return;
+    btn.__teamChatDragBound = true;
+    var drag = null;
+    var suppressClick = false;
+    btn.addEventListener('pointerdown', function (event) {
+      if (event.isPrimary === false || event.button !== 0 || chatPanelOpen) return;
+      suppressClick = false;
+      var rect = btn.getBoundingClientRect();
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left, top: rect.top,
+        previous: chatFabPosition, moved: false };
+      try { btn.setPointerCapture(event.pointerId); } catch (_) {}
+    });
+    btn.addEventListener('pointermove', function (event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      var dx = event.clientX - drag.x;
+      var dy = event.clientY - drag.y;
+      if (!drag.moved && Math.hypot(dx, dy) <= 6) return;
+      drag.moved = true;
+      suppressClick = true;
+      event.preventDefault();
+      btn.classList.add('chat-fab-dragging');
+      var bounds = getFabBounds(btn);
+      chatFabPosition = {
+        x: bounds.travelX ? Math.max(0, Math.min(1, (drag.left + dx - bounds.left) / bounds.travelX)) : 0,
+        y: bounds.travelY ? Math.max(0, Math.min(1, (drag.top + dy - bounds.top) / bounds.travelY)) : 0
+      };
+      applyFabPosition(document.getElementById('chat-popup-container'), btn);
+    });
+    function finishDrag(event) {
+      if (!drag || drag.id !== event.pointerId) return;
+      var finished = drag;
+      drag = null;
+      btn.classList.remove('chat-fab-dragging');
+      if (event.type !== 'pointerup') {
+        chatFabPosition = finished.previous;
+        suppressClick = true;
+        ensureFAB();
+      } else if (finished.moved) {
+        try { window.localStorage.setItem(CHAT_FAB_POSITION_KEY, JSON.stringify(chatFabPosition)); } catch (_) {}
+      }
+      try { btn.releasePointerCapture(event.pointerId); } catch (_) {}
+    }
+    btn.addEventListener('pointerup', finishDrag);
+    btn.addEventListener('pointercancel', finishDrag);
+    btn.addEventListener('lostpointercapture', finishDrag);
+    btn.addEventListener('click', function (event) {
+      if (!suppressClick || event.detail === 0) return;
+      suppressClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
   }
 
   // ---------- ENSURE FAB EXISTS + VISIBLE (creates if missing, restores if hidden) ----------
@@ -233,41 +262,14 @@ import { ROLE_IDS } from './role-constants.js';
       // FAB was removed from DOM — recreate it
       cont = document.createElement('div');
       cont.id = 'chat-popup-container';
-      cont.innerHTML = '<div id="chat-toggle-btn" onclick="window.toggleChatPopup&&window.toggleChatPopup()" style="width:56px;height:56px;border-radius:50%;background:#007BFF;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(0,0,0,.4);position:relative;"><i class="fas fa-comments"></i><span id="chat-badge" style="display:none;position:absolute;top:-5px;right:-5px;background:#f5576c;color:#fff;border-radius:12px;padding:2px 6px;font-size:11px;font-weight:bold;min-width:20px;text-align:center;">0</span></div>';
+      cont.innerHTML = '<button type="button" id="chat-toggle-btn" class="chat-toggle-btn" aria-label="Buka Chat Tim" title="Buka Chat Tim" aria-controls="chat-box" aria-expanded="false" onclick="window.toggleChatPopup&&window.toggleChatPopup()" style="width:56px;height:56px;border-radius:50%;background:#007BFF;color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(0,0,0,.4);position:relative;"><i class="fas fa-comments"></i><span id="chat-badge" class="chat-badge" style="display:none;">0</span></button>';
       var target = document.body || document.documentElement;
       if (target) target.appendChild(cont);
       console.log('[ChatPopup] FAB recreated by guardian');
     }
     var chatOpen = cont.classList.contains('chat-is-open');
-    var isMobile = window.innerWidth <= 991;
-
-    if (chatOpen && isMobile) {
-      // Mobile frame: move to body to avoid transform-ancestor offset issues.
-      if (cont.parentNode !== document.body) document.body.appendChild(cont);
-      var navH = getReservedBottomPx();
-      var navPx = parseInt(navH, 10);
-      if (isNaN(navPx)) navPx = 65;
-      // Clear HTML inline style first, then set each property with !important
-      cont.style.cssText = '';
-      applyMobileViewportFrame(cont, navPx);
-      cont.style.setProperty('margin', '0', 'important');
-      cont.style.setProperty('padding', '0', 'important');
-      cont.style.setProperty('display', 'block', 'important');
-      cont.style.setProperty('visibility', 'visible', 'important');
-      cont.style.setProperty('opacity', '1', 'important');
-      cont.style.setProperty('z-index', '2147483647', 'important');
-      cont.style.setProperty('pointer-events', 'auto', 'important');
-      cont.style.setProperty('transform', 'none', 'important');
-      var box = document.getElementById('chat-box');
-      if (box && box.style.getPropertyValue('display') !== 'none') {
-        var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '8px' : '0';
-        box.style.setProperty('width', '100%', 'important');
-        box.style.setProperty('height', '100%', 'important');
-        box.style.setProperty('border-radius', clinicRadius, 'important');
-        box.style.setProperty('box-shadow', 'none', 'important');
-        box.style.setProperty('max-height', 'none', 'important');
-        box.style.setProperty('max-width', 'none', 'important');
-      }
+    if (chatOpen) {
+      applyMobileFullScreen(cont);
     } else if (!chatOpen) {
       // FAB mode
       var navH2 = getNavBottomPx();
@@ -288,6 +290,8 @@ import { ROLE_IDS } from './role-constants.js';
         btn.style.setProperty('display', 'flex', 'important');
         btn.style.setProperty('visibility', 'visible', 'important');
         btn.style.setProperty('opacity', '1', 'important');
+        applyFabPosition(cont, btn);
+        bindFabDrag(btn);
       }
     }
   }
@@ -297,14 +301,11 @@ import { ROLE_IDS } from './role-constants.js';
 
   // Guardian interval — every 2s (200ms was too aggressive, triggered observer loop)
 
-  // Helper: apply the mobile chat frame (compact in Sunday Clinic, full elsewhere).
+  // The historical export name is retained, but the frame is fullscreen on desktop too.
   function applyMobileFullScreen(cont) {
     if (cont.parentNode !== document.body) document.body.appendChild(cont);
-    var navH = getReservedBottomPx();
-    var navPx = parseInt(navH, 10);
-    if (isNaN(navPx)) navPx = 65;
     cont.style.cssText = '';
-    applyMobileViewportFrame(cont, navPx);
+    applyMobileViewportFrame(cont);
     cont.style.setProperty('margin', '0', 'important');
     cont.style.setProperty('padding', '0', 'important');
     cont.style.setProperty('display', 'block', 'important');
@@ -316,10 +317,9 @@ import { ROLE_IDS } from './role-constants.js';
     // Style chat-box to fill container
     var box = document.getElementById('chat-box');
     if (box) {
-      var clinicRadius = document.body.classList.contains('sunday-clinic-embedded-active') ? '8px' : '0';
       box.style.setProperty('width', '100%', 'important');
       box.style.setProperty('height', '100%', 'important');
-      box.style.setProperty('border-radius', clinicRadius, 'important');
+      box.style.setProperty('border-radius', '0', 'important');
       box.style.setProperty('box-shadow', 'none', 'important');
       box.style.setProperty('max-height', 'none', 'important');
       box.style.setProperty('max-width', 'none', 'important');
@@ -337,7 +337,6 @@ import { ROLE_IDS } from './role-constants.js';
       ensureFAB();
       return;
     }
-    if (window.innerWidth > 991) return;
     applyMobileFullScreen(cont);
     scheduleChatScrollToLatest();
   }
@@ -402,9 +401,58 @@ import { ROLE_IDS } from './role-constants.js';
         && typeof document.activeElement.blur === 'function') {
       document.activeElement.blur();
     }
-    if (cont) cont.classList.remove('chat-is-open');
+    if (cont) cont.classList.remove('chat-is-open', 'chat-is-closing');
     ensureFAB();
     if (btn) btn.style.setProperty('display', 'flex', 'important');
+  }
+
+  function setChatPanelOpen(open) {
+    var cont = document.getElementById('chat-popup-container');
+    var box = document.getElementById('chat-box');
+    var btn = document.getElementById('chat-toggle-btn');
+    if (!cont || !box) return;
+    if (!open && (!cont.classList.contains('chat-is-open') || chatCloseTimer !== null)) return;
+    if (chatCloseTimer !== null) { window.clearTimeout(chatCloseTimer); chatCloseTimer = null; }
+    chatPanelOpen = open;
+    setChatKeyboardMode(false);
+    btn?.setAttribute('aria-expanded', String(open));
+    var reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (open) {
+      if (!savedPageOverflow) {
+        savedPageOverflow = [document.body, document.documentElement].map(function (element) {
+          return { element: element, value: element.style.getPropertyValue('overflow'), priority: element.style.getPropertyPriority('overflow') };
+        });
+      }
+      savedPageOverflow.forEach(function (entry) { entry.element.style.setProperty('overflow', 'hidden', 'important'); });
+      cont.classList.remove('chat-is-closing');
+      cont.classList.add('chat-is-open');
+      if (btn) btn.style.setProperty('display', 'none', 'important');
+      box.classList.add('chat-open');
+      box.style.setProperty('display', 'flex', 'important');
+      box.setAttribute('aria-hidden', 'false');
+      applyMobileFullScreen(cont);
+      box.style.setProperty('animation', reducedMotion ? 'none' : 'chatPanelSlideIn 250ms ease both', 'important');
+      scheduleChatScrollToLatest();
+    } else {
+      if (document.activeElement && cont.contains(document.activeElement)) document.activeElement.blur();
+      cont.classList.add('chat-is-closing');
+      box.style.setProperty('animation', reducedMotion ? 'none' : 'chatPanelSlideOut 250ms ease both', 'important');
+      var finishClose = function () {
+        chatCloseTimer = null;
+        box.style.setProperty('display', 'none', 'important');
+        box.classList.remove('chat-open');
+        box.setAttribute('aria-hidden', 'true');
+        restoreChatFabAfterClose(cont, btn);
+        (savedPageOverflow || []).forEach(function (entry) {
+          if (entry.value) entry.element.style.setProperty('overflow', entry.value, entry.priority);
+          else entry.element.style.removeProperty('overflow');
+        });
+        savedPageOverflow = null;
+        if (btn && typeof btn.focus === 'function') btn.focus({ preventScroll: true });
+      };
+      if (reducedMotion) finishClose();
+      else chatCloseTimer = window.setTimeout(finishClose, 250);
+    }
   }
 
   // ---------- EARLY STUB FUNCTIONS for WebView onclick compatibility ----------
@@ -650,13 +698,13 @@ import { ROLE_IDS } from './role-constants.js';
   const chatHTML = `
     <div id="chat-popup-container">
       <!-- Floating Chat Button -->
-      <div id="chat-toggle-btn" class="chat-toggle-btn" onclick="window.toggleChatPopup && window.toggleChatPopup()" aria-label="Buka Chat Tim" title="Buka Chat Tim">
+      <button type="button" id="chat-toggle-btn" class="chat-toggle-btn" onclick="window.toggleChatPopup && window.toggleChatPopup()" aria-label="Buka Chat Tim" aria-controls="chat-box" aria-expanded="false" title="Buka Chat Tim">
         <i class="fas fa-comments"></i>
         <span class="chat-badge" style="display:none;">0</span>
-      </div>
+      </button>
 
       <!-- Chat Box -->
-      <div id="chat-box" class="chat-box" style="display:none;">
+      <div id="chat-box" class="chat-box" role="dialog" aria-label="Team Chat" aria-modal="true" aria-hidden="true" style="display:none;">
         <div class="chat-header">
           <div class="chat-header-content">
             <div>
@@ -671,8 +719,8 @@ import { ROLE_IDS } from './role-constants.js';
             <button id="chat-clear-btn" class="chat-clear-btn" aria-label="Clear Chat" title="Clear Chat">
               <i class="fas fa-trash-alt"></i>
             </button>
-            <button id="chat-close-btn" class="chat-close-btn" onclick="window.closeChatPopup && window.closeChatPopup()" aria-label="Tutup">
-              <i class="fas fa-times"></i>
+            <button type="button" id="chat-close-btn" class="chat-close-btn" onclick="window.closeChatPopup && window.closeChatPopup()" aria-label="Tutup chat" title="Tutup chat">
+              <span aria-hidden="true">×</span>
             </button>
           </div>
         </div>
@@ -746,10 +794,12 @@ import { ROLE_IDS } from './role-constants.js';
         color: #fff; border: none; cursor: pointer;
         display: flex; align-items: center; justify-content: center;
         font-size: 24px; box-shadow: 0 4px 12px rgba(102,126,234,.4);
-        transition: all .3s ease; position: relative;
+        transition: box-shadow .2s ease; position: relative;
+        touch-action: none !important; user-select: none !important; -webkit-user-select: none !important;
+        cursor: grab !important; padding: 0 !important;
       }
-      .chat-toggle-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(102,126,234,.5); }
-      .chat-toggle-btn:active { transform: scale(.95); }
+      .chat-toggle-btn:hover { box-shadow: 0 6px 16px rgba(102,126,234,.5); }
+      #chat-toggle-btn.chat-fab-dragging { cursor: grabbing !important; transform: none !important; }
 
       .chat-badge {
         position: absolute; top: -5px; right: -5px;
@@ -762,9 +812,9 @@ import { ROLE_IDS } from './role-constants.js';
         width: 340px; height: 480px; background: #fff; border-radius: 8px;
         box-shadow: 0 8px 32px rgba(0,0,0,.12);
         display: flex; flex-direction: column; overflow: hidden;
-        animation: slideUp .3s ease;
       }
-      @keyframes slideUp { from {opacity:0; transform: translateY(20px);} to {opacity:1; transform:translateY(0);} }
+      @keyframes chatPanelSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+      @keyframes chatPanelSlideOut { from { transform: translateX(0); } to { transform: translateX(100%); } }
 
       /* Header compact per request */
       .chat-header {
@@ -780,11 +830,13 @@ import { ROLE_IDS } from './role-constants.js';
         opacity: 0.9; display: flex; align-items: center; gap: 4px;
       }
 
-      .chat-close-btn {
+      #chat-popup-container #chat-close-btn.chat-close-btn {
         background: rgba(255,255,255,.2); border: none; color: #fff;
-        width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+        width: 44px !important; height: 44px !important; min-width: 44px !important; min-height: 44px !important;
+        border-radius: 50%; cursor: pointer; flex-shrink: 0 !important;
         display:flex; align-items:center; justify-content:center; transition: all .2s ease;
       }
+      #chat-popup-container .chat-close-btn span { font-size: 28px !important; line-height: 1 !important; }
       .chat-close-btn:hover { background: rgba(255,255,255,.3); }
 
       .chat-clear-btn {
@@ -885,21 +937,11 @@ import { ROLE_IDS } from './role-constants.js';
       .chat-send-btn:active { transform: scale(.95); }
       .chat-send-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-      /* Mobile: full-screen chat panel when open */
-      @media (max-width: 991.98px) {
+      /* Full viewport in the Staff shell and embedded Sunday Clinic, at every width. */
         #chat-popup-container.chat-is-open {
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 65px !important;
-          width: 100% !important;
-          height: calc(100dvh - 65px) !important;
           margin: 0 !important;
           padding: 0 !important;
-        }
-        body.chat-keyboard-active #chat-popup-container.chat-is-open {
-          bottom: 0 !important;
-          height: 100dvh !important;
+          overflow: hidden !important;
         }
         #chat-popup-container.chat-is-open #chat-box,
         #chat-popup-container.chat-is-open .chat-box {
@@ -916,7 +958,8 @@ import { ROLE_IDS } from './role-constants.js';
           max-height: none !important;
           border-radius: 0 !important;
           box-shadow: none !important;
-          animation: none !important;
+          border: 0 !important;
+          padding: 0 !important;
         }
         #chat-popup-container.chat-is-open .chat-messages {
           flex: 1 1 0 !important;
@@ -925,7 +968,19 @@ import { ROLE_IDS } from './role-constants.js';
         }
         #chat-popup-container.chat-is-open .chat-input-container {
           flex-shrink: 0 !important;
+          padding-bottom: max(12px, env(safe-area-inset-bottom)) !important;
+          padding-left: max(12px, env(safe-area-inset-left)) !important;
+          padding-right: max(12px, env(safe-area-inset-right)) !important;
         }
+        #chat-popup-container.chat-is-open .chat-header {
+          flex-shrink: 0 !important;
+          padding-top: max(10px, env(safe-area-inset-top)) !important;
+          padding-left: max(12px, env(safe-area-inset-left)) !important;
+          padding-right: max(12px, env(safe-area-inset-right)) !important;
+        }
+        #chat-popup-container .chat-input { min-width: 0 !important; }
+      @media (prefers-reduced-motion: reduce) {
+        #chat-popup-container #chat-box { animation: none !important; }
       }
     </style>
   `;
@@ -948,7 +1003,7 @@ import { ROLE_IDS } from './role-constants.js';
             console.log('[ChatPopup] Container already in DOM, injecting only chat-box...');
             // Container is in HTML but chat-box is not — inject just the chat box
             if (!document.getElementById('chat-box')) {
-                const chatBoxHTML = `<div id="chat-box" class="chat-box" style="display:none;">
+                const chatBoxHTML = `<div id="chat-box" class="chat-box" role="dialog" aria-label="Team Chat" aria-modal="true" aria-hidden="true" style="display:none;">
                     <div class="chat-header">
                       <div class="chat-header-content">
                         <div>
@@ -961,7 +1016,7 @@ import { ROLE_IDS } from './role-constants.js';
                       </div>
                       <div style="display: flex; gap: 8px; align-items: center;">
                         <button id="chat-clear-btn" class="chat-clear-btn" aria-label="Clear Chat" title="Clear Chat"><i class="fas fa-trash-alt"></i></button>
-                        <button id="chat-close-btn" class="chat-close-btn" onclick="window.closeChatPopup && window.closeChatPopup()" aria-label="Tutup"><i class="fas fa-times"></i></button>
+                        <button type="button" id="chat-close-btn" class="chat-close-btn" onclick="window.closeChatPopup && window.closeChatPopup()" aria-label="Tutup chat" title="Tutup chat"><span aria-hidden="true">×</span></button>
                       </div>
                     </div>
                     <div class="chat-messages" id="chat-messages"></div>
@@ -979,47 +1034,13 @@ import { ROLE_IDS } from './role-constants.js';
         const closeBtn = document.getElementById('chat-close-btn');
         const chatBox = document.getElementById('chat-box');
 
-        let isChatOpenBasic = false;
-
         // Basic toggle that works without auth
         function basicToggle() {
-            isChatOpenBasic = !isChatOpenBasic;
-            const cont = document.getElementById('chat-popup-container');
-            const btn = document.getElementById('chat-toggle-btn');
-            if (isChatOpenBasic) {
-            setChatKeyboardMode(false);
-                chatBox.style.setProperty('display', 'flex', 'important');
-                chatBox.classList.add('chat-open');
-                if (cont) {
-                    cont.classList.add('chat-is-open');
-                    if (window.innerWidth <= 991 && window._applyChatMobileFullScreen) window._applyChatMobileFullScreen(cont);
-                }
-                if (btn) btn.style.setProperty('display', 'none', 'important');
-                scheduleChatScrollToLatest();
-            } else {
-            setChatKeyboardMode(false);
-                chatBox.style.setProperty('display', 'none', 'important');
-                chatBox.classList.remove('chat-open');
-                chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
-                chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
-                chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-                restoreChatFabAfterClose(cont, btn);
-            }
-            console.log('[ChatPopup] Basic toggle - isChatOpen:', isChatOpenBasic);
+            setChatPanelOpen(!chatPanelOpen);
         }
 
         function basicClose() {
-            isChatOpenBasic = false;
-            const cont = document.getElementById('chat-popup-container');
-            const btn = document.getElementById('chat-toggle-btn');
-          setChatKeyboardMode(false);
-            chatBox.style.setProperty('display', 'none', 'important');
-            chatBox.classList.remove('chat-open');
-            chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
-            chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
-            chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-            restoreChatFabAfterClose(cont, btn);
-            console.log('[ChatPopup] Basic close');
+            setChatPanelOpen(false);
         }
 
         // Set these as the real functions initially
@@ -1183,8 +1204,6 @@ import { ROLE_IDS } from './role-constants.js';
           return window.socket || (window.__realtimeSyncState && window.__realtimeSyncState.socket) || null;
         }
 
-  // isChatOpenBasic already defined above - reuse it
-  let isChatOpen = isChatOpenBasic;
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
   const renderedMessageIds = new Set();
@@ -1394,23 +1413,14 @@ import { ROLE_IDS } from './role-constants.js';
 
     // Toggle function - exposed globally for WebView onclick compatibility
     function handleToggleChat() {
-      isChatOpen = !isChatOpen;
-      const cont = document.getElementById('chat-popup-container');
-      if (isChatOpen) {
-        setChatKeyboardMode(false);
-        chatBox.style.display = 'flex';
-        chatBox.classList.add('chat-open');
-        if (cont) {
-          cont.classList.add('chat-is-open');
-          if (window.innerWidth <= 991 && window._applyChatMobileFullScreen) window._applyChatMobileFullScreen(cont);
-        }
-        toggleBtn.style.setProperty('display', 'none', 'important');
+      setChatPanelOpen(!chatPanelOpen);
+      if (chatPanelOpen) {
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
         markMessagesAsRead();
         scheduleChatScrollToLatest();
         setTimeout(() => {
-          if (!isChatOpen) return;
+          if (!chatPanelOpen) return;
           scheduleChatScrollToLatest();
           if (chatInput) {
             setChatKeyboardMode(true);
@@ -1418,16 +1428,8 @@ import { ROLE_IDS } from './role-constants.js';
             queueChatLayoutSync();
             scheduleChatScrollToLatest();
           }
-        }, 100);
+        }, 250);
         checkClearButtonVisibility();
-      } else {
-        setChatKeyboardMode(false);
-        chatBox.style.setProperty('display', 'none', 'important');
-        chatBox.classList.remove('chat-open');
-        chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
-        chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
-        chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-        restoreChatFabAfterClose(cont, toggleBtn);
       }
     }
 
@@ -1440,15 +1442,7 @@ import { ROLE_IDS } from './role-constants.js';
 
     // Close function - exposed globally for WebView onclick compatibility
     function handleCloseChat() {
-      isChatOpen = false;
-      const cont = document.getElementById('chat-popup-container');
-      setChatKeyboardMode(false);
-      chatBox.style.setProperty('display', 'none', 'important');
-      chatBox.classList.remove('chat-open');
-      chatBox.style.removeProperty('width'); chatBox.style.removeProperty('height');
-      chatBox.style.removeProperty('max-width'); chatBox.style.removeProperty('max-height');
-      chatBox.style.removeProperty('border-radius'); chatBox.style.removeProperty('box-shadow');
-      restoreChatFabAfterClose(cont, toggleBtn);
+      setChatPanelOpen(false);
     }
 
     // Upgrade the close function
@@ -1684,7 +1678,7 @@ import { ROLE_IDS } from './role-constants.js';
 
       // Badge ONLY for new real-time messages, NOT history
       // Skip ALL badge updates during history loading
-      if (!isChatOpen && type === 'received') {
+      if (!chatPanelOpen && type === 'received') {
         const msgTime = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
         const isUnread = msgTime > lastReadTimestamp;
 
