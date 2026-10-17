@@ -13,12 +13,13 @@
  */
 
 import { renderPreviousPlanningPanel, loadPreviousPlanning } from '../../utils/previous-planning.js';
+import { loadPlannedSc } from '../../utils/planned-sc.js';
 
 export default {
     afterRender(state) {
         const root = document.querySelector('#sunday-clinic-content [data-planning-mr-id]');
         if (!root || root.dataset.planningMrId !== state.currentMrId) return;
-        return loadPreviousPlanning(state, root);
+        return Promise.all([loadPreviousPlanning(state, root), loadPlannedSc(state, root)]);
     },
     /**
      * Render the Plan form
@@ -333,6 +334,7 @@ export default {
                                       placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(planData.rencana)}</textarea>
                             ${showPreviousControl ? renderPreviousPlanningPanel('rencana') : ''}
                         </div>
+                        <div class="mt-2" data-planned-sc hidden aria-live="polite"></div>
                         <div class="sc-docboard-plan-actions mt-2">
                             <button type="button" class="btn btn-sm btn-outline-info" id="btn-planning-docboard">
                                 <i class="fas fa-calendar-plus mr-1"></i>Masukkan ke DocBoard

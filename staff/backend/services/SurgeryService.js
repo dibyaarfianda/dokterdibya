@@ -250,6 +250,51 @@ class SurgeryService {
   // SURGERY SCHEDULES
   // =====================================================
 
+  async getPlannedScByMrId(mrId, today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date())) {
+    const [visits] = await pool.query(
+      'SELECT patient_id FROM sunday_clinic_records WHERE mr_id = ? LIMIT 2', [mrId]
+    );
+    if (!visits.length) return null;
+    if (visits.length > 1 || !visits[0].patient_id) {
+      throw Object.assign(new Error('Identitas pasien DRD tidak dapat dipastikan.'), { statusCode: 409 });
+    }
+    const patientId = visits[0].patient_id;
+    const [rows] = await pool.query(
+      `SELECT s.id, s.surgery_date, s.surgery_time, s.location, s.status,
+              s.operation_type_other, ot.code AS op_code, ot.name AS op_name, ot.name_id AS op_name_id
+         FROM surgery_schedules s
+         LEFT JOIN surgery_operation_types ot ON ot.id = s.operation_type_id
+        WHERE s.surgery_date >= ? AND s.status IN ('planned', 'confirmed')
+          AND NOT EXISTS (
+                 SELECT 1 FROM sunday_clinic_records conflict
+                  WHERE conflict.mr_id = s.mr_id COLLATE utf8mb4_unicode_ci
+                    AND conflict.patient_id <> ?
+               )
+          AND (s.patient_id = ? OR ((s.patient_id IS NULL OR s.patient_id = '') AND EXISTS (
+                 SELECT 1 FROM sunday_clinic_records linked
+                  WHERE linked.mr_id = s.mr_id COLLATE utf8mb4_unicode_ci
+                    AND linked.patient_id = ?
+               )))
+        ORDER BY s.surgery_date, s.surgery_time, s.id`,
+      [today, patientId, patientId, patientId]
+    );
+    // Classify the operation itself, never a diagnosis such as "bekas SC".
+    const caesarean = /\b(?:SC|RE-SC|ERACS|sectio\s+caesarea|caesarean(?:\s+section)?|cesarean(?:\s+section)?|operasi\s+caesar)\b/i;
+    return rows.filter(row => ['planned', 'confirmed'].includes(row.status)
+      && formatDateLocal(row.surgery_date) >= today
+      && caesarean.test([row.op_code, row.op_name, row.op_name_id, row.operation_type_other].filter(Boolean).join(' ')))
+      .map(row => ({
+        id: row.id,
+        surgery_date: formatDateLocal(row.surgery_date),
+        surgery_time: row.surgery_time ? String(row.surgery_time).slice(0, 5) : null,
+        location: row.location,
+        status: row.status,
+        operation: row.operation_type_other || row.op_name_id || row.op_name || row.op_code
+      }));
+  }
+
   async getCalendarMonth(year, month) {
     const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
     const lastDay = new Date(year, month, 0).getDate();

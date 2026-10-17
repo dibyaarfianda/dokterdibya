@@ -31,6 +31,7 @@ const {
 } = require('./shared');
 const { updateQueueStatus } = require('./queue');
 const { assertNoCancelledBillingEvidence } = require('./billing-cancellation');
+const surgeryService = require('../SurgeryService');
 
 async function getCheckExisting(req, res, next) {
     try {
@@ -270,6 +271,19 @@ async function getRecordsByMrId(req, res, next) {
             mrId: normalizedMrId,
             error: error.message
         });
+        next(error);
+    }
+}
+
+async function getPlannedScByMrId(req, res, next) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const mrId = normalizeMrId(req.params.mrId);
+    if (!mrId) return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    try {
+        const schedules = await surgeryService.getPlannedScByMrId(mrId);
+        if (schedules === null) return res.status(404).json({ success: false, message: 'DRD tidak ditemukan.' });
+        return res.json({ success: true, data: schedules });
+    } catch (error) {
         next(error);
     }
 }
@@ -775,6 +789,7 @@ module.exports = {
     getCheckExisting,
     getDirectory,
     getRecordsByMrId,
+    getPlannedScByMrId,
     postRecordsByMrIdBySection,
     getRecordsByMrIdPrefillMedify,
     getMedifySyncJobsByMrId,

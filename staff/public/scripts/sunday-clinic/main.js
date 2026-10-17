@@ -42,6 +42,7 @@ import {
     hasUnsavedPlanning,
     validateDocBoardSchedule
 } from './utils/docboard-planning.js';
+import { loadPlannedSc } from './utils/planned-sc.js';
 
 const QUEUE_STATUS_TIMEOUT_MS = 12000;
 
@@ -1703,6 +1704,10 @@ class SundayClinicApp {
                 state.idempotencyKey
             );
             const result = await apiClient.post('/api/docboard/from-drd', payload);
+            const planningRoot = document.querySelector('#sunday-clinic-content [data-planning-mr-id]');
+            if (planningRoot?.dataset.planningMrId === state.preview.mr_id) {
+                loadPlannedSc(stateManager.getState(), planningRoot);
+            }
             const typeLabel = result.kind === 'surgery' ? 'Operasi' : 'Tindakan';
             const status = document.getElementById('planning-docboard-status');
             if (status) {

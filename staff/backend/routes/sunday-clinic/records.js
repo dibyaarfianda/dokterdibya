@@ -33,6 +33,7 @@ async function requireOpenAccountingDate(req, res, next) {
 router.get('/check-existing', verifyToken, handlers.getCheckExisting);
 router.get('/directory', verifyToken, handlers.getDirectory);
 router.get('/records/:mrId', verifyToken, handlers.getRecordsByMrId);
+router.get('/records/:mrId/planned-sc', verifyToken, handlers.getPlannedScByMrId);
 router.post('/records/:mrId/:section', verifyToken, handlers.postRecordsByMrIdBySection);
 router.get('/records/:mrId/prefill/medify', verifyToken, handlers.getRecordsByMrIdPrefillMedify);
 router.get('/medify-sync/jobs/:mrId', verifyToken, handlers.getMedifySyncJobsByMrId);
