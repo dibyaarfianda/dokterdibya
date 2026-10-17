@@ -7,7 +7,7 @@ const vm = require('vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/chat-popup.js'), 'utf8')
     .replace(/^import \{ ROLE_IDS \} from '[^']+';\r?\n/, '');
 
-function fixture({ width = 400, height = 800, stored = new Map(), storageFails = false, clinic = false, reduced = false, authenticated = false } = {}) {
+function fixture({ width = 400, height = 800, stored = new Map(), storageFails = false, clinic = false, reduced = false, authenticated = false, shellZoom = 1 } = {}) {
     const elements = new Map();
     let releaseHistory;
     const history = new Promise(resolve => { releaseHistory = () => resolve({ ok: true, json: async () => ({ success: true, data: [] }) }); });
@@ -50,8 +50,9 @@ function fixture({ width = 400, height = 800, stored = new Map(), storageFails =
                     const frame = elements.get('chat-popup-container').getBoundingClientRect();
                     return { left: frame.left, top: frame.top, width: 50, height: 50, right: frame.left + 50, bottom: frame.top + 50 };
                 }
-                const w = parseFloat(style.getPropertyValue('width')) || 50;
-                const h = parseFloat(style.getPropertyValue('height')) || 50;
+                const scale = id === 'chat-popup-container' ? shellZoom * (parseFloat(style.getPropertyValue('zoom')) || 1) : 1;
+                const w = (parseFloat(style.getPropertyValue('width')) || 50) * scale;
+                const h = (parseFloat(style.getPropertyValue('height')) || 50) * scale;
                 const left = parseFloat(style.getPropertyValue('left')) || (win.innerWidth - 64);
                 const top = parseFloat(style.getPropertyValue('top')) || (win.innerHeight - 121);
                 return { left, top, width: w, height: h, right: left + w, bottom: top + h };
@@ -65,7 +66,7 @@ function fixture({ width = 400, height = 800, stored = new Map(), storageFails =
         visualViewport: { ...target(), width, height, offsetLeft: 0, offsetTop: 0 },
         localStorage: { getItem(k) { if (storageFails) throw Error('blocked'); return stored.get(k) || null; },
             setItem(k, v) { if (storageFails) throw Error('blocked'); stored.set(k, v); } },
-        getComputedStyle() { return { display: 'block', visibility: 'visible', opacity: '1', getPropertyValue() { return '0'; } }; },
+        getComputedStyle(el) { return { zoom: el.id === 'html' ? String(shellZoom) : '1', display: 'block', visibility: 'visible', opacity: '1', getPropertyValue() { return '0'; } }; },
         matchMedia() { return { matches: reduced }; }, getAuthToken() { return authenticated ? 'fixture' : null; },
         requestAnimationFrame(fn) { return setTimeout(fn, 0); }, cancelAnimationFrame: clearTimeout,
         setTimeout, clearTimeout
@@ -115,6 +116,13 @@ test('desktop also fills the entire viewport', () => {
     f.button.fire('click');
     expect(f.container.style.getPropertyValue('width')).toBe('1440px');
     expect(f.container.style.getPropertyValue('height')).toBe('900px');
+});
+
+test('desktop shell zoom at 80 percent does not shrink the fullscreen chat', () => {
+    const f = fixture({ width: 1440, height: 900, shellZoom: 0.8 });
+    f.win.toggleChatPopup();
+    expect(f.container.getBoundingClientRect().width).toBe(1440);
+    expect(f.container.getBoundingClientRect().height).toBe(900);
 });
 
 test.each(['mouse', 'touch'])('drag with %s persists position without opening chat, even after navigation', pointerType => {

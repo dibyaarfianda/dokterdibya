@@ -107,6 +107,17 @@ import { ROLE_IDS } from './role-constants.js';
     return 360;
   }
 
+  // The regular desktop shell uses CSS zoom: .8 on <html>. Cancel only that
+  // inherited CSS scale for this viewport overlay, preserving browser zoom.
+  function getChatZoomCorrection() {
+    if (typeof window.getComputedStyle !== 'function') return 1;
+    var scale = [document.documentElement, document.body].reduce(function (total, element) {
+      var zoom = element ? parseFloat(window.getComputedStyle(element).zoom) : 1;
+      return total * (Number.isFinite(zoom) && zoom > 0 ? zoom : 1);
+    }, 1);
+    return 1 / scale;
+  }
+
   function isChatKeyboardModeActive() {
     return !!(document.body && document.body.classList.contains('chat-keyboard-active'));
   }
@@ -163,6 +174,7 @@ import { ROLE_IDS } from './role-constants.js';
   } catch (_) { /* Storage can be unavailable; the in-memory position still works. */ }
 
   function applyMobileViewportFrame(cont) {
+    cont.style.setProperty('zoom', String(getChatZoomCorrection()), 'important');
     cont.style.setProperty('position', 'fixed', 'important');
     cont.style.setProperty('top', getMobileViewportTop() + 'px', 'important');
     cont.style.setProperty('left', getMobileViewportLeft() + 'px', 'important');
@@ -277,6 +289,7 @@ import { ROLE_IDS } from './role-constants.js';
       if (isNaN(navPx2)) navPx2 = 65;
       var fabBottom = (navPx2 + getChatFabInsetPx()) + 'px';
       cont.style.cssText = '';
+      cont.style.setProperty('zoom', String(getChatZoomCorrection()), 'important');
       cont.style.setProperty('position', 'fixed', 'important');
       cont.style.setProperty('display', 'block', 'important');
       cont.style.setProperty('visibility', 'visible', 'important');
