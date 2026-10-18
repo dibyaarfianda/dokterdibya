@@ -1,0 +1,104 @@
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 18mm 15mm;
+  }
+  html,
+  body {
+    background: white !important;
+    color: #193d60;
+    font-family: Arial, sans-serif;
+  }
+  .stage,
+  .toast,
+  .modal-wrap {
+    display: none !important;
+  }
+  .print-sheet {
+    display: block !important;
+  }
+  .print-sheet header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid #268477;
+    padding: 0 0 18px;
+    margin-bottom: 25px;
+  }
+  .print-sheet header img:first-child {
+    width: 245px;
+  }
+  .print-sheet header img:not(:first-child) {
+    width: 58px;
+    height: 58px;
+    object-fit: contain;
+  }
+  .print-sheet .dummy-stamp {
+    color: #a9433b;
+    letter-spacing: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 15px;
+  }
+  .print-sheet h1 {
+    font-size: 22px;
+    margin: 10px 0 18px;
+  }
+  .print-sheet dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 18px;
+  }
+  .print-sheet dl > div {
+    min-width: 0;
+    padding: 9px 0;
+    border-bottom: 1px solid #e2eaf0;
+    break-inside: avoid;
+  }
+  .print-sheet dt {
+    color: #60798b;
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+  .print-sheet dd {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .print-sheet table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 11px;
+    margin-top: 22px;
+  }
+  .print-sheet th {
+    background: #193d60;
+    color: white;
+    text-align: left;
+    padding: 10px;
+  }
+  .print-sheet td {
+    padding: 10px;
+    border-bottom: 1px solid #dce5ea;
+    overflow-wrap: anywhere;
+  }
+  .print-sheet tr {
+    break-inside: avoid;
+  }
+  .print-sheet thead {
+    display: table-header-group;
+  }
+  .print-sheet footer {
+    font-size: 9px;
+    margin-top: 25px;
+    color: #6d8090;
+  }
+  .print-sheet .signoff {
+    margin-top: 32px;
+    font-size: 11px;
+    break-inside: avoid;
+  }
+}

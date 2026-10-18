@@ -1,0 +1,26 @@
+{
+  "id": "/staff-preview/",
+  "name": "dr. Dibya Staff · Preview",
+  "short_name": "Staff Preview",
+  "description": "Prototipe Staff & DocBoard dengan data fiktif",
+  "lang": "id",
+  "start_url": "/staff-preview/#/dashboard",
+  "scope": "/staff-preview/",
+  "display": "standalone",
+  "background_color": "#f4f7fa",
+  "theme_color": "#193d60",
+  "icons": [
+    {
+      "src": "/staff-preview/brand/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/staff-preview/brand/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
