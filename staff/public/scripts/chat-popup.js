@@ -178,6 +178,14 @@ import { ROLE_IDS } from './role-constants.js';
     return 360;
   }
 
+  function isDesktopWebChat() {
+    var mobileApp = typeof window.isMobileAppMode === 'function'
+      ? window.isMobileAppMode()
+      : document.documentElement.classList.contains('mobile-app-mode')
+        || document.body?.classList.contains('mobile-app-mode');
+    return getMobileViewportWidth() > 768 && !mobileApp;
+  }
+
   // The regular desktop shell uses CSS zoom: .8 on <html>. Cancel only that
   // inherited CSS scale for this viewport overlay, preserving browser zoom.
   function getChatZoomCorrection() {
@@ -195,7 +203,7 @@ import { ROLE_IDS } from './role-constants.js';
 
   function setChatKeyboardMode(active) {
     if (!document.body) return;
-    document.body.classList.toggle('chat-keyboard-active', !!active);
+    document.body.classList.toggle('chat-keyboard-active', !!active && !isDesktopWebChat());
   }
 
   var chatScrollFrameId = null;
@@ -232,6 +240,22 @@ import { ROLE_IDS } from './role-constants.js';
   var chatPanelOpen = false;
   var chatCloseTimer = null;
   var savedPageOverflow = null;
+  function setChatPageScrollLocked(locked) {
+    if (locked) {
+      if (!savedPageOverflow) {
+        savedPageOverflow = [document.body, document.documentElement].map(function (element) {
+          return { element: element, value: element.style.getPropertyValue('overflow'), priority: element.style.getPropertyPriority('overflow') };
+        });
+      }
+      savedPageOverflow.forEach(function (entry) { entry.element.style.setProperty('overflow', 'hidden', 'important'); });
+    } else {
+      (savedPageOverflow || []).forEach(function (entry) {
+        if (entry.value) entry.element.style.setProperty('overflow', entry.value, entry.priority);
+        else entry.element.style.removeProperty('overflow');
+      });
+      savedPageOverflow = null;
+    }
+  }
   const CHAT_FAB_POSITION_KEY = 'staff_team_chat_fab_position_v1';
   var chatFabPosition = null;
   try {
@@ -245,14 +269,19 @@ import { ROLE_IDS } from './role-constants.js';
   } catch (_) { /* Storage can be unavailable; the in-memory position still works. */ }
 
   function applyMobileViewportFrame(cont) {
+    var compact = isDesktopWebChat();
+    var viewportWidth = getMobileViewportWidth();
+    var viewportHeight = getMobileViewportHeight();
+    var width = compact ? Math.min(400, viewportWidth - 32) : viewportWidth;
+    var height = compact ? Math.min(560, Math.max(1, viewportHeight - 32)) : viewportHeight;
     cont.style.setProperty('zoom', String(getChatZoomCorrection()), 'important');
     cont.style.setProperty('position', 'fixed', 'important');
-    cont.style.setProperty('top', getMobileViewportTop() + 'px', 'important');
-    cont.style.setProperty('left', getMobileViewportLeft() + 'px', 'important');
+    cont.style.setProperty('top', (getMobileViewportTop() + (compact ? viewportHeight - height - 16 : 0)) + 'px', 'important');
+    cont.style.setProperty('left', (getMobileViewportLeft() + (compact ? viewportWidth - width - 16 : 0)) + 'px', 'important');
     cont.style.setProperty('right', 'auto', 'important');
     cont.style.setProperty('bottom', 'auto', 'important');
-    cont.style.setProperty('width', getMobileViewportWidth() + 'px', 'important');
-    cont.style.setProperty('height', getMobileViewportHeight() + 'px', 'important');
+    cont.style.setProperty('width', width + 'px', 'important');
+    cont.style.setProperty('height', height + 'px', 'important');
   }
 
   function getFabBounds(btn) {
@@ -385,8 +414,10 @@ import { ROLE_IDS } from './role-constants.js';
 
   // Guardian interval — every 2s (200ms was too aggressive, triggered observer loop)
 
-  // The historical export name is retained, but the frame is fullscreen on desktop too.
+  // Keep the historical export name; desktop web now uses a compact frame.
   function applyMobileFullScreen(cont) {
+    var compact = isDesktopWebChat();
+    cont.classList.toggle('chat-is-compact', compact);
     if (cont.parentNode !== document.body) document.body.appendChild(cont);
     cont.style.cssText = '';
     applyMobileViewportFrame(cont);
@@ -398,15 +429,20 @@ import { ROLE_IDS } from './role-constants.js';
     cont.style.setProperty('z-index', '2147483647', 'important');
     cont.style.setProperty('pointer-events', 'auto', 'important');
     cont.style.setProperty('transform', 'none', 'important');
+    cont.style.setProperty('border-radius', compact ? '12px' : '0', 'important');
+    cont.style.setProperty('box-shadow', compact ? '0 8px 32px rgba(0,0,0,.2)' : 'none', 'important');
+    setChatPageScrollLocked(!compact);
+    if (compact) setChatKeyboardMode(false);
     // Style chat-box to fill container
     var box = document.getElementById('chat-box');
     if (box) {
       box.style.setProperty('width', '100%', 'important');
       box.style.setProperty('height', '100%', 'important');
-      box.style.setProperty('border-radius', '0', 'important');
+      box.style.setProperty('border-radius', compact ? '12px' : '0', 'important');
       box.style.setProperty('box-shadow', 'none', 'important');
       box.style.setProperty('max-height', 'none', 'important');
       box.style.setProperty('max-width', 'none', 'important');
+      box.setAttribute('aria-modal', String(!compact));
     }
   }
 
@@ -502,12 +538,6 @@ import { ROLE_IDS } from './role-constants.js';
     btn?.setAttribute('aria-expanded', String(open));
     var reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     if (open) {
-      if (!savedPageOverflow) {
-        savedPageOverflow = [document.body, document.documentElement].map(function (element) {
-          return { element: element, value: element.style.getPropertyValue('overflow'), priority: element.style.getPropertyPriority('overflow') };
-        });
-      }
-      savedPageOverflow.forEach(function (entry) { entry.element.style.setProperty('overflow', 'hidden', 'important'); });
       cont.classList.remove('chat-is-closing');
       cont.classList.add('chat-is-open');
       if (btn) btn.style.setProperty('display', 'none', 'important');
@@ -527,11 +557,7 @@ import { ROLE_IDS } from './role-constants.js';
         box.classList.remove('chat-open');
         box.setAttribute('aria-hidden', 'true');
         restoreChatFabAfterClose(cont, btn);
-        (savedPageOverflow || []).forEach(function (entry) {
-          if (entry.value) entry.element.style.setProperty('overflow', entry.value, entry.priority);
-          else entry.element.style.removeProperty('overflow');
-        });
-        savedPageOverflow = null;
+        setChatPageScrollLocked(false);
         if (btn && typeof btn.focus === 'function') btn.focus({ preventScroll: true });
       };
       if (reducedMotion) finishClose();
@@ -921,6 +947,15 @@ import { ROLE_IDS } from './role-constants.js';
         font-size: 11px; line-height: 1.2; margin-top: 2px; 
         opacity: 0.9; display: flex; align-items: center; gap: 4px;
       }
+      #chat-popup-container.chat-is-compact .chat-header { gap: 8px !important; }
+      #chat-popup-container.chat-is-compact .chat-header-content {
+        flex: 1 !important; min-width: 0 !important;
+      }
+      #chat-popup-container.chat-is-compact .chat-header-content > div { min-width: 0 !important; }
+      #chat-popup-container.chat-is-compact .chat-header-content + div { flex-shrink: 0 !important; }
+      #chat-popup-container.chat-is-compact #online-names {
+        min-width: 0 !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important;
+      }
 
       #chat-box .chat-notification-volume {
         display: flex !important; align-items: center !important; gap: 10px !important;
@@ -1046,7 +1081,7 @@ import { ROLE_IDS } from './role-constants.js';
       .chat-send-btn:active { transform: scale(.95); }
       .chat-send-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-      /* Full viewport in the Staff shell and embedded Sunday Clinic, at every width. */
+      /* Fill the responsive frame: compact desktop web or fullscreen mobile. */
         #chat-popup-container.chat-is-open {
           margin: 0 !important;
           padding: 0 !important;

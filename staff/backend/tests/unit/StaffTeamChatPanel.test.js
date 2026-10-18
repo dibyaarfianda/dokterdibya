@@ -91,6 +91,7 @@ function fixture({ width = 400, height = 800, stored = new Map(), storageFails =
     elements.get('chat-send-sound').volume = 1;
     if (ios) Object.defineProperty(elements.get('chat-incoming-sound'), 'volume', { get: () => 1, set() {} });
     elements.get('chat-box').style.setProperty('display', 'none');
+    elements.get('chat-box').setAttribute('aria-modal', 'true');
     vm.runInNewContext(source, { window: win, document: doc, navigator: { userAgent: ios ? 'iPhone' : '', platform: '', maxTouchPoints: 0 },
         console, MutationObserver: class { observe() {} }, requestAnimationFrame: win.requestAnimationFrame,
         localStorage: win.localStorage, fetch: () => history,
@@ -211,18 +212,60 @@ test.each([false, true])('chat fills the visible viewport, including Sunday Clin
     expect(f.container.style.getPropertyValue('height')).toBe('310px');
 });
 
-test('desktop also fills the entire viewport', () => {
+test('desktop web opens a compact panel at the bottom right and leaves the page usable', () => {
     const f = fixture({ width: 1440, height: 900 });
+    f.doc.body.style.setProperty('overflow', 'auto');
     f.button.fire('click');
-    expect(f.container.style.getPropertyValue('width')).toBe('1440px');
-    expect(f.container.style.getPropertyValue('height')).toBe('900px');
+    expect(f.container.style.getPropertyValue('width')).toBe('400px');
+    expect(f.container.style.getPropertyValue('height')).toBe('560px');
+    expect(f.container.style.getPropertyValue('left')).toBe('1024px');
+    expect(f.container.style.getPropertyValue('top')).toBe('324px');
+    expect(f.doc.body.style.getPropertyValue('overflow')).toBe('auto');
+    expect(f.doc.documentElement.style.getPropertyValue('overflow')).toBe('');
+    expect(f.box.getAttribute('aria-modal')).toBe('false');
 });
 
-test('desktop shell zoom at 80 percent does not shrink the fullscreen chat', () => {
+test('desktop shell zoom at 80 percent preserves the compact chat size', () => {
     const f = fixture({ width: 1440, height: 900, shellZoom: 0.8 });
     f.win.toggleChatPopup();
-    expect(f.container.getBoundingClientRect().width).toBe(1440);
-    expect(f.container.getBoundingClientRect().height).toBe(900);
+    expect(f.container.getBoundingClientRect().width).toBe(400);
+    expect(f.container.getBoundingClientRect().height).toBe(560);
+});
+
+test('a short desktop viewport keeps the full panel and input within view', () => {
+    const f = fixture({ width: 1024, height: 500 });
+    f.win.toggleChatPopup();
+    expect(f.container.style.getPropertyValue('width')).toBe('400px');
+    expect(f.container.style.getPropertyValue('height')).toBe('468px');
+    expect(f.container.style.getPropertyValue('top')).toBe('16px');
+});
+
+test('mobile app mode retains fullscreen chat even on a wide display', () => {
+    const f = fixture({ width: 1024, height: 800, clinic: true });
+    f.win.toggleChatPopup();
+    expect(f.container.style.getPropertyValue('width')).toBe('1024px');
+    expect(f.container.style.getPropertyValue('height')).toBe('800px');
+    expect(f.doc.body.style.getPropertyValue('overflow')).toBe('hidden');
+    expect(f.box.getAttribute('aria-modal')).toBe('true');
+});
+
+test('resizing web chat switches layout and page scrolling without losing the draft', () => {
+    const f = fixture({ width: 1024, height: 800 });
+    f.doc.body.style.setProperty('overflow', 'auto');
+    f.win.toggleChatPopup();
+    f.elements.get('chat-input').value = 'Unsent draft';
+    f.win.innerWidth = f.win.visualViewport.width = 400;
+    f.win.fire('resize');
+    jest.advanceTimersByTime(1);
+    expect(f.container.style.getPropertyValue('height')).toBe('800px');
+    expect(f.doc.body.style.getPropertyValue('overflow')).toBe('hidden');
+    f.win.innerWidth = f.win.visualViewport.width = 1024;
+    f.win.fire('resize');
+    jest.advanceTimersByTime(1);
+    expect(f.container.style.getPropertyValue('height')).toBe('560px');
+    expect(f.doc.body.style.getPropertyValue('overflow')).toBe('auto');
+    expect(f.box.getAttribute('aria-modal')).toBe('false');
+    expect(f.elements.get('chat-input').value).toBe('Unsent draft');
 });
 
 test.each(['mouse', 'touch'])('drag with %s persists position without opening chat, even after navigation', pointerType => {
