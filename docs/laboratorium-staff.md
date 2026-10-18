@@ -12,6 +12,8 @@ Menu mobile: **Lainnya → Laboratorium**. Pilih pasien dan DRD yang sudah ada d
 
 PDF Hasil dan Cetak Komparasi terpisah. Komparasi hanya memakai laporan terstruktur terbit milik pasien yang sama dengan tanggal terdahulu. Selisih dihitung hanya jika parameter dan satuannya sama; BUN dan ureum berbeda. Lampiran lama tetap di Penunjang.
 
+Penanda H/L hanya dihitung untuk rentang numerik yang jelas. Rujukan seperti `4.000-10.000` tetap dicetak apa adanya tanpa menebak pemisah ribuan; petugas dapat memperjelasnya menjadi `4000-10000` setelah memeriksa sumber.
+
 ## Akses dan konfigurasi
 
 - `lab_exam.view`: daftar, detail, pencarian DRD, komparasi.

@@ -77,8 +77,8 @@ function flag(parameter) {
     if (!parameter.reviewed || parameter.numeric_value === null) return '';
     const range = parameter.reference.replace(/,/g, '.').match(/^\s*(-?\d+(?:\.\d+)?)\s*[-–]\s*(-?\d+(?:\.\d+)?)\s*$/);
     if (!range) return '';
-    const low = Number(range[1]); const high = Number(range[2]);
-    if (low > high) return '';
+    const low = numericValue(range[1]); const high = numericValue(range[2]);
+    if (low === null || high === null || low > high) return '';
     return parameter.numeric_value < low ? 'L' : parameter.numeric_value > high ? 'H' : '';
 }
 function compareReports(current, previous) {

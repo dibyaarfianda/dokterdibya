@@ -10,6 +10,11 @@ const sample = () => ({ examined_at: '2026-10-18T15:00', technician: 'Petugas Uj
     parameters: [{ code: 'hb', name: 'Hemoglobin', panel: 'Darah Lengkap', raw_value: '10,0', unit: 'g/dL', reference: '12.0-15.5', reviewed: true, origin: 'manual' }], sources: [], review_confirmed: true });
 
 describe('structured lab report contracts', () => {
+    test('ambiguous thousands separators in reference ranges cannot produce false high/low flags', () => {
+        expect(domain.flag({ reviewed: true, numeric_value: 9370, reference: '4.000-10.000' })).toBe('');
+        expect(domain.flag({ reviewed: true, numeric_value: 9370, reference: '4,000-10,000' })).toBe('');
+        expect(domain.flag({ reviewed: true, numeric_value: 12000, reference: '4000-10000' })).toBe('H');
+    });
     test('requires a matching patient and a private clinic DRD, rejects ambiguous visits', () => {
         expect(typeof domain.assertVisit).toBe('function');
         const visit = { id: 1, mr_id: 'DRD001', patient_id: 'P001', visit_location: 'klinik_private' };
