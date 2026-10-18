@@ -7,6 +7,11 @@ const { execFileSync } = require('child_process');
 const vm = require('vm');
 
 describe('shared staff and patient display dates', () => {
+    test('patient history imports the API helper needed to load dated records', () => {
+        const source = fs.readFileSync(path.join(root, 'public/riwayat-kunjungan.html'), 'utf8');
+        const names = source.match(/import \{([^}]+)\} from '\/scripts\/patient-utils.js'/)[1].split(',').map(name => name.trim());
+        expect(names).toContain('apiRequest');
+    });
     test('dashboard graph labels and tooltips use DD-MM-YYYY', () => {
         const source = fs.readFileSync(path.join(root, 'staff/public/scripts/dashboard.js'), 'utf8');
         const chart = source.match(/function renderVisitsChart\(dailyData\) \{[\s\S]*?\n\}/)[0];
