@@ -4,8 +4,20 @@ const root = path.resolve(__dirname, '../../../..');
 const helperPath = path.join(root, 'public/scripts/date-time-format.js');
 const display = fs.existsSync(helperPath) ? require(helperPath) : {};
 const { execFileSync } = require('child_process');
+const vm = require('vm');
 
 describe('shared staff and patient display dates', () => {
+    test('dashboard graph labels and tooltips use DD-MM-YYYY', () => {
+        const source = fs.readFileSync(path.join(root, 'staff/public/scripts/dashboard.js'), 'utf8');
+        const chart = source.match(/function renderVisitsChart\(dailyData\) \{[\s\S]*?\n\}/)[0];
+        const container = { innerHTML: '' };
+        const context = { DibyaDateTime: display, document: { getElementById: () => container } };
+        vm.createContext(context);
+        vm.runInContext(chart, context);
+        context.renderVisitsChart([{ date: '2026-10-18', label: '18 Oktober 2026', fullLabel: '18 Oktober 2026', count: 23 }]);
+        expect(container.innerHTML).toContain('18-10-2026');
+        expect(container.innerHTML).not.toContain('Oktober');
+    });
     test('calendar dates always show DD-MM-YYYY, including leap days', () => {
         expect(typeof display.date).toBe('function');
         expect(display.date('2026-10-18')).toBe('18-10-2026');

@@ -103,6 +103,7 @@ function renderVisitsChart(dailyData) {
     const maxBarHeight = 120;
 
     const bars = dailyData.map((day, index) => {
+        const dateLabel = DibyaDateTime.date(day.date);
         // Calculate height in pixels based on fixed scale of 30
         const heightPx = day.count === 0 ? 4 : Math.round((day.count / maxScale) * maxBarHeight);
 
@@ -115,8 +116,8 @@ function renderVisitsChart(dailyData) {
             <div class="d-flex flex-column align-items-center" style="width: ${barWidth}; gap: 6px; position: relative;">
                 ${verticalLine}
                 <div style="font-size: 11px; font-weight: 600;">${day.count}</div>
-                <div class="w-100" style="height: ${heightPx}px; min-height: 4px; background: linear-gradient(180deg, #4f46ef, #6366f1); border-radius: 6px 6px 0 0;" title="${day.fullLabel}: ${day.count} kunjungan"></div>
-                <div style="font-size: 10px; color: #6b7280; text-align: center;">${day.label}</div>
+                <div class="w-100" style="height: ${heightPx}px; min-height: 4px; background: linear-gradient(180deg, #4f46ef, #6366f1); border-radius: 6px 6px 0 0;" title="${dateLabel}: ${day.count} kunjungan"></div>
+                <div style="font-size: 10px; color: #6b7280; text-align: center;">${dateLabel}</div>
             </div>
         `;
     }).join('');
