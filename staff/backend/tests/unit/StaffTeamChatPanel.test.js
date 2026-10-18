@@ -2,12 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-// The DOM fixture does not render role-coloured messages; leave the module's
-// unrelated static role import outside the VM, exercising the complete widget.
-const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/chat-popup.js'), 'utf8')
+// Evaluate the real role constants and widget together without an ESM loader.
+const roles = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/role-constants.js'), 'utf8').replace(/export /g, '');
+const source = roles + '\n' + fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/chat-popup.js'), 'utf8')
     .replace(/^import \{ ROLE_IDS \} from '[^']+';\r?\n/, '');
 
-function fixture({ width = 400, height = 800, stored = new Map(), storageFails = false, clinic = false, reduced = false, authenticated = false, shellZoom = 1 } = {}) {
+function fixture({ width = 400, height = 800, stored = new Map(), storageFails = false, clinic = false, reduced = false, authenticated = false, shellZoom = 1, ios = false, audioContext } = {}) {
     const elements = new Map();
     let releaseHistory;
     const history = new Promise(resolve => { releaseHistory = () => resolve({ ok: true, json: async () => ({ success: true, data: [] }) }); });
@@ -61,7 +61,7 @@ function fixture({ width = 400, height = 800, stored = new Map(), storageFails =
         elements.set(id, el);
         return el;
     }
-    const win = { ...target(), innerWidth: width, innerHeight: height,
+    const win = { ...target(), innerWidth: width, innerHeight: height, AudioContext: audioContext,
         location: { hostname: 'fixture.test', origin: 'https://fixture.test' },
         visualViewport: { ...target(), width, height, offsetLeft: 0, offsetTop: 0 },
         localStorage: { getItem(k) { if (storageFails) throw Error('blocked'); return stored.get(k) || null; },
@@ -83,11 +83,15 @@ function fixture({ width = 400, height = 800, stored = new Map(), storageFails =
     if (clinic) doc.body.classList.add('mobile-app-mode', 'sunday-clinic-embedded-active');
     const container = element('chat-popup-container');
     doc.body.appendChild(container);
-    for (const id of ['chat-toggle-btn', 'chat-box', 'chat-badge', 'chat-close-btn', 'chat-clear-btn', 'chat-input', 'chat-send-btn', 'chat-messages', 'online-names']) {
+    for (const id of ['chat-toggle-btn', 'chat-box', 'chat-badge', 'chat-close-btn', 'chat-clear-btn', 'chat-input', 'chat-send-btn', 'chat-messages', 'online-names', 'chat-notification-volume', 'chat-notification-volume-value', 'chat-incoming-sound', 'chat-send-sound']) {
         container.appendChild(element(id));
     }
+    elements.get('chat-incoming-sound').volume = 1;
+    elements.get('chat-incoming-sound').play = jest.fn(() => Promise.resolve());
+    elements.get('chat-send-sound').volume = 1;
+    if (ios) Object.defineProperty(elements.get('chat-incoming-sound'), 'volume', { get: () => 1, set() {} });
     elements.get('chat-box').style.setProperty('display', 'none');
-    vm.runInNewContext(source, { window: win, document: doc, navigator: { userAgent: '', platform: '', maxTouchPoints: 0 },
+    vm.runInNewContext(source, { window: win, document: doc, navigator: { userAgent: ios ? 'iPhone' : '', platform: '', maxTouchPoints: 0 },
         console, MutationObserver: class { observe() {} }, requestAnimationFrame: win.requestAnimationFrame,
         localStorage: win.localStorage, fetch: () => history,
         setTimeout, clearTimeout, atob: value => Buffer.from(value, 'base64').toString() });
@@ -96,6 +100,102 @@ function fixture({ width = 400, height = 800, stored = new Map(), storageFails =
 
 beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
+
+test('notification slider changes incoming volume immediately, preserves send volume, and survives reload', () => {
+    const f = fixture();
+    const slider = f.elements.get('chat-notification-volume');
+    expect(slider.value).toBe('100');
+    slider.value = '35';
+    slider.fire('input');
+    expect(f.elements.get('chat-incoming-sound').volume).toBe(0.35);
+    expect(f.elements.get('chat-send-sound').volume).toBe(1);
+    expect(f.elements.get('chat-notification-volume-value').textContent).toBe('35%');
+    const reloaded = fixture({ stored: f.stored });
+    expect(reloaded.elements.get('chat-notification-volume').value).toBe('35');
+    expect(reloaded.elements.get('chat-incoming-sound').volume).toBe(0.35);
+});
+
+test('zero notification volume remains silent after reload', () => {
+    const f = fixture();
+    f.elements.get('chat-notification-volume').value = '0';
+    f.elements.get('chat-notification-volume').fire('input');
+    expect(f.elements.get('chat-incoming-sound').volume).toBe(0);
+    expect(f.elements.get('chat-notification-volume-value').textContent).toBe('Senyap');
+    const reloaded = fixture({ stored: f.stored });
+    expect(reloaded.elements.get('chat-incoming-sound').volume).toBe(0);
+});
+
+test('incoming notifications obey the slider without changing sent-message playback', async () => {
+    const f = fixture({ authenticated: true });
+    f.releaseHistory();
+    for (let i = 0; i < 25; i++) await Promise.resolve();
+    const audio = f.elements.get('chat-incoming-sound');
+    const slider = f.elements.get('chat-notification-volume');
+    slider.value = '0';
+    slider.fire('input');
+    f.win.addChatMessage('A new message', 'received', null, 'Colleague');
+    expect(audio.play).not.toHaveBeenCalled();
+    slider.value = '25';
+    slider.fire('input');
+    f.win.addChatMessage('Another message', 'received', null, 'Colleague');
+    expect(audio.play).toHaveBeenCalledTimes(1);
+    expect(audio.volume).toBe(0.25);
+    expect(f.elements.get('chat-send-sound').volume).toBe(1);
+});
+
+test('notification volume works in memory when browser storage is blocked', () => {
+    const f = fixture({ storageFails: true });
+    f.elements.get('chat-notification-volume').value = '60';
+    expect(() => f.elements.get('chat-notification-volume').fire('input')).not.toThrow();
+    expect(f.elements.get('chat-incoming-sound').volume).toBe(0.6);
+    f.win.toggleChatPopup();
+    f.win.closeChatPopup();
+    jest.advanceTimersByTime(250);
+    f.win.toggleChatPopup();
+    expect(f.elements.get('chat-notification-volume').value).toBe('60');
+});
+
+test('iOS uses one incoming-audio gain graph and resumes it on interaction', () => {
+    const contexts = [];
+    class AudioContext {
+        constructor() {
+            this.state = 'suspended';
+            this.destination = {};
+            this.gainNode = { gain: { value: 1 }, connect: jest.fn() };
+            this.sourceNode = { connect: jest.fn() };
+            this.resume = jest.fn(() => { this.state = 'running'; return Promise.resolve(); });
+            this.createGain = jest.fn(() => this.gainNode);
+            this.createMediaElementSource = jest.fn(() => this.sourceNode);
+            contexts.push(this);
+        }
+    }
+    const f = fixture({ ios: true, audioContext: AudioContext,
+        stored: new Map([['staff_team_chat_notification_volume_v1', '40']]) });
+    expect(contexts).toHaveLength(1);
+    const context = contexts[0];
+    expect(context.createMediaElementSource).toHaveBeenCalledWith(f.elements.get('chat-incoming-sound'));
+    expect(context.sourceNode.connect).toHaveBeenCalledWith(context.gainNode);
+    expect(context.gainNode.connect).toHaveBeenCalledWith(context.destination);
+    expect(context.gainNode.gain.value).toBe(0.4);
+    expect(context.resume).not.toHaveBeenCalled();
+    f.doc.fire('pointerdown');
+    expect(context.resume).toHaveBeenCalledTimes(1);
+    f.elements.get('chat-notification-volume').value = '15';
+    f.elements.get('chat-notification-volume').fire('input');
+    expect(context.gainNode.gain.value).toBe(0.15);
+    f.doc.fire('touchend');
+    expect(contexts).toHaveLength(1);
+    expect(context.createMediaElementSource).toHaveBeenCalledTimes(1);
+    expect(f.elements.get('chat-send-sound').volume).toBe(1);
+    context.state = 'interrupted';
+    f.doc.fire('keydown');
+    expect(context.resume).toHaveBeenCalledTimes(2);
+});
+
+test.each([['-10', 0], ['150', 1], ['broken', 1], ['', 1]])('saved notification volume %s stays within the media volume range', (saved, expected) => {
+    const f = fixture({ stored: new Map([['staff_team_chat_notification_volume_v1', saved]]) });
+    expect(f.elements.get('chat-incoming-sound').volume).toBe(expected);
+});
 
 test.each([false, true])('chat fills the visible viewport, including Sunday Clinic=%s', clinic => {
     const f = fixture({ clinic });

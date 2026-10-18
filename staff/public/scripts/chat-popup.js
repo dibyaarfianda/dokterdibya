@@ -16,8 +16,79 @@ import { ROLE_IDS } from './role-constants.js';
 
   const CHAT_HISTORY_POLL_INTERVAL_MS = 15000;
   const CHAT_HISTORY_ERROR_BACKOFF_MS = 30000;
+  const CHAT_NOTIFICATION_VOLUME_KEY = 'staff_team_chat_notification_volume_v1';
+  let chatNotificationVolume = 100;
+  try {
+    const savedVolume = window.localStorage.getItem(CHAT_NOTIFICATION_VOLUME_KEY);
+    if (savedVolume !== null && savedVolume.trim() !== '' && Number.isFinite(Number(savedVolume))) {
+      chatNotificationVolume = Math.max(0, Math.min(100, Number(savedVolume)));
+    }
+  } catch (_) { /* Keep volume usable when browser storage is unavailable. */ }
+
+  function applyChatNotificationVolume() {
+    const audio = document.getElementById('chat-incoming-sound');
+    if (audio) audio.volume = chatNotificationGain ? 1 : chatNotificationVolume / 100;
+    if (chatNotificationGain) chatNotificationGain.gain.value = chatNotificationVolume / 100;
+    const slider = document.getElementById('chat-notification-volume');
+    if (slider) {
+      slider.value = String(chatNotificationVolume);
+      slider.setAttribute('aria-valuetext', chatNotificationVolume === 0 ? 'Senyap' : chatNotificationVolume + '%');
+    }
+    const value = document.getElementById('chat-notification-volume-value');
+    if (value) value.textContent = chatNotificationVolume === 0 ? 'Senyap' : chatNotificationVolume + '%';
+  }
+
+  function bindChatNotificationVolume() {
+    prepareChatNotificationAudio();
+    applyChatNotificationVolume();
+    if (IS_IOS_DEVICE) {
+      document.addEventListener('pointerdown', resumeChatNotificationAudio, { passive: true });
+      document.addEventListener('touchend', resumeChatNotificationAudio, { passive: true });
+      document.addEventListener('keydown', resumeChatNotificationAudio);
+    }
+    const slider = document.getElementById('chat-notification-volume');
+    if (!slider) return;
+    slider.addEventListener('input', function () {
+      const nextVolume = Number(slider.value);
+      if (!Number.isFinite(nextVolume)) return;
+      chatNotificationVolume = Math.max(0, Math.min(100, nextVolume));
+      resumeChatNotificationAudio();
+      applyChatNotificationVolume();
+      try {
+        window.localStorage.setItem(CHAT_NOTIFICATION_VOLUME_KEY, String(chatNotificationVolume));
+      } catch (_) { /* The current page still retains the selected volume. */ }
+    });
+  }
   const IS_IOS_DEVICE = /iPad|iPhone|iPod/.test(navigator.userAgent || '')
     || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let chatNotificationAudioContext = null;
+  let chatNotificationGain = null;
+
+  // iOS ignores HTMLMediaElement.volume, so attenuate only incoming audio
+  // through Web Audio. Other browsers retain their existing media playback.
+  function prepareChatNotificationAudio() {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const audio = document.getElementById('chat-incoming-sound');
+    if (!IS_IOS_DEVICE || !AudioContextClass || !audio || chatNotificationAudioContext) return;
+    try {
+      const context = new AudioContextClass();
+      const gain = context.createGain();
+      gain.gain.value = chatNotificationVolume / 100;
+      gain.connect(context.destination);
+      const source = context.createMediaElementSource(audio);
+      source.connect(gain);
+      chatNotificationAudioContext = context;
+      chatNotificationGain = gain;
+      audio.volume = 1;
+    } catch (_) { /* Keep the original media playback if Web Audio is unavailable. */ }
+  }
+
+  function resumeChatNotificationAudio() {
+    prepareChatNotificationAudio();
+    if (chatNotificationAudioContext && chatNotificationAudioContext.state !== 'running') {
+      try { chatNotificationAudioContext.resume().catch(() => {}); } catch (_) {}
+    }
+  }
 
   function isVisibleBottomNav(nav) {
     if (!nav) return false;
@@ -708,6 +779,13 @@ import { ROLE_IDS } from './role-constants.js';
   }
 
   // ---------- HTML ----------
+  const chatVolumeHTML = `
+    <div class="chat-notification-volume">
+      <label for="chat-notification-volume"><i class="fas fa-volume-up" aria-hidden="true"></i> Volume notifikasi</label>
+      <input id="chat-notification-volume" type="range" min="0" max="100" step="1" value="100">
+      <output id="chat-notification-volume-value" for="chat-notification-volume">100%</output>
+    </div>
+  `;
   const chatHTML = `
     <div id="chat-popup-container">
       <!-- Floating Chat Button -->
@@ -738,6 +816,7 @@ import { ROLE_IDS } from './role-constants.js';
           </div>
         </div>
 
+        ${chatVolumeHTML}
         <div class="chat-messages" id="chat-messages">
           <!-- Messages will be loaded here -->
         </div>
@@ -841,6 +920,23 @@ import { ROLE_IDS } from './role-constants.js';
       .chat-header-online { 
         font-size: 11px; line-height: 1.2; margin-top: 2px; 
         opacity: 0.9; display: flex; align-items: center; gap: 4px;
+      }
+
+      #chat-box .chat-notification-volume {
+        display: flex !important; align-items: center !important; gap: 10px !important;
+        flex-shrink: 0 !important; padding: 6px 12px !important;
+        background: #f8fafc !important; border-bottom: 1px solid #e2e8f0 !important;
+        color: #475569 !important; font-size: 12px !important;
+      }
+      #chat-box .chat-notification-volume label {
+        margin: 0 !important; white-space: nowrap !important; font-weight: 500 !important;
+      }
+      #chat-box #chat-notification-volume {
+        flex: 1 !important; min-width: 0 !important; width: auto !important; height: 32px !important;
+        margin: 0 !important; padding: 0 !important; accent-color: #007bff !important; cursor: pointer !important;
+      }
+      #chat-box #chat-notification-volume-value {
+        min-width: 44px !important; padding: 0 !important; text-align: right !important; font-variant-numeric: tabular-nums;
       }
 
       #chat-popup-container #chat-close-btn.chat-close-btn {
@@ -1032,6 +1128,7 @@ import { ROLE_IDS } from './role-constants.js';
                         <button type="button" id="chat-close-btn" class="chat-close-btn" onclick="window.closeChatPopup && window.closeChatPopup()" aria-label="Tutup chat" title="Tutup chat"><span aria-hidden="true">×</span></button>
                       </div>
                     </div>
+                    ${chatVolumeHTML}
                     <div class="chat-messages" id="chat-messages"></div>
                     <div class="chat-input-container">
                       <input type="text" id="chat-input" class="chat-input" placeholder="Ketik pesan...">
@@ -1041,6 +1138,7 @@ import { ROLE_IDS } from './role-constants.js';
                 existingContainer.insertAdjacentHTML('beforeend', chatBoxHTML);
             }
         }
+        bindChatNotificationVolume();
 
         // Set up basic toggle handlers IMMEDIATELY (for WebView onclick compatibility)
         const toggleBtn = document.getElementById('chat-toggle-btn');
@@ -1164,6 +1262,8 @@ import { ROLE_IDS } from './role-constants.js';
             incomingAudioEl.preload = 'auto';
             document.body.appendChild(incomingAudioEl);
         }
+        prepareChatNotificationAudio();
+        applyChatNotificationVolume();
 
         // Get additional elements (toggleBtn, closeBtn, chatBox already defined above)
         const clearBtn = document.getElementById('chat-clear-btn');
@@ -1702,7 +1802,7 @@ import { ROLE_IDS } from './role-constants.js';
         }
       }
 
-      if (type === 'received' && incomingAudio && typeof incomingAudio.play === 'function') {
+      if (type === 'received' && chatNotificationVolume > 0 && incomingAudio && typeof incomingAudio.play === 'function') {
         try {
           incomingAudio.currentTime = 0;
           incomingAudio.play().catch(() => {});
