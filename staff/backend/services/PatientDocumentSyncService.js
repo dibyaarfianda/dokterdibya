@@ -8,7 +8,7 @@ async function mutatePenunjangDocuments(connection, { patientId, mrId, files = [
     const normalizedFiles = Array.isArray(files) ? files.filter(file => file && file.url) : [];
     const [existingDocs] = await connection.query(
         `SELECT id, file_url FROM patient_documents
-         WHERE patient_id = ? AND mr_id = ? AND document_type = 'lab_result' AND status = 'published'
+         WHERE patient_id = ? AND mr_id = ? AND document_type = 'lab_result' AND status = 'published' AND lab_report_id IS NULL
          ORDER BY id FOR UPDATE`, [patientId, mrId]);
     const existingUrls = new Set(existingDocs.map(doc => doc.file_url));
     const currentUrls = new Set(normalizedFiles.map(file => file.url));
@@ -45,7 +45,7 @@ async function syncPenunjangLabResults({
 
     const [existingDocs] = await db.query(
         `SELECT id, file_url FROM patient_documents
-         WHERE patient_id = ? AND mr_id = ? AND document_type = 'lab_result' AND status = 'published'`,
+         WHERE patient_id = ? AND mr_id = ? AND document_type = 'lab_result' AND status = 'published' AND lab_report_id IS NULL`,
         [patientId, mrId]
     );
 

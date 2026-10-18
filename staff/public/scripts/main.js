@@ -251,6 +251,7 @@ function initPages() {
     pages.physical = grab('physical-exam-page');
     pages.usg = grab('usg-exam-page');
     pages.lab = grab('lab-exam-page');
+    pages.laboratorium = grab('laboratorium-page');
     pages.tindakan = grab('tindakan-page');
     pages.obat = grab('obat-page');
     pages.cashier = grab('cashier-page');
@@ -1930,6 +1931,14 @@ async function showLabExam() {
     // Load saved lab exam data for current patient
     const { loadLabExamData } = await importWithVersion('./medical-exam.js');
     await loadLabExamData();
+}
+async function showLaboratoriumPage(options = {}) {
+    const navGen = reserveStaffNavigation();
+    const module = await importWithVersion('./pages/laboratorium.js');
+    if (!hideAllPages(navGen)) return;
+    pages.laboratorium?.classList.remove('d-none');
+    setTitleAndActive('Laboratorium', 'nav-laboratorium', 'laboratorium');
+    await module.mountLaboratorium(pages.laboratorium, options);
 }
 function showStokOpnamePage() {
     hideAllPages();
@@ -4682,6 +4691,7 @@ window.showAnamnesa = showAnamnesa;
 window.showPhysicalExam = showPhysicalExam;
 window.showUSGExam = showUSGExam;
 window.showLabExam = showLabExam;
+window.showLaboratoriumPage = showLaboratoriumPage;
 window.showLogPage = showLogPage;
 window.showAppointmentsPage = showAppointmentsPage;
 window.showAnalyticsPage = showAnalyticsPage;

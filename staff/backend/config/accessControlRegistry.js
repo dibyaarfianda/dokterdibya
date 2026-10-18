@@ -72,6 +72,7 @@ const STAFF_NAVIGATION_MAP = Object.freeze({
     'nav-jadwal-booking': 'appointments.view',
     'nav-kantor-saya': 'navigation.kantor_saya',
     'nav-kelola-pasien': 'navigation.kelola_pasien',
+    'nav-laboratorium': 'lab_exam.view',
     'nav-klinik-private': 'navigation.klinik_privat',
     'nav-medify-sync': 'integrations.view',
     'nav-pasien-baru': 'navigation.pasien_baru',
@@ -137,6 +138,7 @@ const SOURCE_POLICIES = Object.freeze({
     inventory: CRUD('inventory.view', 'inventory.purchase', 'inventory.adjust', 'inventory.adjust', { export: 'inventory.view', reset: 'inventory.adjust' }),
     invoices: CRUD('billing.view', 'billing.create', 'billing.create', 'billing.reset', { payment: 'billing.process_payment', export: 'billing.export', finalize: 'billing.finalize' }),
     'lab-results': CRUD('lab_exam.view', 'lab_exam.create', 'lab_exam.edit', 'medical_records.delete', { export: 'medical_records.export', finalize: 'medical_records.finalize' }),
+    'lab-reports': CRUD('lab_exam.view', 'lab_exam.create', 'lab_exam.edit', 'medical_records.delete', { export: 'medical_records.export', publish: 'patient_documents.create' }),
     logs: CRUD('logs.view', 'logs.view', 'logs.view', 'system.reset', { reset: 'system.reset', export: 'logs.view' }),
     'medical-exams': CRUD('physical_exam.view', 'physical_exam.create', 'physical_exam.edit', 'medical_records.delete', { finalize: 'medical_records.finalize' }),
     'medical-import': CRUD('medical_import.use', 'medical_import.use', 'medical_import.use', 'medical_import.use', { sync: 'medical_import.use' }),
@@ -219,6 +221,7 @@ const INHERITED_PRIVATE_SOURCES = new Set([
 // do not advertise their intent in the URL explicit so the HTTP boundary and
 // the route-level guard always require the same permission.
 const ROUTE_PERMISSION_OVERRIDES = new Map([
+    ['lab-reports:POST:/:id/ocr', 'lab_exam.edit'],
     ['appointments:POST:/hospital/:location/resolve-queue-patient', 'appointments.sync'],
     ['sunday-appointments:POST:/:id/start-clinic-record', 'sunday_clinic.create'],
     ['staff-announcements:POST:/:id/read', 'staff_announcements.view'],

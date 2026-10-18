@@ -523,6 +523,7 @@ if (supportChatRoutes.setupSocketHandlers) {
 // Lab results routes (upload and AI interpretation)
 const labResultsRoutes = require('./routes/lab-results');
 app.use('/api/lab-results', labResultsRoutes);
+app.use('/api/lab-reports', require('./routes/lab-reports'));
 
 // USG photos routes (upload ultrasound images)
 const usgPhotosRoutes = require('./routes/usg-photos');

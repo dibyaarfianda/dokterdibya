@@ -306,6 +306,9 @@ router.post('/publish', verifyStaffToken, async (req, res) => {
             return res.status(400).json({ success: false, message: 'Document IDs are required' });
         }
 
+        const [linkedLabReports] = await db.query('SELECT id FROM patient_documents WHERE id IN (?) AND lab_report_id IS NOT NULL', [documentIds]);
+        if (linkedLabReports.length) return res.status(409).json({ success: false, code: 'LAB_REPORT_MANAGED', message: 'Terbitkan hasil melalui menu Laboratorium.' });
+
         const publishedAt = getGMT7Timestamp();
         const publishedBy = req.user?.id || null;
 
@@ -434,13 +437,13 @@ router.post('/publish-from-mr', verifyStaffToken, async (req, res) => {
                     // For file-based docs, check by file_url to allow multiple unique files
                     [existing] = await db.query(`
                         SELECT id FROM patient_documents
-                        WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND file_url = ? AND status = 'published'
+                        WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND file_url = ? AND status = 'published' AND lab_report_id IS NULL
                     `, [patientId, mrId, doc.type, doc.fileUrl]);
                 } else {
                     // For text-based docs (resume_medis), check only by type (overwrite)
                     [existing] = await db.query(`
                         SELECT id FROM patient_documents
-                        WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND status = 'published'
+                        WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND status = 'published' AND lab_report_id IS NULL
                     `, [patientId, mrId, doc.type]);
                 }
 
@@ -690,6 +693,10 @@ router.delete('/:id', verifyStaffToken, requireSuperadminOrAccountPermission('r2
 
         const doc = docs[0];
 
+        if (doc.lab_report_id) {
+            return res.status(409).json({ success: false, code: 'LAB_REPORT_MANAGED', message: 'Kelola laporan ini melalui menu Laboratorium.' });
+        }
+
         // Delete file from storage
         if (doc.file_path) {
             try {
@@ -837,6 +844,9 @@ router.post('/mark-all-viewed', verifyPatientToken, async (req, res) => {
  * Query params: type (optional) - filter by document_type
  */
 router.get('/my-documents', verifyPatientToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     try {
         const patientId = req.patient?.patientId || req.patient?.id;
         const { type } = req.query;
@@ -951,6 +961,7 @@ router.post('/:id/view', verifyPatientToken, async (req, res) => {
  * Get document content (for resume_medis without file)
  */
 router.get('/:id/content', verifyPatientToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     try {
         const { id } = req.params;
         const patientId = req.patient?.patientId || req.patient?.id;

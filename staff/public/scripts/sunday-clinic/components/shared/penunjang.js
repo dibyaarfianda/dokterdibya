@@ -10,6 +10,8 @@
 
 import stateManager from '../../utils/state-manager.js';
 import apiClient from '../../utils/api-client.js';
+import { getIdToken } from '../../../vps-auth-v2.js';
+import { escapeHtml } from '../../../safe-render.js';
 
 export default {
     /**
@@ -88,6 +90,7 @@ export default {
                     </div>
 
                     <!-- Uploaded Files List -->
+                    <div id="penunjang-structured-lab" class="mb-3"></div>
                     <div id="penunjang-files-list" class="mb-3">
                         ${this.renderFilesList(uploadedFiles)}
                     </div>
@@ -215,7 +218,26 @@ ${interpretation}
     /**
      * Initialize event handlers
      */
+    async loadStructuredLabReports(state) {
+        const container = document.getElementById('penunjang-structured-lab');
+        const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
+        const patientId = state.derived?.patientId || state.recordData?.patientId || state.patientData?.id;
+        const location = state.recordData?.record?.visitLocation || state.recordData?.record?.visit_location;
+        if (!container || !mrId || (location && location !== 'klinik_private') || !window.hasAccountPermission?.('lab_exam.view')) return;
+        try {
+            const token = await getIdToken();
+            const response = await fetch(`/api/lab-reports?${new URLSearchParams({ mr_id: mrId, patient_id: patientId || '' })}`, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+            if (!response.ok) throw new Error('Laporan lab belum termuat.');
+            const result = await response.json();
+            if (!container.isConnected || (stateManager.getState().currentMrId && stateManager.getState().currentMrId !== mrId)) return;
+            container.innerHTML = `<div class="card card-outline card-info"><div class="card-body"><h6>Hasil Lab Terstruktur</h6>${result.reports.map(report => `<button type="button" class="btn btn-light btn-sm mb-2 mr-2" data-lab-report-id="${Number(report.id)}">${escapeHtml(report.lab_number || 'Draf lab')} · ${escapeHtml(report.examined_at?.replace('T', ' ') || '')}</button>`).join('')}${window.hasAccountPermission?.('lab_exam.create') ? '<button type="button" class="btn btn-outline-info btn-sm" data-open-laboratorium>Kelola Laboratorium</button>' : ''}</div></div>`;
+            container.querySelectorAll('[data-lab-report-id]').forEach(button => button.addEventListener('click', () => window.showLaboratoriumPage?.({ reportId: Number(button.dataset.labReportId) })));
+            container.querySelector('[data-open-laboratorium]')?.addEventListener('click', () => window.showLaboratoriumPage?.({ mrId, patientId }));
+        } catch (_) { if (container.isConnected) container.textContent = 'Hasil lab terstruktur belum termuat.'; }
+    },
+
     async initHandlers(state) {
+        this.loadStructuredLabReports(state);
         console.log('[Penunjang] initHandlers called');
 
         // File upload handler

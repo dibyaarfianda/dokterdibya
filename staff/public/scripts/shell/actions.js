@@ -92,6 +92,7 @@ function openMobileMenu() {
     items.style.padding = '8px 0 16px 0';
 
     var menuData = [
+        {icon: 'fa-flask', text: 'Laboratorium', fn: 'showLaboratoriumPage', color: '#268477', permission: 'lab_exam.view'},
         {icon: 'fa-user-cog', text: 'Profil', fn: 'showProfileSettings', color: '#0d6efd'},
         {icon: 'fa-capsules', text: 'Obat/Alkes', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
         {icon: 'fa-prescription', text: 'Template Resep', fn: 'showTemplateResepPage', color: '#0d6efd', doctorOnly: true},
@@ -105,6 +106,7 @@ function openMobileMenu() {
     ];
 
     menuData.forEach(function(item) {
+        if (item.permission && typeof window.hasAccountPermission === 'function' && !window.hasAccountPermission(item.permission)) return;
         if (item.doctorOnly && Number((window.currentStaffUser || window.auth?.currentUser)?.role_id) !== window.staffRoleConstants?.ROLE_IDS.DOKTER) return;
         if (item.icon === 'divider') {
             var divider = document.createElement('div');
