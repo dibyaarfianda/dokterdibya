@@ -42,7 +42,7 @@ if [ -f "$SNIPPET" ]; then cp "$SNIPPET" "$BACKUP.snippet"; fi
 cat > "$SNIPPET" <<'NGINX'
 location = /staff-preview { return 301 /staff-preview/; }
 location = /staff-preview/ {
-    alias /var/www/dokterdibya-staff-preview/current/index.html;
+    alias /var/www/dokterdibya-staff-preview/current/;
     add_header Cache-Control "no-store" always;
     add_header X-Robots-Tag "noindex, nofollow" always;
     add_header X-Content-Type-Options "nosniff" always;
@@ -94,10 +94,11 @@ if ! nginx -t; then
   exit 1
 fi
 systemctl reload nginx
+PAGE_HASH=$(sha256sum "$RELEASE/index.html" | cut -d' ' -f1)
 for origin in https://dokterdibya.com https://www.dokterdibya.com; do
   READY=0
   for attempt in 1 2 3 4 5; do
-    if curl --max-time 20 -fsS "$origin/staff-preview/release.json" | node -e 'let t="";process.stdin.on("data",x=>t+=x).on("end",()=>{try{const r=JSON.parse(t);if(r.commit!==process.argv[1])process.exit(1);console.log("Live preview",r.version,r.commit)}catch{process.exit(1)}})' "$COMMIT"; then
+    if curl --max-time 20 -fsS "$origin/staff-preview/release.json" | node -e 'let t="";process.stdin.on("data",x=>t+=x).on("end",()=>{try{const r=JSON.parse(t);if(r.commit!==process.argv[1])process.exit(1);console.log("Live preview",r.version,r.commit)}catch{process.exit(1)}})' "$COMMIT" && [ "$(curl --max-time 20 -fsS "$origin/staff-preview/" | sha256sum | cut -d' ' -f1)" = "$PAGE_HASH" ]; then
       READY=1
       break
     fi
