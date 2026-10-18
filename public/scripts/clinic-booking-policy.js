@@ -7,9 +7,9 @@
     // Keep published versions immutable: change this version when the terms change.
     const version = '20261017-confirmation-v1';
     const title = 'Booking belum berarti kehadiran terkonfirmasi.';
-    const schedule = 'Popup konfirmasi di portal aktif mulai H-1 pukul 18.00 WIB dan diperbarui pada hari praktik pukul 07.00 WIB.';
+    const schedule = 'Popup konfirmasi di portal aktif mulai H-1 pukul 18:00 WIB dan diperbarui pada hari praktik pukul 07:00 WIB.';
     const immediate = 'Jika booking dibuat setelah waktu aktivasi, popup langsung tersedia saat portal dibuka.';
-    const deadline = 'Pilih “Datang” sebelum pukul 14.00 WIB pada hari praktik.';
+    const deadline = 'Pilih “Datang” sebelum pukul 14:00 WIB pada hari praktik.';
     const expiry = 'Tanpa konfirmasi hingga batas waktu tersebut, booking dibatalkan otomatis.';
     const support = 'Jika popup tidak muncul atau mengalami kendala, segera hubungi staff klinik sebelum batas waktu.';
 

@@ -135,7 +135,7 @@ describe('private clinic booking confirmation policy', () => {
             .send({ ...ACKNOWLEDGEMENT, appointment_date: '2026-10-17', session: 2, slot_number: 1, chief_complaint: 'Keluhan simulasi' })
             .expect(201);
         expect(response.body).toMatchObject({ status: 'pending_confirmation', requiresConfirmation: true });
-        expect(response.body.message).toContain('14.00 WIB');
+        expect(response.body.message).toContain('14:00 WIB');
         expect(fixture.getInsertCall().params[10]).toBe(true);
     });
 
@@ -157,7 +157,7 @@ describe('private clinic booking confirmation policy', () => {
             })
             .expect(400);
 
-        expect(response.body.message).toContain('14.00 WIB');
+        expect(response.body.message).toContain('14:00 WIB');
         expect(fixture.getInsertedStatus()).toBeNull();
     });
 
@@ -190,7 +190,7 @@ describe('private clinic booking confirmation policy', () => {
             .expect(400);
 
         expect(fixture.getInsertCall().sql).toContain("CURTIME() < '14:00:00'");
-        expect(response.body.message).toContain('14.00 WIB');
+        expect(response.body.message).toContain('14:00 WIB');
     });
 
     test.each([undefined, false, 'true', 1])('booking rejects missing or non-boolean acknowledgement %s before accessing the database', async (acknowledged) => {

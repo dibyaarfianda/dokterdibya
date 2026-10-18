@@ -63,6 +63,14 @@
             }
             select.value = selected;
             label.append(select);
+            if (columns.childElementCount) {
+                const separator = document.createElement('span');
+                separator.dataset.timeSeparator = '';
+                separator.textContent = ':';
+                separator.setAttribute('aria-hidden', 'true');
+                separator.style.cssText = 'align-self:center!important;padding-top:24px!important;font-size:24px!important;font-weight:600!important;';
+                columns.append(separator);
+            }
             columns.append(label);
             return select;
         }

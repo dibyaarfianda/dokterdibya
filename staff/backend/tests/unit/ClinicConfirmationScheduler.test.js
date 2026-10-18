@@ -64,6 +64,6 @@ test('expiry only cancels and notifies appointments that are still pending at up
     expect(updates).toHaveLength(2);
     expect(updates.every(([sql]) => sql.includes("status = 'pending_confirmation'"))).toBe(true);
     expect(createPatientNotification).toHaveBeenCalledTimes(1);
-    expect(createPatientNotification).toHaveBeenCalledWith(expect.objectContaining({ patient_id: 'P-101', message: expect.stringContaining('14.00 WIB') }));
+    expect(createPatientNotification).toHaveBeenCalledWith(expect.objectContaining({ patient_id: 'P-101', message: expect.stringContaining('14:00 WIB') }));
     expect(realtimeSync.broadcastToStaff).toHaveBeenCalledWith('booking:slots_released', expect.objectContaining({ count: 1 }));
 });

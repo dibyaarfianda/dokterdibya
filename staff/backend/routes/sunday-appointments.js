@@ -399,7 +399,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
 
         if (requiresConfirmation && isSameDayBooking && currentWibMinutes >= (14 * 60)) {
             return res.status(400).json({
-                message: 'Booking klinik yang memerlukan konfirmasi hanya dapat dibuat sebelum pukul 14.00 WIB pada hari praktik. Silakan pilih tanggal berikutnya.'
+                message: 'Booking klinik yang memerlukan konfirmasi hanya dapat dibuat sebelum pukul 14:00 WIB pada hari praktik. Silakan pilih tanggal berikutnya.'
             });
         }
 
@@ -507,7 +507,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
 
         if (result.affectedRows !== 1) {
             return res.status(400).json({
-                message: 'Booking hari ini sudah melewati batas konfirmasi pukul 14.00 WIB. Silakan pilih jadwal praktik berikutnya.'
+                message: 'Booking hari ini sudah melewati batas konfirmasi pukul 14:00 WIB. Silakan pilih jadwal praktik berikutnya.'
             });
         }
 
@@ -525,7 +525,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         // Track booking activity (fire-and-forget)
         patientActivityLogger.logActivity(req.user.id, patientActivityLogger.EVENTS.BOOKING, { detail: 'Booking ' + appointment_date + ' Sesi ' + session }, req);
 
-        const responseMessage = 'Booking berhasil! Konfirmasi kehadiran Anda di hari-H sebelum jam 14.00 WIB agar nama Anda muncul di antrian.';
+        const responseMessage = 'Booking berhasil! Konfirmasi kehadiran Anda di hari-H sebelum jam 14:00 WIB agar nama Anda muncul di antrian.';
 
         res.status(201).json({
             message: responseMessage,

@@ -313,7 +313,10 @@ function showDetail(appointmentId) {
 
     const complaintBlock = escapeHtml(apt.chief_complaint || '-').replace(/\n/g, '<br>');
     const notesBlock = apt.notes ? escapeHtml(apt.notes).replace(/\n/g, '<br>') : '';
-    const cancellationReasonBlock = apt.cancellation_reason ? escapeHtml(apt.cancellation_reason).replace(/\n/g, '<br>') : '';
+    const displayedCancellationReason = AUTO_NO_CONFIRMATION_REASONS.includes(apt.cancellation_reason)
+        ? apt.cancellation_reason.replace(/(\d{2})\.(\d{2})(?= WIB)/g, '$1:$2')
+        : apt.cancellation_reason;
+    const cancellationReasonBlock = displayedCancellationReason ? escapeHtml(displayedCancellationReason).replace(/\n/g, '<br>') : '';
     const cancelledByLabel = apt.cancelled_by === 'patient' ? 'Pasien' : apt.cancelled_by === 'staff' ? 'Staff Klinik' : apt.cancelled_by === 'system' ? 'Sistem' : '-';
     const cancelledAtLabel = apt.cancelled_at ? DibyaDateTime.dateTime(new Date(apt.cancelled_at)) : null;
 

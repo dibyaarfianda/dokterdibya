@@ -466,7 +466,7 @@ function startPracticeConfirmationExpiryJob() {
                             patient_id: apt.patient_id,
                             type: 'appointment',
                             title: 'Jadwal Hangus — Tidak Ada Konfirmasi',
-                            message: `Slot Anda (${sessionLabel}, nomor ${apt.slot_number}) hangus karena tidak ada konfirmasi kehadiran sebelum jam 14.00 WIB. Silakan hubungi staff klinik jika memerlukan bantuan.`,
+                            message: `Slot Anda (${sessionLabel}, nomor ${apt.slot_number}) hangus karena tidak ada konfirmasi kehadiran sebelum jam 14:00 WIB. Silakan hubungi staff klinik jika memerlukan bantuan.`,
                             link: '/riwayat-kunjungan.html',
                             icon: 'fa fa-times-circle',
                             icon_color: 'text-danger'
@@ -516,7 +516,7 @@ async function ensureAttendanceAnnouncementSeeded() {
              VALUES (?, ?, ?, ?, ?, ?)`,
             [
                 TITLE,
-                'Mulai sekarang, dikarenakan sering terjadi blocking jadwal namun pasien tidak dapat hadir, setiap jadwal praktek hari Minggu memerlukan konfirmasi kehadiran melalui popup di aplikasi.\n\nCara konfirmasi:\n- Buka aplikasi setelah popup konfirmasi aktif\n- Popup diaktifkan Sabtu pukul 18.00 WIB dan diperbarui lagi Minggu pukul 07.00 WIB\n- Pilih "Datang" jika akan hadir\n- Pilih "Batal" jika tidak dapat hadir\n\nBatas waktu konfirmasi: pukul 14.00 WIB hari Minggu.\n\nJika belum konfirmasi hingga pukul 14.00, jadwal akan dibatalkan otomatis. Silakan hubungi staff klinik jika memerlukan bantuan.\n\nTerima kasih atas pengertiannya.',
+                'Mulai sekarang, dikarenakan sering terjadi blocking jadwal namun pasien tidak dapat hadir, setiap jadwal praktek hari Minggu memerlukan konfirmasi kehadiran melalui popup di aplikasi.\n\nCara konfirmasi:\n- Buka aplikasi setelah popup konfirmasi aktif\n- Popup diaktifkan Sabtu pukul 18:00 WIB dan diperbarui lagi Minggu pukul 07:00 WIB\n- Pilih "Datang" jika akan hadir\n- Pilih "Batal" jika tidak dapat hadir\n\nBatas waktu konfirmasi: pukul 14:00 WIB hari Minggu.\n\nJika belum konfirmasi hingga pukul 14:00, jadwal akan dibatalkan otomatis. Silakan hubungi staff klinik jika memerlukan bantuan.\n\nTerima kasih atas pengertiannya.',
                 'system',
                 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
                 'important',
