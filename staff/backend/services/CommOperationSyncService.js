@@ -309,7 +309,13 @@ class CommOperationSyncService {
         if (!fields.length) return false;
 
         values.push(surgeryId);
-        await this.db.query(`UPDATE surgery_schedules SET ${fields.join(', ')} WHERE id = ?`, values);
+        // A clinician's reasoned cancellation is terminal for background sync.
+        // Keep this predicate on the UPDATE itself to cover concurrent cancellation.
+        const [updated] = await this.db.query(
+            `UPDATE surgery_schedules SET ${fields.join(', ')} WHERE id = ? AND NOT
+             (status = 'cancelled' AND COALESCE(TRIM(cancellation_reason), '') <> '')`, values
+        );
+        if (!updated.affectedRows) return false;
         await this.logAudit(surgeryId, 'comm_sync_updated', 'COMM cron', {
             source_key: item.sourceKey,
             match_strength: matchStrength,

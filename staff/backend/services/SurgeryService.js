@@ -1,5 +1,6 @@
 const pool = require('../db');
 const logger = require('../utils/logger');
+const { AppError } = require('../middleware/errorHandler');
 
 function formatDateLocal(date) {
   if (!date) return null;
@@ -18,6 +19,12 @@ function nullableInt(value) {
   if (value === undefined || value === null || value === '') return null;
   const parsed = parseInt(value, 10);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+function jakartaToday() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
 }
 
 class SurgeryService {
@@ -250,23 +257,23 @@ class SurgeryService {
   // SURGERY SCHEDULES
   // =====================================================
 
-  async getPlannedScByMrId(mrId, today = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit'
-  }).format(new Date())) {
-    const [visits] = await pool.query(
-      'SELECT patient_id FROM sunday_clinic_records WHERE mr_id = ? LIMIT 2', [mrId]
+  async getPlannedScByMrId(mrId, today = jakartaToday(), options = {}) {
+    const queryable = options.connection || pool;
+    const statuses = options.includeCancelled ? ['planned', 'confirmed', 'cancelled'] : ['planned', 'confirmed'];
+    const [visits] = await queryable.query(
+      'SELECT patient_id FROM sunday_clinic_records WHERE mr_id = ? LIMIT 2' + (options.lock ? ' FOR UPDATE' : ''), [mrId]
     );
     if (!visits.length) return null;
     if (visits.length > 1 || !visits[0].patient_id) {
-      throw Object.assign(new Error('Identitas pasien DRD tidak dapat dipastikan.'), { statusCode: 409 });
+      throw new AppError('Identitas pasien DRD tidak dapat dipastikan.', 409);
     }
     const patientId = visits[0].patient_id;
-    const [rows] = await pool.query(
+    const [rows] = await queryable.query(
       `SELECT s.id, s.surgery_date, s.surgery_time, s.location, s.status,
               s.operation_type_other, ot.code AS op_code, ot.name AS op_name, ot.name_id AS op_name_id
          FROM surgery_schedules s
          LEFT JOIN surgery_operation_types ot ON ot.id = s.operation_type_id
-        WHERE s.surgery_date >= ? AND s.status IN ('planned', 'confirmed')
+        WHERE s.surgery_date >= ? AND s.status IN (${statuses.map(status => `'${status}'`).join(', ')})
           AND NOT EXISTS (
                  SELECT 1 FROM sunday_clinic_records conflict
                   WHERE conflict.mr_id = s.mr_id COLLATE utf8mb4_unicode_ci
@@ -277,12 +284,13 @@ class SurgeryService {
                   WHERE linked.mr_id = s.mr_id COLLATE utf8mb4_unicode_ci
                     AND linked.patient_id = ?
                )))
-        ORDER BY s.surgery_date, s.surgery_time, s.id`,
-      [today, patientId, patientId, patientId]
+          ${options.surgeryId ? 'AND s.id = ?' : ''}
+        ORDER BY s.surgery_date, s.surgery_time, s.id${options.lock ? ' FOR UPDATE' : ''}`,
+      [today, patientId, patientId, patientId, ...(options.surgeryId ? [options.surgeryId] : [])]
     );
     // Classify the operation itself, never a diagnosis such as "bekas SC".
     const caesarean = /\b(?:SC|RE-SC|ERACS|sectio\s+caesarea|caesarean(?:\s+section)?|cesarean(?:\s+section)?|operasi\s+caesar)\b/i;
-    return rows.filter(row => ['planned', 'confirmed'].includes(row.status)
+    return rows.filter(row => statuses.includes(row.status)
       && formatDateLocal(row.surgery_date) >= today
       && caesarean.test([row.op_code, row.op_name, row.op_name_id, row.operation_type_other].filter(Boolean).join(' ')))
       .map(row => ({
@@ -293,6 +301,57 @@ class SurgeryService {
         status: row.status,
         operation: row.operation_type_other || row.op_name_id || row.op_name || row.op_code
       }));
+  }
+
+  async cancelPlannedScByMrId(mrId, surgeryId, reason, userId, today = jakartaToday()) {
+    const id = Number(surgeryId);
+    const cancellationReason = typeof reason === 'string' ? reason.trim() : '';
+    const invalid = (statusCode, message) => new AppError(message, statusCode);
+    if (!/^\d+$/.test(String(surgeryId)) || !Number.isSafeInteger(id) || id <= 0) {
+      throw invalid(400, 'ID jadwal operasi tidak valid.');
+    }
+    if (!cancellationReason || cancellationReason.length > 1000) {
+      throw invalid(400, 'Alasan pembatalan wajib diisi, maksimal 1000 karakter.');
+    }
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      const schedules = await this.getPlannedScByMrId(mrId, today, {
+        connection, surgeryId: id, includeCancelled: true, lock: true
+      });
+      if (schedules === null) throw invalid(404, 'DRD tidak ditemukan.');
+      const schedule = schedules.find(item => Number(item.id) === id);
+      if (!schedule) throw invalid(409, 'Jadwal SC aktif yang terhubung ke pasien ini tidak ditemukan. Muat ulang Planning.');
+      if (schedule.status === 'cancelled') {
+        await connection.commit();
+        return { id, status: 'cancelled', already_cancelled: true };
+      }
+      const [updated] = await connection.query(
+        `UPDATE surgery_schedules SET status = 'cancelled', cancellation_reason = ?
+         WHERE id = ? AND status IN ('planned', 'confirmed')`, [cancellationReason, id]
+      );
+      if (updated.affectedRows !== 1) throw invalid(409, 'Status jadwal sudah berubah. Muat ulang Planning.');
+      await connection.query(
+        'INSERT INTO surgery_audit_log (surgery_id, action, user_id, changes) VALUES (?, ?, ?, ?)',
+        [id, 'status_changed', userId, JSON.stringify({
+          status: 'cancelled', previous_status: schedule.status, reason: cancellationReason,
+          source: 'planning', mr_id: mrId
+        })]
+      );
+      const [saved] = await connection.query(
+        'SELECT id, status, cancellation_reason FROM surgery_schedules WHERE id = ?', [id]
+      );
+      if (saved[0]?.status !== 'cancelled' || saved[0]?.cancellation_reason !== cancellationReason) {
+        throw invalid(409, 'Pembatalan jadwal belum terverifikasi. Tidak ada perubahan yang disimpan.');
+      }
+      await connection.commit();
+      return { id, status: 'cancelled', already_cancelled: false };
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
   }
 
   async getCalendarMonth(year, month) {
@@ -334,7 +393,7 @@ class SurgeryService {
       `SELECT s.*, ot.code as op_code, ot.name as op_name, ot.name_id as op_name_id, ot.category as op_category
        FROM surgery_schedules s
        JOIN surgery_operation_types ot ON s.operation_type_id = ot.id
-       WHERE s.surgery_date = ?
+       WHERE s.surgery_date = ? AND s.status <> 'cancelled'
        ORDER BY s.surgery_time, s.created_at`,
       [date]
     );
@@ -458,10 +517,14 @@ class SurgeryService {
     if (fields.length === 0) return this.getSurgeryById(id);
 
     values.push(id);
-    await pool.query(
-      `UPDATE surgery_schedules SET ${fields.join(', ')} WHERE id = ?`,
+    const changesStatus = updateData.status !== undefined && updateData.status !== 'cancelled';
+    const [updated] = await pool.query(
+      `UPDATE surgery_schedules SET ${fields.join(', ')} WHERE id = ?${changesStatus ? " AND status <> 'cancelled'" : ''}`,
       values
     );
+    if (changesStatus && updated.affectedRows !== 1) {
+      throw Object.assign(new Error('Jadwal telah dibatalkan atau berubah. Muat ulang DocBoard.'), { statusCode: 409 });
+    }
 
     logger.info(`Surgery updated: #${id}`);
 
@@ -481,11 +544,14 @@ class SurgeryService {
       values.push(reason);
     }
 
-    values.push(id);
-    await pool.query(
-      `UPDATE surgery_schedules SET ${fields.join(', ')} WHERE id = ?`,
+    values.push(id, normalizedStatus);
+    const [updated] = await pool.query(
+      `UPDATE surgery_schedules SET ${fields.join(', ')} WHERE id = ? AND (status <> 'cancelled' OR ? = 'cancelled')`,
       values
     );
+    if (updated.affectedRows !== 1) {
+      throw Object.assign(new Error('Jadwal telah dibatalkan atau berubah. Muat ulang DocBoard.'), { statusCode: 409 });
+    }
 
     logger.info(`Surgery #${id} status → ${normalizedStatus}`);
 

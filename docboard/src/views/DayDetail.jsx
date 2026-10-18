@@ -5,6 +5,8 @@ import { SkeletonList } from '../components/SkeletonLoader';
 import { api, listDaySpaceSchedules } from '../services/api';
 import { formatDateDisplay, getDayName, formatTime } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
+import { surgeryScheduleRevision, surgeryRefreshFailed, surgeryRefreshPending } from '../stores/schedule';
+import SurgeryRefreshWarning from '../components/SurgeryRefreshWarning';
 
 const SPACE_META = {
   ilmiah: { label: 'Ilmiah', route: '/docboard/scientific' },
@@ -23,9 +25,32 @@ export default function DayDetail({ date }) {
 
   useEffect(() => {
     loadDay();
-    loadSurgeries();
     loadSpaceSchedules();
   }, [date]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadSurgeries() {
+      surgeryRefreshPending.value = true;
+      try {
+        const result = await api.getDaySurgeries(date);
+        if (active) {
+          setSurgeries(result.surgeries || []);
+          surgeryRefreshFailed.value = false;
+        }
+      } catch (err) {
+        if (active) surgeryRefreshFailed.value = true;
+        console.error('Failed to load surgeries:', err);
+      } finally {
+        if (active) {
+          setSurgLoading(false);
+          surgeryRefreshPending.value = false;
+        }
+      }
+    }
+    loadSurgeries();
+    return () => { active = false; surgeryRefreshPending.value = false; };
+  }, [date, surgeryScheduleRevision.value]);
 
   async function loadDay() {
     setLoading(true);
@@ -37,18 +62,6 @@ export default function DayDetail({ date }) {
       setError(err.message);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function loadSurgeries() {
-    setSurgLoading(true);
-    try {
-      const result = await api.getDaySurgeries(date);
-      setSurgeries(result.surgeries || []);
-    } catch (err) {
-      console.error('Failed to load surgeries:', err);
-    } finally {
-      setSurgLoading(false);
     }
   }
 
@@ -67,6 +80,7 @@ export default function DayDetail({ date }) {
 
   return (
     <div class="view-day-detail">
+      <SurgeryRefreshWarning />
       {/* Header */}
       <div class="day-header">
         <button class="back-btn" onClick={() => route('/docboard/')}>

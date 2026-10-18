@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { verifyToken, verifyPatientToken, requireSuperadminOrAccountPermission } = require('../../middleware/auth');
+const { verifyToken, verifyPatientToken, verifyStaffToken, requirePermission, requireSuperadminOrAccountPermission } = require('../../middleware/auth');
 const db = require('../../db');
 const handlers = require('../../services/sunday-clinic/records');
 const { normalizeMrId } = require('../../services/sunday-clinic/shared');
@@ -34,6 +34,7 @@ router.get('/check-existing', verifyToken, handlers.getCheckExisting);
 router.get('/directory', verifyToken, handlers.getDirectory);
 router.get('/records/:mrId', verifyToken, handlers.getRecordsByMrId);
 router.get('/records/:mrId/planned-sc', verifyToken, handlers.getPlannedScByMrId);
+router.post('/records/:mrId/planned-sc/:surgeryId/cancel', verifyStaffToken, requirePermission('docboard.write'), handlers.cancelPlannedScByMrId);
 router.post('/records/:mrId/:section', verifyToken, handlers.postRecordsByMrIdBySection);
 router.get('/records/:mrId/prefill/medify', verifyToken, handlers.getRecordsByMrIdPrefillMedify);
 router.get('/medify-sync/jobs/:mrId', verifyToken, handlers.getMedifySyncJobsByMrId);

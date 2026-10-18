@@ -241,6 +241,7 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['usg-bulk-upload:POST:/bot/schedule/run-now', 'usg_exam.sync'],
     ['sunday-clinic/records:GET:/directory', 'patients.view'],
     ['sunday-clinic/records:POST:/records/:mrId/:section', 'medical_records.edit'],
+    ['sunday-clinic/records:POST:/records/:mrId/planned-sc/:surgeryId/cancel', 'docboard.write'],
     ['sunday-clinic/records:GET:/medify-sync/jobs/:mrId', 'integrations.view'],
     ['sunday-clinic/records:GET:/medify-sync/stats', 'integrations.view'],
     ['sunday-clinic/resume-export:POST:/generate-anamnesa/:mrId', 'clinical_ai.use'],

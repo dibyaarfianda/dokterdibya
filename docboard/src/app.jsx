@@ -25,6 +25,7 @@ import Login from './views/Login';
 import Confidential from './views/Confidential';
 import { initAuth, isLoggedIn, isLoading, user, accessError, refreshAccountAccess } from './stores/auth';
 import { startUnreadPolling, stopUnreadPolling } from './stores/notifications';
+import { subscribeToSurgeryScheduleChanges, surgeryScheduleRevision } from './stores/schedule';
 import { queueCount, syncState } from './services/api';
 import { canAccessScientificSchedule, isNandaUser } from './utils/access';
 import { signal } from '@preact/signals';
@@ -45,6 +46,10 @@ function ScientificScheduleRoute(props) {
 }
 
 export default function App() {
+  useEffect(() => subscribeToSurgeryScheduleChanges(() => {
+    surgeryScheduleRevision.value += 1;
+  }), []);
+
   useEffect(() => {
     initAuth();
     const refresh = () => {

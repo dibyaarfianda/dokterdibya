@@ -28,6 +28,8 @@ const EXPECTED_ROUTES = Object.freeze({
         'get /check-existing',
         'get /directory',
         'get /records/:mrId',
+        'get /records/:mrId/planned-sc',
+        'post /records/:mrId/planned-sc/:surgeryId/cancel',
         'post /records/:mrId/:section',
         'get /records/:mrId/prefill/medify',
         'get /medify-sync/jobs/:mrId',

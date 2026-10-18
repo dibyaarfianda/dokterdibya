@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'preact/hooks';
+import { useState, useEffect, useRef } from 'preact/hooks';
 import { route } from 'preact-router';
 import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS, OP_CATEGORY, COMPLICATION_GRADES, WOUND_CLASSES } from '../utils/constants';
 import { surgeryPermissions } from '../stores/auth';
 import PostOpNotesForm from '../components/PostOpNotesForm';
+import SurgeryRefreshWarning from '../components/SurgeryRefreshWarning';
+import { surgeryScheduleRevision, surgeryRefreshFailed, surgeryRefreshPending } from '../stores/schedule';
 import { getDayName, formatDateDisplay } from '../utils/date';
 
 const ASA_LABELS = {
@@ -33,19 +35,34 @@ export default function SurgeryDetail({ id }) {
   const [showOutcome, setShowOutcome] = useState(false);
   const [outcomeForm, setOutcomeForm] = useState(null);
   const [savingOutcome, setSavingOutcome] = useState(false);
+  const surgeryRequest = useRef(0);
   const perms = surgeryPermissions.value;
 
-  useEffect(() => { loadSurgery(); }, [id]);
+  useEffect(() => { setLoading(true); }, [id]);
+  useEffect(() => {
+    loadSurgery();
+    return () => {
+      surgeryRequest.current += 1;
+      surgeryRefreshPending.value = false;
+    };
+  }, [id, surgeryScheduleRevision.value]);
 
   async function loadSurgery() {
-    setLoading(true);
+    const request = ++surgeryRequest.current;
+    surgeryRefreshPending.value = true;
     try {
       const data = await api.getSurgery(id);
+      if (request !== surgeryRequest.current) return;
       setSurgery(data.surgery);
+      surgeryRefreshFailed.value = false;
     } catch (err) {
+      if (request === surgeryRequest.current) surgeryRefreshFailed.value = true;
       console.error('Failed to load surgery:', err);
     } finally {
-      setLoading(false);
+      if (request === surgeryRequest.current) {
+        setLoading(false);
+        surgeryRefreshPending.value = false;
+      }
     }
   }
 
@@ -70,7 +87,7 @@ export default function SurgeryDetail({ id }) {
   }
 
   async function toggleChecklistItem(key) {
-    if (!checklist) return;
+    if (!checklist || surgery?.status === 'cancelled' || surgeryRefreshFailed.value || surgeryRefreshPending.value) return;
     const updated = checklist.items.map(item =>
       item.key === key ? { ...item, checked: !item.checked, checked_at: !item.checked ? new Date().toISOString() : null } : item
     );
@@ -99,6 +116,7 @@ export default function SurgeryDetail({ id }) {
 
   async function handleSaveOutcome(e) {
     e.preventDefault();
+    if (surgery?.status === 'cancelled' || surgeryRefreshFailed.value || surgeryRefreshPending.value) return;
     setSavingOutcome(true);
     try {
       const data = await api.saveOutcome(id, outcomeForm);
@@ -111,6 +129,7 @@ export default function SurgeryDetail({ id }) {
   }
 
   async function updateStatus(newStatus) {
+    if (surgery?.status === 'cancelled' || surgeryRefreshFailed.value || surgeryRefreshPending.value) return;
     let reason = null;
     if (newStatus === 'cancelled' || newStatus === 'postponed') {
       reason = prompt(newStatus === 'cancelled' ? 'Alasan batal:' : 'Alasan ditunda:');
@@ -136,7 +155,7 @@ export default function SurgeryDetail({ id }) {
   }
 
   if (loading) return <div class="loading-state"><div class="spinner" /></div>;
-  if (!surgery) return <div class="empty-state"><p>Tidak ditemukan</p></div>;
+  if (!surgery) return <div class="empty-state"><SurgeryRefreshWarning /><p>{surgeryRefreshFailed.value ? 'Jadwal operasi belum dapat dimuat.' : 'Tidak ditemukan'}</p></div>;
 
   const s = surgery;
   const loc = LOCATIONS[s.location] || {};
@@ -146,9 +165,11 @@ export default function SurgeryDetail({ id }) {
   const dateStr = `${getDayName(s.surgery_date, true)}, ${formatDateDisplay(s.surgery_date)}`;
   const timeStr = s.surgery_time ? s.surgery_time.substring(0, 5) : null;
   const team = s.team_members || [];
+  const statusUncertain = surgeryRefreshFailed.value || surgeryRefreshPending.value;
 
   return (
     <div class="view-surgery-detail">
+      <SurgeryRefreshWarning />
       {/* Header */}
       <div class="detail-header" style={{ borderBottomColor: loc.color || '#3B82F6' }}>
         <button class="btn-back" onClick={() => history.back()}>
@@ -176,12 +197,12 @@ export default function SurgeryDetail({ id }) {
       {/* Actions dropdown */}
       {showActions && (
         <div class="actions-dropdown">
-          {perms.canChangeStatus && s.status === 'planned' && <button onClick={() => updateStatus('confirmed')}>Konfirmasi</button>}
-          {perms.canChangeStatus && s.status !== 'cancelled' && s.status !== 'completed' && <button onClick={() => updateStatus('completed')}>Selesai</button>}
+          {perms.canChangeStatus && s.status === 'planned' && <button disabled={statusUncertain} onClick={() => updateStatus('confirmed')}>Konfirmasi</button>}
+          {perms.canChangeStatus && s.status !== 'cancelled' && s.status !== 'completed' && <button disabled={statusUncertain} onClick={() => updateStatus('completed')}>Selesai</button>}
           {perms.canChangeStatus && s.status !== 'cancelled' && s.status !== 'completed' && (
             <>
-              <button onClick={() => updateStatus('postponed')}>Tunda</button>
-              <button onClick={() => updateStatus('cancelled')} class="text-danger">Batalkan</button>
+              <button disabled={statusUncertain} onClick={() => updateStatus('postponed')}>Tunda</button>
+              <button disabled={statusUncertain} onClick={() => updateStatus('cancelled')} class="text-danger">Batalkan</button>
             </>
           )}
           {perms.canDeleteSurgery && <button onClick={handleDelete} class="text-danger">Hapus</button>}
@@ -299,7 +320,7 @@ export default function SurgeryDetail({ id }) {
       )}
 
       {/* Pre-op Checklist */}
-      {s.status !== 'completed' && s.status !== 'cancelled' && (
+      {(showChecklist || (s.status !== 'completed' && s.status !== 'cancelled')) && (
         <div class="detail-card">
           {!showChecklist ? (
             <button class="btn-text" onClick={loadChecklist} style="width:100%;text-align:center;padding:8px 0">
@@ -314,7 +335,7 @@ export default function SurgeryDetail({ id }) {
               <div class="checklist-items">
                 {checklist.items.map(item => (
                   <label key={item.key} class={`checklist-item ${item.checked ? 'checked' : ''}`}>
-                    <input type="checkbox" checked={item.checked} disabled={!perms.canEditChecklist} onChange={() => toggleChecklistItem(item.key)} />
+                    <input type="checkbox" checked={item.checked} disabled={!perms.canEditChecklist || statusUncertain || s.status === 'cancelled'} onChange={() => toggleChecklistItem(item.key)} />
                     <span class="checklist-label">{item.label}</span>
                   </label>
                 ))}
@@ -343,12 +364,12 @@ export default function SurgeryDetail({ id }) {
       )}
 
       {/* Post-Op Notes Section */}
-      {(s.status === 'in_progress' || s.status === 'completed') && (
+      {(showPostOpForm || s.status === 'in_progress' || s.status === 'completed') && (
         showPostOpForm ? (
           <PostOpNotesForm
             surgeryId={id}
             existingNotes={s.post_op_notes}
-            canSave={perms.canEditClinical}
+            canSave={perms.canEditClinical && !statusUncertain && s.status !== 'cancelled'}
             onSaved={() => {
               setShowPostOpForm(false);
               loadSurgery();
@@ -382,7 +403,7 @@ export default function SurgeryDetail({ id }) {
       )}
 
       {/* Post-Op Outcome */}
-      {s.status === 'completed' && (
+      {(showOutcome || s.status === 'completed') && (
         <div class="detail-card">
           {!showOutcome ? (
             <button class="btn-text" onClick={loadOutcome} style="width:100%;text-align:center;padding:8px 0">
@@ -439,7 +460,7 @@ export default function SurgeryDetail({ id }) {
                     <label>Catatan</label>
                     <textarea rows="2" value={outcomeForm.notes || ''} onInput={e => setOutcomeForm(f => ({ ...f, notes: e.target.value }))} />
                   </div>
-                  <button type="submit" class="btn-primary btn-full" disabled={savingOutcome}>
+                  <button type="submit" class="btn-primary btn-full" disabled={savingOutcome || statusUncertain || s.status === 'cancelled'}>
                     {savingOutcome ? 'Menyimpan...' : 'Simpan Outcome'}
                   </button>
                 </form>

@@ -1,6 +1,26 @@
 const service = require('../../services/CommOperationSyncService');
 
 describe('COMM operation sync status', () => {
+  test.each(['gambiran', 'bhayangkara'])('atomic %s synchronization cannot revive a locally cancelled schedule', async facility => {
+    const originalDb = service.db;
+    const originalLogAudit = service.logAudit;
+    const query = jest.fn().mockResolvedValue([{ affectedRows: 0 }]);
+    service.db = { query };
+    service.logAudit = jest.fn();
+    try {
+      const item = service.normalizeItem({ source_key: `${facility}:case:operation`, facility,
+        patient_name: 'Pasien Uji', operation_date: '2027-01-05', raw_status: 'confirmed' }, {});
+      expect(await service.updateSurgery(91, item, {}, 'source_key')).toBe(false);
+      const [sql] = query.mock.calls[0];
+      expect(sql).toMatch(/WHERE id = \? AND NOT/);
+      expect(sql).toContain("status = 'cancelled'");
+      expect(sql).toContain('cancellation_reason');
+      expect(service.logAudit).not.toHaveBeenCalled();
+    } finally {
+      service.db = originalDb;
+      service.logAudit = originalLogAudit;
+    }
+  });
   test('Medify Melinda import is completed while Gambiran keeps its source status', () => {
     const base = {
       source_key: 'facility:case:operation', patient_name: 'Pasien Audit',

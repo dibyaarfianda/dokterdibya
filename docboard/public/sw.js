@@ -1,4 +1,4 @@
-const CACHE_NAME = 'docboard-pwa-20261017-embed1';
+const CACHE_NAME = 'docboard-pwa-20261018-planned-sc-cancel';
 const APP_SHELL = [
   '/docboard/',
   '/docboard/index.html',

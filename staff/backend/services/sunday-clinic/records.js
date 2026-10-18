@@ -288,6 +288,18 @@ async function getPlannedScByMrId(req, res, next) {
     }
 }
 
+async function cancelPlannedScByMrId(req, res, next) {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    const mrId = normalizeMrId(req.params.mrId);
+    if (!mrId) return res.status(400).json({ success: false, message: 'MR ID tidak valid.' });
+    try {
+        const result = await surgeryService.cancelPlannedScByMrId(mrId, req.params.surgeryId, req.body?.reason, req.user.id);
+        return res.json({ success: true, data: result, message: 'Rencana SC dibatalkan dan dikeluarkan dari jadwal aktif DocBoard.' });
+    } catch (error) {
+        next(error);
+    }
+}
+
 async function postRecordsByMrIdBySection(req, res) {
     // Older cached clients submit unversioned whole sections. They must reload
     // to use the versioned medical-record API; no legacy save can mutate data.
@@ -790,6 +802,7 @@ module.exports = {
     getDirectory,
     getRecordsByMrId,
     getPlannedScByMrId,
+    cancelPlannedScByMrId,
     postRecordsByMrIdBySection,
     getRecordsByMrIdPrefillMedify,
     getMedifySyncJobsByMrId,

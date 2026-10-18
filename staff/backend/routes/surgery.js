@@ -659,7 +659,7 @@ router.put('/:id', requirePermission('medical_records.edit'), async (req, res) =
     res.json({ success: true, surgery });
   } catch (error) {
     logger.error('Surgery update error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 });
 
@@ -693,7 +693,7 @@ router.patch('/:id/status', async (req, res) => {
     res.json({ success: true, surgery });
   } catch (error) {
     logger.error('Surgery status update error:', error);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 });
 

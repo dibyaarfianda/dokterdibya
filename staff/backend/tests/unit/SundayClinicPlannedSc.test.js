@@ -64,12 +64,12 @@ describe('patient SC schedule in every control DRD', () => {
 function frontend() {
     const filename = path.resolve(__dirname, '../../../public/scripts/sunday-clinic/utils/planned-sc.js');
     const source = fs.existsSync(filename) ? fs.readFileSync(filename, 'utf8').replace(/^import .*;\s*$/gm, '').replace(/^export /gm, '') : '';
-    const panel = { innerHTML: '', hidden: true };
+    const panel = { innerHTML: '', hidden: true, querySelectorAll: () => [] };
     const state = { currentMrId: 'DRD200', activeSection: 'plan' };
     const root = { isConnected: true, dataset: { planningMrId: 'DRD200' }, querySelector: () => panel };
     const apiClient = { request: jest.fn() };
     const escapeHtml = value => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    const context = { apiClient, stateManager: { getState: () => state }, escapeHtml, Date };
+    const context = { apiClient, stateManager: { getState: () => state }, hasPermission: async () => false, escapeHtml, Date };
     vm.runInNewContext(source, context, { filename });
     return { ...context, panel, state, root };
 }

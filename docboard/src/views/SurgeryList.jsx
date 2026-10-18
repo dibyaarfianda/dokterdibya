@@ -4,7 +4,9 @@ import { api } from '../services/api';
 import { LOCATIONS, SURGERY_STATUS } from '../utils/constants';
 import { today, normalizeDateInput, getDayName, formatDateShort } from '../utils/date';
 import { surgeryPermissions } from '../stores/auth';
+import { surgeryScheduleRevision, surgeryRefreshFailed, surgeryRefreshPending } from '../stores/schedule';
 import ExportButton from '../components/ExportButton';
+import SurgeryRefreshWarning from '../components/SurgeryRefreshWarning';
 
 export default function SurgeryList() {
   const [surgeries, setSurgeries] = useState([]);
@@ -12,19 +14,29 @@ export default function SurgeryList() {
   const [completingId, setCompletingId] = useState(null);
   const { canCreateSurgery, canChangeStatus } = surgeryPermissions.value;
 
-  useEffect(() => { loadUpcoming(); }, []);
-
-  async function loadUpcoming() {
-    setLoading(true);
-    try {
-      const data = await api.getUpcomingSurgeries(14, 7);
-      setSurgeries(data.surgeries || []);
-    } catch (err) {
-      console.error('Failed to load surgeries:', err);
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    let active = true;
+    async function loadUpcoming() {
+      surgeryRefreshPending.value = true;
+      try {
+        const data = await api.getUpcomingSurgeries(14, 7);
+        if (active) {
+          setSurgeries(data.surgeries || []);
+          surgeryRefreshFailed.value = false;
+        }
+      } catch (err) {
+        if (active) surgeryRefreshFailed.value = true;
+        console.error('Failed to load surgeries:', err);
+      } finally {
+        if (active) {
+          setLoading(false);
+          surgeryRefreshPending.value = false;
+        }
+      }
     }
-  }
+    loadUpcoming();
+    return () => { active = false; surgeryRefreshPending.value = false; };
+  }, [surgeryScheduleRevision.value]);
 
   // Group by date
   const grouped = {};
@@ -35,7 +47,7 @@ export default function SurgeryList() {
   }
 
   async function completeSurgery(id) {
-    if (completingId !== null) return;
+    if (completingId !== null || surgeryRefreshFailed.value || surgeryRefreshPending.value) return;
     setCompletingId(id);
     try {
       await api.updateSurgeryStatus(id, 'completed');
@@ -51,6 +63,7 @@ export default function SurgeryList() {
 
   return (
     <div class="view-surgery">
+      <SurgeryRefreshWarning />
       <div class="view-header">
         <div>
           <h1>Jadwal Operasi</h1>
@@ -76,7 +89,7 @@ export default function SurgeryList() {
             <rect x="3" y="4" width="18" height="18" rx="2" />
             <path d="M3 10h18" /><path d="M8 2v4" /><path d="M16 2v4" />
           </svg>
-          <p>Belum ada jadwal operasi</p>
+          <p>{surgeryRefreshFailed.value ? 'Jadwal operasi belum dapat dimuat.' : 'Belum ada jadwal operasi'}</p>
           {canCreateSurgery && <button class="btn-primary" onClick={() => route('/docboard/surgery/new')}>
             + Tambah Jadwal
           </button>}
@@ -96,7 +109,7 @@ export default function SurgeryList() {
                   <span class="surgery-date-count">{items.length} operasi</span>
                 </div>
                 {items.map(s => (
-                  <SurgeryCard key={s.id} surgery={s} onClick={() => route(`/docboard/surgery/${s.id}`)} onComplete={() => completeSurgery(s.id)} canComplete={canChangeStatus} completing={completingId === s.id} />
+                  <SurgeryCard key={s.id} surgery={s} onClick={() => route(`/docboard/surgery/${s.id}`)} onComplete={() => completeSurgery(s.id)} canComplete={canChangeStatus && !surgeryRefreshFailed.value && !surgeryRefreshPending.value} completing={completingId === s.id} />
                 ))}
               </div>
             );

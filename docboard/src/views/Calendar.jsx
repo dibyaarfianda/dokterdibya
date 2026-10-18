@@ -3,8 +3,9 @@ import { route } from 'preact-router';
 import CalendarGrid from '../components/CalendarGrid';
 import WeeklyView from '../components/WeeklyView';
 import { SkeletonCalendar } from '../components/SkeletonLoader';
+import SurgeryRefreshWarning from '../components/SurgeryRefreshWarning';
 import { api, getSpaceScheduleCalendar } from '../services/api';
-import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData, spaceScheduleCalendarData } from '../stores/schedule';
+import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData, spaceScheduleCalendarData, surgeryScheduleRevision, surgeryRefreshFailed, surgeryRefreshPending } from '../stores/schedule';
 import { getMonthName, today, getWeekStart } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
 
@@ -13,9 +14,29 @@ export default function Calendar() {
     loadCalendar();
   }, [currentYear.value, currentMonth.value]);
 
-  // Load surgery calendar data alongside regular calendar
+  // An external surgery change refreshes only the surgery calendar.
   useEffect(() => {
+    let active = true;
+    async function loadSurgeryCalendar() {
+      surgeryRefreshPending.value = true;
+      try {
+        const data = await api.getSurgeryCalendar(currentYear.value, currentMonth.value + 1);
+        if (active) {
+          surgeryCalendarData.value = data.days || {};
+          surgeryRefreshFailed.value = false;
+        }
+      } catch (err) {
+        if (active) surgeryRefreshFailed.value = true;
+        console.error('Failed to load surgery calendar:', err);
+      } finally {
+        if (active) surgeryRefreshPending.value = false;
+      }
+    }
     loadSurgeryCalendar();
+    return () => { active = false; surgeryRefreshPending.value = false; };
+  }, [currentYear.value, currentMonth.value, surgeryScheduleRevision.value]);
+
+  useEffect(() => {
     loadSpaceScheduleCalendar();
   }, [currentYear.value, currentMonth.value]);
 
@@ -28,15 +49,6 @@ export default function Calendar() {
       console.error('Failed to load calendar:', err);
     } finally {
       calendarLoading.value = false;
-    }
-  }
-
-  async function loadSurgeryCalendar() {
-    try {
-      const data = await api.getSurgeryCalendar(currentYear.value, currentMonth.value + 1);
-      surgeryCalendarData.value = data.days || {};
-    } catch (err) {
-      console.error('Failed to load surgery calendar:', err);
     }
   }
 
@@ -89,6 +101,7 @@ export default function Calendar() {
 
   return (
     <div class="view-calendar">
+      <SurgeryRefreshWarning />
       {/* Today summary card */}
       <div class="today-summary" onClick={() => handleDayClick(todayStr)}>
         <div class="today-summary-left">

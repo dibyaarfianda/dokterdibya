@@ -30,6 +30,62 @@ export const unreadCount = signal(0);
 export const surgeryCalendarData = signal({});
 export const upcomingSurgeries = signal([]);
 export const operationTypes = signal([]);
+export const surgeryScheduleRevision = signal(0);
+export const surgeryRefreshFailed = signal(false);
+export const surgeryRefreshPending = signal(false);
+
+const SURGERY_SCHEDULE_REVISION_KEY = 'docboard_schedule_revision_v1';
+
+// Planning publishes this marker after a successful schedule change. Reconcile
+// against storage itself so queued older events cannot restore a stale revision.
+export function subscribeToSurgeryScheduleChanges(onRevision, {
+  windowTarget = globalThis.window,
+  documentTarget = globalThis.document,
+  storage,
+  shouldRetry = () => surgeryRefreshFailed.value && !surgeryRefreshPending.value,
+} = {}) {
+  try {
+    storage ??= windowTarget?.localStorage;
+  } catch {
+    // Some embedded/private browsers deny localStorage access.
+  }
+
+  function readRevision() {
+    try {
+      const marker = JSON.parse(storage?.getItem(SURGERY_SCHEDULE_REVISION_KEY) || 'null');
+      return typeof marker?.revision === 'string' && marker.revision.trim() ? marker.revision : null;
+    } catch {
+      return null;
+    }
+  }
+
+  let lastRevision = readRevision();
+  function reconcile(retryFailed = false) {
+    if (documentTarget?.visibilityState === 'hidden') return;
+    const revision = readRevision();
+    const changed = revision && revision !== lastRevision;
+    if (!changed && !(retryFailed && shouldRetry())) return;
+    if (changed) lastRevision = revision;
+    onRevision(revision);
+  }
+  const retryOnReturn = () => reconcile(true);
+  function onStorage(event) {
+    if (event.key !== SURGERY_SCHEDULE_REVISION_KEY || event.newValue === null) return;
+    if (event.storageArea && event.storageArea !== storage) return;
+    reconcile();
+  }
+
+  windowTarget?.addEventListener('storage', onStorage);
+  windowTarget?.addEventListener('focus', retryOnReturn);
+  windowTarget?.addEventListener('online', retryOnReturn);
+  documentTarget?.addEventListener('visibilitychange', retryOnReturn);
+  return () => {
+    windowTarget?.removeEventListener('storage', onStorage);
+    windowTarget?.removeEventListener('focus', retryOnReturn);
+    windowTarget?.removeEventListener('online', retryOnReturn);
+    documentTarget?.removeEventListener('visibilitychange', retryOnReturn);
+  };
+}
 
 // Scientific/personal schedules
 export const spaceScheduleCalendarData = signal({});

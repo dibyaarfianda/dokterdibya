@@ -14,6 +14,7 @@ describe('DocBoard scheduling follows its account permissions', () => {
         ['POST', '/api/docboard/surgery', 'docboard.write'],
         ['PUT', '/api/docboard/surgery/9', 'docboard.write'],
         ['PATCH', '/api/docboard/surgery/9/status', 'docboard.write'],
+        ['POST', '/api/sunday-clinic/records/DRD200/planned-sc/91/cancel', 'docboard.write'],
         ['DELETE', '/api/docboard/surgery/9', 'docboard.delete'],
         ['PUT', '/api/docboard/surgery/9/outcome', 'medical_records.edit'],
         ['PATCH', '/api/docboard/surgery/9/post-op-notes', 'medical_records.edit'],
