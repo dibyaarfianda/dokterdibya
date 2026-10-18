@@ -142,12 +142,12 @@
     }
 
     #mobile-action-bar button.active {
-        color: #0d6efd;
+        color: #0d6efd !important;
     }
 
     #mobile-action-bar button.active .icon-wrapper {
-        background: #0d6efd;
-        color: #ffffff;
+        background: #0d6efd !important;
+        color: #ffffff !important;
         box-shadow: 0 3px 10px rgba(13, 110, 253, 0.3);
     }
 
@@ -849,12 +849,12 @@ body.mobile-app-mode #mobile-action-bar button .icon-wrapper i {
 }
 
 body.mobile-app-mode #mobile-action-bar button.active {
-    color: #0d6efd;
+    color: #0d6efd !important;
 }
 
 body.mobile-app-mode #mobile-action-bar button.active .icon-wrapper {
-    background: #0d6efd;
-    color: #ffffff;
+    background: #0d6efd !important;
+    color: #ffffff !important;
 }
 
 /* Android WebView handles safe area via native padding - no CSS needed */

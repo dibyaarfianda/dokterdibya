@@ -95,6 +95,8 @@
             // Improve button tap response
             const buttons = document.querySelectorAll('.btn, button');
             buttons.forEach(function(btn) {
+                // Bottom navigation owns .active for the current page, not a press.
+                if (btn.closest('#mobile-action-bar')) return;
                 btn.addEventListener('touchstart', function() {
                     this.classList.add('active');
                 }, {passive: true});

@@ -180,8 +180,30 @@ function clearAppCache() {
     Promise.all(tasks).then(done).catch(done);
 }
 function mobileNavClick(btn, action) {
-    document.querySelectorAll('#mobile-action-bar button').forEach(function(b){b.classList.remove('active');});
-    if(btn && action !== 'more') btn.classList.add('active');
+    document.querySelectorAll('#mobile-action-bar button').forEach(function(button) {
+        var active = button === btn;
+        button.classList.toggle('active', active);
+        if (active) button.setAttribute('aria-current', 'page');
+        else button.removeAttribute('aria-current');
+    });
+}
+
+function syncMobileNavForPage(page) {
+    if (!page) return;
+    var pageActions = {
+        'dashboard': 'dashboard',
+        'klinik-private': 'klinik',
+        'sunday-clinic': 'klinik',
+        'hospital-appointments': 'klinik',
+        'appointments': 'klinik',
+        'docboard': 'docboard',
+        'kelola-pasien': 'pasien',
+        'patients': 'pasien',
+        'hospital-patients': 'pasien',
+        'tanya-dokter': 'tanya'
+    };
+    var action = pageActions[page] || 'more';
+    mobileNavClick(document.getElementById('mobile-btn-' + action), action);
 }
 
 const shellActionHandlers = {
@@ -234,6 +256,11 @@ const shellActionHandlers = {
 function bindShellActions() {
     if (shellActionsInitialized) return;
     shellActionsInitialized = true;
+
+    document.addEventListener('page:changed', function(event) {
+        syncMobileNavForPage(event.detail?.page);
+    });
+    syncMobileNavForPage(window.__currentPage || window.staffPageRegistry?.activeKey || 'dashboard');
 
     document.addEventListener('click', function(event) {
         var target = event.target.closest('[data-shell-action]');
