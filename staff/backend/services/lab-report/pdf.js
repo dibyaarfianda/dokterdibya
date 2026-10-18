@@ -21,11 +21,8 @@ async function renderLabPdf({ data, patient, labNumber = '', version = 1, draft 
         const write = (value, x, top, options = {}) => doc.text(printable(value), x, top, { lineBreak: false, ...options });
         function header(continued = false) {
             doc.image(path.join(assets, 'dpc-lab-logo.png'), left, 28, { fit: [268, 82] });
-            doc.image(path.join(assets, 'melinda.png'), 363, 31, { fit: [35, 38] });
-            doc.font('Helvetica').fontSize(6.5).fillColor(gray);
-            write('Supported by', 348, 74, { width: 65, align: 'center' });
-            write('RSIA Melinda', 348, 84, { width: 65, align: 'center' });
-            doc.image(path.join(assets, 'sw-healthcare.jpg'), 464, 26, { fit: [77, 77] });
+            doc.image(path.join(assets, 'sw-healthcare.png'), 365, 27, { fit: [77, 77] });
+            doc.image(path.join(assets, 'melinda.png'), 485, 30, { fit: [70, 70] });
             doc.fillColor(teal).rect(left, 115, width, 3).fill();
             doc.fillColor(navy).font('Helvetica-Bold').fontSize(16);
             write(comparison ? 'KOMPARASI HASIL LABORATORIUM' : 'HASIL LABORATORIUM', left, 132);
