@@ -40,6 +40,26 @@ function sendServiceError(res, error, fallbackMessage) {
     });
 }
 
+// Read-only matching: accept directory metadata so preview never waits for photo uploads.
+router.post('/preview-manifest', verifyToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+        const preview = await usgBulkUpload.previewFromZipEntries({
+            entries: req.body.entries,
+            date: req.body.date,
+            hospital: req.body.hospital
+        });
+        logger.info('[BulkUSG] Directory preview complete', {
+            totalFolders: preview.summary.totalFolders,
+            matched: preview.summary.matched,
+            totalFiles: preview.summary.totalFiles
+        });
+        res.json(preview);
+    } catch (error) {
+        sendServiceError(res, error, 'Gagal mencocokkan pasien: ');
+    }
+});
+
 router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) => {
     try {
         if (!req.file) {

@@ -5,6 +5,8 @@
 
 import { getIdToken } from './vps-auth-v2.js';
 import { formatDateLocal } from './date-utils.js';
+import { staffApiRequest } from './staff-api.js';
+import { readZipDirectory } from './usg-zip-directory.js';
 
 // Use relative URL to avoid CORS issues with www vs non-www
 const API_URL = window.location.hostname === 'localhost'
@@ -15,6 +17,7 @@ let currentPreviewData = null;
 let currentZipFile = null;
 let selectedHospital = null;
 let hospitals = [];
+let previewInFlight = false;
 
 // History state
 let historyData = [];
@@ -152,7 +155,7 @@ function renderPage() {
                 <!-- Loading -->
                 <div id="loading-preview" class="d-none text-center py-5">
                     <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-3 text-muted">Memproses file ZIP...</p>
+                    <p class="mt-3 text-muted" id="preview-status" role="status" aria-live="polite">Membaca daftar berkas ZIP di perangkat...</p>
                 </div>
 
                 <!-- Preview Results -->
@@ -488,7 +491,7 @@ function resetToUpload() {
  * Preview upload - send ZIP to server for analysis
  */
 async function previewUpload() {
-    if (!currentZipFile) return;
+    if (!currentZipFile || previewInFlight) return;
 
     if (!selectedHospital) {
         window.showError('Pilih lokasi rumah sakit terlebih dahulu');
@@ -497,35 +500,44 @@ async function previewUpload() {
 
     const loadingEl = document.getElementById('loading-preview');
     const previewBtnEl = document.getElementById('preview-btn-container');
+    const statusEl = document.getElementById('preview-status');
+    const uploadDate = document.getElementById('upload-date').value;
+    if (!uploadDate) {
+        window.showError('Pilih tanggal USG terlebih dahulu');
+        return;
+    }
 
+    previewInFlight = true;
     loadingEl.classList.remove('d-none');
     previewBtnEl.classList.add('d-none');
+    statusEl.textContent = 'Membaca daftar berkas ZIP di perangkat...';
 
     try {
-        const token = await getIdToken();
-        const uploadDate = document.getElementById('upload-date').value;
-
-        if (!uploadDate) {
-            window.showError('Pilih tanggal USG terlebih dahulu');
-            loadingEl.classList.add('d-none');
-            previewBtnEl.classList.remove('d-none');
-            return;
+        let entries;
+        try {
+            entries = await readZipDirectory(currentZipFile);
+        } catch (error) {
+            if (error.code !== 'ZIP_DIRECTORY_UNSUPPORTED') throw error;
         }
 
-        const formData = new FormData();
-        formData.append('zipFile', currentZipFile);
-        formData.append('hospital', selectedHospital);
-        formData.append('date', uploadDate);
-
-        const response = await fetch(`${API_URL}/usg-bulk-upload/preview`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData
-        });
-
-        const data = await response.json();
+        let data;
+        if (entries) {
+            statusEl.textContent = 'Mencocokkan pasien dari daftar berkas; foto belum dikirim...';
+            data = await staffApiRequest(`${API_URL}/usg-bulk-upload/preview-manifest`, {
+                method: 'POST', timeoutMs: 30000, retries: 0,
+                body: JSON.stringify({ entries, hospital: selectedHospital, date: uploadDate })
+            });
+        } else {
+            // Preserve support for ZIP64/unusual archives using the existing server parser.
+            statusEl.textContent = 'Format ZIP khusus: mengirim ZIP untuk dibaca server. Waktu bergantung ukuran file dan koneksi...';
+            const formData = new FormData();
+            formData.append('zipFile', currentZipFile);
+            formData.append('hospital', selectedHospital);
+            formData.append('date', uploadDate);
+            data = await staffApiRequest(`${API_URL}/usg-bulk-upload/preview`, {
+                method: 'POST', timeoutMs: 180000, retries: 0, body: formData
+            });
+        }
 
         if (!data.success) {
             throw new Error(data.message || 'Preview failed');
@@ -536,9 +548,13 @@ async function previewUpload() {
 
     } catch (error) {
         console.error('Preview error:', error);
-        window.showError('Gagal memproses file: ' + error.message);
+        const message = error.name === 'TimeoutError' || error.name === 'AbortError'
+            ? 'Batas waktu preview habis. Periksa koneksi lalu tekan Preview kembali; foto belum disimpan.'
+            : error.message;
+        window.showError('Gagal memproses file: ' + message);
         previewBtnEl.classList.remove('d-none');
     } finally {
+        previewInFlight = false;
         loadingEl.classList.add('d-none');
     }
 }

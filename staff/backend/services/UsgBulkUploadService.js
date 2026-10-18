@@ -83,11 +83,17 @@ function sundayClinicDateIso(now = new Date()) {
 
 function parseZipFolders(buffer) {
     const zip = new AdmZip(buffer);
-    const zipEntries = zip.getEntries();
+    const entries = zip.getEntries().map(entry => ({
+        entryName: entry.entryName, isDirectory: entry.isDirectory, size: entry.header.size
+    }));
+    return { zip, ...groupZipEntries(entries) };
+}
+
+function groupZipEntries(entries) {
     const folderMap = new Map();
     let detectedDate = null;
 
-    for (const entry of zipEntries) {
+    for (const entry of entries) {
         if (entry.isDirectory) continue;
 
         const parts = entry.entryName.split('/').filter(Boolean);
@@ -121,11 +127,11 @@ function parseZipFolders(buffer) {
         folderMap.get(patientFolder).files.push({
             name: path.basename(entry.entryName),
             path: entry.entryName,
-            size: entry.header.size
+            size: entry.size
         });
     }
 
-    return { zip, folderMap, detectedDate };
+    return { folderMap, detectedDate };
 }
 
 function buildUniqueMappings(folders) {
@@ -159,13 +165,30 @@ function reviewFolders(folders) {
 }
 
 async function previewFromZipBuffer({ buffer, date, hospital }) {
+    return buildPreview({ ...parseZipFolders(buffer), date, hospital });
+}
+
+async function previewFromZipEntries({ entries, date, hospital }) {
+    if (!Array.isArray(entries) || entries.length > 65534 || entries.some(entry => (
+        !entry || typeof entry.entryName !== 'string' || !entry.entryName
+        || entry.entryName.length > 4096 || entry.entryName.includes('\0')
+        || typeof entry.isDirectory !== 'boolean'
+        || !Number.isSafeInteger(entry.size) || entry.size < 0
+    ))) {
+        const error = new Error('Daftar berkas ZIP tidak valid');
+        error.statusCode = 400;
+        throw error;
+    }
+    return buildPreview({ ...groupZipEntries(entries), date, hospital });
+}
+
+async function buildPreview({ folderMap, detectedDate, date, hospital }) {
     if (!isValidHospital(hospital)) {
         const error = new Error('Lokasi rumah sakit harus dipilih');
         error.statusCode = 400;
         throw error;
     }
 
-    const { folderMap, detectedDate } = parseZipFolders(buffer);
     const targetDate = date || detectedDate;
     if (!targetDate || !isValidIsoDate(targetDate)) {
         const error = new Error('Tanggal USG harus dipilih dan valid');
@@ -914,6 +937,7 @@ module.exports = {
     buildUniqueMappings,
     reviewFolders,
     previewFromZipBuffer,
+    previewFromZipEntries,
     executeFromZipBuffer,
     assertSafeZipUrl,
     downloadZipFromUrl,
