@@ -210,12 +210,27 @@ function normalizeSearch(value) {
 function operationMatches(text, operationTypes = []) {
   const normalizedText = ` ${normalizeSearch(text)} `;
   if (!normalizedText.trim()) return [];
-  return operationTypes.filter((type) => {
+  const matches = [];
+  for (const type of operationTypes) {
     const candidates = [type.code, type.name_id, type.name]
       .map(normalizeSearch)
       .filter((value) => value.length >= 2 && value !== 'other op' && value !== 'lainnya');
-    return candidates.some((candidate) => normalizedText.includes(` ${candidate} `));
-  }).map((type) => Number(type.id)).filter(Number.isInteger);
+    for (const candidate of candidates) {
+      const needle = ` ${candidate} `;
+      let start = normalizedText.indexOf(needle);
+      while (start !== -1) {
+        matches.push({ id: Number(type.id), start, end: start + needle.length });
+        start = normalizedText.indexOf(needle, start + 1);
+      }
+    }
+  }
+  // A combined operation (SC-IUD) owns its whole phrase; do not also select SC.
+  const specificMatches = matches.filter((match) => !matches.some((other) => (
+    other.id !== match.id && other.start <= match.start && other.end >= match.end
+      && other.end - other.start > match.end - match.start
+  )));
+  return operationTypes.map((type) => Number(type.id))
+    .filter((id) => Number.isInteger(id) && specificMatches.some((match) => match.id === id));
 }
 
 function parsePlanningSuggestions(rencana, now = new Date(), operationTypes = []) {
@@ -440,7 +455,10 @@ class DrdDocBoardScheduleService {
 
     const baseDiagnosis = buildDiagnosisText(snapshot.diagnosis);
     const rencana = textValue(snapshot.planning?.rencana || snapshot.planning?.instruksi);
-    const suggestions = parsePlanningSuggestions(rencana, this.now(), snapshot.operationTypes);
+    const operationTypes = snapshot.operationTypes.filter((type) => (
+      !isOtherOperationType(type) && !isProcedureOnlyOperationType(type)
+    ));
+    const suggestions = parsePlanningSuggestions(rencana, this.now(), operationTypes);
     const scheduleDate = requestedDate || suggestions.scheduleDate;
     const pregnant = pregnancyLikely(snapshot, baseDiagnosis);
     const pregnancy = projectGestationalAge(snapshot.anamnesa, scheduleDate, {
@@ -468,9 +486,7 @@ class DrdDocBoardScheduleService {
       options: {
         locations: LOCATIONS,
         procedure_categories: PROCEDURE_CATEGORIES,
-        operation_types: snapshot.operationTypes.filter((type) => (
-          !isOtherOperationType(type) && !isProcedureOnlyOperationType(type)
-        )),
+        operation_types: operationTypes,
       },
       warnings: [...new Set(warnings)],
       can_create: Boolean(baseDiagnosis),
@@ -506,9 +522,7 @@ class DrdDocBoardScheduleService {
     const snapshot = preview._snapshot;
 
     if (data.kind === 'surgery') {
-      const activeIds = new Set(snapshot.operationTypes
-        .filter((type) => !isOtherOperationType(type) && !isProcedureOnlyOperationType(type))
-        .map((type) => Number(type.id)));
+      const activeIds = new Set(preview.options.operation_types.map((type) => Number(type.id)));
       const selectedIds = [...new Set((Array.isArray(data.operation_type_ids) ? data.operation_type_ids : [])
         .map(Number).filter((id) => Number.isInteger(id) && activeIds.has(id)))];
       const customLabels = String(data.operation_type_other || '').split(/\r?\n|\+/)

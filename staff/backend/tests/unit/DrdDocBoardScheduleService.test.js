@@ -134,6 +134,16 @@ describe('DRD to DocBoard canonical schedule service', () => {
     expect(ambiguousRelativeDate.procedureCategory).toBe('Lepas Pasang IUD');
   });
 
+  test('keeps separate operations while preferring a specific SC subtype at the same position', () => {
+    const types = [
+      { id: 1, code: 'SC', name: 'Sectio Caesarea', name_id: 'Operasi Caesar' },
+      { id: 2, code: 'SC-EM', name: 'Emergency Caesarean Section', name_id: 'SC Darurat / Cito' },
+      { id: 58, code: 'MOW', name: 'Tubal Ligation', name_id: 'Tubektomi / MOW' },
+    ];
+    expect(parsePlanningSuggestions('SC-EM + MOW besok', NOW, types).operationTypeIds).toEqual([2, 58]);
+    expect(parsePlanningSuggestions('SC + MOW besok', NOW, types).operationTypeIds).toEqual([1, 58]);
+  });
+
   test('creates surgery from canonical DRD data and ignores spoofed patient or diagnosis fields', async () => {
     const captured = [];
     const service = new DrdDocBoardScheduleService({
@@ -182,6 +192,64 @@ describe('DRD to DocBoard canonical schedule service', () => {
     const preview = await service.preview({ mr_id: 'DRD1001', schedule_date: '2026-10-20' });
     expect(preview.options.operation_types.map((type) => type.code)).toEqual(['SC']);
   });
+
+  test('does not preselect a hidden IUD procedure from a saved SC + IUD plan', async () => {
+    const service = new DrdDocBoardScheduleService({
+      repository: {
+        loadSnapshot: jest.fn().mockResolvedValue(canonicalSnapshot({
+          planning: { rencana: 'Rencana SC + IUD tgl. 10/12/2026' },
+          operationTypes: [
+            { id: 1, code: 'SC', name: 'Sectio Caesarea', name_id: 'Operasi Caesar' },
+            { id: 63, code: 'IUD', name: 'IUD Insertion/Removal', name_id: 'Pemasangan/Pelepasan IUD' },
+            { id: 85, code: 'P-IUD', name: 'Pasang IUD', name_id: 'Pasang IUD' },
+          ],
+        })),
+        findExistingSurgery: jest.fn().mockResolvedValue(null),
+      },
+      surgeryService: { createSurgery: async (payload) => ({ id: 42, ...payload }) },
+      docboardService: {}, pushService: {}, rulesService: {}, now: () => NOW,
+    });
+
+    const preview = await service.preview({ mr_id: 'DRD1001', schedule_date: '2026-12-10' });
+    expect(preview.suggestions.operationTypeIds).toEqual([1]);
+    const result = await service.create({
+      mr_id: 'DRD1001', kind: 'surgery', schedule_date: '2026-12-10', schedule_time: '08:30',
+      location: 'rsia_melinda', operation_type_ids: preview.suggestions.operationTypeIds,
+      idempotency_key: 'sc-with-hidden-iud',
+    }, 'STAFF01');
+    expect(result.summary).toMatchObject({ operation_type_id: 1, operation_type_other: null });
+  });
+
+  test.each(['SC-IUD', 'SC + IUD'])(
+    'selects the combined %s operation once without adding its SC parent or a hidden IUD',
+    async (operation) => {
+      const service = new DrdDocBoardScheduleService({
+        repository: {
+          loadSnapshot: jest.fn().mockResolvedValue(canonicalSnapshot({
+            planning: { rencana: `Rencana ${operation} tgl. 10/12/2026` },
+            operationTypes: [
+              { id: 1, code: 'SC', name: 'Sectio Caesarea', name_id: 'Operasi Caesar' },
+              { id: 63, code: 'IUD', name: 'IUD Insertion/Removal', name_id: 'Pemasangan/Pelepasan IUD' },
+              { id: 92, code: 'SC-IUD', name: 'Sectio Caesarea with IUD insertion', name_id: 'SC dengan pemasangan IUD' },
+            ],
+          })),
+          findExistingSurgery: jest.fn().mockResolvedValue(null),
+        },
+        surgeryService: { createSurgery: async (payload) => ({ id: 43, ...payload }) },
+        docboardService: {}, pushService: {}, rulesService: {}, now: () => NOW,
+      });
+
+      const preview = await service.preview({ mr_id: 'DRD1001', schedule_date: '2026-12-10' });
+      expect(preview.options.operation_types.map((type) => type.code)).toEqual(['SC', 'SC-IUD']);
+      expect(preview.suggestions.operationTypeIds).toEqual([92]);
+      const result = await service.create({
+        mr_id: 'DRD1001', kind: 'surgery', schedule_date: '2026-12-10', schedule_time: '08:30',
+        location: 'rsia_melinda', operation_type_ids: preview.suggestions.operationTypeIds,
+        idempotency_key: 'combined-sc-iud',
+      }, 'STAFF01');
+      expect(result.summary).toMatchObject({ operation_type_id: 92, operation_type_other: null });
+    },
+  );
 
   test('keeps DocBoard procedure categories out of surgery choices and rejects bypass attempts', async () => {
     const operationTypes = [
