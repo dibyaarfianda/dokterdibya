@@ -14,6 +14,7 @@
     function playTap() {
         try {
             if (!tapSound) return;
+            tapSound.volume = 0.7;
             tapSound.currentTime = 0;
             const playback = tapSound.play();
             if (playback?.catch) playback.catch(function() {});
