@@ -1788,6 +1788,14 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
+            if (typeof window.savePlanningTerapiEdits !== 'function') {
+                throw new Error('Form resep belum siap. Muat ulang halaman sebelum menyimpan Planning.');
+            }
+            await window.savePlanningTerapiEdits(mrId);
+            if (stateManager.getState().currentMrId !== mrId) {
+                throw new Error('Kunjungan berubah. Buka kembali Planning yang ingin disimpan.');
+            }
+
             const result = await apiClient.saveSection(mrId, 'planning', data);
             console.log('[SundayClinic] Planning saved successfully:', result);
 

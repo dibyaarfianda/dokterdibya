@@ -13,7 +13,7 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-08-16-v19-edit-saved-therapy';
+window.PLANNING_HELPERS_VERSION = '2026-10-18-v20-save-all-planning-therapy';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 console.log('[Planning Helpers] DOM debug marker removed for production/mobile use');
@@ -747,7 +747,7 @@ async function deleteIndividualTindakan(itemId, itemName) {
  * Render tindakan items as a list with individual delete buttons
  * Fetches current billing tindakan items and displays them
  */
-async function renderTindakanItemsList() {
+async function renderTindakanItemsList(options = {}) {
     const container = document.getElementById('tindakan-items-container');
     if (!container) return;
 
@@ -758,23 +758,25 @@ async function renderTindakanItemsList() {
         const mrSlug = window.routeMrSlug;
         if (!mrSlug) return;
 
-        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!response.ok) {
-            container.innerHTML = '<p class="text-muted small">Belum ada tindakan dari billing.</p>';
-            return;
+        let billing = options.billing;
+        if (!billing) {
+            const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) {
+                if (!options.isCurrent || options.isCurrent()) container.innerHTML = '<p class="text-muted small">Belum ada tindakan dari billing.</p>';
+                return false;
+            }
+            const result = await response.json();
+            billing = result.data || {};
         }
-
-        const result = await response.json();
-        const billing = result.data || {};
+        if (options.isCurrent && !options.isCurrent()) return false;
         const tindakanItems = (billing.items || []).filter(item => item.item_type === 'tindakan');
         const isDraft = billing.status === 'draft';
 
         if (tindakanItems.length === 0) {
             container.innerHTML = '<p class="text-muted small">Belum ada tindakan. Klik "Input Tindakan" untuk menambahkan.</p>';
-            return;
+            return true;
         }
 
         const escapeHtmlLocal = (str) => {
@@ -806,10 +808,12 @@ async function renderTindakanItemsList() {
         }).join('');
 
         container.innerHTML = listHtml;
+        return true;
 
     } catch (error) {
         console.error('Error rendering tindakan items:', error);
-        container.innerHTML = '<p class="text-muted small">Gagal memuat daftar tindakan.</p>';
+        if (!options.isCurrent || options.isCurrent()) container.innerHTML = '<p class="text-muted small">Gagal memuat daftar tindakan.</p>';
+        return false;
     }
 }
 
@@ -1675,6 +1679,105 @@ async function deleteIndividualObat(itemId, itemName) {
     }
 }
 
+/** Save all changed prescription rows together, using the existing billing contract. */
+async function savePlanningTerapiEdits(mrSlug) {
+    const container = document.getElementById('terapi-items-container');
+    const edits = new Map();
+    for (const row of container?.querySelectorAll('.terapi-item[data-item-id]') || []) {
+        const itemId = Number(row.dataset.itemId);
+        const quantityInput = document.getElementById(`terapi-quantity-${itemId}`);
+        const caraPakaiInput = document.getElementById(`terapi-cara-pakai-${itemId}`);
+        if (!quantityInput || !caraPakaiInput) continue; // Read-only/confirmed prescription.
+        const quantity = Number(quantityInput.value);
+        if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 1000) {
+            quantityInput.focus();
+            throw new Error('Jumlah obat harus berupa angka bulat antara 1 dan 1000');
+        }
+        const caraPakai = caraPakaiInput.value.trim();
+        const quantityChanged = quantity !== Number(quantityInput.defaultValue);
+        const instructionsChanged = caraPakai !== caraPakaiInput.defaultValue.trim();
+        if (quantityChanged || instructionsChanged) {
+            edits.set(itemId, { quantity, caraPakai, quantityChanged, instructionsChanged });
+        }
+    }
+    if (!edits.size) return true;
+
+    const isCurrent = () => window.routeMrSlug === mrSlug &&
+        (!window.stateManager || window.stateManager.getState().currentMrId === mrSlug);
+    if (!mrSlug || !isCurrent()) throw new Error('Kunjungan berubah. Buka kembali Planning yang ingin disimpan.');
+    const token = await window.getToken();
+    if (!token) throw new Error('Sesi habis. Silakan login ulang.');
+
+    const endpoint = `/api/sunday-clinic/billing/${encodeURIComponent(mrSlug)}`;
+    const response = await fetch(endpoint, {
+        cache: 'no-store',
+        headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
+    });
+    if (!response.ok) throw new Error('Gagal memuat tagihan terbaru. Planning belum disimpan.');
+    const result = await response.json();
+    const billing = result.data;
+    if (!result.success || !billing || !Array.isArray(billing.items)) {
+        throw new Error('Gagal memuat resep terbaru. Planning belum disimpan.');
+    }
+    if (billing.status !== 'draft') {
+        throw new Error('Tagihan sudah dikunci. Muat ulang Planning sebelum mengubah resep.');
+    }
+    for (const itemId of edits.keys()) {
+        if (!billing.items.some(item => Number(item.id) === itemId && item.item_type === 'obat')) {
+            throw new Error('Daftar obat telah berubah. Muat ulang Planning sebelum menyimpan resep.');
+        }
+    }
+    const items = billing.items.map(item => {
+        const edit = edits.get(Number(item.id));
+        const itemData = item.item_data && typeof item.item_data === 'object' ? item.item_data : {};
+        return {
+            item_type: item.item_type,
+            item_code: item.item_code,
+            item_name: item.item_name,
+            quantity: edit?.quantityChanged ? edit.quantity : item.quantity,
+            item_data: edit?.instructionsChanged
+                ? { ...itemData, caraPakai: edit.caraPakai, latinSig: convertToLatinSig(edit.caraPakai) }
+                : itemData
+        };
+    });
+    if (!isCurrent()) throw new Error('Kunjungan berubah. Buka kembali Planning yang ingin disimpan.');
+    const saved = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ items, billingData: billing.billing_data || {} })
+    });
+    const savedResult = await saved.json();
+    if (!saved.ok || !savedResult.success) {
+        throw new Error(savedResult.message || 'Gagal menyimpan perubahan resep. Planning belum disimpan.');
+    }
+    // Read back uncached, then refresh both lists from one snapshot: billing replaces every item ID.
+    if (!isCurrent()) throw new Error('Resep tersimpan. Buka kembali kunjungan untuk melanjutkan Planning.');
+    const verifiedResponse = await fetch(endpoint, {
+        cache: 'no-store',
+        headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
+    });
+    if (!verifiedResponse.ok) throw new Error('Resep diterima, tetapi hasil penyimpanan belum termuat. Muat ulang sebelum melanjutkan Planning.');
+    const verifiedResult = await verifiedResponse.json();
+    const verifiedBilling = verifiedResult.data;
+    if (!verifiedResult.success || !Array.isArray(verifiedBilling?.items) ||
+        verifiedBilling.items.length !== items.length || !items.every((item, index) => {
+            const stored = verifiedBilling.items[index];
+            return stored.item_type === item.item_type && stored.item_name === item.item_name &&
+                (stored.item_code || null) === (item.item_code || null) && Number(stored.quantity) === Number(item.quantity) &&
+                (stored.item_data?.caraPakai || '') === (item.item_data.caraPakai || '') &&
+                (stored.item_data?.latinSig || '') === (item.item_data.latinSig || '');
+        })) {
+        throw new Error('Resep diterima, tetapi hasil penyimpanan belum sesuai. Muat ulang sebelum melanjutkan Planning.');
+    }
+    if (!isCurrent()) throw new Error('Resep tersimpan. Buka kembali kunjungan untuk melanjutkan Planning.');
+    const refreshOptions = { isCurrent, billing: verifiedBilling };
+    if (!await renderTerapiItemsList(refreshOptions) || !await renderTindakanItemsList(refreshOptions)) {
+        throw new Error('Resep tersimpan, tetapi daftar item belum termuat. Muat ulang sebelum melanjutkan Planning.');
+    }
+    refreshBillingIfActive();
+    return true;
+}
+
 async function updateIndividualObat(itemId, button) {
     const quantityInput = document.getElementById(`terapi-quantity-${itemId}`);
     const caraPakaiInput = document.getElementById(`terapi-cara-pakai-${itemId}`);
@@ -1791,20 +1894,21 @@ async function renderTerapiItemsList(options = {}) {
         const mrSlug = window.routeMrSlug;
         if (!mrSlug) return false;
 
-        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}${options.preserveEdits ? '?_t=' + Date.now() : ''}`, {
-            ...(options.preserveEdits ? {cache:'no-store'} : {}),
-            headers: { 'Authorization': `Bearer ${token}`, ...(options.preserveEdits ? {'Cache-Control':'no-cache'} : {}) }
-        });
-
-        if (!response.ok) {
-            if (!options.preserveEdits) container.innerHTML = '<p class="text-muted small">Belum ada obat dari billing.</p>';
-            return false;
+        let billing = options.billing;
+        if (!billing) {
+            const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}${options.preserveEdits ? '?_t=' + Date.now() : ''}`, {
+                ...(options.preserveEdits ? {cache:'no-store'} : {}),
+                headers: { 'Authorization': `Bearer ${token}`, ...(options.preserveEdits ? {'Cache-Control':'no-cache'} : {}) }
+            });
+            if (!response.ok) {
+                if (!options.preserveEdits && (!options.isCurrent || options.isCurrent())) container.innerHTML = '<p class="text-muted small">Belum ada obat dari billing.</p>';
+                return false;
+            }
+            const result = await response.json();
+            if (options.preserveEdits && !result.success) return false;
+            billing = result.data || {};
         }
-
-        const result = await response.json();
         if (options.isCurrent && !options.isCurrent()) return false;
-        if (options.preserveEdits && !result.success) return false;
-        const billing = result.data || {};
         const obatItems = (billing.items || []).filter(item => item.item_type === 'obat');
         const isDraft = billing.status === 'draft';
 
@@ -1851,17 +1955,11 @@ async function renderTerapiItemsList(options = {}) {
                                 <input type="number" class="form-control form-control-sm"
                                        id="terapi-quantity-${item.id}" min="1" max="1000" value="${quantity}">
                             </div>
-                            <div class="col-8 col-md-7">
+                            <div class="col-8 col-md-10">
                                 <label class="small text-muted mb-1" for="terapi-cara-pakai-${item.id}">Cara pakai</label>
                                 <input type="text" class="form-control form-control-sm"
                                        id="terapi-cara-pakai-${item.id}" value="${escapedCaraPakai}"
                                        placeholder="Contoh: 1x1 malam">
-                            </div>
-                            <div class="col-12 col-md-3 d-flex align-items-end mt-2 mt-md-0">
-                                <button type="button" class="btn btn-sm btn-outline-primary btn-block"
-                                        onclick="window.updateIndividualObat(${item.id}, this)">
-                                    <i class="fas fa-save mr-1"></i>Simpan
-                                </button>
                             </div>
                         </div>
                     ` : `
@@ -2012,6 +2110,7 @@ window.clearDraftTerapi = clearDraftTerapi;
 window.removeObatFromPlanning = removeObatFromPlanning;
 window.deleteIndividualObat = deleteIndividualObat;
 window.updateIndividualObat = updateIndividualObat;
+window.savePlanningTerapiEdits = savePlanningTerapiEdits;
 window.renderTerapiItemsList = renderTerapiItemsList;
 window.deleteIndividualTindakan = deleteIndividualTindakan;
 window.renderTindakanItemsList = renderTindakanItemsList;

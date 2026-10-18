@@ -304,6 +304,7 @@ export default {
                         <div id="terapi-items-container" class="mb-2">
                             <p class="text-muted small">Memuat daftar obat...</p>
                         </div>
+                        <small class="text-muted d-block mb-2">Perubahan jumlah dan cara pakai obat ikut disimpan saat menekan Simpan Planning.</small>
 
                         <!-- Textarea for custom entries (vitamins not in list, etc.) -->
                         <div${showPreviousControl ? ' class="sc-planning-reference-row"' : ''}>

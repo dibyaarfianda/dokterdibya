@@ -377,7 +377,7 @@ describe('staff panel stabilization sources', () => {
 
         expect(planningHelpers).toContain('id="terapi-quantity-${item.id}"');
         expect(planningHelpers).toContain('id="terapi-cara-pakai-${item.id}"');
-        expect(planningHelpers).toContain('window.updateIndividualObat(${item.id}, this)');
+        expect(planningHelpers).toContain('window.savePlanningTerapiEdits = savePlanningTerapiEdits;');
         expect(planningHelpers).toContain('async function updateIndividualObat(itemId, button)');
         expect(planningHelpers).toContain("method: 'POST'");
         expect(planningHelpers).toContain('billingData: billing.billing_data || {}');
