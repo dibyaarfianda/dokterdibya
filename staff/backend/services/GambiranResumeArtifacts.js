@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const AdmZip = require('adm-zip');
 
 const WIB_OFFSET = '+07:00';
@@ -284,10 +285,10 @@ function buildTimeline(snapshot) {
 function formatWib(value) {
   const epoch = Date.parse(value || '');
   if (!Number.isFinite(epoch)) return 'Waktu tidak tersedia';
-  return new Intl.DateTimeFormat('id-ID', {
+  return DibyaDateTime.dateTime(new Date(epoch), {
     timeZone: 'Asia/Jakarta', day: '2-digit', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-  }).format(new Date(epoch)).replace(' pukul ', ' ') + ' WIB';
+  }).replace(' pukul ', ' ') + ' WIB';
 }
 
 function formatScalar(value) {

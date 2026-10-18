@@ -32,7 +32,7 @@ function formatTroubleshootingDate(value) {
     if (!value) return '-';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleString('id-ID', {
+    return DibyaDateTime.dateTime(date, {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -101,7 +101,7 @@ export async function loadTroubleshootingReports() {
         const reports = Array.isArray(result.data) ? result.data : [];
         renderTroubleshootingReports(reports);
         if (totalEl) totalEl.textContent = String(result.total ?? reports.length);
-        if (loadedEl) loadedEl.textContent = new Date().toLocaleString('id-ID');
+        if (loadedEl) loadedEl.textContent = DibyaDateTime.dateTime(new Date());
         setTroubleshootingStatus(
             reports.length ? 'Menampilkan laporan bug/error pasien terbaru.' : 'Belum ada laporan bug/error pasien.',
             reports.length ? 'success' : 'secondary'

@@ -69,7 +69,7 @@ function frontend() {
     const root = { isConnected: true, dataset: { planningMrId: 'DRD200' }, querySelector: () => panel };
     const apiClient = { request: jest.fn() };
     const escapeHtml = value => String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-    const context = { apiClient, stateManager: { getState: () => state }, hasPermission: async () => false, escapeHtml, Date };
+    const context = { DibyaDateTime: require('../../../../public/scripts/date-time-format'), apiClient, stateManager: { getState: () => state }, hasPermission: async () => false, escapeHtml, Date };
     vm.runInNewContext(source, context, { filename });
     return { ...context, panel, state, root };
 }
@@ -83,7 +83,7 @@ describe('SC schedule reference under Planning Rencana', () => {
         await f.loadPlannedSc(f.state, f.root);
         expect(f.apiClient.request).toHaveBeenCalledWith(expect.stringMatching(/^\/api\/sunday-clinic\/records\/DRD200\/planned-sc\?_t=/), expect.objectContaining({ method: 'GET', cache: 'no-store' }));
         expect(f.panel.hidden).toBe(false);
-        expect(f.panel.innerHTML).toContain('22 Oktober 2026');
+        expect(f.panel.innerHTML).toContain('22-10-2026');
         expect(f.panel.innerHTML).toContain('16:00 WIB');
         expect(f.panel.innerHTML).toContain('RSIA Melinda');
         expect(f.panel.innerHTML).toContain('SC + MOW');
@@ -110,7 +110,7 @@ describe('SC schedule reference under Planning Rencana', () => {
             navigate(f);
             resolve({ success: true, data: [schedule] });
             await pending;
-            expect(f.panel.innerHTML).not.toContain('22 Oktober 2026');
+            expect(f.panel.innerHTML).not.toContain('22-10-2026');
         }
     });
 
@@ -119,7 +119,7 @@ describe('SC schedule reference under Planning Rencana', () => {
         const html = f.plannedScMarkup([{ ...schedule, operation: '<img src=x onerror=alert(1)>' }]);
         expect(html).toContain('&lt;img');
         expect(html).not.toContain('<img');
-        expect(html).toContain('22 Oktober 2026');
+        expect(html).toContain('22-10-2026');
     });
 
     test('keeps the latest refresh if a prior request finishes later', async () => {
@@ -131,8 +131,8 @@ describe('SC schedule reference under Planning Rencana', () => {
         await f.loadPlannedSc(f.state, f.root);
         resolveOld({ success: true, data: [schedule] });
         await old;
-        expect(f.panel.innerHTML).toContain('23 Oktober 2026');
-        expect(f.panel.innerHTML).not.toContain('22 Oktober 2026');
+        expect(f.panel.innerHTML).toContain('23-10-2026');
+        expect(f.panel.innerHTML).not.toContain('22-10-2026');
     });
 });
 

@@ -719,7 +719,7 @@
             }
 
             tbody.innerHTML = data.data.map(patient => {
-                const regDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
+                const regDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return DibyaDateTime.date(d); })() : '-';
 
                 return `
                     <tr>
@@ -1077,14 +1077,14 @@
         if (!value) return '-';
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) return escapeHtmlSafe(value);
-        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+        return DibyaDateTime.dateTime(d);
     }
 
     function formatHplDate(value) {
         if (!value) return '-';
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) return escapeHtmlSafe(value);
-        return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+        return DibyaDateTime.date(d);
     }
 
     function renderHplRiskRows(items, tbodyId, riskType) {
@@ -1186,7 +1186,7 @@
     function formatPatientTableDate(value) {
         const date = getPatientTableDateValue(value);
         if (!date) return '-';
-        return `${date.getDate().toString().padStart(2,'0')}/${(date.getMonth()+1).toString().padStart(2,'0')}/${date.getFullYear().toString().slice(-2)}`;
+        return DibyaDateTime.date(date);
     }
 
     function getPatientTableDateSort(value) {
@@ -1479,7 +1479,7 @@
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
             const hplDate = new Date(patient.hpl);
-            const hplFormatted = `${hplDate.getDate().toString().padStart(2,'0')}/${(hplDate.getMonth()+1).toString().padStart(2,'0')}/${hplDate.getFullYear().toString().slice(-2)}`;
+            const hplFormatted = DibyaDateTime.date(hplDate);
             const weeksPregnant = Math.floor(patient.days_pregnant / 7);
             let bgClass = '', textClass = '', icon = '';
             if (patient.days_pregnant >= 280) { bgClass = 'bg-danger'; textClass = 'text-white'; icon = '<i class="fas fa-exclamation-triangle mr-1"></i>'; }
@@ -2079,7 +2079,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                             </tr>
                                             <tr>
                                                 <th>Tanggal Lahir</th>
-                                                <td>${patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {year: 'numeric', month: 'long', day: 'numeric'}) : '-'}</td>
+                                                <td>${patient.birth_date ? DibyaDateTime.date(new Date(patient.birth_date), {year: 'numeric', month: 'long', day: 'numeric'}) : '-'}</td>
                                             </tr>
                                             <tr>
                                                 <th>Usia</th>
@@ -2115,14 +2115,14 @@ Apakah Anda yakin ingin melanjutkan?`;
                                             </tr>
                                             <tr>
                                                 <th>Tgl Registrasi</th>
-                                                <td>${new Date(patient.registration_date).toLocaleString('id-ID', {
+                                                <td>${DibyaDateTime.dateTime(new Date(patient.registration_date), {
                                                     year: 'numeric', month: 'long', day: 'numeric',
                                                     hour: '2-digit', minute: '2-digit'
                                                 })}</td>
                                             </tr>
                                             <tr>
                                                 <th>Terakhir Update</th>
-                                                <td>${patient.updated_at ? new Date(patient.updated_at).toLocaleString('id-ID', {
+                                                <td>${patient.updated_at ? DibyaDateTime.dateTime(new Date(patient.updated_at), {
                                                     year: 'numeric', month: 'long', day: 'numeric',
                                                     hour: '2-digit', minute: '2-digit'
                                                 }) : '-'}</td>
@@ -2148,7 +2148,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                             </tr>
                                             <tr>
                                                 <th>Tanggal Lahir</th>
-                                                <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
+                                                <td>${intake.payload.dob ? DibyaDateTime.date(new Date(intake.payload.dob), {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
                                             </tr>
                                             <tr>
                                                 <th>Usia</th>
@@ -2196,7 +2196,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                             </tr>
                                             <tr>
                                                 <th>HPHT</th>
-                                                <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
+                                                <td>${intake.payload.lmp ? DibyaDateTime.date(new Date(intake.payload.lmp), {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
                                             </tr>
                                             <tr>
                                                 <th>HPL</th>
@@ -2223,8 +2223,8 @@ Apakah Anda yakin ingin melanjutkan?`;
                                 </div>
                                 ` : ''}
                                 <div class="mt-2 text-muted small">
-                                    <i class="far fa-clock"></i> Diisi: ${new Date(intake.createdAt).toLocaleString('id-ID')}
-                                    ${intake.updatedAt ? ` | Diperbarui: ${new Date(intake.updatedAt).toLocaleString('id-ID')}` : ''}
+                                    <i class="far fa-clock"></i> Diisi: ${DibyaDateTime.dateTime(new Date(intake.createdAt))}
+                                    ${intake.updatedAt ? ` | Diperbarui: ${DibyaDateTime.dateTime(new Date(intake.updatedAt))}` : ''}
                                 </div>
                                 ` : '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Belum ada formulir rekam medis awal</div>'}
                             </div>
@@ -2332,7 +2332,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                             </thead>
                             <tbody>
                                 ${sortedRecords.map(record => {
-                                    const visitDate = record.visit_date ? new Date(record.visit_date).toLocaleDateString('id-ID', {
+                                    const visitDate = record.visit_date ? DibyaDateTime.date(new Date(record.visit_date), {
                                         weekday: 'short',
                                         day: 'numeric',
                                         month: 'short',
@@ -2627,8 +2627,8 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             tbody.innerHTML = filteredData.map(d => {
                 const date = new Date(d.created_at);
-                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = DibyaDateTime.date(date, { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = DibyaDateTime.time(date, { hour: '2-digit', minute: '2-digit' });
 
                 let typeBadge = '';
                 let qtyClass = '';
@@ -2752,8 +2752,8 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             tbody.innerHTML = data.map(d => {
                 const date = new Date(d.timestamp);
-                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = DibyaDateTime.date(date, { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = DibyaDateTime.time(date, { hour: '2-digit', minute: '2-digit' });
 
                 let actionBadge = '<span class="badge badge-secondary">' + d.action + '</span>';
                 if (d.action === 'Login') {
@@ -2992,8 +2992,8 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             tbody.innerHTML = data.map(d => {
                 const date = new Date(d.timestamp);
-                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = DibyaDateTime.date(date, { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = DibyaDateTime.time(date, { hour: '2-digit', minute: '2-digit' });
 
                 let typeBadge = '<span class="badge badge-secondary">' + escapePatientActivityHtml(d.type || '-') + '</span>';
                 if (d.type === 'booking') {
@@ -3173,8 +3173,8 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             tbody.innerHTML = data.map(d => {
                 const date = new Date(d.timestamp);
-                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = DibyaDateTime.date(date, { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = DibyaDateTime.time(date, { hour: '2-digit', minute: '2-digit' });
                 const session = escapeGuestActivityHtml(d.session_id || '-');
                 const shortSession = session.length > 18 ? session.slice(0, 18) + '...' : session;
                 const path = escapeGuestActivityHtml(d.page_path || '-');
@@ -3351,7 +3351,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 html += '<table class="table table-sm table-borderless mb-0"><tbody>';
                 result.loginTrend.forEach(function(d) {
                     var dt = new Date(d.date);
-                    var dayStr = dt.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' });
+                    var dayStr = DibyaDateTime.date(dt, { weekday: 'short', day: '2-digit', month: 'short' });
                     var pct = maxLogin > 0 ? Math.round((d.count / maxLogin) * 100) : 0;
                     html += '<tr>' +
                         '<td class="py-1" style="width:100px;"><small>' + dayStr + '</small></td>' +
@@ -3605,7 +3605,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             } else {
                 let html = '<table class="table table-sm table-bordered mb-0"><thead class="bg-light"><tr><th>Batch</th><th>Supplier</th><th class="text-center">Sisa</th><th>Harga Beli</th><th>Kadaluarsa</th></tr></thead><tbody>';
                 batches.forEach(b => {
-                    const expDate = b.expiry_date ? new Date(b.expiry_date).toLocaleDateString('id-ID') : '-';
+                    const expDate = b.expiry_date ? DibyaDateTime.date(new Date(b.expiry_date)) : '-';
                     const daysLeft = b.expiry_date ? Math.ceil((new Date(b.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
                     let expBadge = '';
                     if (daysLeft !== null) {

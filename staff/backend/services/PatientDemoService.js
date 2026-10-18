@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -42,15 +43,15 @@ function buildBaseline(now = wibNow()) {
     const source = JSON.parse(fs.readFileSync(BASELINE_PATH, 'utf8'));
     const state = materializeRelativeDates(source, now);
     const edd = new Date(`${state.pregnancy.edd}T00:00:00+07:00`);
-    state.pregnancy.eddFormatted = new Intl.DateTimeFormat('id-ID', {
+    state.pregnancy.eddFormatted = DibyaDateTime.date(edd, {
         day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta'
-    }).format(edd);
+    });
     state.pregnancy.daysUntilEdd = Math.max(0, Math.ceil((edd.getTime() - Date.now()) / 86400000));
     state.bookings.forEach((booking) => {
         const date = new Date(`${booking.date}T00:00:00+07:00`);
-        booking.dateFormatted = new Intl.DateTimeFormat('id-ID', {
+        booking.dateFormatted = DibyaDateTime.date(date, {
             weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Jakarta'
-        }).format(date);
+        });
     });
     return validateState(state);
 }

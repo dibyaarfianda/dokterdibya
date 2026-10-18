@@ -28,7 +28,7 @@
         try {
             var parts = String(ymd).split('-');
             var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-            return d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            return DibyaDateTime.date(d, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         } catch (e) { return ymd; }
     }
 

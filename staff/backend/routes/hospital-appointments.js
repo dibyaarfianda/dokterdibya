@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * Hospital Appointments Routes
  * Handles booking for hospital practices (non-Sunday clinics)
@@ -137,7 +138,7 @@ router.get('/schedules', verifyPatientToken, async (req, res) => {
                             hospitalColor: hospital.color,
                             startTime: schedule.start_time.substring(0, 5),
                             endTime: schedule.end_time.substring(0, 5),
-                            formatted: `${dayNames[dayOfWeek]}, ${checkDate.getDate()} ${checkDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
+                            formatted: DibyaDateTime.date(checkDate, { weekday: 'long', day: '2-digit' }),
                             isActive: schedule.is_active === 1
                         });
                     }
@@ -168,7 +169,7 @@ router.get('/schedules', verifyPatientToken, async (req, res) => {
                         hospitalColor: hospital.color,
                         startTime: schedule.start_time.substring(0, 5),
                         endTime: schedule.end_time.substring(0, 5),
-                        formatted: `${dayNames[dayOfWeek]}, ${checkDate.getDate()} ${checkDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
+                        formatted: DibyaDateTime.date(checkDate, { weekday: 'long', day: '2-digit' }),
                         isActive: schedule.is_active === 1
                     });
                 }
@@ -270,7 +271,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
         ]);
 
         const hospital = hospitalInfo[location] || { name: location };
-        const formattedDate = bookingDate.toLocaleDateString('id-ID', {
+        const formattedDate = DibyaDateTime.date(bookingDate, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
@@ -321,7 +322,7 @@ router.get('/patient', verifyPatientToken, async (req, res) => {
                 ...apt,
                 hospitalName: hospital.name,
                 hospitalColor: hospital.color,
-                dateFormatted: date.toLocaleDateString('id-ID', {
+                dateFormatted: DibyaDateTime.date(date, {
                     weekday: 'long',
                     day: 'numeric',
                     month: 'long',

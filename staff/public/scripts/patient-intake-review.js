@@ -642,13 +642,13 @@ function formatDate(value) {
     if (!value) return '-';
     const date = new Date(value);
     if (Number.isNaN(date.valueOf())) return value;
-    return new Intl.DateTimeFormat('id-ID', {
+    return DibyaDateTime.dateTime(date, {
         day: 'numeric',
         month: 'long',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-    }).format(date);
+    });
 }
 
 function formatStatus(status) {

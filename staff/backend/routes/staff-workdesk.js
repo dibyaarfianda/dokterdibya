@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
@@ -203,7 +204,7 @@ function formatIntegrationField(value, formatter) {
     if (formatKey === 'date_id') {
         const dateValue = parseValidDate(value);
         if (!dateValue) return toScalarString(value);
-        return dateValue.toLocaleDateString('id-ID', {
+        return DibyaDateTime.date(dateValue, {
             day: '2-digit',
             month: 'short',
             year: 'numeric',
@@ -214,7 +215,7 @@ function formatIntegrationField(value, formatter) {
     if (formatKey === 'datetime_id') {
         const dateValue = parseValidDate(value);
         if (!dateValue) return toScalarString(value);
-        return dateValue.toLocaleString('id-ID', {
+        return DibyaDateTime.dateTime(dateValue, {
             day: '2-digit',
             month: 'short',
             year: 'numeric',

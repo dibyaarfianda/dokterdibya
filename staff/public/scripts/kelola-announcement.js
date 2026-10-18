@@ -299,7 +299,7 @@ function getPriorityLabel(priority) {
 
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(date, {
         day: 'numeric',
         month: 'long',
         year: 'numeric',

@@ -62,7 +62,8 @@ function formatDate(value, includeTime = false) {
             : rawValue;
     const date = new Date(normalized);
     if (Number.isNaN(date.getTime())) return String(value);
-    return new Intl.DateTimeFormat('id-ID', {
+    const format = includeTime ? DibyaDateTime.dateTime : DibyaDateTime.date;
+    return format(date, {
         timeZone: 'Asia/Jakarta',
         weekday: includeTime ? undefined : 'long',
         day: '2-digit',
@@ -70,7 +71,7 @@ function formatDate(value, includeTime = false) {
         year: 'numeric',
         hour: includeTime ? '2-digit' : undefined,
         minute: includeTime ? '2-digit' : undefined
-    }).format(date);
+    });
 }
 
 function getTodayWib(now = new Date()) {

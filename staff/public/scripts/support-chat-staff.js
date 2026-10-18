@@ -519,7 +519,7 @@
         if (diff < 60000) return 'Baru saja';
         if (diff < 3600000) return Math.floor(diff / 60000) + ' mnt lalu';
         if (diff < 86400000) return Math.floor(diff / 3600000) + ' jam lalu';
-        return date.toLocaleDateString('id-ID');
+        return DibyaDateTime.date(date);
     }
 
     function showToast(msg, type) {

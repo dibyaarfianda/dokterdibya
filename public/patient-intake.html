@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="utf-8">
@@ -1437,7 +1439,7 @@
                 indicator.style.cssText = 'position: fixed; top: 70px; right: 1rem; background: rgba(16, 185, 129, 0.95); color: white; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(16, 185, 129, 1);';
                 document.body.appendChild(indicator);
             }
-            indicator.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            indicator.textContent = 'Draft tersimpan ' + DibyaDateTime.time(new Date(), { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             indicator.style.display = 'block';
         }
 
@@ -1446,7 +1448,7 @@
             const indicator = document.createElement('div');
             const savedDate = new Date(timestamp);
             indicator.style.cssText = 'position: fixed; top: 70px; right: 1rem; background: rgba(0, 102, 255, 0.95); color: white; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(0, 102, 255, 1);';
-            indicator.textContent = 'Draft dipulihkan dari ' + savedDate.toLocaleString('id-ID', {
+            indicator.textContent = 'Draft dipulihkan dari ' + DibyaDateTime.dateTime(savedDate, {
                 day: '2-digit',
                 month: '2-digit',
                 hour: '2-digit',

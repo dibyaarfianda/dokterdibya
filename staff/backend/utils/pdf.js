@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * PDF Service
  * Generate professional medical receipts and reports
@@ -55,7 +56,7 @@ class PDFService {
                 doc.fontSize(10).font('Helvetica');
                 
                 doc.text(`No. Kwitansi: ${String(visit.id).padStart(6, '0')}`, 50, doc.y);
-                doc.text(`Tanggal: ${visitDate.toLocaleDateString('id-ID')}`, 350, doc.y - 12);
+                doc.text(`Tanggal: ${DibyaDateTime.date(visitDate)}`, 350, doc.y - 12);
                 doc.moveDown();
                 
                 // Patient info
@@ -186,7 +187,7 @@ class PDFService {
                 doc.text(`Nama: ${patient.full_name}`);
                 doc.text(`ID Pasien: ${patient.id}`);
                 if (patient.birth_date) {
-                    doc.text(`Tanggal Lahir: ${new Date(patient.birth_date).toLocaleDateString('id-ID')}`);
+                    doc.text(`Tanggal Lahir: ${DibyaDateTime.date(new Date(patient.birth_date))}`);
                 }
                 if (patient.age) doc.text(`Usia: ${patient.age} tahun`);
                 if (patient.whatsapp) doc.text(`WhatsApp: ${patient.whatsapp}`);
@@ -205,7 +206,7 @@ class PDFService {
                         const visitDate = new Date(visit.visit_date);
                         
                         doc.fontSize(11).font('Helvetica-Bold')
-                           .text(`${index + 1}. ${visitDate.toLocaleDateString('id-ID')}`);
+                           .text(`${index + 1}. ${DibyaDateTime.date(visitDate)}`);
                         
                         doc.fontSize(10).font('Helvetica');
                         doc.text(`   Dokter: ${visit.doctor_name || 'Dr. Dibya'}`);
@@ -219,7 +220,7 @@ class PDFService {
                 // Footer
                 doc.moveDown();
                 doc.fontSize(9).font('Helvetica')
-                   .text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, { align: 'center' });
+                   .text(`Dicetak pada: ${DibyaDateTime.dateTime(new Date())}`, { align: 'center' });
                 
                 doc.end();
                 

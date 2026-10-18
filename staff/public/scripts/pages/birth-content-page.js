@@ -29,7 +29,7 @@ function formatBirthDate(value) {
     if (!value) return '-';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(date, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
@@ -178,7 +178,7 @@ export async function loadBirthTestimonialsList() {
 
         const cards = items.map(item => {
             const submittedAt = item.patient_testimonial_submitted_at
-                ? `${new Date(item.patient_testimonial_submitted_at).toLocaleString('id-ID', {
+                ? `${DibyaDateTime.dateTime(new Date(item.patient_testimonial_submitted_at), {
                     dateStyle: 'medium',
                     timeStyle: 'short',
                     timeZone: 'Asia/Jakarta'

@@ -40,7 +40,7 @@
         if (!ymd) return '-';
         var parts = String(ymd).split('-');
         if (parts.length !== 3) return ymd;
-        return parts[2] + '/' + parts[1] + '/' + parts[0];
+        return parts[2] + '-' + parts[1] + '-' + parts[0];
     }
 
     function todayLocalDate() {

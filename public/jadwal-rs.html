@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off" data-portal-nav-active="jadwal">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -333,7 +335,7 @@
                 try {
                     var schedules = await fetchSchedules();
                     renderSchedules(schedules);
-                    updatedEl.textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                    updatedEl.textContent = DibyaDateTime.date(new Date(), { day: 'numeric', month: 'short' });
                 } catch (error) {
                     console.error('[JadwalRS] Failed to load schedules:', error);
                     renderSchedules(getDemoSchedules());

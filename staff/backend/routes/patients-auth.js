@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
@@ -2420,7 +2421,7 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
             success: true,
             data: {
                 edd: edd,
-                eddFormatted: new Date(edd).toLocaleDateString('id-ID', {
+                eddFormatted: DibyaDateTime.date(new Date(edd), {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric'

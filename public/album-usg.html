@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -728,7 +730,7 @@
 
             gallery.innerHTML = window.filteredImages.map((img, index) => {
                 const date = new Date(img.published_at || img.created_at);
-                const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const dateStr = DibyaDateTime.date(date, { day: 'numeric', month: 'short', year: 'numeric' });
                 const isNew = !img.first_viewed_at;
                     const isThumbnail = window.customThumbnailId && parseInt(window.customThumbnailId, 10) === img.id;
 
@@ -781,7 +783,7 @@
         // Update lightbox content
         function updateLightboxContent(img) {
             const date = new Date(img.published_at || img.created_at);
-            const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const dateStr = DibyaDateTime.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
             const lightboxImage = document.getElementById('lightbox-img');
             lightboxImage.src = img.file_url;

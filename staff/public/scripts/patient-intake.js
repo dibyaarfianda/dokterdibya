@@ -720,7 +720,7 @@ function updateEDDFromLMP() {
     if (eddDateIntakeField) {
         const eddDate = new Date(formatted);
         const options = { day: 'numeric', month: 'long', year: 'numeric' };
-        const formattedDisplay = eddDate.toLocaleDateString('id-ID', options);
+        const formattedDisplay = DibyaDateTime.date(eddDate, options);
         eddDateIntakeField.value = formattedDisplay;
     }
 
@@ -1275,7 +1275,7 @@ function showVerificationStatus(verificationData) {
     
     if (verificationSection && verificationDetails && reviewerStamp) {
         const reviewDate = new Date(verificationData.reviewed_at);
-        const formattedDate = reviewDate.toLocaleDateString('id-ID', {
+        const formattedDate = DibyaDateTime.date(reviewDate, {
             day: 'numeric',
             month: 'long',
             year: 'numeric',

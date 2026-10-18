@@ -1,4 +1,5 @@
 'use strict';
+const DibyaDateTime = require('../../../../public/scripts/date-time-format.js');
 
 const {
     db,
@@ -270,7 +271,7 @@ async function postResumeMedisSendWhatsapp(req, res, next) {
 Berikut adalah Resume Medis Anda dari Klinik Privat Dr. Dibya:
 
 No. MR: ${mrId}
-Tanggal: ${new Date().toLocaleDateString('id-ID')}
+Tanggal: ${DibyaDateTime.date(new Date())}
 
 Resume medis Anda dapat diunduh melalui link berikut (berlaku 24 jam):
 ${pdfUrl}

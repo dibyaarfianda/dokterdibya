@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * WhatsApp Service
  * Supports multiple methods:
@@ -301,7 +302,7 @@ ${this.clinicName}`;
     async sendSurgeryConfirmation(surgery, phone) {
         const locName = WhatsAppService.LOCATION_NAMES[surgery.location] || surgery.location;
         const dateObj = new Date(surgery.surgery_date);
-        const dateStr = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const dateStr = DibyaDateTime.date(dateObj, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const timeStr = surgery.surgery_time ? surgery.surgery_time.substring(0, 5) : '';
 
         const message = `Yth. ${surgery.patient_name},\n\n` +

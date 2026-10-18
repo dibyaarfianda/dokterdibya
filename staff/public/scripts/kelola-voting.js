@@ -32,7 +32,7 @@
         if (!value) return '-';
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) return '-';
-        return d.toLocaleString('id-ID', {
+        return DibyaDateTime.dateTime(d, {
             year: 'numeric',
             month: 'short',
             day: '2-digit',

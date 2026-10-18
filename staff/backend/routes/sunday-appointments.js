@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const express = require('express');
 const { formatDateLocal } = require('../utils/date');
 const router = express.Router();
@@ -149,7 +150,7 @@ function normalizeAppointmentDate(value) {
 function formatAppointmentDateId(value, options = {}) {
     const dateOnly = normalizeAppointmentDate(value);
     if (!dateOnly) return '-';
-    return new Date(`${dateOnly}T12:00:00+07:00`).toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(new Date(`${dateOnly}T12:00:00+07:00`), {
         timeZone: 'Asia/Jakarta',
         ...options
     });
@@ -287,7 +288,7 @@ router.get('/practice-dates', verifyStaffToken, async (req, res) => {
             return {
                 session: setting.session, name: setting.name, dayOfWeek: setting.dayOfWeek,
                 date: date ? formatDateLocal(date) : null,
-                formatted: date ? date.toLocaleDateString('id-ID', {
+                formatted: date ? DibyaDateTime.date(date, {
                     timeZone: 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
                 }) : null
             };
@@ -309,7 +310,7 @@ router.get('/sundays', verifyPatientToken, async (req, res) => {
         const practiceDates = getNextPracticeDates(configuredDays, 8, 14);
         const formattedSundays = practiceDates.map(date => ({
             date: formatDateLocal(date),
-            formatted: date.toLocaleDateString('id-ID', {
+            formatted: DibyaDateTime.date(date, {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
@@ -457,7 +458,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
             const existingAppt = patientExisting[0];
             const existingDate = new Date(existingAppt.appointment_date);
             return res.status(409).json({ 
-                message: `Anda sudah memiliki janji temu di Klinik Privat pada ${existingDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} sesi ${getSessionLabelFromSettings(sessionSettings, existingAppt.session)}. Anda hanya dapat membooking 1 slot. Silakan batalkan janji temu yang ada jika ingin mengubah jadwal.`
+                message: `Anda sudah memiliki janji temu di Klinik Privat pada ${DibyaDateTime.date(existingDate, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} sesi ${getSessionLabelFromSettings(sessionSettings, existingAppt.session)}. Anda hanya dapat membooking 1 slot. Silakan batalkan janji temu yang ada jika ingin mengubah jadwal.`
             });
         }
         
@@ -532,7 +533,7 @@ router.post('/book', verifyPatientToken, async (req, res) => {
             status: bookingStatus,
             requiresConfirmation,
             details: {
-                date: appointmentDate.toLocaleDateString('id-ID', {
+                date: DibyaDateTime.date(appointmentDate, {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -635,7 +636,7 @@ router.get('/patient', verifyPatientToken, async (req, res) => {
                     startDateTime = start.toISOString();
                     const arrival = new Date(start.getTime() - (15 * 60 * 1000));
                     arrivalTime = arrival.toISOString();
-                    arrivalTimeFormatted = arrival.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    arrivalTimeFormatted = DibyaDateTime.time(arrival, { hour: '2-digit', minute: '2-digit' });
                     isPast = start < new Date();
                 }
             }
@@ -753,7 +754,7 @@ router.post('/:id/trigger-confirmation-popup', verifyStaffToken, async (req, res
 
         try {
             const appointmentDate = new Date(appointment.appointment_date);
-            const formattedDate = appointmentDate.toLocaleDateString('id-ID', {
+            const formattedDate = DibyaDateTime.date(appointmentDate, {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',
@@ -1396,7 +1397,7 @@ router.get('/list', verifyStaffToken, async (req, res) => {
                 ...apt,
                 patientAge,
                 patientBirthDate: birthIso,
-                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                dateFormatted: DibyaDateTime.date(new Date(apt.appointment_date), {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -1459,7 +1460,7 @@ router.get('/patient-by-id', verifyStaffToken, async (req, res) => {
 
             return {
                 ...apt,
-                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                dateFormatted: DibyaDateTime.date(new Date(apt.appointment_date), {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
@@ -1544,7 +1545,7 @@ router.put('/:id/status', verifyStaffToken, async (req, res) => {
         // Create patient notification based on status change
         try {
             const appointmentDate = new Date(appointment.appointment_date);
-            const formattedDate = appointmentDate.toLocaleDateString('id-ID', {
+            const formattedDate = DibyaDateTime.date(appointmentDate, {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',

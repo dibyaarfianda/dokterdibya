@@ -106,7 +106,7 @@ function renderInvoiceRows(invoices) {
         const rawDate = invoice.visit_date || invoice.created_at;
         const parsedDate = rawDate ? new Date(rawDate) : null;
         const visitDate = parsedDate && !Number.isNaN(parsedDate.getTime())
-            ? parsedDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+            ? DibyaDateTime.date(parsedDate, { day: 'numeric', month: 'short', year: 'numeric' })
             : '-';
         const amount = new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -119,7 +119,7 @@ function renderInvoiceRows(invoices) {
             || (statusValue === 'paid' ? invoice.last_modified_by : '');
         const cancelledDate = invoice.cancelled_at ? new Date(invoice.cancelled_at) : null;
         const cancelledAt = cancelledDate && !Number.isNaN(cancelledDate.getTime())
-            ? cancelledDate.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+            ? DibyaDateTime.dateTime(cancelledDate, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
             : '';
         const statusBy = statusValue === 'cancelled'
             ? `<small class="text-danger d-block">Alasan: ${escapeHtml(invoice.cancellation_reason || '-')}</small>

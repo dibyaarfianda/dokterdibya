@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -2688,12 +2690,12 @@
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return '-';
         if (window.matchMedia('(max-width: 1000px)').matches) {
-            return date.toLocaleDateString('id-ID', {
+            return DibyaDateTime.date(date, {
                 day: '2-digit',
                 month: 'short'
             });
         }
-        return date.toLocaleString('id-ID', {
+        return DibyaDateTime.dateTime(date, {
             day: '2-digit',
             month: 'short',
             hour: '2-digit',
@@ -3256,7 +3258,7 @@
     }
 
     function formatTime(value) {
-        return new Date(value).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return DibyaDateTime.time(new Date(value), { hour: '2-digit', minute: '2-digit' });
     }
 
     function formatRoomTime(value) {
@@ -3265,7 +3267,7 @@
         const now = new Date();
         const sameDay = date.toDateString() === now.toDateString();
         if (sameDay) return formatTime(value);
-        return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        return DibyaDateTime.date(date, { day: '2-digit', month: 'short' });
     }
 
     function getInitials(name) {
@@ -3282,7 +3284,7 @@
 
     function formatDateDivider(value) {
         const d = new Date(value);
-        return d.toLocaleDateString('id-ID', {
+        return DibyaDateTime.date(d, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',

@@ -148,7 +148,7 @@ function formatDate(dateString) {
     if (diffHours < 24) return `${diffHours} jam yang lalu`;
     if (diffDays < 7) return `${diffDays} hari yang lalu`;
 
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(date, {
         day: 'numeric',
         month: 'long',
         year: 'numeric'

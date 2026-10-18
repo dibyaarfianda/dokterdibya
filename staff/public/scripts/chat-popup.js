@@ -1769,8 +1769,8 @@ import { ROLE_IDS } from './role-constants.js';
       }
 
       const time = timestamp
-        ? new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' })
-        : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
+        ? DibyaDateTime.time(new Date(timestamp), { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' })
+        : DibyaDateTime.time(new Date(), { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
 
       const isSelf = type === 'sent';
       const isBlockStart = lastSender !== userName;

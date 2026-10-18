@@ -838,7 +838,7 @@ export default {
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
+        return `${day}-${month}-${year}`;
     },
 
     /**
@@ -1672,15 +1672,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (lmpInput) {
         // Function to format date in Indonesian style
         function formatIndonesianDate(date) {
-            const months = [
-                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-            ];
-            const day = date.getDate();
-            const month = months[date.getMonth()];
-            const year = date.getFullYear();
-            return `${day} ${month} ${year}`;
-        }
+        return DibyaDateTime.date(date);
+    }
 
         // Calculate EDD and GA when LMP changes
         lmpInput.addEventListener('change', function(e) {

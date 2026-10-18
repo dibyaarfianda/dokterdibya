@@ -538,7 +538,7 @@ export default {
 
                 <div class="mt-3 d-flex justify-content-between align-items-center">
                     <div class="text-muted small" id="usg-status">
-                        ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(usg.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
+                        ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${DibyaDateTime.dateTime(new Date(usg.saved_at))}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
                     </div>
                     <button class="btn btn-primary" id="usg-save">
                         <i class="fas fa-save"></i> Simpan
@@ -733,7 +733,7 @@ export default {
                 // Update UI
                 const statusEl = document.getElementById('usg-status');
                 if (statusEl) {
-                    statusEl.innerHTML = `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date().toLocaleString('id-ID')}`;
+                    statusEl.innerHTML = `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${DibyaDateTime.dateTime(new Date())}`;
                 }
 
                 // Show success feedback

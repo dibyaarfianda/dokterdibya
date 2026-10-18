@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav-active="beranda">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -424,7 +426,7 @@
             };
             container.innerHTML = list.map(item => {
                 const stars = item.rating ? '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating) : '';
-                const date = item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                const date = item.created_at ? DibyaDateTime.date(new Date(item.created_at), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
                 return `<div class="history-item">
                     <div class="hi-meta">
                         <span class="hi-category">${categoryLabels[item.category] || item.category}</span>

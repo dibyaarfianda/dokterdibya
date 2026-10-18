@@ -177,7 +177,7 @@
 
         listContainer.innerHTML = filteredQuestions.map(q => {
             const date = new Date(q.created_at);
-            const dateStr = date.toLocaleDateString('id-ID', {
+            const dateStr = DibyaDateTime.date(date, {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
@@ -265,7 +265,7 @@
         const statusLabels = { 'open': 'Menunggu Jawaban', 'answered': 'Sudah Dijawab', 'closed': 'Selesai' };
 
         const date = new Date(question.created_at);
-        const dateStr = date.toLocaleDateString('id-ID', {
+        const dateStr = DibyaDateTime.date(date, {
             day: 'numeric',
             month: 'long',
             year: 'numeric',
@@ -279,7 +279,7 @@
         // Build replies HTML with actual sender names
         let repliesHtml = replies.map(r => {
             const rDate = new Date(r.created_at);
-            const rDateStr = rDate.toLocaleDateString('id-ID', {
+            const rDateStr = DibyaDateTime.date(rDate, {
                 day: 'numeric',
                 month: 'short',
                 hour: '2-digit',

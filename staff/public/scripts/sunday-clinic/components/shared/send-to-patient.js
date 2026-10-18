@@ -246,7 +246,7 @@ const SendToPatient = {
                                    state.patientData?.full_name ||
                                    'Pasien';
                 const today = new Date();
-                const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+                const dateStr = DibyaDateTime.date(today);
                 documents.push({
                     type: 'resume_medis',
                     title: `Resume Medis - ${patientName} - ${dateStr}`,

@@ -212,8 +212,8 @@ export async function loadPreviousPlanning(state, root) {
             update('rencana', 'Belum ada kontrol sebelumnya di klinik private.');
             return;
         }
-        const date = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric',
-            timeZone: 'Asia/Jakarta' }).format(new Date(visitTimestamp(previous.visit_date)));
+        const date = DibyaDateTime.date(new Date(visitTimestamp(previous.visit_date)), { day: '2-digit', month: 'short', year: 'numeric',
+            timeZone: 'Asia/Jakarta' });
         panels.forEach(panel => {
             panel.querySelector('[data-planning-history-meta]').textContent = `${date} • ${previous.mr_id}`;
         });

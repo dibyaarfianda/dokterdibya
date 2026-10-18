@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v458';
+const STAFF_PWA_VERSION = 'v459';
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `${CACHE_NAME}-static`;
 const DYNAMIC_CACHE = `${CACHE_NAME}-dynamic`;
@@ -14,6 +14,8 @@ const versionedStaffAsset = (path) => `${path}?v=${STAFF_PWA_VERSION}`;
 // complete shell graph in the install transaction so the first controlled warm
 // navigation does not revalidate dozens of JavaScript files over the network.
 const STAFF_SHELL_SCRIPTS = [
+  '/staff/public/scripts/date-time-format.js',
+  '/staff/public/scripts/date-time-inputs.js',
   '/staff/public/scripts/auth.js',
   '/staff/public/scripts/chat-popup.js',
   '/staff/public/scripts/dashboard.js',

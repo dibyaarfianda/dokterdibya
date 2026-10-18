@@ -21,8 +21,8 @@ function updateDateTime() {
     const now = new Date();
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Jakarta' };
     const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta', hour12: false };
-    const dateText = now.toLocaleDateString('id-ID', dateOptions);
-    const timeText = now.toLocaleTimeString('id-ID', timeOptions);
+    const dateText = DibyaDateTime.date(now, dateOptions);
+    const timeText = DibyaDateTime.time(now, timeOptions);
 
     // Main staff navbar uses a single compact date+time label.
     if (dateEl) {
@@ -961,7 +961,7 @@ async function loadPasienBaru() {
             // Registration date (newest first sort via data-order)
             const regRaw = patient.registration_date || patient.created_at;
             const regSort = regRaw ? new Date(regRaw).toISOString() : '';
-            const regDisplay = regRaw ? new Date(regRaw).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+            const regDisplay = regRaw ? DibyaDateTime.date(new Date(regRaw), {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
 
             // Address from intake submission
             const alamat = (patient.intake_address && patient.intake_address.trim())
@@ -1071,9 +1071,9 @@ async function loadHospitalPatients(location) {
         }
 
         tbody.innerHTML = data.data.map(patient => {
-            const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-            const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-            const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
+            const birthDate = patient.birth_date ? DibyaDateTime.date(new Date(patient.birth_date), {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+            const regDate = patient.created_at ? DibyaDateTime.date(new Date(patient.created_at), {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+            const lastVisit = patient.last_visit ? DibyaDateTime.date(new Date(patient.last_visit), {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
             const statusBadge = patient.status === 'active' ?
                 '<span class="badge badge-success">Aktif</span>' :
                 '<span class="badge badge-secondary">Nonaktif</span>';
@@ -1201,7 +1201,7 @@ async function renderMedifyLiveQueue(queueData, hospitalName, hospitalColor, loc
     const items = Array.isArray(queueData.items) ? queueData.items : [];
     const stats = queueData.stats || { waiting: items.length, serving: 0, total: items.length };
     const today = new Date();
-    const dateLabel = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const dateLabel = DibyaDateTime.date(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const canSyncAppointments = await hasPermission('appointments.sync');
 
     if (!items.length) {
@@ -1453,7 +1453,7 @@ async function renderHospitalAppointmentsTable(appointments, hospitalName, hospi
 
     // Get today's date for display
     const today = new Date();
-    const dateLabel = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const dateLabel = DibyaDateTime.date(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const canCreateClinicRecord = await hasPermission('sunday_clinic.create');
 
     if (appointments.length === 0) {
@@ -3691,7 +3691,7 @@ async function showPatientDetail(patientId) {
         let visitsTableHtml = '';
         if (patientVisits.length > 0) {
             const visitsRows = patientVisits.map(visit => {
-                const visitDate = new Date(visit.visit_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const visitDate = DibyaDateTime.date(new Date(visit.visit_date), { day: 'numeric', month: 'short', year: 'numeric' });
                 const isFinalized = visit.status === 'finalized';
                 const btnClass = isFinalized ? 'btn-outline-danger' : 'btn-danger';
                 const btnTitle = isFinalized ? 'Hapus (Finalized - konfirmasi ekstra)' : 'Hapus Rekam Medis';
@@ -3785,7 +3785,7 @@ async function showPatientDetail(patientId) {
                                         </tr>
                                         <tr>
                                             <th>Tanggal Lahir</th>
-                                            <td>${normalizedPatient.birth_date ? new Date(normalizedPatient.birth_date).toLocaleDateString('id-ID', {year: 'numeric', month: 'long', day: 'numeric'}) : '-'}</td>
+                                            <td>${normalizedPatient.birth_date ? DibyaDateTime.date(new Date(normalizedPatient.birth_date), {year: 'numeric', month: 'long', day: 'numeric'}) : '-'}</td>
                                         </tr>
                                         <tr>
                                             <th>Usia</th>
@@ -3829,14 +3829,14 @@ async function showPatientDetail(patientId) {
                                         </tr>
                                         <tr>
                                             <th>Tgl Registrasi</th>
-                                            <td>${normalizedPatient.registration_date ? new Date(normalizedPatient.registration_date).toLocaleString('id-ID', {
+                                            <td>${normalizedPatient.registration_date ? DibyaDateTime.dateTime(new Date(normalizedPatient.registration_date), {
                                                 year: 'numeric', month: 'long', day: 'numeric',
                                                 hour: '2-digit', minute: '2-digit'
                                             }) : '-'}</td>
                                         </tr>
                                         <tr>
                                             <th>Terakhir Update</th>
-                                            <td>${normalizedPatient.updated_at ? new Date(normalizedPatient.updated_at).toLocaleString('id-ID', {
+                                            <td>${normalizedPatient.updated_at ? DibyaDateTime.dateTime(new Date(normalizedPatient.updated_at), {
                                                 year: 'numeric', month: 'long', day: 'numeric',
                                                 hour: '2-digit', minute: '2-digit'
                                             }) : '-'}</td>
@@ -3858,7 +3858,7 @@ async function showPatientDetail(patientId) {
                                     <h6 class="text-primary"><i class="fas fa-user"></i> Data Pribadi</h6>
                                     <table class="table table-sm table-bordered">
                                         <tr><th width="40%">Nama Lengkap</th><td>${intake.payload.full_name || '-'}</td></tr>
-                                        <tr><th>Tanggal Lahir</th><td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td></tr>
+                                        <tr><th>Tanggal Lahir</th><td>${intake.payload.dob ? DibyaDateTime.date(new Date(intake.payload.dob), {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td></tr>
                                         <tr><th>Usia</th><td>${intake.payload.age || '-'} tahun</td></tr>
                                         <tr><th>Tinggi Badan</th><td>${intake.payload.height ? intake.payload.height + ' cm' : '-'}</td></tr>
                                         <tr><th>Telepon</th><td>${intake.payload.phone || '-'}</td></tr>
@@ -3918,8 +3918,8 @@ async function showPatientDetail(patientId) {
                             </div>
                             ` : ''}
                             <div class="mt-2 text-muted small">
-                                <i class="far fa-clock"></i> Diisi: ${new Date(intake.createdAt).toLocaleString('id-ID')}
-                                ${intake.updatedAt ? ` | Diperbarui: ${new Date(intake.updatedAt).toLocaleString('id-ID')}` : ''}
+                                <i class="far fa-clock"></i> Diisi: ${DibyaDateTime.dateTime(new Date(intake.createdAt))}
+                                ${intake.updatedAt ? ` | Diperbarui: ${DibyaDateTime.dateTime(new Date(intake.updatedAt))}` : ''}
                                 <span class="badge badge-${intake.status === 'verified' ? 'success' : 'warning'} ml-2">${intake.status}</span>
                             </div>
                             ` : '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Belum ada formulir rekam medis awal</div>'}
@@ -4008,7 +4008,7 @@ async function showNewVisitModal(patientId, patientName) {
         };
 
         const pendingList = pendingRecords.map(r => {
-            const date = new Date(r.visit_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            const date = DibyaDateTime.date(new Date(r.visit_date), { day: 'numeric', month: 'short', year: 'numeric' });
             return `<tr>
                 <td><code>${r.mr_id}</code></td>
                 <td>${date}</td>
@@ -4216,7 +4216,7 @@ function showSimrsImportModal(data) {
     let visitDateDisplay = 'Tidak terdeteksi';
     if (visitDate) {
         const dateObj = new Date(visitDate);
-        visitDateDisplay = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        visitDateDisplay = DibyaDateTime.date(dateObj, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         if (visitTime) {
             visitDateDisplay += ` pukul ${visitTime}`;
         }
@@ -4524,7 +4524,7 @@ async function startVisitWithImport() {
         $('#simrsImportModal').modal('hide');
 
         // Show success message
-        const dateMsg = visitDate ? ` (tanggal ${new Date(visitDate).toLocaleDateString('id-ID')})` : '';
+        const dateMsg = visitDate ? ` (tanggal ${DibyaDateTime.date(new Date(visitDate))})` : '';
         if (typeof showSuccess === 'function') {
             showSuccess(`Rekam medis ${drdCode} dibuat${dateMsg}! Mengisi data pemeriksaan...`);
         }

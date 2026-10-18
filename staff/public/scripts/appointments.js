@@ -227,7 +227,7 @@ function renderAppointmentsList(appointments) {
     tbody.innerHTML = appointments.map((apt, index) => {
         const statusBadge = getStatusBadge(apt.status);
         const appointmentDate = new Date(apt.appointment_date);
-        const dateStr = appointmentDate.toLocaleDateString('id-ID', {
+        const dateStr = DibyaDateTime.date(appointmentDate, {
             day: 'numeric',
             month: 'long',
             year: 'numeric'

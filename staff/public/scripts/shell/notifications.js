@@ -876,7 +876,7 @@ function formatTimeAgo(dateString) {
     if (diffHour < 24) return `${diffHour} jam lalu`;
     if (diffDay < 7) return `${diffDay} hari lalu`;
 
-    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    return DibyaDateTime.date(date, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function handleNotifPageClick(link) {

@@ -552,7 +552,7 @@ import './booking-slot-utils.js';
                     <tbody>
                         ${activeBookings.map(b => {
                             const date = new Date(b.appointment_date);
-                            const formattedDate = date.toLocaleDateString('id-ID', {
+                            const formattedDate = DibyaDateTime.date(date, {
                                 weekday: 'short',
                                 day: 'numeric',
                                 month: 'short'
@@ -588,7 +588,7 @@ import './booking-slot-utils.js';
         if (!booking) return;
 
         const date = new Date(booking.appointment_date);
-        const formattedDate = date.toLocaleDateString('id-ID', {
+        const formattedDate = DibyaDateTime.date(date, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',

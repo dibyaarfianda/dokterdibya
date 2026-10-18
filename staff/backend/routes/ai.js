@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * AI Routes
  * API endpoints for AI-powered features
@@ -466,8 +467,8 @@ router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
             success: true,
             data: {
                 greeting: getFallbackDailyGreeting(userId, userName),
-                day: now.toLocaleDateString('id-ID', { weekday: 'long' }),
-                time: now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+                day: DibyaDateTime.date(now, { weekday: 'long' }),
+                time: DibyaDateTime.time(now, { hour: '2-digit', minute: '2-digit' }),
                 cachedUntil,
                 fallback: true,
                 pending: true

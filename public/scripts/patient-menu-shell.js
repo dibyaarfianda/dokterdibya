@@ -1,4 +1,4 @@
-import './clinic-booking-policy.js?v=20261017confirmation1';
+import './clinic-booking-policy.js?v=20261018datetime1';
 import { startCommunityBadge } from './community-chat-badge.js?v=20260924realtime2';
 import { createPortalNicknameStore } from './patient-shell/portal-nickname.js?v=20260917nickname1';
 import {
@@ -19,7 +19,7 @@ import {
     getGuestNavigationUrl,
     isGuestLoginRoute,
     PATIENT_MENU_DATA
-} from './patient-shell/routes.js?v=20261017confirmation1';
+} from './patient-shell/routes.js?v=20261018datetime1';
 import { createPatientSheetController } from './patient-shell/sheet-controller.js';
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';
@@ -536,21 +536,21 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             if (!value) return '-';
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return String(value);
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            return DibyaDateTime.date(date, { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
         function formatDateLong(value) {
             if (!value) return '-';
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return String(value);
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            return DibyaDateTime.date(date, { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
         function formatDateWeekday(value) {
             if (!value) return '';
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '';
-            return date.toLocaleDateString('id-ID', { weekday: 'long' });
+            return DibyaDateTime.date(date, { weekday: 'long' });
         }
 
         function parseLocalDateOnly(value) {
@@ -564,9 +564,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         }
 
         function formatBirthClassHomeDate(value) {
-            const date = parseLocalDateOnly(value);
-            if (!date) return '-';
-            return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+            return DibyaDateTime.date(String(value || '').slice(0, 10), { weekday: 'short', day: 'numeric', month: 'short' });
         }
 
         function formatBirthClassHomeTime(value) {
@@ -1523,7 +1521,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         function todayLabel() {
             const todayValue = document.getElementById('today-value');
             if (todayValue) {
-                todayValue.textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+                todayValue.textContent = DibyaDateTime.date(new Date(), { weekday: 'long', day: 'numeric', month: 'long' });
             }
             const hour = new Date().getHours();
             const greeting = hour >= 5 && hour < 11 ? 'Selamat Pagi' : hour >= 11 && hour < 15 ? 'Selamat Siang' : hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
@@ -1607,7 +1605,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             if (diffMinutes < 60) return diffMinutes + ' menit lalu';
             if (diffHours < 24) return diffHours + ' jam lalu';
             if (diffDays < 7) return diffDays + ' hari lalu';
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            return DibyaDateTime.date(date, { day: 'numeric', month: 'short' });
         }
 
         function getInfoTone(item) {
@@ -1788,9 +1786,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                 const data = await response.json();
                 if (!data.success || !data.bookings || data.bookings.length === 0) return;
                 const booking = data.bookings[0];
-                const dateParts = String(booking.appointment_date || '').slice(0, 10).split('-');
-                const date = dateParts.length === 3 ? new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2])) : new Date(booking.appointment_date);
-                const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+                const dateStr = DibyaDateTime.date(String(booking.appointment_date || '').slice(0, 10), { weekday: 'long', day: 'numeric', month: 'long' });
                 document.getElementById('booking-status-title').textContent = booking.status === 'confirmed' ? 'Booking Dikonfirmasi' : 'Menunggu Konfirmasi';
                 document.getElementById('booking-status-desc').textContent = dateStr + ' - ' + (booking.slot_time || '-');
                 panel.classList.add('show');
@@ -1967,7 +1963,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             const normalized = normalizeBirthDateInput(value);
             if (!normalized) return '';
             const parts = normalized.split('-');
-            return parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : '';
+            return parts.length === 3 ? parts[2] + '-' + parts[1] + '-' + parts[0] : '';
         }
 
         function normalizeBirthDateSubmitInput(value) {
@@ -2734,9 +2730,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         function showAttendanceConfirmationPopup(apt) {
             const existing = document.getElementById('attendance-confirm-overlay');
             if (existing) existing.remove();
-            const dateParts = String(apt.appointment_date || '').slice(0, 10).split('-');
-            const date = dateParts.length === 3 ? new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2])) : new Date(apt.appointment_date);
-            const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const dateStr = DibyaDateTime.date(String(apt.appointment_date || '').slice(0, 10), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             const overlay = document.createElement('div');
             overlay.id = 'attendance-confirm-overlay';
             overlay.className = 'modal-overlay active';

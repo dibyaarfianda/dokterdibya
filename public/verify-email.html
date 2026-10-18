@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Verifikasi Email - Dibya Klinik</title>
@@ -405,14 +407,14 @@
         function showSaveIndicator() {
             const existing = document.getElementById('save-indicator');
             if (existing) {
-                existing.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                existing.textContent = 'Draft tersimpan ' + DibyaDateTime.time(new Date(), { hour: '2-digit', minute: '2-digit' });
                 return;
             }
 
             const indicator = document.createElement('div');
             indicator.id = 'save-indicator';
             indicator.style.cssText = 'background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(16, 185, 129, 0.3);';
-            indicator.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            indicator.textContent = 'Draft tersimpan ' + DibyaDateTime.time(new Date(), { hour: '2-digit', minute: '2-digit' });
             document.querySelector('.otp-container').insertBefore(indicator, document.querySelector('.otp-inputs'));
         }
 

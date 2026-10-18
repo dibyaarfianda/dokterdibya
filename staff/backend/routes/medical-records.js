@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
@@ -472,7 +473,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
         billingItems = { obat: billingItems, tindakan: [] };
     }
     let resume = '';
-    const today = new Date().toLocaleDateString('id-ID', { 
+    const today = DibyaDateTime.date(new Date(), {
         day: 'numeric', 
         month: 'long', 
         year: 'numeric',

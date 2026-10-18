@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * PDF Generator for Billing Documents
  * Generates Invoice and Etiket (Label) PDFs
@@ -26,11 +27,7 @@ class PDFGenerator {
      * Format date to European format (DD-MM-YYYY)
      */
     formatDateEuropean(date = new Date()) {
-        const d = date instanceof Date ? date : new Date(date);
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${day}-${month}-${year}`;
+        return DibyaDateTime.date(date);
     }
 
     /**
@@ -219,7 +216,7 @@ class PDFGenerator {
                     doc.text(`Dibatalkan oleh: ${billingData.cancelled_by_name || billingData.cancelled_by || '-'}`);
                     const cancellationDate = billingData.cancelled_at ? new Date(billingData.cancelled_at) : null;
                     doc.text(`Waktu: ${cancellationDate && !Number.isNaN(cancellationDate.valueOf())
-                        ? cancellationDate.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB' : '-'}`);
+                        ? DibyaDateTime.dateTime(cancellationDate, { timeZone: 'Asia/Jakarta' }) + ' WIB' : '-'}`);
                     doc.moveDown().text(`Alasan: ${billingData.cancellation_reason || '-'}`);
                 }
 

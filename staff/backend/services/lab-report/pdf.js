@@ -1,4 +1,5 @@
 'use strict';
+const DibyaDateTime = require('../../../../public/scripts/date-time-format.js');
 
 const path = require('path');
 const PDFDocument = require('pdfkit');
@@ -6,7 +7,7 @@ const { flag } = require('./domain');
 const assets = path.resolve(__dirname, '../../../public/images/laboratorium');
 const navy = '#193D60'; const teal = '#268477'; const gray = '#64748B';
 const printable = value => String(value ?? '').replace(/[–—−]/g, '-').replace(/→/g, ' -> ').replace(/\u00a0/g, ' ');
-const displayDate = value => value ? String(value).replace('T', ' ') + (String(value).includes('T') ? ' WIB' : '') : '-';
+const displayDate = value => value ? DibyaDateTime.dateTime(value) + ' WIB' : '-';
 function comparisonCells(p) {
     return [p.name, p.previous ? `${p.previous.raw_value} ${p.previous.unit || ''}`.trim() : '-', `${p.raw_value} ${p.unit || ''}`.trim(),
         p.delta === null ? '-' : `${p.delta > 0 ? '+' : ''}${p.delta}`, flag(p)];
@@ -43,7 +44,7 @@ async function renderLabPdf({ data, patient, labNumber = '', version = 1, draft 
                 return;
             }
             const patientRows = [['Pasien', patient.name || '-', 'ID Pasien / DRD', `${patient.patient_id} / ${patient.mr_id}`],
-                ['Tanggal lahir', patient.birth_date || '-', 'Pemeriksaan', displayDate(data.examined_at)],
+                ['Tanggal lahir', DibyaDateTime.date(patient.birth_date), 'Pemeriksaan', displayDate(data.examined_at)],
                 ['Dokter', data.doctor || '-', 'Waktu permintaan', data.request_time || '-']];
             y = 180;
             patientRows.forEach(row => {
@@ -108,7 +109,7 @@ async function renderLabPdf({ data, patient, labNumber = '', version = 1, draft 
             const range = doc.bufferedPageRange();
             for (let i = 0; i < range.count; i++) {
                 doc.switchToPage(i); doc.font('Helvetica').fontSize(6.5).fillColor(gray);
-                write(`dr. Dibya Private Clinic  |  Dicetak ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`, left, doc.page.height - 62);
+                write(`dr. Dibya Private Clinic  |  Dicetak ${DibyaDateTime.dateTime(new Date(), { timeZone: 'Asia/Jakarta' })} WIB`, left, doc.page.height - 62);
                 write(`${i + 1} / ${range.count}`, 505, doc.page.height - 62, { width: 50, align: 'right' });
             }
             doc.end();

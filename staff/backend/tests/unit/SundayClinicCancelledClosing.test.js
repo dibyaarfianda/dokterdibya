@@ -63,7 +63,7 @@ describe('cancelled invoice accounting', () => {
         const content = { innerHTML: '' };
         const submit = { disabled: false, innerHTML: '', classList: { add() {}, remove() {} } };
         const document = { getElementById(id) { return id === 'sunday-clinic-closing-content' ? content : id === 'btn-submit-sunday-clinic-closing' ? submit : null; } };
-        const context = vm.createContext({ document, window: {}, ROLE_IDS: { DOKTER: 1 }, getIdToken() {}, Intl, Date, Number, String });
+        const context = vm.createContext({ DibyaDateTime: require('../../../../public/scripts/date-time-format'), document, window: {}, ROLE_IDS: { DOKTER: 1 }, getIdToken() {}, Intl, Date, Number, String });
         vm.runInContext(`${source}\nglobalThis.renderPreviewForTest = renderPreview;`, context);
         context.renderPreviewForTest(preview());
         expect(content.innerHTML).toContain('Tagihan Dibatalkan');

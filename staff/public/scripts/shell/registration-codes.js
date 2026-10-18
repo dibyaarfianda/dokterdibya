@@ -310,7 +310,7 @@ async function openGenerateCodeModal() {
         if (data.success && data.code) {
             document.getElementById('current-code-display').textContent = data.code;
             const expires = new Date(data.expires_at);
-            document.getElementById('current-code-expires').textContent = `Berlaku sampai: ${expires.toLocaleString('id-ID')}`;
+            document.getElementById('current-code-expires').textContent = `Berlaku sampai: ${DibyaDateTime.dateTime(expires)}`;
             document.getElementById('current-public-code').style.display = 'block';
         }
     } catch (e) {
@@ -375,7 +375,7 @@ function updateRegistrationCodeDisplay(code, expiresAt) {
     if (container) {
         const expiry = expiresAt ? new Date(expiresAt) : null;
         container.title = normalizedCode && expiry && !Number.isNaN(expiry.getTime())
-            ? `Kode registrasi pasien aktif sampai ${expiry.toLocaleString('id-ID')}`
+            ? `Kode registrasi pasien aktif sampai ${DibyaDateTime.dateTime(expiry)}`
             : 'Tidak ada kode registrasi pasien aktif';
     }
 }

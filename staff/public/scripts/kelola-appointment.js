@@ -315,7 +315,7 @@ function showDetail(appointmentId) {
     const notesBlock = apt.notes ? escapeHtml(apt.notes).replace(/\n/g, '<br>') : '';
     const cancellationReasonBlock = apt.cancellation_reason ? escapeHtml(apt.cancellation_reason).replace(/\n/g, '<br>') : '';
     const cancelledByLabel = apt.cancelled_by === 'patient' ? 'Pasien' : apt.cancelled_by === 'staff' ? 'Staff Klinik' : apt.cancelled_by === 'system' ? 'Sistem' : '-';
-    const cancelledAtLabel = apt.cancelled_at ? new Date(apt.cancelled_at).toLocaleString('id-ID') : null;
+    const cancelledAtLabel = apt.cancelled_at ? DibyaDateTime.dateTime(new Date(apt.cancelled_at)) : null;
 
     const detailHtml = `
         <div class="appointment-details">
@@ -352,8 +352,8 @@ function showDetail(appointmentId) {
                 ${cancelledAtLabel ? `<p><small class="text-muted">Dibatalkan: ${escapeHtml(cancelledAtLabel)}</small></p>` : ''}
             ` : ''}
             <hr>
-            <p><small class="text-muted">Dibuat: ${new Date(apt.created_at).toLocaleString('id-ID')}</small></p>
-            <p><small class="text-muted">Update Terakhir: ${new Date(apt.updated_at).toLocaleString('id-ID')}</small></p>
+            <p><small class="text-muted">Dibuat: ${DibyaDateTime.dateTime(new Date(apt.created_at))}</small></p>
+            <p><small class="text-muted">Update Terakhir: ${DibyaDateTime.dateTime(new Date(apt.updated_at))}</small></p>
         </div>
     `;
 

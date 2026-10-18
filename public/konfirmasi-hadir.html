@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#1a1a1a">
@@ -397,8 +399,8 @@
                 document.getElementById('apt-patient-name').textContent = apt.patient_name;
 
                 var dateObj = new Date(apt.appointment_date);
-                var gmt7 = new Date(dateObj.getTime() + 7 * 3600 * 1000);
-                document.getElementById('apt-date').textContent = gmt7.toLocaleDateString('id-ID', {
+                var gmt7 = dateObj;
+                document.getElementById('apt-date').textContent = DibyaDateTime.date(gmt7, {
                     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
                 });
                 document.getElementById('apt-session').textContent = apt.session_label + ' \u2022 Slot ' + apt.slot_time;

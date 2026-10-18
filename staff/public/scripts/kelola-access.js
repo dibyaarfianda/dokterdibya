@@ -154,7 +154,7 @@ function renderAuditHistory() {
     };
     const audits = state.selected.audits || [];
     body.innerHTML = audits.length ? audits.map(item => `<tr>
-        <td class="text-nowrap">${escapeHtml(new Date(item.created_at).toLocaleString('id-ID'))}</td>
+        <td class="text-nowrap">${escapeHtml(DibyaDateTime.dateTime(new Date(item.created_at)))}</td>
         <td>${escapeHtml(labels[item.action] || item.action)}</td>
         <td>${escapeHtml(item.actor_name || item.actor_user_id)}</td>
         <td>${escapeHtml(item.access_version)}</td>

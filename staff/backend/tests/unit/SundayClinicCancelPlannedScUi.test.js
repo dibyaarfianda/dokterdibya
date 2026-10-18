@@ -15,7 +15,7 @@ function fixture() {
         localStorage: { setItem: jest.fn((key, value) => storage.set(key, value)) }, showSundayClinicNotice: jest.fn() };
     const apiClient = { request: jest.fn().mockResolvedValue({ success: true, data: [] }) };
     const hasPermission = jest.fn().mockResolvedValue(true);
-    const context = { apiClient, stateManager: { getState: () => state }, hasPermission,
+    const context = { DibyaDateTime: require('../../../../public/scripts/date-time-format'), apiClient, stateManager: { getState: () => state }, hasPermission,
         window, Date, Math, escapeHtml: value => String(value ?? '').replace(/</g, '&lt;').replace(/"/g, '&quot;') };
     vm.runInNewContext(source, context);
     return { ...context, state, button, panel, root, storage };

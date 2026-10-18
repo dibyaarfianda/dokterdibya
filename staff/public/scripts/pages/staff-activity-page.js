@@ -39,7 +39,7 @@ function renderActivityRows(logs) {
 
     tbody.innerHTML = logs.map(log => {
         const date = new Date(log.timestamp);
-        const timestamp = Number.isNaN(date.getTime()) ? '-' : date.toLocaleString('id-ID', {
+        const timestamp = Number.isNaN(date.getTime()) ? '-' : DibyaDateTime.dateTime(date, {
             day: '2-digit',
             month: 'short',
             year: 'numeric',

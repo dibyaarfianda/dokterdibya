@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -496,7 +498,7 @@
             // Show valid until date
             if (subscription && subscription.end_date) {
                 const endDate = new Date(subscription.end_date);
-                document.getElementById('valid-until').textContent = endDate.toLocaleDateString('id-ID', {
+                document.getElementById('valid-until').textContent = DibyaDateTime.date(endDate, {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric'

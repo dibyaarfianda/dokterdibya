@@ -1,4 +1,5 @@
 'use strict';
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 
 /**
  * DocBoard Push Notification Service
@@ -230,7 +231,7 @@ async function sendNewBookingNotification(surgery) {
   const opName = surgery.op_name_id || surgery.op_name || surgery.operation_type_other || 'Operasi';
   const locName = LOCATION_NAMES[surgery.location] || surgery.location;
   const dateObj = new Date(surgery.surgery_date);
-  const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
+  const dateStr = DibyaDateTime.date(dateObj);
   const message = `${surgery.patient_name} - ${opName} di ${locName} (${dateStr})`;
 
   // Store in DB

@@ -23,7 +23,7 @@
         for (var i = 0; i < n; i++) {
             var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             var ym = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
-            var label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            var label = DibyaDateTime.date(d, { month: 'long', year: 'numeric' });
             out.push({ value: ym, label: label });
         }
         return out;

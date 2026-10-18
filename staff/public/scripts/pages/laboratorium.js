@@ -8,7 +8,7 @@ let creationToken = '';
 let owner = '';
 let cancelConfirmation = null;
 const can = permission => window.hasAccountPermission ? window.hasAccountPermission(permission) : false;
-const pretty = value => String(value || '').replace('T', ' ');
+const pretty = value => value ? DibyaDateTime.dateTime(value) : '';
 const defaults = () => { creationToken = crypto.randomUUID(); return ({ examined_at: currentWib(), technician: 'ACHMAD SHOLEH, A.MD.', license: '503/0126/SIP-SIK/419.104/2024',
     doctor: 'dr. Dibya Arfianda, Sp.OG', request_time: '', notes: '', parameters: [], sources: [], source_warnings: [], identity_resolved: false, review_confirmed: false }); };
 function clearPreviews() { previews.forEach(url => URL.revokeObjectURL(url)); previews = []; }
@@ -93,7 +93,7 @@ function input(label, key, value, type = 'text', extra = '') {
 }
 function renderEditor() {
     const editable = can(report ? 'lab_exam.edit' : 'lab_exam.create');
-    const identity = selectedVisit ? `<strong>${esc(selectedVisit.patient_name)}</strong><span>${esc(selectedVisit.patient_id)} · ${esc(selectedVisit.mr_id)} · ${esc(selectedVisit.birth_date || 'Tanggal lahir belum tersedia')}</span>` : '<strong>Pilih pasien dan DRD</strong><span>Tujuan laporan harus ditentukan sebelum unggah atau simpan.</span>';
+    const identity = selectedVisit ? `<strong>${esc(selectedVisit.patient_name)}</strong><span>${esc(selectedVisit.patient_id)} · ${esc(selectedVisit.mr_id)} · ${esc(selectedVisit.birth_date ? DibyaDateTime.date(selectedVisit.birth_date) : 'Tanggal lahir belum tersedia')}</span>` : '<strong>Pilih pasien dan DRD</strong><span>Tujuan laporan harus ditentukan sebelum unggah atau simpan.</span>';
     frame(`<button type="button" class="lr-link" data-action="back">← Daftar hasil</button>
         <div class="lr-identity">${identity}${report ? `<span class="lr-badge">${statusLabel(report)} · v${Number(report.version)}</span>` : ''}</div>
         <form id="lr-form"><fieldset ${editable ? '' : 'disabled'}>

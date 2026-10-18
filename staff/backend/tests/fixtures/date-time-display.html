@@ -1,0 +1,30 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Uji Format Tanggal dan Jam</title>
+<script src="/public/scripts/date-time-format.js"></script><script defer src="/public/scripts/date-time-inputs.js"></script>
+<style>body{font:16px Arial;padding:25px;max-width:700px}label{display:block;margin:15px 0 5px}.form-control{font:inherit;padding:10px;border:1px solid #aaa;border-radius:5px;box-sizing:border-box;height:42px}li{margin:5px}</style></head><body>
+<h1>Format tanggal dan jam</h1><p id="examples"></p>
+<form id="fixture"><label for="qa-date">Tanggal</label><input id="qa-date" class="form-control clinical-field" name="date" type="date" value="2026-10-18" required min="2026-10-01" max="2026-10-31">
+<label for="qa-time">Jam (24 jam)</label><input id="qa-time" class="form-control" name="time" type="time" value="13:05" required>
+<label for="qa-datetime">Tanggal dan jam</label><input id="qa-datetime" class="form-control" name="datetime" type="datetime-local" value="2026-10-18T23:05">
+<button type="reset">Reset</button></form><ul id="results"></ul><pre id="payload"></pre>
+<script>document.addEventListener('DOMContentLoaded',async()=>{
+const results=document.getElementById('results');let count=0;
+function check(label,ok){const li=document.createElement('li');li.textContent=(ok?'PASS ':'FAIL ')+label;results.append(li);if(!ok)throw Error(label);count++;}
+const d=document.getElementById('qa-date'),t=document.getElementById('qa-time');
+const mirror=d.parentElement.querySelector('[data-date-time-display]');
+document.getElementById('examples').textContent=DibyaDateTime.dateTime('2026-10-18T06:05:00Z');
+check('Tanggal tampil 18-10-2026',mirror.value==='18-10-2026');
+check('Jam tampil 13:05',t.parentElement.querySelector('[data-date-time-display]').value==='13:05');
+check('Nilai ISO dan jumlah field klinis tetap',d.value==='2026-10-18'&&document.querySelectorAll('.clinical-field').length===1&&new FormData(d.form).get('date')==='2026-10-18');
+d.value='2026-10-19';check('Perubahan programatis tersinkron',mirror.value==='19-10-2026');
+d.valueAsDate=new Date('2026-10-22T00:00:00Z');check('valueAsDate tersinkron',mirror.value==='22-10-2026');
+d.valueAsNumber=Date.parse('2026-10-23T00:00:00Z');check('valueAsNumber tersinkron',mirror.value==='23-10-2026');
+mirror.value='20-10-2026';mirror.dispatchEvent(new Event('input',{bubbles:true}));check('Edit DD-MM-YYYY dikirim ISO',d.value==='2026-10-20');
+mirror.value='31-02-2026';mirror.dispatchEvent(new Event('input',{bubbles:true}));check('Tanggal tidak valid ditolak',d.value===''&&!mirror.checkValidity()&&mirror.value==='31-02-2026');
+d.value='2026-11-01';check('Batas tanggal masih berlaku',d.validity.rangeOverflow);
+d.disabled=true;await Promise.resolve();check('Disabled tersinkron',mirror.disabled);d.disabled=false;await Promise.resolve();
+d.hidden=true;await Promise.resolve();check('Hidden tidak memunculkan field tambahan',getComputedStyle(d.parentElement).display==='none');d.hidden=false;await Promise.resolve();
+const later=document.createElement('input');later.type='date';later.value='2024-02-29';d.form.append(later);await new Promise(resolve=>setTimeout(resolve,0));check('Field dinamis ikut diformat',later.parentElement.querySelector('[data-date-time-display]').value==='29-02-2024');later.parentElement.remove();
+d.form.reset();await Promise.resolve();check('Reset mengembalikan nilai awal',d.value==='2026-10-18'&&mirror.value==='18-10-2026');
+function payload(){document.getElementById('payload').textContent=JSON.stringify(Object.fromEntries(new FormData(d.form)),null,2);}d.form.addEventListener('input',payload);d.form.addEventListener('change',payload);payload();
+document.body.dataset.result='passed';document.body.dataset.checks=count;
+});</script></body></html>

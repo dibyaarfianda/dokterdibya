@@ -48,7 +48,7 @@ function renderRows(patients) {
 
     tbody.innerHTML = patients.map(patient => {
         const registrationTime = patient.created_at
-            ? new Date(patient.created_at).toLocaleString('id-ID', {
+            ? DibyaDateTime.dateTime(new Date(patient.created_at), {
                 day: 'numeric',
                 month: 'short',
                 hour: '2-digit',

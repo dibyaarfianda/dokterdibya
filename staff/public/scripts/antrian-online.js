@@ -24,7 +24,7 @@ function formatDateLabel(dateValue) {
     if (!dateValue) return 'Hari ini';
     const date = new Date(`${dateValue}T00:00:00+07:00`);
     if (Number.isNaN(date.getTime())) return String(dateValue);
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(date, {
         weekday: 'long',
         day: 'numeric',
         month: 'long',

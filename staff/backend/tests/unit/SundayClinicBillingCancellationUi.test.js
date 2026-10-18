@@ -12,6 +12,7 @@ function staffBillingContext({ status, role = 'dokter', additional = [], hasPend
     const roleSource = read('staff', 'public', 'scripts', 'role-constants.js')
         .replace(/export /g, '');
     const context = vm.createContext({
+        DibyaDateTime: require('../../../../public/scripts/date-time-format'),
         window: { getToken: () => 'staff-token', currentStaffIdentity: { role }, routeMrSlug: 'DRD123' },
         document: { getElementById: () => null },
         fetch: jest.fn(async url => ({ ok: true, json: async () => ({
@@ -87,6 +88,7 @@ describe('whole unpaid invoice cancellation UI', () => {
             return elements.get(id);
         };
         const context = vm.createContext({
+        DibyaDateTime: require('../../../../public/scripts/date-time-format'),
             window: { PatientSession: { getToken: () => 'patient-token' }, location: {} },
             document: { getElementById: element, querySelectorAll: () => [] },
             fetch: jest.fn(async url => ({ json: async () => ({ success: true, data: String(url).includes('my-bills')
@@ -113,6 +115,7 @@ describe('whole unpaid invoice cancellation UI', () => {
         const tbody = { innerHTML: '' };
         const printRequest = jest.fn(async () => ({ success: true, downloadUrl: 'https://example.com/stamped.pdf' }));
         const context = vm.createContext({
+        DibyaDateTime: require('../../../../public/scripts/date-time-format'),
             document: { getElementById: id => id === 'invoice-history-tbody' ? tbody : null, addEventListener() {} },
             window: { buildSundayClinicAppUrl: () => '/sunday-clinic.html?mr=DRD123', open: jest.fn() },
             createPageRequestScope: () => ({}),

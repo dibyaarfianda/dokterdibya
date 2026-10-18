@@ -290,7 +290,7 @@ async function startSync(source) {
         return;
     }
 
-    const dateText = new Date(targetDate).toLocaleDateString('id-ID', {
+    const dateText = DibyaDateTime.date(new Date(targetDate), {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
 
@@ -664,7 +664,7 @@ function getStatusBadge(status) {
 function formatDateTime(dateStr) {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
-    return date.toLocaleString('id-ID', {
+    return DibyaDateTime.dateTime(date, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',

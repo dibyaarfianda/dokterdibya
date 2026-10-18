@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
@@ -377,7 +378,7 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadminOrAccountPermissi
 
         // Format date for notification
         const appointmentDate = new Date(booking.appointment_date);
-        const formattedDate = appointmentDate.toLocaleDateString('id-ID', {
+        const formattedDate = DibyaDateTime.date(appointmentDate, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',

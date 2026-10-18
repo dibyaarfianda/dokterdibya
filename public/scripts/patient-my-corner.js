@@ -414,9 +414,9 @@
 
     function getPastelDateInfo() {
         var now = new Date();
-        var day = now.toLocaleDateString('id-ID', { weekday: 'long' });
-        var date = now.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-        var time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+        var day = DibyaDateTime.date(now, { weekday: 'long' });
+        var date = DibyaDateTime.date(now, { day: 'numeric', month: 'long', year: 'numeric' });
+        var time = DibyaDateTime.time(now, { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
         return { day: day, date: date, time: time, greeting: getGreetingByHour(now) };
     }
 

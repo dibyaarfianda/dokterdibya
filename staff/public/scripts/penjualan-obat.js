@@ -415,7 +415,7 @@ async function loadSales() {
         tbody.innerHTML = currentSales.map(sale => {
             const statusBadge = getStatusBadge(sale.status);
             const hospitalLabel = HOSPITALS.find(h => h.value === sale.hospital_source)?.label || sale.hospital_source;
-            const createdAt = new Date(sale.created_at).toLocaleDateString('id-ID', {
+            const createdAt = DibyaDateTime.date(new Date(sale.created_at), {
                 day: '2-digit', month: 'short', year: 'numeric'
             });
 
@@ -771,7 +771,7 @@ window.viewObatSale = async function(id) {
         if (!sale) throw new Error('Data penjualan tidak ditemukan');
 
         const hospitalLabel = HOSPITALS.find(h => h.value === sale.hospital_source)?.label || sale.hospital_source;
-        const createdAt = new Date(sale.created_at).toLocaleDateString('id-ID', {
+        const createdAt = DibyaDateTime.date(new Date(sale.created_at), {
             day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
@@ -824,8 +824,8 @@ window.viewObatSale = async function(id) {
                 <div class="col-12">
                     <p><strong>Status:</strong> ${getStatusBadge(sale.status)}</p>
                     ${sale.payment_method ? `<p><strong>Metode Pembayaran:</strong> ${paymentMethodLabel}</p>` : ''}
-                    ${sale.confirmed_at ? `<p><small class="text-muted">Confirmed: ${new Date(sale.confirmed_at).toLocaleString('id-ID')} oleh ${sale.confirmed_by}</small></p>` : ''}
-                    ${sale.paid_at ? `<p><small class="text-muted">Paid: ${new Date(sale.paid_at).toLocaleString('id-ID')} oleh ${sale.paid_by}</small></p>` : ''}
+                    ${sale.confirmed_at ? `<p><small class="text-muted">Confirmed: ${DibyaDateTime.dateTime(new Date(sale.confirmed_at))} oleh ${sale.confirmed_by}</small></p>` : ''}
+                    ${sale.paid_at ? `<p><small class="text-muted">Paid: ${DibyaDateTime.dateTime(new Date(sale.paid_at))} oleh ${sale.paid_by}</small></p>` : ''}
                 </div>
             </div>
         `;

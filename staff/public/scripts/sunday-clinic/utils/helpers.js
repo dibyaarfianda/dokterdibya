@@ -132,7 +132,7 @@ export function formatDateDMY(value) {
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) {
         const [, year, month, day] = match;
-        return `${day}/${month}/${year}`;
+        return `${day}-${month}-${year}`;
     }
     // Handle ISO timestamp format
     if (value.includes('T')) {
@@ -141,7 +141,7 @@ export function formatDateDMY(value) {
             const day = String(date.getDate()).padStart(2, '0');
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const year = date.getFullYear();
-            return `${day}/${month}/${year}`;
+            return `${day}-${month}-${year}`;
         }
     }
     return value;
@@ -185,19 +185,7 @@ export function renderRecordMeta(context, primaryType) {
 }
 
 function formatDateTime(timestamp) {
-    if (!timestamp) return '';
-    try {
-        const date = new Date(timestamp);
-        // European format: DD/MM/YYYY HH:mm
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${day}/${month}/${year} ${hours}:${minutes}`;
-    } catch {
-        return '';
-    }
+    return timestamp ? DibyaDateTime.dateTime(timestamp) : '';
 }
 
 function formatRecordTypeLabel(type) {

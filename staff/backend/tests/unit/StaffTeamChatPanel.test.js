@@ -92,7 +92,7 @@ function fixture({ width = 400, height = 800, stored = new Map(), storageFails =
     if (ios) Object.defineProperty(elements.get('chat-incoming-sound'), 'volume', { get: () => 1, set() {} });
     elements.get('chat-box').style.setProperty('display', 'none');
     elements.get('chat-box').setAttribute('aria-modal', 'true');
-    vm.runInNewContext(source, { window: win, document: doc, navigator: { userAgent: ios ? 'iPhone' : '', platform: '', maxTouchPoints: 0 },
+    vm.runInNewContext(source, { DibyaDateTime: require('../../../../public/scripts/date-time-format'), window: win, document: doc, navigator: { userAgent: ios ? 'iPhone' : '', platform: '', maxTouchPoints: 0 },
         console, MutationObserver: class { observe() {} }, requestAnimationFrame: win.requestAnimationFrame,
         localStorage: win.localStorage, fetch: () => history,
         setTimeout, clearTimeout, atob: value => Buffer.from(value, 'base64').toString() });

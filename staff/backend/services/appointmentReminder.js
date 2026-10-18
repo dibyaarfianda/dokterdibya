@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * Appointment Reminder Service
  * Sends WhatsApp reminders to patients:
@@ -27,7 +28,7 @@ const SESSION_LABELS = {
  * Format date to Indonesian locale
  */
 function formatDateIndonesian(date) {
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(date, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',

@@ -249,10 +249,7 @@ function formatDateLocal(dateValue = new Date()) {
 function formatDate(dateStr, options = {}) {
     if (!dateStr) return '-';
 
-    const date = parseDateOnlyLocal(dateStr);
-    if (isNaN(date.getTime())) return '-';
-
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(dateStr, {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -268,10 +265,7 @@ function formatDate(dateStr, options = {}) {
 function formatDateTime(dateStr) {
     if (!dateStr) return '-';
 
-    const date = parseDateOnlyLocal(dateStr);
-    if (isNaN(date.getTime())) return '-';
-
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.dateTime(dateStr, {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
@@ -288,10 +282,7 @@ function formatDateTime(dateStr) {
 function formatTime(dateStr) {
     if (!dateStr) return '-';
 
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '-';
-
-    return date.toLocaleTimeString('id-ID', {
+    return DibyaDateTime.time(dateStr, {
         hour: '2-digit',
         minute: '2-digit'
     });

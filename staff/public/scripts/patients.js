@@ -176,7 +176,7 @@ async function showDetails(p) {
     
     const last = toDate(p.lastVisit);
     const patientId = String(p.patientId || '').padStart(5, '0');
-    const birthDateFormatted = p.birthDate ? toDate(p.birthDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+    const birthDateFormatted = p.birthDate ? DibyaDateTime.date(toDate(p.birthDate), {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
     
     // Initial render
     detailsEl.innerHTML = `
@@ -281,7 +281,7 @@ async function loadPatientHistory(patient) {
             // Get last visit with full date and time
             const lastVisit = toDate(visits[0].date);
             const lastVisitStr = lastVisit ? 
-                `${lastVisit.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} pukul ${lastVisit.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}` : 
+                `${DibyaDateTime.date(lastVisit, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} pukul ${DibyaDateTime.time(lastVisit, { hour: '2-digit', minute: '2-digit' })}` :
                 '-';
             
             let html = `
@@ -302,8 +302,8 @@ async function loadPatientHistory(patient) {
             const last5 = visits.slice(0, 5);
             last5.forEach((v, idx) => {
                 const visitDate = toDate(v.date);
-                const dateStr = visitDate ? visitDate.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-                const timeStr = visitDate ? visitDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+                const dateStr = visitDate ? DibyaDateTime.date(visitDate, {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                const timeStr = visitDate ? DibyaDateTime.time(visitDate, { hour: '2-digit', minute: '2-digit' }) : '';
                 const services = Array.isArray(v.services) ? v.services.map(s => s.name || s).join(', ') : '-';
                 const obat = Array.isArray(v.obat) ? v.obat.map(o => `${o.name} (${o.quantity})`).join(', ') : '-';
                 const total = v.grandTotal || v.total || 0;

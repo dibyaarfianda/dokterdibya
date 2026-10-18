@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * Notification Service
  * Email and WhatsApp notification system
@@ -676,7 +677,7 @@ class NotificationService {
         let scheduleInfo = 'jadwal Anda';
         if (appointment.appointment_date) {
             const date = new Date(appointment.appointment_date);
-            scheduleInfo = date.toLocaleString('id-ID', {
+            scheduleInfo = DibyaDateTime.dateTime(date, {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
@@ -728,7 +729,7 @@ class NotificationService {
         const clinicName = process.env.CLINIC_NAME || 'Klinik Dr. Dibya';
         const subject = `Ringkasan Kunjungan - ${clinicName}`;
 
-        const visitDate = visit.visit_date ? new Date(visit.visit_date).toLocaleDateString('id-ID', {
+        const visitDate = visit.visit_date ? DibyaDateTime.date(new Date(visit.visit_date), {
             weekday: 'long',
             year: 'numeric',
             month: 'long',

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/staff/public/scripts/date-time-format.js?v=v459"></script>
+    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v459"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
@@ -572,7 +574,7 @@
                 </div>`;
             }
             return `<tr>
-                <td class="muted" style="white-space:nowrap">${esc(new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }))}</td>
+                <td class="muted" style="white-space:nowrap">${esc(DibyaDateTime.dateTime(new Date(r.created_at), { dateStyle: 'short', timeStyle: 'short' }))}</td>
                 <td class="ans">${esc(answer)}</td>
                 <td>${cats}</td>
                 <td class="muted">${esc(r.ip_address)}</td>

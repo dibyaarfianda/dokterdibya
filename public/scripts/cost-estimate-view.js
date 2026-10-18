@@ -30,7 +30,7 @@
                 '<div class="estimate-toolbar"><label>Periode estimasi<select class="estimate-input" data-estimate="trimester">' +
                 [...TRIMESTERS, 'all'].map((key, i) => '<option value="' + key + '"' + (scenario.trimester === key ? ' selected' : '') + '>' + (key === 'all' ? 'Seluruh semester' : 'Trimester ' + (i + 1)) + '</option>').join('') +
                 '</select></label><button type="button" class="estimate-button" data-estimate="help"><i class="fa-regular fa-circle-question"></i> Cara Menggunakan</button></div>' +
-                '<p class="estimate-note">Harga dimuat: ' + esc(new Date(data.prices_loaded_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })) + ' WIB. Pengulangan dapat diubah untuk simulasi.</p>' +
+                '<p class="estimate-note">Harga dimuat: ' + esc(DibyaDateTime.dateTime(data.prices_loaded_at)) + ' WIB. Pengulangan dapat diubah untuk simulasi.</p>' +
                 selectedKeys.map(key => '<p class="estimate-note estimate-service-guidance">' + esc(serviceGuidance[key]) + '</p>').join('') +
                 '<p class="estimate-note"><strong>USG Transvaginal</strong> hanya dilakukan 1 kali bila usia kehamilan di bawah 8 minggu.</p>' +
                 selectedKeys.map(key => {

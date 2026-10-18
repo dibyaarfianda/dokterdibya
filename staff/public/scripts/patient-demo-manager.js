@@ -20,9 +20,9 @@ function assertDoctor() {
 function formatWib(value) {
     if (!value) return '-';
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('id-ID', {
+    return Number.isNaN(date.getTime()) ? String(value) : DibyaDateTime.date(date, {
         dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Jakarta'
-    }).format(date);
+    });
 }
 
 async function request(path, options = {}) {

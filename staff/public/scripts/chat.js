@@ -57,7 +57,7 @@ function renderMessage(list, { text, name, time, me }) {
     el.innerHTML = `
         <div class="chat-meta">
             <span class="chat-name" style="color:${nameColor}">${name || (me ? 'Saya' : 'User')}</span>
-            <span style="color: rgba(255,255,255,0.7); font-size: 11px;">${ts.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span>
+            <span style="color: rgba(255,255,255,0.7); font-size: 11px;">${DibyaDateTime.time(ts, {hour:'2-digit',minute:'2-digit'})}</span>
         </div>
         <div style="line-height: 1.6; font-size: 15px; color: #ffffff;">${enhancedText}</div>
     `;

@@ -580,7 +580,7 @@ async function loadRecentPatients() {
 
         // Render patients
         tbody.innerHTML = recentPatients.map(patient => {
-            const lastVisit = patient.appointmentDate ? new Date(patient.appointmentDate).toLocaleDateString('id-ID', {
+            const lastVisit = patient.appointmentDate ? DibyaDateTime.date(new Date(patient.appointmentDate), {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric'

@@ -30,7 +30,7 @@ function escapeHtml(value) {
 
 function formatDateTime(value) {
     if (!value) return '';
-    return new Date(value).toLocaleString('id-ID', {
+    return DibyaDateTime.dateTime(new Date(value), {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
@@ -1655,7 +1655,7 @@ export default {
 
         // Status badge + who confirmed
         const confirmedBy = billing.confirmed_by || '';
-        const confirmedAt = billing.confirmed_at ? new Date(billing.confirmed_at).toLocaleString('id-ID', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
+        const confirmedAt = billing.confirmed_at ? DibyaDateTime.dateTime(new Date(billing.confirmed_at), { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '';
         const lastModifiedBy = billing.last_modified_by || '';
         const lastModifiedAt = billing.last_modified_at ? formatDateTime(billing.last_modified_at) : '';
         let statusBadge = '<span class="badge badge-warning">Draft</span>';

@@ -325,7 +325,7 @@ export default {
                 </div>
 
                 <div class="mt-3 text-muted small" id="anamnesa-status">
-                    ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(anamnesa.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
+                    ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${DibyaDateTime.dateTime(new Date(anamnesa.saved_at))}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
                 </div>
                 <div class="sc-mobile-only mt-3">
                     <button type="button" class="btn btn-primary btn-block" onclick="document.getElementById('anamnesa-save').click()">
@@ -433,7 +433,7 @@ export default {
                 // Update UI
                 const statusEl = document.getElementById('anamnesa-status');
                 if (statusEl) {
-                    statusEl.innerHTML = `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date().toLocaleString('id-ID')}`;
+                    statusEl.innerHTML = `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${DibyaDateTime.dateTime(new Date())}`;
                 }
 
                 // Show success feedback

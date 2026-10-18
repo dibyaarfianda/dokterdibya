@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -1346,7 +1348,7 @@
                     const chipClass = isOpen ? 'open' : 'done';
 
                     const date = new Date(q.created_at);
-                    const dateStr = date.toLocaleDateString('id-ID', {
+                    const dateStr = DibyaDateTime.date(date, {
                         day: 'numeric', month: 'short', year: 'numeric',
                         hour: '2-digit', minute: '2-digit'
                     });
@@ -1398,7 +1400,7 @@
 
                     let messagesHtml = replies.map(r => {
                         const rDate = new Date(r.created_at);
-                        const rDateStr = rDate.toLocaleDateString('id-ID', {
+                        const rDateStr = DibyaDateTime.date(rDate, {
                             day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
                         });
                         const isDoctor = r.sender_type === 'doctor';

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off" data-portal-nav-active="dokumen">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -625,7 +627,7 @@
 
             list.innerHTML = labResults.map((lab, index) => {
                 const date = new Date(lab.date);
-                const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const dateStr = DibyaDateTime.date(date, { day: 'numeric', month: 'short', year: 'numeric' });
 
                 const iconClass = lab.fileType === 'pdf' ? 'pdf' : (lab.fileType === 'image' ? 'image' : '');
                 const iconName = lab.fileType === 'pdf' ? 'fa-file-pdf-o' : (lab.fileType === 'image' ? 'fa-file-image-o' : 'fa-file-o');
@@ -661,7 +663,7 @@
             document.body.style.overflow = 'hidden';
 
             const date = new Date(currentLabItem.date);
-            const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+            const dateStr = DibyaDateTime.date(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
             document.getElementById('preview-title').textContent = currentLabItem.title || 'Hasil Lab';
             document.getElementById('preview-date').textContent = dateStr;

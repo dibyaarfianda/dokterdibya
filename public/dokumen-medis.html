@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -767,7 +769,7 @@
 
             list.innerHTML = filteredDocuments.map((doc, index) => {
                 const date = new Date(doc.published_at || doc.created_at);
-                const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const dateStr = DibyaDateTime.date(date, { day: 'numeric', month: 'short', year: 'numeric' });
                 const isNew = !doc.first_viewed_at;
                 const location = locationMap[doc.visit_location] || { name: '' };
 

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -989,13 +991,13 @@
         function formatDate(dateStr) {
             const date = parseLooseDate(dateStr);
             if (!date) return '-';
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            return DibyaDateTime.date(formatLocalDate(date), { day: 'numeric', month: 'short', year: 'numeric' });
         }
 
         function formatDateShort(dateStr) {
             const date = parseLooseDate(dateStr);
             if (!date) return '-';
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            return DibyaDateTime.date(formatLocalDate(date), { day: 'numeric', month: 'short' });
         }
 
         function renderCalendar() {

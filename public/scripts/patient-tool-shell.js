@@ -154,14 +154,14 @@
         if (diffHours < 24) return diffHours + ' jam lalu';
         var diffDays = Math.floor(diffHours / 24);
         if (diffDays < 7) return diffDays + ' hari lalu';
-        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        return DibyaDateTime.date(date, { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
     function formatProfileDate(value) {
         if (!value) return '-';
         var date = new Date(value);
         if (Number.isNaN(date.getTime())) return String(value);
-        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        return DibyaDateTime.date(date, { day: 'numeric', month: 'long', year: 'numeric' });
     }
 
     function ensureTopbarModal() {

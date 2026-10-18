@@ -569,13 +569,13 @@
             var monthIndex = Number(match[2]) - 1;
             var day = Number(match[3]);
             if (monthIndex >= 0 && monthIndex < monthNames.length) {
-                return String(day).padStart(2, '0') + ' ' + monthNames[monthIndex] + ' ' + year;
+                return DibyaDateTime.date(`${match[1]}-${match[2]}-${match[3]}`);
             }
         }
 
         var parsed = new Date(raw);
         if (Number.isNaN(parsed.getTime())) return raw;
-        return parsed.toLocaleDateString('id-ID', {
+        return DibyaDateTime.date(parsed, {
             day: '2-digit',
             month: 'short',
             year: 'numeric'
@@ -1403,7 +1403,7 @@
         if (!value) return '-';
         var d = new Date(value);
         if (Number.isNaN(d.getTime())) return '-';
-        return d.toLocaleString('id-ID', {
+        return DibyaDateTime.dateTime(d, {
             day: '2-digit',
             month: 'short',
             hour: '2-digit',
@@ -3300,8 +3300,8 @@
             else if (hour >= 15 && hour < 18) greeting = 'Selamat Sore';
 
             bodyEl.innerHTML =
-                '<div style="font-size:28px;font-weight:700;line-height:1.1;">' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + '</div>' +
-                '<div class="text-muted" style="font-size:12px;">' + now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</div>' +
+                '<div style="font-size:28px;font-weight:700;line-height:1.1;">' + DibyaDateTime.time(now, { hour: '2-digit', minute: '2-digit' }) + '</div>' +
+                '<div class="text-muted" style="font-size:12px;">' + DibyaDateTime.date(now, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + '</div>' +
                 '<div class="mt-2" style="font-size:13px;font-weight:600;">' + greeting + '</div>';
         }
 
@@ -3571,7 +3571,7 @@
         }
 
         bodyEl.innerHTML =
-            '<div class="font-weight-bold mb-2">' + now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) + '</div>' +
+            '<div class="font-weight-bold mb-2">' + DibyaDateTime.date(now, { month: 'long', year: 'numeric' }) + '</div>' +
             '<div class="ks-calendar">' +
                 weekHeads.map(function (h) { return '<div class="ks-calendar-head">' + h + '</div>'; }).join('') +
                 cells.join('') +

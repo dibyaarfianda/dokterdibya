@@ -1,4 +1,4 @@
-﻿// Core AdminLTE bootstrap for dibyaklinik
+// Core AdminLTE bootstrap for dibyaklinik
 // This module ports essential UX from index-asli.html: clock, page switching, and basic bindings.
 
 import { validatePatient, validateObatUsage, updatePatientDisplay, getCurrentPatientData, getSelectedServices, getSelectedObat } from './scripts/billing.js';
@@ -14,8 +14,8 @@ function updateDateTime() {
     const now = new Date();
     const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Jakarta' };
     const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta', hour12: false };
-    dateEl.textContent = now.toLocaleDateString('id-ID', dateOptions);
-    timeEl.textContent = `${now.toLocaleTimeString('id-ID', timeOptions)} WIB`;
+    dateEl.textContent = DibyaDateTime.date(now, dateOptions);
+    timeEl.textContent = `${DibyaDateTime.time(now, timeOptions)} WIB`;
 }
 function startClock() {
     if (clockIntervalId) clearInterval(clockIntervalId);

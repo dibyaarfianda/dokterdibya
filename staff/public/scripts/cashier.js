@@ -181,7 +181,7 @@ export function updateCashierSummary(patientData, tindakanData, obatData) {
     // Update patient info
     document.getElementById('summary-patient-name').textContent = patientData.name || '-';
     document.getElementById('summary-patient-phone').textContent = patientData.whatsapp || '-';
-    document.getElementById('summary-date').textContent = new Date().toLocaleDateString('id-ID', { 
+    document.getElementById('summary-date').textContent = DibyaDateTime.date(new Date(), {
         weekday: 'long', 
         year: 'numeric', 
         month: 'long', 
@@ -534,7 +534,7 @@ async function printEtiket() {
             // Patient name and date
             doc.setFontSize(8);
             doc.text(`Pasien: ${patientName}`, currentX + 3, textY);
-            doc.text(new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}), currentX + labelWidth - 3, textY, { align: 'right' });
+            doc.text(DibyaDateTime.date(new Date(), {day: 'numeric', month: 'long', year: 'numeric'}), currentX + labelWidth - 3, textY, { align: 'right' });
             
             // Drug name
             textY += 4;
@@ -644,7 +644,7 @@ async function printInvoice() {
         doc.setFontSize(7.2);
         doc.setFont("helvetica", "normal");
         doc.text(`Nama Pasien: ${patientName}`, leftMargin, y);
-        doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'})}`, rightEdge, y, { align: 'right' });
+        doc.text(`Tanggal: ${DibyaDateTime.date(new Date(), {day: 'numeric', month: 'long', year: 'numeric'})}`, rightEdge, y, { align: 'right' });
         y += 4; // Reduced from 6 to 4
         
         // Tindakan section

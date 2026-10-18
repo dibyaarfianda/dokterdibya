@@ -15,7 +15,7 @@
     function formatDate(value) {
         if (!value) return '-';
         const date = new Date(value);
-        return date.toLocaleDateString('id-ID', {
+        return DibyaDateTime.date(date, {
             year: 'numeric',
             month: 'long',
             day: 'numeric'

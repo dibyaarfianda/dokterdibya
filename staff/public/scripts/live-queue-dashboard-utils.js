@@ -45,7 +45,7 @@ export function renderLiveQueueHtml(queueItems = [], options = {}) {
   const items = Array.isArray(queueItems) ? queueItems : [];
   const summary = summarizeQueue(items);
   const updatedAt = options.updatedAt
-    ? new Date(options.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+    ? DibyaDateTime.time(new Date(options.updatedAt), { hour: '2-digit', minute: '2-digit' })
     : '';
 
   if (items.length === 0) {
@@ -83,7 +83,7 @@ export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
   const summary = summarizeQueue(items);
   const dateLabel = options.dateLabel || 'Hari ini';
   const updatedAt = options.updatedAt
-    ? new Date(options.updatedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })
+    ? DibyaDateTime.time(new Date(options.updatedAt), { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })
     : '';
   const isQueueVisible = Boolean(options.isQueueVisible);
   const doctorArrived = Boolean(options.doctorArrived);

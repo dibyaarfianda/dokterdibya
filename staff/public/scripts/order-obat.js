@@ -117,11 +117,11 @@ function notify(message, danger = false) {
 }
 function formatWib(value) {
     if (!value) return '—';
-    if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return String(value).split('-').reverse().join('/');
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return String(value).split('-').reverse().join('-');
     // MySQL date-time strings without offsets are already WIB.
     const input = String(value).replace(' ', 'T');
     const date = new Date(/(?:Z|[+-]\d{2}:?\d{2})$/.test(input) ? input : `${input}+07:00`);
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB';
+    return Number.isNaN(date.getTime()) ? String(value) : DibyaDateTime.dateTime(date, { timeZone: 'Asia/Jakarta' }) + ' WIB';
 }
 function removeDraftItem(value, id) {
     if (value.status !== 'draft') throw new Error('Draft arsip tidak dapat diubah.');

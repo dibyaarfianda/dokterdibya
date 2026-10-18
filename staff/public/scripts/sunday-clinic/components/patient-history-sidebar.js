@@ -552,7 +552,7 @@ class PatientHistorySidebar {
         }
 
         const titleText = syncInfo.updated_at
-            ? `${selected.label} • ${new Date(syncInfo.updated_at).toLocaleString('id-ID')}`
+            ? `${selected.label} • ${DibyaDateTime.dateTime(new Date(syncInfo.updated_at))}`
             : selected.label;
 
         return `
@@ -1165,7 +1165,7 @@ class PatientHistorySidebar {
     formatDate(dateStr) {
         if (!dateStr) return '-';
         const date = new Date(dateStr);
-        return date.toLocaleDateString('id-ID', {
+        return DibyaDateTime.date(date, {
             day: 'numeric',
             month: 'short',
             year: 'numeric'

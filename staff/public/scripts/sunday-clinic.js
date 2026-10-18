@@ -582,11 +582,11 @@ function setupDateTimeDisplay() {
 
         // Date format: Senin, 20 Nov 2025
         const dateOptions = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
-        dateDisplay.textContent = now.toLocaleDateString('id-ID', dateOptions);
+        dateDisplay.textContent = DibyaDateTime.date(now, dateOptions);
 
         // Time format: 14:30:45
         const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
-        timeDisplay.textContent = now.toLocaleTimeString('id-ID', timeOptions);
+        timeDisplay.textContent = DibyaDateTime.time(now, timeOptions);
     }
 
     updateDateTime();
@@ -1030,7 +1030,7 @@ function formatDate(dateStr) {
     if (!dateStr) return '';
     const date = new Date(dateStr);
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('id-ID', options);
+    return DibyaDateTime.date(date, options);
 }
 
 // ============================================================================

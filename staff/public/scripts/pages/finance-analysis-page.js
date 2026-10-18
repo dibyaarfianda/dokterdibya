@@ -237,7 +237,7 @@
             xaxis: {
                 categories: data.map(d => {
                     const date = new Date(d.date);
-                    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                    return DibyaDateTime.date(date, { day: 'numeric', month: 'long', year: 'numeric' });
                 })
             },
             yaxis: {
@@ -566,7 +566,7 @@
         for (let i = 0; i < 12; i++) {
             const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            const label = DibyaDateTime.date(d, { month: 'long', year: 'numeric' });
             const option = document.createElement('option');
             option.value = value;
             option.textContent = label;
@@ -694,7 +694,7 @@
 
             let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Obat</th><th>Batch</th><th>Sisa</th><th>Kadaluarsa</th></tr></thead><tbody>';
             items.forEach(item => {
-                const expDate = new Date(item.expiry_date).toLocaleDateString('id-ID');
+                const expDate = DibyaDateTime.date(new Date(item.expiry_date));
                 const daysLeft = item.days_until_expiry;
                 const badge = daysLeft <= 0 ? 'badge-danger' : daysLeft <= 30 ? 'badge-warning' : 'badge-secondary';
                 html += `<tr>
@@ -866,7 +866,7 @@
 
         appointments.forEach(apt => {
             const date = new Date(apt.appointment_date);
-            const dateStr = date.toLocaleDateString('id-ID', {
+            const dateStr = DibyaDateTime.date(date, {
                 weekday: 'long',
                 day: 'numeric',
                 month: 'long',

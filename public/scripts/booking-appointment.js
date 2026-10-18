@@ -99,7 +99,7 @@ function renderSundays(sundays) {
     const html = sundays.map(sunday => `
         <div class="date-card" data-date="${sunday.date}" data-formatted="${sunday.formatted}">
             <div class="day">${getDisplayDayName(sunday)}</div>
-            <div class="date">${parseDateOnlyLocal(sunday.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</div>
+            <div class="date">${DibyaDateTime.date(sunday.date, { day: 'numeric', month: 'short' })}</div>
         </div>
     `).join('');
     

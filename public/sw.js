@@ -5,12 +5,14 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20261017confirmation1';
+const CACHE_VERSION = '20261018datetime1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
 // Files to cache immediately on install
 const PRECACHE_FILES = [
+  '/scripts/date-time-format.js',
+  '/scripts/date-time-inputs.js',
   '/',
   '/patient-menu.html',
   '/app-closed.html',

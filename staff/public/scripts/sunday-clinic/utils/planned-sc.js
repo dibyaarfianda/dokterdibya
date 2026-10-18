@@ -7,7 +7,6 @@ import { hasPermission } from '../../vps-auth-v2.js';
 const loads = new WeakMap();
 const cancellations = new Set();
 const locations = { klinik_private: 'Klinik Privat', rsia_melinda: 'RSIA Melinda', rsud_gambiran: 'RSUD Gambiran', rs_bhayangkara: 'RS Bhayangkara' };
-const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
 function isCurrentPlanning(root, mrId) {
     const state = stateManager.getState();
@@ -19,8 +18,7 @@ export function plannedScMarkup(schedules, canCancel = false) {
     return `<div class="alert alert-info mb-0" role="status">
         <strong><i class="fas fa-calendar-check mr-1" aria-hidden="true"></i>Jadwal Rencana SC</strong>
         ${schedules.map(schedule => {
-            const [year, month, day] = String(schedule.surgery_date).split('-');
-            const date = `${Number(day)} ${months[Number(month) - 1]} ${year}`;
+            const date = DibyaDateTime.date(schedule.surgery_date);
             const time = schedule.surgery_time ? `${schedule.surgery_time} WIB` : 'Jam belum ditentukan';
             const status = schedule.status === 'confirmed' ? 'Terkonfirmasi' : 'Direncanakan';
             return `<div class="mt-1"><strong>${escapeHtml(schedule.operation)}</strong>
@@ -80,7 +78,7 @@ export async function cancelPlannedSc(state, root, schedule, button) {
             notice('error', 'Akses ditolak untuk membatalkan jadwal DocBoard.');
             return;
         }
-        const promptText = `${schedule.operation} · ${schedule.surgery_date} ${schedule.surgery_time || ''}. Jadwal akan dikeluarkan dari jadwal aktif DocBoard. Riwayat pembatalan tetap tersimpan.`;
+        const promptText = `${schedule.operation} · ${DibyaDateTime.date(schedule.surgery_date)} ${schedule.surgery_time || ''}. Jadwal akan dikeluarkan dari jadwal aktif DocBoard. Riwayat pembatalan tetap tersimpan.`;
         let reason;
         if (window.Swal?.fire) {
             const result = await window.Swal.fire({

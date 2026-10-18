@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * Patient Questions Route - Tanya Dokter
  * Q&A feature between patients and doctor
@@ -287,7 +288,7 @@ router.post('/', verifyPatientToken, upload.single('image'), async (req, res) =>
             } else if (quota.reason === 'weekly_quota') {
                 message = `Kuota pertanyaan minggu ini sudah habis (${quota.used}/${quota.limit}). `;
                 if (quota.nextAvailable) {
-                    message += `Anda dapat bertanya lagi pada ${new Date(quota.nextAvailable).toLocaleDateString('id-ID')}.`;
+                    message += `Anda dapat bertanya lagi pada ${DibyaDateTime.date(new Date(quota.nextAvailable))}.`;
                 }
             }
             return res.status(400).json({ success: false, message });

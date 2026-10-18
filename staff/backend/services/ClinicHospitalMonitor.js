@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 const crypto = require('crypto');
 const zlib = require('zlib');
 
@@ -389,7 +390,7 @@ class ClinicHospitalMonitor {
                 const allowed = await this.store.transact(r => this.activation(r).enabled && r['connection:owner']?.chat_id === job.chat && (!job.event || (this.activeFacilities().includes(job.event.facility) && !values(r, 'episode').find(e => e.id === job.event.episode_id)?.identity_conflict)));
                 if (!allowed) continue;
                 const e = job.event;
-                const body = e ? { text: `${e.patient_name}\n${HOSPITAL_LABELS[e.facility]} — ${e.ward || '-'}\n${EVENT_LABELS[e.event_type]}\n${new Date(e.occurred_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB`, reply_markup: { inline_keyboard: [[{ text: 'Buka di COMM', url: `${this.config.commUrl.replace(/\/$/, '')}/?clinicAlert=${e.id}` }]] } } : { text: `Pemantauan Klinik Privat aktif untuk ${this.activeFacilities().map(f => HOSPITAL_LABELS[f]).join(' dan ')}. ${job.count} episode terpantau saat aktivasi.` };
+                const body = e ? { text: `${e.patient_name}\n${HOSPITAL_LABELS[e.facility]} — ${e.ward || '-'}\n${EVENT_LABELS[e.event_type]}\n${DibyaDateTime.dateTime(new Date(e.occurred_at), { timeZone: 'Asia/Jakarta' })} WIB`, reply_markup: { inline_keyboard: [[{ text: 'Buka di COMM', url: `${this.config.commUrl.replace(/\/$/, '')}/?clinicAlert=${e.id}` }]] } } : { text: `Pemantauan Klinik Privat aktif untuk ${this.activeFacilities().map(f => HOSPITAL_LABELS[f]).join(' dan ')}. ${job.count} episode terpantau saat aktivasi.` };
                 await this.sendTelegram(job.chat, body);
                 await this.store.transact(r => { const stored = r[`outbox:${job.id}`]; stored.status = 'sent'; stored.sent_at = this.now().toISOString(); stored.lease_until = null; });
             } catch (_) {

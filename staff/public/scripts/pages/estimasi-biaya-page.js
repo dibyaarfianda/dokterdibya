@@ -86,7 +86,7 @@ async function load() {
         const saveButton = el('estimasi-biaya-page').querySelector('[data-action="save-estimasi-biaya"]');
         saveButton.disabled = !hasAccountPermission('cost_estimates.write');
         saveButton.style.display = hasAccountPermission('cost_estimates.write') ? '' : 'none';
-        status(draft.updated_at ? 'Draft tersimpan: ' + new Date(draft.updated_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB.' : 'Belum ada draft tersimpan. Template belum dipilih.');
+        status(draft.updated_at ? 'Draft tersimpan: ' + DibyaDateTime.dateTime(new Date(draft.updated_at), { timeZone: 'Asia/Jakarta' }) + ' WIB.' : 'Belum ada draft tersimpan. Template belum dipilih.');
         send({ type: 'estimate-unavailable', message: 'Perbarui pratinjau untuk memuat draft ini.' });
     } catch (error) { if (error.name !== 'AbortError') status('Gagal memuat data. Klik Muat Ulang untuk mencoba lagi.', 'danger'); }
 }

@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * Patient Documents Routes
  * Handles document sharing with patients (Resume Medis, USG Photos, Lab Results)
@@ -1383,7 +1384,7 @@ router.post('/generate-resume-pdf', verifyStaffToken, async (req, res) => {
 
         // For now, we'll store the resume as text content
         // PDF generation can be added later using pdfkit or similar
-        const title = `Resume Medis - ${patientData?.fullName || 'Pasien'} - ${new Date().toLocaleDateString('id-ID')}`;
+        const title = `Resume Medis - ${patientData?.fullName || 'Pasien'} - ${DibyaDateTime.date(new Date())}`;
 
         const [insertResult] = await db.query(`
             INSERT INTO patient_documents (
@@ -1646,7 +1647,7 @@ function generateDefaultTitle(documentType, filename) {
         'patient_other': 'Dokumen'
     };
     const baseName = typeNames[documentType] || 'Dokumen';
-    const date = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    const date = DibyaDateTime.date(new Date(), { day: 'numeric', month: 'short', year: 'numeric' });
     return `${baseName} - ${date}`;
 }
 

@@ -90,7 +90,7 @@ Contoh:
                 </div>
 
                 <div class="mt-3 text-muted small" id="gyn-exam-status">
-                    ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(gynExam.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
+                    ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${DibyaDateTime.dateTime(new Date(gynExam.saved_at))}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
                 </div>
             </div>
         `;
@@ -141,7 +141,7 @@ Contoh:
                 // Update UI
                 const statusEl = document.getElementById('gyn-exam-status');
                 if (statusEl) {
-                    statusEl.innerHTML = `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date().toLocaleString('id-ID')}`;
+                    statusEl.innerHTML = `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${DibyaDateTime.dateTime(new Date())}`;
                 }
 
                 // Show success feedback

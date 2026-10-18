@@ -321,7 +321,7 @@ async function loadDashboardStats(signal) {
 
         // Format next Sunday date for display
         const nextSundayDate = new Date(stats.nextSundayDate);
-        const nextSundayLabel = nextSundayDate.toLocaleDateString('id-ID', {
+        const nextSundayLabel = DibyaDateTime.date(nextSundayDate, {
             weekday: 'long',
             day: 'numeric',
             month: 'long',
@@ -496,7 +496,7 @@ async function loadRecentActivity(signal) {
                         const time = new Date(log.timestamp);
                         return `<li class="d-flex justify-content-between">
                             <span>${log.user_name}: ${log.action}</span>
-                            <span class="text-muted">${time.toLocaleTimeString('id-ID', {hour:'2-digit',minute:'2-digit'})}</span>
+                            <span class="text-muted">${DibyaDateTime.time(time, {hour:'2-digit',minute:'2-digit'})}</span>
                         </li>`;
                     }).join('')}
                 </ul>

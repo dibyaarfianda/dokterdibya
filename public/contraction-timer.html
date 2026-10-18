@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id" data-portal-nav="off">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
     <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
     <meta charset="UTF-8">
@@ -1382,14 +1384,14 @@
             if (!value) return '-';
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '-';
-            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            return DibyaDateTime.date(date, { day: 'numeric', month: 'short' });
         }
 
         function formatTime(value) {
             if (!value) return '-';
             const date = new Date(value);
             if (Number.isNaN(date.getTime())) return '-';
-            return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            return DibyaDateTime.time(date, { hour: '2-digit', minute: '2-digit' });
         }
 
         function formatDuration(seconds) {

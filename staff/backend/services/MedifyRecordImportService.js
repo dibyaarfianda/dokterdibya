@@ -1,4 +1,5 @@
 'use strict';
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 
 const records = require('./MedicalRecordService');
 const { createPatientNotification } = require('../routes/patient-notifications');
@@ -108,7 +109,7 @@ class MedifyRecordImportService {
     async publishResume({ patientId, mrId, resume, patientName, actor }) {
         if (!patientId || !mrId || !resume) throw new Error('Complete resume scope required');
         const now = new Date();
-        const dateStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Jakarta' });
+        const dateStr = DibyaDateTime.date(now, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Jakarta' });
         const title = `Resume Medis - ${patientName} - ${dateStr}`;
         const sourceData = JSON.stringify({ content: resume, generatedAt: now.toISOString() });
         await this.records.saveInternalSections({

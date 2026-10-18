@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -6270,7 +6272,7 @@
                 // Format date
                 if (data.birth_date) {
                     const birthDate = new Date(data.birth_date);
-                    document.getElementById('birth-date').textContent = birthDate.toLocaleDateString('id-ID', {
+                    document.getElementById('birth-date').textContent = DibyaDateTime.date(birthDate, {
                         weekday: 'long',
                         year: 'numeric',
                         month: 'long',
@@ -6368,8 +6370,7 @@
 
                 if (data.success && data.bookings && data.bookings.length > 0) {
                     const booking = data.bookings[0];
-                    const date = parseDateOnlyLocal(booking.appointment_date);
-                    const dateStr = date.toLocaleDateString('id-ID', {
+                    const dateStr = DibyaDateTime.date(booking.appointment_date, {
                         weekday: 'long',
                         day: 'numeric',
                         month: 'long'

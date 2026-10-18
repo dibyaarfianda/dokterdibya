@@ -1,3 +1,4 @@
+const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * Subscriptions Route - Tanya Dokter Premium
  */
@@ -95,7 +96,7 @@ router.post('/subscribe', verifyPatientToken, async (req, res) => {
             paymentInstructions = 'Anda akan diarahkan ke halaman pembayaran kartu kredit yang aman.';
         }
 
-        res.json({ success: true, message: 'Silakan selesaikan pembayaran', payment: { ...paymentData, tier, tier_name: tierConfig.name, instructions: paymentInstructions, expired_at_formatted: expiredAt.toLocaleString('id-ID') } });
+        res.json({ success: true, message: 'Silakan selesaikan pembayaran', payment: { ...paymentData, tier, tier_name: tierConfig.name, instructions: paymentInstructions, expired_at_formatted: DibyaDateTime.dateTime(expiredAt) } });
     } catch (error) {
         console.error('Error subscribing:', error);
         res.status(500).json({ success: false, message: 'Server error' });

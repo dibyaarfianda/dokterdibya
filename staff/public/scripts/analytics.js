@@ -381,7 +381,7 @@ function formatCurrency(amount) {
  */
 function formatDate(dateString) {
     const date = new Date(dateString);
-    return date.toLocaleDateString('id-ID', {
+    return DibyaDateTime.date(date, {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
@@ -485,7 +485,7 @@ function analyzeWeeklyRevenue(visits) {
     
     return Object.entries(dailyRevenue).map(([date, revenue]) => ({
         date,
-        dateLabel: new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        dateLabel: DibyaDateTime.date(new Date(date), { day: 'numeric', month: 'long', year: 'numeric' }),
         revenue
     }));
 }
@@ -509,7 +509,7 @@ function analyzeMonthlyRevenue(visits) {
     
     return Object.entries(dailyRevenue).map(([date, revenue]) => ({
         date,
-        dateLabel: new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+        dateLabel: DibyaDateTime.date(new Date(date), { day: 'numeric', month: 'long', year: 'numeric' }),
         revenue
     }));
 }

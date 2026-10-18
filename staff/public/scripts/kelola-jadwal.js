@@ -314,7 +314,7 @@ function renderDisabledDates(dates) {
     dates.forEach(item => {
         const dateObj = new Date(item.disabled_date);
         const dayName = dayNames[dateObj.getDay()];
-        const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        const formattedDate = DibyaDateTime.date(dateObj, { day: 'numeric', month: 'long', year: 'numeric' });
 
         const locationText = item.location ? locationNames[item.location] : '<span class="text-danger font-weight-bold">Semua Lokasi</span>';
 
