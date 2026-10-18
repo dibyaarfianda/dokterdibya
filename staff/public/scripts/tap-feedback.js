@@ -2,7 +2,7 @@
     if (window.__tapFeedbackInitialized) return;
     window.__tapFeedbackInitialized = true;
 
-    let audioCtx = null;
+    const tapSound = document.getElementById('tap-feedback-sound');
     const interactiveTags = new Set(['BUTTON', 'A', 'INPUT', 'SELECT', 'TEXTAREA', 'LABEL', 'SUMMARY']);
 
     function isMobileContext() {
@@ -11,38 +11,12 @@
             window.isNativePlatform?.();
     }
 
-    function getCtx() {
-        const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextCtor) return null;
-
-        if (!audioCtx) audioCtx = new AudioContextCtor();
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume().catch(function() {});
-        }
-
-        return audioCtx;
-    }
-
     function playTap() {
         try {
-            const ac = getCtx();
-            if (!ac) return;
-
-            const osc = ac.createOscillator();
-            const gain = ac.createGain();
-
-            osc.connect(gain);
-            gain.connect(ac.destination);
-
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(800, ac.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);
-
-            gain.gain.setValueAtTime(0.12, ac.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.06);
-
-            osc.start(ac.currentTime);
-            osc.stop(ac.currentTime + 0.06);
+            if (!tapSound) return;
+            tapSound.currentTime = 0;
+            const playback = tapSound.play();
+            if (playback?.catch) playback.catch(function() {});
         } catch (error) {
             console.debug('[TapFeedback] Tap sound skipped:', error?.message || error);
         }

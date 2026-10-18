@@ -849,19 +849,49 @@ describe('staff panel stabilization sources', () => {
         expect(sundayClinicCss).toContain('touch-action: pan-y !important;');
     });
 
-    test('staff mobile tap feedback uses COMM tap sound parameters', () => {
+    test('staff mobile tap feedback replays the bundled audio only for mobile controls', () => {
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
         const tapFeedback = readRepoFile('staff', 'public', 'scripts', 'tap-feedback.js');
+        const sw = readRepoFile('staff', 'public', 'sw.js');
 
         const staffVersion = html.match(/window\.STAFF_CACHE_VERSION = '([^']+)'/)?.[1];
         expect(staffVersion).toBeTruthy();
         expect(html).toContain(`/staff/public/scripts/tap-feedback.js?v=${staffVersion}`);
-        expect(tapFeedback).toContain("osc.type = 'sine';");
-        expect(tapFeedback).toContain('osc.frequency.setValueAtTime(800, ac.currentTime);');
-        expect(tapFeedback).toContain('osc.frequency.exponentialRampToValueAtTime(400, ac.currentTime + 0.06);');
-        expect(tapFeedback).toContain('gain.gain.setValueAtTime(0.12, ac.currentTime);');
-        expect(tapFeedback).toContain('gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + 0.06);');
-        expect(tapFeedback).toContain('osc.stop(ac.currentTime + 0.06);');
-        expect(tapFeedback).toContain('navigator.vibrate(10);');
+        expect(html).toContain(`<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=${staffVersion}" preload="auto"></audio>`);
+        expect(sw).toContain("versionedStaffAsset('/staff/public/sounds/tap.mp3')");
+
+        let mobile = true;
+        const listeners = {};
+        const audio = { currentTime: 0.05, play: jest.fn().mockResolvedValue() };
+        const vibrate = jest.fn();
+        const body = {};
+        const document = {
+            body,
+            getElementById: (id) => id === 'tap-feedback-sound' ? audio : null,
+            addEventListener: (type, handler) => { listeners[type] = handler; }
+        };
+        require('vm').runInNewContext(tapFeedback, {
+            window: { PointerEvent: function() {}, matchMedia: () => ({ matches: mobile }) },
+            document,
+            navigator: { vibrate },
+            console
+        });
+        const button = { tagName: 'BUTTON', parentElement: body };
+        listeners.pointerdown({ target: button });
+        expect(audio.play).toHaveBeenCalledTimes(1);
+        expect(audio.currentTime).toBe(0);
+        expect(vibrate).toHaveBeenCalledWith(10);
+
+        audio.currentTime = 0.08;
+        listeners.pointerdown({ target: button });
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        expect(audio.currentTime).toBe(0);
+
+        mobile = false;
+        listeners.pointerdown({ target: button });
+        mobile = true;
+        listeners.pointerdown({ target: body });
+        expect(audio.play).toHaveBeenCalledTimes(2);
+        expect(vibrate).toHaveBeenCalledTimes(2);
     });
 });
