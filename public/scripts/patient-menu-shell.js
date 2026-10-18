@@ -1,4 +1,4 @@
-import './clinic-booking-policy.js?v=20261018datetime2';
+import './clinic-booking-policy.js?v=20261018datetime3';
 import { startCommunityBadge } from './community-chat-badge.js?v=20260924realtime2';
 import { createPortalNicknameStore } from './patient-shell/portal-nickname.js?v=20260917nickname1';
 import {
@@ -19,7 +19,7 @@ import {
     getGuestNavigationUrl,
     isGuestLoginRoute,
     PATIENT_MENU_DATA
-} from './patient-shell/routes.js?v=20261018datetime2';
+} from './patient-shell/routes.js?v=20261018datetime3';
 import { createPatientSheetController } from './patient-shell/sheet-controller.js';
 import { createMyCornerController } from './patient-shell/features/my-corner-controller.js';
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';

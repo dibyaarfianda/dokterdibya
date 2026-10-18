@@ -1,0 +1,59 @@
+<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Uji pemilih jam 24 jam</title>
+<style>body{font:16px Arial;padding:24px;max-width:720px}label{display:block;margin:14px 0 5px}.form-control{font:inherit;padding:10px;border:1px solid #aaa;border-radius:5px;box-sizing:border-box;height:42px}li{margin:6px 0}</style>
+</head><body><h1>Pemilih jam pemeriksaan dan USG</h1>
+<form id="fixture"><label for="pe-datetime">Tanggal & Jam Pemeriksaan</label><input id="pe-datetime" name="physical_exam" class="form-control clinical-field" type="datetime-local" value="2026-10-18T13:05" required>
+<label for="usg-datetime">Tanggal & Jam USG</label><input id="usg-datetime" name="usg" class="form-control clinical-field" type="datetime-local" value="2026-10-18T23:05" required>
+<label for="qa-time">Jam dengan batas dan interval</label><input id="qa-time" name="time" class="form-control" type="time" value="13:00" min="01:00" max="23:30" step="900"></form>
+<ul id="results"></ul><pre id="payload"></pre>
+<script>
+(async()=>{
+ const version=new URL(location.href).searchParams.get('live');
+ const base=version?'https://dokterdibya.com/staff/public/scripts/':'/staff/public/scripts/';
+ async function load(file){await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src=base+file+(version?'?v='+encodeURIComponent(version):'');script.onload=resolve;script.onerror=reject;document.head.append(script);});}
+ await load('date-time-format.js');await load('date-time-inputs.js');
+ const tick=()=>new Promise(resolve=>setTimeout(resolve,0));await tick();
+ let count=0;const results=document.getElementById('results');
+ function check(label,ok){const row=document.createElement('li');row.textContent=(ok?'PASS ':'FAIL ')+label;results.append(row);if(!ok)throw Error(label);count++;}
+ const pe=document.getElementById('pe-datetime'),usg=document.getElementById('usg-datetime'),limited=document.getElementById('qa-time');
+ const open=input=>{input.parentElement.querySelector('button').click();return document.querySelector('[data-date-time-picker]');};
+ const choose=(dialog,part,value)=>{const select=dialog.querySelector('[data-time-part="'+part+'"]');select.value=value;select.dispatchEvent(new Event('change',{bubbles:true}));};
+ const apply=dialog=>dialog.querySelector('[data-picker-apply]').click();
+ try{
+  let dialog=open(pe);check('Pemilih pemeriksaan memakai jam 00-23',!!dialog);
+  const hours=Array.from(dialog.querySelector('[data-time-part="hour"]').options,option=>option.textContent);
+  check('Ada tepat 24 pilihan jam numerik tanpa AM/PM',hours.length===24&&hours[0]==='00'&&hours[23]==='23'&&hours.every(value=>/^\d{2}$/.test(value)));
+  check('Menit 00-59 dapat digulir',dialog.querySelector('[data-time-part="minute"]').options.length===60);
+  choose(dialog,'hour','00');choose(dialog,'minute','07');apply(dialog);
+  check('Tengah malam disimpan 00:07 dengan tanggal tetap',pe.value==='2026-10-18T00:07');
+  check('Tampilan pemeriksaan tetap DD-MM-YYYY HH:mm',pe.parentElement.querySelector('[data-date-time-display]').value==='18-10-2026 00:07');
+  let changes=0;usg.addEventListener('change',()=>changes++);
+  dialog=open(usg);await tick();choose(dialog,'hour','13');choose(dialog,'minute','45');apply(dialog);
+  check('USG menyimpan 13:45 dan memicu satu change',usg.value==='2026-10-18T13:45'&&changes===1);
+  dialog=open(usg);choose(dialog,'hour','23');choose(dialog,'minute','59');dialog.querySelector('[data-picker-cancel]').click();
+  check('Batal mempertahankan draft dan tidak memicu change',usg.value==='2026-10-18T13:45'&&changes===1);
+  dialog=open(usg);choose(dialog,'hour','23');choose(dialog,'minute','59');apply(dialog);
+  check('Jam 23:59 tidak berbalik menjadi 11:59',usg.value==='2026-10-18T23:59');
+  dialog=open(limited);choose(dialog,'hour','00');choose(dialog,'minute','00');apply(dialog);
+  check('Batas min tetap menolak jam di luar rentang',limited.value==='13:00'&&dialog.isConnected&&dialog.querySelector('[data-picker-error]').textContent.length>0);
+  choose(dialog,'hour','13');choose(dialog,'minute','07');apply(dialog);
+  check('Interval step tetap divalidasi',limited.value==='13:00'&&dialog.isConnected);
+  choose(dialog,'hour','13');choose(dialog,'minute','15');apply(dialog);
+  check('Jam yang valid lolos dan form tetap memakai ISO',limited.value==='13:15'&&new FormData(pe.form).get('usg')==='2026-10-18T23:59');
+  check('Kontrol klinis tidak diduplikasi',document.querySelectorAll('.clinical-field').length===2);
+  dialog=open(usg);await tick();dialog.querySelector('[data-picker-date]').value='2026-10-19';choose(dialog,'hour','13');choose(dialog,'minute','45');apply(dialog);
+  check('Perubahan tanggal dan jam digabung tanpa pergeseran hari',usg.value==='2026-10-19T13:45');
+  dialog=open(usg);choose(dialog,'hour','23');usg.value='2026-10-19T10:10';apply(dialog);
+  check('Nilai yang berubah saat popup terbuka tidak ditimpa',usg.value==='2026-10-19T10:10'&&dialog.isConnected);dialog.querySelector('[data-picker-cancel]').click();
+  dialog=open(usg);usg.disabled=true;choose(dialog,'hour','23');apply(dialog);
+  check('Kontrol yang dinonaktifkan tidak dapat diubah dari popup lama',usg.value==='2026-10-19T10:10'&&!dialog.isConnected);usg.disabled=false;await tick();
+  const precision=document.createElement('input');precision.type='time';precision.step='1';precision.value='23:59:42';pe.form.append(precision);await tick();
+  dialog=open(precision);choose(dialog,'second','58');apply(dialog);check('Field dengan detik mempertahankan presisi',precision.value==='23:59:58');precision.parentElement.remove();
+  const modal=document.createElement('div');modal.className='modal';modal.tabIndex=-1;const modalTime=document.createElement('input');modalTime.type='time';modalTime.value='14:00';modal.append(modalTime);document.body.append(modal);await tick();
+  const enforceFocus=event=>{if(!modal.contains(event.target))modal.focus();};document.addEventListener('focusin',enforceFocus);
+  dialog=open(modalTime);check('Kolom jam tetap mendapat fokus di dalam alur modal',document.activeElement===dialog.querySelector('[data-time-part="hour"]'));
+  dialog.querySelector('[data-picker-cancel]').click();document.removeEventListener('focusin',enforceFocus);modal.remove();
+  document.body.dataset.result='passed';document.body.dataset.checks=count;
+ }catch(error){document.body.dataset.result='failed';console.error(error);}
+ function payload(){document.getElementById('payload').textContent=JSON.stringify(Object.fromEntries(new FormData(pe.form)),null,2);}pe.form.addEventListener('change',payload);payload();
+})();
+</script></body></html>
