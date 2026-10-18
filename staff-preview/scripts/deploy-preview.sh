@@ -81,7 +81,7 @@ if include not in source:
     open(path,'w').write(source)
 PY
 OLD=$(readlink "$BASE/current" || true)
-if [ -n "$OLD" ]; then
+if [ -n "$OLD" ] && [ "$OLD" != "$RELEASE" ]; then
   [[ "$(realpath "$OLD")" == "$BASE/releases/"* ]] || { echo 'Unexpected old release path'; exit 2; }
   printf '%s\n' "$OLD" > "$BASE/previous-release"
 fi
@@ -95,7 +95,15 @@ if ! nginx -t; then
 fi
 systemctl reload nginx
 for origin in https://dokterdibya.com https://www.dokterdibya.com; do
-  curl --max-time 20 -fsS "$origin/staff-preview/release.json" | node -e 'let t="";process.stdin.on("data",x=>t+=x).on("end",()=>{const r=JSON.parse(t);if(r.commit!==process.argv[1])process.exit(1);console.log("Live preview",r.version,r.commit)})' "$COMMIT"
+  READY=0
+  for attempt in 1 2 3 4 5; do
+    if curl --max-time 20 -fsS "$origin/staff-preview/release.json" | node -e 'let t="";process.stdin.on("data",x=>t+=x).on("end",()=>{try{const r=JSON.parse(t);if(r.commit!==process.argv[1])process.exit(1);console.log("Live preview",r.version,r.commit)}catch{process.exit(1)}})' "$COMMIT"; then
+      READY=1
+      break
+    fi
+    sleep 1
+  done
+  test "$READY" = 1
 done
 STAFF_AFTER=$(curl --max-time 20 -fsS https://dokterdibya.com/staff/public/index-adminlte.html | sha256sum | cut -d' ' -f1)
 DOCBOARD_AFTER=$(curl --max-time 20 -fsS https://dokterdibya.com/docboard/ | sha256sum | cut -d' ' -f1)
