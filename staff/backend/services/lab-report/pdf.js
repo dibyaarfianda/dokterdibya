@@ -35,6 +35,16 @@ async function renderLabPdf({ data, patient, labNumber = '', version = 1, draft 
                 doc.roundedRect(482, 131, 73, 24, 6).fill('#FFF0D1');
                 doc.fillColor('#8D6217').font('Helvetica-Bold').fontSize(9); write('DRAF', 487, 139, { width: 63, align: 'center' });
             }
+            if (continued) {
+                doc.font('Helvetica-Bold').fontSize(9).fillColor(navy);
+                const identityHeight = Math.max(doc.heightOfString(printable(patient.name || '-'), { width: 265 }), 12);
+                write(patient.name || '-', left, 180, { width: 265, lineBreak: true });
+                write(`${patient.patient_id} / ${patient.mr_id}`, 318, 180, { width: 235, lineBreak: true });
+                y = 180 + identityHeight + 9;
+                doc.font('Helvetica').fontSize(7.5).fillColor(gray); write(`Pemeriksaan: ${displayDate(data.examined_at)}`, left, y); y += 22;
+                if (comparison) { write(`Pembanding: ${displayDate(comparison.previous.examined_at)}  |  ${comparison.previous.lab_number}`, left, y, { width, lineBreak: true }); y += 28; }
+                return;
+            }
             const patientRows = [['Pasien', patient.name || '-', 'ID Pasien / DRD', `${patient.patient_id} / ${patient.mr_id}`],
                 ['Tanggal lahir', patient.birth_date || '-', 'Pemeriksaan', displayDate(data.examined_at)],
                 ['Dokter', data.doctor || '-', 'Waktu permintaan', data.request_time || '-']];
@@ -72,7 +82,7 @@ async function renderLabPdf({ data, patient, labNumber = '', version = 1, draft 
                 const values = comparison ? comparisonCells(p)
                     : [p.name, p.raw_value || '-', p.reference || 'Tidak dicantumkan', p.unit || '-', flag(p)];
                 doc.font('Helvetica').fontSize(8);
-                const height = Math.max(27, ...values.map((v, i) => doc.heightOfString(printable(v), { width: widths[i] - 12 }) + 16));
+                const height = Math.max(24, ...values.map((v, i) => doc.heightOfString(printable(v), { width: widths[i] - 12 }) + 12));
                 const note = [p.reference_context, p.note].filter(Boolean).join(' | ');
                 const noteHeight = note ? doc.heightOfString(printable(note), { width: width - 20 }) + 8 : 0;
                 ensureSpace(height + noteHeight);

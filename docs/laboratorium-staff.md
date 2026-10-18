@@ -31,6 +31,6 @@ Migrasi aditif: `staff/backend/migrations/20261018_structured_lab_reports.sql`. 
 
 Tes unit/API: `LabReportContract`, `LabReportServices`, `LabReportForm`, `LabReportScopeReset`, `labReportsAuth`, serta regresi Penunjang, hak akun, shell dan aset Staff. Harness `tests/integration/labReports.mysql.cjs` hanya menerima nama database baru berawalan `codex_lab_test_` dan direktori output absolut; membuat fixture fiktif, menguji transaksi/publikasi/koreksi/konflik/rollback/R2 gagal/komparasi/audit, lalu menghapus database buatannya sendiri. Opsi `--serve` mempertahankan database sampai server uji dihentikan.
 
-`tests/integration/labReports.ocr.cjs --output=/absolute/test-output --env=/existing/server/.env` menguji provider nyata dengan 18 parameter fiktif pada PNG dan PDF tiga halaman, tanpa akses database. Jangan simpan kredensial atau data pasien ke fixture.
+`tests/integration/labReports.ocr.cjs --output=/absolute/test-output --env=/existing/server/.env` menguji provider nyata dengan 18 parameter fiktif pada PNG dan PDF beberapa halaman, tanpa akses database. Jangan simpan kredensial atau data pasien ke fixture.
 
 Rilis memakai snapshot aset Staff immutable `stage-staff-assets.js`, mempertahankan rilis sebelumnya, lalu `verify-staff-asset-release.js` untuk kedua versi/origin. Rollback aplikasi ke commit sebelumnya tetap kompatibel dengan migrasi aditif; jangan menghapus tabel/kolom atau snapshot lama saat rollback. Verifikasi produksi dibatasi pembacaan, pratinjau OCR anonim dan pemeriksaan aset/health. Alur tulis lengkap dijalankan di database uji.
