@@ -1828,3 +1828,9 @@ body.mobile-app-mode .mobile-action-bar-force button {
         font-size: 11.5px !important;
     }
 }
+
+.staff-drd-link {
+    color: #007bff !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+}
