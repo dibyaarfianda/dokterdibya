@@ -194,6 +194,10 @@ function App() {
               <a class="btn full" href={url} target="_blank" rel="noopener">
                 Buka PDF Sumber
               </a>
+              <Notice>
+                Pratinjau PDF mengikuti dukungan browser. Jika area di bawah
+                kosong, pilih Buka PDF Sumber untuk membuka atau mengunduhnya.
+              </Notice>
               <iframe
                 title="Pratinjau sumber PDF"
                 src={url}

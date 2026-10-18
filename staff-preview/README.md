@@ -25,6 +25,7 @@ Buka `http://127.0.0.1:4175/staff-preview/`. [Katalog layar](SCREEN-CATALOG.md) 
 - Coba daftar → detail → edit → simpan → buka ulang. Draf dipisahkan per kunjungan; konflik menahan perubahan sampai pengguna memilih memuat versi tersimpan.
 - Laboratorium mendukung foto/galeri/PDF lokal, kandidat OCR **simulasi**, koreksi manual, penerbitan lokal, komparasi, dan cetak. **OCR tidak mentranskripsikan berkas yang dipilih**; kandidat selalu berasal dari fixture fiktif.
 - Cetak/PDF menggunakan dialog cetak browser dan selalu bertanda **DUMMY**. Pilih “Simpan sebagai PDF” untuk mengekspor.
+- Pratinjau berkas PDF memakai penampil bawaan browser. Jika browser tidak mendukung penampil dalam halaman, gunakan **Buka PDF Sumber** untuk membuka atau mengunduh berkas lokal.
 - **Reset Data Demo** mengembalikan fixture, draf, preferensi, dan berkas preview saja.
 
 ## Penyimpanan dan batas integrasi
