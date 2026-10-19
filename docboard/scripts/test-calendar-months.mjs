@@ -52,3 +52,20 @@ test('Staff iframe fills the visible desktop height at 80% and 100% zoom', () =>
     assert.equal(parseFloat(frame.style.height) * zoom + 60, 600);
   }
 });
+
+test('phone embed keeps its existing viewport and navigation reservation', () => {
+  const source = readFileSync(new URL('../../staff/public/scripts/main.js', import.meta.url), 'utf8');
+  const fn = source.match(/function syncDocboardFrameHeight\(\) \{[\s\S]*?(?=\nfunction bindDocboardViewportSync)/)[0];
+  const frame = { offsetHeight: 600, style: {}, getBoundingClientRect: () => ({ top: 0, height: 480 }) };
+  const bar = { getBoundingClientRect: () => ({ height: 48 }) };
+  vm.runInNewContext(`${fn}\nsyncDocboardFrameHeight();`, {
+    window: { innerWidth: 390, innerHeight: 844, visualViewport: { height: 844 } },
+    document: {
+      body: { classList: { contains: () => true } },
+      getElementById: id => id === 'docboard-iframe' ? frame : id === 'mobile-action-bar' ? bar : null,
+    },
+  });
+  assert.equal(frame.style.position, 'fixed');
+  assert.equal(frame.style.width, '100vw');
+  assert.equal(frame.style.height, 'calc(100vh - 60px)');
+});

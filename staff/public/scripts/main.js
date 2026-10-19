@@ -2042,13 +2042,16 @@ function syncDocboardFrameHeight() {
     iframe.style.width = isMobile ? '100vw' : '100%';
     iframe.style.zIndex = isMobile ? '1000' : '';
     if (page) page.style.cssText = isMobile ? 'position:static;margin:0;padding:0;' : 'margin:0 -15px -10px -15px;';
+    if (isMobile) {
+        const bottomNavHeight = document.getElementById('mobile-action-bar') ? 60 : 0;
+        iframe.style.height = `calc(100vh - ${bottomNavHeight}px)`;
+        return;
+    }
     const rect = iframe.getBoundingClientRect();
     const zoom = iframe.offsetHeight ? rect.height / iframe.offsetHeight : 1;
     if (!zoom) return;
     const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
-    const mobileBar = isMobile ? document.getElementById('mobile-action-bar') : null;
-    const bottomInset = mobileBar ? mobileBar.getBoundingClientRect().height : 0;
-    iframe.style.height = `${Math.max(0, (viewportHeight - Math.max(0, rect.top) - bottomInset) / zoom)}px`;
+    iframe.style.height = `${Math.max(0, (viewportHeight - Math.max(0, rect.top)) / zoom)}px`;
 }
 function bindDocboardViewportSync() {
     if (docboardViewportSyncBound) return;
