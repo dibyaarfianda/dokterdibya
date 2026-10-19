@@ -1,5 +1,11 @@
 import { signal } from '@preact/signals';
 
+// Publish the complete visible range together; a failed month keeps the old data.
+export async function loadCalendarMonths(months, loadMonth) {
+  const days = await Promise.all(months.map(({ year, month }) => loadMonth(year, month + 1)));
+  return Object.assign({}, ...days);
+}
+
 // Calendar state
 export const currentYear = signal(new Date().getFullYear());
 export const currentMonth = signal(new Date().getMonth());

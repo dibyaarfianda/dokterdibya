@@ -427,6 +427,7 @@ function hideAllPages(expectedGeneration = null) {
     document.documentElement.classList.remove('kantor-saya-active');
     document.body.classList.remove('kantor-saya-active');
     document.body.classList.remove('community-chat-active');
+    document.body.classList.remove('docboard-active');
     document.body.classList.remove('klinik-private-active');
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
     document.querySelectorAll('[id$="-page"]').forEach(function (p) {
@@ -2028,6 +2029,34 @@ async function showKelolaJadwalPage() {
     });
 }
 
+let docboardViewportSyncBound = false;
+function syncDocboardFrameHeight() {
+    if (!document.body.classList.contains('docboard-active')) return;
+    const iframe = document.getElementById('docboard-iframe');
+    if (!iframe) return;
+    const page = document.getElementById('docboard-frame-page');
+    const isMobile = window.innerWidth <= 991;
+    iframe.style.position = isMobile ? 'fixed' : '';
+    iframe.style.top = isMobile ? '0' : '';
+    iframe.style.left = isMobile ? '0' : '';
+    iframe.style.width = isMobile ? '100vw' : '100%';
+    iframe.style.zIndex = isMobile ? '1000' : '';
+    if (page) page.style.cssText = isMobile ? 'position:static;margin:0;padding:0;' : 'margin:0 -15px -10px -15px;';
+    const rect = iframe.getBoundingClientRect();
+    const zoom = iframe.offsetHeight ? rect.height / iframe.offsetHeight : 1;
+    if (!zoom) return;
+    const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
+    const mobileBar = isMobile ? document.getElementById('mobile-action-bar') : null;
+    const bottomInset = mobileBar ? mobileBar.getBoundingClientRect().height : 0;
+    iframe.style.height = `${Math.max(0, (viewportHeight - Math.max(0, rect.top) - bottomInset) / zoom)}px`;
+}
+function bindDocboardViewportSync() {
+    if (docboardViewportSyncBound) return;
+    docboardViewportSyncBound = true;
+    window.addEventListener('resize', syncDocboardFrameHeight, { passive: true });
+    window.visualViewport?.addEventListener('resize', syncDocboardFrameHeight, { passive: true });
+}
+
 function showDocboardPage() {
     const token = getAuthToken();
     if (!token) {
@@ -2038,6 +2067,7 @@ function showDocboardPage() {
     if (!pages.docboard) pages.docboard = grab('docboard-frame-page');
     if (pages.docboard) {
         pages.docboard.classList.remove('d-none');
+        document.body.classList.add('docboard-active');
         const iframe = document.getElementById('docboard-iframe');
         const embedVersion = window.__assetVersion || window.STAFF_CACHE_VERSION || 'v397';
         const docboardUrl = `/docboard/?embed=${encodeURIComponent(embedVersion)}`;
@@ -2047,18 +2077,8 @@ function showDocboardPage() {
             iframe.setAttribute('data-loaded', '1');
             iframe.setAttribute('data-docboard-version', embedVersion);
         }
-        // On mobile: make iframe fill the whole screen
-        if (window.innerWidth <= 991) {
-            const bottomNavH = document.getElementById('mobile-action-bar') ? 60 : 0;
-            iframe.style.position = 'fixed';
-            iframe.style.top = '0';
-            iframe.style.left = '0';
-            iframe.style.width = '100vw';
-            iframe.style.height = `calc(100vh - ${bottomNavH}px)`;
-            iframe.style.zIndex = '1000';
-            iframe.style.border = 'none';
-            pages.docboard.style.cssText = 'position:static;margin:0;padding:0;';
-        }
+        bindDocboardViewportSync();
+        syncDocboardFrameHeight();
     }
     setTitleAndActive('DocBoard', 'nav-docboard', 'docboard');
 }

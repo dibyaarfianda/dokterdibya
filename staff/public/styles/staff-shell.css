@@ -18,6 +18,14 @@
             zoom: 1 !important;
         }
 
+        body.docboard-active .main-footer {
+            display: none !important;
+        }
+
+        body.docboard-active .content-wrapper {
+            padding-bottom: 0 !important;
+        }
+
         html.mobile-app-mode,
         body.mobile-app-mode {
             zoom: 1 !important;

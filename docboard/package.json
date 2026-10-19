@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "node scripts/test-date-utils.mjs && node scripts/test-gambiran-monitor-date.mjs && node scripts/test-schedule-archive.mjs && node --test scripts/test-account-access.mjs scripts/test-schedule-refresh.mjs",
+    "test": "node scripts/test-date-utils.mjs && node scripts/test-gambiran-monitor-date.mjs && node scripts/test-schedule-archive.mjs && node --test scripts/test-account-access.mjs scripts/test-schedule-refresh.mjs scripts/test-calendar-months.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

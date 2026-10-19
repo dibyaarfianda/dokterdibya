@@ -41,6 +41,13 @@ export function getMonthName(month, full = true) {
   return full ? MONTHS_ID[month] : MONTHS_SHORT[month];
 }
 
+export function getCalendarMonths(year, month, count = 1) {
+  return Array.from({ length: count }, (_, offset) => {
+    const date = new Date(year, month + offset, 1);
+    return { year: date.getFullYear(), month: date.getMonth() };
+  });
+}
+
 export function formatDateDisplay(date) {
   const d = parseLocalDate(date);
   return `${d.getDate()} ${MONTHS_ID[d.getMonth()]} ${d.getFullYear()}`;

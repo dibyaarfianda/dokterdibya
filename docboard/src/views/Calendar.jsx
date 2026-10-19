@@ -1,18 +1,38 @@
-import { useEffect } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { route } from 'preact-router';
 import CalendarGrid from '../components/CalendarGrid';
 import WeeklyView from '../components/WeeklyView';
 import { SkeletonCalendar } from '../components/SkeletonLoader';
 import SurgeryRefreshWarning from '../components/SurgeryRefreshWarning';
 import { api, getSpaceScheduleCalendar } from '../services/api';
-import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData, spaceScheduleCalendarData, surgeryScheduleRevision, surgeryRefreshFailed, surgeryRefreshPending } from '../stores/schedule';
-import { getMonthName, today, getWeekStart } from '../utils/date';
+import { currentYear, currentMonth, calendarData, calendarLoading, calendarView, currentWeekStart, surgeryCalendarData, spaceScheduleCalendarData, surgeryScheduleRevision, surgeryRefreshFailed, surgeryRefreshPending, loadCalendarMonths } from '../stores/schedule';
+import { getMonthName, today, getWeekStart, getCalendarMonths } from '../utils/date';
 import { LOCATIONS } from '../utils/constants';
 
 export default function Calendar() {
+  const isEmbedded = document.documentElement.classList.contains('docboard-embedded');
+  const [dualMonth, setDualMonth] = useState(() => isEmbedded && window.matchMedia('(min-width: 768px)').matches);
+  const year = currentYear.value;
+  const month = currentMonth.value;
+  const months = getCalendarMonths(year, month, dualMonth ? 2 : 1);
+
   useEffect(() => {
-    loadCalendar();
-  }, [currentYear.value, currentMonth.value]);
+    if (!isEmbedded) return;
+    const query = window.matchMedia('(min-width: 768px)');
+    const update = () => setDualMonth(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [isEmbedded]);
+
+  useEffect(() => {
+    let active = true;
+    calendarLoading.value = true;
+    loadCalendarMonths(months, async (y, m) => (await api.getCalendar(y, m)).days || {})
+      .then(days => { if (active) calendarData.value = days; })
+      .catch(err => console.error('Failed to load calendar:', err))
+      .finally(() => { if (active) calendarLoading.value = false; });
+    return () => { active = false; };
+  }, [year, month, dualMonth]);
 
   // An external surgery change refreshes only the surgery calendar.
   useEffect(() => {
@@ -20,9 +40,9 @@ export default function Calendar() {
     async function loadSurgeryCalendar() {
       surgeryRefreshPending.value = true;
       try {
-        const data = await api.getSurgeryCalendar(currentYear.value, currentMonth.value + 1);
+        const days = await loadCalendarMonths(months, async (y, m) => (await api.getSurgeryCalendar(y, m)).days || {});
         if (active) {
-          surgeryCalendarData.value = data.days || {};
+          surgeryCalendarData.value = days;
           surgeryRefreshFailed.value = false;
         }
       } catch (err) {
@@ -34,31 +54,15 @@ export default function Calendar() {
     }
     loadSurgeryCalendar();
     return () => { active = false; surgeryRefreshPending.value = false; };
-  }, [currentYear.value, currentMonth.value, surgeryScheduleRevision.value]);
+  }, [year, month, dualMonth, surgeryScheduleRevision.value]);
 
   useEffect(() => {
-    loadSpaceScheduleCalendar();
-  }, [currentYear.value, currentMonth.value]);
-
-  async function loadCalendar() {
-    calendarLoading.value = true;
-    try {
-      const data = await api.getCalendar(currentYear.value, currentMonth.value + 1);
-      calendarData.value = data.days || {};
-    } catch (err) {
-      console.error('Failed to load calendar:', err);
-    } finally {
-      calendarLoading.value = false;
-    }
-  }
-
-  async function loadSpaceScheduleCalendar() {
-    try {
-      spaceScheduleCalendarData.value = await getSpaceScheduleCalendar(currentYear.value, currentMonth.value + 1);
-    } catch (err) {
-      console.error('Failed to load space schedule calendar:', err);
-    }
-  }
+    let active = true;
+    loadCalendarMonths(months, getSpaceScheduleCalendar)
+      .then(days => { if (active) spaceScheduleCalendarData.value = days; })
+      .catch(err => console.error('Failed to load space schedule calendar:', err));
+    return () => { active = false; };
+  }, [year, month, dualMonth]);
 
   function prevMonth() {
     if (currentMonth.value === 0) {
@@ -169,15 +173,16 @@ export default function Calendar() {
         <>
           {/* Month navigation */}
           <div class="month-nav">
-            <button class="month-nav-btn" onClick={prevMonth}>
+            <button class="month-nav-btn" aria-label="Bulan sebelumnya" onClick={prevMonth}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="15,18 9,12 15,6" />
               </svg>
             </button>
             <button class="month-nav-title" onClick={goToToday}>
               {getMonthName(currentMonth.value)} {currentYear.value}
+              {dualMonth && ` – ${getMonthName(months[1].month)} ${months[1].year}`}
             </button>
-            <button class="month-nav-btn" onClick={nextMonth}>
+            <button class="month-nav-btn" aria-label="Bulan berikutnya" onClick={nextMonth}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="9,18 15,12 9,6" />
               </svg>
@@ -185,18 +190,23 @@ export default function Calendar() {
           </div>
 
           {/* Calendar grid */}
-          {calendarLoading.value ? (
-            <SkeletonCalendar />
-          ) : (
-            <CalendarGrid
-              year={currentYear.value}
-              month={currentMonth.value}
-              events={calendarData.value}
-              surgeryEvents={surgeryCalendarData.value}
-              spaceEvents={spaceScheduleCalendarData.value}
-              onDayClick={handleDayClick}
-            />
-          )}
+          <div class="calendar-months">
+            {months.map(({ year: y, month: m }) => (
+              <section class="calendar-month-panel" key={`${y}-${m}`} aria-label={`${getMonthName(m)} ${y}`}>
+                {dualMonth && <h2 class="calendar-month-title">{getMonthName(m)} {y}</h2>}
+                {calendarLoading.value ? <SkeletonCalendar /> : (
+                  <CalendarGrid
+                    year={y}
+                    month={m}
+                    events={calendarData.value}
+                    surgeryEvents={surgeryCalendarData.value}
+                    spaceEvents={spaceScheduleCalendarData.value}
+                    onDayClick={handleDayClick}
+                  />
+                )}
+              </section>
+            ))}
+          </div>
         </>
       )}
 
