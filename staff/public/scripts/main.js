@@ -462,7 +462,12 @@ function syncCommunityChatFrameHeight() {
     const zoom = page.offsetHeight ? rect.height / page.offsetHeight : 1;
     if (!zoom) return;
     const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0;
-    const availableHeight = Math.max(0, Math.floor((viewportHeight - Math.max(0, rect.top)) / zoom));
+    // The fixed PWA menu overlays the viewport; keep the iframe's composer above it.
+    const bottomBarRect = document.getElementById('mobile-action-bar')?.getBoundingClientRect();
+    const visibleBottom = bottomBarRect?.height > 0
+        ? Math.min(viewportHeight, Math.max(0, bottomBarRect.top))
+        : viewportHeight;
+    const availableHeight = Math.max(0, Math.floor((visibleBottom - Math.max(0, rect.top)) / zoom));
     document.documentElement.style.setProperty('--staff-community-chat-height', `${availableHeight}px`);
 }
 

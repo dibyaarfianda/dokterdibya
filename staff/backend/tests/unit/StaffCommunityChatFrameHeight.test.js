@@ -5,7 +5,7 @@ const vm = require('vm');
 const main = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/main.js'), 'utf8');
 const source = main.slice(main.indexOf('function syncCommunityChatFrameHeight()'), main.indexOf('function bindCommunityChatViewportSync()'));
 
-function layout({ zoom = 0.8, height = 720, top = 56, active = true, present = true, visualViewport = true } = {}) {
+function layout({ zoom = 0.8, height = 720, top = 56, active = true, present = true, visualViewport = true, bottomBar = null } = {}) {
     const properties = new Map();
     const page = {
         offsetHeight: 600,
@@ -14,7 +14,9 @@ function layout({ zoom = 0.8, height = 720, top = 56, active = true, present = t
     const window = { innerHeight: height, visualViewport: visualViewport ? { height } : null };
     const document = {
         body: { classList: { contains: () => active } },
-        getElementById: () => present ? page : null,
+        getElementById: id => id === 'community-chat-page'
+            ? (present ? page : null)
+            : (id === 'mobile-action-bar' && bottomBar ? { getBoundingClientRect: () => bottomBar } : null),
         documentElement: { clientHeight: height, style: { setProperty: (key, value) => properties.set(key, value) } }
     };
     const context = vm.createContext({ window, document });
@@ -40,6 +42,17 @@ test('a viewport resize updates chat height while retaining the desktop scale', 
     window.visualViewport.height = 480;
     context.syncCommunityChatFrameHeight();
     expect(properties.get('--staff-community-chat-height')).toBe('530px');
+});
+
+test.each([
+    ['mobile bottom menu', { zoom: 1, height: 820, top: 52, bottomBar: { top: 754, height: 66 } }, '702px'],
+    ['scaled shell with a visible menu', { zoom: 0.8, bottomBar: { top: 650, height: 70 } }, '742px'],
+    ['hidden desktop menu', { bottomBar: { top: 0, height: 0 } }, '830px'],
+    ['keyboard viewport ending above the menu', { zoom: 1, height: 460, top: 52, bottomBar: { top: 754, height: 66 } }, '408px']
+])('%s keeps the chat within its unobscured viewport', (_, options, expected) => {
+    const { context, properties } = layout(options);
+    context.syncCommunityChatFrameHeight();
+    expect(properties.get('--staff-community-chat-height')).toBe(expected);
 });
 
 test.each([{ active: false }, { present: false }])('inactive or absent chat does not change the layout: %j', options => {
