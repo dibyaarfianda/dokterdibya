@@ -121,32 +121,84 @@ function renderPage() {
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     container.innerHTML = `
+        <style>
+            #penjualan-obat-page .obat-sales-toolbar {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                flex-wrap: wrap !important;
+                gap: 12px !important;
+            }
+            #penjualan-obat-page #btn-new-obat-sale {
+                flex-shrink: 0 !important;
+                white-space: nowrap !important;
+            }
+            #penjualan-obat-page .obat-sales-filters {
+                display: grid !important;
+                grid-template-columns: minmax(340px, 1fr) 160px 180px !important;
+                align-items: center !important;
+                gap: 8px !important;
+                flex: 0 1 710px !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                margin-left: auto !important;
+            }
+            #penjualan-obat-page .obat-sales-date-range {
+                display: grid !important;
+                grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+                align-items: center !important;
+                gap: 8px !important;
+                min-width: 0 !important;
+            }
+            #penjualan-obat-page .obat-sales-filters .form-control,
+            #penjualan-obat-page #btn-new-obat-sale {
+                height: 38px !important;
+            }
+            #penjualan-obat-page .obat-sales-filters > .form-control {
+                width: 100% !important;
+                min-width: 0 !important;
+            }
+            #penjualan-obat-page .obat-sales-date-separator {
+                color: #6c757d !important;
+                white-space: nowrap !important;
+            }
+            @media (max-width: 991.98px) {
+                #penjualan-obat-page .obat-sales-filters {
+                    flex-basis: 100% !important;
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                }
+                #penjualan-obat-page .obat-sales-date-range {
+                    grid-column: 1 / -1 !important;
+                }
+            }
+            @media (max-width: 575.98px) {
+                #penjualan-obat-page .obat-sales-filters .form-control {
+                    font-size: 14px !important;
+                    padding-left: 8px !important;
+                }
+            }
+        </style>
         <div class="container-fluid">
             <!-- Header with New Sale Button and Filters -->
             <div class="row mb-3">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="obat-sales-toolbar">
                         ${hasAccountPermission('medications.sales_write') ? `<button class="btn btn-primary" id="btn-new-obat-sale">
                             <i class="fas fa-plus"></i> Penjualan Baru
                         </button>` : '<span></span>'}
-                        <div class="d-flex gap-2 flex-wrap align-items-center">
-                            <div class="input-group" style="width: auto;">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
-                                </div>
-                                <input type="date" class="form-control" id="filter-date-from" value="${firstDayOfMonth}" style="width: 140px;">
-                                <div class="input-group-prepend input-group-append">
-                                    <span class="input-group-text">s/d</span>
-                                </div>
-                                <input type="date" class="form-control" id="filter-date-to" value="${today}" style="width: 140px;">
+                        <div class="obat-sales-filters" role="group" aria-label="Filter penjualan obat">
+                            <div class="obat-sales-date-range" role="group" aria-label="Rentang tanggal penjualan">
+                                <input type="date" class="form-control" id="filter-date-from" aria-label="Tanggal mulai" value="${firstDayOfMonth}">
+                                <span class="obat-sales-date-separator">s/d</span>
+                                <input type="date" class="form-control" id="filter-date-to" aria-label="Tanggal akhir" value="${today}">
                             </div>
-                            <select class="form-control" id="filter-status" style="width: 150px;">
+                            <select class="form-control" id="filter-status" aria-label="Status penjualan">
                                 <option value="">Semua Status</option>
                                 <option value="draft">Draft</option>
                                 <option value="payment_pending">Payment Pending</option>
                                 <option value="paid">Paid</option>
                             </select>
-                            <select class="form-control" id="filter-hospital" style="width: 150px;">
+                            <select class="form-control" id="filter-hospital" aria-label="Rumah sakit">
                                 <option value="">Semua RS</option>
                                 ${HOSPITALS.map(h => `<option value="${h.value}">${h.label}</option>`).join('')}
                             </select>
