@@ -44,7 +44,7 @@
             ['fa-solid fa-wave-square', 'Hitung Kontraksi', '/contraction-timer.html'],
             ['fa-solid fa-calendar-days', 'Kalender Kesuburan', '/fertility-calendar.html'],
             ['fa-solid fa-kit-medical', 'Jadwal Vitamin', '/jadwal-vitamin.html'],
-            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html', 'NEW']
+            ['fa-solid fa-calculator', 'Estimasi Biaya', '/estimasi-biaya-kehamilan.html']
         ],
         edukasi: [
             ['fa-solid fa-heart', 'Perjalanan Ibu', '/perjalanan-ibu.html'],
