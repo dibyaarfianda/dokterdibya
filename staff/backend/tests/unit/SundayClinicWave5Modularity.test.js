@@ -22,7 +22,8 @@ const EXPECTED_ROUTES = Object.freeze({
         'get /queue/settings',
         'put /queue/settings',
         'put /records/:mrId/queue-status',
-        'get /queue/public'
+        'get /queue/public',
+        'get /queue/preview'
     ],
     records: [
         'get /check-existing',

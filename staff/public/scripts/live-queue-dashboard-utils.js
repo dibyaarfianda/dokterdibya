@@ -1,3 +1,5 @@
+import { renderPatientQueueHtml } from './patient-queue-view.js';
+
 const STATUS_CONFIG = {
   menunggu: { label: 'Menunggu', badge: 'badge-secondary' },
   anamnesa: { label: 'Anamnesa', badge: 'badge-info' },
@@ -80,7 +82,6 @@ export function renderLiveQueueHtml(queueItems = [], options = {}) {
 
 export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
   const items = Array.isArray(queueItems) ? queueItems : [];
-  const summary = summarizeQueue(items);
   const dateLabel = options.dateLabel || 'Hari ini';
   const updatedAt = options.updatedAt
     ? DibyaDateTime.time(new Date(options.updatedAt), { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })
@@ -111,112 +112,17 @@ export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
           </button>
         </div>
       </div>
-      <div class="card-body">
-        ${isOnBreak ? '<div class="alert alert-success" role="status">Sedang istirahat</div>' : ''}
-        <div class="row">
-          ${renderSummaryBox('Total', summary.total, 'primary', 'fa-users')}
-          ${renderSummaryBox('Menunggu', summary.waiting, 'warning', 'fa-hourglass-half')}
-          ${renderSummaryBox('Proses', summary.inProgress, 'info', 'fa-stethoscope')}
-          ${renderSummaryBox('Selesai', summary.completed, 'success', 'fa-check-circle')}
+      <div class="card-body patient-queue-preview">
+        <link rel="stylesheet" href="/staff/public/styles/patient-queue-view.css?v=${escapeHtml(options.assetVersion || 'v473')}">
+        <div class="patient-queue-view">
+          <div class="patient-queue-heading">Antrian Klinik Hari Ini <span class="patient-queue-live">LIVE</span></div>
+          <div class="patient-queue-doctor">${isOnBreak ? 'Sedang istirahat' : (doctorArrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang')}</div>
+          ${renderPatientQueueHtml(items, { visible: isQueueVisible })}
+          <p class="privacy-note"><i class="fa fa-lock"></i> Nama pasien lain disamarkan untuk menjaga privasi</p>
         </div>
-        ${items.length || options.breaks?.length ? renderOnlineQueueTable(items, options) : renderOnlineQueueEmptyState()}
       </div>
     </div>
   `;
-}
-
-function renderSummaryBox(label, value, color, icon) {
-  return `
-    <div class="col-lg-3 col-6">
-      <div class="small-box bg-${color}" aria-label="${escapeHtml(label)} ${escapeHtml(value)}">
-        <div class="inner">
-          <h3>${escapeHtml(value)}</h3>
-          <p>${escapeHtml(label)}</p>
-        </div>
-        <div class="icon"><i class="fas ${escapeHtml(icon)}"></i></div>
-      </div>
-    </div>
-  `;
-}
-
-function renderOnlineQueueTable(items, options) {
-  const rows = items.map((item, index) => ({time: item.slot_time || '', html: renderOnlineQueueRow(item, index)}));
-  for (const rest of [...(options.breaks || [])].sort((a,b) => a.startTime.localeCompare(b.startTime))) {
-    const html = `<tr class="booking-break-row ${options.isOnBreak ? 'bg-success' : 'bg-light'}"><td colspan="6" style="text-align:center !important; padding:16px !important;"><i class="fas fa-coffee mr-2"></i>Istirahat &middot; ${escapeHtml(rest.startTime)} - ${escapeHtml(rest.endTime)} WIB &middot; Sesi ${escapeHtml(rest.session)}${options.isOnBreak ? '  -  Sedang istirahat' : ''}</td></tr>`;
-    const index = rows.findIndex(row => row.time >= rest.startTime);
-    rows.splice(index < 0 ? rows.length : index, 0, {time: rest.startTime, html});
-  }
-  return `
-    <div class="table-responsive">
-      <table class="table table-hover table-sm mb-0">
-        <thead class="thead-light">
-          <tr>
-            <th style="text-align: center !important; vertical-align: middle !important; width: 60px;">No</th>
-            <th style="vertical-align: middle !important;">Pasien</th>
-            <th style="vertical-align: middle !important; width: 160px;">Jam</th>
-            <th style="vertical-align: middle !important;">Keluhan</th>
-            <th style="text-align: center !important; vertical-align: middle !important; width: 150px;">Status</th>
-            <th style="text-align: center !important; vertical-align: middle !important; width: 130px;">Aksi</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(row => row.html).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-function renderOnlineQueueRow(item, index) {
-  const statusConfig = getQueueStatusConfig(item && item.queue_status);
-  const patientName = item && item.patient_name ? item.patient_name : '-';
-  const sessionLabel = item && item.session_label ? item.session_label : `Sesi ${item?.session || '-'}`;
-  const slotText = item && item.slot_time ? item.slot_time : `Slot ${item?.slot_number || '-'}`;
-  const complaint = item && item.chief_complaint ? item.chief_complaint : '-';
-  const mrId = item && item.mr_id ? String(item.mr_id) : '';
-  const appointmentId = item && item.id ? `#${item.id}` : '';
-  const status = item && item.status ? item.status : '';
-
-  return `
-    <tr>
-      <td class="text-center align-middle"><span class="badge badge-primary" style="min-width:32px;">${index + 1}</span></td>
-      <td class="align-middle">
-        <div class="font-weight-bold">${escapeHtml(patientName)}</div>
-        <small class="text-muted">${escapeHtml(appointmentId)}${mrId ? ` &bull; ${escapeHtml(mrId)}` : ''}</small>
-      </td>
-      <td class="align-middle">
-        <div class="font-weight-bold">${escapeHtml(slotText)}</div>
-        <small class="text-muted">${escapeHtml(sessionLabel)}</small>
-      </td>
-      <td class="align-middle"><span class="text-muted">${escapeHtml(complaint)}</span></td>
-      <td class="text-center align-middle">
-        <span class="badge ${statusConfig.badge}">${escapeHtml(statusConfig.label)}</span>
-        ${status ? `<br><small class="text-muted">${escapeHtml(status)}</small>` : ''}
-      </td>
-      <td class="text-center align-middle">
-        ${mrId
-          ? `<button type="button" class="btn btn-xs btn-primary" onclick="window.openSundayClinicWithMrId('${escapeJsString(mrId)}', 'identitas')" title="Buka rekam medis"><i class="fas fa-notes-medical mr-1"></i>Buka</button>`
-          : '<button type="button" class="btn btn-xs btn-outline-secondary" disabled title="Belum ada DRD"><i class="fas fa-clock mr-1"></i>Belum DRD</button>'}
-      </td>
-    </tr>
-  `;
-}
-
-function renderOnlineQueueEmptyState() {
-  return `
-    <div class="text-center text-muted py-5">
-      <i class="fas fa-list-ol fa-3x mb-3"></i>
-      <p class="mb-0">Belum ada antrian online hari ini.</p>
-    </div>
-  `;
-}
-
-function escapeJsString(value) {
-  return String(value == null ? '' : value)
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/\r/g, '\\r')
-    .replace(/\n/g, '\\n');
 }
 
 function renderQueueItem(item, index) {

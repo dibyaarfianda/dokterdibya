@@ -1,0 +1,253 @@
+/* Patient queue cards shared with the Staff preview. */
+.patient-queue-view .session-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #28a7e9;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid rgba(40, 167, 233, 0.15);
+    margin: 18px 0 10px;
+}
+.patient-queue-view .session-label:first-of-type {
+    margin-top: 0;
+}
+.patient-queue-view .queue-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    transition: background 0.2s, border-color 0.2s;
+}
+.patient-queue-view .queue-row.status-menunggu {
+    background: rgba(255,255,255,0.03);
+}
+.patient-queue-view .queue-row.status-anamnesa {
+    background: rgba(16, 185, 129, 0.07);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+.patient-queue-view .queue-row.status-diperiksa {
+    background: rgba(220, 53, 69, 0.07);
+    border-color: rgba(220, 53, 69, 0.35);
+}
+.patient-queue-view .queue-row.status-selesai_periksa {
+    background: rgba(255, 193, 7, 0.07);
+    border-color: rgba(255, 193, 7, 0.3);
+}
+.patient-queue-view .queue-row.status-lunas {
+    opacity: 0.4;
+}
+.patient-queue-view .queue-row.status-selesai {
+    opacity: 0.55;
+}
+.patient-queue-view .queue-row.status-dilayani {
+    background: rgba(16, 185, 129, 0.07);
+    border-color: rgba(16, 185, 129, 0.3);
+}
+.patient-queue-view .slot-num {
+    min-width: 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+.patient-queue-view .status-menunggu .slot-num {
+    background: rgba(40, 167, 233, 0.15); color: #28a7e9;
+}
+.patient-queue-view .status-anamnesa .slot-num {
+    background: rgba(16, 185, 129, 0.2);  color: #10b981;
+}
+.patient-queue-view .status-diperiksa .slot-num {
+    background: rgba(220, 53, 69, 0.2);   color: #dc3545;
+}
+.patient-queue-view .status-selesai_periksa .slot-num {
+    background: rgba(255, 193, 7, 0.2); color: #ffc107;
+}
+.patient-queue-view .status-lunas .slot-num {
+    background: rgba(255,255,255,0.06);   color: #555;
+}
+.patient-queue-view .status-dilayani .slot-num {
+    background: rgba(16, 185, 129, 0.2);  color: #10b981;
+}
+.patient-queue-view .status-selesai  .slot-num {
+    background: rgba(255,255,255,0.06);   color: #888;
+}
+.patient-queue-view .queue-info {
+    flex: 1;
+    min-width: 0;
+}
+.patient-queue-view .queue-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.patient-queue-view .queue-time {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+}
+.patient-queue-view .queue-status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.patient-queue-view .badge-menunggu {
+    background: rgba(40, 167, 233, 0.12); color: #28a7e9; border: 1px solid rgba(40, 167, 233, 0.25);
+}
+.patient-queue-view .badge-anamnesa {
+    background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.patient-queue-view .badge-diperiksa {
+    background: rgba(220, 53, 69, 0.12);  color: #dc3545; border: 1px solid rgba(220, 53, 69, 0.3);
+}
+.patient-queue-view .badge-selesai_periksa {
+    background: rgba(255, 193, 7, 0.12);  color: #e6ac00; border: 1px solid rgba(255, 193, 7, 0.3);
+}
+.patient-queue-view .badge-lunas {
+    background: rgba(255,255,255,0.06);   color: #777;    border: 1px solid rgba(255,255,255,0.1);
+}
+.patient-queue-view .badge-dilayani {
+    background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.patient-queue-view .badge-selesai {
+    background: rgba(255,255,255,0.06);   color: #777;    border: 1px solid rgba(255,255,255,0.1);
+}
+.patient-queue-view .privacy-note {
+    text-align: center;
+    font-size: 11px;
+    color: #555;
+    margin-top: 20px;
+    line-height: 1.6;
+}
+.patient-queue-view .privacy-note i {
+    margin-right: 4px;
+}
+.patient-queue-view .state-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px;
+    padding: 40px 20px;
+    text-align: center;
+}
+.patient-queue-view .state-card i {
+    font-size: 36px;
+    color: #444;
+    margin-bottom: 14px;
+    display: block;
+}
+.patient-queue-view .state-card p {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.6;
+}
+.patient-queue-view .state-card.loading i {
+    color: #28a7e9; animation: spin 1s linear infinite;
+}
+
+
+
+.patient-queue-view .session-label {
+    color: var(--green, #5c7f72) !important;
+}
+
+.patient-queue-view .queue-name {
+    color: var(--ink, #111111) !important;
+}
+
+.patient-queue-view .queue-time,
+.patient-queue-view .privacy-note,
+.patient-queue-view .state-card p {
+    color: var(--muted, #717171) !important;
+}
+
+.patient-queue-view .state-card,
+.patient-queue-view .queue-row {
+    background: rgba(255, 255, 255, 0.82) !important;
+    border: 1px solid rgba(92, 127, 114, 0.16) !important;
+    box-shadow: 0 16px 42px rgba(17, 17, 17, 0.06) !important;
+}
+
+.patient-queue-view .session-label {
+    border-bottom-color: rgba(92, 127, 114, 0.16) !important;
+}
+
+.patient-queue-view .queue-row.status-menunggu {
+    background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.patient-queue-view .queue-row.status-anamnesa,
+.patient-queue-view .queue-row.status-dilayani {
+    background: rgba(92, 127, 114, 0.08) !important;
+    border-color: rgba(92, 127, 114, 0.24) !important;
+}
+
+.patient-queue-view .queue-row.status-diperiksa {
+    background: rgba(220, 53, 69, 0.06) !important;
+    border-color: rgba(220, 53, 69, 0.24) !important;
+}
+
+.patient-queue-view .queue-row.status-selesai_periksa {
+    background: rgba(245, 158, 11, 0.08) !important;
+    border-color: rgba(245, 158, 11, 0.24) !important;
+}
+
+.patient-queue-view .status-menunggu .slot-num {
+    background: rgba(92, 127, 114, 0.12) !important;
+    color: var(--green, #5c7f72) !important;
+}
+
+.patient-queue-view .status-anamnesa .slot-num,
+.patient-queue-view .status-dilayani .slot-num {
+    background: rgba(92, 127, 114, 0.16) !important;
+    color: #2d5a42 !important;
+}
+
+.patient-queue-view .status-lunas .slot-num,
+.patient-queue-view .status-selesai .slot-num,
+.patient-queue-view .badge-lunas,
+.patient-queue-view .badge-selesai {
+    background: rgba(17, 17, 17, 0.06) !important;
+    color: #6b7280 !important;
+    border-color: rgba(17, 17, 17, 0.08) !important;
+}
+
+.patient-queue-view .badge-menunggu {
+    background: rgba(92, 127, 114, 0.09) !important;
+    color: var(--green, #5c7f72) !important;
+    border-color: rgba(92, 127, 114, 0.2) !important;
+}
+
+.patient-queue-view .badge-anamnesa,
+.patient-queue-view .badge-dilayani {
+    background: rgba(92, 127, 114, 0.12) !important;
+    color: #2d5a42 !important;
+    border-color: rgba(92, 127, 114, 0.24) !important;
+}
+
+.patient-queue-view .state-card i,
+.patient-queue-view .state-card.loading i {
+    color: var(--green, #5c7f72) !important;
+}
+
+.patient-queue-preview { background: linear-gradient(180deg, #fbfbf7, #f3f7f1) !important; }
+.patient-queue-preview .patient-queue-view { max-width: 520px; margin: 0 auto; padding: 8px 0 16px; }
+.patient-queue-view .patient-queue-heading { font-size: 18px; font-weight: 600; color: #111 !important; margin-bottom: 8px; }
+.patient-queue-view .patient-queue-live { float: right; color: #2d5a42 !important; font-size: 11px; padding: 4px 9px; border-radius: 20px; background: rgba(92,127,114,.1) !important; }
+.patient-queue-view .patient-queue-doctor { color: #717171 !important; font-size: 13px; margin-bottom: 18px; }
+.patient-queue-view p { margin-bottom: 0 !important; }
+.patient-queue-view .queue-status-badge { max-width: 48%; white-space: normal; text-align: center; }

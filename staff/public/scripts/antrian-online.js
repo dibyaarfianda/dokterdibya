@@ -4,7 +4,7 @@ import { renderOnlineQueuePageHtml } from './live-queue-dashboard-utils.js';
 let pageBound = false;
 let socketBound = false;
 let socketBindTimer = null;
-const ONLINE_QUEUE_POLL_INTERVAL_MS = 45000;
+const ONLINE_QUEUE_POLL_INTERVAL_MS = 30000;
 const ONLINE_QUEUE_ERROR_BACKOFF_MS = 60000;
 let queueInFlight = false;
 let queueBackoffUntil = 0;
@@ -113,7 +113,7 @@ async function loadAntrianOnlineQueue(forceRefresh = false, signal) {
     try {
         const [settings, response] = await Promise.all([
             loadQueueSettings(signal),
-            fetch(`/api/sunday-clinic/queue/today?refresh=${forceRefresh ? '1' : '0'}&_t=${Date.now()}`, {
+            fetch(`/api/sunday-clinic/queue/preview?_t=${Date.now()}`, {
                 signal,
                 headers: {
                     'Authorization': `Bearer ${token}`,

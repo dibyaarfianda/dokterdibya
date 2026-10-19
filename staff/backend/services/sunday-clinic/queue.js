@@ -453,6 +453,15 @@ async function putRecordsByMrIdQueueStatus(req, res, next) {
 }
 
 async function getQueuePublic(req, res, next) {
+    return getPatientQueue(req, res, next, false);
+}
+
+async function getQueuePreview(req, res, next) {
+    return getPatientQueue(req, res, next, true);
+}
+
+// Staff preview shares the patient projection, but has its own staff-only route.
+async function getPatientQueue(req, res, next, staffPreview) {
     try {
         const { dateStr: todayStr, startDateTime: todayStart, endDateTime: tomorrowStart } = getGmt7DayWindow();
         const patientId = req.user?.id;
@@ -461,7 +470,7 @@ async function getQueuePublic(req, res, next) {
         res.set('Pragma', 'no-cache');
         res.set('Expires', '0');
 
-        const [[activeBooking]] = await db.query(
+        const [[activeBooking]] = staffPreview ? [[null]] : await db.query(
             `SELECT id, appointment_date, session, slot_number, status
              FROM sunday_appointments
              WHERE patient_id = ?
@@ -478,7 +487,7 @@ async function getQueuePublic(req, res, next) {
             [patientId, todayStr]
         );
 
-        if (!activeBooking) {
+        if (!staffPreview && !activeBooking) {
             return res.status(403).json({
                 success: false,
                 code: 'QUEUE_ACCESS_DENIED',
@@ -563,5 +572,6 @@ module.exports = {
     putQueueSettings,
     putRecordsByMrIdQueueStatus,
     getQueuePublic,
+    getQueuePreview,
     setupSocketHandlers
 };

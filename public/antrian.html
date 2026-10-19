@@ -968,6 +968,7 @@
             color: var(--green, #5c7f72) !important;
         }
     </style>
+    <link rel="stylesheet" href="/staff/public/styles/patient-queue-view.css?v=v473">
     <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit antrian-page" data-tool-shell-active="jadwal" data-tool-kicker="Live Queue" data-tool-title="Antrian hari ini." data-tool-copy="Pantau status antrian klinik secara real time dan atur pengingat saat nomor Anda sudah mendekat." data-tool-meta-label="Refresh" data-tool-meta-value="Otomatis 30 detik">
@@ -1085,7 +1086,7 @@
         </div>
         </div>
 
-        <div id="queue-container">
+        <div id="queue-container" class="patient-queue-view">
             <div class="state-card loading">
                 <i class="fa-solid fa-circle-notch"></i>
                 <p>Memuat data antrian...</p>
@@ -1116,7 +1117,8 @@
 
     <script src="/js/push-subscribe.js?v=20260516q1"></script>
 
-    <script>
+    <script type="module">
+        import { renderPatientQueueHtml } from "/staff/public/scripts/patient-queue-view.js?v=v473";
         const STATUS_LABELS = {
             menunggu:        'Belum Datang',
             anamnesa:        'Pasien Hadir',
@@ -1747,12 +1749,8 @@
 
         function showQueueHidden() {
             const container = document.getElementById('queue-container');
-            container.innerHTML = `
-                <div class="state-card">
-                    <i class="fa fa-eye-slash" style="font-size:36px;color:#555;margin-bottom:12px;display:block;"></i>
-                    <p>Antrian belum dibuka hari ini.<br><small style="color:#555">Silakan coba beberapa saat lagi.</small></p>
-                </div>`;
-                updateReminderLiveStatus();
+            container.innerHTML = renderPatientQueueHtml([], { visible: false });
+            updateReminderLiveStatus();
         }
 
         function showQueueAccessDenied(message) {
@@ -1774,49 +1772,11 @@
             document.getElementById('today-date').textContent = formatDate(date);
             const container = document.getElementById('queue-container');
 
-            if (!data || data.length === 0) {
-                container.innerHTML = `
-                    <div class="state-card">
-                        <i class="fa-solid fa-calendar-xmark"></i>
-                        <p>Tidak ada antrian hari ini.<br>Klinik mungkin sedang tidak buka.</p>
-                    </div>`;
-                populateReminderSessions();
-                updateReminderLiveStatus();
-                return;
-            }
-
-            // Group by session
-            const sessions = {};
-            for (const apt of data) {
-                const key = apt.session;
-                if (!sessions[key]) sessions[key] = { label: apt.session_label, items: [] };
-                sessions[key].items.push(apt);
-            }
-
-            let html = '';
-            for (const key of Object.keys(sessions).sort((a, b) => a - b)) {
-                const sess = sessions[key];
-                html += `<div class="session-label"><i class="fa-regular fa-clock"></i> Sesi ${sess.label}</div>`;
-                for (const apt of sess.items) {
-                    const st = apt.queue_status || 'menunggu';
-                    const badgeClass = `badge-${st}`;
-                    const rowClass = `status-${st}`;
-                    html += `
-                        <div class="queue-row ${rowClass}">
-                            <div class="slot-num">${apt.slot_number}</div>
-                            <div class="queue-info">
-                                <div class="queue-name">${escHtml(apt.masked_name)}</div>
-                                <div class="queue-time"><i class="fa-regular fa-clock" style="font-size:10px;margin-right:3px;"></i>${apt.slot_time || '-'}</div>
-                            </div>
-                            <span class="queue-status-badge ${badgeClass}">${STATUS_LABELS[st] || st}</span>
-                        </div>`;
-                }
-            }
-            container.innerHTML = html;
+            container.innerHTML = renderPatientQueueHtml(data);
 
             populateReminderSessions();
             updateReminderLiveStatus();
-            maybeTriggerReminder();
+            if (_queueData.length) maybeTriggerReminder();
         }
 
         function escHtml(str) {

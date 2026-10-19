@@ -51,6 +51,7 @@ describe('patient route access policy', () => {
     });
 
     test.each([
+        ['GET', '/api/sunday-clinic/queue/preview'],
         ['GET', '/api/patients'],
         ['GET', '/api/patients/all'],
         ['GET', '/api/patients/other-patient-id'],
