@@ -232,6 +232,10 @@ async function bootstrapStaffShell() {
             () => import('./support-chat-badge.js').then(module => module.initSupportChatBadge?.()),
             2200
         );
+        scheduleDeferredStartup(
+            () => import('./conversation-badges.js').then(module => module.initConversationBadges()),
+            1500
+        );
         runIdle(() => {
             try {
                 initSessionManager();

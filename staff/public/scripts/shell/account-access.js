@@ -49,6 +49,10 @@ function syncAccountPermissionElements(user) {
 }
 
 function syncMobileActionBar(user) {
+    if (window.staffMobileQuickMenu) {
+        window.staffMobileQuickMenu.render(user);
+        return;
+    }
     const bar = document.getElementById('mobile-action-bar');
     if (!bar) return;
     const allowedNavigation = new Set(user.navigation || []);

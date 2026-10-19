@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v469';
+const STAFF_PWA_VERSION = 'v470';
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `${CACHE_NAME}-static`;
 const DYNAMIC_CACHE = `${CACHE_NAME}-dynamic`;
@@ -35,6 +35,8 @@ const STAFF_SHELL_SCRIPTS = [
   '/staff/public/scripts/session-manager.js',
   '/staff/public/scripts/socket-credentials.js',
   '/staff/public/scripts/shell/actions.js',
+  '/staff/public/scripts/shell/mobile-quick-menu.js',
+  '/staff/public/scripts/shell/conversation-badges.js',
   '/staff/public/scripts/shell/account-access.js',
   '/staff/public/scripts/shell/bootstrap.js',
   '/staff/public/scripts/shell/compact-sidebar.js',

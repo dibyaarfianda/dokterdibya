@@ -105,6 +105,16 @@ function openMobileMenu() {
         {icon: 'fa-sign-out-alt', text: 'Logout', fn: 'handleLogout', color: '#dc3545'}
     ];
 
+    if (window.staffMobileQuickMenu) {
+        menuData = [
+            { icon: 'fa-sliders-h', text: 'Atur Quick Menu', run: window.staffMobileQuickMenu.openEditor, color: '#0d6efd' },
+            ...window.staffMobileQuickMenu.moreItems(),
+            { icon: 'divider' },
+            { icon: 'fa-sync-alt', text: 'Perbarui Aplikasi', fn: 'clearAppCache', color: '#6c757d' },
+            { icon: 'fa-sign-out-alt', text: 'Logout', fn: 'handleLogout', color: '#dc3545' }
+        ];
+    }
+
     menuData.forEach(function(item) {
         if (item.permission && typeof window.hasAccountPermission === 'function' && !window.hasAccountPermission(item.permission)) return;
         if (item.doctorOnly && Number((window.currentStaffUser || window.auth?.currentUser)?.role_id) !== window.staffRoleConstants?.ROLE_IDS.DOKTER) return;
@@ -127,7 +137,8 @@ function openMobileMenu() {
             link.onclick = function(e) {
                 e.preventDefault();
                 closeMobileMenu();
-                if (typeof window[item.fn] === 'function') window[item.fn]();
+                if (item.run) item.run();
+                else if (typeof window[item.fn] === 'function') window[item.fn]();
             };
 
             var icon = document.createElement('i');
@@ -141,6 +152,12 @@ function openMobileMenu() {
 
             link.appendChild(icon);
             link.appendChild(text);
+            if (['tanya', 'community'].includes(item.key)) {
+                var badge = document.createElement('span');
+                badge.className = 'badge badge-danger d-none';
+                badge.dataset.conversationBadge = item.key;
+                link.appendChild(badge);
+            }
             items.appendChild(link);
         }
     });
@@ -151,6 +168,7 @@ function openMobileMenu() {
     container.appendChild(content);
     document.body.appendChild(container);
     document.body.style.overflow = 'hidden';
+    window.staffConversationBadges?.apply();
 }
 function closeMobileMenu() {
     var m = document.getElementById('dynamic-mobile-menu');
@@ -200,10 +218,20 @@ function syncMobileNavForPage(page) {
         'kelola-pasien': 'pasien',
         'patients': 'pasien',
         'hospital-patients': 'pasien',
-        'tanya-dokter': 'tanya'
+        'tanya-dokter': 'tanya',
+        'profile-settings': 'profile',
+        'laboratorium': 'laboratorium'
     };
-    var action = pageActions[page] || 'more';
-    mobileNavClick(document.getElementById('mobile-btn-' + action), action);
+    var action = pageActions[page] || (page === 'community-chat' ? 'community' : 'nav-' + page);
+    var selectedButton = document.getElementById('mobile-btn-' + window.staffMobileQuickMenu?.activeKey())
+        || document.getElementById('mobile-btn-' + action);
+    if (!selectedButton && window.staffMobileQuickMenu) {
+        selectedButton = Array.from(document.querySelectorAll('#mobile-action-bar [data-mobile-nav]')).find(button => {
+            var navId = button.dataset.mobileNav;
+            return document.getElementById(navId)?.querySelector(':scope > .nav-link.active');
+        });
+    }
+    mobileNavClick(selectedButton || document.getElementById('mobile-btn-more'), action);
 }
 
 const shellActionHandlers = {
@@ -240,6 +268,8 @@ const shellActionHandlers = {
     'mobile-nav': function(element) {
         var action = element.dataset.mobileNav || '';
         mobileNavClick(element, action);
+
+        if (window.staffMobileQuickMenu?.navigate(action)) return true;
 
         if (action === 'dashboard') return callGlobal('showDashboardPage');
         if (action === 'klinik') return callGlobal('showKlinikPrivatePage');
@@ -296,4 +326,5 @@ window.openMobileMenu = openMobileMenu;
 window.closeMobileMenu = closeMobileMenu;
 window.clearAppCache = clearAppCache;
 window.mobileNavClick = mobileNavClick;
+window.syncMobileNavForPage = syncMobileNavForPage;
 })();

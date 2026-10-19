@@ -77,6 +77,7 @@
 
             if (data.success) {
                 allQuestions = data.questions || [];
+                window.dispatchEvent(new CustomEvent('staff:conversation-changed'));
                 updateTanyaStats();
                 renderTanyaQuestions();
             } else {
@@ -480,33 +481,5 @@
         }
     }
 
-    // ==================== INITIALIZATION ====================
-
-    // Load questions count for sidebar badge on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(loadTanyaBadgeCount, 1000);
-    });
-
-    async function loadTanyaBadgeCount() {
-        const token = getAuthToken();
-        if (!token) return;
-
-        try {
-            const response = await fetch('/api/patient-questions/staff/count', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                const badge = document.getElementById('badge-tanya-dokter');
-                if (badge && data.count > 0) {
-                    badge.textContent = data.count;
-                    badge.classList.remove('d-none');
-                }
-            }
-        } catch (error) {
-            console.error('Error loading tanya badge count:', error);
-        }
-    }
-
+    // Counts are maintained by the shell even before this lazy page is loaded.
 })();
