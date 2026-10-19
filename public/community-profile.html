@@ -170,6 +170,14 @@
             margin-bottom: 6px;
         }
 
+        .chip.chip-doctor {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #ffffff;
+        }
+
+        #bio { white-space: pre-wrap; }
+
         .box {
             border: 1px solid var(--line);
             border-radius: 14px;
@@ -351,7 +359,9 @@
         const profile = data.profile;
 
         nameEl.textContent = profile.display_name || '-';
-        typeEl.textContent = profile.user_type === 'staff' ? 'Staff' : 'Patient';
+        const isDoctor = profile.user_type === 'staff' && profile.is_doctor === true;
+        typeEl.textContent = isDoctor ? 'Dokter' : (profile.user_type === 'staff' ? 'Staff' : 'Patient');
+        typeEl.classList.toggle('chip-doctor', isDoctor);
         bioEl.textContent = profile.bio || 'Belum ada bio.';
         nicknameEl.textContent = profile.nickname || 'Belum diset.';
         applyAvatar(profile.avatar_url, profile.display_name || 'U');

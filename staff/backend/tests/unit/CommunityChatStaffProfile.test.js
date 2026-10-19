@@ -13,6 +13,7 @@ const router = require('../../routes/community-chat');
 const attention = require('../../services/CommunityChatAttention');
 const { hydrateStaffMessages } = require('../../services/CommunityChatStaffProfile');
 const { resolveSocketPrincipal } = require('../../security/socketAccess');
+const { ROLE_IDS, ROLE_NAMES } = require('../../constants/roles');
 const app = express();
 app.use(express.json(), router);
 const room = { id: 1, slug: 'lobby', name: 'Lobby', is_direct: 0 };
@@ -110,4 +111,30 @@ test('patient quote snapshots and malformed legacy snapshots are left unchanged 
     ];
     expect(await hydrateStaffMessages(db, rows)).toEqual(rows);
     expect(db.query).not.toHaveBeenCalled();
+});
+
+test.each([
+    [{ role_id: ROLE_IDS.DOKTER }, true],
+    [{ role: ROLE_NAMES.DOKTER }, true],
+    [{ is_superadmin: 1 }, true],
+    [{ role_id: ROLE_IDS.ADMIN, role: ROLE_NAMES.ADMIN, is_superadmin: 0 }, false]
+])('public doctor badge comes from the stored account role %j', async (fields, expected) => {
+    Object.assign(staff, fields);
+    try {
+        const result = await request(app).get('/profiles/staff/S01');
+        expect(result.body.profile.is_doctor).toBe(expected);
+    } finally {
+        delete staff.role_id; delete staff.role; delete staff.is_superadmin;
+    }
+});
+
+test.each([42, 'x'.repeat(501)])('rejects an invalid public bio before writing any profile data', async bio => {
+    const result = await request(app).put('/me/profile').send({ bio });
+    expect(result.status).toBe(400);
+    expect(db.query.mock.calls.some(([sql]) => sql.includes('INSERT INTO community_chat_profiles'))).toBe(false);
+});
+
+test.each(['GET', 'PUT'])('own public profile is a self-service route for %s even without chat write permission', method => {
+    const { createRuntimeAccessResolver } = require('../../security/accountModeAccess');
+    expect(createRuntimeAccessResolver()(method, '/api/community-chat/me/profile')).toMatchObject({ exemption: 'staff_profile' });
 });

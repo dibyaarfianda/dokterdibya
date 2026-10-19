@@ -1,11 +1,12 @@
 const { resolveStaffIdentity } = require('../utils/staffIdentity');
+const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 // Use the same name, avatar URL and avatar version as /api/auth/me (Staff Profile).
 async function loadStaffProfiles(db, userIds) {
     const ids = [...new Set(userIds.filter(Boolean).map(String))];
     if (!ids.length) return new Map();
     const [rows] = await db.query(
-        `SELECT new_id, name,
+        `SELECT new_id, name, role, role_id, is_superadmin,
             CASE WHEN photo_url IS NULL OR photo_url = '' THEN 0 ELSE 1 END AS has_photo,
             UNIX_TIMESTAMP(updated_at) AS avatar_version
          FROM users
@@ -14,6 +15,7 @@ async function loadStaffProfiles(db, userIds) {
         const name = String(row.name || '').trim();
         return [String(row.new_id), {
             name: name && !name.includes('@') ? name : 'Staf',
+            isDoctor: Number(row.is_superadmin) === 1 || isSuperadminRole(Number(row.role_id)) || row.role === ROLE_NAMES.DOKTER,
             avatarUrl: resolveStaffIdentity({
                 name: row.name, userId: row.new_id,
                 hasPhoto: Boolean(row.has_photo), avatarVersion: row.avatar_version

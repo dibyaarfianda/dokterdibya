@@ -74,7 +74,8 @@ describe('Task 9 communication and content route matrix', () => {
             serverFile: path.join(backendRoot, 'server.js'),
             routesDir: path.join(backendRoot, 'routes')
         }).filter(route => TASK9_PERMISSION_PREFIXES.some(prefix => route.resolution?.permission?.startsWith(prefix)));
-        expect(routes.length).toBeGreaterThanOrEqual(75);
+        // Own-profile GET/PUT are self service, separate from the chat matrix.
+        expect(routes.length).toBeGreaterThanOrEqual(73);
 
         const state = {
             userId: 'STAFF-ACCOUNT', userType: 'staff', isActive: true, isSuperadmin: false,

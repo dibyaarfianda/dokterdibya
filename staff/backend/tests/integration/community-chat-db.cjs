@@ -23,7 +23,7 @@ const install = (relative, exports) => { require.cache[require.resolve(path.join
             await db.query('CREATE TABLE ' + table + ' LIKE dibyaklinik.' + table);
         }
         await db.query("CREATE TABLE patients (id VARCHAR(50) PRIMARY KEY, full_name VARCHAR(255), photo_url TEXT)");
-        await db.query("CREATE TABLE users (new_id VARCHAR(64) PRIMARY KEY, name VARCHAR(255), user_type VARCHAR(20), photo_url TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+        await db.query("CREATE TABLE users (new_id VARCHAR(64) PRIMARY KEY, name VARCHAR(255), user_type VARCHAR(20), photo_url TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, role VARCHAR(40), role_id INT, is_superadmin TINYINT DEFAULT 0)");
         await db.query("CREATE TABLE patient_portal_settings (patient_id VARCHAR(50) PRIMARY KEY, nickname VARCHAR(40))");
         await db.query("INSERT INTO patients VALUES ('P1','Private One',NULL),('P2','Private Two',NULL),('P3','Private Three',NULL)");
         await db.query("INSERT INTO users (new_id,name,user_type,photo_url) VALUES ('S1','Staf Uji','staff','data:image/png;base64,aGVsbG8=')");
@@ -47,8 +47,8 @@ const install = (relative, exports) => { require.cache[require.resolve(path.join
         const app = express(); app.use(express.json()); app.use('/api/community-chat', router);
         server = await new Promise(resolve => { const srv = app.listen(0, '127.0.0.1', () => resolve(srv)); });
         const base = 'http://127.0.0.1:' + server.address().port + '/api/community-chat';
-        async function api(user, endpoint, body) {
-            const response = await fetch(base + endpoint, { method: body ? 'POST' : 'GET', headers: { Authorization: 'Bearer ' + jwt.sign({ id: user, user_type: user === 'S1' ? 'staff' : 'patient' }, secret), 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+        async function api(user, endpoint, body, method = body ? 'POST' : 'GET') {
+            const response = await fetch(base + endpoint, { method, headers: { Authorization: 'Bearer ' + jwt.sign({ id: user, user_type: user === 'S1' ? 'staff' : 'patient' }, secret), 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
             return { status: response.status, body: await response.json(), headers: response.headers };
         }
         assert.equal((await api('P1', '/unread')).body.total, 0, 'Historical messages are excluded');
@@ -111,6 +111,24 @@ const install = (relative, exports) => { require.cache[require.resolve(path.join
         assert.equal(metadata.reply.sender, ownProfile.defaultName);
         await db.query("UPDATE users SET photo_url=NULL WHERE new_id='S1'");
         assert.equal((await api('S1', '/me/profile')).body.profile.avatarUrl, '/staff/public/images/avatarwanita.png');
+        await db.query("UPDATE community_chat_profiles SET profile_visible=0 WHERE user_id='S1' AND user_type='staff'");
+        const bio = 'Bio dokter\nInformasi publik.';
+        const savedBio = await api('S1', '/me/profile', { bio }, 'PUT');
+        assert.equal(savedBio.status, 200, JSON.stringify(savedBio.body));
+        assert.equal(savedBio.body.profile.bio, bio);
+        const [preserved] = await db.query("SELECT nickname, profile_visible FROM community_chat_profiles WHERE user_id='S1' AND user_type='staff'");
+        assert.equal(preserved[0].nickname, 'Nama Komunitas Lama');
+        assert.equal(preserved[0].profile_visible, 0, 'Saving only bio preserves hidden profile');
+        assert.equal((await api('S1', '/me/profile', { bio: 'x'.repeat(501) }, 'PUT')).status, 400);
+        await api('S1', '/me/profile', { profile_visible: true }, 'PUT');
+        const { ROLE_IDS } = require(path.join(backend, 'constants/roles'));
+        await db.query('UPDATE users SET role_id=? WHERE new_id=?', [ROLE_IDS.DOKTER, 'S1']);
+        const doctor = (await api('P1', '/profiles/staff/S1')).body.profile;
+        assert.equal(doctor.is_doctor, true);
+        assert.equal(doctor.bio, bio);
+        await db.query('UPDATE users SET role_id=? WHERE new_id=?', [ROLE_IDS.ADMIN, 'S1']);
+        assert.equal((await api('P1', '/profiles/staff/S1')).body.profile.is_doctor, false);
+        assert.equal((await api('S1', '/me/profile', { bio: '' }, 'PUT')).body.profile.bio, '');
         console.log(JSON.stringify({ result: 'PASS real MariaDB', schema: database, cases: 'migration twice, baseline, unread across rooms, own exclusion, monotonic read, authorization, member names, quote, recipient dedup, notification row and push dispatch, deleted context' }));
     } finally {
         if (server) await new Promise(resolve => server.close(resolve));

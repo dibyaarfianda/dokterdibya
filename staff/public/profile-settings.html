@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <script src="/staff/public/scripts/date-time-format.js?v=v459"></script>
-    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v466"></script>
+    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v467"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pengaturan Profil</title>
@@ -325,6 +325,12 @@
                                     </div>
 
                                     <div class="form-group">
+                                        <label for="profile-bio">Bio Publik</label>
+                                        <textarea class="form-control" id="profile-bio" maxlength="500" rows="4" placeholder="Perkenalkan diri Anda" disabled></textarea>
+                                        <small class="form-text text-muted" id="profile-bio-help">Ditampilkan pada profil publik di chat komunitas. Maksimal 500 karakter.</small>
+                                    </div>
+
+                                    <div class="form-group">
                                         <label for="profile-email">Email</label>
                                         <input type="email" class="form-control" id="profile-email" readonly disabled>
                                         <small class="form-text text-muted">Email tidak dapat diubah</small>
@@ -406,6 +412,8 @@
 
     let currentUser = null;
     let selectedProfilePicture = null;
+    let publicBioLoaded = false;
+    let loadedPublicBio = '';
     let avatarEditorBound = false;
     const avatarEditorState = {
         image: null,
@@ -793,6 +801,8 @@
 
     // Load profile data
     async function loadProfileData() {
+        publicBioLoaded = false;
+        $('#profile-bio').prop('disabled', true);
         try {
             const token = await getToken();
             if (!token) {
@@ -821,6 +831,19 @@
 
                 // Load profile picture
                 displayProfilePicture(currentUser.photo_url);
+                try {
+                    const profileResponse = await fetch('/api/community-chat/me/profile', {
+                        cache: 'no-store', headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const profileData = await profileResponse.json();
+                    if (!profileResponse.ok || profileData.success === false) throw new Error('Bio tidak dapat dimuat');
+                    loadedPublicBio = profileData.profile.bio || '';
+                    $('#profile-bio').val(loadedPublicBio).prop('disabled', false);
+                    publicBioLoaded = true;
+                } catch (error) {
+                    $('#profile-bio-help').text('Bio belum dapat dimuat. Buka ulang Profile Settings untuk mencoba lagi.');
+                    showToast('Bio publik belum dapat dimuat. Pengaturan profil lain tetap dapat disimpan.', 'error');
+                }
             } else {
                 showToast('Failed to load profile data', 'error');
             }
@@ -887,6 +910,7 @@
         }
 
         const newDisplayName = $('#profile-displayname').val().trim();
+        const newBio = $('#profile-bio').val().trim();
         const currentPassword = $('#profile-current-password').val();
         const newPassword = $('#profile-new-password').val();
         const confirmPassword = $('#profile-confirm-password').val();
@@ -898,6 +922,10 @@
         }
         if (isEmailLike(newDisplayName)) {
             showToast('Tampilan nama tidak boleh berupa email', 'error');
+            return;
+        }
+        if (publicBioLoaded && newBio.length > 500) {
+            showToast('Bio publik maksimal 500 karakter', 'error');
             return;
         }
 
@@ -942,6 +970,20 @@
             if (!response.ok) {
                 showToast(data.message || 'Gagal memperbarui profil', 'error');
                 return;
+            }
+
+            if (publicBioLoaded && newBio !== loadedPublicBio) {
+                const bioResponse = await fetch('/api/community-chat/me/profile', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ bio: newBio })
+                });
+                const bioData = await bioResponse.json();
+                if (!bioResponse.ok || bioData.success === false) {
+                    showToast('Nama/foto sudah disimpan, tetapi bio gagal disimpan. ' + (bioData.message || 'Coba lagi.'), 'error');
+                    return;
+                }
+                loadedPublicBio = newBio;
             }
 
             // If password change requested, call separate endpoint

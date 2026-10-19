@@ -12,6 +12,7 @@ const DEFAULT_LOBBY_SLUG = 'lobby';
 const DEFAULT_ROOM_COLOR = '#2563eb';
 const MAX_ROOM_NAME = 80;
 const MAX_MESSAGE_LENGTH = 2000;
+const MAX_PROFILE_BIO_LENGTH = 500;
 const COMMUNITY_NICKNAME_MIN_LENGTH = 3;
 const COMMUNITY_NICKNAME_MAX_LENGTH = 40;
 const FORBIDDEN_NICKNAME_WORDS = [
@@ -329,6 +330,7 @@ async function getReadableProfile(userId, userType) {
     let defaultName = 'User';
     let portalNickname = null;
     let fallbackAvatarUrl = null;
+    let isDoctor = false;
 
     if (userType === 'patient') {
         const [rows] = await db.query('SELECT full_name, photo_url FROM patients WHERE id = ? LIMIT 1', [userId]);
@@ -341,6 +343,7 @@ async function getReadableProfile(userId, userType) {
         const staffProfile = (await loadStaffProfiles(db, [userId])).get(String(userId));
         defaultName = staffProfile?.name || 'Staf';
         fallbackAvatarUrl = staffProfile?.avatarUrl || null;
+        isDoctor = staffProfile?.isDoctor === true;
     }
 
     const [profiles] = await db.query(
@@ -358,6 +361,7 @@ async function getReadableProfile(userId, userType) {
     return {
         user_id: userId,
         user_type: userType,
+        is_doctor: isDoctor,
         display_name: effectiveNickname || defaultName,
         nickname: effectiveNickname,
         bio: profile?.bio || '',
@@ -891,6 +895,15 @@ router.put('/me/profile', verifyToken, async (req, res) => {
         const nickname = normalizeText(req.body.nickname);
         const bio = normalizeText(req.body.bio);
         const profileVisible = req.body.profile_visible === false ? 0 : 1;
+        const hasField = field => Object.prototype.hasOwnProperty.call(req.body, field);
+        if (hasField('bio') && (typeof req.body.bio !== 'string' || bio.length > MAX_PROFILE_BIO_LENGTH)) {
+            return res.status(400).json({ success: false, message: `Bio harus berupa teks maksimal ${MAX_PROFILE_BIO_LENGTH} karakter.` });
+        }
+        const updates = [];
+        if (hasField('nickname')) updates.push('nickname = VALUES(nickname)');
+        if (hasField('bio')) updates.push('bio = VALUES(bio)');
+        if (hasField('profile_visible')) updates.push('profile_visible = VALUES(profile_visible)');
+        if (!updates.length) return res.status(400).json({ success: false, message: 'Tidak ada perubahan profil.' });
 
         let safeNickname = null;
         if (nickname) {
@@ -908,9 +921,7 @@ router.put('/me/profile', verifyToken, async (req, res) => {
             `INSERT INTO community_chat_profiles (user_id, user_type, nickname, bio, profile_visible)
              VALUES (?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
-                nickname = VALUES(nickname),
-                bio = VALUES(bio),
-                profile_visible = VALUES(profile_visible),
+                ${updates.join(', ')},
                 updated_at = CURRENT_TIMESTAMP`,
             [userId, userType, safeNickname, bio || null, profileVisible]
         );

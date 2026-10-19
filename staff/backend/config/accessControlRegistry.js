@@ -356,6 +356,9 @@ function resolveRouteAccess(route) {
         return { permission: 'access.manage', ruleId: 'legacy-role-adapter-protected' };
     }
     if (route.sourceFile === 'chat') return { exemption: 'staff_chat', ruleId: 'staff-chat' };
+    if (route.sourceFile === 'community-chat' && route.routePath === '/me/profile' && ['GET', 'PUT'].includes(route.method)) {
+        return { exemption: 'staff_profile', ruleId: 'community-profile-self-service' };
+    }
     if (route.sourceFile === 'auth') {
         const authResolution = resolveAuthRoute(route);
         if (authResolution) return authResolution;
