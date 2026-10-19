@@ -2177,11 +2177,6 @@
     const forceLegacyTheme = themeMode === 'legacy' || themeMode === 'old' || themeMode === 'classic';
     const forceNewTheme = themeMode === 'newdesign' || themeMode === 'sisiwanita';
     const useNewDesignTheme = !isStaffEmbed && (forceNewTheme || !forceLegacyTheme);
-    const userAgent = navigator.userAgent || '';
-    const isAndroidDevice = /Android/i.test(userAgent);
-    const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    const isAndroidWebView = isAndroidDevice && (userAgent.includes(' wv') || userAgent.includes('; wv)') || userAgent.includes('Version/'));
-    const useAndroidBottomNavFallback = !isStaffEmbed && isAndroidDevice && (isAndroidWebView || isStandaloneMode);
 
     let socket = null;
     let token = null;
@@ -3856,9 +3851,8 @@
         const viewport = window.visualViewport;
         const height = Math.round(viewport?.height || window.innerHeight);
         if (height > 0) document.documentElement.style.setProperty('--app-height', height + 'px');
-        const keyboardOpen = viewport && viewport.height < window.innerHeight * .78;
-        document.documentElement.style.setProperty('--mobile-bottom-offset',
-            (useAndroidBottomNavFallback && !keyboardOpen ? 52 : 0) + 'px');
+        // The viewport already excludes Android system navigation. Safe-area padding is handled in CSS.
+        document.documentElement.style.setProperty('--mobile-bottom-offset', '0px');
     }
 
     function initMobileViewportGuard() {
