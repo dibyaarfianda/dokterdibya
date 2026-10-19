@@ -968,7 +968,8 @@
             color: var(--green, #5c7f72) !important;
         }
     </style>
-    <link rel="stylesheet" href="/staff/public/styles/patient-queue-view.css?v=v473">
+    <link rel="stylesheet" href="/styles/patient-queue-view.css?v=v474">
+    <script src="/scripts/patient-queue-view.js?v=v474"></script>
     <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit antrian-page" data-tool-shell-active="jadwal" data-tool-kicker="Live Queue" data-tool-title="Antrian hari ini." data-tool-copy="Pantau status antrian klinik secara real time dan atur pengingat saat nomor Anda sudah mendekat." data-tool-meta-label="Refresh" data-tool-meta-value="Otomatis 30 detik">
@@ -1117,8 +1118,7 @@
 
     <script src="/js/push-subscribe.js?v=20260516q1"></script>
 
-    <script type="module">
-        import { renderPatientQueueHtml } from "/staff/public/scripts/patient-queue-view.js?v=v473";
+    <script>
         const STATUS_LABELS = {
             menunggu:        'Belum Datang',
             anamnesa:        'Pasien Hadir',
@@ -1749,7 +1749,7 @@
 
         function showQueueHidden() {
             const container = document.getElementById('queue-container');
-            container.innerHTML = renderPatientQueueHtml([], { visible: false });
+            container.innerHTML = PatientQueueView.renderPatientQueueHtml([], { visible: false });
             updateReminderLiveStatus();
         }
 
@@ -1772,7 +1772,7 @@
             document.getElementById('today-date').textContent = formatDate(date);
             const container = document.getElementById('queue-container');
 
-            container.innerHTML = renderPatientQueueHtml(data);
+            container.innerHTML = PatientQueueView.renderPatientQueueHtml(data);
 
             populateReminderSessions();
             updateReminderLiveStatus();

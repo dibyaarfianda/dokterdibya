@@ -1,5 +1,3 @@
-import { renderPatientQueueHtml } from './patient-queue-view.js';
-
 const STATUS_CONFIG = {
   menunggu: { label: 'Menunggu', badge: 'badge-secondary' },
   anamnesa: { label: 'Anamnesa', badge: 'badge-info' },
@@ -113,11 +111,11 @@ export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
         </div>
       </div>
       <div class="card-body patient-queue-preview">
-        <link rel="stylesheet" href="/staff/public/styles/patient-queue-view.css?v=${escapeHtml(options.assetVersion || 'v473')}">
+        <link rel="stylesheet" href="/styles/patient-queue-view.css?v=${escapeHtml(options.assetVersion || 'v474')}">
         <div class="patient-queue-view">
           <div class="patient-queue-heading">Antrian Klinik Hari Ini <span class="patient-queue-live">LIVE</span></div>
           <div class="patient-queue-doctor">${isOnBreak ? 'Sedang istirahat' : (doctorArrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang')}</div>
-          ${renderPatientQueueHtml(items, { visible: isQueueVisible })}
+          ${PatientQueueView.renderPatientQueueHtml(items, { visible: isQueueVisible })}
           <p class="privacy-note"><i class="fa fa-lock"></i> Nama pasien lain disamarkan untuk menjaga privasi</p>
         </div>
       </div>

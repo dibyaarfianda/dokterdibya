@@ -1,4 +1,10 @@
 // Shared by the patient portal and the Staff patient-view preview.
+(function(root, factory) {
+    const api = factory();
+    if (typeof module === "object" && module.exports) module.exports = api;
+    if (root) root.PatientQueueView = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function() {
+"use strict";
 const STATUS_LABELS = {
     menunggu: 'Belum Datang', anamnesa: 'Pasien Hadir', diperiksa: 'Sedang Diperiksa',
     selesai_periksa: 'Selesai Periksa', lunas: 'Lunas', dilayani: 'Sedang Dilayani', selesai: 'Selesai'
@@ -8,7 +14,7 @@ function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
 
-export function renderPatientQueueHtml(data = [], { visible = true } = {}) {
+function renderPatientQueueHtml(data = [], { visible = true } = {}) {
     if (!visible) return '<div class="state-card"><i class="fa fa-eye-slash"></i><p>Antrian belum dibuka hari ini.<br><small>Silakan coba beberapa saat lagi.</small></p></div>';
     if (!Array.isArray(data) || !data.length) return '<div class="state-card"><i class="fa fa-calendar-times"></i><p>Tidak ada antrian hari ini.<br>Klinik mungkin sedang tidak buka.</p></div>';
     const sessions = new Map();
@@ -28,3 +34,6 @@ export function renderPatientQueueHtml(data = [], { visible = true } = {}) {
         }).join('');
     }).join('');
 }
+
+return Object.freeze({ renderPatientQueueHtml });
+});

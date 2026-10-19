@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import dateTime from './date-time-format.js';
+import patientQueueView from '../../../public/scripts/patient-queue-view.js';
 
 globalThis.DibyaDateTime = dateTime;
+globalThis.PatientQueueView = patientQueueView;
 
 import {
   renderOnlineQueuePageHtml,
