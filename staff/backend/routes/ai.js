@@ -1,4 +1,3 @@
-const DibyaDateTime = require('../../../public/scripts/date-time-format.js');
 /**
  * AI Routes
  * API endpoints for AI-powered features
@@ -8,93 +7,6 @@ const express = require('express');
 const router = express.Router();
 const aiService = require('../services/aiService');
 const { verifyToken } = require('../middleware/auth');
-
-const DAILY_GREETING_FAST_TIMEOUT_MS = 900;
-const FALLBACK_DAILY_GREETINGS = [
-    'semoga harimu menyenangkan dan pelayanan berjalan lancar.',
-    'semangat menjalani hari ini. Satu langkah kecil bisa sangat berarti untuk pasien.',
-    'terima kasih atas dedikasimu hari ini. Semoga semua pelayanan berjalan lancar.',
-    'semoga hari kerja ini ringan, rapi, dan penuh kebaikan untuk pasien.',
-    'selamat bertugas. Fokus pelan-pelan, satu pasien satu perhatian.'
-];
-
-function formatLocalDateKey(date = new Date()) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
-
-function getNextLocalMidnightIso() {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    return tomorrow.toISOString();
-}
-
-function getFallbackDailyGreeting(userId, userName = '') {
-    const seed = String(userId || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const displayName = sanitizeDisplayName(userName) || 'Staff';
-    return `${displayName}, ${FALLBACK_DAILY_GREETINGS[seed % FALLBACK_DAILY_GREETINGS.length]}`;
-}
-
-function isEmailLike(value) {
-    return typeof value === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-}
-
-function sanitizeDisplayName(value) {
-    const candidate = String(value || '').trim();
-    return candidate && !isEmailLike(candidate) ? candidate : '';
-}
-
-function getGreetingCache() {
-    if (!global.greetingCache) global.greetingCache = new Map();
-    if (!global.greetingPending) global.greetingPending = new Map();
-    return { cache: global.greetingCache, pending: global.greetingPending };
-}
-
-function cleanupGreetingCache(cache, today) {
-    for (const key of cache.keys()) {
-        if (!key.includes(today)) cache.delete(key);
-    }
-}
-
-function startDailyGreetingGeneration(cacheKey, payload, cachedUntil) {
-    const { cache, pending } = getGreetingCache();
-    if (pending.has(cacheKey)) return pending.get(cacheKey);
-
-    const promise = aiService.generateDailyGreeting(payload)
-        .then((result) => {
-            if (!result || !result.success || !result.data?.greeting) return null;
-
-            const greetingData = {
-                greeting: result.data.greeting,
-                day: result.data.day,
-                time: result.data.time,
-                isWeekend: result.data.isWeekend,
-                cachedUntil,
-                generatedAt: new Date().toISOString()
-            };
-
-            cache.set(cacheKey, greetingData);
-
-            return {
-                success: true,
-                data: {
-                    ...greetingData,
-                    cached: false
-                },
-                tokensUsed: result.tokensUsed
-            };
-        })
-        .catch((error) => {
-            console.error('AI Daily Greeting background generation failed:', error.message);
-            return null;
-        })
-        .finally(() => {
-            pending.delete(cacheKey);
-        });
-
-    pending.set(cacheKey, promise);
-    return promise;
-}
 
 /**
  * POST /api/ai/demo/detect-category
@@ -402,90 +314,14 @@ router.post('/api/ai/interview/process', verifyToken, async (req, res) => {
     }
 });
 
-/**
- * GET /api/ai/daily-greeting
- * Generate daily motivational greeting using AI
- * Cached per user per day (changes at midnight)
- *
- * Returns: {
- *   success: boolean,
- *   data: {
- *     greeting: string,
- *     day: string,
- *     time: string,
- *     cachedUntil: string (ISO date)
- *   }
- * }
- */
-router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
-    try {
-        const userId = req.user.id;
-        const userName = sanitizeDisplayName(req.query.displayName) ||
-            sanitizeDisplayName(req.user.name) ||
-            sanitizeDisplayName(req.user.username) ||
-            'Staff';
-        const roleName = req.user.role_display_name || req.user.role || 'Staff';
-
-        // Check cache first (stored in memory with date key)
-        const today = formatLocalDateKey();
-        const cacheKey = `greeting_${userId}_${today}`;
-        const { cache } = getGreetingCache();
-
-        // Clean old cache entries (older than today)
-        cleanupGreetingCache(cache, today);
-
-        // Return cached greeting if exists
-        if (cache.has(cacheKey)) {
-            const cached = cache.get(cacheKey);
-            return res.json({
-                success: true,
-                data: {
-                    ...cached,
-                    cached: true
-                }
-            });
-        }
-
-        const cachedUntil = getNextLocalMidnightIso();
-        const generation = startDailyGreetingGeneration(cacheKey, {
-            userId,
-            userName,
-            roleName
-        }, cachedUntil);
-
-        const fastResult = await Promise.race([
-            generation,
-            new Promise((resolve) => setTimeout(() => resolve(null), DAILY_GREETING_FAST_TIMEOUT_MS))
-        ]);
-
-        if (fastResult) {
-            return res.json(fastResult);
-        }
-
-        const now = new Date();
-        return res.json({
-            success: true,
-            data: {
-                greeting: getFallbackDailyGreeting(userId, userName),
-                day: DibyaDateTime.date(now, { weekday: 'long' }),
-                time: DibyaDateTime.time(now, { hour: '2-digit', minute: '2-digit' }),
-                cachedUntil,
-                fallback: true,
-                pending: true
-            }
-        });
-
-    } catch (error) {
-        console.error('AI Daily Greeting API Error:', error);
-        // Return fallback greeting on error
-        res.json({
-            success: true,
-            data: {
-                greeting: getFallbackDailyGreeting(req.user?.id, req.query?.displayName || req.user?.name || req.user?.username),
-                fallback: true
-            }
-        });
-    }
+// Retain a tombstone for cached Staff clients without starting any AI work.
+router.get('/api/ai/daily-greeting', verifyToken, (req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.status(410).json({
+        success: false,
+        code: 'DAILY_GREETING_DISABLED',
+        message: 'Ucapan harian Staff sudah dinonaktifkan.'
+    });
 });
 
 module.exports = router;

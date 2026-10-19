@@ -590,28 +590,6 @@ async function activateRegisteredStaffPage(key) {
 }
 window.activateRegisteredStaffPage = activateRegisteredStaffPage;
 
-function resolveDashboardDisplayName(user) {
-    if (isSuperadminUser(user)) {
-        return 'dr. Dibya';
-    }
-
-    return resolveDisplayName(user?.name || window.currentUserName, user?.id, 'User');
-}
-
-function greetingContainsIdentityLeak(greeting, rejectedValues = []) {
-    const text = String(greeting || '');
-    if (!text) return false;
-
-    if (/[^\s"'<>()]+@[^\s"'<>()]+\.[^\s"'<>()]+/.test(text)) {
-        return true;
-    }
-
-    return rejectedValues
-        .map(value => String(value || '').trim())
-        .filter(Boolean)
-        .some(value => text.toLowerCase().includes(value.toLowerCase()));
-}
-
 function logActivity(action, details) {
     // Debounce same page views
     if (action === 'Page View' && details === lastLoggedPage) return;
@@ -2692,148 +2670,12 @@ function parseMarkdown(text) {
         .replace(/(<br>\s*){2,}/g, '<br><br>');
 }
 
-// Fallback greetings when API fails
-const FALLBACK_GREETINGS = [
-    "semoga harimu menyenangkan dan pelayanan berjalan lancar.",
-    "semangat menjalani hari ini dengan tenang dan rapi.",
-    "terima kasih atas dedikasimu hari ini.",
-    "satu langkah kecil hari ini bisa berdampak besar untuk pasien.",
-    "semoga pagi ini membawa energi baik untuk memberi yang terbaik."
-];
-
-function buildFallbackDailyGreeting(displayName) {
-    const safeDisplayName = resolveDisplayName(displayName, window.currentUserId, 'User');
-    const fallbackIndex = Math.floor(Math.random() * FALLBACK_GREETINGS.length);
-    return `${safeDisplayName}, ${FALLBACK_GREETINGS[fallbackIndex]}`;
-}
-
-/**
- * Get daily greeting from AI API (cached per day per user)
- * Changes once per day at midnight
- * Falls back to stale cache or local greeting if API fails/times out
- */
-async function fetchDailyGreeting(userId, displayName, rejectedIdentityTokens = []) {
-    const today = formatDateLocal(new Date()); // YYYY-MM-DD
-    const storageKey = `daily_greeting_ai_${userId}`;
-    const stored = localStorage.getItem(storageKey);
-    const safeDisplayName = resolveDisplayName(displayName, userId, 'User');
-
-    // Return today's fresh cache immediately
-    if (stored) {
-        try {
-            const { date, greeting } = JSON.parse(stored);
-            if (date === today && greeting && !greetingContainsIdentityLeak(greeting, rejectedIdentityTokens)) {
-                return greeting;
-            }
-        } catch (e) { /* invalid, fetch new */ }
-    }
-
-    // Fetch from AI API with 3s hard timeout
-    try {
-        const token = getAuthToken();
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const params = new URLSearchParams({ displayName: safeDisplayName });
-        const response = await fetch(`/api/ai/daily-greeting?${params.toString()}`, {
-            headers: { 'Authorization': `Bearer ${token}` },
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success && result.data?.greeting) {
-                const greeting = result.data.greeting;
-                if (!greetingContainsIdentityLeak(greeting, rejectedIdentityTokens)) {
-                    localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting }));
-                    return greeting;
-                }
-            }
-        }
-    } catch (error) {
-        console.warn('AI greeting fetch failed:', error.name);
-    }
-
-    // Use stale cache (any date) before resorting to random fallback
-    if (stored) {
-        try {
-            const { greeting } = JSON.parse(stored);
-            if (greeting && !greetingContainsIdentityLeak(greeting, rejectedIdentityTokens)) return greeting;
-        } catch (e) { /* ignore */ }
-    }
-
-    // Final random fallback
-    const fallbackGreeting = buildFallbackDailyGreeting(safeDisplayName);
-    localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting: fallbackGreeting }));
-    return fallbackGreeting;
-}
-
-/**
- * Update daily greeting element with AI-generated greeting
- * Stale-while-revalidate: show cached greeting immediately, refresh in background
- */
-async function updateDailyGreeting(user) {
-    const greetingEl = document.getElementById('daily-greeting');
-    if (!greetingEl) return;
-
-    const userId = user?.id || window.currentUserId || 'unknown';
-    const displayName = resolveDashboardDisplayName(user);
-    const rejectedIdentityTokens = [user?.email, window.currentUserName].filter(isEmailLike);
-    const today = formatDateLocal(new Date());
-    const storageKey = `daily_greeting_ai_${userId}`;
-    const stored = localStorage.getItem(storageKey);
-
-    // Show any cached greeting immediately (no loading state)
-    let hasStale = false;
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            if (parsed.greeting && !greetingContainsIdentityLeak(parsed.greeting, rejectedIdentityTokens)) {
-                greetingEl.textContent = parsed.greeting;
-                greetingEl.style.opacity = '1';
-                hasStale = true;
-                // Today's greeting is already fresh - nothing more to do
-                if (parsed.date === today) return;
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    if (!hasStale) {
-        greetingEl.style.opacity = '0.6';
-        greetingEl.textContent = 'Memuat ucapan hari ini...';
-    }
-
-    // Background refresh (stale from yesterday or no cache)
-    try {
-        const greeting = await fetchDailyGreeting(userId, displayName, rejectedIdentityTokens);
-        greetingEl.textContent = greeting;
-        greetingEl.style.opacity = '1';
-    } catch (error) {
-        if (!hasStale) {
-            greetingEl.textContent = buildFallbackDailyGreeting(displayName);
-            greetingEl.style.opacity = '1';
-        }
-    }
-}
-
-// Update welcome card with user roles and job descriptions
-async function updateWelcomeCard(user) {
-    const welcomeName = document.getElementById('welcome-name');
-    const rolesDescList = document.getElementById('roles-description-list');
+// Update account identity independently of dashboard content.
+function updateNavbarUser(user) {
     const navbarUserName = document.getElementById('navbar-user-name');
     const navbarUserRole = document.getElementById('navbar-user-role');
 
-    if (!welcomeName || !rolesDescList) return;
-
-    // Set name - special greeting for superadmin (dr. Dibya)
-    // Check multiple possible superadmin indicators
     const isSuperadmin = isSuperadminUser(user);
-
-    if (isSuperadmin) {
-        welcomeName.innerHTML = '<strong>dr. Dibya</strong>';
-    } else {
-        welcomeName.textContent = resolveDisplayName(user.name, user.id, 'User');
-    }
 
     // Also update navbar user name
     if (navbarUserName) {
@@ -2862,22 +2704,8 @@ async function updateWelcomeCard(user) {
         }
     }
 
-    // Update daily greeting
-    updateDailyGreeting(user);
-
     const jobLabel = user.role_display_name || user.role || 'Staff';
     if (navbarUserRole) navbarUserRole.textContent = jobLabel;
-    rolesDescList.textContent = '';
-    const card = document.createElement('div');
-    card.style.cssText = 'background:#fff;border-radius:8px;padding:12px 16px;margin-bottom:10px;border:1px solid #dee2e6;';
-    const title = document.createElement('div');
-    title.style.cssText = 'font-weight:600;color:#343a40;margin-bottom:6px;font-size:14px;';
-    title.textContent = jobLabel;
-    const description = document.createElement('div');
-    description.style.cssText = 'color:#495057;font-size:13px;line-height:1.5;';
-    description.textContent = 'Label jabatan untuk identitas akun dan badge chat.';
-    card.append(title, description);
-    rolesDescList.append(card);
 }
 
 async function initializeApp(user) {
@@ -2899,8 +2727,8 @@ async function initializeApp(user) {
             }, 500);
         }
 
-        // Update welcome card
-        updateWelcomeCard(user);
+        // Update navbar account identity
+        updateNavbarUser(user);
 
         const isZeroGrantAccount = window.staffAccountAccess?.hasNoGrantedAccess(user)
             ?? (!user?.is_doctor_protected && (!Array.isArray(user.permissions) || user.permissions.length === 0));
