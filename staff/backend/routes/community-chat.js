@@ -4,6 +4,7 @@ const { validateOperationalSchemaScope } = require('../services/OperationalSchem
 const { verifyToken, verifyStaffToken } = require('../middleware/auth');
 const { requireSocketPrincipal } = require('../security/socketAccess');
 const attention = require('../services/CommunityChatAttention');
+const { loadStaffProfiles, hydrateStaffMessages } = require('../services/CommunityChatStaffProfile');
 
 const router = express.Router();
 
@@ -244,6 +245,7 @@ async function resolveUserIdentity(user) {
     let defaultName = user.name || user.full_name || user.email || 'User';
     let portalNickname = null;
     let fallbackAvatarUrl = null;
+    let staffProfile = null;
 
     if (userType === 'patient') {
         const [rows] = await db.query(
@@ -256,13 +258,9 @@ async function resolveUserIdentity(user) {
         }
         portalNickname = await getPatientPortalNickname(userId);
     } else {
-        const [rows] = await db.query(
-            'SELECT name FROM users WHERE new_id = ? LIMIT 1',
-            [userId]
-        );
-        if (rows.length > 0) {
-            defaultName = rows[0].name || defaultName;
-        }
+        staffProfile = (await loadStaffProfiles(db, [userId])).get(userId);
+        defaultName = staffProfile?.name || 'Staf';
+        fallbackAvatarUrl = staffProfile?.avatarUrl || null;
     }
 
     const [profiles] = await db.query(
@@ -274,14 +272,14 @@ async function resolveUserIdentity(user) {
     );
 
     const profile = profiles[0] || null;
-    const effectiveNickname = pickAllowedNickname(profile?.nickname, portalNickname);
+    const effectiveNickname = userType === 'staff' ? null : pickAllowedNickname(profile?.nickname, portalNickname);
     return {
         userId,
         userType,
         defaultName,
         nickname: effectiveNickname,
         bio: profile?.bio || '',
-        avatarUrl: profile?.avatar_url || fallbackAvatarUrl || null,
+        avatarUrl: userType === 'staff' ? fallbackAvatarUrl : (profile?.avatar_url || fallbackAvatarUrl || null),
         profileVisible: profile ? profile.profile_visible === 1 : true
     };
 }
@@ -340,16 +338,9 @@ async function getReadableProfile(userId, userType) {
         }
         portalNickname = await getPatientPortalNickname(userId);
     } else {
-        const [rows] = await db.query(
-            `SELECT u.name, r.display_name AS role_display_name
-             FROM users u
-             LEFT JOIN roles r ON r.id = u.role_id
-             WHERE u.new_id = ? LIMIT 1`,
-            [userId]
-        );
-        if (rows.length > 0) {
-            defaultName = rows[0].name || defaultName;
-        }
+        const staffProfile = (await loadStaffProfiles(db, [userId])).get(String(userId));
+        defaultName = staffProfile?.name || 'Staf';
+        fallbackAvatarUrl = staffProfile?.avatarUrl || null;
     }
 
     const [profiles] = await db.query(
@@ -362,7 +353,7 @@ async function getReadableProfile(userId, userType) {
     const profile = profiles[0] || null;
     if (profile && profile.profile_visible === 0) return null;
 
-    const effectiveNickname = pickAllowedNickname(profile?.nickname, portalNickname);
+    const effectiveNickname = userType === 'staff' ? null : pickAllowedNickname(profile?.nickname, portalNickname);
 
     return {
         user_id: userId,
@@ -370,7 +361,7 @@ async function getReadableProfile(userId, userType) {
         display_name: effectiveNickname || defaultName,
         nickname: effectiveNickname,
         bio: profile?.bio || '',
-        avatar_url: profile?.avatar_url || fallbackAvatarUrl || null,
+        avatar_url: userType === 'staff' ? fallbackAvatarUrl : (profile?.avatar_url || fallbackAvatarUrl || null),
         updated_at: profile?.updated_at || null
     };
 }
@@ -684,7 +675,7 @@ router.get('/rooms/:slug/messages', verifyToken, async (req, res) => {
         res.json({
             success: true,
             room: mapRoom(roomForResponse || room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
-            messages: rows.reverse().map(attention.messageDto)
+            messages: (await hydrateStaffMessages(db, rows.reverse())).map(attention.messageDto)
         });
     } catch (error) {
         console.error('community messages error:', error);
@@ -711,7 +702,7 @@ router.get('/rooms/:slug/members', verifyToken, async (req, res) => {
                 member.user_type,
                 CASE WHEN member.user_type = 'patient'
                     THEN COALESCE(NULLIF(profile.nickname, ''), NULLIF(settings.nickname, ''), 'Anggota')
-                    ELSE COALESCE(NULLIF(profile.nickname, ''), NULLIF(staff.name, ''), 'Staf') END AS display_name,
+                    ELSE COALESCE(NULLIF(staff.name, ''), 'Staf') END AS display_name,
                 member.avatar_url,
                 member.first_joined_at,
                 member.last_seen_at,
@@ -732,10 +723,18 @@ router.get('/rooms/:slug/members', verifyToken, async (req, res) => {
             [room.id, room.id]
         );
 
+        const staffProfiles = await loadStaffProfiles(db, rows.filter(member => member.user_type === 'staff').map(member => member.user_id));
         res.json({
             success: true,
             room: mapRoom(await getRoomBySlug(req.params.slug) || room, isPatientUser(req.user) ? 'patient' : 'staff', String(req.user.id)),
-            members: rows.map(member => ({ ...member, display_name: attention.displayName({ nickname: member.display_name, userType: member.user_type }) })),
+            members: rows.map(member => {
+                const staffProfile = member.user_type === 'staff' && staffProfiles.get(String(member.user_id));
+                return {
+                    ...member,
+                    display_name: attention.displayName({ nickname: staffProfile?.name || member.display_name, userType: member.user_type }),
+                    avatar_url: staffProfile ? staffProfile.avatarUrl : member.avatar_url
+                };
+            }),
             summary: {
                 total_members: rows.length,
                 staff_count: rows.filter((member) => member.user_type === 'staff').length,
@@ -822,7 +821,8 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
             [result.insertId]
         );
 
-        const message = attention.messageDto(rows[0]);
+        const [hydratedMessage] = await hydrateStaffMessages(db, rows);
+        const message = attention.messageDto(hydratedMessage);
         await attention.notify(room, message, identity, attention.recipients(metadata.mentions, metadata.reply, identity));
 
         if (ioRef) {

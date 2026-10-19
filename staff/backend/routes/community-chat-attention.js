@@ -1,4 +1,5 @@
 const { messageDto } = require('../services/CommunityChatAttention');
+const { hydrateStaffMessages } = require('../services/CommunityChatStaffProfile');
 
 module.exports = function attachAttentionRoutes(router, { db, verifyToken, getRoomBySlug, canAccessRoom, touchRoomMember, isPatientUser }) {
     router.get('/unread', verifyToken, async (req, res) => {
@@ -55,7 +56,8 @@ module.exports = function attachAttentionRoutes(router, { db, verifyToken, getRo
             const [before] = await db.query('SELECT * FROM community_chat_messages WHERE room_id = ? AND id <= ? ORDER BY id DESC LIMIT 60', [room.id, target[0].id]);
             const [after] = await db.query('SELECT * FROM community_chat_messages WHERE room_id = ? AND id > ? ORDER BY id ASC LIMIT 60', [room.id, target[0].id]);
             const [latest] = await db.query('SELECT MAX(id) AS id FROM community_chat_messages WHERE room_id = ?', [room.id]);
-            res.json({ success: true, messages: [...before.reverse(), ...after].map(messageDto), latest_message_id: latest[0].id });
+            const messages = await hydrateStaffMessages(db, [...before.reverse(), ...after]);
+            res.json({ success: true, messages: messages.map(messageDto), latest_message_id: latest[0].id });
         } catch (error) {
             console.error('community context error:', error);
             res.status(500).json({ success: false, message: 'Gagal memuat pesan' });

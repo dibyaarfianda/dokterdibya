@@ -1,3 +1,5 @@
+const { hydrateStaffMessages } = require('./CommunityChatStaffProfile');
+
 function displayName(identity) {
     const name = String(identity.nickname || (identity.userType === 'staff' ? identity.defaultName : '') || '').trim();
     return name && !name.includes('@') ? name : (identity.userType === 'staff' ? 'Staf' : 'Anggota');
@@ -29,7 +31,7 @@ async function validateMetadata(db, room, body, text) {
             `SELECT cm.user_id, cm.user_type,
                 CASE WHEN cm.user_type = 'patient'
                     THEN COALESCE(NULLIF(cp.nickname, ''), NULLIF(ps.nickname, ''), 'Anggota')
-                    ELSE COALESCE(NULLIF(cp.nickname, ''), NULLIF(u.name, ''), 'Staf') END AS display_name
+                    ELSE COALESCE(NULLIF(u.name, ''), 'Staf') END AS display_name
              FROM community_chat_room_members cm
              LEFT JOIN community_chat_profiles cp ON cp.user_id = cm.user_id AND cp.user_type = cm.user_type
              LEFT JOIN patient_portal_settings ps ON ps.patient_id = cm.user_id AND cm.user_type = 'patient'
@@ -57,7 +59,7 @@ async function validateMetadata(db, room, body, text) {
         if (!/^[1-9]\d*$/.test(String(body.reply_to_message_id))) throw invalid('Quote tidak valid.');
         const [rows] = await db.query('SELECT * FROM community_chat_messages WHERE id = ? AND room_id = ? LIMIT 1', [body.reply_to_message_id, room.id]);
         if (!rows.length) throw invalid('Pesan quote sudah dihapus atau berasal dari room lain.');
-        const original = rows[0];
+        const [original] = await hydrateStaffMessages(db, rows);
         reply = {
             id: original.id, sender_id: original.sender_id, sender_type: original.sender_type,
             sender: displayName({ nickname: original.sender_nickname, defaultName: original.sender_name, userType: original.sender_type }),
