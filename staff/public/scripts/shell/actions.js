@@ -33,7 +33,7 @@ function openMobileMenu() {
     container.style.left = '0';
     container.style.width = '100%';
     container.style.height = '100%';
-    container.style.zIndex = '9999999';
+    container.style.zIndex = '2147483647';
     container.style.display = 'flex';
     container.style.flexDirection = 'column';
     container.style.justifyContent = 'flex-end';
