@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20261019chatbottom1');
+importScripts('/sw.js?v=20261020applicationbadge1');

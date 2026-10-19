@@ -118,7 +118,7 @@
             '<nav class="tbn-bottom-nav" id="tbn-bottom-nav" aria-label="Navigasi bawah"><div class="tbn-bottom-inner">' +
             '<a href="/patient-menu.html" class="tbn-nav-item" data-tbn-cat="beranda"><i class="fa-solid fa-house"></i><span>Beranda</span></a>' +
             '<a href="#" class="tbn-nav-item" data-tbn-cat="dokumen"><i class="fa-solid fa-folder-open"></i><span>Dokumen</span></a>' +
-            '<a href="#" class="tbn-nav-item" data-tbn-cat="aplikasi"><i class="fa-solid fa-th-large"></i><span>Aplikasi</span><em class="tbn-application-new-badge" data-application-new-badge>NEW</em></a>' +
+            '<a href="#" class="tbn-nav-item" data-tbn-cat="aplikasi"><i class="fa-solid fa-th-large"></i><span>Aplikasi</span></a>' +
             '<a href="#" class="tbn-nav-item" data-tbn-cat="edukasi"><i class="fa-solid fa-book-open"></i><span>Ruang Baca</span></a>' +
             '<a href="#" class="tbn-nav-item" data-tbn-cat="jadwal"><i class="fa-solid fa-calendar-check"></i><span>Jadwal</span></a>' +
             '</div></nav>';

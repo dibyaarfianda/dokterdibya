@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/date-time-format.js?v=20261019estimatebadge1"></script>
-    <script defer src="/scripts/date-time-inputs.js?v=20261019estimatebadge1"></script>
+    <script src="/scripts/date-time-format.js?v=20261020applicationbadge1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261020applicationbadge1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,9 +20,9 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20261019estimatebadge1">
-    <script src="/scripts/socket-credentials.js?v=20261019estimatebadge1"></script>
-    <script src="/scripts/patient-session.js?v=20261019estimatebadge1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20261020applicationbadge1">
+    <script src="/scripts/socket-credentials.js?v=20261020applicationbadge1"></script>
+    <script src="/scripts/patient-session.js?v=20261020applicationbadge1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -5787,7 +5787,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20261019estimatebadge1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20261020applicationbadge1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -8097,6 +8097,6 @@
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20261019estimatebadge1"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20261020applicationbadge1"></script>
 </body>
 </html>
