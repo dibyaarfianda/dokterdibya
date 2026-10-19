@@ -1580,11 +1580,28 @@
 
     // Advanced Search Functions
     let advancedSearchActive = false;
+    let searchRequestSequence = 0;
+    const advancedSearchFields = {
+        name: 'adv-search-name',
+        mr_id: 'adv-search-drd',
+        email: 'adv-search-email',
+        phone: 'adv-search-phone',
+        visit_date_from: 'adv-search-visit-date-from',
+        visit_date_to: 'adv-search-visit-date-to'
+    };
 
     // Debounce function for live search
     let searchDebounceTimer = null;
+    function clearAdvancedSearchDateError() {
+        const error = document.getElementById('adv-search-date-error');
+        if (error) {
+            error.hidden = true;
+            error.textContent = '';
+        }
+    }
     function debounceSearch(delay = 300) {
         clearTimeout(searchDebounceTimer);
+        searchRequestSequence++;
         searchDebounceTimer = setTimeout(() => {
             performAdvancedSearch();
         }, delay);
@@ -1603,12 +1620,9 @@
         // Live search - trigger search on typing (with debounce)
         const searchFields = [
             'adv-search-name',
-            'adv-search-id',
-            'adv-search-mr',
+            'adv-search-drd',
             'adv-search-email',
-            'adv-search-phone',
-            'adv-search-whatsapp',
-            'adv-search-husband'
+            'adv-search-phone'
         ];
 
         searchFields.forEach(fieldId => {
@@ -1623,19 +1637,39 @@
             }
         });
 
-        // For age fields, trigger on change
-        ['adv-search-age-min', 'adv-search-age-max'].forEach(fieldId => {
+        // Date display controls dispatch change on the original ISO date inputs.
+        ['adv-search-visit-date-from', 'adv-search-visit-date-to'].forEach(fieldId => {
             const field = document.getElementById(fieldId);
             if (field) {
-                field.addEventListener('input', function() {
-                    debounceSearch(500);
+                field.addEventListener('input', clearAdvancedSearchDateError);
+                field.addEventListener('change', function() {
+                    clearAdvancedSearchDateError();
+                    debounceSearch(400);
                 });
             }
         });
     });
 
     async function performAdvancedSearch() {
+        clearTimeout(searchDebounceTimer);
+        const requestSequence = ++searchRequestSequence;
         try {
+            const form = document.getElementById('advanced-search-form');
+            const dateFrom = document.getElementById('adv-search-visit-date-from');
+            const dateTo = document.getElementById('adv-search-visit-date-to');
+            clearAdvancedSearchDateError();
+            if (form && !form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            if (dateFrom?.value && dateTo?.value && dateFrom.value > dateTo.value) {
+                const error = document.getElementById('adv-search-date-error');
+                if (error) {
+                    error.textContent = 'Tanggal sampai harus sama dengan atau setelah tanggal dari.';
+                    error.hidden = false;
+                }
+                return;
+            }
             const token = (window.getAuthToken ? window.getAuthToken() : '');
             const tbody = document.getElementById('manage-patients-tbody');
             const resultCount = document.getElementById('adv-search-result-count');
@@ -1646,31 +1680,12 @@
             // Collect search parameters
             const params = new URLSearchParams();
 
-            const name = document.getElementById('adv-search-name')?.value;
-            const id = document.getElementById('adv-search-id')?.value;
-            const mr_id = document.getElementById('adv-search-mr')?.value;
-            const email = document.getElementById('adv-search-email')?.value;
-            const age_min = document.getElementById('adv-search-age-min')?.value;
-            const age_max = document.getElementById('adv-search-age-max')?.value;
-            const phone = document.getElementById('adv-search-phone')?.value;
-            const whatsapp = document.getElementById('adv-search-whatsapp')?.value;
-            const husband = document.getElementById('adv-search-husband')?.value;
-            const visit_date = document.getElementById('adv-search-visit-date')?.value;
-
-            if (name) params.append('name', name);
-            if (id) params.append('id', id);
-            if (mr_id) params.append('mr_id', mr_id);
-            if (email) params.append('email', email);
-            if (age_min) params.append('age_min', age_min);
-            if (age_max) params.append('age_max', age_max);
-            if (phone) params.append('phone', phone);
-            if (whatsapp) params.append('whatsapp', whatsapp);
-            if (husband) params.append('husband', husband);
-            if (visit_date) params.append('visit_date', visit_date);
+            for (const [parameter, fieldId] of Object.entries(advancedSearchFields)) {
+                const value = document.getElementById(fieldId)?.value.trim();
+                if (value) params.append(parameter, value);
+            }
+            const hasFilters = params.size > 0;
             params.append('limit', '100');
-
-            // Check if any filter is applied
-            const hasFilters = name || id || mr_id || email || age_min || age_max || phone || whatsapp || husband || visit_date;
 
             if (!hasFilters) {
                 // No filters, load all patients
@@ -1694,19 +1709,11 @@
             }
 
             const data = await response.json();
+            if (requestSequence !== searchRequestSequence) return;
             clearBulkDeletePatientSelection();
 
             window.staffDebugLog?.('PatientSearch', 'Advanced search response', {
-                filters: {
-                    name: Boolean(name),
-                    id: Boolean(id),
-                    mr_id: Boolean(mr_id),
-                    email: Boolean(email),
-                    phone: Boolean(phone),
-                    whatsapp: Boolean(whatsapp),
-                    husband: Boolean(husband),
-                    visit_date: Boolean(visit_date)
-                },
+                filters: Object.fromEntries(Object.keys(advancedSearchFields).map(key => [key, params.has(key)])),
                 count: Array.isArray(data.data) ? data.data.length : 0
             });
 
@@ -1743,6 +1750,7 @@
             }
 
         } catch (error) {
+            if (requestSequence !== searchRequestSequence) return;
             console.error('Error in advanced search:', error);
             document.getElementById('manage-patients-tbody').innerHTML =
                 '<tr><td colspan="8" class="text-center text-danger">Gagal melakukan pencarian</td></tr>';
@@ -1750,17 +1758,17 @@
     }
 
     window.resetAdvancedSearch = function() {
+        clearTimeout(searchDebounceTimer);
+        searchRequestSequence++;
+        clearAdvancedSearchDateError();
         // Clear all search fields
-        document.getElementById('adv-search-name').value = '';
-        document.getElementById('adv-search-id').value = '';
-        document.getElementById('adv-search-mr').value = '';
-        document.getElementById('adv-search-email').value = '';
-        document.getElementById('adv-search-age-min').value = '';
-        document.getElementById('adv-search-age-max').value = '';
-        document.getElementById('adv-search-phone').value = '';
-        document.getElementById('adv-search-whatsapp').value = '';
-        document.getElementById('adv-search-husband').value = '';
-        document.getElementById('adv-search-visit-date').value = '';
+        Object.values(advancedSearchFields).forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.value = '';
+                field.setCustomValidity('');
+            }
+        });
 
         // Clear result count
         const resultCount = document.getElementById('adv-search-result-count');

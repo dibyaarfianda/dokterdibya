@@ -233,4 +233,54 @@ describe('GET /api/patients wave 4 additive contract', () => {
         expect(pageSql).toMatch(/SELECT scr\.mr_id FROM sunday_clinic_records scr[\s\S]*scr\.mr_id LIKE \?[\s\S]*DATE\(scr\.created_at\) = \?/);
         expect(pageParams.slice(0, 3)).toEqual(['%DRD%', '2026-09-24', '%ani@example.test%']);
     });
+
+    test('advanced examination range uses the latest anamnesa for the same patient and DRD', async () => {
+        db.query.mockImplementation(async sql => sql.includes('COUNT(') ? [[{ total: 0 }]] : [[]]);
+        await request(app).get('/api/patients/search/advanced')
+            .query({ name: 'Ani', mr_id: 'DRD001', email: 'ani@', phone: '0812', visit_date_from: '2026-10-02', visit_date_to: '2026-10-19' })
+            .expect(200);
+        const [countSql, countParams] = db.query.mock.calls.find(([sql]) => sql.includes('COUNT('));
+        const [pageSql, pageParams] = db.query.mock.calls.find(([sql]) => sql.includes('LIMIT ? OFFSET ?'));
+        for (const sql of [countSql, pageSql]) {
+            expect(sql).toContain('am.patient_id = scr.patient_id');
+            expect(sql).toContain('am.mr_id = scr.mr_id');
+            expect(sql).toContain("am.record_type = 'anamnesa'");
+            expect(sql).toContain('$.record_datetime');
+            expect(sql).toContain('REGEXP');
+            expect(sql).toContain('LAST_DAY');
+            expect(sql).toContain('ORDER BY am.version DESC, am.updated_at DESC, am.created_at DESC, am.id DESC');
+            expect(sql).not.toContain('DATE(scr.created_at)');
+            expect(sql).toContain('>= ?');
+            expect(sql).toContain('<= ?');
+        }
+        expect(countParams).toEqual(['%Ani%', '%DRD001%', '2026-10-02', '2026-10-19', '%ani@%', '%0812%']);
+        expect((countSql.match(/\?/g) || []).length).toBe(countParams.length);
+        expect((pageSql.match(/\?/g) || []).length).toBe(pageParams.length);
+        expect(pageParams.slice(0, 3)).toEqual(['%DRD001%', '2026-10-02', '2026-10-19']);
+    });
+
+    test.each([
+        { visit_date_from: '2026-10-02' },
+        { visit_date_to: '2026-10-19' },
+        { visit_date_from: '2026-10-19', visit_date_to: '2026-10-19' }
+    ])('advanced examination range accepts open and same-day bounds: %j', async query => {
+        db.query.mockImplementation(async sql => sql.includes('COUNT(') ? [[{ total: 0 }]] : [[]]);
+        await request(app).get('/api/patients/search/advanced').query(query).expect(200);
+        const [sql, params] = db.query.mock.calls.find(([text]) => text.includes('COUNT('));
+        expect(sql).toContain('$.record_datetime');
+        expect(params).toEqual(Object.values(query));
+    });
+
+    test.each([
+        { visit_date_from: '2026-02-30' },
+        { visit_date_to: '19-10-2026' },
+        { visit_date_from: '2026-10-20', visit_date_to: '2026-10-19' },
+        { visit_date_from: ['2026-10-02', '2026-10-03'] },
+        { visit_date_to: { value: '2026-10-19' } }
+    ])('advanced examination range rejects invalid dates before querying: %j', async query => {
+        const response = await request(app).get('/api/patients/search/advanced').query(query).expect(400);
+        expect(response.body.success).toBe(false);
+        expect(response.body.code).toBe('INVALID_EXAMINATION_DATE_RANGE');
+        expect(db.query).not.toHaveBeenCalled();
+    });
 });

@@ -809,9 +809,24 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
             whatsapp,   // Nomor WhatsApp
             husband,    // Nama suami
             visit_date, // Tanggal periksa (from sunday_clinic_records.created_at)
+            visit_date_from, // Inclusive examination date from the visit's anamnesa
+            visit_date_to,
             limit,
             page
         } = req.query;
+
+        const rangeBounds = [visit_date_from, visit_date_to].map(value => typeof value === 'string' ? value.trim() : value);
+        const validBound = value => {
+            if (value === undefined || value === '') return true;
+            if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+            const [year, month, day] = value.split('-').map(Number);
+            const date = new Date(Date.UTC(year, month - 1, day));
+            return year >= 1000 && date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day;
+        };
+        const [dateFrom, dateTo] = rangeBounds;
+        if (!rangeBounds.every(validBound) || (dateFrom && dateTo && dateFrom > dateTo)) {
+            return res.status(400).json({ success: false, code: 'INVALID_EXAMINATION_DATE_RANGE', message: 'Rentang tanggal periksa tidak valid.' });
+        }
 
         const visitFilters = [];
         const visitParams = [];
@@ -822,6 +837,31 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
         if (visit_date && visit_date.trim()) {
             visitFilters.push('DATE(scr.created_at) = ?');
             visitParams.push(visit_date.trim());
+        }
+        // Read only the current anamnesa for this patient AND visit. Missing or
+        // malformed dates remain NULL; creation/import timestamps are not exam dates.
+        if (dateFrom || dateTo) {
+            const storedDateTime = "JSON_UNQUOTE(JSON_EXTRACT(IF(JSON_VALID(am.record_data), am.record_data, '{}'), '$.record_datetime'))";
+            // Form/import producers store local WIB dates and datetime-local values.
+            // DATE() alone accepts trailing junk, so validate shape and clock first.
+            // Use {0,1}: mysql2.query treats even a quoted ? as a bind marker.
+            const localDateTimePattern = '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])([T ]([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9]([.][0-9]{1,6}){0,1}){0,1}){0,1}$';
+            const examinationDate = `(SELECT CASE WHEN ${storedDateTime} REGEXP '${localDateTimePattern}'
+                AND LEFT(${storedDateTime}, 4) >= '1000'
+                AND CAST(SUBSTRING(${storedDateTime}, 9, 2) AS UNSIGNED)
+                    <= DAY(LAST_DAY(CONCAT(LEFT(${storedDateTime}, 7), '-01')))
+                THEN DATE(LEFT(${storedDateTime}, 10)) END
+                FROM medical_records am
+                WHERE am.patient_id = scr.patient_id AND am.mr_id = scr.mr_id AND am.record_type = 'anamnesa'
+                ORDER BY am.version DESC, am.updated_at DESC, am.created_at DESC, am.id DESC LIMIT 1)`;
+            if (dateFrom) {
+                visitFilters.push(`${examinationDate} >= ?`);
+                visitParams.push(dateFrom);
+            }
+            if (dateTo) {
+                visitFilters.push(`${examinationDate} <= ?`);
+                visitParams.push(dateTo);
+            }
         }
         const visitMatchSql = visitFilters.length ? ` AND ${visitFilters.join(' AND ')}` : '';
         const emailMatchSql = email && email.trim() ? ' AND u.email LIKE ?' : '';

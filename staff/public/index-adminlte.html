@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/staff/public/scripts/date-time-format.js?v=v465"></script>
-    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v465"></script>
+    <script src="/staff/public/scripts/date-time-format.js?v=v466"></script>
+    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v466"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Cache controlled via versioned URLs instead of no-cache headers -->
@@ -10,16 +10,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v465';
+        window.STAFF_CACHE_VERSION = 'v466';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v465">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v465">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v465">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v465">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v466">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v466">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v466">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v466">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v465">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v466">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,7 +27,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v465">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v466">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -56,7 +56,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v465"></script>
+    <script src="scripts/error-handler.js?v=v466"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -71,10 +71,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v465">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v466">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v465">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v466">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -2759,68 +2759,48 @@
                                         <div class="row">
                                             <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label>Nama Pasien</label>
+                                                    <label for="adv-search-name">Nama Pasien</label>
                                                     <input type="text" id="adv-search-name" class="form-control form-control-sm" placeholder="Cari nama...">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <div class="form-group">
-                                                    <label>ID Pasien</label>
-                                                    <input type="text" id="adv-search-id" class="form-control form-control-sm" placeholder="DRD0001">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <div class="form-group">
-                                                    <label>MR ID</label>
-                                                    <input type="text" id="adv-search-mr" class="form-control form-control-sm" placeholder="MR-...">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label>Email</label>
+                                                    <label for="adv-search-drd">DRD Pasien</label>
+                                                    <input type="text" id="adv-search-drd" class="form-control form-control-sm" placeholder="DRD0001">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="adv-search-email">Email</label>
                                                     <input type="text" id="adv-search-email" class="form-control form-control-sm" placeholder="email@...">
                                                 </div>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label>Umur</label>
-                                                    <div class="input-group input-group-sm">
-                                                        <input type="number" id="adv-search-age-min" class="form-control" placeholder="Min" min="0" max="150">
-                                                        <div class="input-group-append input-group-prepend">
-                                                            <span class="input-group-text">-</span>
-                                                        </div>
-                                                        <input type="number" id="adv-search-age-max" class="form-control" placeholder="Max" min="0" max="150">
-                                                    </div>
+                                                    <label for="adv-search-phone">No. Telp</label>
+                                                    <input type="text" id="adv-search-phone" class="form-control form-control-sm" placeholder="08...">
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="row">
-                                            <div class="col-md-2">
-                                                <div class="form-group">
-                                                    <label>No. HP</label>
-                                                    <input type="text" id="adv-search-phone" class="form-control form-control-sm" placeholder="08...">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <div class="form-group">
-                                                    <label>No. WhatsApp</label>
-                                                    <input type="text" id="adv-search-whatsapp" class="form-control form-control-sm" placeholder="08...">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <div class="form-group">
-                                                    <label>Nama Suami</label>
-                                                    <input type="text" id="adv-search-husband" class="form-control form-control-sm" placeholder="Nama suami...">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-3">
+                                            <div class="col-md-6">
                                                 <div class="form-group">
                                                     <label>Tanggal Periksa</label>
-                                                    <input type="date" id="adv-search-visit-date" class="form-control form-control-sm">
+                                                    <div class="form-row">
+                                                        <div class="col-6">
+                                                            <label for="adv-search-visit-date-from" class="small text-muted">Dari</label>
+                                                            <input type="date" id="adv-search-visit-date-from" aria-label="Tanggal periksa dari" class="form-control form-control-sm">
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <label for="adv-search-visit-date-to" class="small text-muted">Sampai</label>
+                                                            <input type="date" id="adv-search-visit-date-to" aria-label="Tanggal periksa sampai" class="form-control form-control-sm">
+                                                        </div>
+                                                    </div>
+                                                    <div id="adv-search-date-error" class="small text-danger mt-1" role="alert" hidden></div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-3 d-flex align-items-end">
-                                                <div class="form-group mb-0 w-100">
+                                            <div class="col-md-6 d-flex align-items-end">
+                                                <div class="form-group w-100">
                                                     <button type="submit" class="btn btn-primary btn-sm mr-2">
                                                         <i class="fas fa-search mr-1"></i>Cari
                                                     </button>
@@ -3738,10 +3718,10 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/actions.js?v=v465"></script>
-<script defer src="scripts/shell/compact-sidebar.js?v=v465"></script>
-<script defer src="scripts/shell/drd-links.js?v=v465"></script>
-<script defer src="scripts/patient-demo-manager.js?v=v465"></script>
+<script defer src="scripts/shell/actions.js?v=v466"></script>
+<script defer src="scripts/shell/compact-sidebar.js?v=v466"></script>
+<script defer src="scripts/shell/drd-links.js?v=v466"></script>
+<script defer src="scripts/patient-demo-manager.js?v=v466"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3822,9 +3802,9 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v465" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v465" preload="auto"></audio>
-<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v465" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v466" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v466" preload="auto"></audio>
+<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v466" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3836,7 +3816,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v465"></script>
+<script defer src="scripts/rum.js?v=v466"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4099,7 +4079,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v465"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v466"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4252,7 +4232,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v465"></script>
+ <script src="scripts/mobile-helper.js?v=v466"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4264,8 +4244,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v465"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v465"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v466"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v466"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->
