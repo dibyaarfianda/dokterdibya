@@ -39,7 +39,7 @@ router.post('/exchange', exchangeLimiter, async (req, res, next) => {
             return res.status(410).json({ success: false, code: 'DEMO_CODE_EXPIRED_OR_USED', message: 'Kode demo sudah kedaluwarsa atau telah digunakan.' });
         }
         const state = await PatientDemoService.getState();
-        const user = { ...state.profile, demo_mode: true };
+        const user = { ...state.profile, demo_mode: true, demo_session_id: session.id };
         const token = jwt.sign({
             id: user.id,
             email: user.email,

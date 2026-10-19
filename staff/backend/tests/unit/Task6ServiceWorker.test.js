@@ -209,7 +209,7 @@ test('patient worker update rotates cache namespace before adding new shell asse
     expect(source).not.toContain("const CACHE_VERSION = '20260924wave3'");
 });
 
-test('patient precache contains only versioned same-origin static assets, never HTML or CDN', async () => {
+test('patient precache contains versioned same-origin static assets and only the safe offline story shell', async () => {
     const source = fs.readFileSync(path.join(root, 'public/sw.js'), 'utf8');
     const cacheVersion = source.match(/const CACHE_VERSION = '([^']+)';/)?.[1];
     expect(cacheVersion).toBeTruthy();
@@ -221,7 +221,9 @@ test('patient precache contains only versioned same-origin static assets, never 
     expect(urls).toBeTruthy();
     const items = (await urls).addAll.mock.calls[0][0];
     expect(items.length).toBeGreaterThan(0);
+    expect(items.filter(item => /\.html(?:\?|$)/.test(item))).toEqual(['/ruang-cerita.html']);
     for (const item of items) {
+        if (item === '/ruang-cerita.html') continue; // Static shared markup; private drafts only use no-store APIs.
         expect(item).toMatch(/^\/[^?]+\?v=[^?]+$/);
         expect(new URL(item, 'https://example.test').searchParams.get('v')).toBe(cacheVersion);
         expect(item).not.toMatch(/\.html(?:\?|$)/);

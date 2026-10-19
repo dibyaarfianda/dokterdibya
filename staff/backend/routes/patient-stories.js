@@ -5,6 +5,9 @@ const { verifyPatientToken, verifyStaffToken, requireRolesOrAccountPermission } 
 const { ROLE_NAMES } = require('../constants/roles');
 const logger = require('../utils/logger');
 
+// Mount before /:id so "draft" is never interpreted as a published story.
+router.use('/draft', require('./patient-story-draft'));
+
 const CATEGORY_VALUES = new Set(['kehamilan', 'kesuburan', 'penyakit_kandungan']);
 const STATUS_VALUES = new Set(['pending', 'published', 'rejected', 'archived']);
 const AUTHOR_MODE_VALUES = new Set(['nickname', 'anonim']);

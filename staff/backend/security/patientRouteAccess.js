@@ -93,6 +93,8 @@ const PATIENT_ROUTE_RULES = [
     createRule('PUT', /^\/api\/patient-notifications\/queue-reminder-settings$/),
     createRule('POST', /^\/api\/patient-notifications\/(?:[^/]+\/read|mark-read-by-link|read-all)$/),
 
+    createRule(['GET', 'PUT', 'DELETE'], /^\/api\/patient-stories\/draft$/),
+    createRule('POST', /^\/api\/patient-stories\/draft\/submit$/),
     createRule('GET', /^\/api\/patient-stories(?:\/my|\/[^/]+)?$/),
     createRule('POST', /^\/api\/patient-stories(?:\/[^/]+\/(?:reaction|report))?$/),
     createRule('POST', /^\/api\/patient-feedback$/),

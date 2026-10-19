@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20261018datetime4';
+const CACHE_VERSION = '20261019storydraft1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -35,6 +35,10 @@ const PRECACHE_FILES = [
   '/tanya-dokter.html',
   '/artikel.html',
   '/community-chat.html',
+  '/ruang-cerita.html',
+  '/scripts/patient-utils.js',
+  '/scripts/patient-story-drafts.js',
+  '/scripts/patient-story-editor.js',
   '/my-corner-visit.html',
   '/styles/patient-portal-theme.css',
   '/styles/patient-tool-shell.css',
@@ -115,7 +119,8 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('[SW] Caching essential files');
-        return cache.addAll(IMMUTABLE_STATIC_ASSETS);
+        // Preserve this static editor shell across cache-version activation, too.
+        return cache.addAll([...IMMUTABLE_STATIC_ASSETS, '/ruang-cerita.html']);
       })
       .then(() => {
         console.log('[SW] Skip waiting');
@@ -173,6 +178,21 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For navigation requests (HTML pages)
+  // This is a shared static editor shell; private draft data only uses no-store APIs.
+  if (url.origin === self.location.origin && url.pathname === '/ruang-cerita.html') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await fetch(freshRequest);
+        if (!response.ok) throw new Error('Editor unavailable');
+        await cache.put('/ruang-cerita.html', response.clone());
+        return response;
+      } catch (_) {
+        return (await cache.match('/ruang-cerita.html')) || new Response('Editor belum tersedia offline. Sambungkan internet sekali untuk membuka draft.', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+      }
+    })());
+    return;
+  }
   if (request.mode === 'navigate' || url.pathname.endsWith('.html') || (request.headers.get('accept') || '').includes('text/html')) {
     event.respondWith(
       fetch(freshRequest)

@@ -346,6 +346,10 @@ async function patientDemoGuard(req, res, next) {
             return res.status(403).json({ success: false, code: 'DEMO_ACTION_BLOCKED', message: 'Aksi ini dinonaktifkan pada mode dummy.' });
         }
 
+        if (/^\/api\/patient-stories\/draft(?:\/submit)?$/.test(pathname)) {
+            return require('../routes/patient-story-draft').dispatch(req, res, 'demo:' + payload.demo_session_id, true, pathname.endsWith('/submit'));
+        }
+
         const state = await PatientDemoService.getState();
         const result = req.method === 'GET'
             ? await handleGet(req, res, state, pathname)

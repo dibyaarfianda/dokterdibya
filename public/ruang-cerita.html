@@ -239,6 +239,14 @@
             align-items: center;
             font-weight: 600;
         }
+        [hidden] { display: none !important; }
+        .draft-notice { padding: 14px; margin: 12px 0; border: 1px solid var(--border-color, #d9c8d1); border-radius: 14px; background: var(--card-bg, #fff8fb); color: inherit; line-height: 1.5; }
+        .draft-notice p { margin: 6px 0; }
+        #draftStatus[data-state="error"], #draftStatus[data-state="conflict"] { color: #a22c36; }
+        #draftServerPreview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 180px; overflow: auto; font: inherit; }
+        .draft-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        #deleteDraftDialog { max-width: 420px; width: calc(100% - 40px); border: 0; border-radius: 18px; padding: 24px; }
+        #deleteDraftDialog::backdrop { background: rgba(0,0,0,.5); }
         @media (max-width: 760px) {
             .page-hero { padding: 28px 20px 20px; }
             .story-room { padding: 4px 20px 34px; }
@@ -275,6 +283,10 @@
             <button type="button" class="primary-btn" id="openSubmitBtn"><i class="fa-solid fa-pen"></i> Tulis Cerita</button>
         </div>
 
+        <aside id="draftResume" class="draft-notice" hidden>
+            <button type="button" id="draftResumeBtn" class="ghost-btn">Lanjutkan draft terakhir</button>
+            <p id="draftResumeTime" class="form-help"></p>
+        </aside>
         <div class="filter-tabs" role="tablist" aria-label="Filter kategori">
             <button type="button" class="filter-tab active" data-filter="all">Semua</button>
             <button type="button" class="filter-tab" data-filter="kehamilan">Kehamilan</button>
@@ -315,6 +327,20 @@
             </div>
             <div class="story-modal-body">
                 <form class="story-form" id="storyForm">
+                    <p id="draftStatus" class="draft-notice" role="status" aria-live="polite">Menyiapkan draft…</p>
+                    <aside id="draftConflict" class="draft-notice" hidden>
+                        <strong>Versi berbeda ditemukan</strong>
+                        <details><summary>Lihat versi server</summary><pre id="draftServerPreview"></pre></details>
+                        <div class="draft-actions">
+                            <button type="button" id="draftUseServer" class="ghost-btn">Gunakan draft server</button>
+                            <button type="button" id="draftKeepMine" class="ghost-btn">Simpan tulisan saya sebagai versi terbaru</button>
+                        </div>
+                    </aside>
+                    <aside id="draftAlternatives" class="draft-notice" hidden>
+                        <label for="draftAlternativeSelect">Salinan lain yang belum tersinkron</label>
+                        <select id="draftAlternativeSelect"></select>
+                        <button type="button" id="draftUseAlternative" class="ghost-btn">Lanjutkan salinan ini</button>
+                    </aside>
                     <div class="form-row">
                         <label for="storyTitle">Judul</label>
                         <input id="storyTitle" maxlength="100" required placeholder="Contoh: Hal kecil yang membantu saya lebih tenang">
@@ -344,11 +370,22 @@
             </div>
             <div class="story-modal-actions">
                 <button type="submit" form="storyForm" class="primary-btn" id="submitStoryBtn"><i class="fa-solid fa-paper-plane"></i> Kirim untuk Review</button>
-                <button type="button" class="ghost-btn" onclick="closeSubmitModal()">Batal</button>
+                <button type="button" class="ghost-btn" onclick="closeSubmitModal()">Simpan &amp; Tutup</button>
+                <button type="button" class="ghost-btn" id="deleteDraftBtn">Hapus Draft</button>
             </div>
         </section>
     </div>
 
+    <dialog id="deleteDraftDialog" aria-labelledby="deleteDraftTitle">
+        <h3 id="deleteDraftTitle">Hapus draft ini?</h3>
+        <p>Draft ini akan dihapus dari perangkat dan server saat tersambung. Salinan berbeda di tab lain tetap dilindungi.</p>
+        <div class="draft-actions">
+            <button type="button" class="ghost-btn" id="cancelDeleteDraft">Kembali</button>
+            <button type="button" class="primary-btn" id="confirmDeleteDraft">Ya, Hapus Draft</button>
+        </div>
+    </dialog>
+    <script src="/scripts/patient-story-drafts.js?v=20261019storydraft1"></script>
+    <script src="/scripts/patient-story-editor.js?v=20261019storydraft1"></script>
     <script type="module">
         import { checkAuth, apiRequest, showToast, escapeHtml, formatRelativeTime } from '/scripts/patient-utils.js';
 
@@ -374,6 +411,11 @@
         let activeStory = null;
 
         const container = document.getElementById('storiesContainer');
+        const storyEditor = window.PatientStoryEditor.mount({ apiRequest, showToast, onSubmitted: async () => {
+            currentView = 'mine';
+            document.querySelectorAll('.tab-btn').forEach(item => item.classList.toggle('active', item.dataset.view === 'mine'));
+            await loadStories();
+        } });
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -394,9 +436,6 @@
         });
 
         document.getElementById('openSubmitBtn').addEventListener('click', openSubmitModal);
-        document.getElementById('storyTitle').addEventListener('input', updateCounts);
-        document.getElementById('storyBody').addEventListener('input', updateCounts);
-        document.getElementById('storyForm').addEventListener('submit', submitStory);
 
         loadStories();
 
@@ -526,56 +565,13 @@
 
         window.openSubmitModal = openSubmitModal;
         function openSubmitModal() {
-            document.getElementById('storyForm').reset();
-            updateCounts();
-            document.getElementById('submitModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
+            storyEditor.open();
         }
 
         window.closeSubmitModal = function() {
-            document.getElementById('submitModal').classList.remove('active');
-            document.body.style.overflow = '';
+            storyEditor.close();
         };
 
-        function updateCounts() {
-            document.getElementById('titleCount').textContent = document.getElementById('storyTitle').value.length;
-            document.getElementById('bodyCount').textContent = document.getElementById('storyBody').value.length;
-        }
-
-        async function submitStory(event) {
-            event.preventDefault();
-            const btn = document.getElementById('submitStoryBtn');
-            const payload = {
-                title: document.getElementById('storyTitle').value.trim(),
-                category: document.getElementById('storyCategory').value,
-                author_mode: document.querySelector('input[name="authorMode"]:checked')?.value || 'nickname',
-                body: document.getElementById('storyBody').value.trim()
-            };
-            if (!payload.title || !payload.body) {
-                showToast('Judul dan isi cerita wajib diisi', 'warning');
-                return;
-            }
-
-            try {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner spin"></i> Mengirim...';
-                const result = await apiRequest('/api/patient-stories', {
-                    method: 'POST',
-                    body: JSON.stringify(payload)
-                });
-                if (!result?.success) throw new Error(result?.message || 'Gagal mengirim cerita');
-                showToast('Cerita terkirim dan menunggu review', 'success');
-                closeSubmitModal();
-                currentView = 'mine';
-                document.querySelectorAll('.tab-btn').forEach(item => item.classList.toggle('active', item.dataset.view === 'mine'));
-                await loadStories();
-            } catch (error) {
-                showToast(error.message || 'Gagal mengirim cerita', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Kirim untuk Review';
-            }
-        }
     </script>
     <script src="/js/patient-tracker.js?v=20260209"></script>
     <script src="/js/push-subscribe.js?v=20260209"></script>
