@@ -457,8 +457,12 @@ function syncCommunityChatFrameHeight() {
     if (!page) return;
 
     const rect = page.getBoundingClientRect();
+    // The desktop shell is scaled to 80%; DOM bounds are viewport pixels,
+    // while the CSS height must use the page's unscaled layout pixels.
+    const zoom = page.offsetHeight ? rect.height / page.offsetHeight : 1;
+    if (!zoom) return;
     const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight || 0;
-    const availableHeight = Math.max(320, Math.floor(viewportHeight - Math.max(0, rect.top)));
+    const availableHeight = Math.max(0, Math.floor((viewportHeight - Math.max(0, rect.top)) / zoom));
     document.documentElement.style.setProperty('--staff-community-chat-height', `${availableHeight}px`);
 }
 
