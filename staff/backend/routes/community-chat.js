@@ -4,6 +4,9 @@ const { validateOperationalSchemaScope } = require('../services/OperationalSchem
 const { verifyToken, verifyStaffToken } = require('../middleware/auth');
 const { requireSocketPrincipal } = require('../security/socketAccess');
 const attention = require('../services/CommunityChatAttention');
+const chatNotifications = require('../services/CommunityChatNotifications').createChatNotifications({
+    db, push: require('../services/pushNotificationService')
+});
 const { loadStaffProfiles, hydrateStaffMessages } = require('../services/CommunityChatStaffProfile');
 
 const router = express.Router();
@@ -424,6 +427,7 @@ router.use(async (req, res, next) => {
 });
 
 require('./community-chat-attention')(router, { db, verifyToken, getRoomBySlug, canAccessRoom, touchRoomMember, isPatientUser });
+require('./community-chat-notifications')(router, { db, verifyToken, getRoomBySlug, canAccessRoom, isPatientUser, chatNotifications });
 
 router.get('/rooms', verifyToken, async (req, res) => {
     try {
@@ -828,6 +832,10 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
         const [hydratedMessage] = await hydrateStaffMessages(db, rows);
         const message = attention.messageDto(hydratedMessage);
         await attention.notify(room, message, identity, attention.recipients(metadata.mentions, metadata.reply, identity));
+        // Push delivery must not delay the persisted message response or make a saved message look failed.
+        chatNotifications.notify(room, message, identity).catch(() => {
+            console.warn('[CommunityChat] chat push dispatch failed', { message_id: message.id });
+        });
 
         if (ioRef) {
             ioRef.to(`community:${room.slug}`).emit('community:message:new', {

@@ -9,7 +9,7 @@ export function mountPatientCommunityChat() {
     const available = () => Boolean(session.getToken()) && !session.isDemoMode();
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '/styles/patient-community-chat.css?v=20261025edgechat3';
+    style.href = '/styles/patient-community-chat.css?v=20261025chatfast1';
     document.head.appendChild(style);
 
     const root = document.createElement('div');
@@ -33,6 +33,26 @@ export function mountPatientCommunityChat() {
     const content = document.getElementById('patient-community-content');
     let frame = null, opened = false, closeTimer = null, pendingBack = false;
     let previousOverflow = '', credential = session.getToken();
+    let warmAttempted = false;
+
+    function prepareFrame() {
+        if (!mobile.matches || !available()) return;
+        if (frame) return;
+        warmAttempted = true;
+        frame = document.createElement('iframe');
+        frame.id = 'patient-community-frame';
+        frame.title = 'Percakapan chat komunitas';
+        frame.dataset.communityChatVisible = 'false';
+        frame.src = '/community-chat.html?embed=patient&v=20261025chatfast1';
+        frame.addEventListener('load', () => { if (opened) notifyOpened(); });
+        content.appendChild(frame);
+    }
+
+    function notifyOpened() {
+        frame?.contentWindow?.postMessage({ type: 'PATIENT_COMMUNITY_CHAT_OPEN' }, window.location.origin);
+    }
+    // Warm once after the portal's initial work; hidden frames never acknowledge reads.
+    window.setTimeout(() => { if (!warmAttempted) prepareFrame(); }, 800);
 
     function updateViewport() {
         const viewport = window.visualViewport;
@@ -52,14 +72,9 @@ export function mountPatientCommunityChat() {
         if (!panel.open) panel.showModal();
         opened = true;
         launcher.setAttribute('aria-expanded', 'true');
-        if (!frame) {
-            frame = document.createElement('iframe');
-            frame.id = 'patient-community-frame';
-            frame.title = 'Percakapan chat komunitas';
-            frame.src = '/community-chat.html?embed=patient&v=20261025edgechat1';
-            content.appendChild(frame);
-        }
+        prepareFrame();
         frame.dataset.communityChatVisible = 'true';
+        notifyOpened();
         requestAnimationFrame(() => { if (opened) panel.classList.add('is-open'); });
         document.getElementById('patient-community-close').focus({ preventScroll: true });
         if (!fromHistory) {

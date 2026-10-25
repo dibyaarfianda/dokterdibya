@@ -43,6 +43,7 @@
     }
 
     function clearTokenKeys() {
+        remove(global.sessionStorage, 'patient_community_preview_v1');
         [TOKEN_KEY, ...LEGACY_TOKEN_KEYS].forEach((key) => {
             remove(global.localStorage, key);
             remove(global.sessionStorage, key);
@@ -153,7 +154,7 @@
         if (PAGE_TRACKING_EXCLUDED_PATHS.has(path) || ['/patient-intake.html', '/community-chat.html', '/community-profile.html', '/app-closed.html'].includes(path)) return;
         if (global.__patientCommunityChatRequested) return;
         global.__patientCommunityChatRequested = true;
-        import('/scripts/patient-community-chat.js?v=20261025edgechat3')
+        import('/scripts/patient-community-chat.js?v=20261025chatfast1')
             .then(module => module.mountPatientCommunityChat())
             .catch(error => { global.__patientCommunityChatRequested = false; console.warn('[PatientSession] Community chat unavailable:', error.message); });
     }

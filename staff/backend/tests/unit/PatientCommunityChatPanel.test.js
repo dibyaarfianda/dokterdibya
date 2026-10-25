@@ -95,6 +95,24 @@ test('does not load a chat iframe until opened, then reuses it to keep the draft
     expect(app.nodes.get('patient-community-frame')).toBe(frame);
 });
 
+test('warms chat after the portal settles without opening it or marking it visible', () => {
+    const app = setup(); app.flush();
+    const frame = app.nodes.get('patient-community-frame');
+    expect(frame).toBeDefined();
+    expect(frame.dataset.communityChatVisible).toBe('false');
+    expect(app.nodes.get('patient-community-panel').open).toBe(false);
+    expect(app.history.state.patientCommunityChat).toBeUndefined();
+    app.controller.open();
+    expect(app.nodes.get('patient-community-frame')).toBe(frame);
+});
+
+test('scheduled warming never loads chat after logout or on desktop', () => {
+    const app = setup(); app.setToken(null); app.flush();
+    expect(app.nodes.get('patient-community-frame')).toBeUndefined();
+    const desktop = setup({ mobile: false }); desktop.flush();
+    expect(desktop.nodes.get('patient-community-frame')).toBeUndefined();
+});
+
 test('close restores page scrolling and focus and removes modal presentation', () => {
     const app = setup();
     app.controller.open();

@@ -33,6 +33,10 @@ const install = (relative, exports) => { require.cache[require.resolve(path.join
         await db.query("INSERT INTO community_chat_messages (id,room_id,sender_id,sender_type,sender_name,message) VALUES (1,1,'P2','patient','Private Two','Historical')");
         const migration = fs.readFileSync(path.join(backend, 'migrations/20260923_community_chat_attention.sql'), 'utf8');
         await db.query(migration);
+        const notificationMigration = fs.readFileSync(path.join(backend, 'migrations/20261025_patient_chat_notifications.sql'), 'utf8');
+        await db.query(notificationMigration);
+        await db.query(notificationMigration);
+        await db.query("INSERT INTO patient_chat_notification_settings (patient_id,enabled) VALUES ('P2',1)");
         await db.query("INSERT INTO community_chat_room_members (room_id,user_id,user_type,display_name) VALUES (1,'P1','patient','Mama Satu'),(1,'P2','patient','Mama Dua'),(2,'P1','patient','Mama Satu')");
         install('db.js', db);
         const verifyToken = (req, res, next) => {
@@ -62,6 +66,9 @@ const install = (relative, exports) => { require.cache[require.resolve(path.join
         const [notifications] = await db.query("SELECT * FROM patient_notifications WHERE patient_id='P2'");
         assert.equal(notifications.length, 1, 'Mention plus quote creates only one notification');
         assert.ok(notifications[0].link.includes('message=' + b.body.message.id));
+        // Chat push dispatch is detached from the already-persisted message response.
+        const pushDeadline = Date.now() + 2000;
+        while (!pushed.length && Date.now() < pushDeadline) await new Promise(resolve => setTimeout(resolve, 10));
         assert.equal(pushed.length, 1);
         assert.equal(pushed[0][0], 'P2');
         assert.ok(!notifications[0].message.includes('Private'));

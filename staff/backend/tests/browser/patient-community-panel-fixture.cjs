@@ -11,13 +11,23 @@ const user = { id: 'EDGE-QA', name: 'Pasien Contoh', fullname: 'Pasien Contoh', 
 const token = 'fixture.' + Buffer.from(JSON.stringify({ ...user, user_type: 'patient', role: 'patient' })).toString('base64url') + '.fixture';
 const room = { id: 1, slug: 'lobby', name: 'Lobby Komunitas', description: 'Percakapan contoh untuk pengujian tampilan', color: '#5c7f72', member_count: 5 };
 const requests = [];
+const chatDelay = Number(process.env.PATIENT_CHAT_QA_DELAY_MS) || 0;
+let notificationsEnabled = false;
 const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1:8899');
     const send = (data, type = 'application/json') => { res.writeHead(200, { 'Content-Type': type + '; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(typeof data === 'object' ? JSON.stringify(data) : data); };
     if (url.pathname === '/__qa-start') return send(`<meta name="viewport" content="width=device-width,initial-scale=1"><script src="/scripts/patient-session.js"></script><script>PatientSession.setToken(${JSON.stringify(token)},{persistent:false});PatientSession.setUser(${JSON.stringify(user)},{persistent:false});location.replace('/patient-menu.html');</script>`, 'text/html');
     if (url.pathname === '/__qa-metrics') return send(requests);
     if (url.pathname.startsWith('/api/')) {
-        requests.push({ method: req.method, path: url.pathname });
+        requests.push({ method: req.method, path: url.pathname, at: Date.now() });
+        if (url.pathname.startsWith('/api/community-chat/')) await new Promise(resolve => setTimeout(resolve, chatDelay));
+        if (url.pathname === '/api/community-chat/me/notifications') {
+            if (req.method === 'PUT') {
+                let body = ''; for await (const chunk of req) body += chunk;
+                notificationsEnabled = JSON.parse(body).enabled === true;
+            }
+            return send({ success: true, settings: { enabled: notificationsEnabled } });
+        }
         if (url.pathname === '/api/patients/profile') return send({ success: true, user });
         if (url.pathname === '/api/patients/portal-settings') return send({ success: true, settings: { nickname: 'PasienContoh', notification_sound: 'default' } });
         if (url.pathname === '/api/community-chat/unread') return send({ success: true, total: 3 });
@@ -25,7 +35,8 @@ const server = http.createServer(async (req, res) => {
         if (url.pathname === '/api/community-chat/rooms') return send({ success: true, rooms: [room], permissions: { can_write: true } });
         if (url.pathname.endsWith('/messages')) return send({ success: true, room, messages: [
             { id: 1, room_id: 1, sender_id: 'example-a', sender_type: 'patient', sender_name: 'Anggota Contoh', nickname: 'AnggotaContoh', message: 'Selamat datang di chat komunitas.', created_at: '2026-10-25T09:00:00+07:00' },
-            { id: 2, room_id: 1, sender_id: 'example-a', sender_type: 'patient', sender_name: 'Anggota Contoh', nickname: 'AnggotaContoh', message: 'Semoga hari ini menyenangkan untuk semuanya.', created_at: '2026-10-25T09:01:00+07:00' }
+            { id: 2, room_id: 1, sender_id: 'example-a', sender_type: 'patient', sender_name: 'Anggota Contoh', nickname: 'AnggotaContoh', message: 'Semoga hari ini menyenangkan untuk semuanya.', created_at: '2026-10-25T09:01:00+07:00' },
+            { id: 3, room_id: 1, sender_id: 'doctor-example', sender_type: 'staff', sender_name: 'dr. Dibya', sender_nickname: 'dr. Dibya', sender_is_dr_dibya: true, message: 'Pesan contoh untuk pengujian tampilan.', created_at: '2026-10-25T09:02:00+07:00' }
         ] });
         return send({ success: true, count: 0, data: [], appointments: [], notifications: [], announcements: [], records: [], sessions: [] });
     }
