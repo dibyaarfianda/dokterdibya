@@ -9,7 +9,7 @@ export function mountPatientCommunityChat() {
     const available = () => Boolean(session.getToken()) && !session.isDemoMode();
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '/styles/patient-community-chat.css?v=20261025chatfast1';
+    style.href = '/styles/patient-community-chat.css?v=20261025chatfix1';
     document.head.appendChild(style);
 
     const root = document.createElement('div');
@@ -23,6 +23,7 @@ export function mountPatientCommunityChat() {
         <dialog id="patient-community-panel" aria-labelledby="patient-community-title">
             <header class="patient-community-header">
                 <span id="patient-community-title">Chat Komunitas</span>
+                <button type="button" id="patient-community-menu" aria-label="Menu chat komunitas" aria-haspopup="menu">&#8942;</button>
                 <button type="button" id="patient-community-close" aria-label="Tutup chat komunitas">&#215;</button>
             </header>
             <div id="patient-community-content"></div>
@@ -43,7 +44,7 @@ export function mountPatientCommunityChat() {
         frame.id = 'patient-community-frame';
         frame.title = 'Percakapan chat komunitas';
         frame.dataset.communityChatVisible = 'false';
-        frame.src = '/community-chat.html?embed=patient&v=20261025chatfast1';
+        frame.src = '/community-chat.html?embed=patient&v=20261025chatfix1';
         frame.addEventListener('load', () => { if (opened) notifyOpened(); });
         content.appendChild(frame);
     }
@@ -104,6 +105,9 @@ export function mountPatientCommunityChat() {
     }
 
     launcher.addEventListener('click', () => open());
+    document.getElementById('patient-community-menu').addEventListener('click', () => {
+        if (opened) frame?.contentWindow?.postMessage({ type: 'PATIENT_COMMUNITY_CHAT_MENU' }, window.location.origin);
+    });
     document.getElementById('patient-community-close').addEventListener('click', () => close());
     panel.addEventListener('cancel', event => { event.preventDefault(); close(); });
     // Capture before the home shell's Back-to-exit guard.

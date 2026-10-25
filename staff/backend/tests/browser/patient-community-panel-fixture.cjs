@@ -4,6 +4,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { Server } = require('socket.io');
+const { isPatientAllowedRoute } = require('../../security/patientRouteAccess');
 const root = path.resolve(__dirname, '../../../..');
 const port = Number(process.env.PATIENT_CHAT_QA_PORT) || 8899;
 const assetOrigin = process.argv.includes('--deployed-assets') ? 'https://sisiwanita.id' : null;
@@ -20,6 +21,10 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/__qa-metrics') return send(requests);
     if (url.pathname.startsWith('/api/')) {
         requests.push({ method: req.method, path: url.pathname, at: Date.now() });
+        if (url.pathname.startsWith('/api/community-chat/') && req.headers.authorization && !isPatientAllowedRoute(req.method, req.url)) {
+            res.writeHead(403, { 'Content-Type': 'application/json' });
+            return res.end(JSON.stringify({ success: false, message: 'Patient route blocked' }));
+        }
         if (url.pathname.startsWith('/api/community-chat/')) await new Promise(resolve => setTimeout(resolve, chatDelay));
         if (url.pathname === '/api/community-chat/me/notifications') {
             if (req.method === 'PUT') {

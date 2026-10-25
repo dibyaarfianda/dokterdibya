@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20261025chatfast1');
+importScripts('/sw.js?v=20261025chatfix1');

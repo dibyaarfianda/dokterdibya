@@ -48,13 +48,27 @@ const install = (relative, exports) => { require.cache[require.resolve(path.join
         install('services/pushNotificationService.js', { sendToPatient: async (...args) => { pushed.push(args); return { success: true, sent: 1, failed: 0 }; } });
         install('realtime-sync.js', { broadcastPatientNotification: () => {} });
         const router = require(path.join(backend, 'routes/community-chat.js'));
-        const app = express(); app.use(express.json()); app.use('/api/community-chat', router);
+        const { isPatientAllowedRoute } = require(path.join(backend, 'security/patientRouteAccess'));
+        const app = express(); app.use(express.json());
+        app.use('/api/community-chat', verifyToken, (req, res, next) => {
+            if (req.user.user_type === 'patient' && !isPatientAllowedRoute(req.method, req.originalUrl)) {
+                return res.status(403).json({ success: false, message: 'Patient route blocked' });
+            }
+            next();
+        }, router);
         server = await new Promise(resolve => { const srv = app.listen(0, '127.0.0.1', () => resolve(srv)); });
         const base = 'http://127.0.0.1:' + server.address().port + '/api/community-chat';
         async function api(user, endpoint, body, method = body ? 'POST' : 'GET') {
             const response = await fetch(base + endpoint, { method, headers: { Authorization: 'Bearer ' + jwt.sign({ id: user, user_type: user === 'S1' ? 'staff' : 'patient' }, secret), 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
             return { status: response.status, body: await response.json(), headers: response.headers };
         }
+        const preference = await api('P1', '/me/notifications');
+        assert.equal(preference.status, 200, 'Patient notification settings pass the shared route boundary');
+        assert.equal(preference.body.settings.enabled, false);
+        assert.equal((await api('P1', '/me/notifications', { enabled: true }, 'PUT')).status, 200);
+        assert.equal((await api('P1', '/me/notifications')).body.settings.enabled, true);
+        assert.equal((await api('P1', '/me/notifications', { enabled: false }, 'PUT')).status, 200);
+        assert.equal((await api('P1', '/me/notifications')).body.settings.enabled, false);
         assert.equal((await api('P1', '/unread')).body.total, 0, 'Historical messages are excluded');
         const a = await api('P2', '/rooms/lobby/messages', { message: 'Hallo' }); assert.equal(a.status, 200, JSON.stringify(a.body));
         assert.equal((await api('P1', '/unread')).body.total, 1);

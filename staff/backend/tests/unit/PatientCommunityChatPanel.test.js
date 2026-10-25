@@ -124,6 +124,18 @@ test('close restores page scrolling and focus and removes modal presentation', (
     expect(app.focused()).toBe(app.nodes.get('patient-community-launcher'));
 });
 
+test('compact header menu targets only the open chat frame on its own origin', () => {
+    const app = setup(); app.controller.open();
+    const frame = app.nodes.get('patient-community-frame');
+    frame.contentWindow = { postMessage: jest.fn() };
+    const click = app.nodes.get('patient-community-menu').events.click[0];
+    click();
+    expect(frame.contentWindow.postMessage).toHaveBeenCalledWith({ type: 'PATIENT_COMMUNITY_CHAT_MENU' }, app.window.location.origin);
+    frame.contentWindow.postMessage.mockClear();
+    app.controller.close(); click();
+    expect(frame.contentWindow.postMessage).not.toHaveBeenCalled();
+});
+
 test('Back closes only the panel without triggering the home exit guard', () => {
     const app = setup(); app.controller.open();
     const stopImmediatePropagation = jest.fn();

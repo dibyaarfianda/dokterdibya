@@ -1977,6 +1977,9 @@
 <style>
     body.embed-patient .topbar-brand { display: none; }
     body.embed-patient .page { padding-top: 0; }
+    body.embed-patient .topbar,
+    body.embed-patient .chat-head { display: none !important; }
+    body.embed-patient > .chat-menu { position: fixed; top: 8px; right: 8px; z-index: 40; }
     body .msg-user.msg-user-dr-dibya {
         background: #c62828 !important;
         color: #fff !important;
@@ -2208,8 +2211,8 @@
     import '/scripts/socket-credentials.js';
     import { showToast } from '/scripts/patient-utils.js';
     import { createMentionComposer, communityName, animateChatNode } from '/scripts/community-chat-ui.js?v=20260923chat1';
-    import { createPatientChatPreview } from '/scripts/patient-chat-preview.js?v=20261025chatfast1';
-    import { setupPatientChatNotifications } from '/scripts/patient-chat-notifications.js?v=20261025chatfast1';
+    import { createPatientChatPreview } from '/scripts/patient-chat-preview.js?v=20261025chatfix1';
+    import { setupPatientChatNotifications } from '/scripts/patient-chat-notifications.js?v=20261025chatfix1';
 
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
     const UI_SETTINGS_KEY = 'community_chat_ui_settings_v1';
@@ -3039,6 +3042,7 @@
     function applyEmbedMode() {
         document.body.classList.toggle('community-newdesign', useNewDesignTheme);
         document.body.classList.toggle('embed-patient', isPatientEmbed);
+        if (isPatientEmbed) document.body.appendChild(el.chatMenu);
         if (isStaffEmbed) {
             document.body.classList.add('embed-staff');
         }
@@ -4067,7 +4071,13 @@
         document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollActiveRoomMessages(); scheduleRead(); } });
         window.addEventListener('focus', scheduleRead);
         window.addEventListener('message', event => {
-            if (!isPatientEmbed || event.origin !== window.location.origin || event.source !== window.parent || event.data?.type !== 'PATIENT_COMMUNITY_CHAT_OPEN') return;
+            if (!isPatientEmbed || event.origin !== window.location.origin || event.source !== window.parent) return;
+            if (event.data?.type === 'PATIENT_COMMUNITY_CHAT_MENU') {
+                toggleChatMenu();
+                if (el.chatMenu.classList.contains('show')) el.menuRoomPicker.focus();
+                return;
+            }
+            if (event.data?.type !== 'PATIENT_COMMUNITY_CHAT_OPEN') return;
             requestAnimationFrame(() => {
                 if (el.messages.scrollTop === 0 && !contextMode) el.messages.scrollTop = el.messages.scrollHeight;
                 if (initialChatReady) { pollActiveRoomMessages(); scheduleRead(); }
