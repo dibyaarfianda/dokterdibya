@@ -790,6 +790,141 @@ function getAdditionalBillingStatusBadge(status) {
     return '<span class="badge badge-warning">Draft</span>';
 }
 
+function canRecordBillingReturn() {
+    return typeof window.hasAccountPermission === 'function'
+        ? window.hasAccountPermission('billing.reset')
+        : isSuperadminUser(window.currentStaffIdentity || window.currentUser || {});
+}
+
+function renderBillingReturns(data, error) {
+    if (error) return `<section id="billing-returns-panel" class="pt-4 mt-4 border-top"><h5>Retur / Pengembalian</h5><div class="alert alert-danger">${escapeHtml(error)} Muat ulang halaman untuk mencoba lagi.</div></section>`;
+    if (!data) return '';
+    return `<section id="billing-returns-panel" class="pt-4 mt-4 border-top">
+        <div class="d-flex justify-content-between align-items-center mb-3"><h5 class="mb-0"><i class="fas fa-undo text-danger mr-2"></i>Retur / Pengembalian</h5>
+        ${canRecordBillingReturn() ? '<button type="button" id="btn-create-billing-return" class="btn btn-outline-danger btn-sm">Catat Retur / Minus</button>' : ''}</div>
+        <p class="text-muted">Pengembalian obat atau uang dari invoice yang sudah lunas. Retur obat otomatis menambah stok kembali.</p>
+        <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr>
+        ${['Tanggal / Petugas', 'Invoice Asal', 'Jenis / Alasan', 'Pengurangan'].map(title => `<th style="text-align: center !important; vertical-align: middle !important;">${title}</th>`).join('')}
+        </tr></thead><tbody>${data.returns.length ? data.returns.map(row => `<tr>
+            <td>${escapeHtml(formatDateTime(row.created_at))}<small class="d-block">${escapeHtml(row.actor_name)}</small></td>
+            <td>${escapeHtml(data.invoices.find(invoice => Number(invoice.additional_billing_id || 0) === Number(row.additional_billing_id || 0))?.reference_number || row.mr_id)}<small class="d-block">Retur R${Number(row.id)}</small></td>
+            <td>${row.kind === 'obat' ? `${escapeHtml(row.item_name)} × ${Number(row.quantity)}` : 'Pengembalian uang'}<small class="d-block">${escapeHtml(row.reason)} · ${row.payment_method === 'cash' ? 'Tunai' : 'Transfer'}</small></td>
+            <td class="text-right text-danger">−${formatRupiah(row.amount)}</td></tr>`).join('') : '<tr><td colspan="4" class="text-center text-muted">Belum ada retur / pengembalian.</td></tr>'}</tbody></table></div>
+        <div class="text-right">Total dibayar: <strong>${formatRupiah(data.paid_total)}</strong><br>Retur / minus: <strong class="text-danger">−${formatRupiah(data.return_total)}</strong><br>Penerimaan bersih: <strong>${formatRupiah(data.net_total)}</strong></div>
+        <form id="billing-return-form" class="border rounded p-3 mt-3" hidden>
+            <div class="alert alert-info">Catat setelah uang diserahkan atau ditransfer kepada pasien. Tombol ini mencatat pengembalian, tidak mengirim uang otomatis. Transaksi tercatat pada tanggal hari ini.</div>
+            <div id="billing-return-error" class="alert alert-danger" hidden></div>
+            <fieldset id="billing-return-fields">
+            <div class="form-group"><label for="billing-return-invoice">Invoice asal</label><select id="billing-return-invoice" class="form-control">${data.invoices.map((invoice, i) => `<option value="${i}">${escapeHtml(invoice.reference_number)} — sisa dapat dikembalikan ${formatRupiah(invoice.total - invoice.returned_total)}</option>`).join('')}</select></div>
+            <div class="form-group"><label for="billing-return-kind">Jenis</label><select id="billing-return-kind" class="form-control"><option value="obat">Retur obat + pengembalian uang</option><option value="money">Pengembalian uang</option></select></div>
+            <div id="billing-return-obat-fields"><div class="form-group"><label for="billing-return-item">Obat dari invoice asal</label><select id="billing-return-item" class="form-control"></select></div>
+            <div class="form-group"><label for="billing-return-quantity">Jumlah dikembalikan</label><input type="number" min="1" step="1" value="1" id="billing-return-quantity" class="form-control"></div></div>
+            <div class="form-group"><label for="billing-return-amount">Nominal pengembalian (Rp)</label><input id="billing-return-amount" type="number" min="0.01" step="0.01" class="form-control" required></div>
+            <div class="form-group"><label for="billing-return-method">Metode pengembalian</label><select id="billing-return-method" class="form-control"><option value="cash">Tunai</option><option value="transfer">Transfer</option></select></div>
+            <div class="form-group"><label for="billing-return-reason">Alasan / catatan pengembalian</label><textarea id="billing-return-reason" class="form-control" rows="2" maxlength="2000" required></textarea></div>
+            </fieldset><button type="submit" id="billing-return-save" class="btn btn-danger">Simpan Pengembalian</button>
+        </form></section>`;
+}
+
+function bindBillingReturns(data, mrId) {
+    const form = document.getElementById('billing-return-form');
+    if (!form || !data || !canRecordBillingReturn()) return;
+    const field = name => document.getElementById(`billing-return-${name}`);
+    const storageKey = `clinic-return-pending:${mrId}`;
+    let pending = null;
+    const error = message => { field('error').textContent = message; field('error').hidden = !message; };
+    const updateAmount = () => {
+        const invoice = data.invoices[Number(field('invoice').value)];
+        const isObat = field('kind').value === 'obat';
+        field('obat-fields').hidden = !isObat;
+        field('amount').readOnly = isObat;
+        field('quantity').required = isObat;
+        field('quantity').disabled = !isObat;
+        field('amount').max = Math.max(0, Number(invoice?.total || 0) - Number(invoice?.returned_total || 0));
+        if (isObat) {
+            const item = invoice?.items.find(item => Number(item.id) === Number(field('item').value));
+            field('quantity').max = item?.remaining_quantity || 0;
+            const returned = Number(item?.quantity || 0) - Number(item?.remaining_quantity || 0);
+            const requested = Number(field('quantity').value);
+            field('amount').value = item ? (Math.round(Number(item.total) * 100 * (returned + requested) / Number(item.quantity)) - Math.round(Number(item.total) * 100 * returned / Number(item.quantity))) / 100 : '';
+        }
+    };
+    const updateInvoice = () => {
+        const invoice = data.invoices[Number(field('invoice').value)];
+        field('item').innerHTML = (invoice?.items || []).filter(item => item.remaining_quantity > 0).map(item => `<option value="${Number(item.id)}">${escapeHtml(item.item_name)} — sisa ${Number(item.remaining_quantity)}</option>`).join('');
+        updateAmount();
+    };
+    field('invoice').addEventListener('change', updateInvoice);
+    field('kind').addEventListener('change', () => { field('amount').value = ''; updateAmount(); });
+    field('item').addEventListener('change', updateAmount);
+    field('quantity').addEventListener('input', updateAmount);
+    document.getElementById('btn-create-billing-return')?.addEventListener('click', () => { form.hidden = !form.hidden; });
+    updateInvoice();
+    try {
+        pending = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+        if (pending && data.returns.some(row => row.request_key === pending.request_key)) {
+            sessionStorage.removeItem(storageKey);
+            pending = null;
+        }
+        if (pending) {
+            form.hidden = false;
+            field('invoice').value = data.invoices.findIndex(invoice => Number(invoice.additional_billing_id || 0) === Number(pending.additional_billing_id || 0));
+            field('kind').value = pending.kind;
+            updateInvoice();
+            field('item').value = pending.item_id || '';
+            field('quantity').value = pending.quantity || 1;
+            field('reason').value = pending.reason;
+            field('method').value = pending.payment_method;
+            updateAmount();
+            if (pending.kind === 'money') field('amount').value = pending.amount;
+            field('fields').disabled = true;
+            error('Hasil penyimpanan sebelumnya belum pasti. Tekan Periksa / Simpan Ulang untuk memeriksa transaksi yang sama.');
+            field('save').textContent = 'Periksa / Simpan Ulang';
+        }
+    } catch (_) { error('Penyimpanan sesi browser tidak tersedia. Aktifkan sebelum mencatat retur.'); }
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = field('save');
+        if (button.disabled) return;
+        error('');
+        try {
+            if (!pending) {
+                const invoice = data.invoices[Number(field('invoice').value)];
+                if (!invoice) throw new Error('Invoice asal tidak tersedia.');
+                const payload = { additional_billing_id: invoice.additional_billing_id, kind: field('kind').value,
+                    item_id: Number(field('item').value), quantity: Number(field('quantity').value), amount: Number(field('amount').value),
+                    reason: field('reason').value.trim(), payment_method: field('method').value, request_key: crypto.randomUUID() };
+                sessionStorage.setItem(storageKey, JSON.stringify(payload));
+                pending = payload;
+            }
+            button.disabled = true;
+            field('fields').disabled = true;
+            const response = await fetch(`/api/sunday-clinic/billing/${encodeURIComponent(mrId)}/returns`, {
+                method: 'POST', headers: { 'Authorization': `Bearer ${getAdditionalBillingToken()}`, 'Content-Type': 'application/json' }, body: JSON.stringify(pending)
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                if (response.status >= 400 && response.status < 500 && result.code === 'INVALID_BILLING_RETURN') {
+                    sessionStorage.removeItem(storageKey);
+                    pending = null;
+                    field('fields').disabled = false;
+                }
+                throw new Error(result.message || 'Pengembalian belum berhasil disimpan.');
+            }
+            const returnedMedicine = pending.kind === 'obat';
+            sessionStorage.removeItem(storageKey);
+            pending = null;
+            window.showSuccess?.(returnedMedicine ? 'Retur obat tercatat dan stok telah dikembalikan.' : 'Pengembalian uang berhasil dicatat.');
+            refreshBillingSection();
+        } catch (err) {
+            error(`${err.message}${pending ? ' Hasil belum pasti; gunakan tombol ini untuk memeriksa transaksi yang sama.' : ''}`);
+        } finally {
+            button.disabled = false;
+            button.textContent = pending ? 'Periksa / Simpan Ulang' : 'Simpan Pengembalian';
+        }
+    });
+}
+
 function renderAdditionalBillingPanel(additionalBillings) {
     const rows = additionalBillings.map(billing => {
         const items = Array.isArray(billing.items) ? billing.items : [];
@@ -1607,6 +1742,18 @@ export default {
             }
         }
         this.additionalBillings = additionalBillings;
+        this.returnData = null;
+        this.returnError = null;
+        if (status === 'paid' && mrId) {
+            try {
+                const response = await fetch(`/api/sunday-clinic/billing/${encodeURIComponent(mrId)}/returns`, {
+                    headers: { 'Authorization': `Bearer ${getAdditionalBillingToken()}` }, cache: 'no-store'
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success || !Array.isArray(result.data?.invoices)) throw new Error(result.message || 'Gagal memuat data retur.');
+                this.returnData = result.data;
+            } catch (error) { this.returnError = error.message; }
+        }
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -1851,6 +1998,7 @@ export default {
                     </div>
 
                     ${status === 'paid' ? renderAdditionalBillingPanel(additionalBillings) : ''}
+                    ${status === 'paid' ? renderBillingReturns(this.returnData, this.returnError) : ''}
                 </div>
             </div>
         `;
@@ -1862,6 +2010,7 @@ export default {
     async afterRender(state) {
         // Setup billing button handlers
         setTimeout(() => {
+            bindBillingReturns(this.returnData, state.recordData?.mrId || state.recordData?.mr_id || state.currentMrId);
             const additionalBillingsById = new Map(
                 (this.additionalBillings || []).map(billing => [Number(billing.id), billing])
             );

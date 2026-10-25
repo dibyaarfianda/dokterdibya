@@ -160,6 +160,7 @@ describe('cancelled invoice accounting', () => {
                 if (compact.includes('FROM sunday_clinic_billing_items')) return [[{ id: 1, billing_id: 11, item_type: 'tindakan', item_name: 'USG', quantity: 1, price: 135000, total: 135000 }], []];
                 if (compact.includes('FROM tagihan_payments tp')) return [[], []];
                 if (compact.includes('FROM sunday_clinic_billing_revisions br')) return [[], []];
+                if (compact.includes('FROM sunday_clinic_billing_returns r')) return [[], []];
                 if (compact.includes('INSERT INTO sunday_clinic_closings')) return [{ insertId: 7 }, []];
                 if (compact.includes('INSERT INTO sunday_clinic_closing_entries')) { insertedEntry = params; return [{ affectedRows: 1 }, []]; }
                 if (compact.includes('FROM sunday_clinic_closings') && compact.includes('WHERE id')) return [[{

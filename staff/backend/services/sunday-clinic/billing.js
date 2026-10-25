@@ -1071,6 +1071,10 @@ async function postBillingByMrIdRequestRevision(req, res, next) {
             await connection.rollback();
             return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat direvisi.' });
         }
+        if (billing.status === 'paid') {
+            await connection.rollback();
+            return res.status(409).json({ success: false, message: 'Tagihan lunas tidak dapat direvisi. Gunakan retur / pengembalian atau tagihan tambahan.' });
+        }
         // Insert revision request
         const [result] = await connection.query(
             `INSERT INTO sunday_clinic_billing_revisions (mr_id, message, requested_by, created_at)
@@ -1189,7 +1193,7 @@ async function postBillingRevisionsByIdApprove(req, res, next) {
         );
         if (!billing || billing.status === 'cancelled' || lockedRevision?.status !== 'pending') {
             await connection.rollback();
-            return res.status(409).json({ success: false, message: 'Usulan tidak dapat disetujui karena tagihan telah dibatalkan atau usulan sudah ditutup.' });
+            return res.status(409).json({ success: false, message: 'Usulan tidak dapat disetujui karena tagihan sudah lunas / dibatalkan atau usulan sudah ditutup. Gunakan retur untuk pengembalian tagihan lunas.' });
         }
         // Update revision status and revert billing to draft
         await connection.query(
@@ -1197,19 +1201,22 @@ async function postBillingRevisionsByIdApprove(req, res, next) {
             [revisionId]
         );
 
-        await connection.query(
-            `UPDATE sunday_clinic_billings
-             SET status = 'draft', confirmed_at = NULL, confirmed_by = NULL
-             WHERE mr_id = ? AND status <> 'cancelled'`,
-            [revision.mr_id]
-        );
+        // Resolve old pending requests without reopening an immutable paid invoice.
+        if (billing.status !== 'paid') {
+            await connection.query(
+                `UPDATE sunday_clinic_billings
+                 SET status = 'draft', confirmed_at = NULL, confirmed_by = NULL
+                 WHERE mr_id = ? AND status NOT IN ('paid', 'cancelled')`,
+                [revision.mr_id]
+            );
+        }
         await connection.commit();
         connection.release();
         connection = null;
 
         res.json({
             success: true,
-            message: 'Usulan disetujui. Billing dikembalikan ke draft',
+            message: billing.status === 'paid' ? 'Usulan ditutup. Tagihan sudah lunas; gunakan retur / pengembalian atau tagihan tambahan.' : 'Usulan disetujui. Billing dikembalikan ke draft',
             mrId: revision.mr_id
         });
     } catch (error) {
@@ -2573,6 +2580,10 @@ async function postBillingByMrIdRequestChange(req, res, next) {
                 await connection.rollback();
                 return res.status(409).json({ success: false, message: 'Tagihan telah dibatalkan dan tidak dapat diubah.' });
             }
+            if (billing.status === 'paid') {
+                await connection.rollback();
+                return res.status(409).json({ success: false, message: 'Tagihan lunas tidak dapat diubah. Gunakan tagihan tambahan atau retur / pengembalian.' });
+            }
             const changeRequests = Array.isArray(billing.change_requests)
                 ? billing.change_requests
                 : (billing.change_requests ? JSON.parse(billing.change_requests) : []);
@@ -2740,7 +2751,7 @@ async function postBillingByMrIdApproveChanges(req, res, next) {
             `UPDATE sunday_clinic_billings
              SET pending_changes = FALSE, status = 'confirmed',
                  confirmed_at = NOW(), confirmed_by = ?
-             WHERE mr_id = ? AND pending_changes = TRUE AND status <> 'cancelled'`,
+             WHERE mr_id = ? AND pending_changes = TRUE AND status NOT IN ('paid', 'cancelled')`,
             [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 

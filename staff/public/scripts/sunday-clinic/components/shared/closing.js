@@ -209,7 +209,7 @@ function renderTransactions(transactions) {
                 </thead>
                 <tbody>
                     ${transactions.map((transaction, index) => {
-                        const sourceType = transaction.source_type === 'additional' ? 'Tagihan Tambahan' : 'Tagihan Utama';
+                        const sourceType = transaction.source_type === 'return' ? 'Retur / Pengembalian' : transaction.source_type === 'additional' ? 'Tagihan Tambahan' : 'Tagihan Utama';
                         const amount = transaction.amount ?? transaction.total ?? 0;
                         const patientName = transaction.patient_name || transaction.full_name || '-';
                         const reference = transaction.reference_number || transaction.mr_id || '-';
@@ -311,6 +311,7 @@ function renderPreview(data) {
         <div class="sc-closing-summary-grid">
             <div class="sc-closing-summary-card"><span>Tagihan Utama</span><strong>${formatCurrency(summary.main_total)}</strong><small>${Number(mainCount)} transaksi</small></div>
             <div class="sc-closing-summary-card"><span>Tagihan Tambahan</span><strong>${formatCurrency(summary.additional_total)}</strong><small>${Number(additionalCount)} transaksi</small></div>
+            ${Number(summary.return_count) ? `<div class="sc-closing-summary-card"><span>Retur / Pengembalian</span><strong class="text-danger">−${formatCurrency(summary.return_total)}</strong><small>${Number(summary.return_count)} transaksi</small></div>` : ''}
             <div class="sc-closing-summary-card sc-closing-summary-total"><span>Total Pendapatan</span><strong>${formatCurrency(summary.grand_total)}</strong><small>${Number(summary.patient_count || 0)} pasien · ${Number(summary.transaction_count || 0)} transaksi</small></div>
         </div>
         ${(Number(summary.cancelled_count || 0) || cancelledBillings.length) ? `
@@ -323,6 +324,7 @@ function renderPreview(data) {
             <div><span>Tindakan</span><strong>${formatCurrency(breakdown.tindakan)}</strong></div>
             <div><span>Obat</span><strong>${formatCurrency(breakdown.obat)}</strong></div>
             <div><span>Administratif</span><strong>${formatCurrency(breakdown.administratif)}</strong></div>
+            ${Number(summary.return_count) ? `<div><span>Retur / Pengembalian</span><strong>${formatCurrency(-summary.return_total)}</strong></div>` : ''}
         </div>
         ${renderIssueList('Closing belum dapat dilakukan', data.blockers, 'danger')}
         ${renderIssueList('Anomali yang perlu diperiksa', data.anomalies, 'warning')}

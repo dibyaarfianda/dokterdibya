@@ -254,6 +254,7 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['obat-sales:POST:/:id/invoice-base64', 'billing.export'],
     ['obat-sales:POST:/:id/etiket-base64', 'billing.export'],
     ['sunday-clinic/billing:POST:/billing/:mrId/cancel', 'billing.reset'],
+    ['sunday-clinic/billing:POST:/billing/:mrId/returns', 'billing.reset'],
     ['sunday-clinic/billing:POST:/billing/:mrId/additional/:additionalBillingId/cancel', 'billing.reset'],
     ['staff-briefing:POST:/today/start', 'staff_briefing.finalize'],
     ['staff-payroll:GET:/driver-payrolls', 'staff_payroll.view'],

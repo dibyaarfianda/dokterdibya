@@ -1,0 +1,7 @@
+# Klinik Privat: retur dan pengembalian
+
+Add Retur / Pengembalian directly below Tagihan Tambahan for paid private-clinic invoices. Each immutable entry refers to a paid main/additional invoice and records a reason, actor, method, server date, and positive refund amount displayed as a minus. Medication returns select one original invoice item and quantity; the server calculates the proportional original amount and restores stock to the original sale batches (including legacy unbatched sales). The user explicitly requested automatic restocking.
+
+Use a separate return ledger rather than modifying paid invoices or negative additional invoices: this preserves original documents, receipts, and closed accounting days. Refunds are manual cash/transfer disbursements recorded by staff, not automatic provider transfers. Apply existing billing.reset authorization. Bound cumulative refunds by the original paid total and cumulative quantities by the original purchased quantity. Request keys and invoice locks prevent duplicate refunds/restocking. Stock, ledger, and audit are one transaction.
+
+Record returns on the current WIB date under the existing closing lock. Closing includes negative return entries and a separate return subtotal; historical snapshots remain immutable. Display original paid amount, returns, and net received in the billing panel. Do not change unrelated billing screens or patient source invoices. No real patient writes for QA.

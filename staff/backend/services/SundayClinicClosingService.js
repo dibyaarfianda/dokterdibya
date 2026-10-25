@@ -150,7 +150,8 @@ function buildClosingPreview({
     additionalBillings = [],
     additionalItems = [],
     pendingPayments = [],
-    pendingRevisions = []
+    pendingRevisions = [],
+    returns = []
 } = {}) {
     const closingRecords = recordsRequiredForClosing(records);
     const recordByMrId = new Map(closingRecords.map(record => [String(record.mr_id), record]));
@@ -160,7 +161,7 @@ function buildClosingPreview({
     const blockers = [];
     const anomalies = [];
 
-    if (records.length === 0 && mainBillings.length === 0 && additionalBillings.length === 0) {
+    if (records.length === 0 && mainBillings.length === 0 && additionalBillings.length === 0 && returns.length === 0) {
         blockers.push(createIssue(
             'NO_CLINIC_ACTIVITY',
             'Tidak ada kunjungan atau tagihan Klinik Privat pada tanggal ini.'
@@ -330,6 +331,22 @@ function buildClosingPreview({
         ));
     }
 
+    for (const entry of returns) {
+        const total = -normalizeMoney(entry.amount);
+        const source = {
+            source_type: 'return', source_id: entry.id, parent_billing_id: entry.billing_id,
+            mr_id: entry.mr_id, patient_id: entry.patient_id, patient_name: entry.patient_name || '-',
+            reference_number: `${entry.mr_id}-R${entry.id}`, status: 'paid',
+            accounting_date: normalizeDateOnly(entry.accounting_date), total, amount: total,
+            payment_method: entry.payment_method, paid_at: entry.created_at, paid_by: entry.actor_name,
+            items: [{ item_type: 'return', item_name: entry.kind === 'obat' ? `Retur ${entry.item_name}` : 'Pengembalian uang',
+                quantity: Number(entry.quantity) || 1, price: total / (Number(entry.quantity) || 1), total, category: 'retur' }]
+        };
+        sources.push(source);
+        transactions.push(source);
+    }
+    const returnTotal = normalizeMoney(returns.reduce((sum, entry) => sum + Number(entry.amount), 0));
+    if (returns.length) breakdown.retur = -returnTotal;
     const mainTotal = normalizeMoney(transactions
         .filter(transaction => transaction.source_type === 'main')
         .reduce((sum, transaction) => sum + transaction.total, 0));
@@ -340,7 +357,9 @@ function buildClosingPreview({
     const summary = {
         main_total: mainTotal,
         additional_total: additionalTotal,
-        grand_total: normalizeMoney(mainTotal + additionalTotal),
+        grand_total: normalizeMoney(mainTotal + additionalTotal - returnTotal),
+        return_total: returnTotal,
+        return_count: returns.length,
         patient_count: patientIds.size,
         transaction_count: transactions.length,
         cancelled_count: cancelledBillings.length,
@@ -505,7 +524,15 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         ORDER BY br.id${lockClause}
     `, [clinicDate]);
 
+    const returns = await queryRows(client, `
+        SELECT r.*, COALESCE(NULLIF(p.full_name, ''), r.patient_id) AS patient_name
+        FROM sunday_clinic_billing_returns r
+        LEFT JOIN patients p ON p.id = r.patient_id
+        WHERE r.accounting_date = ? ORDER BY r.id${lockClause}
+    `, [clinicDate]);
+
     return {
+        returns,
         records,
         mainBillings,
         mainItems,
