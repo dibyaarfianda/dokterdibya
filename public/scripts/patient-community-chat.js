@@ -9,14 +9,15 @@ export function mountPatientCommunityChat() {
     const available = () => Boolean(session.getToken()) && !session.isDemoMode();
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '/styles/patient-community-chat.css?v=20261025edgechat2';
+    style.href = '/styles/patient-community-chat.css?v=20261025edgechat3';
     document.head.appendChild(style);
 
     const root = document.createElement('div');
     root.id = 'patient-community-widget';
     root.innerHTML = `
         <button type="button" id="patient-community-launcher" aria-label="Buka chat komunitas" aria-haspopup="dialog" aria-controls="patient-community-panel" aria-expanded="false">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>
+            <svg viewBox="0 0 12 16" width="10" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 3-5 5 5 5"/></svg>
+            <span class="patient-community-tab-label" aria-hidden="true">CHAT</span>
             <span id="patient-community-edge-badge" hidden aria-live="polite"></span>
         </button>
         <dialog id="patient-community-panel" aria-labelledby="patient-community-title">
