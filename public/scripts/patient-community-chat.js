@@ -9,7 +9,7 @@ export function mountPatientCommunityChat() {
     const available = () => Boolean(session.getToken()) && !session.isDemoMode();
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '/styles/patient-community-chat.css?v=20261025edgechat1';
+    style.href = '/styles/patient-community-chat.css?v=20261025edgechat2';
     document.head.appendChild(style);
 
     const root = document.createElement('div');

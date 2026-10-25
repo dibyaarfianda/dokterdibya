@@ -4,14 +4,14 @@
     right: 0;
     top: 50%;
     z-index: 1040;
-    width: calc(52px + env(safe-area-inset-right, 0px));
-    height: 58px;
-    padding: 0 env(safe-area-inset-right, 0px) 0 3px;
+    width: calc(32px + env(safe-area-inset-right, 0px));
+    height: 48px;
+    padding: 0 env(safe-area-inset-right, 0px) 0 1px;
     align-items: center;
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, .7);
     border-right: 0;
-    border-radius: 20px 0 0 20px;
+    border-radius: 14px 0 0 14px;
     background: #285c4d;
     color: #fff;
     box-shadow: -3px 4px 18px rgba(27, 66, 54, .2);
@@ -19,6 +19,8 @@
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
+#patient-community-launcher::before { content: ''; position: absolute; inset: 0 0 0 -12px; }
+#patient-community-launcher svg { width: 20px; height: 20px; }
 #patient-community-launcher[hidden], #patient-community-edge-badge[hidden] { display: none !important; }
 #patient-community-launcher:focus-visible, #patient-community-close:focus-visible { outline: 3px solid #e7b67d; outline-offset: -4px; }
 #patient-community-edge-badge {
