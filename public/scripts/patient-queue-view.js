@@ -14,6 +14,13 @@ function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
 
+function renderDoctorStatusHtml(settings = {}) {
+    const state = settings.is_on_break ? 'break' : (settings.doctor_arrived ? 'arrived' : 'waiting');
+    const labels = { waiting: 'dr. Dibya belum datang', arrived: 'dr. Dibya sudah datang', break: 'dr. Dibya sedang istirahat' };
+    const symbols = { waiting: '◷', arrived: '✓', break: 'Ⅱ' };
+    return `<span class="patient-doctor-status patient-doctor-status--${state}" role="status"><span aria-hidden="true">${symbols[state]}</span>${labels[state]}</span>`;
+}
+
 function renderPatientQueueHtml(data = [], { visible = true } = {}) {
     if (!visible) return '<div class="state-card"><i class="fa fa-eye-slash"></i><p>Antrian belum dibuka hari ini.<br><small>Silakan coba beberapa saat lagi.</small></p></div>';
     if (!Array.isArray(data) || !data.length) return '<div class="state-card"><i class="fa fa-calendar-times"></i><p>Tidak ada antrian hari ini.<br>Klinik mungkin sedang tidak buka.</p></div>';
@@ -35,5 +42,5 @@ function renderPatientQueueHtml(data = [], { visible = true } = {}) {
     }).join('');
 }
 
-return Object.freeze({ renderPatientQueueHtml });
+return Object.freeze({ renderPatientQueueHtml, renderDoctorStatusHtml });
 });

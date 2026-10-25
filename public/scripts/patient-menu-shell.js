@@ -1828,7 +1828,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             const items = Array.isArray(queueItems) ? queueItems : [];
             total.textContent = String(items.length);
             const active = items.find(item => item.queue_status === 'diperiksa') || items.find(item => item.queue_status === 'anamnesa') || items[0];
-            current.textContent = active ? '#' + (active.queue_position || active.slot_number || '-') : '-';
+            current.textContent = active ? '#' + (active.slot_number || active.queue_position || '-') : '-';
 
             if (items.length === 0) {
                 list.innerHTML = (settings.breaks || []).map(rest => BookingBreakDisplay.block(rest, settings.is_on_break)).join('');
@@ -1846,7 +1846,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             list.innerHTML = rows.map(function(item) {
                 if (item.isBreak) return BookingBreakDisplay.block(item, settings.is_on_break);
                 const index = patientIndex++;
-                const position = item.queue_position || item.slot_number || (index + 1);
+                const position = item.slot_number || item.queue_position || (index + 1);
                 return '<div class="live-queue-item">' +
                     '<div class="live-queue-number">' + escapeHtml(position) + '</div>' +
                     '<div class="live-queue-name">' + escapeHtml(item.masked_name || 'Pasien') + '</div>' +
@@ -1871,7 +1871,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
 
                 const settingsResponse = await fetch('/api/sunday-clinic/queue/settings?_t=' + Date.now(), { headers: { 'Cache-Control': 'no-cache' } });
                 const settings = await settingsResponse.json();
-                if (!settings.success || !settings.is_queue_visible) {
+                if (!settingsResponse.ok || !settings.success) {
                     section.classList.remove('show');
                     requestAnimationFrame(updateHomeActionGap);
                     return;
@@ -1884,20 +1884,32 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
                     }
                 });
                 const queue = await queueResponse.json();
-                if (queueResponse.status === 401 || queueResponse.status === 403 || queue.code === 'QUEUE_ACCESS_DENIED') {
+                if (!queueResponse.ok || !queue.success || !queue.my_booking) {
                     section.classList.remove('show');
                     requestAnimationFrame(updateHomeActionGap);
                     return;
                 }
 
-                if (queue.success) {
-                    document.getElementById('live-queue-doctor-status').textContent = settings.is_on_break ? 'Sedang istirahat' : (settings.doctor_arrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang');
-                    section.classList.add('show');
-                    requestAnimationFrame(updateHomeActionGap);
+                const booking = queue.my_booking;
+                const ownItem = (queue.data || []).find(item => String(item.session) === String(booking.session) && String(item.slot_number) === String(booking.slot_number));
+                document.getElementById('live-queue-my-booking').textContent = 'Nomor ' + booking.slot_number + ' · Sesi ' + (ownItem?.session_label || booking.session) + (ownItem?.slot_time ? ' · ' + ownItem.slot_time + ' WIB' : '');
+                document.getElementById('live-queue-doctor-status').innerHTML = PatientQueueView.renderDoctorStatusHtml(settings);
+                const visible = Boolean(settings.is_queue_visible);
+                document.getElementById('live-queue-meta').hidden = !visible;
+                document.getElementById('live-queue-home-list').hidden = !visible;
+                const empty = document.getElementById('live-queue-empty');
+                empty.textContent = visible ? 'Belum ada antrian hari ini.' : 'Antrian online belum dibuka. Booking Anda sudah terdaftar untuk hari ini.';
+                if (visible) {
                     renderLiveQueueHome(queue.data, settings);
+                } else {
+                    document.getElementById('live-queue-home-list').innerHTML = '';
+                    empty.style.display = 'block';
                 }
+                section.classList.add('show');
+                requestAnimationFrame(updateHomeActionGap);
             } catch (error) {
                 section.classList.remove('show');
+                requestAnimationFrame(updateHomeActionGap);
             } finally {
                 queueBusy = false;
                 if (queuePending && document.visibilityState === 'visible') { queuePending = false; loadLiveQueueHome(); }

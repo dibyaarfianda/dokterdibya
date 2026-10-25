@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20261020applicationbadge1';
+const CACHE_VERSION = '20261025homequeue1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -49,6 +49,8 @@ const PRECACHE_FILES = [
   '/scripts/community-chat-ui.js',
   '/scripts/patient-native-app-guard.js',
   '/scripts/booking-break-display.js',
+  '/scripts/patient-queue-view.js',
+  '/styles/patient-queue-view.css',
   '/scripts/clinic-booking-policy.js',
   '/scripts/patient-session.js',
   '/scripts/socket-credentials.js',
