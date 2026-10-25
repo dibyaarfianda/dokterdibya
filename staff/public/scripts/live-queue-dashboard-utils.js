@@ -111,10 +111,10 @@ export function renderOnlineQueuePageHtml(queueItems = [], options = {}) {
         </div>
       </div>
       <div class="card-body patient-queue-preview">
-        <link rel="stylesheet" href="/styles/patient-queue-view.css?v=${escapeHtml(options.assetVersion || 'v474')}">
+        <link rel="stylesheet" href="/styles/patient-queue-view.css?v=${escapeHtml(options.assetVersion || '20261025homequeue1')}">
         <div class="patient-queue-view">
           <div class="patient-queue-heading">Antrian Klinik Hari Ini <span class="patient-queue-live">LIVE</span></div>
-          <div class="patient-queue-doctor">${isOnBreak ? 'Sedang istirahat' : (doctorArrived ? 'dr. Dibya sudah datang' : 'dr. Dibya belum datang')}</div>
+          <div class="patient-queue-doctor" aria-live="polite">${PatientQueueView.renderDoctorStatusHtml({ doctor_arrived: doctorArrived, is_on_break: isOnBreak })}</div>
           ${PatientQueueView.renderPatientQueueHtml(items, { visible: isQueueVisible })}
           <p class="privacy-note"><i class="fa fa-lock"></i> Nama pasien lain disamarkan untuk menjaga privasi</p>
         </div>

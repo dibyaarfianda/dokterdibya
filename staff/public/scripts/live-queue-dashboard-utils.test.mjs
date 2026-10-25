@@ -100,9 +100,21 @@ test('patient queue preview retains staff controls outside the patient cards', (
 test('break state and controls remain available alongside the patient view', () => {
  const options = {isOnBreak:true, isQueueVisible:true};
  const html = renderOnlineQueuePageHtml([], options);
- assert.match(html, /patient-queue-doctor">Sedang istirahat/);
+ assert.ok(html.includes(patientQueueView.renderDoctorStatusHtml({is_on_break:true})));
  assert.match(html, /id="antrian-online-break-btn"/);
- assert.doesNotMatch(renderOnlineQueuePageHtml([], {...options,isOnBreak:false}), /patient-queue-doctor">Sedang istirahat/);
+ assert.doesNotMatch(renderOnlineQueuePageHtml([], {...options,isOnBreak:false}), /patient-doctor-status--break/);
+});
+
+test('staff preview mirrors the exact shared patient doctor status for every state', () => {
+ for (const settings of [
+   {doctor_arrived:false,is_on_break:false},
+   {doctor_arrived:true,is_on_break:false},
+   {doctor_arrived:true,is_on_break:true},
+   {doctor_arrived:false,is_on_break:true}
+ ]) {
+   const html = renderOnlineQueuePageHtml([], {isQueueVisible:true, doctorArrived:settings.doctor_arrived, isOnBreak:settings.is_on_break});
+   assert.ok(html.includes(patientQueueView.renderDoctorStatusHtml(settings)));
+ }
 });
 
 test('patient cards escape all display fields and reject unrecognized CSS statuses', () => {
