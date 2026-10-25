@@ -1,5 +1,4 @@
 import './clinic-booking-policy.js?v=20261018datetime4';
-import { startCommunityBadge } from './community-chat-badge.js?v=20260924realtime2';
 import { createPortalNicknameStore } from './patient-shell/portal-nickname.js?v=20260917nickname1';
 import {
     getPatientToken as getToken,
@@ -25,7 +24,7 @@ import { createMyCornerController } from './patient-shell/features/my-corner-con
 import { createBugReportController } from './patient-shell/features/bug-report-controller.js';
 import { createPatientNotificationController } from './patient-shell/features/notification-controller.js';
 import { createPatientPwaInstallController } from './patient-shell/pwa-install-controller.js?v=20260917nickname1';
-import { createPatientExitController } from './patient-shell/exit-controller.js';
+import { createPatientExitController } from './patient-shell/exit-controller.js?v=20261025edgechat1';
 
 (function initPatientMenuShell() {
         const CORNER_NAME_KEY = 'patient_my_corner_name';
@@ -38,7 +37,6 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
         let liveQueueHomeTimer = null;
         let queueBusy = false, queuePending = false;
         let queueHidden = document.visibilityState === 'hidden', queueBound = false;
-        let stopCommunityBadge = null;
         let currentBirthCongratsId = '';
         let currentBirthCongratsData = null;
         let currentBirthPending = null;
@@ -3134,12 +3132,6 @@ import { createPatientExitController } from './patient-shell/exit-controller.js'
             loadHomeAnnouncements();
             loadUnreadDocCounts();
             initializeLiveQueueHome();
-            stopCommunityBadge?.();
-            stopCommunityBadge = startCommunityBadge({
-                getToken,
-                enabled: () => !isGuestMode() && !window.PatientSession?.isDemoMode(),
-                badge: document.getElementById('community-chat-badge')
-            });
             updateRuangBacaBadges();
             checkActiveBooking();
             loadBirthClassHomeCard();

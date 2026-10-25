@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20261025homequeue1';
+const CACHE_VERSION = '20261025edgechat1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -46,6 +46,8 @@ const PRECACHE_FILES = [
   '/styles/patient-my-corner.css',
   '/scripts/patient-menu-shell.js',
   '/scripts/community-chat-badge.js',
+  '/scripts/patient-community-chat.js',
+  '/styles/patient-community-chat.css',
   '/scripts/community-chat-ui.js',
   '/scripts/patient-native-app-guard.js',
   '/scripts/booking-break-display.js',

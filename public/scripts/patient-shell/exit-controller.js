@@ -71,7 +71,8 @@ export function createPatientExitController({
             history.pushState({ patientHomeBackGuard: true }, '', window.location.href);
         } catch (error) {}
 
-        window.addEventListener('popstate', () => {
+        window.addEventListener('popstate', event => {
+            if (window.__patientCommunityChat?.handleBack(event)) return;
             if (exitConfirmed || !isHomeRoute()) return;
             if (hasActiveHomeSurface()) {
                 closeSheet();

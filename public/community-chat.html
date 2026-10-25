@@ -1974,6 +1974,10 @@
         }
     </style>
 <link rel="stylesheet" href="/styles/community-chat-attention.css?v=20260923chat1">
+<style>
+    body.embed-patient .topbar-brand { display: none; }
+    body.embed-patient .page { padding-top: 0; }
+</style>
 </head>
 <body>
 <div class="page">
@@ -2171,6 +2175,7 @@
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
+    const isPatientEmbed = urlParams.get('embed') === 'patient' && window.parent !== window;
     const useStaffTokenBridge = isStaffEmbed || urlParams.get('staffBridge') === '1';
     const useCompactModerator = isStaffEmbed || urlParams.get('moderator') === 'compact';
     const themeMode = String(urlParams.get('theme') || '').toLowerCase();
@@ -2284,10 +2289,12 @@
     };
 
     const backButton = document.getElementById('chat-back-btn');
+    function leaveCommunityChat(reset = false) {
+        if (isPatientEmbed) window.parent.postMessage({ type: 'PATIENT_COMMUNITY_CHAT_CLOSE', reset: reset === true }, window.location.origin);
+        else window.location.href = '/patient-menu.html';
+    }
     if (backButton) {
-        backButton.addEventListener('click', () => {
-            window.location.href = '/patient-menu.html';
-        });
+        backButton.addEventListener('click', leaveCommunityChat);
     }
 
     function setModeratorPanelExpanded(expanded) {
@@ -2834,7 +2841,7 @@
 
         el.menuExit.addEventListener('click', () => {
             toggleChatMenu(false);
-            window.location.href = '/patient-menu.html';
+            leaveCommunityChat();
         });
 
         el.createRoomClose.addEventListener('click', () => setModalOpen(el.createRoomModal, false));
@@ -2985,6 +2992,7 @@
 
     function applyEmbedMode() {
         document.body.classList.toggle('community-newdesign', useNewDesignTheme);
+        document.body.classList.toggle('embed-patient', isPatientEmbed);
         if (isStaffEmbed) {
             document.body.classList.add('embed-staff');
         }
@@ -3035,7 +3043,9 @@
             }
 
             showToast('Isi nickname di Beranda terlebih dahulu sebelum masuk chat.', 'warning');
-            if (!isStaffEmbed) {
+            if (isPatientEmbed) {
+                leaveCommunityChat(true);
+            } else if (!isStaffEmbed) {
                 window.location.href = '/patient-menu.html';
             }
             return false;
@@ -3287,6 +3297,17 @@
         });
     }
 
+    function bindPatientEmbedProfileLink(link) {
+        if (!isPatientEmbed || !link) return;
+        const url = new URL(link.href);
+        url.searchParams.set('embed', 'patient');
+        link.href = url.href;
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            window.location.replace(link.href);
+        });
+    }
+
     function buildMessageNode(msg) {
         const mine = String(msg.sender_id) === String(currentUser.id) && msg.sender_type === (isStaff ? 'staff' : 'patient');
         const displayName = communityName(msg);
@@ -3316,6 +3337,7 @@
 
         const bubble = row.querySelector('.msg');
         const profileLink = row.querySelector('.msg-user');
+        bindPatientEmbedProfileLink(profileLink);
         if (isStaff) {
             profileLink.href += '&staffBridge=1' + (isStaffEmbed ? '&embed=staff' : '');
             profileLink.addEventListener('click', async event => {
@@ -3453,10 +3475,14 @@
         return el.messages.scrollHeight - el.messages.clientHeight - el.messages.scrollTop < 72;
     }
 
+    function isCommunityChatVisible() {
+        return !document.hidden && (!isPatientEmbed || window.frameElement?.dataset.communityChatVisible === 'true');
+    }
+
     function scheduleRead() {
         clearTimeout(readTimer);
         readTimer = setTimeout(async () => {
-            if (!activeRoom || document.hidden || !document.hasFocus() || contextMode || contextRequestPending || pendingDeepLink || !nearBottom()) return;
+            if (!activeRoom || !isCommunityChatVisible() || !document.hasFocus() || contextMode || contextRequestPending || pendingDeepLink || !nearBottom()) return;
             const slug = activeRoom.slug;
             const last = el.messages.querySelector('.msg-row:last-child');
             const id = Number(last?.dataset.id || 0);
@@ -3466,6 +3492,7 @@
                 await api('/rooms/' + encodeURIComponent(slug) + '/read', { method: 'POST', body: JSON.stringify({ message_id: id }) });
                 readAcknowledged.set(slug, Math.max(readAcknowledged.get(slug) || 0, id));
                 window.dispatchEvent(new Event('community:read'));
+                if (isPatientEmbed) window.parent.postMessage({ type: 'PATIENT_COMMUNITY_CHAT_READ' }, window.location.origin);
             } catch (_) { /* Retry after the next visible sync. */ }
             finally { readingRooms.delete(slug); }
         }, 200);
@@ -3553,7 +3580,7 @@
     }
 
     async function pollActiveRoomMessages() {
-        if (!activeRoom || isPollingMessages || document.hidden) return;
+        if (!activeRoom || isPollingMessages || !isCommunityChatVisible()) return;
         isPollingMessages = true;
         try {
             const data = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/messages?limit=120`);
@@ -3570,7 +3597,7 @@
     }
 
     async function pollRoomsForUpdates() {
-        if (isPollingRooms) return;
+        if (isPollingRooms || !isCommunityChatVisible()) return;
         isPollingRooms = true;
         try {
             await loadRooms(false);

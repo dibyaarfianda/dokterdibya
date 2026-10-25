@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20261025homequeue1');
+importScripts('/sw.js?v=20261025edgechat1');

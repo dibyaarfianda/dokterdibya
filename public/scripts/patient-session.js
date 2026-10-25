@@ -147,6 +147,17 @@
         global.document.head.appendChild(script);
     }
 
+    function loadPatientCommunityChat() {
+        const path = global.location?.pathname || '';
+        if (!global.document || global.parent !== global || !getToken() || isDemoMode()) return;
+        if (PAGE_TRACKING_EXCLUDED_PATHS.has(path) || ['/patient-intake.html', '/community-chat.html', '/community-profile.html', '/app-closed.html'].includes(path)) return;
+        if (global.__patientCommunityChatRequested) return;
+        global.__patientCommunityChatRequested = true;
+        import('/scripts/patient-community-chat.js?v=20261025edgechat1')
+            .then(module => module.mountPatientCommunityChat())
+            .catch(error => { global.__patientCommunityChatRequested = false; console.warn('[PatientSession] Community chat unavailable:', error.message); });
+    }
+
     if (global.document) {
         if (global.document.readyState === 'loading') global.document.addEventListener('DOMContentLoaded', renderDemoBanner, { once: true });
         else renderDemoBanner();
@@ -169,8 +180,11 @@
     if (global.document) {
         if (global.document.readyState === 'loading') {
             global.document.addEventListener('DOMContentLoaded', loadPatientPageTracker, { once: true });
+            global.document.addEventListener('DOMContentLoaded', loadPatientCommunityChat, { once: true });
         } else {
             loadPatientPageTracker();
+            loadPatientCommunityChat();
         }
+        global.addEventListener?.('auth:credentials-changed', loadPatientCommunityChat);
     }
 })(window);
