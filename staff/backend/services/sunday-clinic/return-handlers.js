@@ -5,13 +5,20 @@ const cache = require('../../utils/cache');
 const { formatDateLocal } = require('../../utils/date');
 const { normalizeMrId } = require('../SundayClinicRouteHelpers');
 const { logBillingAudit } = require('../SundayClinicBillingAuditService');
-const { acquireSundayClinicAccountingDateGuard } = require('../SundayClinicClosingService');
-const { listReturns, createReturn, findSavedReturn } = require('./billing-returns');
+const { acquireSundayClinicAccountingDateGuard, resolveServiceDate } = require('../SundayClinicClosingService');
+const { listReturns, createReturn, findSavedReturn, resolveReturnAccountingDate } = require('./billing-returns');
+
+function invoiceServiceDate(mrId, invoice) {
+    return resolveServiceDate(db, invoice.additional_billing_id ? { additionalBillingId: invoice.additional_billing_id } : { mrId });
+}
 
 async function getReturns(req, res, next) {
     try {
         res.set('Cache-Control', 'no-store');
-        res.json({ success: true, data: await listReturns(db, normalizeMrId(req.params.mrId)) });
+        const mrId = normalizeMrId(req.params.mrId);
+        const data = await listReturns(db, mrId);
+        for (const invoice of data.invoices) invoice.service_date = await invoiceServiceDate(mrId, invoice);
+        res.json({ success: true, data: { ...data, today: formatDateLocal() } });
     } catch (error) { next(error); }
 }
 
@@ -22,7 +29,10 @@ async function postReturn(req, res, next) {
         const input = req.body || {};
         let saved = await findSavedReturn(db, mrId, input);
         if (saved) return res.json({ success: true, data: saved });
-        const accountingDate = formatDateLocal();
+        const accountingDate = resolveReturnAccountingDate(input.accounting_date, {
+            today: formatDateLocal(),
+            minDate: await invoiceServiceDate(mrId, input)
+        });
         try {
             guard = await acquireSundayClinicAccountingDateGuard(db, { clinicDate: accountingDate });
         } catch (error) {

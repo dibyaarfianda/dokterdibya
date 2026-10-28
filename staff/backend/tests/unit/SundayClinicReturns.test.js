@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const servicePath = path.join(__dirname, '../../services/sunday-clinic/billing-returns.js');
-const { buildReturnPlan, allocateReturnedStock, createReturn } = fs.existsSync(servicePath) ? require(servicePath) : {};
+const { buildReturnPlan, resolveReturnAccountingDate, allocateReturnedStock, createReturn } = fs.existsSync(servicePath) ? require(servicePath) : {};
 const { buildClosingPreview } = require('../../services/SundayClinicClosingService');
 
 const invoice = { id: 1, status: 'paid', total: 100000 };
@@ -57,4 +57,15 @@ test('closing subtracts returns and allows a date with returns only', () => {
     expect(preview.summary).toMatchObject({ grand_total: -30000, return_total: 30000, return_count: 1, transaction_count: 1 });
     expect(preview.transactions[0]).toMatchObject({ source_type: 'return', total: -30000 });
     expect(preview.fingerprint).not.toBe(buildClosingPreview({ clinicDate: '2026-10-25' }).fingerprint);
+});
+test('return date defaults to today and allows backdating only within the invoice day and today', () => {
+    const bounds = { today: '2026-10-28', minDate: '2026-10-25' };
+    expect(resolveReturnAccountingDate(undefined, bounds)).toBe('2026-10-28');
+    expect(resolveReturnAccountingDate('', bounds)).toBe('2026-10-28');
+    expect(resolveReturnAccountingDate('2026-10-25', bounds)).toBe('2026-10-25');
+    expect(resolveReturnAccountingDate('2026-10-27', bounds)).toBe('2026-10-27');
+    for (const value of ['2026-10-29', '2026-10-24', '2026-02-30', '25-10-2026', 20261025]) {
+        expect(() => resolveReturnAccountingDate(value, bounds)).toThrow();
+    }
+    expect(resolveReturnAccountingDate('2026-01-01', { today: '2026-10-28', minDate: null })).toBe('2026-01-01');
 });

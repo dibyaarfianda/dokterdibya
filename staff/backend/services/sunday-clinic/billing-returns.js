@@ -2,6 +2,7 @@
 
 const crypto = require('crypto');
 const { AppError } = require('../../middleware/errorHandler');
+const { formatDateLocal } = require('../../utils/date');
 
 function fail(message, statusCode = 400) {
     throw new AppError(message, statusCode, true, 'INVALID_BILLING_RETURN');
@@ -35,6 +36,17 @@ function buildReturnPlan(input, invoice, items, previous) {
     const alreadyReturned = previous.reduce((sum, row) => sum + cents(row.amount), 0);
     if (alreadyReturned + cents(amount) > cents(invoice.total)) fail('Total pengembalian melebihi nilai invoice yang telah dibayar.', 409);
     return { amount, quantity, item, reason: input.reason.trim() };
+}
+
+// Staff may backdate a return to the clinic day it belongs to, never before the invoice's own day nor into the future.
+function resolveReturnAccountingDate(requested, { today, minDate }) {
+    if (requested == null || requested === '') return today;
+    const match = typeof requested === 'string' && requested.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    const parsed = match && new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+    if (!parsed || parsed.toISOString().slice(0, 10) !== requested) fail('Tanggal retur tidak valid.');
+    if (requested > today) fail('Tanggal retur tidak boleh melebihi hari ini.');
+    if (minDate && requested < minDate) fail(`Tanggal retur tidak boleh sebelum tanggal invoice asal (${minDate}).`);
+    return requested;
 }
 
 function allocateReturnedStock(sales, previous, quantity) {
@@ -77,7 +89,7 @@ async function listReturns(client, mrId) {
         const isAdditional = invoice !== main;
         const [items] = await client.query(`SELECT id, item_type, item_name, quantity, price, total FROM ${isAdditional ? 'sunday_clinic_additional_billing_items' : 'sunday_clinic_billing_items'} WHERE ${isAdditional ? 'additional_billing_id' : 'billing_id'} = ? ORDER BY id`, [invoice.id]);
         const history = returns.filter(row => Number(row.additional_billing_id || 0) === (isAdditional ? Number(invoice.id) : 0));
-        invoices.push({ additional_billing_id: isAdditional ? invoice.id : null, reference_number: invoice.reference_number || mrId,
+        invoices.push({ invoice_id: invoice.id, additional_billing_id: isAdditional ? invoice.id : null, reference_number: invoice.reference_number || mrId,
             total: Number(invoice.total), returned_total: history.reduce((sum, row) => sum + Number(row.amount), 0),
             items: items.filter(item => item.item_type === 'obat').map(item => ({ ...item,
                 remaining_quantity: Number(item.quantity) - history.filter(row => Number(row.source_item_id) === Number(item.id)).reduce((sum, row) => sum + Number(row.quantity), 0)
@@ -85,7 +97,7 @@ async function listReturns(client, mrId) {
     }
     const paidTotal = invoices.reduce((sum, invoice) => sum + cents(invoice.total), 0) / 100;
     const returnTotal = returns.reduce((sum, row) => sum + cents(row.amount), 0) / 100;
-    return { invoices, returns, paid_total: paidTotal, return_total: returnTotal, net_total: (cents(paidTotal) - cents(returnTotal)) / 100 };
+    return { invoices, returns: returns.map(row => ({ ...row, accounting_date: row.accounting_date ? formatDateLocal(row.accounting_date) || String(row.accounting_date).slice(0, 10) : null })), paid_total: paidTotal, return_total: returnTotal, net_total: (cents(paidTotal) - cents(returnTotal)) / 100 };
 }
 
 function returnRequestHash(input) {
@@ -95,7 +107,9 @@ function returnRequestHash(input) {
         additionalId, kind: input.kind, item_id: input.kind === 'obat' ? Number(input.item_id) : null,
         quantity: input.kind === 'obat' ? Number(input.quantity) : 0,
         amount: input.kind === 'money' ? Number(input.amount) : null,
-        reason: String(input.reason || '').trim(), payment_method: input.payment_method
+        reason: String(input.reason || '').trim(), payment_method: input.payment_method,
+        // Only part of the hash when sent, so keys saved before backdating existed still match.
+        ...(input.accounting_date ? { accounting_date: String(input.accounting_date) } : {})
     })).digest('hex');
 }
 
@@ -186,4 +200,4 @@ async function createReturn(deps, { mrId, input, actor, accountingDate }) {
     }
 }
 
-module.exports = { buildReturnPlan, allocateReturnedStock, listReturns, createReturn, findSavedReturn };
+module.exports = { buildReturnPlan, resolveReturnAccountingDate, allocateReturnedStock, listReturns, createReturn, findSavedReturn };

@@ -796,6 +796,11 @@ function canRecordBillingReturn() {
         : isSuperadminUser(window.currentStaffIdentity || window.currentUser || {});
 }
 
+function formatReturnDate(value) {
+    const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : String(value || '');
+}
+
 function renderBillingReturns(data, error) {
     if (error) return `<section id="billing-returns-panel" class="pt-4 mt-4 border-top"><h5>Retur / Pengembalian</h5><div class="alert alert-danger">${escapeHtml(error)} Muat ulang halaman untuk mencoba lagi.</div></section>`;
     if (!data) return '';
@@ -806,13 +811,13 @@ function renderBillingReturns(data, error) {
         <div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr>
         ${['Tanggal / Petugas', 'Invoice Asal', 'Jenis / Alasan', 'Pengurangan'].map(title => `<th style="text-align: center !important; vertical-align: middle !important;">${title}</th>`).join('')}
         </tr></thead><tbody>${data.returns.length ? data.returns.map(row => `<tr>
-            <td>${escapeHtml(formatDateTime(row.created_at))}<small class="d-block">${escapeHtml(row.actor_name)}</small></td>
+            <td>${escapeHtml(formatDateTime(row.created_at))}${row.accounting_date ? `<small class="d-block">Dibukukan ${escapeHtml(formatReturnDate(row.accounting_date))}</small>` : ''}<small class="d-block">${escapeHtml(row.actor_name)}</small></td>
             <td>${escapeHtml(data.invoices.find(invoice => Number(invoice.additional_billing_id || 0) === Number(row.additional_billing_id || 0))?.reference_number || row.mr_id)}<small class="d-block">Retur R${Number(row.id)}</small></td>
             <td>${row.kind === 'obat' ? `${escapeHtml(row.item_name)} × ${Number(row.quantity)}` : 'Pengembalian uang'}<small class="d-block">${escapeHtml(row.reason)} · ${row.payment_method === 'cash' ? 'Tunai' : 'Transfer'}</small></td>
             <td class="text-right text-danger">−${formatRupiah(row.amount)}</td></tr>`).join('') : '<tr><td colspan="4" class="text-center text-muted">Belum ada retur / pengembalian.</td></tr>'}</tbody></table></div>
         <div class="text-right">Total dibayar: <strong>${formatRupiah(data.paid_total)}</strong><br>Retur / minus: <strong class="text-danger">−${formatRupiah(data.return_total)}</strong><br>Penerimaan bersih: <strong>${formatRupiah(data.net_total)}</strong></div>
         <form id="billing-return-form" class="border rounded p-3 mt-3" hidden>
-            <div class="alert alert-info">Catat setelah uang diserahkan atau ditransfer kepada pasien. Tombol ini mencatat pengembalian, tidak mengirim uang otomatis. Transaksi tercatat pada tanggal hari ini.</div>
+            <div class="alert alert-info">Catat setelah uang diserahkan atau ditransfer kepada pasien. Tombol ini mencatat pengembalian, tidak mengirim uang otomatis. Transaksi masuk closing pada tanggal retur yang dipilih.</div>
             <div id="billing-return-error" class="alert alert-danger" hidden></div>
             <fieldset id="billing-return-fields">
             <div class="form-group"><label for="billing-return-invoice">Invoice asal</label><select id="billing-return-invoice" class="form-control">${data.invoices.map((invoice, i) => `<option value="${i}">${escapeHtml(invoice.reference_number)} — sisa dapat dikembalikan ${formatRupiah(invoice.total - invoice.returned_total)}</option>`).join('')}</select></div>
@@ -820,6 +825,7 @@ function renderBillingReturns(data, error) {
             <div id="billing-return-obat-fields"><div class="form-group"><label for="billing-return-item">Obat dari invoice asal</label><select id="billing-return-item" class="form-control"></select></div>
             <div class="form-group"><label for="billing-return-quantity">Jumlah dikembalikan</label><input type="number" min="1" step="1" value="1" id="billing-return-quantity" class="form-control"></div></div>
             <div class="form-group"><label for="billing-return-amount">Nominal pengembalian (Rp)</label><input id="billing-return-amount" type="number" min="0.01" step="0.01" class="form-control" required></div>
+            <div class="form-group"><label for="billing-return-date">Tanggal retur (masuk closing tanggal ini)</label><input id="billing-return-date" type="date" class="form-control" value="${escapeHtml(data.today || '')}" max="${escapeHtml(data.today || '')}" required><small class="form-text text-muted">Default hari ini. Pilih tanggal mundur bila retur terjadi saat poli sebelumnya. Tanggal yang sudah di-closing ditolak.</small></div>
             <div class="form-group"><label for="billing-return-method">Metode pengembalian</label><select id="billing-return-method" class="form-control"><option value="cash">Tunai</option><option value="transfer">Transfer</option></select></div>
             <div class="form-group"><label for="billing-return-reason">Alasan / catatan pengembalian</label><textarea id="billing-return-reason" class="form-control" rows="2" maxlength="2000" required></textarea></div>
             </fieldset><button type="submit" id="billing-return-save" class="btn btn-danger">Simpan Pengembalian</button>
@@ -851,6 +857,7 @@ function bindBillingReturns(data, mrId) {
     };
     const updateInvoice = () => {
         const invoice = data.invoices[Number(field('invoice').value)];
+        field('date').min = invoice?.service_date || '';
         field('item').innerHTML = (invoice?.items || []).filter(item => item.remaining_quantity > 0).map(item => `<option value="${Number(item.id)}">${escapeHtml(item.item_name)} — sisa ${Number(item.remaining_quantity)}</option>`).join('');
         updateAmount();
     };
@@ -875,6 +882,7 @@ function bindBillingReturns(data, mrId) {
             field('quantity').value = pending.quantity || 1;
             field('reason').value = pending.reason;
             field('method').value = pending.payment_method;
+            if (pending.accounting_date) field('date').value = pending.accounting_date;
             updateAmount();
             if (pending.kind === 'money') field('amount').value = pending.amount;
             field('fields').disabled = true;
@@ -893,7 +901,8 @@ function bindBillingReturns(data, mrId) {
                 if (!invoice) throw new Error('Invoice asal tidak tersedia.');
                 const payload = { additional_billing_id: invoice.additional_billing_id, kind: field('kind').value,
                     item_id: Number(field('item').value), quantity: Number(field('quantity').value), amount: Number(field('amount').value),
-                    reason: field('reason').value.trim(), payment_method: field('method').value, request_key: crypto.randomUUID() };
+                    reason: field('reason').value.trim(), payment_method: field('method').value, accounting_date: field('date').value || data.today,
+                    request_key: crypto.randomUUID() };
                 sessionStorage.setItem(storageKey, JSON.stringify(payload));
                 pending = payload;
             }
@@ -904,7 +913,7 @@ function bindBillingReturns(data, mrId) {
             });
             const result = await response.json();
             if (!response.ok || !result.success) {
-                if (response.status >= 400 && response.status < 500 && result.code === 'INVALID_BILLING_RETURN') {
+                if (response.status >= 400 && response.status < 500 && ['INVALID_BILLING_RETURN', 'SUNDAY_CLINIC_CLOSED'].includes(result.code)) {
                     sessionStorage.removeItem(storageKey);
                     pending = null;
                     field('fields').disabled = false;
