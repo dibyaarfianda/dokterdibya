@@ -1,5 +1,7 @@
 const STAFF_MALE_AVATAR = '/staff/public/images/avatarlaki.png';
 const STAFF_FEMALE_AVATAR = '/staff/public/images/avatarwanita.png';
+// Canonical staff account; display names and community nicknames are editable.
+const DR_DIBYA_STAFF_ID = 'UDZAQUCQWZ';
 
 function resolveStaffGender(name) {
     const normalizedName = String(name || '')
@@ -40,6 +42,7 @@ function decodeDataImageUrl(value) {
 }
 
 module.exports = {
+    DR_DIBYA_STAFF_ID,
     STAFF_MALE_AVATAR,
     STAFF_FEMALE_AVATAR,
     resolveStaffIdentity,

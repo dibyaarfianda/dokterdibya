@@ -105,6 +105,7 @@ const PATIENT_ROUTE_RULES = [
     createRule('GET', /^\/api\/community-chat\/(?:rooms|unread|me\/profile|profiles\/[^/]+\/[^/]+|rooms\/[^/]+\/(?:messages|members)|rooms\/[^/]+\/messages\/[^/]+\/context)$/),
     createRule('POST', /^\/api\/community-chat\/(?:rooms|rooms\/[^/]+\/(?:messages|read))$/),
     createRule('PUT', /^\/api\/community-chat\/me\/profile$/),
+    createRule(['GET', 'PUT'], /^\/api\/community-chat\/me\/notifications$/),
     createRule('DELETE', /^\/api\/community-chat\/rooms\/[^/]+\/messages\/[^/]+$/),
 
     createRule('GET', /^\/api\/patient-workdesk\/(?:layout|public\/[^/]+)$/),

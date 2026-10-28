@@ -2,19 +2,27 @@ import { badgeLabel } from './community-chat-ui.js?v=20260923chat1';
 import '/scripts/socket-credentials.js';
 
 export function startCommunityBadge({ getToken, enabled, badge }) {
-    if (!badge) return;
+    const badges = (Array.isArray(badge) ? badge : [badge]).filter(Boolean);
+    if (!badges.length) return;
+    function render(total) {
+        for (const badge of badges) {
+            badge.textContent = badgeLabel(total);
+            badge.hidden = total === 0;
+            badge.setAttribute('aria-label', total + ' pesan chat belum dibaca');
+        }
+    }
     let busy = false, previousToken = null, timer = null, socket = null;
     let stopped = false, refreshTimer = null;
     async function refresh() {
         if (stopped) return;
         const token = getToken();
         if (!enabled() || !token) {
-            previousToken = null; badge.hidden = true; badge.textContent = '';
+            previousToken = null; render(0);
             socket?.stopCredentialTracking?.(); socket?.disconnect(); socket = null;
             return;
         }
         if (token !== previousToken) {
-            badge.hidden = true; badge.textContent = ''; previousToken = token;
+            render(0); previousToken = token;
             socket?.stopCredentialTracking?.(); socket?.disconnect(); socket = null;
             connect();
         }
@@ -28,9 +36,7 @@ export function startCommunityBadge({ getToken, enabled, badge }) {
             const data = await response.json();
             if (!data.success || token !== getToken() || !enabled()) return;
             const total = Math.max(0, Number(data.total) || 0);
-            badge.textContent = badgeLabel(total);
-            badge.hidden = total === 0;
-            badge.setAttribute('aria-label', total + ' pesan chat belum dibaca');
+            render(total);
         } catch (_) {
             // Keep the last confirmed count through temporary network failures.
         } finally { busy = false; }

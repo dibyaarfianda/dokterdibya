@@ -109,7 +109,7 @@ test('patient quote snapshots and malformed legacy snapshots are left unchanged 
         { ...patientMessage, reply_snapshot: JSON.stringify({ sender_id: 'P02', sender_type: 'patient', sender: 'Bunda Lain' }) },
         { ...patientMessage, reply_snapshot: 'invalid json' }
     ];
-    expect(await hydrateStaffMessages(db, rows)).toEqual(rows);
+    expect(await hydrateStaffMessages(db, rows)).toEqual(rows.map(row => ({ ...row, sender_is_dr_dibya: false })));
     expect(db.query).not.toHaveBeenCalled();
 });
 

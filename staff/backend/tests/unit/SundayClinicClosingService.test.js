@@ -100,6 +100,8 @@ describe('SundayClinicClosingService', () => {
         expect(preview.summary).toEqual({
             main_total: 135000,
             additional_total: 25000,
+            return_total: 0,
+            return_count: 0,
             grand_total: 160000,
             patient_count: 1,
             transaction_count: 2,
@@ -175,6 +177,8 @@ describe('SundayClinicClosingService', () => {
         expect(preview.summary).toEqual({
             main_total: 181500,
             additional_total: 0,
+            return_total: 0,
+            return_count: 0,
             grand_total: 181500,
             patient_count: 1,
             transaction_count: 1,

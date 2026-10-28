@@ -968,8 +968,8 @@
             color: var(--green, #5c7f72) !important;
         }
     </style>
-    <link rel="stylesheet" href="/styles/patient-queue-view.css?v=v474">
-    <script src="/scripts/patient-queue-view.js?v=v474"></script>
+    <link rel="stylesheet" href="/styles/patient-queue-view.css?v=20261025homequeue1">
+    <script src="/scripts/patient-queue-view.js?v=20261025homequeue1"></script>
     <script>window.__patientPortalHeaderInstalled = true;</script>
 </head>
 <body class="home-sections-locked patient-tool-shell legacy-tool-retrofit antrian-page" data-tool-shell-active="jadwal" data-tool-kicker="Live Queue" data-tool-title="Antrian hari ini." data-tool-copy="Pantau status antrian klinik secara real time dan atur pengingat saat nomor Anda sudah mendekat." data-tool-meta-label="Refresh" data-tool-meta-value="Otomatis 30 detik">
@@ -986,6 +986,7 @@
 
     <!-- Page body -->
     <div class="page-body">
+        <div class="queue-doctor-status" id="queue-doctor-status" aria-live="polite"></div>
         <div class="info-bar">
             <div class="info-date">Tanggal: <span id="today-date">-</span></div>
             <button class="refresh-btn" id="refresh-btn" onclick="loadQueue(true)">
@@ -1786,11 +1787,14 @@
         }
 
         async function checkQueueSettings() {
+            const doctorStatus = document.getElementById('queue-doctor-status');
+            doctorStatus.innerHTML = '';
             try {
                 const res = await fetch('/api/sunday-clinic/queue/settings?_t=' + Date.now());
                 if (!res.ok) return true; // fallback: show queue
                 const data = await res.json();
                 if (data.success) {
+                    doctorStatus.innerHTML = PatientQueueView.renderDoctorStatusHtml(data);
                     return data.is_queue_visible !== false;
                 }
             } catch(e) {

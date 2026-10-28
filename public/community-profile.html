@@ -10,6 +10,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Community Profile - SISIwanita</title>
+    <style>.brand-link[hidden] { display: none !important; }</style>
     <style>
         :root {
             --bg: #f7f7f4;
@@ -326,6 +327,15 @@
 
         if (staffContext) {
             document.querySelector('.back-btn').href = '/community-chat.html?staffBridge=1' + (params.get('embed') === 'staff' ? '&embed=staff' : '');
+            document.querySelector('.brand-link').hidden = true;
+        }
+        if (params.get('embed') === 'patient' && window.parent !== window) {
+            const back = document.querySelector('.back-btn');
+            back.href = '/community-chat.html?embed=patient';
+            back.addEventListener('click', event => {
+                event.preventDefault();
+                window.location.replace(back.href);
+            });
             document.querySelector('.brand-link').hidden = true;
         }
         const token = await getToken();

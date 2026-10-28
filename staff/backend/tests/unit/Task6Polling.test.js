@@ -40,7 +40,8 @@ test('patient home queue never polls hidden and refreshes once when visible', as
     const listeners = {};
     const intervals = [];
     const section = { classList: { remove() {}, add() {} } };
-    const fetch = jest.fn(async () => ({ json: async () => ({ success: true, is_queue_visible: false }) }));
+    const fetch = jest.fn(async url => ({ ok: true, json: async () => url.includes('/settings')
+        ? { success: true, is_queue_visible: false } : { success: true, my_booking: null } }));
     const document = { visibilityState: 'visible', getElementById: id => id === 'live-queue-home-section' ? section : null,
         addEventListener: (name, fn) => { listeners[name] = fn; } };
     const window = { clearInterval() {}, setInterval: fn => { intervals.push(fn); return 1; } };
@@ -49,17 +50,16 @@ test('patient home queue never polls hidden and refreshes once when visible', as
         queueBusy: false, queuePending: false,
         queueHidden: false, queueBound: false });
     vm.runInContext(`${queueFns}\ninitializeLiveQueueHome();`, ctx);
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(fetch).toHaveBeenCalledTimes(1);
+    await new Promise(resolve => setImmediate(resolve));
+    expect(fetch).toHaveBeenCalledTimes(2);
     document.visibilityState = 'hidden';
     listeners.visibilitychange();
     await intervals[0]();
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
     document.visibilityState = 'visible';
     listeners.visibilitychange();
-    await Promise.resolve();
-    expect(fetch).toHaveBeenCalledTimes(2);
+    await new Promise(resolve => setImmediate(resolve));
+    expect(fetch).toHaveBeenCalledTimes(4);
 });
 
 test('staff notification count defers exactly one visible refresh across an in-flight read', async () => {

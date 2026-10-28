@@ -1,4 +1,4 @@
-const { resolveStaffIdentity } = require('../utils/staffIdentity');
+const { resolveStaffIdentity, DR_DIBYA_STAFF_ID } = require('../utils/staffIdentity');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 // Use the same name, avatar URL and avatar version as /api/auth/me (Staff Profile).
@@ -15,6 +15,7 @@ async function loadStaffProfiles(db, userIds) {
         const name = String(row.name || '').trim();
         return [String(row.new_id), {
             name: name && !name.includes('@') ? name : 'Staf',
+            isDrDibya: String(row.new_id) === DR_DIBYA_STAFF_ID,
             isDoctor: Number(row.is_superadmin) === 1 || isSuperadminRole(Number(row.role_id)) || row.role === ROLE_NAMES.DOKTER,
             avatarUrl: resolveStaffIdentity({
                 name: row.name, userId: row.new_id,
@@ -35,9 +36,11 @@ async function hydrateStaffMessages(db, messages) {
     ]);
     return messages.map((message, index) => {
         const profile = message.sender_type === 'staff' && profiles.get(String(message.sender_id));
-        const hydrated = profile ? {
-            ...message, sender_name: profile.name, sender_nickname: profile.name, sender_avatar: profile.avatarUrl
-        } : message;
+        const hydrated = {
+            ...message,
+            ...(profile ? { sender_name: profile.name, sender_nickname: profile.name, sender_avatar: profile.avatarUrl } : {}),
+            sender_is_dr_dibya: Boolean(profile && profile.isDrDibya)
+        };
         const reply = replies[index];
         const replyProfile = reply?.sender_type === 'staff' && profiles.get(String(reply.sender_id));
         return replyProfile ? { ...hydrated, reply_snapshot: { ...reply, sender: replyProfile.name } } : hydrated;

@@ -1,4 +1,20 @@
 /* Patient queue cards shared with the Staff preview. */
+.patient-doctor-status {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.5;
+}
+.patient-doctor-status--waiting { background: #fff3cd !important; color: #785600 !important; border-color: #e5c15c !important; }
+.patient-doctor-status--arrived { background: #dcfce7 !important; color: #166534 !important; border-color: #86d9a3 !important; }
+.patient-doctor-status--break { background: #f0e7ff !important; color: #6b21a8 !important; border-color: #c9a4ee !important; }
+.queue-doctor-status { margin-bottom: 16px; }
+
 .patient-queue-view .session-label {
     font-size: 12px;
     font-weight: 600;

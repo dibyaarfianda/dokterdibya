@@ -474,7 +474,8 @@ async function createPatientNotification({
     link = null,
     icon = 'fa fa-bell',
     icon_color = 'text-primary',
-    popup_on_open = false
+    popup_on_open = false,
+    send_push = true
 }) {
     try {
         const [result] = popup_on_open
@@ -506,17 +507,19 @@ async function createPatientNotification({
 
         // Send push notification to all patient devices (Web Push + FCM)
         try {
-            const pushService = require('../services/pushNotificationService');
-            pushService.sendToPatient(patient_id, title, message, {
-                notification_id: String(result.insertId),
-                type: type,
-                link: link || '',
-                url: link || '/patient-menu.html'
-            }).then(function(delivery) {
-                if (!delivery.success || delivery.failed) console.warn('Push notification delivery incomplete:', { notification_id: result.insertId, sent: delivery.sent, failed: delivery.failed });
-            }).catch(function(err) {
-                console.warn('Push notification send failed:', err.message);
-            });
+            if (send_push) {
+                const pushService = require('../services/pushNotificationService');
+                pushService.sendToPatient(patient_id, title, message, {
+                    notification_id: String(result.insertId),
+                    type: type,
+                    link: link || '',
+                    url: link || '/patient-menu.html'
+                }).then(function(delivery) {
+                    if (!delivery.success || delivery.failed) console.warn('Push notification delivery incomplete:', { notification_id: result.insertId, sent: delivery.sent, failed: delivery.failed });
+                }).catch(function(err) {
+                    console.warn('Push notification send failed:', err.message);
+                });
+            }
         } catch (pushError) {
             console.warn('Failed to send push notification:', pushError.message);
         }

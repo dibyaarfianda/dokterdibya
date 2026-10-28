@@ -1,9 +1,10 @@
 'use strict';
 
 const express = require('express');
-const { verifyToken, verifyPatientToken, requireSuperadminOrAccountPermission } = require('../../middleware/auth');
+const { verifyToken, verifyPatientToken, verifyStaffToken, requireSuperadminOrAccountPermission } = require('../../middleware/auth');
 const db = require('../../db');
 const handlers = require('../../services/sunday-clinic/billing');
+const returnHandlers = require('../../services/sunday-clinic/return-handlers');
 const { normalizeMrId, realtimeSync } = require('../../services/sunday-clinic/shared');
 const {
     acquireSundayClinicAccountingDateGuard
@@ -80,6 +81,8 @@ router.post('/billing/revisions/:id/approve', verifyToken, requireOpenAccounting
 router.post('/billing/:mrId/print-etiket', verifyToken, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdPrintEtiket);
 router.post('/billing/:mrId/print-invoice', verifyToken, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdPrintInvoice);
 router.get('/billing/:mrId/additional', verifyToken, handlers.getBillingByMrIdAdditional);
+router.get('/billing/:mrId/returns', verifyStaffToken, returnHandlers.getReturns);
+router.post('/billing/:mrId/returns', verifyStaffToken, requireSuperadminOrAccountPermission('billing.reset'), broadcastSuccessfulBillingMutation, returnHandlers.postReturn);
 router.post('/billing/:mrId/additional', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditional);
 router.put('/billing/:mrId/additional/:additionalBillingId', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.putBillingByMrIdAdditionalByAdditionalBillingId);
 router.post('/billing/:mrId/additional/:additionalBillingId/confirm', verifyToken, requireOpenAccountingDate, broadcastSuccessfulBillingMutation, handlers.postBillingByMrIdAdditionalByAdditionalBillingIdConfirm);

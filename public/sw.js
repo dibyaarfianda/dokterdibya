@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20261020applicationbadge1';
+const CACHE_VERSION = '20261025chatfix1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -46,9 +46,18 @@ const PRECACHE_FILES = [
   '/styles/patient-my-corner.css',
   '/scripts/patient-menu-shell.js',
   '/scripts/community-chat-badge.js',
+  '/scripts/patient-community-chat.js',
+  '/scripts/patient-chat-preview.js',
+  '/scripts/patient-chat-notifications.js',
+  '/scripts/docboard-session.js',
+  '/styles/community-chat-attention.css',
+  '/socket.io/socket.io.js',
+  '/styles/patient-community-chat.css',
   '/scripts/community-chat-ui.js',
   '/scripts/patient-native-app-guard.js',
   '/scripts/booking-break-display.js',
+  '/scripts/patient-queue-view.js',
+  '/styles/patient-queue-view.css',
   '/scripts/clinic-booking-policy.js',
   '/scripts/patient-session.js',
   '/scripts/socket-credentials.js',
@@ -92,6 +101,7 @@ const PRECACHE_FILES = [
   '/images/ruang-saya/icons-transparent/tracker.png',
   '/images/ruang-saya/icons-transparent/vitamin.png',
   '/images/pwa-icons/sw2v8-any-192x192.png',
+  '/images/pwa-icons/sw-notification-badge.png',
   '/images/pwa-icons/sw2v8-any-180.png',
   '/images/pwa-icons/sw2v8-any-512x512.png',
   '/images/pwa-icons/sw2v8-mask-192x192.png',
@@ -105,6 +115,15 @@ const IMMUTABLE_STATIC_ASSETS = [...new Set(PRECACHE_FILES)].filter(url => {
   return parsed.origin === self.location.origin && !parsed.pathname.endsWith('.html') && parsed.pathname !== '/';
 }).map(url => `${url}?v=${CACHE_VERSION}`);
 const OWNED_STATIC_PATHS = new Set(IMMUTABLE_STATIC_ASSETS.map(url => new URL(url, self.location.origin).pathname));
+// Only the chat's static shell/dependencies use this release-pinned fast path.
+// Authenticated API responses never enter the service-worker cache.
+const CHAT_STATIC_PATHS = new Set([
+  '/community-chat.html', '/scripts/patient-community-chat.js', '/styles/patient-community-chat.css',
+  '/scripts/patient-chat-preview.js', '/scripts/patient-chat-notifications.js',
+  '/scripts/patient-session.js', '/scripts/docboard-session.js', '/scripts/socket-credentials.js',
+  '/scripts/date-time-format.js', '/scripts/date-time-inputs.js', '/scripts/patient-utils.js',
+  '/scripts/community-chat-ui.js', '/styles/community-chat-attention.css', '/socket.io/socket.io.js'
+]);
 function matchOwnedStatic(cache, request, url) {
   if (url.origin !== self.location.origin || !OWNED_STATIC_PATHS.has(url.pathname)) return Promise.resolve(null);
   // Cache entries are revision-pinned, while page asset URLs retain their own
@@ -120,7 +139,7 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('[SW] Caching essential files');
         // Preserve this static editor shell across cache-version activation, too.
-        return cache.addAll([...IMMUTABLE_STATIC_ASSETS, '/ruang-cerita.html']);
+        return cache.addAll([...IMMUTABLE_STATIC_ASSETS, '/ruang-cerita.html', `/community-chat.html?v=${CACHE_VERSION}`]);
       })
       .then(() => {
         console.log('[SW] Skip waiting');
@@ -178,6 +197,17 @@ self.addEventListener('fetch', (event) => {
   }
 
   // For navigation requests (HTML pages)
+  if (url.origin === self.location.origin && CHAT_STATIC_PATHS.has(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request, { ignoreSearch: true });
+      if (cached) return cached;
+      const response = await fetch(freshRequest);
+      if (response.ok) await cache.put(request, response.clone());
+      return response;
+    })());
+    return;
+  }
   // This is a shared static editor shell; private draft data only uses no-store APIs.
   if (url.origin === self.location.origin && url.pathname === '/ruang-cerita.html') {
     event.respondWith((async () => {
@@ -233,8 +263,12 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'Notifikasi baru dari SISIwanita',
     icon: '/images/pwa-icons/sw2v8-any-192x192.png',
-    badge: '/images/pwa-icons/sw2v8-any-72x72.png',
+    badge: '/images/pwa-icons/sw-notification-badge.png',
     vibrate: [100, 50, 100],
+    silent: false,
+    ...(data.data?.type === 'community_chat' ? {
+      tag: data.data.tag || 'community-chat', renotify: true
+    } : {}),
     data: {
       url: data.url || '/patient-menu.html'
     }

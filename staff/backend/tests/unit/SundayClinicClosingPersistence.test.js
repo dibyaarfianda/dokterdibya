@@ -118,6 +118,7 @@ describe('Sunday Clinic closing persistence', () => {
                 if (query.includes('FROM sunday_clinic_billing_items')) return [[paidItem], []];
                 if (query.includes('FROM tagihan_payments tp')) return [[], []];
                 if (query.includes('FROM sunday_clinic_billing_revisions br')) return [[], []];
+                if (query.includes('FROM sunday_clinic_billing_returns r')) return [[], []];
                 if (query.startsWith('INSERT INTO sunday_clinic_closings')) return [{ insertId: 7 }, []];
                 if (query.startsWith('INSERT INTO sunday_clinic_closing_entries')) return [{ affectedRows: 1 }, []];
                 if (query.includes('FROM sunday_clinic_closings') && query.includes('WHERE id')) return [[header], []];
@@ -159,6 +160,7 @@ describe('Sunday Clinic closing persistence', () => {
                 if (query.includes('FROM sunday_clinic_billings b')) return [[], []];
                 if (query.includes('FROM sunday_clinic_additional_billings ab')) return [[], []];
                 if (query.includes('FROM sunday_clinic_billing_revisions br')) return [[], []];
+                if (query.includes('FROM sunday_clinic_billing_returns r')) return [[], []];
                 if (query.startsWith('SELECT RELEASE_LOCK')) return [[{ released: 1 }], []];
                 throw new Error(`Unexpected SQL: ${query}`);
             })
@@ -296,6 +298,7 @@ describe('Sunday Clinic closing persistence', () => {
                 if (query.includes('FROM sunday_clinic_billings b')) return [[], []];
                 if (query.includes('FROM sunday_clinic_additional_billings ab')) return [[], []];
                 if (query.includes('FROM sunday_clinic_billing_revisions br')) return [[], []];
+                if (query.includes('FROM sunday_clinic_billing_returns r')) return [[], []];
                 throw new Error(`Unexpected SQL: ${query}`);
             })
         };

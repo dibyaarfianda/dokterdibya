@@ -52,6 +52,8 @@ const EXPECTED_ROUTES = Object.freeze({
         'post /billing/:mrId/print-etiket',
         'post /billing/:mrId/print-invoice',
         'get /billing/:mrId/additional',
+        'get /billing/:mrId/returns',
+        'post /billing/:mrId/returns',
         'post /billing/:mrId/additional',
         'put /billing/:mrId/additional/:additionalBillingId',
         'post /billing/:mrId/additional/:additionalBillingId/confirm',

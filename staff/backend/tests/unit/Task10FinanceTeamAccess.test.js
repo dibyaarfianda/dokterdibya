@@ -49,6 +49,8 @@ describe('Task 10 medicine, finance, and team route matrix', () => {
         ['POST', '/api/obat-sales/7/etiket-base64', 'billing.export'],
         ['POST', '/api/obat-sales/7/print-invoice', 'billing.export'],
         ['POST', '/api/sunday-clinic/billing/DRD1/cancel', 'billing.reset'],
+        ['POST', '/api/sunday-clinic/billing/DRD1/returns', 'billing.reset'],
+        ['GET', '/api/sunday-clinic/billing/DRD1/returns', 'billing.view'],
         ['POST', '/api/sunday-clinic/billing/DRD1/mark-paid', 'billing.process_payment'],
         ['POST', '/api/sunday-clinic/billing/DRD1/print-invoice', 'billing.export'],
         ['DELETE', '/api/sunday-clinic/billing/DRD1/items/id/5', 'billing.reset'],

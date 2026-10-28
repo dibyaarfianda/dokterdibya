@@ -1974,6 +1974,50 @@
         }
     </style>
 <link rel="stylesheet" href="/styles/community-chat-attention.css?v=20260923chat1">
+<style>
+    body.embed-patient .topbar-brand { display: none; }
+    body.embed-patient .page { padding-top: 0; }
+    body.embed-patient .topbar,
+    body.embed-patient .chat-head { display: none !important; }
+    body.embed-patient > .chat-menu { position: fixed; top: 8px; right: 8px; z-index: 40; }
+    body .msg-user.msg-user-dr-dibya {
+        background: #c62828 !important;
+        color: #fff !important;
+        padding: 3px 7px;
+        border-radius: 5px;
+        display: inline-block;
+    }
+    #chat-cache-status { padding: 5px 14px; font-size: 11px; color: #587064; }
+    #chat-cache-status[hidden] { display: none; }
+    #chat-notification-settings [data-chat-push-toggle] {
+        appearance: none;
+        -webkit-appearance: none;
+        flex: 0 0 42px;
+        width: 42px !important;
+        min-width: 42px;
+        height: 24px;
+        margin: 0;
+        padding: 0 !important;
+        border: 0;
+        border-radius: 999px;
+        background: #b8c5bd;
+        cursor: pointer;
+    }
+    #chat-notification-settings [data-chat-push-toggle]::before {
+        content: '';
+        display: block;
+        width: 20px;
+        height: 20px;
+        margin: 2px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform .15s;
+    }
+    #chat-notification-settings [data-chat-push-toggle]:checked { background: #285c4d; }
+    #chat-notification-settings [data-chat-push-toggle]:checked::before { transform: translateX(18px); }
+    #chat-notification-settings [data-chat-push-toggle]:focus-visible { outline: 2px solid #285c4d; outline-offset: 3px; }
+    #chat-notification-settings [data-chat-push-toggle]:disabled { opacity: .5; cursor: wait; }
+</style>
 </head>
 <body>
 <div class="page">
@@ -2020,6 +2064,7 @@
 
             <div class="typing" id="typing-indicator"></div>
 
+            <div id="chat-cache-status" role="status" hidden></div>
             <div id="messages" class="messages"></div>
 
             <div class="composer">
@@ -2089,6 +2134,7 @@
                 <option value="dark">Gelap</option>
             </select>
         </div>
+        <div class="setting-group" id="chat-notification-settings" hidden></div>
 
         <div class="setting-group">
             <label class="setting-label" for="setting-wallpaper">Wallpaper</label>
@@ -2159,18 +2205,21 @@
     </div>
 </div>
 
-<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
 <script type="module">
     import { docboardSession } from '/scripts/docboard-session.js?v=20260923chat1';
     import '/scripts/socket-credentials.js';
     import { showToast } from '/scripts/patient-utils.js';
     import { createMentionComposer, communityName, animateChatNode } from '/scripts/community-chat-ui.js?v=20260923chat1';
+    import { createPatientChatPreview } from '/scripts/patient-chat-preview.js?v=20261025chatfix1';
+    import { setupPatientChatNotifications } from '/scripts/patient-chat-notifications.js?v=20261025chatfix1';
 
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3000' : '';
     const UI_SETTINGS_KEY = 'community_chat_ui_settings_v1';
     const EMOJIS = ['😊','😂','❤️','👍','👏','🙏','🔥','✨','🎉','🤗','😎','😢','😭','😮','😘','😡','💯','✅','❌','⚕️','🩺','📋','📅','💬'];
     const urlParams = new URLSearchParams(window.location.search);
     const isStaffEmbed = urlParams.get('embed') === 'staff';
+    const isPatientEmbed = urlParams.get('embed') === 'patient' && window.parent !== window;
     const useStaffTokenBridge = isStaffEmbed || urlParams.get('staffBridge') === '1';
     const useCompactModerator = isStaffEmbed || urlParams.get('moderator') === 'compact';
     const themeMode = String(urlParams.get('theme') || '').toLowerCase();
@@ -2211,6 +2260,11 @@
     let isPollingMessages = false;
     let isPollingRooms = false;
     let stableAppHeight = 0;
+    let chatPreview = null;
+    let previewMode = false;
+    let initialChatReady = false;
+    let initialChatLoading = false;
+    let snapshotMessages = [];
     let uiSettings = {
         theme: 'light',
         wallpaperDataUrl: '',
@@ -2284,10 +2338,12 @@
     };
 
     const backButton = document.getElementById('chat-back-btn');
+    function leaveCommunityChat(reset = false) {
+        if (isPatientEmbed) window.parent.postMessage({ type: 'PATIENT_COMMUNITY_CHAT_CLOSE', reset: reset === true }, window.location.origin);
+        else window.location.href = '/patient-menu.html';
+    }
     if (backButton) {
-        backButton.addEventListener('click', () => {
-            window.location.href = '/patient-menu.html';
-        });
+        backButton.addEventListener('click', leaveCommunityChat);
     }
 
     function setModeratorPanelExpanded(expanded) {
@@ -2834,7 +2890,7 @@
 
         el.menuExit.addEventListener('click', () => {
             toggleChatMenu(false);
-            window.location.href = '/patient-menu.html';
+            leaveCommunityChat();
         });
 
         el.createRoomClose.addEventListener('click', () => setModalOpen(el.createRoomModal, false));
@@ -2985,6 +3041,8 @@
 
     function applyEmbedMode() {
         document.body.classList.toggle('community-newdesign', useNewDesignTheme);
+        document.body.classList.toggle('embed-patient', isPatientEmbed);
+        if (isPatientEmbed) document.body.appendChild(el.chatMenu);
         if (isStaffEmbed) {
             document.body.classList.add('embed-staff');
         }
@@ -3004,8 +3062,10 @@
 
     async function api(path, options = {}) {
         token = getToken();
+        const requestToken = token;
         const response = await fetch(`${API_BASE}/api/community-chat${path}`, {
             ...options,
+            cache: 'no-store',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
@@ -3014,7 +3074,12 @@
         });
 
         const data = await response.json().catch(() => ({}));
+        if (requestToken !== getToken()) throw new Error('Sesi chat berubah. Buka kembali chat.');
         if (!response.ok || data.success === false) {
+            if ([401, 403, 404].includes(response.status) && (path === '/me/profile' || path === '/rooms' || path.includes('/messages'))) {
+                chatPreview?.clear();
+                if (previewMode) { el.messages.innerHTML = ''; activeRoom = null; }
+            }
             throw new Error(data.message || 'Request gagal');
         }
         return data;
@@ -3034,8 +3099,12 @@
                 return true;
             }
 
+            chatPreview?.clear();
+            if (previewMode) { el.messages.innerHTML = ''; activeRoom = null; }
             showToast('Isi nickname di Beranda terlebih dahulu sebelum masuk chat.', 'warning');
-            if (!isStaffEmbed) {
+            if (isPatientEmbed) {
+                leaveCommunityChat(true);
+            } else if (!isStaffEmbed) {
                 window.location.href = '/patient-menu.html';
             }
             return false;
@@ -3287,6 +3356,17 @@
         });
     }
 
+    function bindPatientEmbedProfileLink(link) {
+        if (!isPatientEmbed || !link) return;
+        const url = new URL(link.href);
+        url.searchParams.set('embed', 'patient');
+        link.href = url.href;
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            window.location.replace(link.href);
+        });
+    }
+
     function buildMessageNode(msg) {
         const mine = String(msg.sender_id) === String(currentUser.id) && msg.sender_type === (isStaff ? 'staff' : 'patient');
         const displayName = communityName(msg);
@@ -3316,6 +3396,8 @@
 
         const bubble = row.querySelector('.msg');
         const profileLink = row.querySelector('.msg-user');
+        if (msg.sender_type === 'staff' && msg.sender_is_dr_dibya === true) profileLink.classList.add('msg-user-dr-dibya');
+        bindPatientEmbedProfileLink(profileLink);
         if (isStaff) {
             profileLink.href += '&staffBridge=1' + (isStaffEmbed ? '&embed=staff' : '');
             profileLink.addEventListener('click', async event => {
@@ -3373,6 +3455,7 @@
     }
 
     function renderMessages(messages) {
+        snapshotMessages = (messages || []).slice(-120);
         renderedMessageIds = new Set((messages || []).map((msg) => String(msg.id)));
         el.messages.innerHTML = '';
 
@@ -3418,6 +3501,9 @@
         if (requestId !== roomRequest) return;
         if (socket && activeRoom) socket.emit('community:leave', { room: activeRoom.slug });
         activeRoom = data.room;
+        previewMode = false;
+        document.getElementById('chat-cache-status').hidden = true;
+        chatPreview?.save(data);
         contextMode = false;
         queuedMessages = [];
         mentionComposer?.reset();
@@ -3453,10 +3539,14 @@
         return el.messages.scrollHeight - el.messages.clientHeight - el.messages.scrollTop < 72;
     }
 
+    function isCommunityChatVisible() {
+        return !document.hidden && (!isPatientEmbed || window.frameElement?.dataset.communityChatVisible === 'true');
+    }
+
     function scheduleRead() {
         clearTimeout(readTimer);
         readTimer = setTimeout(async () => {
-            if (!activeRoom || document.hidden || !document.hasFocus() || contextMode || contextRequestPending || pendingDeepLink || !nearBottom()) return;
+            if (previewMode || !activeRoom || !isCommunityChatVisible() || !document.hasFocus() || contextMode || contextRequestPending || pendingDeepLink || !nearBottom()) return;
             const slug = activeRoom.slug;
             const last = el.messages.querySelector('.msg-row:last-child');
             const id = Number(last?.dataset.id || 0);
@@ -3466,6 +3556,7 @@
                 await api('/rooms/' + encodeURIComponent(slug) + '/read', { method: 'POST', body: JSON.stringify({ message_id: id }) });
                 readAcknowledged.set(slug, Math.max(readAcknowledged.get(slug) || 0, id));
                 window.dispatchEvent(new Event('community:read'));
+                if (isPatientEmbed) window.parent.postMessage({ type: 'PATIENT_COMMUNITY_CHAT_READ' }, window.location.origin);
             } catch (_) { /* Retry after the next visible sync. */ }
             finally { readingRooms.delete(slug); }
         }, 200);
@@ -3528,6 +3619,8 @@
             for (const item of queuedMessages.splice(0).sort((a, b) => Number(a.message.id) - Number(b.message.id))) {
                 const msg = item.message;
                 if (item.room !== activeRoom?.slug || renderedMessageIds.has(String(msg.id))) continue;
+                snapshotMessages = [...snapshotMessages, msg].slice(-120);
+                chatPreview?.save({ room: activeRoom, messages: snapshotMessages });
                 renderedMessageIds.add(String(msg.id));
                 const newer = [...el.messages.querySelectorAll('.msg-row')].find(node => Number(node.dataset.id) > Number(msg.id));
                 if (newer) {
@@ -3553,11 +3646,12 @@
     }
 
     async function pollActiveRoomMessages() {
-        if (!activeRoom || isPollingMessages || document.hidden) return;
+        if (!initialChatReady || !activeRoom || isPollingMessages || !isCommunityChatVisible()) return;
         isPollingMessages = true;
         try {
             const data = await api(`/rooms/${encodeURIComponent(activeRoom.slug)}/messages?limit=120`);
             if (!activeRoom || data.room.slug !== activeRoom.slug) return;
+            chatPreview?.save(data);
             syncRoomListEntry(data.room);
             (data.messages || []).forEach((message) => appendMessage(message, true));
             renderRooms();
@@ -3570,7 +3664,7 @@
     }
 
     async function pollRoomsForUpdates() {
-        if (isPollingRooms) return;
+        if (!initialChatReady || isPollingRooms || !isCommunityChatVisible()) return;
         isPollingRooms = true;
         try {
             await loadRooms(false);
@@ -3591,7 +3685,7 @@
     }
 
     async function sendMessage() {
-        if (!canWritePermission || !activeRoom || sending) return;
+        if (previewMode || !initialChatReady || !canWritePermission || !activeRoom || sending) return;
         const outgoing = mentionComposer.payload();
         if (!outgoing.message) return;
         const slug = activeRoom.slug, draft = el.messageInput.value, quote = quotedMessage;
@@ -3753,6 +3847,8 @@
             const node = el.messages.querySelector(`[data-id="${payload.message_id}"]`);
             if (node) node.remove();
             renderedMessageIds.delete(String(payload.message_id));
+            snapshotMessages = snapshotMessages.filter(message => String(message.id) !== String(payload.message_id));
+            chatPreview?.save({ room: activeRoom, messages: snapshotMessages });
         });
 
         function refreshTyping() {
@@ -3874,6 +3970,48 @@
         el.messageInput.addEventListener('blur', update);
     }
 
+    function restoreChatPreview() {
+        if (isStaff || pendingDeepLink || (urlParams.get('room') && urlParams.get('room') !== 'lobby')) return;
+        let storage;
+        try { storage = window.sessionStorage; } catch (_) { return; }
+        chatPreview = createPatientChatPreview({ owner: currentUser.id, getToken, storage });
+        const data = chatPreview.read();
+        if (!data) return;
+        previewMode = true;
+        activeRoom = data.room;
+        rooms = [data.room];
+        el.activeRoomName.textContent = data.room.name;
+        el.activeRoomDesc.textContent = data.room.description || 'Room chat komunitas';
+        el.activeRoomColor.style.background = data.room.color || '#285c4d';
+        renderMessages(data.messages);
+        renderRooms();
+        const status = document.getElementById('chat-cache-status');
+        status.textContent = 'Percakapan terakhir · Memperbarui…';
+        status.hidden = false;
+    }
+
+    async function refreshInitialChat() {
+        if (initialChatLoading || initialChatReady) return;
+        initialChatLoading = true;
+        try {
+            if (!await ensureNicknameOnLogin()) return;
+            await loadRooms(true);
+            initialChatReady = true;
+            initSocket();
+        } catch (error) {
+            if (!previewMode) showToast(error.message || 'Gagal memuat chat. Buka kembali untuk mencoba lagi.', 'error');
+        } finally {
+            initialChatLoading = false;
+            if (!initialChatReady) {
+                el.messageInput.disabled = true;
+                el.sendBtn.hidden = true;
+                const status = document.getElementById('chat-cache-status');
+                status.textContent = previewMode ? 'Percakapan terakhir · Belum terhubung' : 'Chat belum terhubung. Buka kembali untuk mencoba lagi.';
+                status.hidden = false;
+            }
+        }
+    }
+
     async function init() {
         applyEmbedMode();
 
@@ -3908,20 +4046,21 @@
         }
 
         isStaff = currentUser.user_type !== 'patient' && currentUser.role !== 'patient';
-        const nicknameReady = await ensureNicknameOnLogin();
-        if (!nicknameReady) {
-            return;
-        }
-
-        isStaff = currentUser.user_type !== 'patient' && currentUser.role !== 'patient';
         updateStatusChips();
         syncDirectRoomActions();
 
         loadUiSettings();
         applyUiSettings();
+        el.messageInput.disabled = true;
+        el.sendBtn.hidden = true;
+        restoreChatPreview();
+        if (!isStaff) {
+            const container = document.getElementById('chat-notification-settings');
+            container.hidden = false;
+            setupPatientChatNotifications({ container, getToken, showToast });
+        }
 
         initEmojiPicker();
-        initSocket();
         mentionComposer = createMentionComposer({
             input: el.messageInput, menu: document.getElementById('mention-list'), escapeHtml,
             getRoom: () => activeRoom?.slug,
@@ -3931,6 +4070,21 @@
         el.messages.addEventListener('scroll', scheduleRead, { passive: true });
         document.addEventListener('visibilitychange', () => { if (!document.hidden) { pollActiveRoomMessages(); scheduleRead(); } });
         window.addEventListener('focus', scheduleRead);
+        window.addEventListener('message', event => {
+            if (!isPatientEmbed || event.origin !== window.location.origin || event.source !== window.parent) return;
+            if (event.data?.type === 'PATIENT_COMMUNITY_CHAT_MENU') {
+                toggleChatMenu();
+                if (el.chatMenu.classList.contains('show')) el.menuRoomPicker.focus();
+                return;
+            }
+            if (event.data?.type !== 'PATIENT_COMMUNITY_CHAT_OPEN') return;
+            requestAnimationFrame(() => {
+                if (el.messages.scrollTop === 0 && !contextMode) el.messages.scrollTop = el.messages.scrollHeight;
+                if (initialChatReady) { pollActiveRoomMessages(); scheduleRead(); }
+                else refreshInitialChat();
+            });
+        });
+        window.addEventListener('online', () => { if (!initialChatReady) refreshInitialChat(); });
         document.getElementById('chat-new-messages').addEventListener('click', async () => {
             if (contextMode) await openRoom(activeRoom.slug);
             scrollLatest();
@@ -3950,7 +4104,7 @@
         el.createRoomBtn.addEventListener('click', createRoom);
         el.saveModeratorsBtn.addEventListener('click', saveModerators);
         el.quoteCancel.addEventListener('click', clearQuotedMessage);
-        await loadRooms(true);
+        await refreshInitialChat();
     }
 
     init().catch((error) => {

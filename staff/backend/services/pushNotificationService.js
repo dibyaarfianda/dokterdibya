@@ -294,8 +294,8 @@ async function sendWebPush(tokenRow, title, body, data) {
         title: title,
         body: body,
         url: data.url || data.link || '/patient-menu.html',
-        icon: '/images/pwa-icons/icon-192x192.png',
-        badge: '/images/pwa-icons/icon-72x72.png',
+        icon: '/images/pwa-icons/sw2v8-any-192x192.png',
+        badge: '/images/pwa-icons/sw-notification-badge.png',
         data: data
     });
 

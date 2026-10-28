@@ -104,7 +104,7 @@ async function notify(room, message, sender, targets) {
             if (target.user_type === 'patient') {
                 result = await require('../routes/patient-notifications').createPatientNotification({
                     patient_id: target.user_id, type: 'system', title, message: text, link,
-                    icon: 'fa fa-comments', icon_color: 'text-success'
+                    icon: 'fa fa-comments', icon_color: 'text-success', send_push: false
                 });
             } else {
                 result = await require('../routes/notifications').createNotification({

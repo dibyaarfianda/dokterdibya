@@ -9,10 +9,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
     <title>Portal Pasien - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20261020applicationbadge1">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20261025chatfix1">
     <script>
-        window.PATIENT_SHELL_VERSION = '20261020applicationbadge1';
-        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20261020applicationbadge1';
+        window.PATIENT_SHELL_VERSION = '20261025chatfix1';
+        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20261025chatfix1';
     </script>
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260606roomthemes">
     <script src="/scripts/socket-credentials.js?v=20261020applicationbadge1"></script>
-    <script src="/scripts/patient-session.js?v=20261020applicationbadge1"></script>
+    <script src="/scripts/patient-session.js?v=20261025chatfix1"></script>
     <script src="/scripts/patient-native-app-guard.js?v=20260605pwa1"></script>
     <style>
         :root {
@@ -147,7 +147,6 @@
         body:not(.header-animated) .brand,
         body:not(.header-animated) #home-notif-btn,
         body:not(.header-animated) #user-avatar,
-        body:not(.header-animated) #live-queue-home-section.show,
         body:not(.header-animated) .hero-card .status-chip,
         body:not(.header-animated) .hero-card .hero-title,
         body:not(.header-animated) .hero-card .hero-copy,
@@ -158,7 +157,6 @@
         body:not(.header-animated) .brand,
         body:not(.header-animated) #home-notif-btn,
         body:not(.header-animated) #user-avatar,
-        body:not(.header-animated) #live-queue-home-section.show,
         body:not(.header-animated) .hero-card .status-chip,
         body:not(.header-animated) .hero-card .hero-copy,
         body:not(.header-animated) .hero-card .today-row {
@@ -530,7 +528,7 @@
             overflow: hidden;
             position: relative;
         }
-        .live-queue-home.show { display: block; animation: cardIn 0.58s ease both; }
+        .live-queue-home.show { display: block; }
         .live-queue-home::before {
             content: '';
             position: absolute;
@@ -569,6 +567,9 @@
         }
         .live-queue-title { font-family: var(--display); font-size: 18px; line-height: 1.1; letter-spacing: -0.03em; color: #1a2e23; }
         .live-queue-sub { color: rgba(26, 46, 35, 0.58); font-size: 11px; margin-top: 4px; }
+        .live-queue-my-booking { margin-top: 8px; font-size: 14px; font-weight: 800; line-height: 1.5; }
+        #live-queue-doctor-status { margin-top: 12px; position: relative; }
+        #live-queue-meta[hidden], #live-queue-home-list[hidden] { display: none !important; }
         .live-queue-link {
             border: 1px solid rgba(92, 127, 114, 0.3);
             background: rgba(92, 127, 114, 0.1);
@@ -2860,6 +2861,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="/styles/patient-queue-view.css?v=20261025homequeue1">
+    <script src="/scripts/patient-queue-view.js?v=20261025homequeue1"></script>
 </head>
 <body class="home-sections-locked">
     <div class="topbar-blur-fade" aria-hidden="true">
@@ -2906,12 +2909,13 @@
                 <div class="live-queue-head">
                     <div>
                         <div class="live-queue-kicker"><span class="live-queue-pulse"></span>Antrian Live</div>
-                        <h2 class="live-queue-title">Klinik hari ini</h2>
-                        <p class="live-queue-sub" id="live-queue-doctor-status">Memuat status antrian...</p>
+                        <h2 class="live-queue-title">Antrian Anda hari ini</h2>
+                        <p class="live-queue-my-booking" id="live-queue-my-booking"></p>
                     </div>
                     <button type="button" class="live-queue-link soundable" data-shell-action="go" data-shell-href="/antrian.html">Lihat</button>
                 </div>
-                <div class="live-queue-meta">
+                <div id="live-queue-doctor-status"></div>
+                <div class="live-queue-meta" id="live-queue-meta">
                     <div class="live-queue-stat"><span>Total</span><strong id="live-queue-total">-</strong></div>
                     <div class="live-queue-stat"><span>Sedang</span><strong id="live-queue-current">-</strong></div>
                 </div>
@@ -3299,7 +3303,7 @@
     </div>
 
     <script src="/scripts/booking-break-display.js?v=20260923-1"></script>
-    <script type="module" src="/scripts/patient-menu-shell.js?v=20261020applicationbadge1"></script>
+    <script type="module" src="/scripts/patient-menu-shell.js?v=20261025chatfix1"></script>
 
 </body>
 </html>

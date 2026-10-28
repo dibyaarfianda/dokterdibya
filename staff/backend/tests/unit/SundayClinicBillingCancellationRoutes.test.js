@@ -19,6 +19,7 @@ function response() {
 
 test.each([
     '/billing/:mrId/cancel',
+    '/billing/:mrId/returns',
     '/billing/:mrId/additional/:additionalBillingId/cancel'
 ])('%s requires doctor or superadmin before cancellation handler', path => {
     const route = router.stack.find(layer => layer.route?.path === path && layer.route.methods.post)?.route;
