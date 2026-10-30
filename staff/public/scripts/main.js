@@ -867,10 +867,10 @@ async function showPasienBaruPage() {
     // Update title
     const titleEl = document.getElementById('hospital-patients-title');
     if (titleEl) {
-        titleEl.textContent = 'Pasien Tanpa DRD';
+        titleEl.textContent = 'Pasien Baru';
     }
 
-    setTitleAndActive('Pasien Tanpa DRD', 'nav-pasien-baru', 'hospital-patients');
+    setTitleAndActive('Pasien Baru', 'nav-pasien-baru', 'hospital-patients');
     loadPasienBaru();
 }
 
@@ -937,7 +937,7 @@ async function loadPasienBaru() {
         }));
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada pasien tanpa DRD</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center">Tidak ada pasien baru</td></tr>`;
             return;
         }
 
