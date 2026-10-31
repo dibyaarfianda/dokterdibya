@@ -78,6 +78,7 @@ const STAFF_NAVIGATION_MAP = Object.freeze({
     'nav-pasien-baru': 'navigation.pasien_baru',
     'nav-patient-activity': 'patient_activity.view',
     'nav-patient-demo': 'patient_demo.manage',
+    'nav-patient-inbox': 'community_chat.view',
     'nav-pengaturan': 'settings.system',
     'nav-pengumuman': 'announcements.view',
     'nav-penjualan-obat': 'navigation.penjualan_obat',

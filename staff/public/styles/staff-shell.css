@@ -1287,6 +1287,14 @@
             display: block !important;
         }
 
+        body.community-chat-active .staff-community-chat-frame.d-none {
+            display: none !important;
+        }
+
+        #staff-patient-inbox-frame {
+            background: #ffffff;
+        }
+
         /* Notification Badge Styles */
         #notification-dropdown {
             display: none !important;

@@ -657,7 +657,7 @@
             const chatLink = allNotifications.find(n => String(n.id) === String(id))?.link;
             if (chatLink) {
                 const destination = new URL(chatLink, window.location.origin);
-                if (destination.origin === window.location.origin && destination.pathname === '/community-chat.html') {
+                if (destination.origin === window.location.origin && ['/community-chat.html', '/pesan.html'].includes(destination.pathname)) {
                     window.location.assign(destination.href);
                     return;
                 }

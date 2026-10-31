@@ -2,9 +2,10 @@ import { getIdToken } from '../vps-auth-v2.js';
 
 const sources = {
     tanya: { url: '/api/patient-questions/staff/count', field: 'count', nav: 'nav-tanya-dokter' },
-    community: { url: '/api/community-chat/unread', field: 'total', nav: 'nav-community-chat' }
+    community: { url: '/api/community-chat/unread', field: 'total', nav: 'nav-community-chat' },
+    inbox: { url: '/api/community-chat/inbox/count', field: 'awaiting_reply', nav: 'nav-patient-inbox' }
 };
-const counts = { tanya: 0, community: 0 };
+const counts = { tanya: 0, community: 0, inbox: 0 };
 let initialized = false;
 const userNow = () => window.currentStaffUser || window.auth?.currentUser;
 const allowed = key => Boolean(userNow()) && (userNow().is_doctor_protected || userNow().navigation?.includes(sources[key].nav));
@@ -18,7 +19,7 @@ function apply() {
         badge.textContent = count ? count > 99 ? '99+' : String(count) : '';
         badge.hidden = count === 0;
         badge.classList.toggle('d-none', count === 0);
-        badge.setAttribute('aria-label', count + (key === 'tanya' ? ' pertanyaan menunggu jawaban' : ' pesan belum dibaca'));
+        badge.setAttribute('aria-label', count + (key === 'tanya' ? ' pertanyaan menunggu jawaban' : key === 'inbox' ? ' percakapan pasien menunggu balasan' : ' pesan belum dibaca'));
     });
 }
 function update(key, count) {
@@ -49,7 +50,7 @@ export function initConversationBadges() {
     }));
     document.addEventListener('page:changed', trigger);
     window.addEventListener('focus', trigger);
-    window.addEventListener('staff:access-changed', () => { update('tanya', 0); update('community', 0); trigger(); });
+    window.addEventListener('staff:access-changed', () => { Object.keys(sources).forEach(key => update(key, 0)); trigger(); });
     window.addEventListener('staff:conversation-changed', trigger);
 }
 window.staffConversationBadges = { init: initConversationBadges, update, apply };

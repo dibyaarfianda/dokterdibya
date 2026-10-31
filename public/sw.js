@@ -5,7 +5,7 @@
 
 // CRITICAL: Increment this on every deploy to force cache refresh
 // Use timestamp format to force all old caches to be abandoned
-const CACHE_VERSION = '20261031suspend1';
+const CACHE_VERSION = '20261031inbox1';
 const CACHE_NAME = `sisiwanita-patient-portal-${CACHE_VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -45,6 +45,7 @@ const PRECACHE_FILES = [
   '/styles/patient-tool-retrofit.css',
   '/styles/patient-my-corner.css',
   '/scripts/patient-menu-shell.js',
+  '/scripts/patient-inbox-badge.js',
   '/scripts/community-chat-badge.js',
   '/scripts/patient-community-chat.js',
   '/scripts/patient-chat-preview.js',
@@ -118,7 +119,8 @@ const OWNED_STATIC_PATHS = new Set(IMMUTABLE_STATIC_ASSETS.map(url => new URL(ur
 // Only the chat's static shell/dependencies use this release-pinned fast path.
 // Authenticated API responses never enter the service-worker cache.
 const CHAT_STATIC_PATHS = new Set([
-  '/community-chat.html', '/scripts/patient-community-chat.js', '/styles/patient-community-chat.css',
+  '/community-chat.html',
+  '/pesan.html', '/scripts/patient-community-chat.js', '/styles/patient-community-chat.css',
   '/scripts/patient-chat-preview.js', '/scripts/patient-chat-notifications.js',
   '/scripts/patient-session.js', '/scripts/docboard-session.js', '/scripts/socket-credentials.js',
   '/scripts/date-time-format.js', '/scripts/date-time-inputs.js', '/scripts/patient-utils.js',

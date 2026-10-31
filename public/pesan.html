@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime4"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime4"></script>
+    <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
+    <script src="/scripts/patient-session.js?v=20261031inbox1"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#ffffff">
+    <title>Pesan - SISIwanita</title>
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-soft: #f4f4f4;
+            --text: #111111;
+            --text-2: #5f5f5f;
+            --line: rgba(0, 0, 0, 0.1);
+            --accent: #111111;
+            --mine: #111111;
+            --theirs: #f0f0f0;
+            --ok: #15803d;
+            --warn: #b45309;
+            --font: 'Inter', Arial, sans-serif;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html, body { height: 100%; }
+        body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; overflow: hidden; }
+        button { font-family: inherit; cursor: pointer; }
+        [hidden] { display: none !important; }
+
+        .app { display: flex; flex-direction: column; height: 100%; }
+        .topbar { display: flex; align-items: center; gap: 10px; padding: calc(10px + var(--safe-top)) 14px 10px; border-bottom: 1px solid var(--line); background: var(--bg); flex: 0 0 auto; }
+        .topbar h1 { font-size: 17px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .topbar .sub { display: block; font-size: 12px; font-weight: 500; color: var(--text-2); }
+        .icon-btn { border: 0; background: transparent; width: 36px; height: 36px; border-radius: 10px; font-size: 16px; color: var(--text); display: inline-flex; align-items: center; justify-content: center; }
+        .icon-btn:active { background: var(--bg-soft); }
+        .primary-btn { border: 0; background: var(--accent); color: #fff; border-radius: 10px; padding: 9px 14px; font-weight: 600; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+        .primary-btn:disabled { opacity: 0.45; cursor: default; }
+
+        .layout { flex: 1 1 auto; display: flex; min-height: 0; }
+        .list-pane { width: 100%; display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); }
+        .thread-pane { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+        body.staff .list-pane { width: 340px; flex: 0 0 340px; }
+        body.staff:not(.thread-open) .thread-pane .thread-empty { display: flex; }
+
+        .search { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; }
+        .search input { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font: inherit; }
+        .filter-row { display: flex; gap: 6px; padding: 8px 12px 0; }
+        .chip { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 5px 11px; font-size: 12px; font-weight: 600; color: var(--text-2); }
+        .chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        .conv-list { flex: 1 1 auto; overflow-y: auto; }
+        .conv { display: flex; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; align-items: flex-start; }
+        .conv:hover, .conv.active { background: var(--bg-soft); }
+        .avatar { width: 38px; height: 38px; border-radius: 50%; background: #e7e7e7; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex: 0 0 auto; color: #333; }
+        .conv-main { flex: 1; min-width: 0; }
+        .conv-top { display: flex; justify-content: space-between; gap: 8px; }
+        .conv-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .conv-time { font-size: 11px; color: var(--text-2); white-space: nowrap; }
+        .conv-preview { font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+        .conv-meta { display: flex; gap: 6px; margin-top: 5px; align-items: center; }
+        .tag { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 2px 6px; }
+        .tag.wait { background: #fef3c7; color: var(--warn); }
+        .tag.done { background: #dcfce7; color: var(--ok); }
+        .unread { background: #dc2626; color: #fff; border-radius: 999px; font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; }
+
+        .thread-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+        .thread-head .title { font-weight: 700; }
+        .thread-head .meta { font-size: 12px; color: var(--text-2); }
+        .messages { flex: 1 1 auto; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; background: var(--bg); }
+        .day { align-self: center; font-size: 11px; color: var(--text-2); background: var(--bg-soft); border-radius: 999px; padding: 3px 10px; margin: 6px 0; }
+        .msg { max-width: min(78%, 560px); display: flex; flex-direction: column; }
+        .msg .who { font-size: 11px; color: var(--text-2); margin: 0 6px 2px; font-weight: 600; }
+        .bubble { padding: 9px 12px; border-radius: 16px; line-height: 1.45; white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; }
+        .msg .time { font-size: 10.5px; color: var(--text-2); margin: 2px 6px 0; }
+        .msg.theirs { align-self: flex-start; }
+        .msg.theirs .bubble { background: var(--theirs); border-bottom-left-radius: 4px; }
+        .msg.mine { align-self: flex-end; align-items: flex-end; }
+        .msg.mine .bubble { background: var(--mine); color: #fff; border-bottom-right-radius: 4px; }
+        .composer { display: flex; gap: 8px; padding: 10px 12px calc(10px + var(--safe-bottom)); border-top: 1px solid var(--line); align-items: flex-end; flex: 0 0 auto; background: var(--bg); }
+        .composer textarea { flex: 1; resize: none; border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; font: inherit; max-height: 140px; min-height: 42px; line-height: 1.4; }
+        .composer .send { border: 0; width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 15px; flex: 0 0 auto; }
+        .composer .send:disabled { opacity: 0.4; }
+        .composer-note { font-size: 11.5px; color: var(--text-2); padding: 0 14px 6px; }
+
+        .empty, .thread-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 32px 24px; color: var(--text-2); }
+        .thread-empty { display: none; }
+        .empty i, .thread-empty i { font-size: 34px; color: #c4c4c4; }
+        .empty h2 { font-size: 16px; color: var(--text); }
+        .loading { padding: 24px; text-align: center; color: var(--text-2); }
+
+        .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+        .modal { background: #fff; border-radius: 16px; width: min(480px, 100%); max-height: 600px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--line); font-weight: 700; }
+        .modal .body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+        .modal input, .modal textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font: inherit; }
+        .modal textarea { min-height: 96px; resize: vertical; }
+        .pick-list { border: 1px solid var(--line); border-radius: 10px; max-height: 210px; overflow-y: auto; }
+        .pick { padding: 9px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+        .pick:last-child { border-bottom: 0; }
+        .pick:hover, .pick.active { background: var(--bg-soft); }
+        .pick small { display: block; color: var(--text-2); }
+        .modal footer { padding: 12px 16px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; }
+
+        #toast { position: fixed; left: 50%; bottom: calc(80px + var(--safe-bottom)); transform: translateX(-50%); background: #111; color: #fff; padding: 9px 16px; border-radius: 8px; font-size: 13px; z-index: 60; }
+        #toast.error { background: #dc2626; }
+
+        @media (max-width: 759px) {
+            body.staff .list-pane { width: 100%; flex: 1 1 auto; border-right: 0; }
+            body.staff .thread-pane { display: none; }
+            body.staff.thread-open .list-pane { display: none; }
+            body.staff.thread-open .thread-pane { display: flex; }
+        }
+        @media (min-width: 760px) {
+            body.staff #thread-back { display: none; }
+        }
+        body.patient .list-pane { border-right: 0; }
+        body.patient.thread-open .list-pane { display: none; }
+        body.patient:not(.thread-open) .thread-pane { display: none; }
+    </style>
+</head>
+<body class="patient">
+<div class="app">
+    <header class="topbar">
+        <button class="icon-btn" id="back-btn" type="button" aria-label="Kembali"><i class="fa-solid fa-chevron-left"></i></button>
+        <h1 id="page-title">Pesan<span class="sub" id="page-sub">Pesan pribadi dari staf dokterDIBYA</span></h1>
+        <button class="primary-btn" id="new-btn" type="button" hidden><i class="fa-solid fa-pen"></i> Pesan baru</button>
+    </header>
+    <div class="layout">
+        <section class="list-pane" id="list-pane">
+            <div class="search" id="search-bar" hidden>
+                <input id="search-input" type="search" placeholder="Cari nama, ID, atau no. HP pasien" autocomplete="off">
+            </div>
+            <div class="filter-row" id="filter-row" hidden>
+                <button class="chip active" data-filter="all" type="button">Semua</button>
+                <button class="chip" data-filter="wait" type="button">Menunggu balasan</button>
+                <button class="chip" data-filter="unread" type="button">Belum dibaca</button>
+            </div>
+            <div class="conv-list" id="conv-list"><div class="loading">Memuat pesan...</div></div>
+        </section>
+        <section class="thread-pane" id="thread-pane">
+            <div class="thread-empty"><i class="fa-regular fa-comments"></i><p>Pilih percakapan pasien di sebelah kiri.</p></div>
+            <div class="thread-head" id="thread-head" hidden>
+                <button class="icon-btn" id="thread-back" type="button" aria-label="Kembali ke daftar"><i class="fa-solid fa-chevron-left"></i></button>
+                <div class="avatar" id="thread-avatar"></div>
+                <div style="min-width:0">
+                    <div class="title" id="thread-title"></div>
+                    <div class="meta" id="thread-meta"></div>
+                </div>
+            </div>
+            <div class="messages" id="messages" hidden></div>
+            <div id="composer-wrap" hidden>
+                <div class="composer">
+                    <textarea id="message-input" rows="1" maxlength="2000" placeholder="Tulis pesan..."></textarea>
+                    <button class="send" id="send-btn" type="button" aria-label="Kirim" disabled><i class="fa-solid fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="modal-back" id="new-modal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="new-modal-title">
+        <header><span id="new-modal-title">Pesan baru ke pasien</span><button class="icon-btn" id="new-close" type="button" aria-label="Tutup"><i class="fa-solid fa-xmark"></i></button></header>
+        <div class="body">
+            <input id="patient-search" type="search" placeholder="Cari nama, ID, no. HP, atau email pasien" autocomplete="off">
+            <div class="pick-list" id="patient-results"></div>
+            <textarea id="new-message" maxlength="2000" placeholder="Isi pesan"></textarea>
+        </div>
+        <footer><button class="primary-btn" id="new-send" type="button" disabled><i class="fa-solid fa-paper-plane"></i> Kirim</button></footer>
+    </div>
+</div>
+<div id="toast" hidden></div>
+
+<script type="module">
+    const params = new URLSearchParams(window.location.search);
+    const useStaffBridge = params.get('staffBridge') === '1';
+    const API = '/api/community-chat';
+    const POLL_THREAD_MS = 8000;
+    const POLL_LIST_MS = 15000;
+
+    const el = id => document.getElementById(id);
+    const state = {
+        role: 'patient', user: null, conversations: [], filter: 'all', active: null,
+        messages: [], lastId: 0, sending: false, search: '', selectedPatient: null
+    };
+
+    function decodeToken(value) {
+        try { return JSON.parse(atob(String(value || '').split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); }
+        catch (_) { return null; }
+    }
+
+    function getToken() {
+        if (useStaffBridge) {
+            try {
+                const owner = window.parent !== window ? window.parent : window.opener;
+                if (owner && typeof owner.getAuthToken === 'function') return owner.getAuthToken() || null;
+            } catch (_) { return null; }
+            return null;
+        }
+        return window.PatientSession?.getToken() || null;
+    }
+
+    async function api(path, options = {}) {
+        const token = getToken();
+        if (!token) throw Object.assign(new Error('Sesi berakhir. Silakan login ulang.'), { status: 401 });
+        const sep = path.includes('?') ? '&' : '?';
+        const response = await fetch(API + path + sep + '_t=' + Date.now(), {
+            ...options,
+            cache: 'no-store',
+            headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', 'Cache-Control': 'no-cache', ...(options.headers || {}) }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false) {
+            throw Object.assign(new Error(data.message || 'Permintaan gagal'), { status: response.status });
+        }
+        return data;
+    }
+
+    let toastTimer = null;
+    function toast(message, type = 'info') {
+        const node = el('toast');
+        node.textContent = message;
+        node.className = type === 'error' ? 'error' : '';
+        node.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => { node.hidden = true; }, 3200);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    function cleanText(value) {
+        return String(value || '').replace(/^\[\[q:[A-Za-z0-9+/=]+\]\]\n?/, '');
+    }
+
+    function initials(name) {
+        return String(name || '?').trim().split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase() || '?';
+    }
+
+    // Display in clinic time (WIB) through the shared formatter, whatever the device timezone.
+    const fmt = window.DibyaDateTime;
+    const dayKey = value => fmt.date(value);
+
+    function formatTime(value) {
+        return value ? fmt.time(value) : '';
+    }
+
+    function formatListTime(value) {
+        if (!value) return '';
+        return dayKey(value) === dayKey(new Date()) ? fmt.time(value) : dayKey(value).slice(0, 5);
+    }
+
+    function formatDay(value) {
+        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        if (dayKey(value) === dayKey(new Date())) return 'Hari ini';
+        if (dayKey(value) === dayKey(yesterday)) return 'Kemarin';
+        return fmt.date(value, { weekday: 'long', day: '2-digit' });
+    }
+
+    function conversationTitle(conv) {
+        return state.role === 'staff' ? conv.patient_name : 'Staf dokterDIBYA';
+    }
+
+    function visibleConversations() {
+        return state.conversations.filter(conv => {
+            if (state.filter === 'wait') return conv.awaiting_reply;
+            if (state.filter === 'unread') return conv.unread_count > 0;
+            return true;
+        });
+    }
+
+    function renderList() {
+        const list = el('conv-list');
+        const items = visibleConversations();
+        if (!items.length) {
+            list.innerHTML = state.role === 'staff'
+                ? `<div class="empty"><i class="fa-regular fa-envelope-open"></i><p>${state.search || state.filter !== 'all' ? 'Tidak ada percakapan yang cocok.' : 'Belum ada percakapan pasien. Tekan "Pesan baru" untuk mulai.'}</p></div>`
+                : '<div class="empty"><i class="fa-regular fa-envelope"></i><h2>Belum ada pesan</h2><p>Pesan dari staf dokterDIBYA untuk Anda akan muncul di sini, dan Anda bisa membalasnya.</p></div>';
+            return;
+        }
+        list.innerHTML = items.map(conv => {
+            const title = conversationTitle(conv);
+            const prefix = conv.last_sender_type === 'staff'
+                ? (state.role === 'staff' ? (conv.last_sender_name || 'Staf') + ': ' : '')
+                : (state.role === 'patient' && conv.last_sender_type === 'patient' ? 'Anda: ' : '');
+            const tag = state.role === 'staff' && conv.last_sender_type
+                ? (conv.awaiting_reply ? '<span class="tag wait">Menunggu balasan</span>' : '<span class="tag done">Sudah dibalas</span>')
+                : '';
+            const unread = conv.unread_count > 0 ? `<span class="unread">${conv.unread_count > 99 ? '99+' : conv.unread_count}</span>` : '';
+            const meta = state.role === 'staff' ? `<span class="conv-time">${escapeHtml(conv.patient_id)}</span>` : '';
+            return `<div class="conv ${state.active?.slug === conv.slug ? 'active' : ''}" data-slug="${escapeHtml(conv.slug)}" role="button" tabindex="0">
+                <div class="avatar">${escapeHtml(initials(title))}</div>
+                <div class="conv-main">
+                    <div class="conv-top"><span class="conv-name">${escapeHtml(title)}</span><span class="conv-time">${escapeHtml(formatListTime(conv.last_message_at))}</span></div>
+                    <div class="conv-preview">${escapeHtml(prefix + (conv.last_message || 'Belum ada pesan'))}</div>
+                    <div class="conv-meta">${tag}${meta}<span style="flex:1"></span>${unread}</div>
+                </div>
+            </div>`;
+        }).join('');
+        list.querySelectorAll('.conv').forEach(node => {
+            const open = () => openConversation(node.dataset.slug);
+            node.addEventListener('click', open);
+            node.addEventListener('keydown', event => { if (event.key === 'Enter') open(); });
+        });
+    }
+
+    function senderLabel(message) {
+        if (message.sender_type === 'staff') return message.sender_nickname || message.sender_name || 'Staf';
+        return state.role === 'staff' ? (state.active?.patient_name || 'Pasien') : 'Anda';
+    }
+
+    function isMine(message) {
+        if (state.role === 'staff') return message.sender_type === 'staff' && String(message.sender_id) === String(state.user.id);
+        return message.sender_type === 'patient';
+    }
+
+    function renderMessages() {
+        const box = el('messages');
+        const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+        if (!state.messages.length) {
+            box.innerHTML = `<div class="empty"><i class="fa-regular fa-comment"></i><p>Belum ada pesan di percakapan ini.</p></div>`;
+            return;
+        }
+        let lastDay = null;
+        const html = [];
+        for (const message of state.messages) {
+            const day = message.created_at ? dayKey(message.created_at) : null;
+            if (day && day !== '-' && day !== lastDay) {
+                html.push(`<div class="day">${escapeHtml(formatDay(message.created_at))}</div>`);
+                lastDay = day;
+            }
+            const mine = isMine(message);
+            // Staff always see which colleague wrote each message.
+            const who = !mine || state.role === 'staff' ? `<span class="who">${escapeHtml(mine ? 'Anda' : senderLabel(message))}</span>` : '';
+            html.push(`<div class="msg ${mine ? 'mine' : 'theirs'}">${who}<div class="bubble">${escapeHtml(cleanText(message.message))}</div><span class="time">${escapeHtml(formatTime(message.created_at))}</span></div>`);
+        }
+        box.innerHTML = html.join('');
+        if (nearBottom || box.dataset.slug !== state.active?.slug) box.scrollTop = box.scrollHeight;
+        box.dataset.slug = state.active?.slug || '';
+    }
+
+    function renderThreadHead() {
+        const conv = state.active;
+        const title = conversationTitle(conv);
+        el('thread-title').textContent = title;
+        el('thread-avatar').textContent = initials(title);
+        el('thread-meta').textContent = state.role === 'staff'
+            ? [conv.patient_id, conv.patient_phone].filter(Boolean).join(' · ') + ' · terlihat oleh semua staf'
+            : 'Dibalas oleh staf dokterDIBYA';
+        // Patients with a single conversation do not need a list to go back to.
+        el('thread-back').hidden = state.role === 'patient' && state.conversations.length <= 1;
+    }
+
+    async function openConversation(slug, { quiet = false } = {}) {
+        const conv = state.conversations.find(item => item.slug === slug);
+        if (!conv) { if (!quiet) toast('Percakapan tidak tersedia.', 'error'); return; }
+        state.active = conv;
+        document.body.classList.add('thread-open');
+        el('thread-head').hidden = false;
+        el('messages').hidden = false;
+        el('composer-wrap').hidden = false;
+        renderThreadHead();
+        renderList();
+        el('messages').innerHTML = '<div class="loading">Memuat percakapan...</div>';
+        await refreshThread(true);
+        if (!quiet && window.matchMedia('(min-width: 760px)').matches) el('message-input').focus();
+    }
+
+    function closeConversation() {
+        state.active = null;
+        state.messages = [];
+        state.lastId = 0;
+        document.body.classList.remove('thread-open');
+        el('thread-head').hidden = true;
+        el('messages').hidden = true;
+        el('composer-wrap').hidden = true;
+        renderList();
+    }
+
+    async function refreshThread(force = false) {
+        const slug = state.active?.slug;
+        if (!slug) return;
+        try {
+            const data = await api('/rooms/' + encodeURIComponent(slug) + '/messages?limit=200');
+            if (state.active?.slug !== slug) return;
+            const messages = data.messages || [];
+            const newest = messages.length ? Number(messages[messages.length - 1].id) : 0;
+            if (force || newest !== state.lastId || messages.length !== state.messages.length) {
+                state.messages = messages;
+                state.lastId = newest;
+                renderMessages();
+            }
+            markRead();
+        } catch (error) {
+            if (force) el('messages').innerHTML = `<div class="empty"><p>${escapeHtml(error.message)}</p></div>`;
+            if (error.status === 403 || error.status === 404) { await refreshList(); closeConversation(); }
+        }
+    }
+
+    let readSent = new Map();
+    async function markRead() {
+        const slug = state.active?.slug;
+        if (!slug || !state.lastId || document.hidden || readSent.get(slug) >= state.lastId) return;
+        readSent.set(slug, state.lastId);
+        try {
+            await api('/rooms/' + encodeURIComponent(slug) + '/read', { method: 'POST', body: JSON.stringify({ message_id: state.lastId }) });
+            const conv = state.conversations.find(item => item.slug === slug);
+            if (conv && conv.unread_count) { conv.unread_count = 0; renderList(); }
+            notifyParent();
+        } catch (_) {
+            readSent.delete(slug);
+        }
+    }
+
+    function notifyParent() {
+        try {
+            if (useStaffBridge && window.parent !== window) window.parent.dispatchEvent(new window.parent.Event('staff:conversation-changed'));
+        } catch (_) { /* cross-window access is best-effort */ }
+    }
+
+    async function refreshList() {
+        try {
+            const query = state.role === 'staff' && state.search ? '?q=' + encodeURIComponent(state.search) : '';
+            const data = await api('/inbox' + query);
+            state.conversations = data.conversations || [];
+            if (state.active) {
+                const fresh = state.conversations.find(item => item.slug === state.active.slug);
+                if (fresh) { state.active = fresh; renderThreadHead(); }
+            }
+            renderList();
+        } catch (error) {
+            if (error.status === 401) return handleLoggedOut();
+            if (!state.conversations.length) el('conv-list').innerHTML = `<div class="empty"><p>${escapeHtml(error.message)}</p></div>`;
+        }
+    }
+
+    async function sendMessage() {
+        const input = el('message-input');
+        const text = input.value.trim();
+        if (!text || !state.active || state.sending) return;
+        state.sending = true;
+        el('send-btn').disabled = true;
+        try {
+            const data = await api('/rooms/' + encodeURIComponent(state.active.slug) + '/messages', { method: 'POST', body: JSON.stringify({ message: text }) });
+            input.value = '';
+            autoGrow();
+            if (data.message) {
+                state.messages.push(data.message);
+                state.lastId = Number(data.message.id);
+                renderMessages();
+                el('messages').scrollTop = el('messages').scrollHeight;
+            }
+            refreshList();
+            notifyParent();
+        } catch (error) {
+            toast(error.message || 'Gagal mengirim pesan', 'error');
+        } finally {
+            state.sending = false;
+            el('send-btn').disabled = !input.value.trim();
+        }
+    }
+
+    function autoGrow() {
+        const input = el('message-input');
+        input.style.height = 'auto';
+        input.style.height = Math.min(140, input.scrollHeight) + 'px';
+        el('send-btn').disabled = !input.value.trim() || state.sending;
+    }
+
+    // ---- Staff: start a conversation with any patient ----
+    let patientSearchTimer = null;
+    async function searchPatients() {
+        const q = el('patient-search').value.trim();
+        const box = el('patient-results');
+        if (q.length < 2) { box.innerHTML = '<div class="pick"><small>Ketik minimal 2 huruf.</small></div>'; return; }
+        box.innerHTML = '<div class="pick"><small>Mencari...</small></div>';
+        try {
+            const data = await api('/admin/patient-users?q=' + encodeURIComponent(q));
+            const patients = data.patients || [];
+            box.innerHTML = patients.length ? patients.map(p => `<div class="pick" data-id="${escapeHtml(p.id)}" data-name="${escapeHtml(p.full_name)}">
+                ${escapeHtml(p.full_name)}<small>${escapeHtml([p.id, p.phone].filter(Boolean).join(' · '))}</small></div>`).join('')
+                : '<div class="pick"><small>Pasien tidak ditemukan.</small></div>';
+            box.querySelectorAll('.pick[data-id]').forEach(node => node.addEventListener('click', () => {
+                box.querySelectorAll('.pick').forEach(item => item.classList.toggle('active', item === node));
+                state.selectedPatient = { id: node.dataset.id, name: node.dataset.name };
+                syncNewSend();
+                el('new-message').focus();
+            }));
+        } catch (error) {
+            box.innerHTML = `<div class="pick"><small>${escapeHtml(error.message)}</small></div>`;
+        }
+    }
+
+    function syncNewSend() {
+        el('new-send').disabled = !state.selectedPatient || !el('new-message').value.trim();
+    }
+
+    function openNewModal() {
+        state.selectedPatient = null;
+        el('patient-search').value = '';
+        el('new-message').value = '';
+        el('patient-results').innerHTML = '<div class="pick"><small>Cari pasien yang ingin dikirimi pesan.</small></div>';
+        syncNewSend();
+        el('new-modal').hidden = false;
+        el('patient-search').focus();
+    }
+
+    async function sendNewConversation() {
+        if (!state.selectedPatient) return;
+        const text = el('new-message').value.trim();
+        if (!text) return;
+        el('new-send').disabled = true;
+        try {
+            const data = await api('/rooms/direct', { method: 'POST', body: JSON.stringify({ patient_id: state.selectedPatient.id, opening_message: text }) });
+            el('new-modal').hidden = true;
+            toast('Pesan terkirim ke ' + state.selectedPatient.name);
+            state.search = '';
+            el('search-input').value = '';
+            await refreshList();
+            if (data.room?.slug) await openConversation(data.room.slug);
+            notifyParent();
+        } catch (error) {
+            toast(error.message || 'Gagal mengirim pesan', 'error');
+            syncNewSend();
+        }
+    }
+
+    function handleLoggedOut() {
+        if (useStaffBridge) {
+            el('conv-list').innerHTML = '<div class="empty"><p>Sesi Staff Panel tidak ditemukan. Muat ulang Staff Panel.</p></div>';
+            return;
+        }
+        window.location.href = '/patient-login.html';
+    }
+
+    function waitForToken(timeoutMs = 4000) {
+        return new Promise(resolve => {
+            const started = Date.now();
+            const tick = () => {
+                const token = getToken();
+                if (token || Date.now() - started > timeoutMs) return resolve(token);
+                setTimeout(tick, 200);
+            };
+            tick();
+        });
+    }
+
+    async function init() {
+        const token = await waitForToken(useStaffBridge ? 4000 : 0);
+        state.user = decodeToken(token);
+        if (!token || !state.user?.id) return handleLoggedOut();
+        const isPatient = state.user.user_type === 'patient' || state.user.role === 'patient';
+        if (useStaffBridge && isPatient) return handleLoggedOut();
+        state.role = isPatient ? 'patient' : 'staff';
+        document.body.classList.toggle('staff', state.role === 'staff');
+        document.body.classList.toggle('patient', state.role === 'patient');
+
+        if (state.role === 'staff') {
+            document.title = 'Inbox Pasien';
+            el('page-title').firstChild.textContent = 'Inbox Pasien';
+            el('page-sub').textContent = 'Semua percakapan pasien, dibaca bersama oleh semua staf';
+            el('new-btn').hidden = false;
+            el('search-bar').hidden = false;
+            el('filter-row').hidden = false;
+            el('back-btn').hidden = window.parent !== window;
+            el('message-input').placeholder = 'Balas pasien...';
+        }
+
+        el('back-btn').addEventListener('click', () => {
+            if (state.role === 'patient' && state.active && state.conversations.length > 1) return closeConversation();
+            if (window.history.length > 1 && document.referrer) window.history.back();
+            else window.location.href = state.role === 'staff' ? '/staff/public/index-adminlte.html' : '/patient-menu.html';
+        });
+        el('thread-back').addEventListener('click', closeConversation);
+        el('message-input').addEventListener('input', autoGrow);
+        el('message-input').addEventListener('keydown', event => {
+            // Desktop: Enter sends, Shift+Enter adds a line. Mobile keyboards keep Enter as a newline.
+            if (event.key === 'Enter' && !event.shiftKey && !event.isComposing && window.matchMedia('(pointer: fine)').matches) {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+        el('send-btn').addEventListener('click', sendMessage);
+        el('search-input').addEventListener('input', () => {
+            clearTimeout(patientSearchTimer);
+            patientSearchTimer = setTimeout(() => { state.search = el('search-input').value.trim(); refreshList(); }, 300);
+        });
+        document.querySelectorAll('#filter-row .chip').forEach(chip => chip.addEventListener('click', () => {
+            state.filter = chip.dataset.filter;
+            document.querySelectorAll('#filter-row .chip').forEach(item => item.classList.toggle('active', item === chip));
+            renderList();
+        }));
+        el('new-btn').addEventListener('click', openNewModal);
+        el('new-close').addEventListener('click', () => { el('new-modal').hidden = true; });
+        el('new-modal').addEventListener('click', event => { if (event.target === el('new-modal')) el('new-modal').hidden = true; });
+        el('patient-search').addEventListener('input', () => { clearTimeout(patientSearchTimer); patientSearchTimer = setTimeout(searchPatients, 300); });
+        el('new-message').addEventListener('input', syncNewSend);
+        el('new-send').addEventListener('click', sendNewConversation);
+
+        await refreshList();
+        const requested = params.get('room');
+        if (requested && state.conversations.some(item => item.slug === requested)) {
+            await openConversation(requested, { quiet: true });
+        } else if (state.role === 'patient' && state.conversations.length === 1) {
+            await openConversation(state.conversations[0].slug, { quiet: true });
+        }
+
+        setInterval(() => { if (!document.hidden) refreshThread(); }, POLL_THREAD_MS);
+        setInterval(() => { if (!document.hidden) refreshList(); }, POLL_LIST_MS);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshList(); refreshThread(); } });
+    }
+
+    init().catch(error => {
+        console.error(error);
+        toast(error.message || 'Gagal memuat pesan', 'error');
+    });
+</script>
+</body>
+</html>
