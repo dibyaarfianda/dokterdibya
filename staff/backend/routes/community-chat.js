@@ -8,6 +8,10 @@ const chatNotifications = require('../services/CommunityChatNotifications').crea
     db, push: require('../services/pushNotificationService')
 });
 const { loadStaffProfiles, hydrateStaffMessages } = require('../services/CommunityChatStaffProfile');
+const patientInbox = require('../services/PatientInbox').createPatientInbox({
+    db,
+    createPatientNotification: (...args) => require('./patient-notifications').createPatientNotification(...args)
+});
 
 const router = express.Router();
 
@@ -429,6 +433,32 @@ router.use(async (req, res, next) => {
 require('./community-chat-attention')(router, { db, verifyToken, getRoomBySlug, canAccessRoom, touchRoomMember, isPatientUser });
 require('./community-chat-notifications')(router, { db, verifyToken, getRoomBySlug, canAccessRoom, isPatientUser, chatNotifications });
 
+router.get('/inbox', verifyToken, async (req, res) => {
+    try {
+        const search = isPatientUser(req.user) ? '' : normalizeText(req.query.q);
+        res.json({ success: true, ...(await patientInbox.listConversations(req.user, isPatientUser, { search })) });
+    } catch (error) {
+        console.error('community inbox error:', error);
+        res.status(500).json({ success: false, message: 'Gagal memuat inbox pesan' });
+    }
+});
+
+router.get('/inbox/count', verifyToken, async (req, res) => {
+    try {
+        res.json({ success: true, ...(await patientInbox.counts(req.user, isPatientUser)) });
+    } catch (error) {
+        console.error('community inbox count error:', error);
+        res.status(500).json({ success: false, message: 'Gagal memuat jumlah pesan' });
+    }
+});
+
+function dispatchPatientInboxNotification(room, message, identity) {
+    // Notification delivery must not delay or fail the saved message.
+    Promise.resolve()
+        .then(() => patientInbox.notifyPatient(room, message, identity))
+        .catch(() => console.warn('[CommunityChat] inbox notification failed', { message_id: message?.id }));
+}
+
 router.get('/rooms', verifyToken, async (req, res) => {
     try {
         const userId = String(req.user.id);
@@ -609,7 +639,8 @@ router.post('/rooms/direct', verifyStaffToken, async (req, res) => {
 
         if (openingMessage) {
             const identity = await resolveUserIdentity(req.user);
-            await db.query(
+            const messageText = mapEmoticonToEmoji(openingMessage);
+            const [inserted] = await db.query(
                 `INSERT INTO community_chat_messages
                     (room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -620,9 +651,11 @@ router.post('/rooms/direct', verifyStaffToken, async (req, res) => {
                     identity.defaultName,
                     identity.nickname,
                     identity.avatarUrl,
-                    mapEmoticonToEmoji(openingMessage)
+                    messageText
                 ]
             );
+            dispatchPatientInboxNotification(room, { id: inserted.insertId, message: messageText }, identity);
+            emitRoomListChanged();
         }
 
         await touchRoomMember(room, req.user);
@@ -836,6 +869,7 @@ router.post('/rooms/:slug/messages', verifyToken, async (req, res) => {
         chatNotifications.notify(room, message, identity).catch(() => {
             console.warn('[CommunityChat] chat push dispatch failed', { message_id: message.id });
         });
+        dispatchPatientInboxNotification(room, message, identity);
 
         if (ioRef) {
             ioRef.to(`community:${room.slug}`).emit('community:message:new', {

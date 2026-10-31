@@ -25,6 +25,8 @@ function createChatNotifications({ db, push }) {
 
     async function notify(room, message, sender) {
         if (Number(room.is_archived) === 1) return;
+        // Staff messages in a direct room are delivered by the patient inbox notification (PatientInbox).
+        if (Number(room.is_direct) === 1 && sender.userType === 'staff') return;
         const [rows] = await db.query(`SELECT s.patient_id, s.enabled,
                 (cm.id IS NOT NULL) AS joined
             FROM patient_chat_notification_settings s

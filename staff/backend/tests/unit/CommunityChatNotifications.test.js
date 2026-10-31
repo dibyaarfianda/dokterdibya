@@ -30,12 +30,15 @@ test('ordinary messages push once to enabled joined patients, excluding sender',
         expect.objectContaining({ type: 'community_chat', message_id: '7', url: '/community-chat.html?room=lobby&message=7' }));
 });
 
-test('direct messages only reach the assigned patient even without prior membership; archived rooms never push', async () => {
+test('direct rooms never push through chat opt-in (patient is sender, staff goes via inbox); archived rooms never push', async () => {
     const db = { query: jest.fn().mockResolvedValue([[{ patient_id: 'P2', enabled: 1, joined: 0 }, { patient_id: 'P3', enabled: 1, joined: 1 }]]) };
     const push = { sendToPatient: jest.fn().mockResolvedValue({ success: true }) };
     const service = createChatNotifications({ db, push });
+    await service.notify({ ...room, is_direct: 1, direct_patient_id: 'P2' }, message, { ...sender, userId: 'P2' });
+    expect(push.sendToPatient).not.toHaveBeenCalled();
+    // Staff direct messages are pushed by the patient inbox notification instead.
     await service.notify({ ...room, is_direct: 1, direct_patient_id: 'P2' }, message, { ...sender, userType: 'staff' });
-    expect(push.sendToPatient.mock.calls.map(args => args[0])).toEqual(['P2']);
+    expect(push.sendToPatient).not.toHaveBeenCalled();
     push.sendToPatient.mockClear();
     await service.notify({ ...room, is_archived: 1 }, message, sender);
     expect(push.sendToPatient).not.toHaveBeenCalled();

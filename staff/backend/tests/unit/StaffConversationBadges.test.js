@@ -25,7 +25,7 @@ test('conversation counts start from shell startup, without waiting for the lazy
     const f = fixture();
     expect(f.window.staffConversationBadges).toBeDefined();
     f.window.staffConversationBadges.init();
-    expect([...f.jobs.keys()]).toEqual(['staff-tanya-badge', 'staff-community-badge']);
+    expect([...f.jobs.keys()]).toEqual(['staff-tanya-badge', 'staff-community-badge', 'staff-inbox-badge']);
 });
 
 test('positive, zero, invalid, and large counts update every navigation surface', () => {
@@ -54,6 +54,10 @@ test('badge polling uses the existing authenticated counts and clears stale zero
     await f.jobs.get('staff-community-badge').run({});
     expect(f.context.fetch.mock.calls[1][0]).toMatch(/^\/api\/community-chat\/unread/);
     expect(f.badges[1].textContent).toBe('7');
+    f.context.fetch.mockResolvedValue({ ok: true, json: async () => ({ success: true, awaiting_reply: 4 }) });
+    await f.jobs.get('staff-inbox-badge').run({});
+    expect(f.context.fetch.mock.calls[2][0]).toMatch(/^\/api\/community-chat\/inbox\/count/);
+    expect(f.badges[2].textContent).toBe('11'); // "more" sums unselected community + inbox
 });
 
 test('revoked permissions discard an in-flight count response', async () => {

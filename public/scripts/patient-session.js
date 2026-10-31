@@ -151,10 +151,10 @@
     function loadPatientCommunityChat() {
         const path = global.location?.pathname || '';
         if (!global.document || global.parent !== global || !getToken() || isDemoMode()) return;
-        if (PAGE_TRACKING_EXCLUDED_PATHS.has(path) || ['/patient-intake.html', '/community-chat.html', '/community-profile.html', '/app-closed.html'].includes(path)) return;
+        if (PAGE_TRACKING_EXCLUDED_PATHS.has(path) || ['/patient-intake.html', '/community-chat.html', '/community-profile.html', '/pesan.html', '/app-closed.html'].includes(path)) return;
         if (global.__patientCommunityChatRequested) return;
         global.__patientCommunityChatRequested = true;
-        import('/scripts/patient-community-chat.js?v=20261031suspend1')
+        import('/scripts/patient-community-chat.js?v=20261031inbox1')
             .then(module => module.mountPatientCommunityChat())
             .catch(error => { global.__patientCommunityChatRequested = false; console.warn('[PatientSession] Community chat unavailable:', error.message); });
     }

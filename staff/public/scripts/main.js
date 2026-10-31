@@ -648,22 +648,42 @@ async function showDashboardPage() {
 }
 
 function showCommunityChatPage() {
+    showStaffChatFrame('community');
+}
+
+// Shared patient inbox: same direct-chat rooms as Community Chat, shown in /pesan.html.
+function showPatientInboxPage() {
+    showStaffChatFrame('inbox');
+}
+
+function showStaffChatFrame(mode) {
+    const inbox = mode === 'inbox';
     hideAllPages();
     document.body.classList.add('community-chat-active');
     pages.communityChat?.classList.remove('d-none');
-    setTitleAndActive('Chat', 'nav-community-chat', 'community-chat');
+    if (inbox) setTitleAndActive('Inbox Pasien', 'nav-patient-inbox', 'patient-inbox');
+    else setTitleAndActive('Chat', 'nav-community-chat', 'community-chat');
     bindCommunityChatViewportSync();
     syncCommunityChatFrameHeight();
     setTimeout(syncCommunityChatFrameHeight, 80);
 
     const chatTree = document.getElementById('nav-chat-main');
-    if (chatTree) {
+    if (chatTree && !inbox) {
         chatTree.classList.add('menu-open');
         const parentLink = chatTree.querySelector(':scope > .nav-link');
         if (parentLink) parentLink.classList.add('active');
     }
 
     const frame = document.getElementById('staff-community-chat-frame');
+    const inboxFrame = document.getElementById('staff-patient-inbox-frame');
+    frame?.classList.toggle('d-none', inbox);
+    inboxFrame?.classList.toggle('d-none', !inbox);
+    if (inbox) {
+        if (inboxFrame && !inboxFrame.getAttribute('src')) {
+            inboxFrame.src = '/pesan.html?staffBridge=1&v=20261031inbox1';
+        }
+        return;
+    }
     if (frame && !frame.getAttribute('src')) {
         frame.src = '/community-chat.html?embed=staff&staffBridge=1&v=20261008access1';
     }
@@ -3266,6 +3286,7 @@ function resumeSavedPageIfRequested(params) {
         'nav-voting':                           () => showVotingPage(),
         'nav-tanya-dokter':                    () => showTanyaDokterPage(),
         'nav-community-chat':                   () => showCommunityChatPage(),
+        'nav-patient-inbox':                    () => showPatientInboxPage(),
         'nav-support-chat':                     () => showSupportChatPage(),
         'nav-troubleshooting':                  () => window.showTroubleshootingPage?.(),
         'nav-patient-activity':                 () => window.showPatientActivityPage && window.showPatientActivityPage(),
@@ -4537,6 +4558,7 @@ export { initMain };
 // Expose page switching functions to the global scope for onclick handlers
 window.showDashboardPage = showDashboardPage;
 window.showCommunityChatPage = showCommunityChatPage;
+window.showPatientInboxPage = showPatientInboxPage;
 window.openCommunityChatPopup = openCommunityChatPopup;
 window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.showAntrianOnlinePage = showAntrianOnlinePage;
