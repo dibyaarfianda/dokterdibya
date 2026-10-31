@@ -93,6 +93,10 @@
         .thread-empty { display: none; }
         .empty i, .thread-empty i { font-size: 34px; color: #c4c4c4; }
         .empty h2 { font-size: 16px; color: var(--text); }
+        .start-box { display: flex; flex-direction: column; gap: 10px; padding: 0 16px calc(16px + var(--safe-bottom)); }
+        .start-box textarea { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; font: inherit; min-height: 110px; resize: vertical; }
+        .start-box .primary-btn { align-self: flex-end; }
+        body.patient .conv-list:has(+ .start-box:not([hidden])) { flex: 0 0 auto; }
         .loading { padding: 24px; text-align: center; color: var(--text-2); }
 
         .modal-back { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
@@ -129,7 +133,7 @@
 <div class="app">
     <header class="topbar">
         <button class="icon-btn" id="back-btn" type="button" aria-label="Kembali"><i class="fa-solid fa-chevron-left"></i></button>
-        <h1 id="page-title">Pesan<span class="sub" id="page-sub">Pesan pribadi dari staf dokterDIBYA</span></h1>
+        <h1 id="page-title">Pesan<span class="sub" id="page-sub">Pesan pribadi dengan staf dokterDIBYA</span></h1>
         <button class="primary-btn" id="new-btn" type="button" hidden><i class="fa-solid fa-pen"></i> Pesan baru</button>
     </header>
     <div class="layout">
@@ -143,6 +147,10 @@
                 <button class="chip" data-filter="unread" type="button">Belum dibaca</button>
             </div>
             <div class="conv-list" id="conv-list"><div class="loading">Memuat pesan...</div></div>
+            <div class="start-box" id="start-box" hidden>
+                <textarea id="start-input" maxlength="2000" placeholder="Tulis pesan untuk staf dokterDIBYA..."></textarea>
+                <button class="primary-btn" id="start-send" type="button" disabled><i class="fa-solid fa-paper-plane"></i> Kirim ke staf</button>
+            </div>
         </section>
         <section class="thread-pane" id="thread-pane">
             <div class="thread-empty"><i class="fa-regular fa-comments"></i><p>Pilih percakapan pasien di sebelah kiri.</p></div>
@@ -283,9 +291,11 @@
         if (!items.length) {
             list.innerHTML = state.role === 'staff'
                 ? `<div class="empty"><i class="fa-regular fa-envelope-open"></i><p>${state.search || state.filter !== 'all' ? 'Tidak ada percakapan yang cocok.' : 'Belum ada percakapan pasien. Tekan "Pesan baru" untuk mulai.'}</p></div>`
-                : '<div class="empty"><i class="fa-regular fa-envelope"></i><h2>Belum ada pesan</h2><p>Pesan dari staf dokterDIBYA untuk Anda akan muncul di sini, dan Anda bisa membalasnya.</p></div>';
+                : '<div class="empty"><i class="fa-regular fa-envelope"></i><h2>Belum ada pesan</h2><p>Kirim pesan ke staf dokterDIBYA di bawah ini. Balasan staf akan muncul di halaman ini.</p></div>';
+            el('start-box').hidden = state.role !== 'patient';
             return;
         }
+        el('start-box').hidden = true;
         list.innerHTML = items.map(conv => {
             const title = conversationTitle(conv);
             const prefix = conv.last_sender_type === 'staff'
@@ -475,6 +485,26 @@
         el('send-btn').disabled = !input.value.trim() || state.sending;
     }
 
+    // ---- Patient: start the private conversation with staff ----
+    async function startPatientConversation() {
+        const text = el('start-input').value.trim();
+        if (!text || state.sending) return;
+        state.sending = true;
+        el('start-send').disabled = true;
+        try {
+            const data = await api('/inbox/start', { method: 'POST', body: JSON.stringify({ message: text }) });
+            el('start-input').value = '';
+            await refreshList();
+            if (data.room?.slug) await openConversation(data.room.slug, { quiet: true });
+            toast('Pesan terkirim ke staf');
+        } catch (error) {
+            toast(error.message || 'Gagal mengirim pesan', 'error');
+        } finally {
+            state.sending = false;
+            el('start-send').disabled = !el('start-input').value.trim();
+        }
+    }
+
     // ---- Staff: start a conversation with any patient ----
     let patientSearchTimer = null;
     async function searchPatients() {
@@ -598,6 +628,8 @@
             document.querySelectorAll('#filter-row .chip').forEach(item => item.classList.toggle('active', item === chip));
             renderList();
         }));
+        el('start-input').addEventListener('input', () => { el('start-send').disabled = !el('start-input').value.trim() || state.sending; });
+        el('start-send').addEventListener('click', startPatientConversation);
         el('new-btn').addEventListener('click', openNewModal);
         el('new-close').addEventListener('click', () => { el('new-modal').hidden = true; });
         el('new-modal').addEventListener('click', event => { if (event.target === el('new-modal')) el('new-modal').hidden = true; });

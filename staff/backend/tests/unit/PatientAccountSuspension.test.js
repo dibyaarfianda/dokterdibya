@@ -48,6 +48,8 @@ describe('patient account suspension boundary', () => {
         expect(matchSuspendedRoute('GET', '/api/patients/account-status?_t=1').allowed).toBe(true);
         expect(matchSuspendedRoute('GET', '/api/community-chat/inbox').allowed).toBe(true);
         expect(matchSuspendedRoute('GET', '/api/community-chat/inbox/count').allowed).toBe(true);
+        expect(matchSuspendedRoute('POST', '/api/community-chat/inbox/start').allowed).toBe(true);
+        expect(matchSuspendedRoute('GET', '/api/community-chat/inbox/start').allowed).toBe(false);
         expect(matchSuspendedRoute('POST', '/api/patient-stories').allowed).toBe(false);
         expect(matchSuspendedRoute('GET', '/api/community-chat/rooms').allowed).toBe(false);
     });
