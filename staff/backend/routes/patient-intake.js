@@ -16,6 +16,7 @@ const {
 const db = require('../db');
 const { getGMT7Timestamp } = require('../utils/idGenerator');
 const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
+const { validatePatientName } = require('../../../public/scripts/patient-name-rules.js');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
@@ -164,7 +165,7 @@ async function generateQuickId() {
     throw new Error('Failed to generate unique quick ID after multiple attempts');
 }
 
-function validatePayload(body) {
+function validatePayload(body, { enforceRealName = false } = {}) {
     const errors = [];
     if (!body || typeof body !== 'object') {
         errors.push('Payload tidak ditemukan.');
@@ -172,6 +173,9 @@ function validatePayload(body) {
     }
     if (!body.full_name) {
         errors.push('Nama lengkap wajib diisi.');
+    } else if (enforceRealName) {
+        const nameCheck = validatePatientName(body.full_name);
+        if (!nameCheck.valid) errors.push(nameCheck.message);
     }
     if (!body.dob) {
         errors.push('Tanggal lahir wajib diisi.');
@@ -608,7 +612,7 @@ router.post('/api/patient-intake', async (req, res, next) => {
 
         await fillDobFromPatientProfile(payload, authenticatedPatientId);
 
-        const errors = validatePayload(payload);
+        const errors = validatePayload(payload, { enforceRealName: true });
         if (errors.length) {
             return res.status(422).json({ success: false, errors });
         }

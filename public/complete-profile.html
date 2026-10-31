@@ -376,6 +376,50 @@
             line-height: 1.4;
         }
 
+        .registration-rules {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--line-soft);
+            border-radius: 16px;
+            padding: 14px 16px;
+        }
+
+        .registration-rules-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #15221d;
+            margin-bottom: 6px;
+        }
+
+        .registration-rules ul {
+            margin: 0 0 10px;
+            padding-left: 18px;
+            font-size: 12.5px;
+            line-height: 1.5;
+            color: #4f625a;
+        }
+
+        .form-group label.registration-consent {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            font-size: 13px !important;
+            font-weight: 600;
+            line-height: 1.45;
+            margin: 0;
+            cursor: pointer;
+            text-transform: none !important;
+            letter-spacing: normal !important;
+            color: #15221d;
+        }
+
+        .registration-consent input {
+            width: 18px;
+            height: 18px;
+            margin-top: 1px;
+            flex: 0 0 auto;
+            accent-color: #0c1012;
+        }
+
         .registration-code-group .form-control {
             text-transform: uppercase;
             letter-spacing: 0.18em;
@@ -450,7 +494,8 @@
 
                 <div class="form-group">
                     <label for="fullname">Nama Lengkap <span class="required">*</span></label>
-                    <input type="text" class="form-control" id="fullname" placeholder="Masukkan nama lengkap Anda" required>
+                    <input type="text" class="form-control" id="fullname" placeholder="Nama lengkap sesuai KTP" autocomplete="name" maxlength="100" required>
+                    <div class="help-text">Tulis nama asli sesuai KTP, bukan nama panggilan, nama akun, atau nama samaran.</div>
                 </div>
 
                 <div class="form-group">
@@ -467,6 +512,19 @@
                 <div class="form-group">
                     <label for="age">Umur</label>
                     <input type="number" class="form-control" id="age" placeholder="Akan terisi otomatis" readonly>
+                </div>
+
+                <div class="form-group registration-rules" id="registration-rules">
+                    <div class="registration-rules-title">Aturan Pendaftaran</div>
+                    <ul>
+                        <li>Wajib memakai data pribadi Anda sendiri yang asli: nama lengkap sesuai KTP, nomor HP aktif, dan tanggal lahir yang benar.</li>
+                        <li>Satu akun untuk satu pasien. Jangan mendaftarkan atau memakai identitas orang lain.</li>
+                        <li>Akun dengan nama samaran atau data tidak benar dapat ditangguhkan oleh staff sampai data diperbaiki.</li>
+                    </ul>
+                    <label class="registration-consent" for="data_consent">
+                        <input type="checkbox" id="data_consent">
+                        <span>Saya menyatakan data di atas adalah data pribadi saya yang asli dan saya menyetujui aturan pendaftaran.</span>
+                    </label>
                 </div>
 
                 <button type="submit" class="btn-primary" id="submit-btn">
@@ -491,6 +549,7 @@
     </script>
 
     <!-- Complete Profile Handler V5 - Supports Google Sign-In flow -->
-    <script src="/js/complete-profile-v3.js?t=20260522c"></script>
+    <script src="/scripts/patient-name-rules.js?v=20261031suspend1"></script>
+    <script src="/js/complete-profile-v3.js?t=20261031suspend1"></script>
 </body>
 </html>

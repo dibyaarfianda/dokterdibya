@@ -20,6 +20,7 @@ const activityLogger = require('../services/activityLogger');
 const logger = require('../utils/logger');
 const { ROLE_NAMES } = require('../constants/roles');
 const PatientListService = require('../services/PatientListService');
+const PatientAccountSuspensionService = require('../services/PatientAccountSuspensionService');
 const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
 const {
@@ -700,6 +701,7 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
         }
 
         const blockedPatientNames = await getActiveBlockedPatientNames();
+        const accountSuspensions = await PatientAccountSuspensionService.getActiveSuspensionMap();
 
         // Map results using lookup sets
         const mappedRows = rows.map(patient => {
@@ -757,7 +759,8 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                 days_pregnant,
                 is_obstetri,
                 has_delivered,
-                is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames)
+                is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames),
+                account_suspension: accountSuspensions.get(String(patient.id)) || null
             };
         });
 
@@ -1005,6 +1008,7 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
         today.setHours(0, 0, 0, 0);
 
         const blockedPatientNames = await getActiveBlockedPatientNames();
+        const accountSuspensions = await PatientAccountSuspensionService.getActiveSuspensionMap();
 
         const mappedRows = uniqueRows.map((patient) => {
             const last_visit_type = lastVisitTypeMap[patient.id] || null;
@@ -1032,7 +1036,8 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                 days_pregnant,
                 is_obstetri,
                 has_delivered,
-                is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames)
+                is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames),
+                account_suspension: accountSuspensions.get(String(patient.id)) || null
             };
         });
 

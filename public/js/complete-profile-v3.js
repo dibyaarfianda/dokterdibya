@@ -116,6 +116,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
 
+        if (window.PatientNameRules) {
+            const nameCheck = window.PatientNameRules.validatePatientName(fullname);
+            if (!nameCheck.valid) {
+                showError(nameCheck.message);
+                if (fullnameInput) fullnameInput.focus();
+                return;
+            }
+        }
+
+        const consentInput = document.getElementById('data_consent');
+        if (consentInput && !consentInput.checked) {
+            showError('Centang pernyataan bahwa data yang diisi adalah data pribadi Anda yang asli.');
+            consentInput.focus();
+            return;
+        }
+
         // Validate registration code if required (email flow only)
         if (registrationCodeRequired && !registrationCode) {
             showError('Kode registrasi harus diisi. Hubungi klinik untuk mendapatkan kode.');
@@ -157,7 +173,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                         birth_date: birthdate,
                         age: age ? parseInt(age) : null,
                         registration_code: registrationCode || null,
-                        google_flow: true
+                        google_flow: true,
+                        data_consent: Boolean(document.getElementById('data_consent')?.checked)
                     })
                 });
 

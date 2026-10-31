@@ -154,9 +154,19 @@
         if (PAGE_TRACKING_EXCLUDED_PATHS.has(path) || ['/patient-intake.html', '/community-chat.html', '/community-profile.html', '/app-closed.html'].includes(path)) return;
         if (global.__patientCommunityChatRequested) return;
         global.__patientCommunityChatRequested = true;
-        import('/scripts/patient-community-chat.js?v=20261025chatfix1')
+        import('/scripts/patient-community-chat.js?v=20261031suspend1')
             .then(module => module.mountPatientCommunityChat())
             .catch(error => { global.__patientCommunityChatRequested = false; console.warn('[PatientSession] Community chat unavailable:', error.message); });
+    }
+
+    function loadPatientAccountSuspension() {
+        if (!global.document || global.parent !== global || !getToken() || isDemoMode()) return;
+        if (global.__patientAccountSuspensionRequested) return;
+        global.__patientAccountSuspensionRequested = true;
+        const script = global.document.createElement('script');
+        script.src = '/scripts/patient-account-suspension.js?v=20261031suspend1';
+        script.async = true;
+        global.document.head.appendChild(script);
     }
 
     if (global.document) {
@@ -186,6 +196,8 @@
             loadPatientPageTracker();
             loadPatientCommunityChat();
         }
+        loadPatientAccountSuspension();
         global.addEventListener?.('auth:credentials-changed', loadPatientCommunityChat);
+        global.addEventListener?.('auth:credentials-changed', loadPatientAccountSuspension);
     }
 })(window);
