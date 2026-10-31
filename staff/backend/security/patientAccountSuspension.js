@@ -9,7 +9,9 @@ const PatientAccountSuspensionService = require('../services/PatientAccountSuspe
 const SUSPENDED_ALLOWED_RULES = [
     ['GET', /^\/api\/patients\/(?:verify|profile|account-status)$/],
     [['POST', 'DELETE'], /^\/api\/patients\/(?:push-token|fcm-token)$/],
-    ['GET', /^\/api\/community-chat\/(?:inbox|inbox\/count)$/]
+    ['GET', /^\/api\/community-chat\/(?:inbox|inbox\/count)$/],
+    // Only ever creates/uses the patient's own direct room (scoped in the route).
+    ['POST', /^\/api\/community-chat\/inbox\/start$/]
 ];
 
 // Room-scoped inbox routes: allowed only for the patient's own direct room.

@@ -452,6 +452,52 @@ router.get('/inbox/count', verifyToken, async (req, res) => {
     }
 });
 
+// Patient starts (or continues) their private conversation with staff from /pesan.html.
+router.post('/inbox/start', verifyToken, async (req, res) => {
+    try {
+        if (!isPatientUser(req.user)) {
+            return res.status(403).json({ success: false, message: 'Staf memulai percakapan lewat Pesan baru' });
+        }
+        const patientId = String(req.user.id);
+        const messageText = mapEmoticonToEmoji(normalizeText(req.body.message));
+        if (!messageText) return res.status(400).json({ success: false, message: 'Pesan tidak boleh kosong' });
+        if (messageText.length > MAX_MESSAGE_LENGTH) {
+            return res.status(400).json({ success: false, message: 'Pesan maksimal 2000 karakter.' });
+        }
+
+        let room = await findActiveDirectRoom(null, patientId);
+        if (!room) {
+            const [patientRows] = await db.query('SELECT full_name FROM patients WHERE id = ? LIMIT 1', [patientId]);
+            if (patientRows.length === 0) return res.status(404).json({ success: false, message: 'Data pasien tidak ditemukan' });
+            const slug = `direct-p-${patientId}-${Math.random().toString(36).slice(2, 8)}`;
+            await db.query(
+                `INSERT INTO community_chat_rooms
+                    (slug, name, description, color, created_by, created_by_type, is_direct, direct_patient_id, direct_staff_id, is_system)
+                 VALUES (?, ?, ?, ?, ?, 'patient', 1, ?, NULL, 0)`,
+                [slug, `Chat Pasien ${patientRows[0].full_name}`, 'Percakapan pribadi staff dan pasien', '#16a34a', patientId, patientId]
+            );
+            room = await getRoomBySlug(slug);
+        }
+
+        const identity = await resolveUserIdentity(req.user);
+        await touchRoomMember(room, req.user, identity);
+        const [inserted] = await db.query(
+            `INSERT INTO community_chat_messages
+                (room_id, sender_id, sender_type, sender_name, sender_nickname, sender_avatar, message)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [room.id, identity.userId, identity.userType, identity.defaultName, attention.displayName(identity), identity.avatarUrl, messageText]
+        );
+        const [rows] = await db.query('SELECT * FROM community_chat_messages WHERE id = ? LIMIT 1', [inserted.insertId]);
+        const message = attention.messageDto(rows[0]);
+        if (ioRef) ioRef.to(`community:${room.slug}`).emit('community:message:new', { room: room.slug, message });
+        emitRoomListChanged();
+        res.json({ success: true, room: { slug: room.slug }, message });
+    } catch (error) {
+        console.error('community inbox start error:', error);
+        res.status(500).json({ success: false, message: 'Gagal mengirim pesan' });
+    }
+});
+
 function dispatchPatientInboxNotification(room, message, identity) {
     // Notification delivery must not delay or fail the saved message.
     Promise.resolve()
