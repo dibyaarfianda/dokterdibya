@@ -44,6 +44,10 @@ const OPERATIONAL_SCHEMA_SCOPES = Object.freeze({
     patientAccessBlocklist: {
         patient_access_blocklist: ['id', 'block_type', 'normalized_value', 'is_active']
     },
+    patientAccountSuspension: {
+        patient_account_suspensions: ['patient_id', 'is_suspended', 'reason', 'suspended_at', 'suspended_by_id', 'suspended_by_name'],
+        patient_account_suspension_log: ['id', 'patient_id', 'action', 'reason', 'staff_id', 'staff_name', 'created_at']
+    },
     patientNotifications: {
         patient_queue_reminder_settings: ['patient_id', 'enabled', 'threshold_ahead', 'background_push_enabled']
     },
@@ -86,7 +90,8 @@ const OPERATIONAL_SCHEMA_SCOPES = Object.freeze({
 
 // Scopes introduced after wave 6 ship their own migration file.
 const SCOPE_MIGRATION_NAMES = Object.freeze({
-    publicPolls: '20261012_public_polls.sql'
+    publicPolls: '20261012_public_polls.sql',
+    patientAccountSuspension: '20261031_patient_account_suspensions.sql'
 });
 
 const scopeValidationPromises = new Map();

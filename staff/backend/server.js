@@ -33,6 +33,7 @@ const {
     isPatientAuthBootstrapRoute
 } = require('./security/patientRouteAccess');
 const { createAccountModeAccessBoundary } = require('./security/accountModeAccess');
+const { enforcePatientAccountSuspension } = require('./security/patientAccountSuspension');
 
 const app = express();
 const server = http.createServer(app);
@@ -439,6 +440,8 @@ app.use('/api', async (req, res, next) => {
                     message: BLOCKED_PATIENT_MESSAGE
                 });
             }
+
+            if (await enforcePatientAccountSuspension(req, res, payload.id)) return;
 
             // Check if route is whitelisted for patients
             const isAllowed = isPatientAllowedRoute(req.method, fullPath);

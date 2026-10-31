@@ -16,6 +16,8 @@ const logger = require('../utils/logger');
 const PatientPasswordService = require('../services/PatientPasswordService');
 const PatientPasswordResetService = require('../services/PatientPasswordResetService');
 const PatientPortalSettingsService = require('../services/PatientPortalSettingsService');
+const PatientAccountSuspensionService = require('../services/PatientAccountSuspensionService');
+const { validatePatientName } = require('../../../public/scripts/patient-name-rules.js');
 const { ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
@@ -1133,6 +1135,27 @@ router.get('/verify', verifyToken, (req, res) => {
     });
 });
 
+// Account suspension status for the portal popup (patient only)
+router.get('/account-status', verifyToken, async (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    if (req.user?.role !== 'patient' && req.user?.user_type !== 'patient') {
+        return res.status(403).json({ success: false, message: 'Endpoint ini hanya untuk pasien' });
+    }
+
+    const suspension = await PatientAccountSuspensionService.getActiveSuspension(req.user.id);
+    res.json({
+        success: true,
+        suspended: Boolean(suspension),
+        reason: suspension?.reason || '',
+        suspended_at: suspension?.suspended_at || null,
+        message: suspension ? PatientAccountSuspensionService.SUSPENDED_PATIENT_MESSAGE : '',
+        inbox_url: '/pesan.html'
+    });
+});
+
 // Get current user profile
 router.get('/profile', verifyToken, async (req, res) => {
     // Prevent browser caching - critical for multi-account scenarios
@@ -1227,6 +1250,14 @@ router.put('/profile', verifyToken, async (req, res) => {
         // Validation - only check if values exist (either new or existing)
         if (!updatedFullName || !updatedEmail || !updatedPhone) {
             return res.status(400).json({ message: 'Nama, email, dan nomor telepon harus diisi' });
+        }
+
+        // New names must follow the real-name rule; untouched legacy names stay editable.
+        if ((fullname || full_name) && updatedFullName !== currentPatient[0].full_name) {
+            const nameCheck = validatePatientName(updatedFullName);
+            if (!nameCheck.valid) {
+                return res.status(400).json({ message: nameCheck.message, field: 'fullname' });
+            }
         }
         
         // Validate email format if email is being updated
@@ -1568,13 +1599,26 @@ router.post('/change-password', verifyToken, async (req, res) => {
 // Complete profile (first-time setup)
 router.post('/complete-profile', verifyToken, async (req, res) => {
     try {
-        const { fullname, phone, birth_date, age, registration_code } = req.body;
+        const { phone, birth_date, age, registration_code } = req.body;
 
-        const { google_flow } = req.body;
+        const { google_flow, data_consent } = req.body;
 
         // Validation
-        if (!fullname || !phone || !birth_date) {
+        if (!req.body.fullname || !phone || !birth_date) {
             return res.status(400).json({ message: 'Nama, nomor telepon, dan tanggal lahir harus diisi' });
+        }
+
+        const nameCheck = validatePatientName(req.body.fullname);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.message, field: 'fullname' });
+        }
+        const fullname = nameCheck.normalized;
+
+        if (data_consent !== true && data_consent !== 'true') {
+            return res.status(400).json({
+                message: 'Centang pernyataan bahwa data yang diisi adalah data pribadi Anda yang asli.',
+                field: 'data_consent'
+            });
         }
 
         // Validate phone format (Indonesian mobile with country code 628)
@@ -1645,6 +1689,11 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
             );
         }
 
+        patientActivityLogger.logActivity(req.user.id, patientActivityLogger.EVENTS.VIEW_HALAMAN, {
+            page_name: 'registrasi:persetujuan-data-pribadi',
+            detail: 'Pasien menyetujui aturan pendaftaran memakai data pribadi asli'
+        }, req);
+
         // Fetch updated profile
         const [updatedPatient] = await db.query(
             'SELECT id, full_name, email, phone, photo_url, home_photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
@@ -1704,6 +1753,11 @@ router.post('/complete-profile-full', verifyToken, async (req, res) => {
         // Validation
         if (!patient_name || !patient_phone || !patient_dob) {
             return res.status(400).json({ message: 'Nama, nomor telepon, dan tanggal lahir harus diisi' });
+        }
+
+        const nameCheck = validatePatientName(patient_name);
+        if (!nameCheck.valid) {
+            return res.status(400).json({ message: nameCheck.message, field: 'patient_name' });
         }
 
         // Validate registration code is required
@@ -1946,6 +2000,90 @@ router.patch('/:id/status', verifyStaffToken, async (req, res) => {
             message: 'Gagal mengubah status pasien',
             error: error.message
         });
+    }
+});
+
+// ==================== ACCOUNT SUSPENSION (Staff) ====================
+function canManagePatientSuspension(req) {
+    return isDelegatedAccountPermission(req, ['patients.edit'])
+        || req.user.is_superadmin
+        || isSuperadminRole(req.user.role_id)
+        || isAdminRole(req.user.role_id);
+}
+
+function sendSuspensionError(res, error, fallbackMessage) {
+    if (error.statusCode === 400) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+    if (error.code === 'OPERATIONAL_SCHEMA_MISSING') {
+        return res.status(503).json({ success: false, message: 'Tabel penangguhan akun belum dimigrasi.' });
+    }
+    logger.error(fallbackMessage, { error: error.message });
+    return res.status(500).json({ success: false, message: fallbackMessage });
+}
+
+// GET /api/patients/:id/account-suspension - Current state + history
+router.get('/:id/account-suspension', verifyStaffToken, async (req, res) => {
+    try {
+        const detail = await PatientAccountSuspensionService.getSuspensionDetail(req.params.id);
+        res.json({ success: true, data: detail });
+    } catch (error) {
+        sendSuspensionError(res, error, 'Gagal memuat status penangguhan akun');
+    }
+});
+
+// POST /api/patients/:id/account-suspension - Suspend patient account with a reason
+router.post('/:id/account-suspension', verifyStaffToken, async (req, res) => {
+    try {
+        if (!canManagePatientSuspension(req)) {
+            return res.status(403).json({ success: false, message: 'Akses ditolak. Butuh izin edit pasien.' });
+        }
+
+        const patient = await PatientAccountSuspensionService.suspendPatient({
+            patientId: req.params.id,
+            reason: req.body?.reason,
+            staffUser: req.user,
+            ipAddress: req.ip
+        });
+        if (!patient) {
+            return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
+        }
+
+        cache.delPattern('patients:');
+        logger.info('Patient account suspended', { patientId: patient.id, staffId: req.user.id });
+        res.json({ success: true, message: `Akun ${patient.full_name} ditangguhkan` });
+    } catch (error) {
+        sendSuspensionError(res, error, 'Gagal menangguhkan akun pasien');
+    }
+});
+
+// DELETE /api/patients/:id/account-suspension - Lift suspension
+router.delete('/:id/account-suspension', verifyStaffToken, async (req, res) => {
+    try {
+        if (!canManagePatientSuspension(req)) {
+            return res.status(403).json({ success: false, message: 'Akses ditolak. Butuh izin edit pasien.' });
+        }
+
+        const patient = await PatientAccountSuspensionService.unsuspendPatient({
+            patientId: req.params.id,
+            note: req.body?.note,
+            staffUser: req.user,
+            ipAddress: req.ip
+        });
+        if (!patient) {
+            return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
+        }
+
+        cache.delPattern('patients:');
+        logger.info('Patient account suspension lifted', { patientId: patient.id, staffId: req.user.id });
+        res.json({
+            success: true,
+            message: patient.alreadyActive
+                ? `Akun ${patient.full_name} memang tidak sedang ditangguhkan`
+                : `Akun ${patient.full_name} aktif kembali`
+        });
+    } catch (error) {
+        sendSuspensionError(res, error, 'Gagal mengaktifkan kembali akun pasien');
     }
 });
 

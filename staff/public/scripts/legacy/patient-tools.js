@@ -1462,6 +1462,10 @@
         const accessBlockBadge = (patient.is_access_blocked === true || Number(patient.is_access_blocked) === 1)
             ? '<span class="badge badge-danger ml-1"><i class="fas fa-ban mr-1"></i>Blocked</span>'
             : '';
+        const suspension = patient.account_suspension || null;
+        const suspensionBadge = suspension
+            ? `<span class="badge badge-danger ml-1" title="${escapeHtmlSafe(`Ditangguhkan${suspension.suspended_by_name ? ' oleh ' + suspension.suspended_by_name : ''}: ${suspension.reason || '-'}`)}"><i class="fas fa-user-lock mr-1"></i>Ditangguhkan</span>`
+            : '';
         const locationLabels = { 'klinik_private': 'Prv', 'rsia_melinda': 'Mel', 'rsud_gambiran': 'Gmb', 'rs_bhayangkara': 'Bhy' };
         const locationBadge = patient.visit_location
             ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>` : '';
@@ -1505,6 +1509,13 @@
                     <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
                 </button>`
             : '';
+        const suspendButton = canEdit
+            ? `<button type="button" class="btn btn-sm ${suspension ? 'btn-outline-success' : 'btn-outline-danger'}" data-account-permission="patients.edit"
+                    onclick="openPatientAccountSuspension('${patient.id}', '${escapedName}')"
+                    title="${suspension ? 'Cabut penangguhan akun' : 'Tangguhkan akun pasien'}">
+                    <i class="fas fa-${suspension ? 'user-check' : 'user-lock'}"></i>
+                </button>`
+            : '';
         const deleteButton = canDelete
             ? `<button type="button" class="btn btn-sm btn-danger" data-account-permission="patients.delete" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
                     <i class="fas fa-trash"></i>
@@ -1519,6 +1530,7 @@
                     </button>
                     ${deliveryButton}
                     ${statusButton}
+                    ${suspendButton}
                     ${deleteButton}
                 </td>
                 <td>${nameCell}</td>
@@ -1527,7 +1539,7 @@
                 <td>${resumeStatusBadge}</td>
                 <td data-order="${registerDateSort}">${registerDate}</td>
                 <td data-order="${visitDateSort}">${visitDate}</td>
-                <td>${statusBadge}${accessBlockBadge}</td>
+                <td>${statusBadge}${accessBlockBadge}${suspensionBadge}</td>
             </tr>
         `;
     }
@@ -2019,6 +2031,135 @@ Apakah Anda yakin ingin melanjutkan?`;
                 btnEl.disabled = false;
                 btnEl.innerHTML = originalHtml;
             }
+        }
+    };
+
+    // ==================== Account Suspension (Penangguhan Akun) ====================
+    const SUSPENSION_REASON_PRESETS = [
+        'Tidak memakai nama asli sesuai KTP',
+        'Data pribadi tidak benar atau memakai identitas orang lain',
+        'Akun ganda / duplikat',
+        'Melanggar tata tertib komunitas atau portal'
+    ];
+
+    function suspensionRequest(url, options = {}) {
+        return fetch(url, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : '')}`,
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            }
+        }).then(async (response) => {
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok || data.success === false) throw new Error(data.message || `HTTP ${response.status}`);
+            return data;
+        });
+    }
+
+    function formatSuspensionTime(value) {
+        if (!value) return '-';
+        return window.DibyaDateTime?.dateTime ? window.DibyaDateTime.dateTime(value) : String(value);
+    }
+
+    function renderSuspensionHistory(history) {
+        if (!Array.isArray(history) || history.length === 0) {
+            return '<div class="text-muted small">Belum ada riwayat penangguhan.</div>';
+        }
+        return `<div class="small" style="max-height:160px;overflow-y:auto;">${history.map(item => `
+            <div class="border-bottom py-1">
+                <span class="badge badge-${item.action === 'suspend' ? 'danger' : 'success'}">${item.action === 'suspend' ? 'Ditangguhkan' : 'Diaktifkan'}</span>
+                <span class="text-muted">${escapeHtmlSafe(formatSuspensionTime(item.created_at))} oleh ${escapeHtmlSafe(item.staff_name || '-')}</span>
+                ${item.reason ? `<div>${escapeHtmlSafe(item.reason)}</div>` : ''}
+            </div>`).join('')}</div>`;
+    }
+
+    window.openPatientAccountSuspension = async function(patientId, patientName) {
+        if (!hasPatientToolsPermission('patients.edit')) return;
+
+        let detail;
+        try {
+            Swal.fire({ title: 'Memuat...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            detail = (await suspensionRequest(`/api/patients/${encodeURIComponent(patientId)}/account-suspension?_=${Date.now()}`)).data;
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'Gagal', text: error.message || 'Gagal memuat status akun' });
+            return;
+        }
+
+        const historyHtml = `<div class="text-left mt-3"><label class="font-weight-bold small mb-1">Riwayat</label>${renderSuspensionHistory(detail.history)}</div>`;
+        const safeName = escapeHtmlSafe(patientName || patientId);
+
+        if (detail.is_suspended) {
+            const current = detail.suspension || {};
+            const result = await Swal.fire({
+                title: 'Cabut penangguhan akun?',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-2"><strong>${safeName}</strong> sedang ditangguhkan.</p>
+                        <div class="alert alert-danger py-2 small mb-2">
+                            <div><strong>Alasan:</strong> ${escapeHtmlSafe(current.reason || '-')}</div>
+                            <div><strong>Oleh:</strong> ${escapeHtmlSafe(current.suspended_by_name || '-')} &middot; ${escapeHtmlSafe(formatSuspensionTime(current.suspended_at))}</div>
+                        </div>
+                        <label for="suspension-note" class="small font-weight-bold mb-1">Catatan pengaktifan (opsional)</label>
+                        <textarea id="suspension-note" class="form-control" rows="2" maxlength="500" placeholder="Mis. nama sudah diperbaiki sesuai KTP"></textarea>
+                    </div>${historyHtml}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Aktifkan Kembali',
+                confirmButtonColor: '#28a745',
+                cancelButtonText: 'Batal',
+                showLoaderOnConfirm: true,
+                allowOutsideClick: () => !Swal.isLoading(),
+                preConfirm: () => suspensionRequest(`/api/patients/${encodeURIComponent(patientId)}/account-suspension`, {
+                    method: 'DELETE',
+                    body: JSON.stringify({ note: document.getElementById('suspension-note')?.value || '' })
+                }).catch(error => Swal.showValidationMessage(error.message))
+            });
+            if (!result.isConfirmed) return;
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: result.value?.message || 'Akun aktif kembali', timer: 2000, showConfirmButton: false });
+        } else {
+            const result = await Swal.fire({
+                title: 'Tangguhkan akun pasien?',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-2"><strong>${safeName}</strong> tidak bisa memakai fitur portal selama ditangguhkan. Pasien tetap bisa login dan membalas lewat menu Pesan.</p>
+                        <label for="suspension-preset" class="small font-weight-bold mb-1">Alasan</label>
+                        <select id="suspension-preset" class="form-control mb-2">
+                            ${SUSPENSION_REASON_PRESETS.map(reason => `<option value="${escapeHtmlSafe(reason)}">${escapeHtmlSafe(reason)}</option>`).join('')}
+                            <option value="">Lainnya (tulis sendiri)</option>
+                        </select>
+                        <textarea id="suspension-reason" class="form-control" rows="2" maxlength="500" placeholder="Detail tambahan yang akan dilihat pasien (opsional jika memilih alasan di atas)"></textarea>
+                        <div class="small text-muted mt-1">Alasan ini ditampilkan ke pasien di popup portal.</div>
+                    </div>${historyHtml}`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Tangguhkan',
+                confirmButtonColor: '#dc3545',
+                cancelButtonText: 'Batal',
+                showLoaderOnConfirm: true,
+                allowOutsideClick: () => !Swal.isLoading(),
+                preConfirm: () => {
+                    const preset = document.getElementById('suspension-preset')?.value || '';
+                    const extra = (document.getElementById('suspension-reason')?.value || '').trim();
+                    const reason = [preset, extra].filter(Boolean).join('. ');
+                    if (reason.length < 5) {
+                        Swal.showValidationMessage('Tulis alasan penangguhan (minimal 5 karakter).');
+                        return false;
+                    }
+                    return suspensionRequest(`/api/patients/${encodeURIComponent(patientId)}/account-suspension`, {
+                        method: 'POST',
+                        body: JSON.stringify({ reason })
+                    }).catch(error => Swal.showValidationMessage(error.message));
+                }
+            });
+            if (!result.isConfirmed) return;
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: result.value?.message || 'Akun ditangguhkan', timer: 2000, showConfirmButton: false });
+        }
+
+        if (advancedSearchActive && typeof window.performAdvancedSearch === 'function') {
+            window.performAdvancedSearch();
+        } else {
+            loadWebPatients();
         }
     };
 

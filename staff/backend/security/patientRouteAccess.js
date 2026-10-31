@@ -29,7 +29,7 @@ const PATIENT_AUTH_BOOTSTRAP_RULES = [
 ];
 
 const PATIENT_ROUTE_RULES = [
-    createRule('GET', /^\/api\/patients\/(?:verify|profile|portal-settings|pregnancy-tracker|medications|birth-record|daily-quote|pregnancy-data)$/),
+    createRule('GET', /^\/api\/patients\/(?:verify|account-status|profile|portal-settings|pregnancy-tracker|medications|birth-record|daily-quote|pregnancy-data)$/),
     createRule('PUT', /^\/api\/patients\/(?:profile|profile\/me|portal-settings)$/),
     createRule('POST', /^\/api\/patients\/(?:push-token|fcm-token|track-page|upload-photo|upload-home-photo|set-password|change-password|complete-profile|complete-profile-full)$/),
     createRule('DELETE', /^\/api\/patients\/(?:push-token|fcm-token|home-photo)$/),
