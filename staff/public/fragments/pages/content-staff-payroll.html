@@ -17,19 +17,23 @@
                                         </div>
                                         <div class="card-body">
                                             <div class="form-row align-items-end">
-                                                <div class="col-md-3 col-12 mb-2">
+                                                <div class="col-lg-3 col-md-6 col-12 mb-2">
                                                     <label class="small text-muted mb-1">Nama Driver</label>
                                                     <input type="text" id="driver-payroll-name" class="form-control form-control-sm" maxlength="120" autocomplete="name" placeholder="Masukkan nama driver">
                                                 </div>
-                                                <div class="col-md-2 col-6 mb-2">
+                                                <div class="col-lg-2 col-md-6 col-6 mb-2">
                                                     <label class="small text-muted mb-1">Bulan Gaji</label>
                                                     <input type="month" id="driver-payroll-month" class="form-control form-control-sm">
                                                 </div>
-                                                <div class="col-md-2 col-6 mb-2">
+                                                <div class="col-lg-2 col-md-6 col-6 mb-2">
                                                     <label class="small text-muted mb-1">Hari Tidak Masuk Kerja</label>
                                                     <input type="number" id="driver-payroll-absence-days" class="form-control form-control-sm" min="0" step="1" value="0">
                                                 </div>
-                                                <div class="col-md-5 mb-2 text-md-right">
+                                                <div class="col-lg-2 col-md-6 col-6 mb-2">
+                                                    <label class="small text-muted mb-1" for="driver-payroll-doctor-bonus">Tambahan dari dokterdibya</label>
+                                                    <input type="number" id="driver-payroll-doctor-bonus" class="form-control form-control-sm" min="0" max="10000000" step="1000" value="500000">
+                                                </div>
+                                                <div class="col-lg-3 col-12 mb-2 text-lg-right">
                                                     <button type="button" class="btn btn-sm btn-primary mr-2" data-payroll-action="driver-save" onclick="if(window.staffPayroll) window.staffPayroll.saveDriver()">
                                                         <i class="fas fa-save mr-1"></i>Simpan Draft
                                                     </button>
@@ -46,15 +50,16 @@
                                             </div>
 
                                             <div class="row mt-2">
-                                                <div class="col-lg-2 col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Hari Kalender</div><strong id="driver-payroll-calendar-days">-</strong></div></div>
-                                                <div class="col-lg-2 col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Minggu Libur</div><strong id="driver-payroll-sundays">-</strong></div></div>
-                                                <div class="col-lg-2 col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Hari Kerja</div><strong id="driver-payroll-working-days">-</strong></div></div>
-                                                <div class="col-lg-2 col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Potongan/Hari</div><strong id="driver-payroll-daily-deduction">-</strong></div></div>
-                                                <div class="col-lg-2 col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Total Potongan</div><strong id="driver-payroll-deduction">-</strong></div></div>
-                                                <div class="col-lg-2 col-6 mb-2"><div class="border border-success rounded p-2 h-100"><div class="small text-muted">Gaji Diterima</div><strong class="text-success" id="driver-payroll-total">-</strong></div></div>
+                                                <div class="col-lg col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Hari Kalender</div><strong id="driver-payroll-calendar-days">-</strong></div></div>
+                                                <div class="col-lg col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Minggu Libur</div><strong id="driver-payroll-sundays">-</strong></div></div>
+                                                <div class="col-lg col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Hari Kerja</div><strong id="driver-payroll-working-days">-</strong></div></div>
+                                                <div class="col-lg col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Potongan/Hari</div><strong id="driver-payroll-daily-deduction">-</strong></div></div>
+                                                <div class="col-lg col-6 mb-2"><div class="border rounded p-2 h-100"><div class="small text-muted">Total Potongan</div><strong id="driver-payroll-deduction">-</strong></div></div>
+                                                <div class="col-lg col-6 mb-2"><div class="border border-info rounded p-2 h-100"><div class="small text-muted">Bagian dokterdibya</div><strong class="text-info" id="driver-payroll-doctor-paid">-</strong></div></div>
+                                                <div class="col-lg col-6 mb-2"><div class="border border-success rounded p-2 h-100"><div class="small text-muted">Gaji Diterima</div><strong class="text-success" id="driver-payroll-total">-</strong></div></div>
                                             </div>
                                             <div class="small text-muted mb-3">
-                                                Gaji pokok Rp1.500.000. Minggu otomatis dihitung sebagai hari libur; potongan harian dibulatkan ke atas per Rp1.000. Jika tidak masuk 0 hari, gaji tetap Rp1.500.000.
+                                                Gaji = Rp1.000.000 fix (dibayar RSIA Melinda) + tambahan dari dokterdibya (default Rp500.000, bisa diubah per bulan). Minggu otomatis dihitung sebagai hari libur; potongan harian = total gaji ÷ hari kerja, dibulatkan ke atas per Rp1.000. Potongan absen mengurangi bagian dokterdibya lebih dulu; hanya bagian dokterdibya yang masuk Analisa Keuangan.
                                             </div>
 
                                             <div class="table-responsive">
@@ -65,6 +70,7 @@
                                                             <th>Bulan</th>
                                                             <th class="text-right">Hari Kerja</th>
                                                             <th class="text-right">Tidak Masuk</th>
+                                                            <th class="text-right">Tambahan</th>
                                                             <th class="text-right">Potongan/Hari</th>
                                                             <th class="text-right">Gaji Diterima</th>
                                                             <th>Status</th>
@@ -72,7 +78,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody id="driver-payroll-history">
-                                                        <tr><td colspan="8" class="text-center text-muted py-3">Memuat gaji driver...</td></tr>
+                                                        <tr><td colspan="9" class="text-center text-muted py-3">Memuat gaji driver...</td></tr>
                                                     </tbody>
                                                 </table>
                                             </div>
@@ -83,7 +89,7 @@
                                         <div class="col-lg-8">
                                             <div class="card card-outline card-success">
                                                 <div class="card-header compact">
-                                                    <h5 class="card-title mb-0"><i class="fas fa-calendar-week mr-2"></i>Siklus 4 Praktik</h5>
+                                                    <h5 class="card-title mb-0"><i class="fas fa-calendar-week mr-2"></i><span id="staff-payroll-cycle-title">Siklus Praktik</span></h5>
                                                 </div>
                                                 <div class="card-body">
                                                     <div class="row" id="staff-payroll-cycle-dates">
@@ -120,11 +126,23 @@
                                         </div>
                                     </div>
 
+                                    <div class="card card-outline card-info" id="staff-payroll-settings-card">
+                                        <div class="card-header compact">
+                                            <h5 class="card-title mb-0"><i class="fas fa-sliders-h mr-2"></i>Pengaturan Gaji</h5>
+                                            <div class="card-tools">
+                                                <button type="button" class="btn btn-tool" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
+                                            </div>
+                                        </div>
+                                        <div class="card-body" id="staff-payroll-settings-body">
+                                            <div class="text-muted small">Memuat pengaturan gaji...</div>
+                                        </div>
+                                    </div>
+
                                     <div id="staff-payroll-summary" class="mb-3"></div>
 
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="small text-muted">
-                                            Rumus: hadir pertama Rp150.000, hadir berikutnya Rp100.000 per hadir, penyesuaian opsional.
+                                        <div class="small text-muted" id="staff-payroll-formula">
+                                            Rumus: hadir pertama + hadir berikutnya per hadir + tunjangan tugas (jika hadir) + penyesuaian opsional.
                                         </div>
                                         <div id="staff-payroll-actions" class="text-right"></div>
                                     </div>
@@ -135,10 +153,11 @@
                                                 <tr>
                                                     <th rowspan="2">Nama</th>
                                                     <th rowspan="2">Role</th>
-                                                    <th colspan="4" class="text-center">Hadir</th>
+                                                    <th colspan="1" class="text-center" id="staff-payroll-attendance-head">Hadir</th>
                                                     <th rowspan="2" class="text-right">Jumlah</th>
                                                     <th rowspan="2" class="text-right">Dasar</th>
                                                     <th rowspan="2" class="text-right">Tambahan</th>
+                                                    <th rowspan="2" class="text-right">Tunjangan</th>
                                                     <th rowspan="2" class="text-right">Bonus/Penyesuaian</th>
                                                     <th rowspan="2" class="text-right">Total</th>
                                                     <th rowspan="2">Catatan</th>
@@ -148,7 +167,7 @@
                                             </thead>
                                             <tbody id="staff-payroll-tbody">
                                                 <tr>
-                                                    <td colspan="13" class="text-center text-muted py-4">
+                                                    <td colspan="14" class="text-center text-muted py-4">
                                                         <i class="fas fa-spinner fa-spin mr-1"></i> Memuat payroll...
                                                     </td>
                                                 </tr>

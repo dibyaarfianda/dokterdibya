@@ -4,7 +4,9 @@ const PAYROLL_CONFIG = Object.freeze({
 });
 
 const DRIVER_PAYROLL_CONFIG = Object.freeze({
-    MONTHLY_SALARY: 1500000,
+    FIXED_SALARY: 1000000,
+    DEFAULT_DOCTOR_BONUS: 500000,
+    MAX_DOCTOR_BONUS: 10000000,
     DEDUCTION_ROUNDING: 1000,
     WEEKLY_DAY_OFF: 0
 });
@@ -17,9 +19,47 @@ function toInteger(value, fieldName) {
     return normalized;
 }
 
-function calculatePayroll(attendanceCount, adjustmentAmount = 0) {
+const MAX_PAYROLL_RATE = 10000000;
+
+function normalizeRateValue(value, fallback, fieldName) {
+    if (value === undefined || value === null || value === '') return fallback;
+    const rate = toInteger(value, fieldName);
+    if (rate < 0) {
+        throw new Error(`${fieldName} tidak boleh negatif`);
+    }
+    if (rate > MAX_PAYROLL_RATE) {
+        throw new Error(`${fieldName} maksimal ${MAX_PAYROLL_RATE}`);
+    }
+    return rate;
+}
+
+// Rates are snapshotted per batch; missing values (legacy batches) fall back
+// to the original 150rb / 100rb defaults so historical totals never change.
+function normalizePayrollRates(rates = {}) {
+    const source = rates || {};
+    return {
+        base_amount: normalizeRateValue(
+            source.base_amount !== undefined ? source.base_amount : source.base_rate,
+            PAYROLL_CONFIG.BASE_AMOUNT,
+            'tarif_hadir_pertama'
+        ),
+        additional_rate: normalizeRateValue(source.additional_rate, PAYROLL_CONFIG.ADDITIONAL_RATE, 'tarif_hadir_tambahan')
+    };
+}
+
+function normalizeAllowanceAmount(value) {
+    return normalizeRateValue(value, 0, 'tunjangan');
+}
+
+/**
+ * total = hadir pertama + hadir tambahan x tarif + tunjangan + penyesuaian.
+ * Tunjangan tugas (mis. stok obat, HR) hanya dibayar jika hadir >= 1.
+ */
+function calculatePayroll(attendanceCount, adjustmentAmount = 0, options = {}) {
     const count = toInteger(attendanceCount, 'jumlah_hadir');
     const adjustment = toInteger(adjustmentAmount, 'bonus_penyesuaian');
+    const rates = normalizePayrollRates(options);
+    const allowance = normalizeAllowanceAmount(options && options.allowance_amount);
 
     if (count < 0) {
         throw new Error('jumlah_hadir tidak boleh negatif');
@@ -34,15 +74,16 @@ function calculatePayroll(attendanceCount, adjustmentAmount = 0) {
             base_amount: 0,
             additional_count: 0,
             additional_amount: 0,
+            allowance_amount: 0,
             adjustment_amount: adjustment,
             total_amount: adjustment
         };
     }
 
     const additionalCount = Math.max(0, count - 1);
-    const baseAmount = PAYROLL_CONFIG.BASE_AMOUNT;
-    const additionalAmount = additionalCount * PAYROLL_CONFIG.ADDITIONAL_RATE;
-    const totalAmount = baseAmount + additionalAmount + adjustment;
+    const baseAmount = rates.base_amount;
+    const additionalAmount = additionalCount * rates.additional_rate;
+    const totalAmount = baseAmount + additionalAmount + allowance + adjustment;
 
     if (totalAmount < 0) {
         throw new Error('Pendapatan akhir tidak boleh negatif');
@@ -53,6 +94,7 @@ function calculatePayroll(attendanceCount, adjustmentAmount = 0) {
         base_amount: baseAmount,
         additional_count: additionalCount,
         additional_amount: additionalAmount,
+        allowance_amount: allowance,
         adjustment_amount: adjustment,
         total_amount: totalAmount
     };
@@ -74,12 +116,29 @@ function normalizePayrollMonth(value) {
     return month;
 }
 
-function calculateDriverPayroll(payrollMonth, absenceDays = 0) {
+function normalizeDoctorBonus(value) {
+    if (value === undefined || value === null || value === '') {
+        return DRIVER_PAYROLL_CONFIG.DEFAULT_DOCTOR_BONUS;
+    }
+    const bonus = toInteger(value, 'tambahan_dokter');
+    if (bonus < 0) {
+        throw new Error('tambahan_dokter tidak boleh negatif');
+    }
+    if (bonus > DRIVER_PAYROLL_CONFIG.MAX_DOCTOR_BONUS) {
+        throw new Error(`tambahan_dokter maksimal ${DRIVER_PAYROLL_CONFIG.MAX_DOCTOR_BONUS}`);
+    }
+    return bonus;
+}
+
+function calculateDriverPayroll(payrollMonth, absenceDays = 0, doctorBonus) {
     const normalizedMonth = normalizePayrollMonth(payrollMonth);
     const absence = toInteger(absenceDays, 'hari_tidak_masuk');
     if (absence < 0) {
         throw new Error('hari_tidak_masuk tidak boleh negatif');
     }
+    const bonus = normalizeDoctorBonus(doctorBonus);
+    const fixedSalary = DRIVER_PAYROLL_CONFIG.FIXED_SALARY;
+    const monthlySalary = fixedSalary + bonus;
 
     const [year, monthNumber] = normalizedMonth.split('-').map(Number);
     const calendarDays = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
@@ -96,24 +155,31 @@ function calculateDriverPayroll(payrollMonth, absenceDays = 0) {
     }
 
     const dailyDeduction = Math.ceil(
-        (DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY / workingDays) / DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING
+        (monthlySalary / workingDays) / DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING
     ) * DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING;
-    const deductionAmount = Math.min(
-        DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY,
-        absence * dailyDeduction
-    );
+    const deductionAmount = Math.min(monthlySalary, absence * dailyDeduction);
+    const totalAmount = monthlySalary - deductionAmount;
 
     return {
         payroll_month: `${normalizedMonth}-01`,
         calendar_days: calendarDays,
         sunday_count: sundayCount,
         working_days: workingDays,
-        monthly_salary: DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY,
+        fixed_salary: fixedSalary,
+        doctor_bonus: bonus,
+        monthly_salary: monthlySalary,
         absence_days: absence,
         daily_deduction: dailyDeduction,
         deduction_amount: deductionAmount,
-        total_amount: DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY - deductionAmount
+        total_amount: totalAmount,
+        doctor_paid_amount: calculateDoctorPaidAmount(totalAmount, fixedSalary)
     };
+}
+
+// RSIA Melinda pays the fixed part in full; absence deductions come out of
+// the dokterdibya part first, so the clinic's share never goes below zero.
+function calculateDoctorPaidAmount(totalAmount, fixedSalary = DRIVER_PAYROLL_CONFIG.FIXED_SALARY) {
+    return Math.max(0, (Number(totalAmount) || 0) - (Number(fixedSalary) || 0));
 }
 
 function validateEmployeePayrollInput(input) {
@@ -133,6 +199,10 @@ module.exports = {
     DRIVER_PAYROLL_CONFIG,
     calculatePayroll,
     calculateDriverPayroll,
+    calculateDoctorPaidAmount,
+    normalizeDoctorBonus,
+    normalizePayrollRates,
+    normalizeAllowanceAmount,
     normalizePayrollMonth,
     validateEmployeePayrollInput,
     sumPayrollItems

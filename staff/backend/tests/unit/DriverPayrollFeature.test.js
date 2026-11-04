@@ -26,6 +26,9 @@ describe('protected private driver payroll feature', () => {
         expect(fragment).toContain('id="driver-payroll-working-days"');
         expect(fragment).toContain('id="driver-payroll-daily-deduction"');
         expect(fragment).toContain('id="driver-payroll-total"');
+        expect(fragment).toContain('id="driver-payroll-doctor-bonus"');
+        expect(fragment).toContain('id="driver-payroll-doctor-paid"');
+        expect(fragment).toContain('RSIA Melinda');
     });
 
     test('protects driver payroll APIs for doctors or explicitly delegated accounts and persists monthly records', () => {
@@ -46,12 +49,25 @@ describe('protected private driver payroll feature', () => {
         expect(route).toContain('normalizeDriverName');
     });
 
+    test('stores the fixed RSIA Melinda salary and the configurable dokterdibya bonus per month', () => {
+        const route = read('staff', 'backend', 'routes', 'staff-payroll.js');
+        const splitMigration = read('staff', 'backend', 'migrations', '20261104_add_driver_salary_split.sql');
+        const payrollScript = read('staff', 'public', 'scripts', 'staff-payroll.js');
+
+        expect(splitMigration).toContain('ADD COLUMN IF NOT EXISTS fixed_salary INT UNSIGNED NOT NULL DEFAULT 1000000');
+        expect(splitMigration).toContain('ADD COLUMN IF NOT EXISTS doctor_bonus INT UNSIGNED NOT NULL DEFAULT 500000');
+        expect(route).toContain('req.body && req.body.doctor_bonus');
+        expect(route).toMatch(/fixed_salary = \?, doctor_bonus = \?/);
+        expect(payrollScript).toContain('doctor_bonus: input.doctor_bonus');
+    });
+
     test('includes finalized driver payroll in private-clinic finance analysis', () => {
         const analytics = read('staff', 'backend', 'routes', 'analytics.js');
         const financePage = read('staff', 'public', 'scripts', 'pages', 'finance-analysis-page.js');
 
         expect(analytics).toContain('FROM staff_driver_payrolls');
         expect(analytics).toContain('totalGajiSupir');
+        expect(analytics).toContain('CAST(total_amount AS SIGNED) - CAST(fixed_salary AS SIGNED)');
         expect(financePage).toContain('totalGajiSupir');
     });
 
