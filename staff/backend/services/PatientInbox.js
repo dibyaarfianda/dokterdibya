@@ -102,7 +102,7 @@ function createPatientInbox({ db, createPatientNotification }) {
         const body = previewText(message?.message) || 'Anda menerima pesan baru.';
         return createPatientNotification({
             patient_id: String(room.direct_patient_id),
-            type: 'direct_message',
+            type: 'system', // patient_notifications.type has no 'direct_message' value
             title: 'Pesan baru dari dokterDIBYA',
             message: body,
             link: '/pesan.html?room=' + encodeURIComponent(room.slug),

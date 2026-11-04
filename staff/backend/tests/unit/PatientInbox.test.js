@@ -51,7 +51,7 @@ test('only staff messages in an active direct room notify the patient inbox', as
     expect(createPatientNotification).not.toHaveBeenCalled();
     await inbox.notifyPatient(room, { message: 'Hasil lab sudah keluar' }, { userType: 'staff' });
     expect(createPatientNotification).toHaveBeenCalledWith(expect.objectContaining({
-        patient_id: 'P2', type: 'direct_message', message: 'Hasil lab sudah keluar',
+        patient_id: 'P2', type: 'system', message: 'Hasil lab sudah keluar',
         link: '/pesan.html?room=direct-S1-P2-abc'
     }));
 });
