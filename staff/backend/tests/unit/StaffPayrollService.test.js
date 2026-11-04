@@ -4,6 +4,7 @@ const {
     calculatePayroll,
     calculateDriverPayroll,
     calculateDoctorPaidAmount,
+    normalizePayrollRates,
     validateEmployeePayrollInput,
     sumPayrollItems
 } = require('../../services/StaffPayrollService');
@@ -137,5 +138,40 @@ describe('StaffPayrollService', () => {
         ];
 
         expect(sumPayrollItems(examples)).toBe(2300000);
+    });
+    test('uses custom per-batch rates when provided', () => {
+        expect(calculatePayroll(3, 0, { base_amount: 200000, additional_rate: 120000 })).toMatchObject({
+            base_amount: 200000,
+            additional_amount: 240000,
+            total_amount: 440000
+        });
+        expect(calculatePayroll(8, 0).total_amount).toBe(850000);
+    });
+
+    test('legacy batches without snapshot rates fall back to 150rb / 100rb', () => {
+        expect(normalizePayrollRates({ base_amount: null, additional_rate: undefined })).toEqual({
+            base_amount: 150000,
+            additional_rate: 100000
+        });
+        expect(normalizePayrollRates({ base_rate: 175000, additional_rate: 0 })).toEqual({
+            base_amount: 175000,
+            additional_rate: 0
+        });
+    });
+
+    test.each([-1, 1.5, 'abc'])('rejects invalid rate %p', (rate) => {
+        expect(() => normalizePayrollRates({ base_amount: rate })).toThrow(/tarif_hadir_pertama/);
+    });
+
+    test('pays task allowance only when the staff attended', () => {
+        expect(calculatePayroll(2, 0, { allowance_amount: 100000 })).toMatchObject({
+            allowance_amount: 100000,
+            total_amount: 350000
+        });
+        expect(calculatePayroll(0, 0, { allowance_amount: 100000 })).toMatchObject({
+            allowance_amount: 0,
+            total_amount: 0
+        });
+        expect(() => calculatePayroll(1, 0, { allowance_amount: -5 })).toThrow(/tunjangan/);
     });
 });

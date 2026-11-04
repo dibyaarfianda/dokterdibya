@@ -105,6 +105,9 @@
             row('Jumlah Hadir', escapeHtml(Number(item.attendance_count) || 0) + ' kali') +
             row('Gaji Dasar', escapeHtml(formatRp(item.base_amount))) +
             row('Tambahan Kehadiran', escapeHtml(formatRp(item.additional_amount))) +
+            (Number(item.allowance_paid) > 0
+                ? row('Tunjangan' + (item.allowance_label ? ' ' + escapeHtml(item.allowance_label) : ''), escapeHtml(formatRp(item.allowance_paid)))
+                : '') +
             row('Bonus/Penyesuaian', escapeHtml(formatRp(item.adjustment_amount))) +
             (notes ? row('Catatan', escapeHtml(notes)) : '') +
             row('GAJI DITERIMA', escapeHtml(formatRp(item.total_amount)), 'total') +

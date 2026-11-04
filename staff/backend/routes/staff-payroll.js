@@ -9,8 +9,11 @@ const {
     calculateDriverPayroll,
     calculateDoctorPaidAmount,
     normalizePayrollMonth,
+    normalizePayrollRates,
+    normalizeAllowanceAmount,
     sumPayrollItems
 } = require('../services/StaffPayrollService');
+const { getSessionSettings, getDayName } = require('../services/booking-session-settings');
 
 const router = express.Router();
 
@@ -41,16 +44,105 @@ function normalizeDate(value, fieldName) {
     return raw;
 }
 
+const CYCLE_WEEKS = 4;
+const MAX_CYCLE_DATES = 60;
+
 function normalizePracticeDates(values) {
     if (!Array.isArray(values)) {
         throw new Error('practice_dates harus berupa array');
     }
     const unique = Array.from(new Set(values.map(v => normalizeDate(v, 'tanggal praktik'))));
     unique.sort();
-    if (unique.length !== 4) {
-        throw new Error('Siklus payroll harus berisi tepat 4 tanggal praktik');
+    if (unique.length === 0) {
+        throw new Error('Siklus payroll minimal berisi 1 tanggal praktik');
+    }
+    if (unique.length > MAX_CYCLE_DATES) {
+        throw new Error(`Siklus payroll maksimal ${MAX_CYCLE_DATES} tanggal praktik`);
     }
     return unique;
+}
+
+/**
+ * Siklus gaji = 4 minggu praktik. Jumlah tanggal mengikuti hari praktik aktif
+ * di Pengaturan Booking (booking_settings), mis. Minggu + Sabtu -> 8 tanggal.
+ */
+async function getCycleInfo() {
+    const settings = await getSessionSettings();
+    const days = Array.from(new Set((settings || []).map(s => Number(s.dayOfWeek) || 0)));
+    // Urutkan Senin..Minggu agar label terbaca natural (Sabtu, Minggu).
+    days.sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+    const practiceDays = days.length ? days : [0];
+    return {
+        cycle_weeks: CYCLE_WEEKS,
+        cycle_size: CYCLE_WEEKS * practiceDays.length,
+        practice_days: practiceDays.map(getDayName)
+    };
+}
+
+function actorIdFrom(req) {
+    return String(req.user && (req.user.id || req.user.new_id || '') || '').trim() || null;
+}
+
+async function loadPayrollStaff(queryable = db) {
+    const [rows] = await queryable.query(
+        `SELECT u.new_id AS staff_id, u.name, u.email, u.role,
+                r.name AS role_name, r.display_name AS role_display
+         FROM users u
+         LEFT JOIN roles r ON r.id = u.role_id
+         WHERE u.user_type = 'staff'
+           AND u.is_active = 1
+           AND (u.role_id IS NULL OR u.role_id <> ?)
+         ORDER BY u.name ASC`,
+        [ROLE_IDS.DOKTER]
+    );
+    return rows;
+}
+
+async function loadPayrollSettings(queryable = db) {
+    const [rows] = await queryable.query(
+        'SELECT base_amount, additional_rate, updated_at FROM staff_payroll_settings WHERE id = 1'
+    );
+    const rates = normalizePayrollRates(rows[0] || {});
+    return { ...rates, updated_at: rows[0] ? rows[0].updated_at : null };
+}
+
+async function loadAllowances(queryable = db, { activeOnly = false } = {}) {
+    const [rows] = await queryable.query(
+        `SELECT a.staff_id, a.label, a.amount, a.is_active, u.name AS staff_name
+         FROM staff_payroll_allowances a
+         LEFT JOIN users u ON u.new_id = a.staff_id
+         ${activeOnly ? 'WHERE a.is_active = 1 AND a.amount > 0' : ''}
+         ORDER BY u.name ASC, a.staff_id ASC`
+    );
+    return rows.map(row => ({
+        staff_id: String(row.staff_id),
+        staff_name: row.staff_name || '',
+        label: row.label,
+        amount: Number(row.amount) || 0,
+        is_active: Number(row.is_active) === 1
+    }));
+}
+
+function normalizeAllowanceInput(values) {
+    if (!Array.isArray(values)) {
+        throw new Error('allowances harus berupa array');
+    }
+    const seen = new Set();
+    return values.map(value => {
+        const staffId = String(value && value.staff_id || '').trim();
+        if (!staffId) throw new Error('Staff tunjangan wajib dipilih');
+        if (seen.has(staffId)) throw new Error('Satu staff hanya boleh punya satu tunjangan');
+        seen.add(staffId);
+        const label = String(value.label || '').replace(/\s+/g, ' ').trim();
+        if (!label) throw new Error('Keterangan tunjangan wajib diisi');
+        if (label.length > 100) throw new Error('Keterangan tunjangan maksimal 100 karakter');
+        return {
+            staff_id: staffId,
+            label,
+            amount: normalizeAllowanceAmount(value.amount),
+            is_active: value.is_active === undefined ? true : Boolean(value.is_active)
+        };
+    });
 }
 
 function parseJsonArray(value) {
@@ -80,7 +172,7 @@ function normalizeAttendanceDates(values, practiceDates) {
 }
 
 async function getLatestPracticeDates(limit = 12) {
-    const safeLimit = Math.max(4, Math.min(24, Number.parseInt(limit, 10) || 12));
+    const safeLimit = Math.max(1, Math.min(MAX_CYCLE_DATES, Number.parseInt(limit, 10) || 12));
     const [rows] = await db.query(
         `SELECT DISTINCT duty_date
          FROM staff_duty_logs
@@ -94,7 +186,8 @@ async function getLatestPracticeDates(limit = 12) {
 async function loadBatch(batchId, queryable = db) {
     const [batchRows] = await queryable.query(
         `SELECT id, cycle_label, cycle_start_date, cycle_end_date, payroll_date,
-                practice_dates_json, status, total_amount, notes, created_by,
+                practice_dates_json, base_rate, additional_rate,
+                status, total_amount, notes, created_by,
                 finalized_by, finalized_at, created_at, updated_at
          FROM staff_payroll_batches
          WHERE id = ?`,
@@ -109,12 +202,15 @@ async function loadBatch(batchId, queryable = db) {
     batch.payroll_date = formatDateOnly(batch.payroll_date);
     batch.practice_dates = parseJsonArray(batch.practice_dates_json);
     delete batch.practice_dates_json;
+    const rates = normalizePayrollRates({ base_amount: batch.base_rate, additional_rate: batch.additional_rate });
+    batch.base_rate = rates.base_amount;
+    batch.additional_rate = rates.additional_rate;
 
     const [items] = await queryable.query(
         `SELECT id, batch_id, staff_id, staff_name, role_name, role_display,
                 attendance_dates_json, attendance_count, base_amount,
-                additional_count, additional_amount, adjustment_amount,
-                total_amount, notes, created_at, updated_at
+                additional_count, additional_amount, allowance_label, allowance_amount,
+                adjustment_amount, total_amount, notes, created_at, updated_at
          FROM staff_payroll_items
          WHERE batch_id = ?
          ORDER BY staff_name ASC`,
@@ -123,6 +219,9 @@ async function loadBatch(batchId, queryable = db) {
 
     batch.items = items.map(item => ({
         ...item,
+        allowance_amount: Number(item.allowance_amount) || 0,
+        // Tunjangan hanya dibayar jika hadir >= 1; allowance_amount = nominal snapshot.
+        allowance_paid: Number(item.attendance_count) > 0 ? (Number(item.allowance_amount) || 0) : 0,
         attendance_dates: parseJsonArray(item.attendance_dates_json),
         attendance_dates_json: undefined
     }));
@@ -170,11 +269,14 @@ function badRequest(res, message) {
 
 router.get('/practice-dates', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), async (req, res) => {
     try {
-        const practiceDates = await getLatestPracticeDates(req.query.limit);
-        const latestCycle = practiceDates.slice(0, 4).sort();
+        const cycle = await getCycleInfo();
+        const limit = Math.max(Number.parseInt(req.query.limit, 10) || 0, cycle.cycle_size * 2);
+        const practiceDates = await getLatestPracticeDates(limit);
+        const latestCycle = practiceDates.slice(0, cycle.cycle_size).sort();
         return res.json({
             success: true,
             data: {
+                ...cycle,
                 practice_dates: practiceDates,
                 latest_cycle: latestCycle
             }
@@ -236,10 +338,14 @@ router.get('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('st
 router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.write'), async (req, res) => {
     let practiceDates;
     try {
-        practiceDates = req.body && req.body.practice_dates
-            ? normalizePracticeDates(req.body.practice_dates)
-            : (await getLatestPracticeDates(4)).slice(0, 4).sort();
-        practiceDates = normalizePracticeDates(practiceDates);
+        if (req.body && req.body.practice_dates) {
+            practiceDates = normalizePracticeDates(req.body.practice_dates);
+        } else {
+            const cycle = await getCycleInfo();
+            practiceDates = normalizePracticeDates(
+                (await getLatestPracticeDates(cycle.cycle_size)).slice(0, cycle.cycle_size)
+            );
+        }
     } catch (err) {
         return badRequest(res, err.message);
     }
@@ -256,7 +362,7 @@ router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff
     const cycleStart = practiceDates[0];
     const cycleEnd = practiceDates[practiceDates.length - 1];
     const cycleLabel = `${cycleStart} s/d ${cycleEnd}`;
-    const userId = String(req.user && (req.user.id || req.user.new_id || '') || '').trim() || null;
+    const userId = actorIdFrom(req);
 
     const connection = await db.getConnection();
     await connection.beginTransaction();
@@ -278,23 +384,18 @@ router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff
             });
         }
 
-        const [staffRows] = await connection.query(
-            `SELECT u.new_id AS staff_id, u.name, u.email, u.role,
-                    r.name AS role_name, r.display_name AS role_display
-             FROM users u
-             LEFT JOIN roles r ON r.id = u.role_id
-             WHERE u.user_type = 'staff'
-               AND u.is_active = 1
-               AND (u.role_id IS NULL OR u.role_id <> ?)
-             ORDER BY u.name ASC`,
-            [ROLE_IDS.DOKTER]
-        );
+        const staffRows = await loadPayrollStaff(connection);
 
         const [dutyRows] = await connection.query(
             `SELECT staff_id, duty_date
              FROM staff_duty_logs
-             WHERE duty_date IN (?, ?, ?, ?)`,
+             WHERE duty_date IN (${practiceDates.map(() => '?').join(', ')})`,
             practiceDates
+        );
+
+        const rates = await loadPayrollSettings(connection);
+        const allowanceByStaff = new Map(
+            (await loadAllowances(connection, { activeOnly: true })).map(a => [a.staff_id, a])
         );
 
         const attendanceMap = new Map();
@@ -307,22 +408,34 @@ router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff
         const [batchResult] = await connection.query(
             `INSERT INTO staff_payroll_batches
              (cycle_label, cycle_start_date, cycle_end_date, payroll_date,
-              practice_dates_json, status, total_amount, notes, created_by)
-             VALUES (?, ?, ?, ?, ?, 'draft', 0, ?, ?)`,
-            [cycleLabel, cycleStart, cycleEnd, payrollDate, practiceDatesJson, notes, userId]
+              practice_dates_json, base_rate, additional_rate,
+              status, total_amount, notes, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 0, ?, ?)`,
+            [
+                cycleLabel, cycleStart, cycleEnd, payrollDate, practiceDatesJson,
+                rates.base_amount, rates.additional_rate, notes, userId
+            ]
         );
 
         const batchId = batchResult.insertId;
         const items = staffRows.map(staff => {
             const attendanceDates = Array.from(attendanceMap.get(String(staff.staff_id)) || []).sort();
-            const payroll = calculatePayroll(attendanceDates.length, 0);
+            const allowance = allowanceByStaff.get(String(staff.staff_id));
+            const allowanceAmount = allowance ? allowance.amount : 0;
+            const payroll = calculatePayroll(attendanceDates.length, 0, {
+                ...rates,
+                allowance_amount: allowanceAmount
+            });
             return {
                 staff_id: staff.staff_id,
                 staff_name: staff.name,
                 role_name: staff.role_name || staff.role || '',
                 role_display: staff.role_display || staff.role_name || staff.role || '',
                 attendance_dates: attendanceDates,
-                ...payroll
+                ...payroll,
+                allowance_label: allowance ? allowance.label : null,
+                // Simpan nominal snapshot; dibayar hanya jika hadir >= 1 (lihat calculatePayroll).
+                allowance_amount: allowanceAmount
             };
         });
 
@@ -331,9 +444,9 @@ router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff
                 `INSERT INTO staff_payroll_items
                  (batch_id, staff_id, staff_name, role_name, role_display,
                   attendance_dates_json, attendance_count, base_amount,
-                  additional_count, additional_amount, adjustment_amount,
-                  total_amount, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+                  additional_count, additional_amount, allowance_label, allowance_amount,
+                  adjustment_amount, total_amount, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
                 [
                     batchId,
                     item.staff_id,
@@ -345,6 +458,8 @@ router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff
                     item.base_amount,
                     item.additional_count,
                     item.additional_amount,
+                    item.allowance_label,
+                    item.allowance_amount,
                     item.adjustment_amount,
                     item.total_amount
                 ]
@@ -408,7 +523,11 @@ router.put('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('st
             const adjustment = update.adjustment_amount !== undefined
                 ? Number(update.adjustment_amount)
                 : Number(existing.adjustment_amount || 0);
-            const payroll = calculatePayroll(attendanceDates.length, adjustment);
+            const payroll = calculatePayroll(attendanceDates.length, adjustment, {
+                base_amount: batch.base_rate,
+                additional_rate: batch.additional_rate,
+                allowance_amount: existing.allowance_amount
+            });
             const notes = update.notes !== undefined ? String(update.notes || '').trim() || null : existing.notes || null;
 
             await connection.query(
@@ -479,7 +598,7 @@ router.post('/batches/:id/finalize', verifyToken, requireDoctorRoleOrAccountPerm
             return res.status(409).json({ success: false, message: 'Batch sudah difinalkan' });
         }
 
-        const finalizer = String(req.user && (req.user.id || req.user.new_id || '') || '').trim() || null;
+        const finalizer = actorIdFrom(req);
         await connection.query(
             `UPDATE staff_payroll_batches
              SET status = 'finalized',
@@ -751,6 +870,91 @@ router.delete('/driver-payrolls/:month', verifyToken, requireDoctorRoleOrAccount
     } catch (err) {
         console.error('[staff-payroll] driver delete error:', err);
         return res.status(500).json({ success: false, message: 'Gagal menghapus draft gaji driver' });
+    }
+});
+
+router.get('/settings', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), async (req, res) => {
+    try {
+        const [rates, allowances, cycle, staffRows] = await Promise.all([
+            loadPayrollSettings(),
+            loadAllowances(),
+            getCycleInfo(),
+            loadPayrollStaff()
+        ]);
+        const staff = staffRows.map(row => ({
+            staff_id: String(row.staff_id),
+            name: row.name,
+            role_display: row.role_display || row.role_name || row.role || ''
+        }));
+        return res.json({ success: true, data: { rates, allowances, cycle, staff } });
+    } catch (err) {
+        console.error('[staff-payroll] settings load error:', err);
+        return res.status(500).json({ success: false, message: 'Gagal memuat pengaturan gaji' });
+    }
+});
+
+router.put('/settings', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.write'), async (req, res) => {
+    let rates;
+    let allowances;
+    try {
+        rates = normalizePayrollRates(req.body && req.body.rates);
+        allowances = normalizeAllowanceInput((req.body && req.body.allowances) || []);
+    } catch (err) {
+        return badRequest(res, err.message);
+    }
+
+    const actorId = actorIdFrom(req);
+    const connection = await db.getConnection();
+    let transactionStarted = false;
+    try {
+        await connection.beginTransaction();
+        transactionStarted = true;
+        await connection.query(
+            `INSERT INTO staff_payroll_settings (id, base_amount, additional_rate, updated_by)
+             VALUES (1, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE base_amount = VALUES(base_amount),
+                 additional_rate = VALUES(additional_rate), updated_by = VALUES(updated_by)`,
+            [rates.base_amount, rates.additional_rate, actorId]
+        );
+
+        const staffIds = allowances.map(a => a.staff_id);
+        if (staffIds.length) {
+            await connection.query(
+                `DELETE FROM staff_payroll_allowances WHERE staff_id NOT IN (${staffIds.map(() => '?').join(', ')})`,
+                staffIds
+            );
+        } else {
+            await connection.query('DELETE FROM staff_payroll_allowances');
+        }
+        for (const allowance of allowances) {
+            await connection.query(
+                `INSERT INTO staff_payroll_allowances (staff_id, label, amount, is_active, updated_by)
+                 VALUES (?, ?, ?, ?, ?)
+                 ON DUPLICATE KEY UPDATE label = VALUES(label), amount = VALUES(amount),
+                     is_active = VALUES(is_active), updated_by = VALUES(updated_by)`,
+                [allowance.staff_id, allowance.label, allowance.amount, allowance.is_active ? 1 : 0, actorId]
+            );
+        }
+
+        await connection.commit();
+        transactionStarted = false;
+        const [savedRates, savedAllowances] = await Promise.all([
+            loadPayrollSettings(connection),
+            loadAllowances(connection)
+        ]);
+        return res.json({
+            success: true,
+            message: 'Pengaturan gaji disimpan. Berlaku untuk draft gaji berikutnya.',
+            data: { rates: savedRates, allowances: savedAllowances }
+        });
+    } catch (err) {
+        if (transactionStarted) {
+            try { await connection.rollback(); } catch (_rollbackError) {}
+        }
+        console.error('[staff-payroll] settings save error:', err);
+        return res.status(500).json({ success: false, message: 'Gagal menyimpan pengaturan gaji' });
+    } finally {
+        connection.release();
     }
 });
 

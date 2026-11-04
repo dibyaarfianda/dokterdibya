@@ -51,6 +51,22 @@ describe('staff payroll printable slips', () => {
         expect(html).toContain('SC-12-STF-01');
     });
 
+    test('shows the task allowance on the staff slip only when it was paid', () => {
+        const item = {
+            ...finalizedBatch.items[0],
+            allowance_label: 'Stok Obat',
+            allowance_amount: 100000,
+            allowance_paid: 100000,
+            total_amount: 375000
+        };
+        const html = buildStaffSlipDocument(finalizedBatch, item);
+        expect(html).toContain('Tunjangan Stok Obat');
+        expect(html).toContain('Rp 100.000');
+
+        const unpaid = buildStaffSlipDocument(finalizedBatch, finalizedBatch.items[0]);
+        expect(unpaid).not.toContain('Tunjangan');
+    });
+
     test('builds a finalized monthly driver slip with deduction details', () => {
         const html = buildDriverSlipDocument(finalizedDriver);
 

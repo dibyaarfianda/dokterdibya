@@ -19,9 +19,47 @@ function toInteger(value, fieldName) {
     return normalized;
 }
 
-function calculatePayroll(attendanceCount, adjustmentAmount = 0) {
+const MAX_PAYROLL_RATE = 10000000;
+
+function normalizeRateValue(value, fallback, fieldName) {
+    if (value === undefined || value === null || value === '') return fallback;
+    const rate = toInteger(value, fieldName);
+    if (rate < 0) {
+        throw new Error(`${fieldName} tidak boleh negatif`);
+    }
+    if (rate > MAX_PAYROLL_RATE) {
+        throw new Error(`${fieldName} maksimal ${MAX_PAYROLL_RATE}`);
+    }
+    return rate;
+}
+
+// Rates are snapshotted per batch; missing values (legacy batches) fall back
+// to the original 150rb / 100rb defaults so historical totals never change.
+function normalizePayrollRates(rates = {}) {
+    const source = rates || {};
+    return {
+        base_amount: normalizeRateValue(
+            source.base_amount !== undefined ? source.base_amount : source.base_rate,
+            PAYROLL_CONFIG.BASE_AMOUNT,
+            'tarif_hadir_pertama'
+        ),
+        additional_rate: normalizeRateValue(source.additional_rate, PAYROLL_CONFIG.ADDITIONAL_RATE, 'tarif_hadir_tambahan')
+    };
+}
+
+function normalizeAllowanceAmount(value) {
+    return normalizeRateValue(value, 0, 'tunjangan');
+}
+
+/**
+ * total = hadir pertama + hadir tambahan x tarif + tunjangan + penyesuaian.
+ * Tunjangan tugas (mis. stok obat, HR) hanya dibayar jika hadir >= 1.
+ */
+function calculatePayroll(attendanceCount, adjustmentAmount = 0, options = {}) {
     const count = toInteger(attendanceCount, 'jumlah_hadir');
     const adjustment = toInteger(adjustmentAmount, 'bonus_penyesuaian');
+    const rates = normalizePayrollRates(options);
+    const allowance = normalizeAllowanceAmount(options && options.allowance_amount);
 
     if (count < 0) {
         throw new Error('jumlah_hadir tidak boleh negatif');
@@ -36,15 +74,16 @@ function calculatePayroll(attendanceCount, adjustmentAmount = 0) {
             base_amount: 0,
             additional_count: 0,
             additional_amount: 0,
+            allowance_amount: 0,
             adjustment_amount: adjustment,
             total_amount: adjustment
         };
     }
 
     const additionalCount = Math.max(0, count - 1);
-    const baseAmount = PAYROLL_CONFIG.BASE_AMOUNT;
-    const additionalAmount = additionalCount * PAYROLL_CONFIG.ADDITIONAL_RATE;
-    const totalAmount = baseAmount + additionalAmount + adjustment;
+    const baseAmount = rates.base_amount;
+    const additionalAmount = additionalCount * rates.additional_rate;
+    const totalAmount = baseAmount + additionalAmount + allowance + adjustment;
 
     if (totalAmount < 0) {
         throw new Error('Pendapatan akhir tidak boleh negatif');
@@ -55,6 +94,7 @@ function calculatePayroll(attendanceCount, adjustmentAmount = 0) {
         base_amount: baseAmount,
         additional_count: additionalCount,
         additional_amount: additionalAmount,
+        allowance_amount: allowance,
         adjustment_amount: adjustment,
         total_amount: totalAmount
     };
@@ -161,6 +201,8 @@ module.exports = {
     calculateDriverPayroll,
     calculateDoctorPaidAmount,
     normalizeDoctorBonus,
+    normalizePayrollRates,
+    normalizeAllowanceAmount,
     normalizePayrollMonth,
     validateEmployeePayrollInput,
     sumPayrollItems

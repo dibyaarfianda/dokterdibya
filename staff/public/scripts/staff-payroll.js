@@ -1,5 +1,6 @@
 /**
- * staff-payroll.js - Gajian karyawan per 4 kali praktik.
+ * staff-payroll.js - Gajian karyawan per siklus 4 minggu praktik.
+ * Jumlah tanggal per siklus mengikuti hari praktik aktif di Pengaturan Booking.
  */
 (function () {
     'use strict';
@@ -8,6 +9,9 @@
         loading: false,
         practiceDates: [],
         latestCycle: [],
+        cycleSize: 4,
+        practiceDays: [],
+        settings: null,
         batches: [],
         currentBatch: null,
         driverPayrolls: [],
@@ -322,7 +326,14 @@
     function renderCyclePicker() {
         var el = document.getElementById('staff-payroll-cycle-dates');
         if (!el) return;
-        var dates = state.latestCycle.length === 4 ? state.latestCycle : ['', '', '', ''];
+        var size = Math.max(1, Number(state.cycleSize) || 4);
+        var dates = state.latestCycle.slice(0, size);
+        while (dates.length < size) dates.push('');
+        var title = document.getElementById('staff-payroll-cycle-title');
+        if (title) {
+            title.textContent = 'Siklus ' + size + ' Praktik' +
+                (state.practiceDays.length ? ' (4 minggu \u00b7 ' + state.practiceDays.join(', ') + ')' : '');
+        }
         el.innerHTML = dates.map(function (date, index) {
             return '<div class="col-md-3 col-6 mb-2">' +
                 '<label class="small text-muted mb-1">Praktik ' + (index + 1) + '</label>' +
@@ -391,13 +402,15 @@
         var batch = state.currentBatch;
         if (!batch) {
             thead.innerHTML = '';
-            tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted py-4">Belum ada batch dipilih.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-4">Belum ada batch dipilih.</td></tr>';
             renderActions();
             return;
         }
 
         var dates = batch.practice_dates || [];
         var readonly = batch.status === 'finalized' || !hasAccountPermission('staff_payroll.write');
+        var attendanceHead = document.getElementById('staff-payroll-attendance-head');
+        if (attendanceHead) attendanceHead.setAttribute('colspan', String(Math.max(1, dates.length)));
         thead.innerHTML = dates.map(function (date) {
             return '<th class="text-center">' + escapeHtml(formatDate(date)) + '</th>';
         }).join('');
@@ -409,13 +422,16 @@
                     '<input type="checkbox" class="staff-payroll-attendance" data-date="' + escapeHtml(date) + '"' + (checked.has(date) ? ' checked' : '') + (readonly ? ' disabled' : '') + '>' +
                     '</td>';
             }).join('');
-            return '<tr data-staff-id="' + escapeHtml(item.staff_id) + '">' +
+            var allowanceAmount = Number(item.allowance_amount) || 0;
+            return '<tr data-staff-id="' + escapeHtml(item.staff_id) + '" data-allowance="' + allowanceAmount + '">' +
                 '<td><div class="font-weight-bold">' + escapeHtml(item.staff_name) + '</div><div class="text-muted small">' + escapeHtml(item.staff_id) + '</div></td>' +
                 '<td>' + escapeHtml(item.role_display || item.role_name || '-') + '</td>' +
                 dateCells +
                 '<td class="text-right payroll-attendance-count">' + (item.attendance_count || 0) + '</td>' +
                 '<td class="text-right payroll-base">' + escapeHtml(formatRp(item.base_amount)) + '</td>' +
                 '<td class="text-right payroll-additional">' + escapeHtml(formatRp(item.additional_amount)) + '</td>' +
+                '<td class="text-right"><span class="payroll-allowance">' + escapeHtml(formatRp(item.allowance_paid)) + '</span>' +
+                    (item.allowance_label ? '<div class="text-muted small">' + escapeHtml(item.allowance_label) + '</div>' : '') + '</td>' +
                 '<td style="min-width:130px;"><input type="number" step="1" class="form-control form-control-sm text-right staff-payroll-adjustment" value="' + (Number(item.adjustment_amount) || 0) + '"' + (readonly ? ' disabled' : '') + '></td>' +
                 '<td class="text-right font-weight-bold payroll-total">' + escapeHtml(formatRp(item.total_amount)) + '</td>' +
                 '<td style="min-width:150px;"><input type="text" class="form-control form-control-sm staff-payroll-notes" value="' + escapeHtml(item.notes || '') + '"' + (readonly ? ' disabled' : '') + '></td>' +
@@ -443,15 +459,21 @@
         var attendance = row.querySelectorAll('.staff-payroll-attendance:checked').length;
         var adjustmentInput = row.querySelector('.staff-payroll-adjustment');
         var adjustment = Number(adjustmentInput && adjustmentInput.value ? adjustmentInput.value : 0);
-        var base = attendance > 0 ? 150000 : 0;
-        var additional = attendance > 0 ? Math.max(0, attendance - 1) * 100000 : 0;
-        var total = attendance > 0 ? base + additional + adjustment : 0;
+        var batch = state.currentBatch || {};
+        var baseRate = batch.base_rate != null ? Number(batch.base_rate) : 150000;
+        var additionalRate = batch.additional_rate != null ? Number(batch.additional_rate) : 100000;
+        var base = attendance > 0 ? baseRate : 0;
+        var additional = attendance > 0 ? Math.max(0, attendance - 1) * additionalRate : 0;
+        var allowance = attendance > 0 ? (Number(row.getAttribute('data-allowance')) || 0) : 0;
+        var total = attendance > 0 ? base + additional + allowance + adjustment : 0;
         if (attendance === 0 && adjustmentInput && Number(adjustmentInput.value || 0) !== 0) {
             adjustmentInput.value = 0;
         }
         row.querySelector('.payroll-attendance-count').textContent = attendance;
         row.querySelector('.payroll-base').textContent = formatRp(base);
         row.querySelector('.payroll-additional').textContent = formatRp(additional);
+        var allowanceEl = row.querySelector('.payroll-allowance');
+        if (allowanceEl) allowanceEl.textContent = formatRp(allowance);
         row.querySelector('.payroll-total').textContent = formatRp(total);
         return total;
     }
@@ -626,10 +648,121 @@
     }
 
     async function loadPracticeDates() {
-        var result = await api('/practice-dates?limit=12');
-        state.practiceDates = result.data && result.data.practice_dates ? result.data.practice_dates : [];
-        state.latestCycle = result.data && result.data.latest_cycle ? result.data.latest_cycle : [];
+        var result = await api('/practice-dates');
+        var data = result.data || {};
+        state.practiceDates = data.practice_dates || [];
+        state.latestCycle = data.latest_cycle || [];
+        state.cycleSize = Number(data.cycle_size) || 4;
+        state.practiceDays = data.practice_days || [];
         renderCyclePicker();
+    }
+
+    async function loadSettings() {
+        var result = await api('/settings');
+        state.settings = result.data || null;
+        renderSettings();
+    }
+
+    function staffOptions(selectedId) {
+        var staff = (state.settings && state.settings.staff) || [];
+        return '<option value="">- Pilih staff -</option>' + staff.map(function (s) {
+            return '<option value="' + escapeHtml(s.staff_id) + '"' + (String(s.staff_id) === String(selectedId) ? ' selected' : '') + '>' +
+                escapeHtml(s.name) + (s.role_display ? ' (' + escapeHtml(s.role_display) + ')' : '') + '</option>';
+        }).join('');
+    }
+
+    function allowanceRowHtml(allowance, readonly) {
+        var a = allowance || {};
+        var dis = readonly ? ' disabled' : '';
+        return '<div class="form-row align-items-center mb-2 staff-payroll-allowance-row">' +
+            '<div class="col-md-4 col-12 mb-1 mb-md-0"><select class="form-control form-control-sm staff-payroll-allowance-staff"' + dis + '>' + staffOptions(a.staff_id) + '</select></div>' +
+            '<div class="col-md-3 col-6"><input type="text" maxlength="100" class="form-control form-control-sm staff-payroll-allowance-label" placeholder="Tugas (mis. Stok Obat)" value="' + escapeHtml(a.label || '') + '"' + dis + '></div>' +
+            '<div class="col-md-3 col-4"><input type="number" min="0" step="1000" class="form-control form-control-sm text-right staff-payroll-allowance-amount" value="' + (a.amount != null ? Number(a.amount) : 100000) + '"' + dis + '></div>' +
+            '<div class="col-md-2 col-2 text-right">' + (readonly ? '' : '<button type="button" class="btn btn-sm btn-outline-danger staff-payroll-allowance-remove" title="Hapus"><i class="fas fa-times"></i></button>') + '</div>' +
+            '</div>';
+    }
+
+    function renderSettings() {
+        var el = document.getElementById('staff-payroll-settings-body');
+        if (!el) return;
+        var settings = state.settings;
+        if (!settings) {
+            el.innerHTML = '<div class="text-muted small">Pengaturan gaji tidak tersedia.</div>';
+            return;
+        }
+        var readonly = !hasAccountPermission('staff_payroll.write');
+        var dis = readonly ? ' disabled' : '';
+        var rates = settings.rates || {};
+        el.innerHTML =
+            '<div class="form-row">' +
+            '<div class="col-md-3 col-6 mb-2"><label class="small text-muted mb-1">Hadir pertama (Rp)</label>' +
+            '<input type="number" min="0" step="1000" id="staff-payroll-rate-base" class="form-control form-control-sm text-right" value="' + (Number(rates.base_amount) || 0) + '"' + dis + '></div>' +
+            '<div class="col-md-3 col-6 mb-2"><label class="small text-muted mb-1">Tiap hadir tambahan (Rp)</label>' +
+            '<input type="number" min="0" step="1000" id="staff-payroll-rate-additional" class="form-control form-control-sm text-right" value="' + (Number(rates.additional_rate) || 0) + '"' + dis + '></div>' +
+            '<div class="col-md-6 mb-2 d-flex align-items-end"><div class="small text-muted">Perubahan tarif & tunjangan berlaku untuk draft gaji yang dibuat berikutnya. Batch yang sudah ada tidak berubah.</div></div>' +
+            '</div>' +
+            '<label class="small text-muted mb-1">Tunjangan tugas per siklus (dibayar jika hadir minimal 1x)</label>' +
+            '<div id="staff-payroll-allowance-list">' +
+            ((settings.allowances || []).map(function (a) { return allowanceRowHtml(a, readonly); }).join('') ||
+                '<div class="text-muted small mb-2 staff-payroll-allowance-empty">Belum ada tunjangan.</div>') +
+            '</div>' +
+            (readonly ? '' :
+                '<div class="mt-2">' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary mr-2" id="staff-payroll-allowance-add"><i class="fas fa-plus mr-1"></i>Tambah Tunjangan</button>' +
+                '<button type="button" class="btn btn-sm btn-info" id="staff-payroll-settings-save"><i class="fas fa-save mr-1"></i>Simpan Pengaturan</button>' +
+                '</div>');
+
+        var formula = document.getElementById('staff-payroll-formula');
+        if (formula) {
+            formula.textContent = 'Rumus: hadir pertama ' + formatRp(rates.base_amount) + ', hadir berikutnya ' +
+                formatRp(rates.additional_rate) + ' per hadir, + tunjangan tugas (jika hadir) + penyesuaian opsional. ' +
+                'Draft memakai tarif saat draft dibuat.';
+        }
+
+        if (readonly) return;
+        var list = document.getElementById('staff-payroll-allowance-list');
+        list.addEventListener('click', function (e) {
+            var btn = e.target.closest('.staff-payroll-allowance-remove');
+            if (btn) btn.closest('.staff-payroll-allowance-row').remove();
+        });
+        document.getElementById('staff-payroll-allowance-add').addEventListener('click', function () {
+            var empty = list.querySelector('.staff-payroll-allowance-empty');
+            if (empty) empty.remove();
+            list.insertAdjacentHTML('beforeend', allowanceRowHtml(null, false));
+        });
+        document.getElementById('staff-payroll-settings-save').addEventListener('click', saveSettings);
+    }
+
+    function collectSettings() {
+        return {
+            rates: {
+                base_amount: Number((document.getElementById('staff-payroll-rate-base') || {}).value || 0),
+                additional_rate: Number((document.getElementById('staff-payroll-rate-additional') || {}).value || 0)
+            },
+            allowances: Array.from(document.querySelectorAll('#staff-payroll-allowance-list .staff-payroll-allowance-row')).map(function (row) {
+                return {
+                    staff_id: row.querySelector('.staff-payroll-allowance-staff').value,
+                    label: row.querySelector('.staff-payroll-allowance-label').value,
+                    amount: Number(row.querySelector('.staff-payroll-allowance-amount').value || 0)
+                };
+            })
+        };
+    }
+
+    async function saveSettings() {
+        if (!hasAccountPermission('staff_payroll.write')) return;
+        setBusy(true);
+        try {
+            var result = await api('/settings', { method: 'PUT', body: JSON.stringify(collectSettings()) });
+            state.settings = Object.assign({}, state.settings, result.data || {});
+            renderSettings();
+            showMessage(result.message || 'Pengaturan gaji disimpan', 'success');
+        } catch (err) {
+            console.error('[staff-payroll] settings save error:', err);
+            showMessage(err.message || 'Gagal menyimpan pengaturan gaji', 'error');
+        } finally {
+            setBusy(false);
+        }
     }
 
     async function loadBatches() {
@@ -785,6 +918,7 @@
         try {
             await loadDriverPayrolls();
             await loadPracticeDates();
+            await loadSettings();
             await loadBatches();
             if (!state.currentBatch && state.batches.length > 0) {
                 await loadBatch(state.batches[0].id);
@@ -795,7 +929,7 @@
         } catch (err) {
             console.error('[staff-payroll] init error:', err);
             var tbody = document.getElementById('staff-payroll-tbody');
-            if (tbody) tbody.innerHTML = '<tr><td colspan="13" class="text-center text-danger py-4">' + escapeHtml(err.message || 'Gagal memuat payroll') + '</td></tr>';
+            if (tbody) tbody.innerHTML = '<tr><td colspan="14" class="text-center text-danger py-4">' + escapeHtml(err.message || 'Gagal memuat payroll') + '</td></tr>';
         } finally {
             setBusy(false);
             renderDriverPreview();
@@ -809,6 +943,7 @@
         save: save,
         finalize: finalize,
         removeDraft: removeDraft,
+        saveSettings: saveSettings,
         loadBatch: loadBatch,
         saveDriver: saveDriver,
         finalizeDriver: finalizeDriver,
