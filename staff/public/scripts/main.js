@@ -2800,8 +2800,8 @@ async function initializeApp(user) {
             console.error('Error fetching menu visibility:', error);
         });
 
-        // Defer badge counts so first render is not blocked by non-critical request.
-        window.scheduleNotificationBadges?.();
+        // Sidebar "new" red dots (global rule, shell/menu-new-badges.js).
+        window.staffMenuNewBadges?.refresh();
 
         // Realtime presence is useful, but it must not compete with the first
         // dashboard paint and its critical data requests.

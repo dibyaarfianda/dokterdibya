@@ -5,32 +5,10 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '../../../..');
 const read = file => fs.readFileSync(path.join(root, file), 'utf8');
 
-test('staff notification badges pause hidden, coalesce in flight, and refresh once on visible', async () => {
-    const listeners = {};
-    let finish;
-    const staffApiRequest = jest.fn(() => new Promise(resolve => { finish = () => resolve({ success: true, counts: {} }); }));
-    const document = { visibilityState: 'visible', getElementById: () => null,
-        addEventListener: (name, fn) => { listeners[name] = fn; } };
-    const intervals = [];
-    const window = { setTimeout: fn => { fn(); return 1; }, setInterval: fn => { intervals.push(fn); return 1; } };
-    const ctx = vm.createContext({ document, window, localStorage: { getItem: () => null }, staffApiRequest,
-        console: { error() {} }, Date, JSON });
-    vm.runInContext(read('staff/public/scripts/shell/notification-badges.js').replace(/^import .*;\r?\n/gm, ''), ctx);
-    ctx.scheduleNotificationBadges();
-    await Promise.resolve();
-    expect(staffApiRequest).toHaveBeenCalledTimes(1);
-    document.visibilityState = 'hidden';
-    listeners.visibilitychange();
-    intervals[0]();
-    expect(staffApiRequest).toHaveBeenCalledTimes(1);
-    document.visibilityState = 'visible';
-    listeners.visibilitychange();
-    expect(staffApiRequest).toHaveBeenCalledTimes(1);
-    finish();
-    await Promise.resolve();
-    await Promise.resolve();
-    await new Promise(resolve => setImmediate(resolve));
-    expect(staffApiRequest).toHaveBeenCalledTimes(2);
+test('staff sidebar menu dots poll through the shared coordinator, not their own interval', () => {
+    const source = read('staff/public/scripts/shell/menu-new-badges.js');
+    expect(source).toContain('window.staffPollingCoordinator.register(JOB_KEY');
+    expect(source).not.toContain('setInterval(');
 });
 
 test('patient home queue never polls hidden and refreshes once when visible', async () => {

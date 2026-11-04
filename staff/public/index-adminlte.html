@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/patient-queue-view.js?v=v488"></script>
-    <script src="/staff/public/scripts/date-time-format.js?v=v488"></script>
-    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v488"></script>
+    <script src="/scripts/patient-queue-view.js?v=v489"></script>
+    <script src="/staff/public/scripts/date-time-format.js?v=v489"></script>
+    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v489"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Cache controlled via versioned URLs instead of no-cache headers -->
@@ -11,16 +11,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v488';
+        window.STAFF_CACHE_VERSION = 'v489';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v488">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v488">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v488">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v488">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v489">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v489">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v489">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v489">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v488">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v489">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,7 +28,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v488">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v489">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -57,7 +57,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v488"></script>
+    <script src="scripts/error-handler.js?v=v489"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -72,10 +72,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v488">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v489">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v488">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v489">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -435,7 +435,7 @@
                     <li class="nav-item" id="nav-klinik-private">
                         <a href="#" class="nav-link" data-shell-action="show-klinik-private">
                             <i class="nav-icon fas fa-calendar-check text-primary"></i>
-                            <p>Klinik Privat <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span></p>
+                            <p>Klinik Privat</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-antrian-online">
@@ -445,21 +445,21 @@
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-rsia-melinda">
-                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rsia_melinda"]' data-staff-after="markBadgeRead" data-staff-after-args='["rsia_melinda"]'>
+                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rsia_melinda"]'>
                             <i class="nav-icon fas fa-calendar-check text-danger"></i>
-                            <p>RSIA Melinda <span class="badge badge-warning right d-none" id="badge-rsia-melinda">0</span></p>
+                            <p>RSIA Melinda</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-rsud-gambiran">
-                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rsud_gambiran"]' data-staff-after="markBadgeRead" data-staff-after-args='["rsud_gambiran"]'>
+                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rsud_gambiran"]'>
                             <i class="nav-icon fas fa-calendar-check text-info"></i>
-                            <p>RSUD Gambiran <span class="badge badge-warning right d-none" id="badge-rsud-gambiran">0</span></p>
+                            <p>RSUD Gambiran</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-rs-bhayangkara">
-                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rs_bhayangkara"]' data-staff-after="markBadgeRead" data-staff-after-args='["rs_bhayangkara"]'>
+                        <a href="#" class="nav-link" data-staff-call="showHospitalAppointmentsPage" data-staff-args='["rs_bhayangkara"]'>
                             <i class="nav-icon fas fa-calendar-check text-success"></i>
-                            <p>RS Bhayangkara <span class="badge badge-warning right d-none" id="badge-rs-bhayangkara">0</span></p>
+                            <p>RS Bhayangkara</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-jadwal-booking">
@@ -500,25 +500,25 @@
                     <li class="nav-item dokter-only d-none" id="nav-tanya-dokter">
                         <a href="#" class="nav-link" data-shell-action="show-tanya-dokter">
                             <i class="nav-icon fas fa-comments text-primary"></i>
-                            <p>Tanya Dokter <span class="badge badge-danger right d-none" id="badge-tanya-dokter" data-conversation-badge="tanya" hidden></span></p>
+                            <p>Tanya Dokter</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-support-chat">
                         <a href="#" class="nav-link" data-staff-call="showSupportChatPage">
                             <i class="nav-icon fas fa-headset text-success"></i>
-                            <p>Chat Bantuan <span class="badge badge-danger right d-none" id="support-chat-badge">0</span></p>
+                            <p>Chat Bantuan</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-community-chat">
                         <a href="#" class="nav-link" data-staff-call="showCommunityChatPage">
                             <i class="nav-icon fas fa-comment-dots"></i>
-                            <p>Chat Komunitas <span class="badge badge-danger right d-none" data-conversation-badge="community" hidden></span></p>
+                            <p>Chat Komunitas</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-patient-inbox">
                         <a href="#" class="nav-link" data-staff-call="showPatientInboxPage">
                             <i class="nav-icon fas fa-envelope text-info"></i>
-                            <p>Inbox Pasien <span class="badge badge-danger right d-none" data-conversation-badge="inbox" hidden></span></p>
+                            <p>Inbox Pasien</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-pengumuman">
@@ -552,9 +552,9 @@
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-artikel-kesehatan">
-                        <a href="#" class="nav-link" data-staff-call="showArtikelKesehatanPage" data-staff-after="markBadgeRead" data-staff-after-args='["artikel"]'>
+                        <a href="#" class="nav-link" data-staff-call="showArtikelKesehatanPage">
                             <i class="nav-icon fas fa-book-reader"></i>
-                            <p>Artikel Kesehatan <span class="badge badge-success right d-none" id="badge-artikel-likes">0</span></p>
+                            <p>Artikel Kesehatan</p>
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-ruang-cerita">
@@ -3726,11 +3726,11 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/mobile-quick-menu.js?v=v488"></script>
-<script defer src="scripts/shell/actions.js?v=v488"></script>
-<script defer src="scripts/shell/compact-sidebar.js?v=v488"></script>
-<script defer src="scripts/shell/drd-links.js?v=v488"></script>
-<script defer src="scripts/patient-demo-manager.js?v=v488"></script>
+<script defer src="scripts/shell/mobile-quick-menu.js?v=v489"></script>
+<script defer src="scripts/shell/actions.js?v=v489"></script>
+<script defer src="scripts/shell/compact-sidebar.js?v=v489"></script>
+<script defer src="scripts/shell/drd-links.js?v=v489"></script>
+<script defer src="scripts/patient-demo-manager.js?v=v489"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3811,9 +3811,9 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v488" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v488" preload="auto"></audio>
-<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v488" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v489" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v489" preload="auto"></audio>
+<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v489" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3825,7 +3825,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v488"></script>
+<script defer src="scripts/rum.js?v=v489"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4088,7 +4088,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v488"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v489"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4241,7 +4241,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v488"></script>
+ <script src="scripts/mobile-helper.js?v=v489"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4253,8 +4253,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v488"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v488"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v489"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v489"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

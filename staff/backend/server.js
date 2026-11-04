@@ -559,6 +559,9 @@ app.use('/', authRoutes);
 // PDF and Notification routes
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/notifications', notificationRoutes);
+// Staff sidebar "new" red dots (per staff last-seen per menu)
+const staffMenuBadgesRoutes = require('./routes/staff-menu-badges');
+app.use('/api/staff-menu-badges', staffMenuBadgesRoutes);
 // REMOVED: app.use('/api/email-settings', emailSettingsRoutes);
 
 // Analytics routes

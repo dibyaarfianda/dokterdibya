@@ -30,7 +30,7 @@ describe('staff panel wave 3 lifecycle contracts', () => {
         const dashboard = read('staff', 'public', 'scripts', 'dashboard.js');
         const queue = read('staff', 'public', 'scripts', 'antrian-online.js');
         const support = read('staff', 'public', 'scripts', 'support-chat-staff.js');
-        const badge = read('staff', 'public', 'scripts', 'shell', 'support-chat-badge.js');
+        const badge = read('staff', 'public', 'scripts', 'shell', 'menu-new-badges.js');
 
         expect(dashboard).not.toMatch(/setInterval\([^\n]*loadDashboardLiveQueue/);
         expect(queue).not.toMatch(/setInterval\([^\n]*loadAntrianOnlineQueue/);

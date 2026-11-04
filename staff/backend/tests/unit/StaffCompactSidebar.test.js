@@ -48,6 +48,10 @@ describe('compact desktop staff sidebar', () => {
         const result = await page.evaluate(() => {
             const nav = document.querySelector('.nav-sidebar');
             const originalIds = [...nav.querySelectorAll('.nav-item[id]')].map(item => item.id);
+            const seededDot = document.createElement('span');
+            seededDot.className = 'staff-new-dot';
+            seededDot.dataset.menuDot = 'nav-klinik-private';
+            document.querySelector('#nav-klinik-private > .nav-link').appendChild(seededDot);
             const initialized = window.staffCompactSidebar?.init({ role_id: 1 });
             return {
                 initialized: Boolean(initialized),
@@ -55,7 +59,7 @@ describe('compact desktop staff sidebar', () => {
                 currentIds: [...nav.querySelectorAll('.nav-item[id]')].map(item => item.id),
                 shortcuts: [...document.querySelectorAll('#staff-compact-shortcuts > .nav-item')].map(item => item.id),
                 groups: [...document.querySelectorAll('.staff-compact-group')].map(item => item.dataset.group),
-                badgeStillOnOriginalLink: Boolean(document.querySelector('#nav-klinik-private #badge-klinik-private')),
+                badgeStillOnOriginalLink: Boolean(document.querySelector('#nav-klinik-private > .nav-link > .staff-new-dot')),
                 actionStillOnOriginalLink: document.querySelector('#nav-kelola-pasien .nav-link')?.dataset.shellAction
             };
         });
@@ -146,13 +150,16 @@ describe('compact desktop staff sidebar', () => {
             window.staffCompactSidebar?.init({ role_id: 1 });
             const chat = document.getElementById('nav-support-chat');
             chat.querySelector('.nav-link').classList.add('active');
-            const badge = document.getElementById('support-chat-badge');
-            badge.classList.remove('d-none');
-            badge.textContent = '2';
+            const dot = document.createElement('span');
+            dot.className = 'staff-new-dot';
+            dot.dataset.menuDot = 'nav-support-chat';
+            chat.querySelector('.nav-link').appendChild(dot);
+            window.dispatchEvent(new CustomEvent('staff:menu-dots-changed'));
             window.staffCompactSidebar?.refresh();
             const group = chat.closest('.staff-compact-group');
             const open = group.classList.contains('menu-open');
-            const groupBadge = group.querySelector('.staff-compact-group-badge')?.textContent;
+            const groupBadgeEl = group.querySelector('.staff-compact-group-badge');
+            const groupBadge = groupBadgeEl && !groupBadgeEl.hidden ? 'dot' : 'none';
             document.getElementById('staff-compact-collapse').click();
             const groupButtonBox = group.querySelector('.staff-compact-group-button').getBoundingClientRect();
             const groupBadgeBox = group.querySelector('.staff-compact-group-badge').getBoundingClientRect();
@@ -166,7 +173,7 @@ describe('compact desktop staff sidebar', () => {
             };
         });
         expect(result.open).toBe(true);
-        expect(result.groupBadge).toBe('2');
+        expect(result.groupBadge).toBe('dot');
         expect(result.collapsed).toBe(true);
         expect(result.searchControl).toBe(true);
         expect(result.badgeWithinIcon).toBe(true);

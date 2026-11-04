@@ -253,7 +253,7 @@
             if (attached) refreshBadges();
         });
         originalItems.forEach(item => {
-            item.querySelectorAll('.badge').forEach(badge => {
+            item.querySelectorAll('.staff-new-dot').forEach(badge => {
                 badgeObserver.observe(badge, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
             });
         });
@@ -269,11 +269,11 @@
     }
 
     function badgeCount(item) {
-        return Array.from(item.querySelectorAll('.badge')).reduce((total, badge) => {
-            if (badge.hidden || badge.classList.contains('d-none') || badge.style.display === 'none') return total;
-            const count = Number.parseInt(badge.textContent.trim(), 10);
-            return total + (Number.isFinite(count) && count > 0 ? count : 0);
-        }, 0);
+        // Global rule: sidebar menus use the "new" red dot (shell/menu-new-badges.js).
+        // Each visible dot counts once; the compact group/rail badge renders as a dot.
+        return Array.from(item.querySelectorAll('.staff-new-dot')).reduce((total, dot) => (
+            total + (dot.hidden || dot.style.display === 'none' ? 0 : 1)
+        ), 0);
     }
 
     function refreshBadges() {
@@ -281,7 +281,8 @@
             const badge = group.button.querySelector('.staff-compact-group-badge');
             const total = Array.from(group.list.children).reduce((sum, item) => sum + (isAllowed(item) ? badgeCount(item) : 0), 0);
             badge.hidden = total === 0;
-            badge.textContent = total > 99 ? '99+' : String(total);
+            badge.textContent = '';
+            badge.setAttribute('aria-label', total ? 'Ada yang baru' : '');
         });
         const shortcuts = document.getElementById('staff-compact-shortcuts');
         shortcuts?.querySelectorAll(':scope > .nav-item').forEach(item => {
@@ -289,7 +290,8 @@
             if (!badge) return;
             const count = isAllowed(item) ? badgeCount(item) : 0;
             badge.hidden = count === 0;
-            badge.textContent = count > 99 ? '99+' : String(count);
+            badge.textContent = '';
+            badge.setAttribute('aria-label', count ? 'Ada yang baru' : '');
         });
     }
 
@@ -402,4 +404,8 @@
     };
     window.addEventListener('resize', syncViewport);
     document.addEventListener('staffPageChanged', refresh);
+    // Dots may be injected/updated after attach (shell/menu-new-badges.js).
+    window.addEventListener('staff:menu-dots-changed', () => {
+        if (attached) refreshBadges();
+    });
 })();

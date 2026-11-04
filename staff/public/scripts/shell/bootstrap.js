@@ -59,9 +59,6 @@ async function bootstrapStaffShell() {
     installLazyFeatureShim('reloadEstimasiBiayaConfig', 'estimasiBiaya', 'estimasi-biaya');
     installLazyFeatureShim('showTroubleshootingPage', 'troubleshooting', 'troubleshooting');
     installLazyFeatureShim('loadTroubleshootingReports', 'troubleshooting', 'troubleshooting');
-    installLazyFeatureShim('markBadgeRead', 'notificationBadges');
-    installLazyFeatureShim('loadNotificationBadges', 'notificationBadges');
-    installLazyFeatureShim('scheduleNotificationBadges', 'notificationBadges');
     installLazyFeatureShim('viewPatientDetail', 'patientSearchDetail');
     [
         'showManagePatientsPage',
@@ -229,11 +226,7 @@ async function bootstrapStaffShell() {
         };
 
         scheduleDeferredStartup(
-            () => import('./support-chat-badge.js').then(module => module.initSupportChatBadge?.()),
-            2200
-        );
-        scheduleDeferredStartup(
-            () => import('./conversation-badges.js').then(module => module.initConversationBadges()),
+            () => import('./menu-new-badges.js').then(module => module.initMenuNewBadges()),
             1500
         );
         runIdle(() => {

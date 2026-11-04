@@ -185,13 +185,9 @@
 
     // ==================== BADGE ====================
     function updateBadge(count) {
+        // Sidebar uses the global "new" red dot (shell/menu-new-badges.js);
+        // only the pending count is kept for this page.
         state.badgeCount = count;
-        var badge = document.getElementById('support-chat-badge');
-        if (badge) {
-            badge.textContent = count > 0 ? count : '';
-            badge.classList.toggle('d-none', count <= 0);
-            badge.style.display = count > 0 ? 'inline-flex' : 'none';
-        }
     }
 
     async function refreshBadge(options) {
@@ -612,7 +608,7 @@
             });
         }
         requestSessionListRefresh();
-        window.staffPollingCoordinator?.trigger('support-chat-badge');
+        window.staffMenuNewBadges?.refresh();
     }
 
     // ==================== PUBLIC API ====================
