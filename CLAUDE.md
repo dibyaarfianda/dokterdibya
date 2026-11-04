@@ -1475,7 +1475,7 @@ User confirmed with "luar biasa, ini baru GPT JOB" after the Gerakan Bayi trial 
 
 **How it works:**
 - Backend registry: `staff/backend/config/menu-activity-sources.js` maps each sidebar `<li id>` to source tables. The newest `created_at`/`updated_at` (only columns that really exist, checked via `information_schema`) is compared with the staff member's `staff_menu_seen.seen_at`.
-- Service/route: `staff/backend/services/StaffMenuBadges.js`, `GET /api/staff-menu-badges`, `POST /api/staff-menu-badges/seen`. Seen state is **per staff, server-side**; first sight of a menu baselines to NOW (no dot flood on rollout).
+- Service/route: `staff/backend/services/StaffMenuBadges.js`, `GET /api/staff-menu-badges`, `POST /api/staff-menu-badges/seen`. Seen state is **per staff, server-side**; first sight of a menu baselines to NOW (no dot flood on rollout). Table `staff_menu_seen` comes ONLY from `migrations/20261104_staff_menu_seen.sql` (no runtime `CREATE TABLE`, enforced by `StaffPanelWave6StartupSchema.test.js`); run it on deploy. Without it the endpoint returns no dots and logs a warning.
 - Frontend: `staff/public/scripts/shell/menu-new-badges.js` injects `.staff-new-dot` into every `li.nav-item[id] > .nav-link`, marks a page seen when its nav-link becomes `.active`, polls every 60s via `staffPollingCoordinator`, and refreshes on socket events.
 - Mirrors: any element with `data-menu-dot="<li id>"` follows the same state (mobile quick menu, "Lainnya" sheet); `data-menu-dot="more"` lights when a hidden menu has a dot. Compact sidebar group/rail badges render as dots.
 

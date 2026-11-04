@@ -8,15 +8,15 @@ const LATEST_TTL_MS = 30 * 1000;
 const COLUMNS_TTL_MS = 10 * 60 * 1000;
 const IDENT_RE = /^[a-z0-9_]+$/i;
 
-const CREATE_TABLE_SQL = `CREATE TABLE IF NOT EXISTS staff_menu_seen (
-    user_id VARCHAR(64) NOT NULL,
-    nav_key VARCHAR(80) NOT NULL,
-    seen_at DATETIME NOT NULL,
-    PRIMARY KEY (user_id, nav_key)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`;
+// Table staff_menu_seen is owned by migrations/20261104_staff_menu_seen.sql
+// (no runtime schema mutation, see StaffPanelWave6StartupSchema.test.js).
+const MIGRATION_NAME = '20261104_staff_menu_seen.sql';
+
+function isMissingTable(error) {
+    return error && (error.code === 'ER_NO_SUCH_TABLE' || error.errno === 1146);
+}
 
 function createStaffMenuBadges({ db, sources = MENU_ACTIVITY_SOURCES, logger = console, now = () => Date.now() }) {
-    let tableReady = null;
     let columnsCache = { at: 0, map: null };
     let latestCache = { at: 0, map: null, pending: null };
     const warned = new Set();
@@ -25,16 +25,6 @@ function createStaffMenuBadges({ db, sources = MENU_ACTIVITY_SOURCES, logger = c
         if (warned.has(key)) return;
         warned.add(key);
         logger.warn(`[StaffMenuBadges] ${message}`);
-    }
-
-    function ensureTable() {
-        if (!tableReady) {
-            tableReady = db.query(CREATE_TABLE_SQL).catch(error => {
-                tableReady = null;
-                throw error;
-            });
-        }
-        return tableReady;
     }
 
     function sourceTables() {
@@ -127,11 +117,18 @@ function createStaffMenuBadges({ db, sources = MENU_ACTIVITY_SOURCES, logger = c
     async function getBadges(userId) {
         const uid = String(userId || '');
         if (!uid) return {};
-        await ensureTable();
-        const [latest, [seenRows]] = await Promise.all([
-            getLatest(),
-            db.query('SELECT nav_key, seen_at FROM staff_menu_seen WHERE user_id = ?', [uid])
-        ]);
+        let latest;
+        let seenRows;
+        try {
+            [latest, [seenRows]] = await Promise.all([
+                getLatest(),
+                db.query('SELECT nav_key, seen_at FROM staff_menu_seen WHERE user_id = ?', [uid])
+            ]);
+        } catch (error) {
+            if (!isMissingTable(error)) throw error;
+            warnOnce('missing-seen-table', `table staff_menu_seen missing; run migrations/${MIGRATION_NAME}`);
+            return Object.fromEntries(Object.keys(sources).map(key => [key, false]));
+        }
         const seen = new Map((seenRows || []).map(r => [r.nav_key, new Date(r.seen_at).getTime()]));
         const missing = Object.keys(sources).filter(key => !seen.has(key));
         if (missing.length) {
@@ -157,16 +154,20 @@ function createStaffMenuBadges({ db, sources = MENU_ACTIVITY_SOURCES, logger = c
         const uid = String(userId || '');
         const key = String(navKey || '');
         if (!uid || !Object.prototype.hasOwnProperty.call(sources, key)) return false;
-        await ensureTable();
-        await db.query(
-            `INSERT INTO staff_menu_seen (user_id, nav_key, seen_at) VALUES (?, ?, NOW())
-             ON DUPLICATE KEY UPDATE seen_at = NOW()`,
-            [uid, key]
-        );
+        try {
+            await db.query(
+                `INSERT INTO staff_menu_seen (user_id, nav_key, seen_at) VALUES (?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE seen_at = NOW()`,
+                [uid, key]
+            );
+        } catch (error) {
+            if (!isMissingTable(error)) throw error;
+            warnOnce('missing-seen-table', `table staff_menu_seen missing; run migrations/${MIGRATION_NAME}`);
+        }
         return true;
     }
 
     return { getBadges, markSeen, buildSourceSql, _reset: () => { latestCache = { at: 0, map: null, pending: null }; columnsCache = { at: 0, map: null }; } };
 }
 
-module.exports = { createStaffMenuBadges, CREATE_TABLE_SQL };
+module.exports = { createStaffMenuBadges, MIGRATION_NAME };

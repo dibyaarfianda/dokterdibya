@@ -15,7 +15,6 @@ function fakeDb({ seen = [], latest = {} } = {}) {
     const calls = [];
     const query = jest.fn(async (sql, params) => {
         calls.push(sql);
-        if (/CREATE TABLE/.test(sql)) return [[]];
         if (/information_schema/.test(sql)) {
             return [[
                 { table_name: 'tbl_a', column_name: 'created_at' },
@@ -98,6 +97,20 @@ test('only existing timestamp columns are used', () => {
     expect(svc.buildSourceSql({ table: 'tbl_a' }, columns)).toContain('GREATEST(');
     expect(svc.buildSourceSql({ table: 'tbl_b' }, columns)).toBe('SELECT MAX(`created_at`) AS latest FROM `tbl_b`');
     expect(svc.buildSourceSql({ table: 'tbl_b', columns: ['nope'] }, columns)).toBeNull();
+});
+
+test('missing staff_menu_seen table degrades to no dots instead of failing', async () => {
+    const missing = Object.assign(new Error('no table'), { code: 'ER_NO_SUCH_TABLE' });
+    const db = { query: jest.fn(async sql => {
+        if (/information_schema/.test(sql)) return [[]];
+        if (/staff_menu_seen/.test(sql)) throw missing;
+        return [[]];
+    }) };
+    const logger = { warn: jest.fn() };
+    const svc = createStaffMenuBadges({ db, sources: SOURCES, logger });
+    expect(await svc.getBadges('U1')).toEqual({ 'nav-a': false, 'nav-b': false, 'nav-missing': false, 'nav-broken': false });
+    expect(await svc.markSeen('U1', 'nav-a')).toBe(true);
+    expect(logger.warn.mock.calls.some(([msg]) => msg.includes('20261104_staff_menu_seen.sql'))).toBe(true);
 });
 
 test('unknown nav keys cannot be marked seen', async () => {

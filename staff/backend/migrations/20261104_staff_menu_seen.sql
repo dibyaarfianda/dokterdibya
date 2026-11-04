@@ -1,6 +1,7 @@
 -- Staff sidebar "new" red dots: when each staff member last opened each menu.
 -- nav_key = <li id> of the sidebar menu (see staff/backend/config/menu-activity-sources.js).
--- The table is also created lazily by services/StaffMenuBadges.js.
+-- Run on deploy: mysql -u root dibyaklinik < staff/backend/migrations/20261104_staff_menu_seen.sql
+-- Until it exists, /api/staff-menu-badges returns no dots (logged) instead of failing.
 CREATE TABLE IF NOT EXISTS staff_menu_seen (
     user_id VARCHAR(64) NOT NULL,
     nav_key VARCHAR(80) NOT NULL,
