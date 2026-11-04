@@ -130,17 +130,27 @@ function actorIdFrom(req) {
     return String(req.user && (req.user.id || req.user.new_id || '') || '').trim() || null;
 }
 
+// Template akses Observer hanya melihat; tidak bertugas di poli sehingga tidak digaji.
+const OBSERVER_TEMPLATE_KEY = 'observer';
+
+/**
+ * Jabatan mengikuti sistem akses akun (Kelola Akses: Staff, Koordinator, Farmasi, ...),
+ * dengan fallback ke role lama untuk akun yang belum pindah — sama seperti AccessControlService.
+ */
 async function loadPayrollStaff(queryable = db) {
     const [rows] = await queryable.query(
         `SELECT u.new_id AS staff_id, u.name, u.email, u.role,
-                r.name AS role_name, r.display_name AS role_display
+                COALESCE(uap.template_key, r.name, u.role) AS role_name,
+                COALESCE(uap.job_label, r.display_name, r.name, u.role, 'Staff') AS role_display
          FROM users u
          LEFT JOIN roles r ON r.id = u.role_id
+         LEFT JOIN user_access_policies uap ON uap.user_id = u.new_id
          WHERE u.user_type = 'staff'
            AND u.is_active = 1
            AND (u.role_id IS NULL OR u.role_id <> ?)
+           AND (uap.template_key IS NULL OR uap.template_key <> ?)
          ORDER BY u.name ASC`,
-        [ROLE_IDS.DOKTER]
+        [ROLE_IDS.DOKTER, OBSERVER_TEMPLATE_KEY]
     );
     return rows;
 }

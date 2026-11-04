@@ -238,6 +238,25 @@ describe('staff payroll cycle follows booking practice days', () => {
         expect(res.body.data.items[0].allowance_paid).toBe(0);
     });
 
+    test('payroll staff use account access job labels and exclude Observer accounts', async () => {
+        let staffQuery;
+        db.query.mockImplementation(async (sql, params) => {
+            if (sql.includes('FROM users u')) {
+                staffQuery = { sql, params };
+                return [[{ staff_id: 'S1', name: 'Liza', role_name: 'coordinator', role_display: 'Koordinator' }]];
+            }
+            if (sql.includes('FROM staff_payroll_settings')) return [[{ base_amount: 150000, additional_rate: 100000 }]];
+            return [[]];
+        });
+
+        const res = await request(app).get('/api/staff-payroll/settings').expect(200);
+        expect(res.body.data.staff).toEqual([{ staff_id: 'S1', name: 'Liza', role_display: 'Koordinator' }]);
+        expect(staffQuery.sql).toContain('LEFT JOIN user_access_policies uap ON uap.user_id = u.new_id');
+        expect(staffQuery.sql).toContain("COALESCE(uap.job_label, r.display_name, r.name, u.role, 'Staff') AS role_display");
+        expect(staffQuery.sql).toContain('uap.template_key IS NULL OR uap.template_key <> ?');
+        expect(staffQuery.params).toContain('observer');
+    });
+
     test('rejects an empty cycle', async () => {
         const res = await request(app)
             .post('/api/staff-payroll/batches')
