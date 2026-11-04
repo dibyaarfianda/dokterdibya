@@ -378,6 +378,12 @@ async function ensureSundayConfirmationSchema() {
             // Already has the value or different schema — non-fatal
 }
 
+// Closed klinik privat dates (Kelola Jadwal → tanggal libur) get no confirmation popup or expiry
+const NOT_DISABLED_PRACTICE_DATE_SQL = `NOT EXISTS (
+                       SELECT 1 FROM disabled_practice_dates dpd
+                       WHERE dpd.disabled_date = sunday_appointments.appointment_date
+                         AND (dpd.location IS NULL OR dpd.location = 'klinik_privat'))`;
+
 /**
  * Daily at 18:00 WIB for tomorrow and 07:00 WIB for today — enable the
  * in-app confirmation popup for every booking that requires confirmation.
@@ -391,7 +397,8 @@ function startPracticeConfirmationSender() {
                 `UPDATE sunday_appointments
                  SET confirmation_popup_enabled_at = COALESCE(confirmation_popup_enabled_at, NOW())
                  WHERE status = 'pending_confirmation'
-                   AND appointment_date = ${targetDateSql}`
+                   AND appointment_date = ${targetDateSql}
+                   AND ${NOT_DISABLED_PRACTICE_DATE_SQL}`
             );
 
             logger.info(`[Scheduler] Practice confirmation popup enabled for ${result.affectedRows || 0} appointment(s)`);
@@ -423,7 +430,8 @@ function startPracticeConfirmationExpiryJob() {
                 `SELECT id, patient_id, patient_name, session, slot_number
                  FROM sunday_appointments
                  WHERE status = 'pending_confirmation'
-                   AND appointment_date = CURDATE()`
+                   AND appointment_date = CURDATE()
+                   AND ${NOT_DISABLED_PRACTICE_DATE_SQL}`
             );
 
             if (expiring.length === 0) {

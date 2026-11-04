@@ -94,6 +94,10 @@ async function sendH1Reminders() {
             WHERE appointment_date = ?
               AND status = 'confirmed'
               AND reminder_h1_sent_at IS NULL
+              AND NOT EXISTS (
+                  SELECT 1 FROM disabled_practice_dates dpd
+                  WHERE dpd.disabled_date = sunday_appointments.appointment_date
+                    AND (dpd.location IS NULL OR dpd.location = 'klinik_privat'))
               AND patient_phone IS NOT NULL
         `, [tomorrowStr]);
 

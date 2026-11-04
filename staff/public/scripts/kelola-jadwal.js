@@ -363,6 +363,16 @@ async function saveDisabledDate() {
             return;
         }
 
+        // Klinik privat (or all locations): patients already booked on this date
+        // must be cancelled and told, otherwise they still show up.
+        if (!location || location === 'klinik_privat') {
+            const bookedCount = await countActiveBookings(token, disabled_date);
+            if (bookedCount > 0 && confirm(`Ada ${bookedCount} pasien sudah booking Klinik Privat tanggal ini.\n\nBatalkan semua booking tersebut dan beri tahu pasien (popup saat buka aplikasi + push)?`)) {
+                await cancelDateBookings(token, disabled_date, location, reason);
+                return;
+            }
+        }
+
         const response = await fetch(`${API_BASE}/disabled-dates`, {
             method: 'POST',
             headers: {
@@ -390,6 +400,51 @@ async function saveDisabledDate() {
         console.error('Error saving disabled date:', error);
         showToast(error.message || 'Gagal menyimpan', 'error');
     }
+}
+
+async function countActiveBookings(token, date) {
+    const response = await fetch(`${VPS_API_BASE}/api/booking-settings/bookings?date=${encodeURIComponent(date)}&_t=${Date.now()}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!response.ok) return 0;
+    const data = await response.json();
+    const inactive = ['cancelled', 'no_show', 'completed'];
+    return (data.bookings || []).filter(b => !inactive.includes(b.status)).length;
+}
+
+async function cancelDateBookings(token, date, location, reason) {
+    if (!reason || reason.trim().length < 10) {
+        throw new Error('Isi alasan minimal 10 karakter, alasan ini dikirim ke pasien');
+    }
+
+    const response = await fetch(`${VPS_API_BASE}/api/booking-settings/cancel-date`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ date, reason })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.message || 'Gagal membatalkan booking');
+    }
+
+    // cancel-date closes klinik privat only; "Semua Lokasi" still needs its own row
+    if (!location) {
+        await fetch(`${API_BASE}/disabled-dates`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ disabled_date: date, location: null, reason })
+        });
+    }
+
+    $('#disabledDateModal').modal('hide');
+    showToast(data.failed > 0 ? `${data.message} ${data.failed} gagal diberi tahu.` : data.message, data.failed > 0 ? 'warning' : 'success');
+    loadDisabledDates();
 }
 
 async function deleteDisabledDate(id) {

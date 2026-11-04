@@ -463,4 +463,108 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadminOrAccountPermissi
     }
 });
 
+/**
+ * POST /api/booking-settings/cancel-date
+ * Close a klinik privat date: block new bookings, cancel every active booking
+ * on that date, and notify each booked patient (popup on next open + push)
+ */
+router.post('/cancel-date', verifyToken, requireSuperadminOrAccountPermission('booking.manage'), async (req, res) => {
+    const { date, reason } = req.body;
+    const trimmedReason = String(reason || '').trim();
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || ''))) {
+        return res.status(400).json({ success: false, message: 'Tanggal tidak valid' });
+    }
+    if (trimmedReason.length < 10) {
+        return res.status(400).json({ success: false, message: 'Alasan pembatalan minimal 10 karakter' });
+    }
+
+    let connection;
+    let bookings;
+    try {
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const createdBy = req.user.name || req.user.email || 'Staff';
+        await connection.query(
+            `INSERT IGNORE INTO disabled_practice_dates (disabled_date, location, reason, created_by)
+             VALUES (?, 'klinik_privat', ?, ?)`,
+            [date, trimmedReason, createdBy]
+        );
+
+        [bookings] = await connection.query(
+            `SELECT sa.id, sa.patient_id, sa.appointment_date, sa.session,
+                    bs.session_name, bs.start_time, bs.end_time, bs.slot_duration, bs.break_start_time, bs.break_duration_minutes,
+                    sa.slot_number
+             FROM sunday_appointments sa
+             LEFT JOIN booking_settings bs ON sa.session = bs.session_number
+             WHERE sa.appointment_date = ?
+               AND sa.status NOT IN ('cancelled', 'no_show', 'completed')
+             FOR UPDATE`,
+            [date]
+        );
+
+        if (bookings.length > 0) {
+            await connection.query(
+                `UPDATE sunday_appointments
+                 SET status = 'cancelled',
+                     cancelled_by = 'staff',
+                     cancellation_reason = ?,
+                     cancelled_at = NOW()
+                 WHERE id IN (?)`,
+                [trimmedReason, bookings.map(b => b.id)]
+            );
+        }
+
+        await connection.commit();
+    } catch (error) {
+        if (connection) {
+            try { await connection.rollback(); } catch (e) { /* ignore rollback errors */ }
+        }
+        console.error('Error cancelling bookings for date:', error);
+        return res.status(500).json({ success: false, message: 'Gagal membatalkan booking pada tanggal ini' });
+    } finally {
+        if (connection) connection.release();
+    }
+
+    const formattedDate = DibyaDateTime.date(new Date(`${date}T00:00:00`), {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+
+    let notified = 0;
+    let failed = 0;
+    for (const booking of bookings) {
+        if (!booking.patient_id) {
+            failed++;
+            continue;
+        }
+        const result = await createPatientNotification({
+            patient_id: booking.patient_id,
+            type: 'appointment',
+            title: 'Jadwal Klinik Dibatalkan',
+            message: `Mohon maaf, klinik tidak praktik pada ${formattedDate}, sehingga janji temu Anda pukul ${getSlotTimeFromBookingRow(booking)} dibatalkan. Alasan: ${trimmedReason}. Silakan pilih jadwal lain.`,
+            link: '/booking-klinik.html',
+            icon: 'fa fa-times-circle',
+            icon_color: 'text-danger',
+            popup_on_open: true,
+            send_push: true
+        });
+        if (result && result.success) notified++;
+        else failed++;
+    }
+
+    clearBookingSettingCaches();
+
+    res.json({
+        success: true,
+        message: `Tanggal ditutup. ${bookings.length} booking dibatalkan, ${notified} pasien diberi tahu.`,
+        cancelled: bookings.length,
+        notified,
+        failed
+    });
+});
+
 module.exports = router;
