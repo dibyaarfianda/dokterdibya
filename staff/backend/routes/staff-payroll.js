@@ -7,6 +7,7 @@ const {
     DRIVER_PAYROLL_CONFIG,
     calculatePayroll,
     calculateDriverPayroll,
+    calculateDoctorPaidAmount,
     normalizePayrollMonth,
     sumPayrollItems
 } = require('../services/StaffPayrollService');
@@ -144,14 +145,15 @@ function normalizeDriverPayrollRow(row) {
     if (!row) return null;
     return {
         ...row,
-        payroll_month: formatDateOnly(row.payroll_month)
+        payroll_month: formatDateOnly(row.payroll_month),
+        doctor_paid_amount: calculateDoctorPaidAmount(row.total_amount, row.fixed_salary)
     };
 }
 
 async function loadDriverPayroll(payrollMonth, queryable = db) {
     const [rows] = await queryable.query(
         `SELECT id, driver_name, payroll_month, calendar_days, sunday_count, working_days,
-                monthly_salary, absence_days, daily_deduction, deduction_amount,
+                fixed_salary, doctor_bonus, monthly_salary, absence_days, daily_deduction, deduction_amount,
                 total_amount, status, created_by, finalized_by, finalized_at,
                 created_at, updated_at
          FROM staff_driver_payrolls
@@ -534,7 +536,7 @@ router.get('/driver-payrolls', verifyToken, requireDoctorRoleOrAccountPermission
         const limit = Math.max(1, Math.min(60, Number.parseInt(req.query.limit, 10) || 24));
         const [rows] = await db.query(
             `SELECT id, driver_name, payroll_month, calendar_days, sunday_count, working_days,
-                    monthly_salary, absence_days, daily_deduction, deduction_amount,
+                    fixed_salary, doctor_bonus, monthly_salary, absence_days, daily_deduction, deduction_amount,
                     total_amount, status, finalized_at, created_at, updated_at
              FROM staff_driver_payrolls
              ORDER BY payroll_month DESC
@@ -552,7 +554,11 @@ router.put('/driver-payrolls/:month', verifyToken, requireDoctorRoleOrAccountPer
     let payroll;
     let driverName;
     try {
-        payroll = calculateDriverPayroll(req.params.month, req.body && req.body.absence_days);
+        payroll = calculateDriverPayroll(
+            req.params.month,
+            req.body && req.body.absence_days,
+            req.body && req.body.doctor_bonus
+        );
         driverName = normalizeDriverName(req.body && req.body.driver_name);
     } catch (err) {
         return badRequest(res, err.message);
@@ -581,7 +587,8 @@ router.put('/driver-payrolls/:month', verifyToken, requireDoctorRoleOrAccountPer
         if (existing) {
             await connection.query(
                 `UPDATE staff_driver_payrolls
-                 SET driver_name = ?, calendar_days = ?, sunday_count = ?, working_days = ?, monthly_salary = ?,
+                 SET driver_name = ?, calendar_days = ?, sunday_count = ?, working_days = ?,
+                     fixed_salary = ?, doctor_bonus = ?, monthly_salary = ?,
                      absence_days = ?, daily_deduction = ?, deduction_amount = ?, total_amount = ?
                  WHERE id = ?`,
                 [
@@ -589,6 +596,8 @@ router.put('/driver-payrolls/:month', verifyToken, requireDoctorRoleOrAccountPer
                     payroll.calendar_days,
                     payroll.sunday_count,
                     payroll.working_days,
+                    payroll.fixed_salary,
+                    payroll.doctor_bonus,
                     payroll.monthly_salary,
                     payroll.absence_days,
                     payroll.daily_deduction,
@@ -600,15 +609,18 @@ router.put('/driver-payrolls/:month', verifyToken, requireDoctorRoleOrAccountPer
         } else {
             await connection.query(
                 `INSERT INTO staff_driver_payrolls
-                 (driver_name, payroll_month, calendar_days, sunday_count, working_days, monthly_salary,
+                 (driver_name, payroll_month, calendar_days, sunday_count, working_days,
+                  fixed_salary, doctor_bonus, monthly_salary,
                   absence_days, daily_deduction, deduction_amount, total_amount, status, created_by)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
                 [
                     driverName,
                     payroll.payroll_month,
                     payroll.calendar_days,
                     payroll.sunday_count,
                     payroll.working_days,
+                    payroll.fixed_salary,
+                    payroll.doctor_bonus,
                     payroll.monthly_salary,
                     payroll.absence_days,
                     payroll.daily_deduction,

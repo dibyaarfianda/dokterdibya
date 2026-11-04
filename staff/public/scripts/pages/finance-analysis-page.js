@@ -608,7 +608,7 @@
                 ? `Gaji Staff (${staffCost.batchCount} batch, ${staffCost.paidStaffCount || 0} staff dibayar, ${staffCost.totalKehadiran || 0} hadir)`
                 : 'Gaji Staff (belum ada payroll finalized)';
             const driverPayrollLabel = staffCost.driverPayrollCount > 0
-                ? `Gaji Driver (${staffCost.driverPayrollCount} bulan finalized)`
+                ? `Gaji Driver - bagian dokterdibya (${staffCost.driverPayrollCount} bulan finalized)`
                 : 'Gaji Driver (belum ada payroll finalized)';
 
             // Update Profit Loss Table

@@ -55,7 +55,18 @@
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
     }
 
-    function calculateDriverPreview(month, absenceDays) {
+    var DRIVER_FIXED_SALARY = 1000000;
+    var DRIVER_DEFAULT_DOCTOR_BONUS = 500000;
+    var DRIVER_MAX_DOCTOR_BONUS = 10000000;
+
+    function normalizeDriverBonus(value) {
+        if (value === undefined || value === null || String(value).trim() === '') return DRIVER_DEFAULT_DOCTOR_BONUS;
+        var bonus = Math.trunc(Number(value));
+        if (!Number.isFinite(bonus)) return DRIVER_DEFAULT_DOCTOR_BONUS;
+        return Math.max(0, Math.min(DRIVER_MAX_DOCTOR_BONUS, bonus));
+    }
+
+    function calculateDriverPreview(month, absenceDays, doctorBonus) {
         var match = /^(\d{4})-(\d{2})$/.exec(String(month || ''));
         if (!match) return null;
         var year = Number(match[1]);
@@ -67,19 +78,24 @@
         }
         var workingDays = calendarDays - sundayCount;
         var absence = Math.max(0, Math.min(workingDays, Math.trunc(Number(absenceDays) || 0)));
-        var monthlySalary = 1500000;
+        var bonus = normalizeDriverBonus(doctorBonus);
+        var monthlySalary = DRIVER_FIXED_SALARY + bonus;
         var dailyDeduction = Math.ceil((monthlySalary / workingDays) / 1000) * 1000;
         var deductionAmount = Math.min(monthlySalary, absence * dailyDeduction);
+        var totalAmount = monthlySalary - deductionAmount;
         return {
             payroll_month: month + '-01',
             calendar_days: calendarDays,
             sunday_count: sundayCount,
             working_days: workingDays,
+            fixed_salary: DRIVER_FIXED_SALARY,
+            doctor_bonus: bonus,
             monthly_salary: monthlySalary,
             absence_days: absence,
             daily_deduction: dailyDeduction,
             deduction_amount: deductionAmount,
-            total_amount: monthlySalary - deductionAmount
+            total_amount: totalAmount,
+            doctor_paid_amount: Math.max(0, totalAmount - DRIVER_FIXED_SALARY)
         };
     }
 
@@ -140,7 +156,7 @@
         var tbody = document.getElementById('driver-payroll-history');
         if (!tbody) return;
         if (!state.driverPayrolls.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Belum ada gaji driver tersimpan.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Belum ada gaji driver tersimpan.</td></tr>';
             return;
         }
 
@@ -153,6 +169,7 @@
                 '<td><strong>' + escapeHtml(month) + '</strong></td>' +
                 '<td class="text-right">' + Number(item.working_days || 0) + '</td>' +
                 '<td class="text-right">' + Number(item.absence_days || 0) + '</td>' +
+                '<td class="text-right">' + escapeHtml(formatRp(item.doctor_bonus)) + '</td>' +
                 '<td class="text-right">' + escapeHtml(formatRp(item.daily_deduction)) + '</td>' +
                 '<td class="text-right font-weight-bold">' + escapeHtml(formatRp(item.total_amount)) + '</td>' +
                 '<td><span class="badge ' + badge + '">' + escapeHtml(item.status) + '</span></td>' +
@@ -179,10 +196,11 @@
         var monthInput = document.getElementById('driver-payroll-month');
         var absenceInput = document.getElementById('driver-payroll-absence-days');
         var nameInput = document.getElementById('driver-payroll-name');
+        var bonusInput = document.getElementById('driver-payroll-doctor-bonus');
         if (!monthInput || !absenceInput || !nameInput) return;
         if (!monthInput.value) monthInput.value = defaultDriverPayrollMonth();
 
-        var preview = calculateDriverPreview(monthInput.value, absenceInput.value);
+        var preview = calculateDriverPreview(monthInput.value, absenceInput.value, bonusInput ? bonusInput.value : undefined);
         if (!preview) return;
         absenceInput.max = String(preview.working_days);
         if (Number(absenceInput.value || 0) !== preview.absence_days) {
@@ -195,6 +213,7 @@
             'driver-payroll-working-days': preview.working_days,
             'driver-payroll-daily-deduction': formatRp(preview.daily_deduction),
             'driver-payroll-deduction': formatRp(preview.deduction_amount),
+            'driver-payroll-doctor-paid': formatRp(preview.doctor_paid_amount),
             'driver-payroll-total': formatRp(preview.total_amount)
         };
         Object.keys(values).forEach(function (id) {
@@ -223,6 +242,7 @@
         if (deleteButton) deleteButton.style.display = hasAccountPermission('staff_payroll.delete') ? '' : 'none';
         if (printButton) printButton.style.display = hasAccountPermission('staff_payroll.export') ? '' : 'none';
         absenceInput.disabled = finalized || !hasAccountPermission('staff_payroll.write');
+        if (bonusInput) bonusInput.disabled = finalized || !hasAccountPermission('staff_payroll.write');
         nameInput.disabled = !hasAccountPermission('staff_payroll.write');
         if (saveButton) {
             saveButton.disabled = state.loading || (finalized && !stored);
@@ -262,6 +282,12 @@
         monthInput.value = month;
         nameInput.value = record ? String(record.driver_name || '') : '';
         absenceInput.value = String(record ? Number(record.absence_days || 0) : 0);
+        var bonusInput = document.getElementById('driver-payroll-doctor-bonus');
+        if (bonusInput) {
+            bonusInput.value = String(record && record.doctor_bonus !== undefined && record.doctor_bonus !== null
+                ? Number(record.doctor_bonus)
+                : DRIVER_DEFAULT_DOCTOR_BONUS);
+        }
         state.currentDriverPayroll = record;
         renderDriverPreview();
     }
@@ -284,6 +310,12 @@
         if (nameInput && nameInput.dataset.bound !== 'true') {
             nameInput.dataset.bound = 'true';
             nameInput.addEventListener('input', renderDriverPreview);
+        }
+        var bonusInput = document.getElementById('driver-payroll-doctor-bonus');
+        if (bonusInput && bonusInput.dataset.bound !== 'true') {
+            bonusInput.dataset.bound = 'true';
+            bonusInput.addEventListener('input', renderDriverPreview);
+            bonusInput.addEventListener('change', renderDriverPreview);
         }
     }
 
@@ -496,14 +528,23 @@
         var absenceDays = Number((document.getElementById('driver-payroll-absence-days') || {}).value || 0);
         var driverName = String((document.getElementById('driver-payroll-name') || {}).value || '').replace(/\s+/g, ' ').trim();
         if (!driverName) throw new Error('Nama driver wajib diisi');
-        return { month: month, driver_name: driverName, absence_days: absenceDays };
+        var bonusRaw = String((document.getElementById('driver-payroll-doctor-bonus') || {}).value || '').trim();
+        var doctorBonus = bonusRaw === '' ? DRIVER_DEFAULT_DOCTOR_BONUS : Number(bonusRaw);
+        if (!Number.isInteger(doctorBonus) || doctorBonus < 0 || doctorBonus > DRIVER_MAX_DOCTOR_BONUS) {
+            throw new Error('Tambahan dari dokterdibya harus bilangan bulat antara 0 dan ' + formatRp(DRIVER_MAX_DOCTOR_BONUS));
+        }
+        return { month: month, driver_name: driverName, absence_days: absenceDays, doctor_bonus: doctorBonus };
     }
 
     async function persistDriverDraft(showSuccess) {
         var input = collectDriverPayrollInput();
         var result = await api('/driver-payrolls/' + encodeURIComponent(input.month), {
             method: 'PUT',
-            body: JSON.stringify({ driver_name: input.driver_name, absence_days: input.absence_days })
+            body: JSON.stringify({
+                driver_name: input.driver_name,
+                absence_days: input.absence_days,
+                doctor_bonus: input.doctor_bonus
+            })
         });
         state.currentDriverPayroll = result.data;
         await loadDriverPayrolls();

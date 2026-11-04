@@ -124,7 +124,9 @@
             (record.finalized_at ? row('Tanggal Finalisasi', escapeHtml(formatDate(record.finalized_at))) : '') +
             row('Status', '<span class="status">FINALIZED</span>') +
             '</table><div class="section-title">Rincian gaji</div><table class="meta">' +
-            row('Gaji Bulanan', escapeHtml(formatRp(record.monthly_salary))) +
+            row('Gaji Fix (RSIA Melinda)', escapeHtml(formatRp(record.fixed_salary !== undefined && record.fixed_salary !== null ? record.fixed_salary : 1000000))) +
+            row('Tambahan dokterdibya', escapeHtml(formatRp(record.doctor_bonus !== undefined && record.doctor_bonus !== null ? record.doctor_bonus : (Number(record.monthly_salary) || 0) - 1000000))) +
+            row('Total Gaji Bulanan', escapeHtml(formatRp(record.monthly_salary))) +
             row('Hari Kalender', escapeHtml(Number(record.calendar_days) || 0) + ' hari') +
             row('Minggu Libur', escapeHtml(Number(record.sunday_count) || 0) + ' hari') +
             row('Hari Kerja', escapeHtml(Number(record.working_days) || 0) + ' hari') +

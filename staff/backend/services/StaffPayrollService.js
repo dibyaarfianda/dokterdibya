@@ -4,7 +4,9 @@ const PAYROLL_CONFIG = Object.freeze({
 });
 
 const DRIVER_PAYROLL_CONFIG = Object.freeze({
-    MONTHLY_SALARY: 1500000,
+    FIXED_SALARY: 1000000,
+    DEFAULT_DOCTOR_BONUS: 500000,
+    MAX_DOCTOR_BONUS: 10000000,
     DEDUCTION_ROUNDING: 1000,
     WEEKLY_DAY_OFF: 0
 });
@@ -74,12 +76,29 @@ function normalizePayrollMonth(value) {
     return month;
 }
 
-function calculateDriverPayroll(payrollMonth, absenceDays = 0) {
+function normalizeDoctorBonus(value) {
+    if (value === undefined || value === null || value === '') {
+        return DRIVER_PAYROLL_CONFIG.DEFAULT_DOCTOR_BONUS;
+    }
+    const bonus = toInteger(value, 'tambahan_dokter');
+    if (bonus < 0) {
+        throw new Error('tambahan_dokter tidak boleh negatif');
+    }
+    if (bonus > DRIVER_PAYROLL_CONFIG.MAX_DOCTOR_BONUS) {
+        throw new Error(`tambahan_dokter maksimal ${DRIVER_PAYROLL_CONFIG.MAX_DOCTOR_BONUS}`);
+    }
+    return bonus;
+}
+
+function calculateDriverPayroll(payrollMonth, absenceDays = 0, doctorBonus) {
     const normalizedMonth = normalizePayrollMonth(payrollMonth);
     const absence = toInteger(absenceDays, 'hari_tidak_masuk');
     if (absence < 0) {
         throw new Error('hari_tidak_masuk tidak boleh negatif');
     }
+    const bonus = normalizeDoctorBonus(doctorBonus);
+    const fixedSalary = DRIVER_PAYROLL_CONFIG.FIXED_SALARY;
+    const monthlySalary = fixedSalary + bonus;
 
     const [year, monthNumber] = normalizedMonth.split('-').map(Number);
     const calendarDays = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
@@ -96,24 +115,31 @@ function calculateDriverPayroll(payrollMonth, absenceDays = 0) {
     }
 
     const dailyDeduction = Math.ceil(
-        (DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY / workingDays) / DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING
+        (monthlySalary / workingDays) / DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING
     ) * DRIVER_PAYROLL_CONFIG.DEDUCTION_ROUNDING;
-    const deductionAmount = Math.min(
-        DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY,
-        absence * dailyDeduction
-    );
+    const deductionAmount = Math.min(monthlySalary, absence * dailyDeduction);
+    const totalAmount = monthlySalary - deductionAmount;
 
     return {
         payroll_month: `${normalizedMonth}-01`,
         calendar_days: calendarDays,
         sunday_count: sundayCount,
         working_days: workingDays,
-        monthly_salary: DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY,
+        fixed_salary: fixedSalary,
+        doctor_bonus: bonus,
+        monthly_salary: monthlySalary,
         absence_days: absence,
         daily_deduction: dailyDeduction,
         deduction_amount: deductionAmount,
-        total_amount: DRIVER_PAYROLL_CONFIG.MONTHLY_SALARY - deductionAmount
+        total_amount: totalAmount,
+        doctor_paid_amount: calculateDoctorPaidAmount(totalAmount, fixedSalary)
     };
+}
+
+// RSIA Melinda pays the fixed part in full; absence deductions come out of
+// the dokterdibya part first, so the clinic's share never goes below zero.
+function calculateDoctorPaidAmount(totalAmount, fixedSalary = DRIVER_PAYROLL_CONFIG.FIXED_SALARY) {
+    return Math.max(0, (Number(totalAmount) || 0) - (Number(fixedSalary) || 0));
 }
 
 function validateEmployeePayrollInput(input) {
@@ -133,6 +159,8 @@ module.exports = {
     DRIVER_PAYROLL_CONFIG,
     calculatePayroll,
     calculateDriverPayroll,
+    calculateDoctorPaidAmount,
+    normalizeDoctorBonus,
     normalizePayrollMonth,
     validateEmployeePayrollInput,
     sumPayrollItems

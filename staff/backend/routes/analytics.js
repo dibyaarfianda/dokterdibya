@@ -389,7 +389,8 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
         const [driverPayrollRows] = await pool.query(`
             SELECT
                 COUNT(*) AS payroll_count,
-                COALESCE(SUM(total_amount), 0) AS total_gaji
+                -- Only the dokterdibya part is a clinic expense; RSIA Melinda pays fixed_salary.
+                COALESCE(SUM(GREATEST(CAST(total_amount AS SIGNED) - CAST(fixed_salary AS SIGNED), 0)), 0) AS total_gaji
             FROM staff_driver_payrolls
             WHERE status = 'finalized'
               AND payroll_month >= ? AND payroll_month < ?
