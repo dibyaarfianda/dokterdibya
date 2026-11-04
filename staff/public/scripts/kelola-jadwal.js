@@ -12,7 +12,7 @@ function hasAccountPermission(permission) {
 }
 
 const locationNames = {
-    'klinik_privat': 'Klinik Privat Minggu',
+    'klinik_privat': 'Klinik Privat',
     'rsud_gambiran': 'RSUD Gambiran Kediri',
     'rsia_melinda': 'RSIA Melinda Kediri',
     'rs_bhayangkara': 'RS Bhayangkara Kediri'
