@@ -25,7 +25,7 @@ const SUNDAY_AND_SATURDAY = [
     { session: 2, name: 'Weekend Clinic', dayOfWeek: 6, isActive: true }
 ];
 
-// 8 most recent practice dates (4 weeks of Saturday + Sunday), newest first.
+// Booking practice dates (Saturday + Sunday), newest first.
 const DUTY_DATES = [
     '2026-11-01', '2026-10-31', '2026-10-25', '2026-10-24',
     '2026-10-18', '2026-10-17', '2026-10-11', '2026-10-10',
@@ -33,22 +33,44 @@ const DUTY_DATES = [
 ];
 
 describe('staff payroll cycle follows booking practice days', () => {
+    let lastEnd;
+    let bookingQueries;
     beforeEach(() => {
         jest.clearAllMocks();
+        lastEnd = null;
+        bookingQueries = [];
         getSessionSettings.mockResolvedValue(SUNDAY_AND_SATURDAY);
         db.query.mockImplementation(async (sql, params) => {
-            if (sql.includes('FROM staff_duty_logs')) {
-                return [DUTY_DATES.slice(0, params[0]).map(d => ({ duty_date: d }))];
+            if (sql.includes('MAX(cycle_end_date)')) return [[{ last_end: lastEnd }]];
+            if (sql.includes('FROM sunday_appointments')) {
+                bookingQueries.push({ sql, params });
+                const limit = params[params.length - 1];
+                if (sql.includes('appointment_date > ?')) {
+                    const after = params[params.length - 2];
+                    return [DUTY_DATES.filter(d => d > after).sort().slice(0, limit).map(d => ({ appointment_date: d }))];
+                }
+                return [DUTY_DATES.slice(0, limit).map(d => ({ appointment_date: d }))];
             }
             return [[]];
         });
     });
 
-    test('Sunday + Saturday sessions produce an 8-date cycle', async () => {
+    test('Sunday + Saturday sessions produce an 8-date cycle from booking dates', async () => {
         const res = await request(app).get('/api/staff-payroll/practice-dates').expect(200);
         expect(res.body.data.cycle_size).toBe(8);
         expect(res.body.data.practice_days).toEqual(['Sabtu', 'Minggu']);
         expect(res.body.data.latest_cycle).toEqual(DUTY_DATES.slice(0, 8).sort());
+        expect(res.body.data.cycle_complete).toBe(true);
+        expect(bookingQueries[0].sql).toContain('DAYOFWEEK(appointment_date) - 1');
+        expect(bookingQueries[0].params).toEqual(expect.arrayContaining(['confirmed', 'completed', 6, 0]));
+    });
+
+    test('next cycle starts after the last payroll batch and reports when incomplete', async () => {
+        lastEnd = '2026-10-18';
+        const res = await request(app).get('/api/staff-payroll/practice-dates').expect(200);
+        expect(res.body.data.last_cycle_end).toBe('2026-10-18');
+        expect(res.body.data.latest_cycle).toEqual(['2026-10-24', '2026-10-25', '2026-10-31', '2026-11-01']);
+        expect(res.body.data.cycle_complete).toBe(false);
     });
 
     test('Sunday-only booking keeps the original 4-date cycle', async () => {
