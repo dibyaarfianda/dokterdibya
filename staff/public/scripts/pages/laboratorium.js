@@ -1,6 +1,6 @@
 import { getIdToken, TOKEN_KEY } from '../vps-auth-v2.js';
 import { escapeHtml as esc } from '../safe-render.js';
-import { mergeOcrCandidates, statusLabel, currentWib, PANELS, removeLabSource, sameLabContext, mergeSourceWarnings, labSourceBytes, labPrincipal } from './lab-report-form.js';
+import { mergeOcrCandidates, statusLabel, currentWib, PANELS, removeLabSource, sameLabContext, mergeSourceWarnings, labSourceBytes, labPrincipal, publishBlockers } from './lab-report-form.js';
 
 let host; let report = null; let data; let selectedVisit = null; let visits = []; let pendingFiles = []; let previews = [];
 let candidate = null; let generation = 0; let dirty = false; let busy = false; let context = {}; let controller = null;
@@ -117,12 +117,14 @@ function renderEditor() {
         <div class="lr-sources">${renderSources()}</div><div id="lr-candidate">${renderCandidate()}</div></section>
         <section class="lr-section"><h2>${report ? '' : '4. '}Periksa hasil</h2><div class="lr-buttons"><select id="lr-panel" aria-label="Panel pemeriksaan">${Object.keys(PANELS).map(p => `<option>${esc(p)}</option>`).join('')}</select><button type="button" class="lr-btn" data-action="add-panel">Tambah Panel</button><button type="button" class="lr-btn" data-action="add-row">+ Parameter</button><button type="button" class="lr-link" data-action="remove-empty">Hapus baris kosong</button></div>
         <div class="lr-parameters">${renderParameters()}</div>
-        ${data.source_warnings?.length ? `<div class="lr-warning"><strong>Periksa sumber</strong><ul>${data.source_warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul><label><input type="checkbox" data-field="identity_resolved" ${data.identity_resolved ? 'checked' : ''}> Saya telah mencocokkan identitas, tanggal, dan sumber.</label></div>` : ''}
-        <label class="lr-check"><input type="checkbox" data-field="review_confirmed" ${data.review_confirmed ? 'checked' : ''}> Saya telah memeriksa hasil, satuan, dan rujukan untuk pasien/DRD ini.</label></section>
-        <section class="lr-section"><h2>Petugas & catatan</h2><div class="lr-grid">${input('Petugas laboratorium', 'technician', data.technician)}${input('Nomor SIP / izin', 'license', data.license)}</div>${input('Dokter pengirim', 'doctor', data.doctor)}<label class="lr-field"><span>Catatan (opsional)</span><textarea data-field="notes" rows="3">${esc(data.notes || '')}</textarea></label></section>
+        ${data.source_warnings?.length ? `<div class="lr-warning"><strong>Periksa sumber</strong><ul>${data.source_warnings.map(w => `<li>${esc(w)}</li>`).join('')}</ul><label id="lr-identity-confirm"><input type="checkbox" data-field="identity_resolved" ${data.identity_resolved ? 'checked' : ''}> Saya telah mencocokkan identitas, tanggal, dan sumber.</label></div>` : ''}
+        <label class="lr-check" id="lr-review-confirm"><input type="checkbox" data-field="review_confirmed" ${data.review_confirmed ? 'checked' : ''}> Saya telah memeriksa hasil, satuan, dan rujukan untuk pasien/DRD ini.</label></section>
+        <section class="lr-section" id="lr-issuer"><h2>Petugas & catatan</h2><div class="lr-grid">${input('Petugas laboratorium', 'technician', data.technician)}${input('Nomor SIP / izin', 'license', data.license)}</div>${input('Dokter pengirim', 'doctor', data.doctor)}<label class="lr-field"><span>Catatan (opsional)</span><textarea data-field="notes" rows="3">${esc(data.notes || '')}</textarea></label></section>
         </fieldset></form>
-        <div class="lr-footer">${editable ? '<button type="button" class="lr-btn lr-primary" data-action="save">Simpan Draf</button>' : ''}${can('patient_documents.create') && report ? '<button type="button" class="lr-btn lr-publish" data-action="publish">Terbitkan ke Pasien</button>' : ''}${report && can('medical_records.export') ? '<button type="button" class="lr-btn" data-action="pdf">PDF Hasil</button>' : ''}${report ? '<button type="button" class="lr-btn" data-action="compare">Komparasi</button>' : ''}${report && can('medical_records.delete') ? '<button type="button" class="lr-btn lr-danger" data-action="delete">Hapus</button>' : ''}</div>`);
+        <div id="lr-publish-check"></div>
+        <div class="lr-footer"><button type="button" class="lr-footer-note" data-action="goto-check" data-publish-summary hidden></button>${editable ? '<button type="button" class="lr-btn lr-primary" data-action="save">Simpan Draf</button>' : ''}${can('patient_documents.create') && report ? '<button type="button" class="lr-btn lr-publish" data-action="publish">Terbitkan ke Pasien</button>' : ''}${report && can('medical_records.export') ? '<button type="button" class="lr-btn" data-action="pdf">PDF Hasil</button>' : ''}${report ? '<button type="button" class="lr-btn" data-action="compare">Komparasi</button>' : ''}${report && can('medical_records.delete') ? '<button type="button" class="lr-btn lr-danger" data-action="delete">Hapus</button>' : ''}</div>`);
     if (!report) renderVisits();
+    refreshPublishCheck();
 }
 function renderSources() {
     const stored = (data.sources || []).map((source, i) => `<div class="lr-source"><a href="${esc(source.url)}" target="_blank" rel="noopener">${source.type.startsWith('image/') ? `<img src="${esc(source.url)}" alt="Sumber hasil lab">` : '<span>PDF</span>'}${esc(source.name)}</a><button type="button" class="lr-link" data-action="remove-source" data-index="${i}">Lepas</button></div>`).join('');
@@ -141,7 +143,7 @@ function renderParameters() {
         return `${heading}<article class="lr-param" data-row="${i}"><div class="lr-param-top"><label class="lr-field"><span>Pemeriksaan</span><input data-param="name" value="${esc(p.name || '')}" aria-label="Nama pemeriksaan"></label><button type="button" class="lr-link lr-danger" data-action="remove-row" data-index="${i}" aria-label="Hapus parameter ${esc(p.name || '')}">Hapus</button></div><div class="lr-param-grid"><label class="lr-field"><span>Hasil</span><input data-param="raw_value" value="${esc(p.raw_value || '')}" inputmode="text" placeholder="Nilai / kualitatif"></label><label class="lr-field"><span>Satuan</span><input data-param="unit" value="${esc(p.unit || '')}" placeholder="Sesuai sumber"></label><label class="lr-field lr-reference"><span>Nilai rujukan</span><input data-param="reference" value="${esc(p.reference || '')}" placeholder="Sesuai sumber"></label></div>
         ${p.code === 'hb' ? `<label class="lr-field"><span>Rujukan Hb dari format lama (pilihan)</span><select data-hb-reference><option value="">Pilih konteks bila digunakan</option><option value="12.0-15.5|Wanita dewasa">Wanita dewasa</option><option value="11.0-13.9|Wanita hamil trimester 1">Hamil trimester 1</option><option value="10.5-14.8|Wanita hamil trimester 2">Hamil trimester 2</option><option value="11.0-15.0|Wanita hamil trimester 3">Hamil trimester 3</option></select></label>` : ''}
         ${ambiguous ? `<label class="lr-field lr-warning"><span>Pemisah angka ambigu. Konfirmasikan nilai numerik tanpa pemisah ribuan.</span><input type="number" step="any" data-param="numeric_value" value="${p.numeric_value === null || p.numeric_value === undefined ? '' : esc(String(p.numeric_value))}" placeholder="Contoh: 9370 atau 9.37"></label>` : ''}
-        <label class="lr-field"><span>Keterangan (opsional)${p.reference_context ? ` · ${esc(p.reference_context)}` : ''}</span><input data-param="note" value="${esc(p.note || '')}"></label><div class="lr-row-review"><span>${p.origin === 'ocr' ? 'OCR · Periksa dengan sumber' : 'Isian manual'}</span><label><input type="checkbox" data-param="reviewed" ${p.reviewed ? 'checked' : ''}> Sudah diperiksa</label></div></article>`;
+        <label class="lr-field"><span>Keterangan (opsional)${p.reference_context ? ` · ${esc(p.reference_context)}` : ''}</span><input data-param="note" value="${esc(p.note || '')}"></label><div class="lr-row-review"><span>${p.origin === 'ocr' ? 'OCR · Periksa dengan sumber' : 'Isian manual'}</span><label><input type="checkbox" data-param="reviewed" ${p.reviewed ? 'checked' : ''}> Sudah diperiksa</label></div><p class="lr-row-missing" data-row-missing hidden></p></article>`;
     }).join('');
 }
 function readEditor() {
@@ -155,6 +157,32 @@ function readEditor() {
         const confirmed = row.querySelector('[data-param="numeric_value"]');
         if (confirmed) parameter.numeric_confirmed_for = confirmed.value === '' ? '' : parameter.raw_value;
     });
+}
+// Show what still blocks publishing, so a report does not silently stay "Draf".
+function refreshPublishCheck() {
+    const box = host?.querySelector('#lr-publish-check'); if (!box || !data) return;
+    const result = publishBlockers(data);
+    host.querySelectorAll('[data-row]').forEach(row => {
+        const reasons = result.rows[Number(row.dataset.row)] || [];
+        row.classList.toggle('lr-param-missing', reasons.length > 0);
+        const note = row.querySelector('[data-row-missing]');
+        if (note) { note.hidden = !reasons.length; note.textContent = reasons.length ? `Belum siap terbit: ${reasons.join(' · ')}` : ''; }
+    });
+    const summary = host.querySelector('[data-publish-summary]');
+    const published = report && Number(report.published_version) === Number(report.version) && !dirty;
+    const canPublish = can('patient_documents.create');
+    if (published) { box.innerHTML = '<div class="lr-publish-ok">Hasil versi ini sudah terbit dan tampil di portal pasien.</div>'; if (summary) summary.hidden = true; return; }
+    const rowItems = Object.entries(result.rows).map(([index, reasons]) => {
+        const p = data.parameters[Number(index)] || {};
+        return `<li><button type="button" class="lr-link" data-action="goto-row" data-index="${Number(index)}">${esc(p.name || `Baris ${Number(index) + 1}`)}</button>: ${esc(reasons.join(' · '))}</li>`;
+    });
+    const generalItems = result.general.map(item => `<li>${item.target ? `<button type="button" class="lr-link" data-action="goto-target" data-target="${esc(item.target)}">${esc(item.text)}</button>` : esc(item.text)}</li>`);
+    const permission = canPublish ? '' : '<p class="lr-muted">Akun ini tidak memiliki hak menerbitkan. Minta dokter atau admin untuk menekan Terbitkan.</p>';
+    const saveNote = report ? '' : '<p class="lr-muted">Simpan draf terlebih dahulu; tombol Terbitkan muncul setelah draf tersimpan.</p>';
+    box.innerHTML = result.total
+        ? `<div class="lr-publish-check" role="status"><strong>Belum bisa diterbitkan · ${result.total} kekurangan</strong><p class="lr-muted">Selama ini belum lengkap, PDF tetap bertanda DRAF dan hasil belum tampil di portal pasien.</p><ul>${[...generalItems, ...rowItems].join('')}</ul>${permission}${saveNote}</div>`
+        : `<div class="lr-publish-ready"><strong>Siap diterbitkan.</strong> ${report ? (canPublish ? 'Tekan "Terbitkan ke Pasien" untuk menghapus tanda DRAF.' : '') : 'Simpan draf, lalu tekan "Terbitkan ke Pasien".'}${permission}</div>`;
+    if (summary) { summary.hidden = !result.total; summary.textContent = `${result.total} kekurangan sebelum terbit ↑`; }
 }
 async function searchVisits(search) {
     const mine = generation;
@@ -245,6 +273,9 @@ async function handleAction(action, button) {
     if (action === 'compare') return showComparison();
     if (action === 'comparison-pdf') return openPdf(true, host.querySelector('#lr-previous').value);
     if (action === 'close-dialog') { host.querySelector('dialog')?.close(); return; }
+    if (action === 'goto-check') { host.querySelector('#lr-publish-check')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (action === 'goto-row') { host.querySelector(`[data-row="${Number(button.dataset.index)}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    if (action === 'goto-target') { const target = host.querySelector(`#${button.dataset.target}`); target?.scrollIntoView({ behavior: 'smooth', block: 'center' }); target?.classList.add('lr-flash'); setTimeout(() => target?.classList.remove('lr-flash'), 1600); return; }
     readEditor();
     if (action === 'add-panel') {
         const panel = host.querySelector('#lr-panel').value;
@@ -290,7 +321,7 @@ export async function mountLaboratorium(container, options = {}) {
                 const numeric = row.querySelector('[data-param="numeric_value"]'); if (numeric) numeric.value = '';
                 data.parameters[Number(row.dataset.row)].numeric_value = null;
             }
-            readEditor();
+            readEditor(); refreshPublishCheck();
         });
         host.addEventListener('change', async event => {
             try {

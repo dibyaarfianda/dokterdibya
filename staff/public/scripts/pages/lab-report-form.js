@@ -42,3 +42,29 @@ export const PANELS = {
     'Golongan Darah': [['blood_group','Golongan darah',''],['rhesus','Rhesus','']],
     'Serologi': [['hbsag','HBsAg',''],['hiv','HIV',''],['syphilis','Sifilis','']]
 };
+// Mirrors the server publish rules (staff/backend/services/lab-report/domain.js assertPublishable)
+// so staff can see exactly what still blocks "Terbitkan ke Pasien".
+const AMBIGUOUS_NUMBER = /^-?\d{1,3}[.,]\d{3}$/;
+export function publishBlockers(data) {
+    const general = []; const rows = {};
+    const parameters = data?.parameters || [];
+    const add = (index, reason) => { (rows[index] = rows[index] || []).push(reason); };
+    if (!parameters.some(p => String(p.raw_value || '').trim())) general.push({ text: 'Isi minimal satu parameter hasil.' });
+    const seen = {};
+    parameters.forEach((p, i) => {
+        const raw = String(p.raw_value || '').trim();
+        if (!String(p.name || '').trim()) add(i, 'Nama pemeriksaan kosong');
+        if (!raw) add(i, 'Hasil kosong (isi atau hapus baris ini)');
+        if (raw && AMBIGUOUS_NUMBER.test(raw) && (p.numeric_value === null || p.numeric_value === undefined || p.numeric_value === '' || p.numeric_confirmed_for !== raw)) {
+            add(i, 'Konfirmasi nilai angka tanpa pemisah ribuan');
+        }
+        if (p.reviewed !== true) add(i, 'Belum dicentang "Sudah diperiksa"');
+        const code = String(p.code || '').trim().toLowerCase();
+        if (code) { if (seen[code] !== undefined) { add(i, 'Parameter ganda'); } else seen[code] = i; }
+    });
+    if ((data?.source_warnings || []).length && data.identity_resolved !== true) general.push({ text: 'Centang "Saya telah mencocokkan identitas, tanggal, dan sumber".', target: 'lr-identity-confirm' });
+    if (data?.review_confirmed !== true) general.push({ text: 'Centang "Saya telah memeriksa hasil, satuan, dan rujukan".', target: 'lr-review-confirm' });
+    if (!String(data?.technician || '').trim() || !String(data?.license || '').trim()) general.push({ text: 'Isi nama petugas laboratorium dan nomor SIP.', target: 'lr-issuer' });
+    const rowCount = Object.keys(rows).length;
+    return { general, rows, total: general.length + rowCount };
+}

@@ -45,3 +45,26 @@ describe('lab OCR review form', () => {
         expect(context.mergeSourceWarnings(['A'], ['A','B'])).toEqual(['A','B']);
     });
 });
+describe('lab publish checklist', () => {
+    const ready = () => ({ technician: 'PETUGAS', license: 'SIP', review_confirmed: true, identity_resolved: false, source_warnings: [],
+        parameters: [{ code: 'hb', name: 'Hemoglobin', raw_value: '12.5', reviewed: true, numeric_value: 12.5 }] });
+    test('a fully reviewed report has no blockers', () => {
+        expect(context.publishBlockers(ready()).total).toBe(0);
+    });
+    test('lists unchecked rows, ambiguous numbers and missing confirmations', () => {
+        const data = ready();
+        data.review_confirmed = false; data.source_warnings = ['Nama berbeda']; data.license = '';
+        data.parameters.push({ code: 'leukosit', name: 'Leukosit', raw_value: '10.970', reviewed: false, numeric_value: null },
+            { code: 'hb', name: 'Hemoglobin', raw_value: '', reviewed: true });
+        const result = context.publishBlockers(data);
+        expect(result.general.map(g => g.target)).toEqual(['lr-identity-confirm', 'lr-review-confirm', 'lr-issuer']);
+        expect(result.rows[1]).toEqual(['Konfirmasi nilai angka tanpa pemisah ribuan', 'Belum dicentang "Sudah diperiksa"']);
+        expect(result.rows[2]).toEqual(['Hasil kosong (isi atau hapus baris ini)', 'Parameter ganda']);
+        expect(result.total).toBe(5);
+    });
+    test('a confirmed ambiguous number is accepted', () => {
+        const data = ready();
+        data.parameters = [{ code: 'plt', name: 'Trombosit', raw_value: '372.000', reviewed: true, numeric_value: 372000, numeric_confirmed_for: '372.000' }];
+        expect(context.publishBlockers(data).total).toBe(0);
+    });
+});
