@@ -1468,3 +1468,18 @@ User confirmed with "luar biasa, ini baru GPT JOB" after the Gerakan Bayi trial 
 
 **Lesson:**
 - For SISIwanita trial pages, final parity with home often depends on late `body #home-*` override blocks. Always inspect and copy those final overrides before declaring the page visually matched.
+
+### 41. GLOBAL RULE: Staff Sidebar "New" Red Dot
+
+**Every staff sidebar menu shows a small red dot when something new happened in that section since the current staff member last opened it. The dot disappears when the page is opened.** This replaced all numeric sidebar badges (Klinik Privat, RS, Artikel, Tanya Dokter, Chat Bantuan/Komunitas, Inbox) on 2026-11-04.
+
+**How it works:**
+- Backend registry: `staff/backend/config/menu-activity-sources.js` maps each sidebar `<li id>` to source tables. The newest `created_at`/`updated_at` (only columns that really exist, checked via `information_schema`) is compared with the staff member's `staff_menu_seen.seen_at`.
+- Service/route: `staff/backend/services/StaffMenuBadges.js`, `GET /api/staff-menu-badges`, `POST /api/staff-menu-badges/seen`. Seen state is **per staff, server-side**; first sight of a menu baselines to NOW (no dot flood on rollout).
+- Frontend: `staff/public/scripts/shell/menu-new-badges.js` injects `.staff-new-dot` into every `li.nav-item[id] > .nav-link`, marks a page seen when its nav-link becomes `.active`, polls every 60s via `staffPollingCoordinator`, and refreshes on socket events.
+- Mirrors: any element with `data-menu-dot="<li id>"` follows the same state (mobile quick menu, "Lainnya" sheet); `data-menu-dot="more"` lights when a hidden menu has a dot. Compact sidebar group/rail badges render as dots.
+
+**When adding a NEW sidebar menu:**
+1. Add an entry for its `<li id>` in `menu-activity-sources.js` (unit test `StaffMenuBadges.test.js` fails if a menu has no source).
+2. Do NOT add a numeric `<span class="badge">` to the sidebar; the dot is injected automatically.
+3. To make a menu quieter, remove/adjust its sources in the registry, not the frontend.

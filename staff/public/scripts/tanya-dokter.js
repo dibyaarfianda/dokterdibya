@@ -113,17 +113,6 @@
             openBadge.textContent = openCount;
             openBadge.style.display = openCount > 0 ? 'inline' : 'none';
         }
-
-        // Update sidebar badge
-        const sidebarBadge = document.getElementById('badge-tanya-dokter');
-        if (sidebarBadge) {
-            sidebarBadge.textContent = openCount;
-            if (openCount > 0) {
-                sidebarBadge.classList.remove('d-none');
-            } else {
-                sidebarBadge.classList.add('d-none');
-            }
-        }
     }
 
     /**

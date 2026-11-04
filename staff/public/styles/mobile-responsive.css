@@ -1320,19 +1320,6 @@ body.mobile-app-mode .chat-toggle-btn {
 body.mobile-app-mode #mobile-action-bar .icon-wrapper {
     position: relative !important;
 }
-body.mobile-app-mode #mobile-action-bar .staff-conversation-badge {
-    position: absolute !important;
-    top: -5px !important;
-    right: -8px !important;
-    min-width: 17px !important;
-    padding: 2px 4px !important;
-    border-radius: 10px !important;
-    font-size: 10px !important;
-    line-height: 13px !important;
-    background: #dc3545 !important;
-    color: #fff !important;
-    white-space: nowrap !important;
-}
 .staff-quick-menu-overlay {
     position: fixed !important;
     inset: 0 !important;

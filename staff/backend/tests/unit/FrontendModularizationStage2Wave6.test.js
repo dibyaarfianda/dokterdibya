@@ -39,22 +39,20 @@ describe('frontend modularization stage 2 wave 6', () => {
         expect(worker).toContain("'/scripts/landing/footer-effects.js'");
     });
 
-    test('staff sidebar badge polling is owned by a shared-api module', () => {
-        const modulePath = absolute('staff', 'public', 'scripts', 'shell', 'notification-badges.js');
+    test('staff sidebar badge polling is owned by the global menu-dot module', () => {
+        const modulePath = absolute('staff', 'public', 'scripts', 'shell', 'menu-new-badges.js');
         expect(fs.existsSync(modulePath)).toBe(true);
+        expect(fs.existsSync(absolute('staff', 'public', 'scripts', 'shell', 'notification-badges.js'))).toBe(false);
         const main = read('staff', 'public', 'scripts', 'main.js');
-        const module = read('staff', 'public', 'scripts', 'shell', 'notification-badges.js');
-        const loader = read('staff', 'public', 'scripts', 'shell', 'feature-loader.js');
+        const module = read('staff', 'public', 'scripts', 'shell', 'menu-new-badges.js');
         const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
-        expect(main).not.toContain('async function loadNotificationBadges(');
-        expect(main).not.toContain('function scheduleNotificationBadges(');
-        expect(main).toContain('window.scheduleNotificationBadges?.();');
-        expect(loader).toContain('notificationBadges: async () => {');
-        expect(loader).toContain('notification-badges.js?v=${version}');
-        expect(bootstrap).toContain("installLazyFeatureShim('markBadgeRead', 'notificationBadges');");
+        expect(main).not.toContain('scheduleNotificationBadges');
+        expect(main).toContain('window.staffMenuNewBadges?.refresh();');
+        expect(bootstrap).toContain("import('./menu-new-badges.js')");
+        expect(bootstrap).not.toContain('markBadgeRead');
         expect(module).toContain("import { staffApiRequest } from '../staff-api.js';");
-        expect(module).toContain("staffApiRequest('/api/notifications/badge-counts'");
-        expect(module).toContain('Object.assign(window, {');
+        expect(module).toContain("'/api/staff-menu-badges");
+        expect(module).not.toContain('setInterval(');
         expect(Buffer.byteLength(main)).toBeLessThan(218000);
     });
 

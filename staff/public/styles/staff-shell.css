@@ -1861,3 +1861,62 @@ body.mobile-app-mode .mobile-action-bar-force button {
     text-decoration: underline !important;
     cursor: pointer !important;
 }
+
+/* ==========================================================
+   GLOBAL RULE: sidebar "new" red dot (shell/menu-new-badges.js)
+   One small red dot per menu when something new arrived since
+   this staff member last opened that page.
+   ========================================================== */
+.main-sidebar .nav-sidebar .nav-item > .nav-link {
+    position: relative !important;
+}
+.staff-new-dot {
+    display: inline-block !important;
+    width: 8px !important;
+    height: 8px !important;
+    min-width: 8px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: #dc3545 !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) !important;
+    pointer-events: none !important;
+}
+.staff-new-dot[hidden] {
+    display: none !important;
+}
+.main-sidebar .nav-sidebar .nav-link > .staff-new-dot {
+    position: absolute !important;
+    top: 50% !important;
+    right: 12px !important;
+    transform: translateY(-50%) !important;
+}
+.main-sidebar .nav-sidebar .has-treeview > .nav-link > .staff-new-dot {
+    right: 2.4rem !important;
+}
+body.sidebar-collapse:not(.sidebar-open) .main-sidebar:not(:hover) .nav-sidebar .nav-link > .staff-new-dot {
+    top: 5px !important;
+    right: 8px !important;
+    transform: none !important;
+}
+#mobile-action-bar .icon-wrapper {
+    position: relative !important;
+}
+#mobile-action-bar .icon-wrapper > .staff-new-dot {
+    position: absolute !important;
+    top: -2px !important;
+    right: -5px !important;
+}
+#dynamic-mobile-menu .staff-new-dot {
+    margin-left: auto !important;
+    flex-shrink: 0 !important;
+}
+.staff-compact-group-badge:empty,
+.staff-compact-rail-badge:empty {
+    min-width: 8px !important;
+    width: 8px !important;
+    height: 8px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    background: #dc3545 !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85) !important;
+}

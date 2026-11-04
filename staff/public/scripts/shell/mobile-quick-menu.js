@@ -43,10 +43,10 @@
             run: () => window.showProfileSettings?.() });
         return entries;
     }
-    function badge(key) {
+    function dot(key) {
         const element = document.createElement('span');
-        element.className = 'staff-conversation-badge badge badge-danger d-none';
-        element.dataset.conversationBadge = key;
+        element.className = 'staff-new-dot';
+        element.dataset.menuDot = key;
         element.hidden = true;
         return element;
     }
@@ -66,7 +66,8 @@
         more.hidden = false;
         more.classList.remove('d-none');
         more.style.display = '';
-        if (!more.querySelector('[data-conversation-badge]')) more.querySelector('.icon-wrapper').appendChild(badge('more'));
+        more.querySelectorAll('[data-conversation-badge]').forEach(element => element.remove());
+        if (!more.querySelector('[data-menu-dot]')) more.querySelector('.icon-wrapper').appendChild(dot('more'));
         currentSelection.forEach(key => {
             const item = available.find(entry => entry.key === key);
             const button = document.createElement('button');
@@ -79,7 +80,7 @@
             const icon = document.createElement('i');
             icon.className = item.iconClass;
             wrapper.appendChild(icon);
-            if (['tanya', 'community'].includes(key)) wrapper.appendChild(badge(key));
+            if (item.navId) wrapper.appendChild(dot(item.navId));
             const label = document.createElement('span');
             label.textContent = item.text;
             button.append(wrapper, label);
@@ -89,7 +90,7 @@
         bar.classList.remove('d-none');
         bar.style.display = '';
         window.syncMobileNavForPage?.(window.__currentPage || window.staffPageRegistry?.activeKey || 'dashboard');
-        window.staffConversationBadges?.apply();
+        window.staffMenuNewBadges?.apply();
     }
     function navigate(key) {
         const item = catalog().find(item => item.key === key);

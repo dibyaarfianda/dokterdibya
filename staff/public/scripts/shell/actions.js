@@ -14,12 +14,6 @@ function logoutFallback() {
     window.location.replace('/staff/public/login.html');
 }
 
-function markBadge(locationKey) {
-    if (typeof window.markBadgeRead === 'function') {
-        window.markBadgeRead(locationKey);
-    }
-}
-
 function openMobileMenu() {
     // Remove existing if any
     var existing = document.getElementById('dynamic-mobile-menu');
@@ -152,11 +146,12 @@ function openMobileMenu() {
 
             link.appendChild(icon);
             link.appendChild(text);
-            if (['tanya', 'community'].includes(item.key)) {
-                var badge = document.createElement('span');
-                badge.className = 'badge badge-danger d-none';
-                badge.dataset.conversationBadge = item.key;
-                link.appendChild(badge);
+            if (item.navId) {
+                var dot = document.createElement('span');
+                dot.className = 'staff-new-dot';
+                dot.dataset.menuDot = item.navId;
+                dot.hidden = true;
+                link.appendChild(dot);
             }
             items.appendChild(link);
         }
@@ -168,7 +163,7 @@ function openMobileMenu() {
     container.appendChild(content);
     document.body.appendChild(container);
     document.body.style.overflow = 'hidden';
-    window.staffConversationBadges?.apply();
+    window.staffMenuNewBadges?.apply();
 }
 function closeMobileMenu() {
     var m = document.getElementById('dynamic-mobile-menu');
@@ -251,7 +246,6 @@ const shellActionHandlers = {
     },
     'show-klinik-private': function() {
         callGlobal('showKlinikPrivatePage');
-        markBadge('klinik_private');
     },
     'show-sunday-clinic-closing': function() {
         callGlobal('showSundayClinicClosingPage');

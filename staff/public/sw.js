@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v485';
+const STAFF_PWA_VERSION = 'v486';
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `${CACHE_NAME}-static`;
 const DYNAMIC_CACHE = `${CACHE_NAME}-dynamic`;
@@ -36,7 +36,6 @@ const STAFF_SHELL_SCRIPTS = [
   '/staff/public/scripts/socket-credentials.js',
   '/staff/public/scripts/shell/actions.js',
   '/staff/public/scripts/shell/mobile-quick-menu.js',
-  '/staff/public/scripts/shell/conversation-badges.js',
   '/staff/public/scripts/shell/account-access.js',
   '/staff/public/scripts/shell/bootstrap.js',
   '/staff/public/scripts/shell/compact-sidebar.js',
@@ -44,12 +43,11 @@ const STAFF_SHELL_SCRIPTS = [
   '/staff/public/scripts/shell/credentials.js',
   '/staff/public/scripts/shell/feature-loader.js',
   '/staff/public/scripts/shell/module-helpers.js',
-  '/staff/public/scripts/shell/notification-badges.js',
+  '/staff/public/scripts/shell/menu-new-badges.js',
   '/staff/public/scripts/shell/page-descriptors.js',
   '/staff/public/scripts/shell/page-registry.js',
   '/staff/public/scripts/shell/polling-coordinator.js',
   '/staff/public/scripts/shell/registration-codes.js',
-  '/staff/public/scripts/shell/support-chat-badge.js',
   '/staff/public/scripts/staff-api.js',
   '/staff/public/scripts/tap-feedback.js',
   '/staff/public/scripts/toast.js',
