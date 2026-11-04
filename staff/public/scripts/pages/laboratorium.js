@@ -56,7 +56,20 @@ function message(text, error = false) {
 }
 function frame(body) {
     host.innerHTML = `<div class="lr-shell"><header class="lr-top"><div><span class="lr-kicker">KLINIK PRIVAT</span><h1>Laboratorium</h1></div><img src="${asset('images/laboratorium/dpc-lab-logo.png')}" alt="dr. Dibya Private Clinic"></header><div data-lab-message hidden role="status" aria-live="polite"></div>${body}</div>`;
+    syncFooterOffset();
 }
+// Keep the sticky save bar above the fixed mobile bottom nav when that nav is visible.
+function syncFooterOffset() {
+    if (!host) return;
+    const nav = document.getElementById('mobile-action-bar');
+    const style = nav && getComputedStyle(nav);
+    const visible = style && style.display !== 'none' && style.visibility !== 'hidden' && style.position === 'fixed' && nav.offsetHeight > 0;
+    const offset = visible ? Math.max(0, window.innerHeight - nav.getBoundingClientRect().top) : 0;
+    host.style.setProperty('--lr-nav-offset', `${Math.round(offset)}px`);
+    host.style.setProperty('--lr-safe-bottom', offset ? '0px' : 'env(safe-area-inset-bottom, 0px)');
+}
+window.addEventListener('resize', syncFooterOffset);
+window.visualViewport?.addEventListener('resize', syncFooterOffset);
 function asset(relative) { const url = new URL(`../../${relative}`, import.meta.url); url.search = new URL(import.meta.url).search; return url.href; }
 async function showList() {
     if (dirty && !await confirmAction('Ada isian belum disimpan. Kembali ke daftar?')) return;
