@@ -39,7 +39,7 @@ class LabReportService {
         return assertVisit(visits, patientId);
     }
     async raw(id, connection = this.pool, lock = false) {
-        const [rows] = await connection.query(`SELECT r.*, p.full_name AS patient_name, p.address AS patient_address,
+        const [rows] = await connection.query(`SELECT r.*, p.full_name AS patient_name,
             DATE_FORMAT(p.birth_date,'%Y-%m-%d') AS birth_date, v.visit_location
             FROM lab_reports r JOIN sunday_clinic_records v ON v.id=r.visit_id AND v.patient_id=r.patient_id AND v.mr_id=r.mr_id
             JOIN patients p ON p.id=r.patient_id WHERE r.id=? AND r.status<>'deleted'${lock ? ' FOR UPDATE' : ''}`, [positiveId(id)]);
@@ -162,7 +162,7 @@ class LabReportService {
                     await connection.query('UPDATE lab_report_sequences SET last_number=? WHERE date_key=?', [number, dateKey]);
                     labNumber = `LAB-${dateKey}-${String(number).padStart(4, '0')}`;
                 }
-                const patient = { name: row.patient_name, birth_date: row.birth_date, address: row.patient_address, patient_id: row.patient_id, mr_id: row.mr_id };
+                const patient = { name: row.patient_name, birth_date: row.birth_date, patient_id: row.patient_id, mr_id: row.mr_id };
                 const snapshot = { ...data, patient_snapshot: patient, lab_number: labNumber };
                 const buffer = await this.renderPdf({ data: snapshot, patient, labNumber, version: row.version, draft: false });
                 const uploaded = await this.storage.uploadFile(buffer, `${labNumber}-v${row.version}.pdf`, 'application/pdf', `lab-reports/${row.id}/v${row.version}`);
@@ -217,7 +217,7 @@ class LabReportService {
         const result = comparison ? await this.comparison(id, previousId) : null;
         if (comparison && !result.previous) fail(400, 'NO_COMPARISON', 'Belum ada hasil terstruktur sebelumnya.');
         const draft = Number(row.published_version) !== Number(row.version);
-        const patient = { name: row.patient_name, birth_date: row.birth_date, address: row.patient_address, patient_id: row.patient_id, mr_id: row.mr_id };
+        const patient = { name: row.patient_name, birth_date: row.birth_date, patient_id: row.patient_id, mr_id: row.mr_id };
         const buffer = await this.renderPdf({ data, patient, labNumber: row.lab_number, version: row.version, draft, comparison: result });
         return { buffer, filename: `${comparison ? 'Komparasi' : 'Lab'}-${row.lab_number || `Draf-${row.id}`}-v${row.version}.pdf` };
     }

@@ -17,10 +17,10 @@ async function main() {
     await admin.query(`CREATE DATABASE \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     pool = mysql.createPool({ ...options, database, multipleStatements: true, dateStrings: true, timezone: '+07:00' });
     fs.mkdirSync(outputDir, { recursive: true });
-    await pool.query(`CREATE TABLE patients (id VARCHAR(10) PRIMARY KEY, full_name VARCHAR(150),address VARCHAR(255),birth_date DATE);
+    await pool.query(`CREATE TABLE patients (id VARCHAR(10) PRIMARY KEY, full_name VARCHAR(150),birth_date DATE);
         CREATE TABLE sunday_clinic_records (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,mr_id VARCHAR(20),patient_id VARCHAR(10),visit_location VARCHAR(50),created_at DATETIME DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE patient_documents (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,patient_id VARCHAR(10),mr_id VARCHAR(20),document_type VARCHAR(30),title VARCHAR(255),file_path VARCHAR(500),file_url VARCHAR(500),file_name VARCHAR(255),file_type VARCHAR(50),file_size INT,source_data LONGTEXT,source VARCHAR(20),status VARCHAR(20),published_at DATETIME,published_by VARCHAR(50),created_by VARCHAR(50),updated_by VARCHAR(50),updated_at DATETIME DEFAULT CURRENT_TIMESTAMP);
-        INSERT INTO patients VALUES ('P001','PASIEN UJI SATU','Alamat fixture','1998-01-01'),('P002','PASIEN UJI DUA','Alamat fixture','1997-02-02');
+        INSERT INTO patients VALUES ('P001','PASIEN UJI SATU','1998-01-01'),('P002','PASIEN UJI DUA','1997-02-02');
         INSERT INTO sunday_clinic_records (mr_id,patient_id,visit_location) VALUES ('DRD001','P001','klinik_private'),('DRD002','P001','rsia_melinda'),('DRD003','P002','klinik_private'),('DRD004','P001','klinik_private');`);
     await pool.query(fs.readFileSync(path.join(__dirname, '../../migrations/20261018_structured_lab_reports.sql'), 'utf8'));
     // Verify that rerunning the additive migration is harmless.
