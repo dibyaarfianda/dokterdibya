@@ -1,10 +1,13 @@
 'use strict';
 const DibyaDateTime = require('../../../../public/scripts/date-time-format.js');
 
+const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
 const { flag } = require('./domain');
 const assets = path.resolve(__dirname, '../../../public/images/laboratorium');
+const TEXT_SCALE = 0.88; // all report text one step smaller
+const technicianSignature = path.join(assets, 'petugas-lab-signature.png');
 const navy = '#193D60'; const teal = '#268477'; const gray = '#64748B';
 const printable = value => String(value ?? '').replace(/[–—−]/g, '-').replace(/→/g, ' -> ').replace(/\u00a0/g, ' ');
 const displayDate = value => value ? DibyaDateTime.dateTime(value) + ' WIB' : '-';
@@ -18,12 +21,14 @@ async function renderLabPdf({ data, patient, labNumber = '', version = 1, draft 
         const doc = new PDFDocument({ size: 'A4', margins: { top: 36, left: 38, right: 38, bottom: 48 }, bufferPages: true,
             info: { Title: comparison ? 'Komparasi Hasil Laboratorium' : 'Hasil Laboratorium', Author: 'dr. Dibya Private Clinic' } });
         const chunks = []; doc.on('data', chunk => chunks.push(chunk)); doc.on('end', () => resolve(Buffer.concat(chunks))); doc.on('error', reject);
+        const setFontSize = doc.fontSize.bind(doc); doc.fontSize = size => setFontSize(size * TEXT_SCALE);
         const left = 38; const width = doc.page.width - 76; let y;
         const write = (value, x, top, options = {}) => doc.text(printable(value), x, top, { lineBreak: false, ...options });
         function header(continued = false) {
-            doc.image(path.join(assets, 'dpc-lab-logo.png'), left, 28, { fit: [268, 82] });
-            doc.image(path.join(assets, 'sw-healthcare.png'), 365, 27, { fit: [77, 77] });
-            doc.image(path.join(assets, 'melinda.png'), 485, 30, { fit: [70, 70] });
+            // Clinic logo left; SisiWanita and Melinda as gray marks side by side on the right.
+            doc.image(path.join(assets, 'dpc-lab-logo.png'), left, 48.5, { fit: [134, 41], valign: 'center' });
+            doc.image(path.join(assets, 'sw-healthcare-gray.png'), 476, 51, { fit: [34, 36], align: 'right', valign: 'center' });
+            doc.image(path.join(assets, 'melinda-gray.png'), 517, 51, { fit: [38, 36], align: 'right', valign: 'center' });
             doc.fillColor(teal).rect(left, 115, width, 3).fill();
             doc.fillColor(navy).font('Helvetica-Bold').fontSize(16);
             write(comparison ? 'KOMPARASI HASIL LABORATORIUM' : 'HASIL LABORATORIUM', left, 132);
@@ -103,6 +108,7 @@ async function renderLabPdf({ data, patient, labNumber = '', version = 1, draft 
             doc.font('Helvetica').fontSize(7).fillColor(gray);
             write('H = di atas rujukan  |  L = di bawah rujukan', left, y);
             write('Petugas Laboratorium', 350, y, { width: 204, align: 'center' });
+            if (fs.existsSync(technicianSignature)) doc.image(technicianSignature, 392, y + 8, { fit: [120, 46], align: 'center', valign: 'center' });
             doc.font('Helvetica-Bold').fontSize(9).fillColor(navy); write(data.technician, 350, y + 55, { width: 204, align: 'center' });
             doc.font('Helvetica').fontSize(7).fillColor(gray); write(`SIP: ${data.license}`, 350, y + 70, { width: 204, align: 'center' });
             write('Hasil dinilai bersama data klinis oleh dokter yang merawat.', left, y + 94, { width, lineBreak: true });
