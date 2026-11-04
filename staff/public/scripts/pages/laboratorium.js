@@ -60,8 +60,8 @@ function frame(body) {
 }
 // Keep the sticky save bar above the fixed mobile bottom nav when that nav is visible.
 function syncFooterOffset() {
-    if (!host) return;
-    const nav = document.getElementById('mobile-action-bar');
+    if (!host?.style?.setProperty || typeof getComputedStyle !== 'function') return;
+    const nav = document.getElementById?.('mobile-action-bar');
     const style = nav && getComputedStyle(nav);
     const visible = style && style.display !== 'none' && style.visibility !== 'hidden' && style.position === 'fixed' && nav.offsetHeight > 0;
     const offset = visible ? Math.max(0, window.innerHeight - nav.getBoundingClientRect().top) : 0;
