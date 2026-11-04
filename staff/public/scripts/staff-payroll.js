@@ -11,6 +11,7 @@
         latestCycle: [],
         cycleSize: 4,
         practiceDays: [],
+        lastCycleEnd: null,
         settings: null,
         batches: [],
         currentBatch: null,
@@ -334,7 +335,14 @@
             title.textContent = 'Siklus ' + size + ' Praktik' +
                 (state.practiceDays.length ? ' (4 minggu \u00b7 ' + state.practiceDays.join(', ') + ')' : '');
         }
-        el.innerHTML = dates.map(function (date, index) {
+        var filled = state.latestCycle.length;
+        var hint = filled < size
+            ? '<div class="col-12 small text-warning mb-2"><i class="fas fa-info-circle mr-1"></i>Siklus belum lengkap: baru ' + filled + ' dari ' + size +
+              ' tanggal praktik' + (state.lastCycleEnd ? ' sejak batch terakhir (' + escapeHtml(formatDate(state.lastCycleEnd)) + ')' : '') +
+              '. Tanggal kosong boleh diisi manual atau dibiarkan.</div>'
+            : '<div class="col-12 small text-muted mb-2">Tanggal diambil dari booking' +
+              (state.lastCycleEnd ? ' setelah batch terakhir (' + escapeHtml(formatDate(state.lastCycleEnd)) + ')' : '') + '; bisa dikoreksi.</div>';
+        el.innerHTML = hint + dates.map(function (date, index) {
             return '<div class="col-md-3 col-6 mb-2">' +
                 '<label class="small text-muted mb-1">Praktik ' + (index + 1) + '</label>' +
                 '<input type="date" class="form-control form-control-sm staff-payroll-cycle-input" value="' + escapeHtml(date) + '">' +
@@ -654,6 +662,7 @@
         state.latestCycle = data.latest_cycle || [];
         state.cycleSize = Number(data.cycle_size) || 4;
         state.practiceDays = data.practice_days || [];
+        state.lastCycleEnd = data.last_cycle_end || null;
         renderCyclePicker();
     }
 

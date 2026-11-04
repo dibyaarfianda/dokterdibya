@@ -75,8 +75,55 @@ async function getCycleInfo() {
     return {
         cycle_weeks: CYCLE_WEEKS,
         cycle_size: CYCLE_WEEKS * practiceDays.length,
+        practice_day_numbers: practiceDays,
         practice_days: practiceDays.map(getDayName)
     };
+}
+
+// Status booking yang menandakan praktik benar-benar berjalan di tanggal itu.
+const HELD_APPOINTMENT_STATUSES = ['confirmed', 'completed', 'no_show'];
+
+/**
+ * Tanggal praktik diambil dari booking (sunday_appointments), bukan dari absensi
+ * Briefing yang sering tidak tercatat. Default siklus = tanggal praktik berikutnya
+ * setelah batch gaji terakhir, sampai hari ini, maksimal cycle_size tanggal.
+ */
+async function getBookingPracticeDates(cycle, queryable = db) {
+    const dayPlaceholders = cycle.practice_day_numbers.map(() => '?').join(', ');
+    const statusPlaceholders = HELD_APPOINTMENT_STATUSES.map(() => '?').join(', ');
+    const [lastRows] = await queryable.query(
+        'SELECT MAX(cycle_end_date) AS last_end FROM staff_payroll_batches'
+    );
+    const lastEnd = lastRows[0] && lastRows[0].last_end ? formatDateOnly(lastRows[0].last_end) : null;
+    const baseParams = [todayLocalDate(), ...HELD_APPOINTMENT_STATUSES, ...cycle.practice_day_numbers];
+    const baseWhere = `appointment_date <= ?
+           AND status IN (${statusPlaceholders})
+           AND (DAYOFWEEK(appointment_date) - 1) IN (${dayPlaceholders})`;
+
+    const [recentRows] = await queryable.query(
+        `SELECT DISTINCT appointment_date FROM sunday_appointments
+         WHERE ${baseWhere}
+         ORDER BY appointment_date DESC
+         LIMIT ?`,
+        [...baseParams, cycle.cycle_size * 2]
+    );
+    const recent = recentRows.map(row => formatDateOnly(row.appointment_date));
+
+    let next;
+    if (lastEnd) {
+        const [nextRows] = await queryable.query(
+            `SELECT DISTINCT appointment_date FROM sunday_appointments
+             WHERE ${baseWhere} AND appointment_date > ?
+             ORDER BY appointment_date ASC
+             LIMIT ?`,
+            [...baseParams, lastEnd, cycle.cycle_size]
+        );
+        next = nextRows.map(row => formatDateOnly(row.appointment_date));
+    } else {
+        next = recent.slice(0, cycle.cycle_size).sort();
+    }
+
+    return { last_cycle_end: lastEnd, practice_dates: recent, next_cycle: next };
 }
 
 function actorIdFrom(req) {
@@ -171,18 +218,6 @@ function normalizeAttendanceDates(values, practiceDates) {
     return unique;
 }
 
-async function getLatestPracticeDates(limit = 12) {
-    const safeLimit = Math.max(1, Math.min(MAX_CYCLE_DATES, Number.parseInt(limit, 10) || 12));
-    const [rows] = await db.query(
-        `SELECT DISTINCT duty_date
-         FROM staff_duty_logs
-         ORDER BY duty_date DESC
-         LIMIT ?`,
-        [safeLimit]
-    );
-    return rows.map(row => formatDateOnly(row.duty_date));
-}
-
 async function loadBatch(batchId, queryable = db) {
     const [batchRows] = await queryable.query(
         `SELECT id, cycle_label, cycle_start_date, cycle_end_date, payroll_date,
@@ -270,15 +305,17 @@ function badRequest(res, message) {
 router.get('/practice-dates', verifyToken, requireDoctorRoleOrAccountPermission('staff_payroll.view'), async (req, res) => {
     try {
         const cycle = await getCycleInfo();
-        const limit = Math.max(Number.parseInt(req.query.limit, 10) || 0, cycle.cycle_size * 2);
-        const practiceDates = await getLatestPracticeDates(limit);
-        const latestCycle = practiceDates.slice(0, cycle.cycle_size).sort();
+        const booking = await getBookingPracticeDates(cycle);
         return res.json({
             success: true,
             data: {
-                ...cycle,
-                practice_dates: practiceDates,
-                latest_cycle: latestCycle
+                cycle_weeks: cycle.cycle_weeks,
+                cycle_size: cycle.cycle_size,
+                practice_days: cycle.practice_days,
+                last_cycle_end: booking.last_cycle_end,
+                practice_dates: booking.practice_dates,
+                latest_cycle: booking.next_cycle,
+                cycle_complete: booking.next_cycle.length >= cycle.cycle_size
             }
         });
     } catch (err) {
@@ -342,9 +379,7 @@ router.post('/batches', verifyToken, requireDoctorRoleOrAccountPermission('staff
             practiceDates = normalizePracticeDates(req.body.practice_dates);
         } else {
             const cycle = await getCycleInfo();
-            practiceDates = normalizePracticeDates(
-                (await getLatestPracticeDates(cycle.cycle_size)).slice(0, cycle.cycle_size)
-            );
+            practiceDates = normalizePracticeDates((await getBookingPracticeDates(cycle)).next_cycle);
         }
     } catch (err) {
         return badRequest(res, err.message);
