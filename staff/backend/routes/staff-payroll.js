@@ -252,7 +252,24 @@ async function loadBatch(batchId, queryable = db) {
         [batchId]
     );
 
-    batch.items = items.map(item => ({
+    let currentAllowances = null;
+    if (batch.status === 'draft') {
+        currentAllowances = new Map(
+            (await loadAllowances(queryable, { activeOnly: true })).map(a => [a.staff_id, a])
+        );
+    }
+    batch.allowances_changed = false;
+
+    batch.items = items.map(item => {
+        if (!currentAllowances) return item;
+        const current = currentAllowances.get(String(item.staff_id)) || null;
+        const label = current ? current.label : null;
+        const amount = current ? current.amount : 0;
+        if ((Number(item.allowance_amount) || 0) !== amount || (item.allowance_label || null) !== label) {
+            batch.allowances_changed = true;
+        }
+        return { ...item, allowance_label: label, allowance_amount: amount };
+    }).map(item => ({
         ...item,
         allowance_amount: Number(item.allowance_amount) || 0,
         // Tunjangan hanya dibayar jika hadir >= 1; allowance_amount = nominal snapshot.
@@ -543,6 +560,10 @@ router.put('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('st
         }
 
         const existingByStaff = new Map(batch.items.map(item => [String(item.staff_id), item]));
+        // Draft selalu memakai tunjangan aktif terbaru (tarif tetap snapshot batch).
+        const allowanceByStaff = new Map(
+            (await loadAllowances(connection, { activeOnly: true })).map(a => [a.staff_id, a])
+        );
 
         for (const update of updates) {
             const staffId = String(update.staff_id || '').trim();
@@ -558,17 +579,20 @@ router.put('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('st
             const adjustment = update.adjustment_amount !== undefined
                 ? Number(update.adjustment_amount)
                 : Number(existing.adjustment_amount || 0);
+            const allowance = allowanceByStaff.get(staffId) || null;
+            const allowanceAmount = allowance ? allowance.amount : 0;
             const payroll = calculatePayroll(attendanceDates.length, adjustment, {
                 base_amount: batch.base_rate,
                 additional_rate: batch.additional_rate,
-                allowance_amount: existing.allowance_amount
+                allowance_amount: allowanceAmount
             });
             const notes = update.notes !== undefined ? String(update.notes || '').trim() || null : existing.notes || null;
 
             await connection.query(
                 `UPDATE staff_payroll_items
                  SET attendance_dates_json = ?, attendance_count = ?, base_amount = ?,
-                     additional_count = ?, additional_amount = ?, adjustment_amount = ?,
+                     additional_count = ?, additional_amount = ?,
+                     allowance_label = ?, allowance_amount = ?, adjustment_amount = ?,
                      total_amount = ?, notes = ?
                  WHERE batch_id = ? AND staff_id = ?`,
                 [
@@ -577,6 +601,8 @@ router.put('/batches/:id', verifyToken, requireDoctorRoleOrAccountPermission('st
                     payroll.base_amount,
                     payroll.additional_count,
                     payroll.additional_amount,
+                    allowance ? allowance.label : null,
+                    allowanceAmount,
                     payroll.adjustment_amount,
                     payroll.total_amount,
                     notes,

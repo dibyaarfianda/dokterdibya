@@ -142,39 +142,100 @@ describe('staff payroll cycle follows booking practice days', () => {
         expect(res.body.data.base_rate).toBe(160000);
     });
 
-    test('saving a draft recalculates with the batch snapshot rates, not current settings', async () => {
+    function draftConnection({ allowances, updates }) {
         const dates = ['2026-10-31', '2026-11-01'];
-        const updates = [];
-        const connection = {
-            beginTransaction: jest.fn(),
-            commit: jest.fn(),
-            rollback: jest.fn(),
-            release: jest.fn(),
-            query: jest.fn(async (sql, params) => {
-                if (sql.includes('FROM staff_payroll_batches') && sql.includes('WHERE id = ?')) {
-                    return [[{ id: 5, practice_dates_json: JSON.stringify(dates), base_rate: 150000, additional_rate: 100000, status: 'draft' }]];
-                }
-                if (sql.includes('FROM staff_payroll_items')) {
-                    return [[{ staff_id: 'S1', staff_name: 'Liza', attendance_dates_json: '[]', attendance_count: 0, allowance_label: 'HR', allowance_amount: 100000, adjustment_amount: 0 }]];
-                }
-                if (sql.includes('UPDATE staff_payroll_items')) {
-                    updates.push(params);
+        return {
+            dates,
+            connection: {
+                beginTransaction: jest.fn(),
+                commit: jest.fn(),
+                rollback: jest.fn(),
+                release: jest.fn(),
+                query: jest.fn(async (sql, params) => {
+                    if (sql.includes('FROM staff_payroll_batches') && sql.includes('WHERE id = ?')) {
+                        return [[{ id: 8, practice_dates_json: JSON.stringify(dates), base_rate: 150000, additional_rate: 100000, status: 'draft' }]];
+                    }
+                    if (sql.includes('FROM staff_payroll_items')) {
+                        // Draft dibuat sebelum tunjangan diisi: snapshot item masih 0.
+                        return [[{ staff_id: 'S1', staff_name: 'Liza', attendance_dates_json: '[]', attendance_count: 0, allowance_label: null, allowance_amount: 0, adjustment_amount: 0 }]];
+                    }
+                    if (sql.includes('FROM staff_payroll_allowances')) return [allowances];
+                    if (sql.includes('UPDATE staff_payroll_items')) {
+                        updates.push(params);
+                        return [{}];
+                    }
+                    if (sql.includes('SUM(total_amount)')) return [[{ total_amount: 0 }]];
+                    if (sql.includes('staff_payroll_settings')) throw new Error('must not read current settings');
                     return [{}];
-                }
-                if (sql.includes('SUM(total_amount)')) return [[{ total_amount: 350000 }]];
-                if (sql.includes('staff_payroll_settings')) throw new Error('must not read current settings');
-                return [{}];
-            })
+                })
+            }
         };
+    }
+
+    test('saving a draft applies allowances added after the draft was created, with snapshot rates', async () => {
+        const updates = [];
+        const { dates, connection } = draftConnection({
+            allowances: [{ staff_id: 'S1', label: 'Penjadwalan Pasien', amount: 100000, is_active: 1 }],
+            updates
+        });
         db.getConnection.mockResolvedValue(connection);
 
         await request(app)
-            .put('/api/staff-payroll/batches/5')
+            .put('/api/staff-payroll/batches/8')
+            .send({ items: [{ staff_id: 'S1', attendance_dates: dates, adjustment_amount: 25000 }] })
+            .expect(200);
+
+        // [dates, count, base, addCount, addAmount, allowLabel, allowAmount, adj, total, notes, batch, staff]
+        expect(updates[0].slice(1, 9)).toEqual([2, 150000, 1, 100000, 'Penjadwalan Pasien', 100000, 25000, 375000]);
+    });
+
+    test('removing an allowance clears it from the open draft on save', async () => {
+        const updates = [];
+        const { dates, connection } = draftConnection({ allowances: [], updates });
+        db.getConnection.mockResolvedValue(connection);
+
+        await request(app)
+            .put('/api/staff-payroll/batches/8')
             .send({ items: [{ staff_id: 'S1', attendance_dates: dates, adjustment_amount: 0 }] })
             .expect(200);
 
-        // [dates, count, base, addCount, addAmount, adj, total, notes, batch, staff]
-        expect(updates[0].slice(1, 7)).toEqual([2, 150000, 1, 100000, 0, 350000]);
+        expect(updates[0].slice(5, 9)).toEqual([null, 0, 0, 250000]);
+    });
+
+    test('loading a draft shows current allowances and flags that it needs saving', async () => {
+        db.query.mockImplementation(async sql => {
+            if (sql.includes('FROM staff_payroll_batches')) {
+                return [[{ id: 8, practice_dates_json: '["2026-11-01"]', base_rate: 150000, additional_rate: 100000, status: 'draft' }]];
+            }
+            if (sql.includes('FROM staff_payroll_items')) {
+                return [[{ staff_id: 'S1', staff_name: 'Liza', attendance_dates_json: '["2026-11-01"]', attendance_count: 1, allowance_label: null, allowance_amount: 0, total_amount: 150000 }]];
+            }
+            if (sql.includes('FROM staff_payroll_allowances')) {
+                return [[{ staff_id: 'S1', label: 'Penjadwalan Pasien', amount: 100000, is_active: 1 }]];
+            }
+            return [[]];
+        });
+
+        const res = await request(app).get('/api/staff-payroll/batches/8').expect(200);
+        expect(res.body.data.allowances_changed).toBe(true);
+        expect(res.body.data.items[0]).toMatchObject({ allowance_label: 'Penjadwalan Pasien', allowance_amount: 100000, allowance_paid: 100000 });
+    });
+
+    test('finalized batches keep their stored allowance snapshot', async () => {
+        db.query.mockImplementation(async sql => {
+            if (sql.includes('FROM staff_payroll_batches')) {
+                return [[{ id: 6, practice_dates_json: '["2026-10-04"]', status: 'finalized' }]];
+            }
+            if (sql.includes('FROM staff_payroll_items')) {
+                return [[{ staff_id: 'S1', attendance_dates_json: '["2026-10-04"]', attendance_count: 1, allowance_label: null, allowance_amount: 0, total_amount: 150000 }]];
+            }
+            if (sql.includes('FROM staff_payroll_allowances')) throw new Error('finalized batch must not read current allowances');
+            return [[]];
+        });
+
+        const res = await request(app).get('/api/staff-payroll/batches/6').expect(200);
+        expect(res.body.data.allowances_changed).toBe(false);
+        expect(res.body.data.items[0].allowance_paid).toBe(0);
     });
 
     test('rejects an empty cycle', async () => {

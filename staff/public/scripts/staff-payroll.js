@@ -512,6 +512,7 @@
         }
 
         el.innerHTML =
+            (batch.allowances_changed ? '<span class="badge badge-warning mr-2" id="staff-payroll-allowance-pending"><i class="fas fa-exclamation-triangle mr-1"></i>Tunjangan diperbarui, klik Simpan Draft</span>' : '') +
             '<strong class="mr-3">Total: <span id="staff-payroll-live-total">' + escapeHtml(formatRp(batch.total_amount)) + '</span></strong>' +
             (hasAccountPermission('staff_payroll.write') ? '<button type="button" class="btn btn-sm btn-primary mr-2" data-payroll-action="save" onclick="if(window.staffPayroll) window.staffPayroll.save()"><i class="fas fa-save mr-1"></i>Simpan Draft</button>' : '') +
             (hasAccountPermission('staff_payroll.finalize') ? '<button type="button" class="btn btn-sm btn-success mr-2" data-payroll-action="finalize" onclick="if(window.staffPayroll) window.staffPayroll.finalize()"><i class="fas fa-check mr-1"></i>Finalize</button>' : '') +
@@ -708,7 +709,7 @@
             '<input type="number" min="0" step="1000" id="staff-payroll-rate-base" class="form-control form-control-sm text-right" value="' + (Number(rates.base_amount) || 0) + '"' + dis + '></div>' +
             '<div class="col-md-3 col-6 mb-2"><label class="small text-muted mb-1">Tiap hadir tambahan (Rp)</label>' +
             '<input type="number" min="0" step="1000" id="staff-payroll-rate-additional" class="form-control form-control-sm text-right" value="' + (Number(rates.additional_rate) || 0) + '"' + dis + '></div>' +
-            '<div class="col-md-6 mb-2 d-flex align-items-end"><div class="small text-muted">Perubahan tarif & tunjangan berlaku untuk draft gaji yang dibuat berikutnya. Batch yang sudah ada tidak berubah.</div></div>' +
+            '<div class="col-md-6 mb-2 d-flex align-items-end"><div class="small text-muted">Tarif berlaku untuk draft gaji yang dibuat berikutnya. Tunjangan juga diterapkan ke draft yang masih terbuka saat Simpan Draft. Batch final tidak berubah.</div></div>' +
             '</div>' +
             '<label class="small text-muted mb-1">Tunjangan tugas per siklus (dibayar jika hadir minimal 1x)</label>' +
             '<div id="staff-payroll-allowance-list">' +
@@ -758,6 +759,40 @@
         };
     }
 
+    // Terapkan tunjangan terbaru ke baris draft yang sedang terbuka tanpa
+    // membuang centang/penyesuaian yang belum disimpan; server menyimpannya saat Simpan Draft.
+    function applyAllowancesToOpenDraft(allowances) {
+        var batch = state.currentBatch;
+        if (!batch || batch.status !== 'draft') return;
+        var byStaff = {};
+        allowances.forEach(function (a) {
+            if (a.is_active !== false && Number(a.amount) > 0) byStaff[String(a.staff_id)] = a;
+        });
+        var changed = false;
+        (batch.items || []).forEach(function (item) {
+            var a = byStaff[String(item.staff_id)] || null;
+            var amount = a ? Number(a.amount) : 0;
+            var label = a ? a.label : null;
+            if ((Number(item.allowance_amount) || 0) !== amount || (item.allowance_label || null) !== label) changed = true;
+            item.allowance_amount = amount;
+            item.allowance_label = label;
+            var row = document.querySelector('#staff-payroll-tbody tr[data-staff-id="' + String(item.staff_id).replace(/"/g, '') + '"]');
+            if (!row) return;
+            row.setAttribute('data-allowance', String(amount));
+            var cell = row.querySelector('.payroll-allowance');
+            if (cell) {
+                var labelEl = cell.parentElement.querySelector('.text-muted.small');
+                if (labelEl) labelEl.remove();
+                if (label) cell.insertAdjacentHTML('afterend', '<div class="text-muted small">' + escapeHtml(label) + '</div>');
+            }
+        });
+        if (changed) {
+            batch.allowances_changed = true;
+            renderActions();
+            recalcClientTotals();
+        }
+    }
+
     async function saveSettings() {
         if (!hasAccountPermission('staff_payroll.write')) return;
         setBusy(true);
@@ -765,6 +800,7 @@
             var result = await api('/settings', { method: 'PUT', body: JSON.stringify(collectSettings()) });
             state.settings = Object.assign({}, state.settings, result.data || {});
             renderSettings();
+            applyAllowancesToOpenDraft((result.data && result.data.allowances) || []);
             showMessage(result.message || 'Pengaturan gaji disimpan', 'success');
         } catch (err) {
             console.error('[staff-payroll] settings save error:', err);
