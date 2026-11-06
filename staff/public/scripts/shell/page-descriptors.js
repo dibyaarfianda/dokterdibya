@@ -16,6 +16,7 @@ const fragmentPages = [
     ['staff-points', 'content-staff-points', 'nav-staff-points', 'Point Staff'],
     ['staff-briefing', 'content-staff-briefing', 'nav-staff-briefing', 'Briefing'],
     ['staff-payroll', 'content-staff-payroll', 'nav-staff-payroll', 'Gajian'],
+    ['drug-audit', 'content-drug-audit', 'nav-drug-audit', 'Audit Obat'],
     ['tanya-dokter', 'tanya-dokter-page', 'nav-tanya-dokter', 'Tanya Dokter'],
     ['birth-congrats', 'birth-congrats-page', 'nav-birth-congrats', 'Ucapan Kelahiran'],
     ['birth-testimonials', 'birth-testimonials-page', 'nav-birth-testimonials', 'Testimoni Pasien'],

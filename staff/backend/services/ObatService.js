@@ -7,6 +7,7 @@ const db = require('../utils/database');
 const cache = require('../utils/cache');
 const logger = require('../utils/logger');
 const { AppError } = require('../middleware/errorHandler');
+const { assertNoDirectStockEdit } = require('./StockLedgerService');
 
 class ObatService {
     /**
@@ -75,7 +76,7 @@ class ObatService {
      * Create new medication
      */
     async createObat(obatData) {
-        const { code, name, category, price, stock, unit, min_stock } = obatData;
+        const { code, name, category, price, unit, min_stock } = obatData;
         
         // Validate required fields
         if (!code || !name || !category || price === undefined) {
@@ -94,7 +95,7 @@ class ObatService {
             name,
             category,
             price,
-            stock: stock || 0,
+            stock: 0, // stok awal selalu 0; hanya ledger yang boleh mengubah stok
             unit: unit || 'tablet',
             min_stock: min_stock || 10,
             is_active: 1
@@ -115,12 +116,23 @@ class ObatService {
      */
     async updateObat(id, obatData) {
         const { name, category, price, stock, unit, min_stock, is_active } = obatData;
+
+        // Baca langsung dari DB (bukan cache) agar perbandingan stok tidak basi.
+        const current = await db.findById('obat', id);
+        if (!current) {
+            throw new AppError('Obat not found', 404);
+        }
+
+        try {
+            assertNoDirectStockEdit(stock, current.stock);
+        } catch (error) {
+            throw new AppError(error.message, 409, true, error.code);
+        }
         
         const updateData = {
             name,
             category,
             price,
-            stock,
             unit,
             min_stock,
             is_active
@@ -139,50 +151,6 @@ class ObatService {
     }
     
     /**
-     * Update stock
-     */
-    async updateStock(id, quantity) {
-        const obat = await this.getObatById(id);
-        
-        const newStock = obat.stock + quantity;
-        
-        if (newStock < 0) {
-            throw new AppError('Insufficient stock', 400);
-        }
-        
-        await db.updateById('obat', id, { stock: newStock });
-        
-        // Invalidate cache
-        cache.delPattern('obat:');
-        
-        logger.info('Stock updated', { obatId: id, quantity, newStock });
-        
-        return { newStock };
-    }
-    
-    /**
-     * Deduct stock (for sales)
-     */
-    async deductStock(id, quantity) {
-        if (quantity <= 0) {
-            throw new AppError('Quantity must be positive', 400);
-        }
-        
-        return this.updateStock(id, -quantity);
-    }
-    
-    /**
-     * Add stock (for purchases)
-     */
-    async addStock(id, quantity) {
-        if (quantity <= 0) {
-            throw new AppError('Quantity must be positive', 400);
-        }
-        
-        return this.updateStock(id, quantity);
-    }
-    
-    /**
      * Get low stock items
      */
     async getLowStockItems() {
@@ -193,22 +161,6 @@ class ObatService {
         logger.info(`Found ${rows.length} low stock items`);
         
         return rows;
-    }
-    
-    /**
-     * Delete medication
-     */
-    async deleteObat(id) {
-        const affectedRows = await db.deleteById('obat', id);
-        
-        if (affectedRows === 0) {
-            throw new AppError('Obat not found', 404);
-        }
-        
-        // Invalidate cache
-        cache.delPattern('obat:');
-        
-        logger.info('Obat deleted', { obatId: id });
     }
 }
 

@@ -8,6 +8,7 @@ const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
 const { verifyToken, requireMenuAccess, requireSuperadmin, requirePermission } = require('../middleware/auth');
 const { validateObat, validateObatUpdate } = require('../middleware/validation');
+const { assertNoDirectStockEdit } = require('../services/StockLedgerService');
 
 // ==================== OBAT ENDPOINTS ====================
 
@@ -92,7 +93,7 @@ router.get('/api/obat/:id', verifyToken, requirePermission('obat_alkes.view'), a
 // ADD NEW OBAT
 router.post('/api/obat', verifyToken, requirePermission('obat_alkes.create'), validateObat, async (req, res) => {
     try {
-        const { code, name, category, price, stock, unit, min_stock, default_supplier_id } = req.body;
+        const { code, name, category, price, unit, min_stock, default_supplier_id } = req.body;
 
         if (!code || !name || !category || price === undefined) {
             return res.status(400).json({
@@ -101,9 +102,10 @@ router.post('/api/obat', verifyToken, requirePermission('obat_alkes.create'), va
             });
         }
 
+        // Stok awal selalu 0; stok hanya berubah lewat pembelian/penyesuaian yang tercatat di ledger.
         const [result] = await db.query(
             'INSERT INTO obat (code, name, category, price, stock, unit, min_stock, default_supplier_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [code, name, category, price, stock || 0, unit || 'tablet', min_stock || 10, default_supplier_id || null]
+            [code, name, category, price, 0, unit || 'tablet', min_stock || 10, default_supplier_id || null]
         );
 
         // Invalidate obat cache
@@ -137,9 +139,24 @@ router.put('/api/obat/:id', verifyToken, requirePermission('obat_alkes.edit'), v
     try {
         const { name, category, price, stock, unit, min_stock, is_active, default_supplier_id, default_cost_price, discount } = req.body;
 
+        const [currentRows] = await db.query('SELECT stock FROM obat WHERE id = ?', [req.params.id]);
+        if (!currentRows || currentRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Obat not found' });
+        }
+
+        try {
+            assertNoDirectStockEdit(stock, currentRows[0].stock);
+        } catch (stockError) {
+            return res.status(stockError.statusCode || 409).json({
+                success: false,
+                code: stockError.code,
+                message: stockError.message
+            });
+        }
+
         const [result] = await db.query(
-            `UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ?, default_supplier_id = ?, default_cost_price = ?, discount = ? WHERE id = ?`,
-            [name, category, price, stock, unit, min_stock, is_active, default_supplier_id || null, default_cost_price || 0, discount || null, req.params.id]
+            `UPDATE obat SET name = ?, category = ?, price = ?, unit = ?, min_stock = ?, is_active = ?, default_supplier_id = ?, default_cost_price = ?, discount = ? WHERE id = ?`,
+            [name, category, price, unit, min_stock, is_active, default_supplier_id || null, default_cost_price || 0, discount || null, req.params.id]
         );
 
         if (result.affectedRows === 0) {
@@ -207,68 +224,13 @@ router.patch('/api/obat/:id/status', verifyToken, requirePermission('obat_alkes.
     }
 });
 
-// UPDATE STOCK (for deducting after finalization or manual adjustment)
-router.patch('/api/obat/:id/stock', verifyToken, requirePermission('stock.update'), async (req, res) => {
-    try {
-        const { quantity, adjustment } = req.body;
-        
-        // Support both quantity (for deduction) and adjustment (for +/- changes)
-        if (quantity === undefined && adjustment === undefined) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Quantity or adjustment is required' 
-            });
-        }
-        
-        // Get current stock
-        const [rows] = await db.query('SELECT stock, name FROM obat WHERE id = ?', [req.params.id]);
-        
-        if (rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Obat not found' });
-        }
-        
-        const currentStock = rows[0].stock;
-        let newStock;
-        
-        if (adjustment !== undefined) {
-            // Manual adjustment: add or subtract
-            newStock = currentStock + parseInt(adjustment);
-        } else {
-            // Quantity deduction: subtract quantity
-            newStock = currentStock - quantity;
-        }
-        
-        if (newStock < 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Stok tidak mencukupi',
-                currentStock,
-                requested: quantity || adjustment
-            });
-        }
-        
-        // Update stock
-        await db.query('UPDATE obat SET stock = ? WHERE id = ?', [newStock, req.params.id]);
-        
-        // Invalidate cache
-        cache.delPattern('obat:');
-        
-        res.json({ 
-            success: true, 
-            message: 'Stock updated successfully',
-            obatName: rows[0].name,
-            oldStock: currentStock,
-            newStock: newStock,
-            change: newStock - currentStock
-        });
-    } catch (error) {
-        console.error('Error updating stock:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to update stock', 
-            error: error.message 
-        });
-    }
+// UPDATE STOCK - ditutup. Stok hanya berubah lewat pembelian, penjualan, atau Ajukan Penyesuaian.
+router.patch('/api/obat/:id/stock', verifyToken, requirePermission('stock.update'), (req, res) => {
+    res.status(410).json({
+        success: false,
+        code: 'STOCK_ENDPOINT_REMOVED',
+        message: 'Endpoint ini sudah ditutup. Gunakan Ajukan Penyesuaian di Kelola Obat.'
+    });
 });
 
 // DELETE OBAT (Superadmin/Dokter only)
@@ -301,7 +263,7 @@ router.delete('/api/obat/:id/permanent', verifyToken, requirePermission('obat_al
         const obatId = req.params.id;
 
         const [obatRows] = await db.query(
-            'SELECT id, name, is_active FROM obat WHERE id = ?',
+            'SELECT id, name, is_active, stock FROM obat WHERE id = ?',
             [obatId]
         );
 
@@ -320,19 +282,37 @@ router.delete('/api/obat/:id/permanent', verifyToken, requirePermission('obat_al
             });
         }
 
+        if (Number(obat.stock) !== 0) {
+            return res.status(409).json({
+                success: false,
+                code: 'OBAT_HAS_STOCK',
+                message: 'Obat masih punya stok. Ajukan penyesuaian sampai stok 0 dan tunggu persetujuan dokter sebelum menghapus permanen.'
+            });
+        }
+
         // Do not allow permanent delete for items that already have transaction history.
         const [historyRows] = await db.query(
             `SELECT
                 (SELECT COUNT(*) FROM stock_movements WHERE obat_id = ?) AS movement_count,
                 (SELECT COUNT(*) FROM obat_batches WHERE obat_id = ?) AS batch_count,
-                (SELECT COUNT(*) FROM obat_sale_items WHERE obat_id = ?) AS sale_item_count`,
-            [obatId, obatId, obatId]
+                (SELECT COUNT(*) FROM obat_sale_items WHERE obat_id = ?) AS sale_item_count,
+                (SELECT COUNT(*) FROM stock_adjustment_requests WHERE obat_id = ?) AS adjustment_request_count`,
+            [obatId, obatId, obatId, obatId]
         );
 
         const history = historyRows[0] || {};
         const movementCount = Number(history.movement_count || 0);
         const batchCount = Number(history.batch_count || 0);
         const saleItemCount = Number(history.sale_item_count || 0);
+        const adjustmentRequestCount = Number(history.adjustment_request_count || 0);
+
+        if (adjustmentRequestCount > 0) {
+            return res.status(409).json({
+                success: false,
+                code: 'OBAT_HAS_ADJUSTMENT_REQUESTS',
+                message: 'Obat ini punya riwayat pengajuan penyesuaian sehingga tidak bisa dihapus permanen.'
+            });
+        }
 
         if (movementCount > 0 || batchCount > 0 || saleItemCount > 0) {
             return res.status(400).json({

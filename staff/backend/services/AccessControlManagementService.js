@@ -24,7 +24,9 @@ const ACCESS_MANAGEMENT_PERMISSIONS = new Set([
 ]);
 const NON_DELEGABLE_PERMISSIONS = new Set([
     ...ACCESS_MANAGEMENT_PERMISSIONS,
-    'system.reset'
+    'system.reset',
+    'drug_audit.view',
+    'drug_audit.approve'
 ]);
 const REQUIRED_STAFF_DRD_PERMISSIONS = new Set([
     'patients.view',

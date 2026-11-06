@@ -49,17 +49,22 @@ router.put('/obat/:id', verifyToken, validateObat, asyncHandler(async (req, res)
     sendSuccess(res, null, 'Obat updated successfully');
 }));
 
-// UPDATE STOCK
-router.patch('/obat/:id/stock', verifyToken, requirePermission('stock.update'), asyncHandler(async (req, res) => {
-    const { quantity } = req.body;
-    const result = await ObatService.updateStock(req.params.id, parseInt(quantity));
-    sendSuccess(res, result, 'Stock updated successfully');
-}));
+// UPDATE STOCK - ditutup. Stok hanya berubah lewat pembelian, penjualan, atau Ajukan Penyesuaian.
+router.patch('/obat/:id/stock', verifyToken, requirePermission('stock.update'), (req, res) => {
+    res.status(410).json({
+        success: false,
+        code: 'STOCK_ENDPOINT_REMOVED',
+        message: 'Endpoint ini sudah ditutup. Gunakan Ajukan Penyesuaian di Kelola Obat.'
+    });
+});
 
-// DELETE OBAT (superadmin/dokter only)
-router.delete('/obat/:id', verifyToken, requireSuperadminOrAccountPermission('obat_alkes.delete'), asyncHandler(async (req, res) => {
-    await ObatService.deleteObat(req.params.id);
-    sendSuccess(res, null, 'Obat deleted successfully');
-}));
+// DELETE OBAT - ditutup. Gunakan Nonaktifkan atau Hapus Permanen di Kelola Obat.
+router.delete('/obat/:id', verifyToken, requireSuperadminOrAccountPermission('obat_alkes.delete'), (req, res) => {
+    res.status(410).json({
+        success: false,
+        code: 'ENDPOINT_REMOVED',
+        message: 'Endpoint ini sudah ditutup. Gunakan Nonaktifkan atau Hapus Permanen di Kelola Obat.'
+    });
+});
 
 module.exports = router;

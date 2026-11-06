@@ -680,6 +680,7 @@ app.use('/api/suppliers', suppliersRoutes);
 const inventoryRoutes = require('./routes/inventory');
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/inventory', require('./routes/inventory-orders'));
+app.use('/api/drug-audit', require('./routes/drug-audit'));
 
 // Obat Sales routes (medication sales for hospital patients)
 const obatSalesRoutes = require('./routes/obat-sales');

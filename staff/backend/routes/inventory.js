@@ -10,6 +10,7 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const { verifyToken, requireMenuAccessOrAccountPermission, requirePermission } = require('../middleware/auth');
 const InventoryService = require('../services/InventoryService');
+const { createAdjustmentRequest, actorFromRequest } = require('../services/StockAdjustmentRequestService');
 
 /**
  * POST /api/inventory/purchase
@@ -373,74 +374,42 @@ router.get('/expiring', verifyToken, requireMenuAccessOrAccountPermission('obat_
 
 /**
  * POST /api/inventory/adjust
- * Manual stock adjustment
+ * Ajukan penyesuaian stok manual (menunggu persetujuan dokter; stok tidak berubah di sini)
  */
 router.post('/adjust', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.adjust'), async (req, res) => {
     try {
-        const { obat_id, adjustment, reason } = req.body;
+        const result = await createAdjustmentRequest(req.body, actorFromRequest(req));
 
-        if (!obat_id) {
-            return res.status(400).json({
-                success: false,
-                message: 'Obat harus dipilih'
-            });
-        }
-
-        if (adjustment === undefined || adjustment === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Jumlah penyesuaian harus diisi'
-            });
-        }
-
-        const result = await InventoryService.adjustStock(
-            obat_id,
-            parseInt(adjustment),
-            reason,
-            req.user?.name || req.user?.id || 'system'
-        );
-
-        res.json(result);
+        res.status(201).json({
+            success: true,
+            data: result,
+            message: 'Pengajuan penyesuaian dikirim. Stok berubah setelah disetujui dokter.'
+        });
     } catch (error) {
-        logger.error('Adjust stock error:', error);
+        if (error.statusCode) {
+            return res.status(error.statusCode).json({
+                success: false,
+                message: error.message
+            });
+        }
+        logger.error('Adjust stock request error:', error);
         res.status(500).json({
             success: false,
-            message: error.message || 'Gagal menyesuaikan stok'
+            message: 'Gagal mengirim pengajuan penyesuaian'
         });
     }
 });
 
 /**
  * POST /api/inventory/deduct
- * Deduct stock using FIFO (for billing integration)
+ * Ditutup: pengurangan stok manual tidak lagi diizinkan.
  */
-router.post('/deduct', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.adjust'), async (req, res) => {
-    try {
-        const { obat_id, quantity, reference_type, reference_id } = req.body;
-
-        if (!obat_id || !quantity) {
-            return res.status(400).json({
-                success: false,
-                message: 'Obat dan jumlah harus diisi'
-            });
-        }
-
-        const result = await InventoryService.deductStockFIFO(
-            obat_id,
-            parseInt(quantity),
-            reference_type || 'manual',
-            reference_id,
-            req.user?.name || req.user?.id || 'system'
-        );
-
-        res.json(result);
-    } catch (error) {
-        logger.error('Deduct stock error:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message || 'Gagal mengurangi stok'
-        });
-    }
+router.post('/deduct', verifyToken, requireMenuAccessOrAccountPermission('obat_alkes', 'inventory.adjust'), (req, res) => {
+    res.status(410).json({
+        success: false,
+        code: 'STOCK_ENDPOINT_REMOVED',
+        message: 'Endpoint ini sudah ditutup. Gunakan Ajukan Penyesuaian di Kelola Obat.'
+    });
 });
 
 /**

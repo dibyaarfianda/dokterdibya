@@ -29,7 +29,9 @@ const NON_DELEGABLE_ACCOUNT_PERMISSIONS = new Set([
     'roles.manage_permissions',
     'roles.view',
     'users.manage_roles',
-    'system.reset'
+    'system.reset',
+    'drug_audit.view',
+    'drug_audit.approve'
 ]);
 
 function isDelegatedAccountPermission(req, requiredPermissions = []) {

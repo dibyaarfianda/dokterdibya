@@ -170,6 +170,10 @@ async function createReturn(deps, { mrId, input, actor, accountingDate }) {
         [main.id, additionalId, mrId, main.patient_id, input.kind, plan.item?.id || null, plan.item?.item_name || null,
             plan.quantity, plan.amount, plan.reason, input.payment_method, accountingDate, actor.id, actor.name,
             input.request_key, hash, JSON.stringify(allocations)]);
+        if (allocations.length) {
+            await connection.query('SELECT id FROM obat WHERE id IN (?) ORDER BY id FOR UPDATE',
+                [[...new Set(allocations.map((a) => a.obat_id))]]);
+        }
         for (const allocation of allocations) {
             if (allocation.batch_id) {
                 const [update] = await connection.query(`UPDATE obat_batches SET quantity_remaining = quantity_remaining + ?

@@ -4,6 +4,7 @@
 import { showSuccess, showError, showWarning } from './toast.js';
 import { getIdToken } from './vps-auth-v2.js';
 import { initOrderObat } from './order-obat.js';
+import { openAdjustmentRequestModal, submitAdjustmentRequest } from './kelola-obat-adjustment.js';
 
 console.log('🔄 kelola-obat.js LOADED - Version: 2025-11-08-11:40 - Using AUTH');
 
@@ -24,6 +25,15 @@ let initialized = false;
 function hasAccountPermission(permission) {
     return typeof window.hasAccountPermission !== 'function'
         || window.hasAccountPermission(permission);
+}
+
+function escapeAttr(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // Initialize the module
@@ -75,7 +85,6 @@ function bindFormSubmit() {
         const categoryInput = document.getElementById('kelola-obat-category');
         const supplierInput = document.getElementById('kelola-obat-supplier');
         const priceInput = document.getElementById('kelola-obat-price');
-        const stockInput = document.getElementById('kelola-obat-stock');
         const costPriceInput = document.getElementById('kelola-obat-cost-price');
         const discountInput = document.getElementById('kelola-obat-discount');
 
@@ -83,7 +92,6 @@ function bindFormSubmit() {
         const category = categoryInput?.value?.trim();
         const supplierId = supplierInput?.value || null;
         const price = parseFloat(priceInput?.value || 0);
-        const stock = parseInt(stockInput?.value || 0);
         const costPrice = parseFloat(costPriceInput?.value || 0);
         const discount = discountInput?.value?.trim() || null;
         const unit = 'pcs'; // Default unit
@@ -115,7 +123,6 @@ function bindFormSubmit() {
                         name,
                         category,
                         price,
-                        stock,
                         unit: 'pcs',
                         min_stock: 10,
                         is_active: editingObatActive,
@@ -135,7 +142,6 @@ function bindFormSubmit() {
                         name,
                         category,
                         price,
-                        stock,
                         unit: 'pcs',
                         min_stock: 10,
                         default_supplier_id: supplierId
@@ -318,7 +324,7 @@ function renderObatTable(obat) {
     // Helper: supplier badge
     function supBadge(item) {
         return item.supplier_name
-            ? `<span class="badge badge-outline-info" title="${item.supplier_code || ''}">${item.supplier_name}</span>`
+            ? `<span class="badge badge-outline-info" title="${escapeAttr(item.supplier_code || '')}">${escapeAttr(item.supplier_name)}</span>`
             : `<span class="badge badge-light text-muted">-</span>`;
     }
 
@@ -338,8 +344,12 @@ function renderObatTable(obat) {
                 ? `<span class="badge badge-danger">${item.stock}</span>`
                 : `<span class="badge badge-success">${item.stock}</span>`;
             const purchaseButton = hasAccountPermission('inventory.purchase') ? `
-                        <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok">
+                        <button class="btn btn-xs btn-success mr-1" data-obat-id="${escapeAttr(item.id)}" data-obat-name="${escapeAttr(item.name || '')}" onclick="window.openPurchaseModal(this.dataset.obatId, this.dataset.obatName)" title="Tambah Stok">
                             <i class="fas fa-plus"></i>
+                        </button>` : '';
+            const adjustmentButton = hasAccountPermission('inventory.adjust') ? `
+                        <button class="btn btn-xs btn-outline-secondary mr-1" data-obat-id="${escapeAttr(item.id)}" data-obat-name="${escapeAttr(item.name || '')}" onclick="window.openAdjustmentRequestModal(this.dataset.obatId, this.dataset.obatName)" title="Ajukan Penyesuaian">
+                            <i class="fas fa-balance-scale"></i>
                         </button>` : '';
             const editButtons = hasAccountPermission('obat_alkes.edit') ? `
                         <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
@@ -351,13 +361,13 @@ function renderObatTable(obat) {
             return `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${item.name || '-'}</td>
-                    <td><span class="badge ${catBadge(item.category)}">${item.category || '-'}</span></td>
+                    <td>${escapeAttr(item.name || '-')}</td>
+                    <td><span class="badge ${catBadge(item.category)}">${escapeAttr(item.category || '-')}</span></td>
                     <td>${supBadge(item)}</td>
                     <td>Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                     <td class="text-center">${stockBadge}</td>
                     <td class="text-center">
-                        ${purchaseButton}${editButtons}
+                        ${purchaseButton}${adjustmentButton}${editButtons}
                     </td>
                 </tr>
             `;
@@ -390,8 +400,8 @@ function renderObatTable(obat) {
                 return `
                     <tr class="table-secondary">
                         <td class="text-muted">${index + 1}</td>
-                        <td class="text-muted">${item.name || '-'}</td>
-                        <td><span class="badge ${catBadge(item.category)}">${item.category || '-'}</span></td>
+                        <td class="text-muted">${escapeAttr(item.name || '-')}</td>
+                        <td><span class="badge ${catBadge(item.category)}">${escapeAttr(item.category || '-')}</span></td>
                         <td>${supBadge(item)}</td>
                         <td class="text-muted">Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                         <td class="text-center">${stockBadge}</td>
@@ -435,6 +445,7 @@ function editObat(obatId) {
     if (supplierInput) supplierInput.value = obat.supplier_id || obat.default_supplier_id || '';
     if (priceInput) priceInput.value = parseFloat(obat.price) || 0;
     if (stockInput) stockInput.value = obat.stock || 0;
+    document.getElementById('kelola-obat-stock-group')?.classList.remove('d-none');
     if (costPriceInput) costPriceInput.value = parseFloat(obat.default_cost_price) || 0;
     if (discountInput) discountInput.value = obat.discount || '';
 
@@ -562,6 +573,8 @@ function resetForm() {
     editingObatId = null;
     editingObatActive = true;
 
+    document.getElementById('kelola-obat-stock-group')?.classList.add('d-none');
+
     const supplierInput = document.getElementById('kelola-obat-supplier');
     if (supplierInput) supplierInput.value = '';
 
@@ -599,4 +612,8 @@ window.toggleObatStatus = toggleObatStatus;
 window.deleteObatPermanen = deleteObatPermanen;
 window.loadKelolaObatList = loadObat;
 window.prepareNewObat = prepareNewObat;
+// Adjustment request handlers are exported to window by kelola-obat-adjustment.js
+// (re-assigned here so the imported bindings stay referenced even if tree-shaken).
+window.openAdjustmentRequestModal = openAdjustmentRequestModal;
+window.submitAdjustmentRequest = submitAdjustmentRequest;
 

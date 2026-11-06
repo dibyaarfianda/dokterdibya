@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/patient-queue-view.js?v=v493"></script>
-    <script src="/staff/public/scripts/date-time-format.js?v=v493"></script>
-    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v493"></script>
+    <script src="/scripts/patient-queue-view.js?v=v494"></script>
+    <script src="/staff/public/scripts/date-time-format.js?v=v494"></script>
+    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v494"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Cache controlled via versioned URLs instead of no-cache headers -->
@@ -11,16 +11,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v493';
+        window.STAFF_CACHE_VERSION = 'v494';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v493">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v493">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v493">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v493">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v494">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v494">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v494">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v494">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v493">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v494">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,7 +28,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v493">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v494">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -57,7 +57,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v493"></script>
+    <script src="scripts/error-handler.js?v=v494"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -72,10 +72,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v493">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v494">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v493">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v494">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -637,6 +637,12 @@
                                 <a href="#" class="nav-link" data-staff-call="showStaffPayrollPage">
                                     <i class="far fa-circle nav-icon"></i>
                                     <p>Gajian</p>
+                                </a>
+                            </li>
+                            <li class="nav-item doctor-role-only d-none" id="nav-drug-audit">
+                                <a href="#" class="nav-link" data-staff-call="showDrugAuditPage">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Audit Obat</p>
                                 </a>
                             </li>
                         </ul>
@@ -3312,6 +3318,9 @@
                 <!-- STAFF PAYROLL PAGE -->
                 <div id="content-staff-payroll" class="d-none" data-page-fragment="/staff/public/fragments/pages/content-staff-payroll.html"></div>
 
+                <!-- AUDIT OBAT PAGE -->
+                <div id="content-drug-audit" class="d-none" data-page-fragment="/staff/public/fragments/pages/content-drug-audit.html"></div>
+
                 <!-- (placeholder kept for following sections) -->
                 <div id="content-after-briefing-placeholder" class="d-none"></div>
 
@@ -3726,11 +3735,11 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/mobile-quick-menu.js?v=v493"></script>
-<script defer src="scripts/shell/actions.js?v=v493"></script>
-<script defer src="scripts/shell/compact-sidebar.js?v=v493"></script>
-<script defer src="scripts/shell/drd-links.js?v=v493"></script>
-<script defer src="scripts/patient-demo-manager.js?v=v493"></script>
+<script defer src="scripts/shell/mobile-quick-menu.js?v=v494"></script>
+<script defer src="scripts/shell/actions.js?v=v494"></script>
+<script defer src="scripts/shell/compact-sidebar.js?v=v494"></script>
+<script defer src="scripts/shell/drd-links.js?v=v494"></script>
+<script defer src="scripts/patient-demo-manager.js?v=v494"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3811,9 +3820,9 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v493" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v493" preload="auto"></audio>
-<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v493" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v494" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v494" preload="auto"></audio>
+<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v494" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3825,7 +3834,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v493"></script>
+<script defer src="scripts/rum.js?v=v494"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4088,7 +4097,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v493"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v494"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4132,7 +4141,7 @@
      document.body.classList.remove('kantor-saya-active');
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
-     ['content-support-chat-page','content-staff-points','content-staff-briefing','content-staff-payroll','content-kantor-saya'].forEach(function(id) {
+     ['content-support-chat-page','content-staff-points','content-staff-briefing','content-staff-payroll','content-drug-audit','content-kantor-saya'].forEach(function(id) {
          var el = document.getElementById(id);
          if (el) el.classList.add('d-none');
      });
@@ -4241,7 +4250,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v493"></script>
+ <script src="scripts/mobile-helper.js?v=v494"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4253,8 +4262,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v493"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v493"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v494"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v494"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->

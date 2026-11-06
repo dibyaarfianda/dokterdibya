@@ -275,6 +275,7 @@ function initPages() {
     pages.templateResep = grab('template-resep-page');
     pages.estimasiBiaya = grab('estimasi-biaya-page');
     pages.financeAnalysis = grab('finance-analysis-page');
+    pages.drugAudit = grab('content-drug-audit');
     pages.birthCongrats = grab('birth-congrats-page');
     pages.birthTestimonials = grab('birth-testimonials-page');
     pages.kelolaRoles = grab('kelola-roles-page');
@@ -2256,6 +2257,21 @@ async function showFinanceAnalysisPage() {
     }, 100);
 }
 
+async function showDrugAuditPage() {
+    const navGen = reserveStaffNavigation();
+    await ensureRegisteredPage('drug-audit');
+    if (typeof window.ensureStaffFeature === 'function') await window.ensureStaffFeature('drugAudit');
+    if (!hideAllPages(navGen)) return;
+    pages.drugAudit?.classList.remove('d-none');
+    setTitleAndActive('Audit Obat', 'nav-drug-audit', 'drug-audit');
+    const privateNav = document.getElementById('nav-private');
+    if (privateNav) {
+        privateNav.classList.add('menu-open');
+        privateNav.querySelector(':scope > .nav-link')?.classList.add('active');
+    }
+    window.initDrugAuditPage?.();
+}
+
 // ==================== END INVOICE HISTORY ====================
 
 function showBookingSettingsPage() {
@@ -3302,6 +3318,7 @@ function resumeSavedPageIfRequested(params) {
         'nav-staff-briefing':                   () => showStaffBriefingPage(),
         'nav-staff-payroll':                    () => showStaffPayrollPage(),
         'nav-finance-analysis':                 () => showFinanceAnalysisPage(),
+        'nav-drug-audit':                       () => showDrugAuditPage(),
         'nav-birth-congrats':                   () => window.showBirthCongratsPage?.(),
         'nav-birth-testimonials':               () => window.showBirthTestimonialsPage?.(),
         'nav-invoice-history':                  () => window.showInvoiceHistoryPage?.(),
@@ -4587,6 +4604,7 @@ window.showDocboardPage = showDocboardPage;
 window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
+window.showDrugAuditPage = showDrugAuditPage;
 window.showKelolaRolesPage = showKelolaRolesPage;
 window.showBookingSettingsPage = showBookingSettingsPage;
 window.showBirthClassPage = showBirthClassPage;
