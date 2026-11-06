@@ -166,6 +166,8 @@ app.use('/api/rum', rumPayloadLimiter, express.json({
     type: ['application/json']
 }), rumRoutes);
 
+app.use('/api/whatsapp/webhook', require('./routes/whatsapp-webhook').createWhatsAppWebhookRouter());
+
 app.use(express.json({
     limit: '10mb',
     type: ['application/json', 'application/csp-report', 'application/reports+json']
