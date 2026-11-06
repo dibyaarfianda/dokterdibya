@@ -1,0 +1,81 @@
+<style>
+#content-drug-audit .drug-audit-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+#content-drug-audit .drug-audit-card { border: 1px solid #dee2e6; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: #fff; }
+#content-drug-audit .drug-audit-card-head { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+#content-drug-audit .drug-audit-card-title { font-weight: 600; word-break: break-word; }
+#content-drug-audit .drug-audit-delta { font-weight: 700; white-space: nowrap; }
+#content-drug-audit .drug-audit-delta.is-plus { color: #28a745; }
+#content-drug-audit .drug-audit-delta.is-minus { color: #dc3545; }
+#content-drug-audit .drug-audit-meta { color: #6c757d; font-size: 13px; margin-top: 4px; word-break: break-word; }
+#content-drug-audit .drug-audit-actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+#content-drug-audit .drug-audit-bulk-bar { position: sticky; top: 0; z-index: 5; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+#content-drug-audit .drug-audit-bulk-bar.d-none { display: none; }
+#content-drug-audit .drug-audit-table { width: 100%; }
+#content-drug-audit .drug-audit-table th, #content-drug-audit .drug-audit-table td { padding: 6px 8px; border-bottom: 1px solid #dee2e6; }
+@media (max-width: 767px) {
+    #content-drug-audit .drug-audit-table thead { display: none; }
+    #content-drug-audit .drug-audit-table, #content-drug-audit .drug-audit-table tbody, #content-drug-audit .drug-audit-table tr, #content-drug-audit .drug-audit-table td { display: block; width: 100%; }
+    #content-drug-audit .drug-audit-table tr { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; margin-bottom: 8px; background: #fff; }
+    #content-drug-audit .drug-audit-table td { border: 0; padding: 2px 0; text-align: right; word-break: break-word; }
+    #content-drug-audit .drug-audit-table td::before { content: attr(data-label); float: left; font-weight: 600; color: #6c757d; margin-right: 8px; }
+}
+</style>
+<div class="container-fluid">
+    <ul class="nav nav-tabs mb-3" id="drug-audit-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="drug-audit-tab-approvals-link" data-toggle="tab" href="#drug-audit-tab-approvals" role="tab">Persetujuan</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="drug-audit-tab-reconciliation-link" data-toggle="tab" href="#drug-audit-tab-reconciliation" role="tab">Rekonsiliasi</a>
+        </li>
+    </ul>
+    <div id="drug-audit-message" class="alert d-none" role="alert"></div>
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="drug-audit-tab-approvals" role="tabpanel">
+            <div class="drug-audit-toolbar">
+                <label for="drug-audit-status" class="mb-0">Status</label>
+                <select id="drug-audit-status" class="form-control form-control-sm" style="width:auto">
+                    <option value="pending">Menunggu</option>
+                    <option value="approved">Disetujui</option>
+                    <option value="rejected">Ditolak</option>
+                    <option value="all">Semua</option>
+                </select>
+            </div>
+            <div id="drug-audit-bulk-bar" class="drug-audit-bulk-bar d-none">
+                <span id="drug-audit-bulk-summary"></span>
+                <button type="button" class="btn btn-sm btn-success" onclick="window.approveSelectedDrugAuditRequests()">Setujui terpilih</button>
+            </div>
+            <div id="drug-audit-list"><div class="text-muted">Memuat...</div></div>
+        </div>
+        <div class="tab-pane fade" id="drug-audit-tab-reconciliation" role="tabpanel">
+            <div id="drug-audit-baseline-banner" class="alert alert-info d-none">Belum ada baseline. Halaman ini hanya membandingkan stok sistem dengan total batch. Baseline dibuat setelah hitung penuh pertama.</div>
+            <div class="drug-audit-toolbar">
+                <span id="drug-audit-recon-summary" class="font-weight-bold"></span>
+                <div class="custom-control custom-checkbox ml-auto">
+                    <input type="checkbox" class="custom-control-input" id="drug-audit-only-mismatch">
+                    <label class="custom-control-label" for="drug-audit-only-mismatch">Hanya yang selisih</label>
+                </div>
+            </div>
+            <div id="drug-audit-recon"><div class="text-muted">Memuat...</div></div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="drug-audit-reject-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tolak Pengajuan</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div id="drug-audit-reject-error" class="alert alert-danger d-none"></div>
+                <label for="drug-audit-reject-note">Catatan penolakan</label>
+                <textarea id="drug-audit-reject-note" class="form-control" rows="3" maxlength="1000"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-danger" onclick="window.submitDrugAuditReject()">Tolak</button>
+            </div>
+        </div>
+    </div>
+</div>

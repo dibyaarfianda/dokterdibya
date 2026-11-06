@@ -639,6 +639,12 @@
                                     <p>Gajian</p>
                                 </a>
                             </li>
+                            <li class="nav-item doctor-role-only d-none" id="nav-drug-audit">
+                                <a href="#" class="nav-link" data-staff-call="showDrugAuditPage">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Audit Obat</p>
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
@@ -3312,6 +3318,9 @@
                 <!-- STAFF PAYROLL PAGE -->
                 <div id="content-staff-payroll" class="d-none" data-page-fragment="/staff/public/fragments/pages/content-staff-payroll.html"></div>
 
+                <!-- AUDIT OBAT PAGE -->
+                <div id="content-drug-audit" class="d-none" data-page-fragment="/staff/public/fragments/pages/content-drug-audit.html"></div>
+
                 <!-- (placeholder kept for following sections) -->
                 <div id="content-after-briefing-placeholder" class="d-none"></div>
 
@@ -4132,7 +4141,7 @@
      document.body.classList.remove('kantor-saya-active');
      var pages = document.querySelectorAll('[id$="-page"]');
      pages.forEach(function(p) { p.classList.add('d-none'); });
-     ['content-support-chat-page','content-staff-points','content-staff-briefing','content-staff-payroll','content-kantor-saya'].forEach(function(id) {
+     ['content-support-chat-page','content-staff-points','content-staff-briefing','content-staff-payroll','content-drug-audit','content-kantor-saya'].forEach(function(id) {
          var el = document.getElementById(id);
          if (el) el.classList.add('d-none');
      });

@@ -73,6 +73,7 @@ const MENU_ACTIVITY_SOURCES = {
     'nav-penjualan-obat': [{ table: 'obat_sales' }],
     'nav-estimasi-biaya': [{ table: 'settings', where: "setting_key = 'pregnancy_cost_estimate_medications'" }],
     'nav-invoice-history': [{ table: 'sunday_clinic_billings' }],
+    'nav-drug-audit': [{ table: 'stock_adjustment_requests' }],
     'nav-finance-analysis': [{ table: 'sunday_clinic_billings' }],
     'nav-staff-briefing': [{ table: 'staff_daily_briefings' }],
     'nav-bulk-upload-usg': [{ table: 'usg_bulk_upload_jobs' }],

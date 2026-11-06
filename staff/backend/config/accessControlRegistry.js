@@ -64,6 +64,7 @@ const STAFF_NAVIGATION_MAP = Object.freeze({
     'nav-community-chat': 'community_chat.view',
     'nav-dashboard': 'navigation.dashboard',
     'nav-docboard': 'docboard.view',
+    'nav-drug-audit': 'drug_audit.view',
     'nav-estimasi-biaya': 'navigation.penjualan_obat',
     'nav-finance-analysis': 'finance_analysis.view',
     'nav-guest-activity': 'logs.view',

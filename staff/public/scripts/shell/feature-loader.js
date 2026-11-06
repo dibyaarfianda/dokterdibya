@@ -102,6 +102,10 @@ const featureLoaders = {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/finance-analysis-page.js?v=${version}`);
     },
+    drugAudit: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/drug-audit-page.js?v=${version}`);
+    },
     registrationCodes: () => loadScript('/staff/public/scripts/shell/registration-codes.js'),
     notifications: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
