@@ -44,6 +44,24 @@ describe('kelola obat adjustment request', () => {
         expect(script()).toContain("from './kelola-obat-adjustment.js'");
     });
 
+    test('row button passes the name through escaped data attributes, not inline JS', () => {
+        const src = script();
+        expect(src).toContain('data-obat-name="${escapeAttr(');
+        expect(src).toContain('this.dataset.obatName');
+        expect(src).not.toContain("openAdjustmentRequestModal('${item.id}', '${(item.name");
+        expect(src).toMatch(/function escapeAttr\(/);
+        expect(src).toContain(".replace(/\"/g, '&quot;')");
+        expect(src).toContain(".replace(/'/g, '&#39;')");
+    });
+
+    test('submit is protected against double submission', () => {
+        expect(fragment()).toMatch(/<button[^>]+id="adj-submit"/);
+        const mod = adjustment();
+        expect(mod).toContain('adj-submit');
+        expect(mod).toContain('disabled = true');
+        expect(mod).toMatch(/finally\s*\{/);
+    });
+
     test('adjustment modal matches the request contract', () => {
         const html = fragment();
         expect(html).toContain('id="kelola-obat-adjustment-modal"');

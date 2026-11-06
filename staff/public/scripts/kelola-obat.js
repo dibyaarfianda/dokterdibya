@@ -27,6 +27,15 @@ function hasAccountPermission(permission) {
         || window.hasAccountPermission(permission);
 }
 
+function escapeAttr(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Initialize the module
 export function initKelolaObat() {
     initOrderObat();
@@ -339,7 +348,7 @@ function renderObatTable(obat) {
                             <i class="fas fa-plus"></i>
                         </button>` : '';
             const adjustmentButton = hasAccountPermission('inventory.adjust') ? `
-                        <button class="btn btn-xs btn-outline-secondary mr-1" onclick="window.openAdjustmentRequestModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Ajukan Penyesuaian">
+                        <button class="btn btn-xs btn-outline-secondary mr-1" data-obat-id="${escapeAttr(item.id)}" data-obat-name="${escapeAttr(item.name || '')}" onclick="window.openAdjustmentRequestModal(this.dataset.obatId, this.dataset.obatName)" title="Ajukan Penyesuaian">
                             <i class="fas fa-balance-scale"></i>
                         </button>` : '';
             const editButtons = hasAccountPermission('obat_alkes.edit') ? `

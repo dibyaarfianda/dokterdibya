@@ -4,6 +4,7 @@ import { showSuccess, showError, showWarning } from './toast.js';
 import { getIdToken } from './vps-auth-v2.js';
 
 let batchRequestSeq = 0;
+let submitInFlight = false;
 
 function formatBatchDate(value) {
     if (!value) return '-';
@@ -99,6 +100,11 @@ export async function submitAdjustmentRequest() {
         return;
     }
 
+    if (submitInFlight) return;
+    submitInFlight = true;
+    const submitBtn = document.getElementById('adj-submit');
+    if (submitBtn) submitBtn.disabled = true;
+
     try {
         const token = await getIdToken();
         const response = await fetch('/api/inventory/adjust', {
@@ -125,6 +131,9 @@ export async function submitAdjustmentRequest() {
     } catch (error) {
         console.error('Error submitting adjustment request:', error);
         showError('Gagal mengirim pengajuan: ' + error.message);
+    } finally {
+        submitInFlight = false;
+        if (submitBtn) submitBtn.disabled = false;
     }
 }
 
