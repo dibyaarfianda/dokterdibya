@@ -229,6 +229,8 @@ const NEW_PERMISSIONS = [
     permission('staff_payroll.delete', 'Hapus gajian staff', 'Tim', 'delete', [{ kind: 'doctor' }]),
     permission('staff_payroll.finalize', 'Finalisasi gajian staff', 'Tim', 'finalize', [{ kind: 'doctor' }]),
     permission('staff_payroll.export', 'Ekspor gajian staff', 'Tim', 'export', [{ kind: 'doctor' }]),
+    permission('drug_audit.view', 'Baca audit obat', 'Obat dan Inventori', 'view', [{ kind: 'doctor' }], { protected: true }),
+    permission('drug_audit.approve', 'Putuskan pengajuan dan opname audit obat', 'Obat dan Inventori', 'finalize', [{ kind: 'doctor' }], { protected: true }),
     permission('staff_points.view', 'Baca poin staff', 'Tim', 'view', [{ kind: 'menu', value: 'staff_points' }]),
     permission('staff_points.write', 'Kelola poin staff', 'Tim', 'write', [{ kind: 'doctor' }]),
     permission('staff_points.reset', 'Reset poin staff', 'Tim', 'reset', [{ kind: 'doctor' }]),

@@ -126,6 +126,7 @@ const SOURCE_POLICIES = Object.freeze({
     'community-chat': CRUD('community_chat.view', 'community_chat.write', 'community_chat.write', 'community_chat.delete', { finalize: 'community_chat.moderate', reset: 'community_chat.moderate' }),
     'community-chat-attention': CRUD('community_chat.view', 'community_chat.write', 'community_chat.write', 'community_chat.delete'),
     'dashboard-stats': CRUD('dashboard.view', 'dashboard.view', 'dashboard.view', 'dashboard.view'),
+    'drug-audit': CRUD('drug_audit.view', 'drug_audit.approve', 'drug_audit.approve', 'drug_audit.approve', { finalize: 'drug_audit.approve' }),
     docboard: CRUD('docboard.view', 'docboard.write', 'docboard.write', 'docboard.delete', { sync: 'docboard.write', reset: 'docboard.write' }),
     'email-settings': CRUD('system.monitor', 'system.write', 'system.write', 'system.write'),
     'estimasi-biaya': CRUD('cost_estimates.view', 'cost_estimates.write', 'cost_estimates.write', 'cost_estimates.delete', { publish: 'cost_estimates.publish' }),
