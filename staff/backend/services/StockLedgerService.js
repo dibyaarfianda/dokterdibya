@@ -354,6 +354,89 @@ async function deductStockFIFO(obatId, quantity, referenceType, referenceId, cre
     }
 }
 
+/**
+ * Apply an approved stock adjustment inside the caller's transaction.
+ * Does NOT commit; the caller commits. Lock order: obat row, then obat_batches.
+ */
+async function applyAdjustmentInTransaction(connection, { requestId, obatId, batchId, quantityDelta, reasonCategory, actorName }) {
+    const obat = await lockObatRow(connection, obatId);
+    const stockBefore = Number(obat.stock);
+    const delta = Number(quantityDelta);
+
+    if (stockBefore + delta < 0) {
+        throw stockLedgerError('Stok tidak cukup untuk penyesuaian ini', 422, 'INSUFFICIENT_STOCK');
+    }
+
+    const [batches] = await connection.query(
+        `SELECT id, quantity_remaining, cost_price
+         FROM obat_batches
+         WHERE obat_id = ? AND quantity_remaining > 0
+         ORDER BY purchase_date ASC, id ASC
+         FOR UPDATE`,
+        [obatId]
+    );
+
+    const [latestRows] = await connection.query(
+        `SELECT cost_price
+         FROM obat_batches
+         WHERE obat_id = ? AND cost_price > 0
+         ORDER BY purchase_date DESC, id DESC
+         LIMIT 1`,
+        [obatId]
+    );
+
+    const unitCost = effectiveUnitCost({
+        defaultCostPrice: obat.default_cost_price,
+        latestBatchCost: latestRows && latestRows[0] ? latestRows[0].cost_price : 0
+    });
+
+    const plan = planAdjustmentAllocation({ quantityDelta: delta, batches, batchId, unitCost });
+    const notes = `Penyesuaian #${requestId} (${reasonCategory})`;
+    const movementIds = [];
+
+    const insertMovement = async (movementBatchId, quantity, costPrice) => {
+        const [result] = await connection.query(
+            `INSERT INTO stock_movements
+             (obat_id, batch_id, movement_type, quantity, cost_price,
+              reference_type, reference_id, notes, created_by)
+             VALUES (?, ?, 'adjustment', ?, ?, 'stock_adjustment_request', ?, ?, ?)`,
+            [obatId, movementBatchId, quantity, costPrice, requestId, notes, actorName]
+        );
+        movementIds.push(result.insertId);
+    };
+
+    for (const deduction of plan.deductions) {
+        const [update] = await connection.query(
+            `UPDATE obat_batches
+             SET quantity_remaining = quantity_remaining - ?
+             WHERE id = ? AND quantity_remaining >= ?`,
+            [deduction.quantity, deduction.batchId, deduction.quantity]
+        );
+        if (!update.affectedRows) {
+            throw stockLedgerError('Batch berubah, coba lagi', 409, 'BATCH_CHANGED');
+        }
+        await insertMovement(deduction.batchId, -deduction.quantity, deduction.costPrice);
+    }
+
+    if (plan.legacyQuantity > 0) {
+        await insertMovement(null, -plan.legacyQuantity, plan.legacyCostPrice);
+    }
+
+    if (plan.newBatchQuantity > 0) {
+        const [batchInsert] = await connection.query(
+            `INSERT INTO obat_batches
+             (obat_id, purchase_date, cost_price, quantity_purchased, quantity_remaining, notes, created_by)
+             VALUES (?, CURDATE(), ?, ?, ?, ?, ?)`,
+            [obatId, unitCost, plan.newBatchQuantity, plan.newBatchQuantity, `Penyesuaian #${requestId}`, actorName]
+        );
+        await insertMovement(batchInsert.insertId, plan.newBatchQuantity, unitCost);
+    }
+
+    await connection.query('UPDATE obat SET stock = stock + ? WHERE id = ?', [delta, obatId]);
+
+    return { stockBefore, stockAfter: stockBefore + delta, movementIds };
+}
+
 module.exports = {
     ADJUSTMENT_REASON_CATEGORIES,
     stockLedgerError,
@@ -361,6 +444,7 @@ module.exports = {
     effectiveUnitCost,
     planAdjustmentAllocation,
     lockObatRow,
+    applyAdjustmentInTransaction,
     recordPurchase,
     deductStockFIFO
 };
