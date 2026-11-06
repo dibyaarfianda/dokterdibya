@@ -12,6 +12,7 @@ const AnalyticsService = require('../services/AnalyticsService');
 const { verifyToken, requirePermission } = require('../middleware/auth');
 const { success, error } = require('../utils/response');
 const logger = require('../utils/logger');
+const { resolveFinancePeriod, prorateMonthlyAmounts } = require('../utils/finance-period');
 
 /**
  * @swagger
@@ -233,47 +234,42 @@ router.get('/dashboard', verifyToken, requirePermission('analytics.view'), async
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
+ *         name: start_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Inclusive start date (YYYY-MM-DD). Must be sent together with end_date.
+ *       - in: query
+ *         name: end_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Inclusive end date (YYYY-MM-DD). Must be sent together with start_date.
+ *       - in: query
  *         name: month
  *         schema:
  *           type: string
- *         description: Month in YYYY-MM format (defaults to current month)
- *       - in: query
- *         name: staffCount
- *         schema:
- *           type: integer
- *         description: Number of staff (defaults to 3)
- *       - in: query
- *         name: attendancePerStaff
- *         schema:
- *           type: integer
- *         description: Attendance days per staff (defaults to working days)
+ *         description: Legacy month filter in YYYY-MM format, used when no date range is sent (defaults to current month)
  *     responses:
  *       200:
  *         description: Private clinic financial analysis
+ *       400:
+ *         description: Invalid date range or month
  */
 router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     const pool = require('../db');
 
     try {
-        const { month, staffCount = 3 } = req.query;
-
-        // Default to current month if not specified (GMT+7 aware)
-        let targetMonth = month;
-        if (!targetMonth) {
-            const now = new Date();
-            const year = now.getFullYear();
-            const monthNum = String(now.getMonth() + 1).padStart(2, '0');
-            targetMonth = `${year}-${monthNum}`;
+        const period = resolveFinancePeriod(req.query);
+        if (!period.ok) {
+            return res.status(400).json(error(period.message));
         }
 
-        const startDate = `${targetMonth}-01`;
-        const [year, monthNum] = targetMonth.split('-').map(Number);
-        const endDate = new Date(year, monthNum, 0); // Last day of month
-        const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+        const { startDate, endDate: endDateStr } = period;
         // Exclusive upper bound for index-friendly range query (no DATE() wrapping)
-        const nextMonthYear = monthNum === 12 ? year + 1 : year;
-        const nextMonthNum = monthNum === 12 ? 1 : monthNum + 1;
-        const nextMonthStart = `${nextMonthYear}-${String(nextMonthNum).padStart(2, '0')}-01`;
+        const nextMonthStart = period.endExclusive;
+        // Driver payroll rows are keyed by the first day of their month.
+        const driverMonthFrom = `${startDate.slice(0, 7)}-01`;
 
         // 1. Get summary data
         const [summaryRows] = await pool.query(`
@@ -375,8 +371,8 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
         const totalHariKerja = parseInt(summary.total_hari_kerja) || 0;
         const totalKunjungan = parseInt(summary.total_kunjungan) || 0;
 
-        // 6. Get finalized staff payroll paid in this month.
-        // Payroll is cash-based here: cross-month 4-practice batches reduce the month of payroll_date.
+        // 6. Get finalized staff payroll paid in this period.
+        // Payroll is cash-based here: a batch reduces the period that contains its payroll_date.
         const [payrollRows] = await pool.query(`
             SELECT
                 COUNT(*) AS batch_count,
@@ -386,15 +382,17 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
               AND payroll_date >= ? AND payroll_date < ?
         `, [startDate, nextMonthStart]);
 
+        // Driver payroll is monthly; a partly covered month is prorated per calendar day.
         const [driverPayrollRows] = await pool.query(`
             SELECT
-                COUNT(*) AS payroll_count,
+                DATE_FORMAT(payroll_month, '%Y-%m') AS payroll_month,
                 -- Only the dokterdibya part is a clinic expense; RSIA Melinda pays fixed_salary.
-                COALESCE(SUM(GREATEST(CAST(total_amount AS SIGNED) - CAST(fixed_salary AS SIGNED), 0)), 0) AS total_gaji
+                GREATEST(CAST(total_amount AS SIGNED) - CAST(fixed_salary AS SIGNED), 0) AS clinic_amount
             FROM staff_driver_payrolls
             WHERE status = 'finalized'
               AND payroll_month >= ? AND payroll_month < ?
-        `, [startDate, nextMonthStart]);
+            ORDER BY payroll_month
+        `, [driverMonthFrom, nextMonthStart]);
 
         const [payrollItemRows] = await pool.query(`
             SELECT
@@ -409,12 +407,16 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
 
         const payrollSummary = payrollRows[0] || {};
         const payrollItems = payrollItemRows[0] || {};
-        const driverPayrollSummary = driverPayrollRows[0] || {};
+        const driverPayroll = prorateMonthlyAmounts(
+            driverPayrollRows.map(row => ({ month: row.payroll_month, amount: row.clinic_amount })),
+            startDate,
+            endDateStr
+        );
         const totalGajiPraktik = parseFloat(payrollSummary.total_gaji) || 0;
-        const totalGajiSupir = parseFloat(driverPayrollSummary.total_gaji) || 0;
+        const totalGajiSupir = driverPayroll.total;
         const totalGajiStaff = totalGajiPraktik + totalGajiSupir;
         const payrollBatchCount = parseInt(payrollSummary.batch_count, 10) || 0;
-        const driverPayrollCount = parseInt(driverPayrollSummary.payroll_count, 10) || 0;
+        const driverPayrollCount = driverPayrollRows.length;
         const payrollItemCount = parseInt(payrollItems.item_count, 10) || 0;
         const paidStaffCount = parseInt(payrollItems.paid_staff_count, 10) || 0;
         const totalPayrollAttendance = parseInt(payrollItems.total_kehadiran, 10) || 0;
@@ -427,9 +429,10 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
 
         res.json(success({
             period: {
-                month: targetMonth,
+                month: period.month,
                 startDate,
-                endDate: endDateStr
+                endDate: endDateStr,
+                totalDays: period.totalDays
             },
             summary: {
                 totalKunjungan,
@@ -445,6 +448,8 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
                 source: 'staff_payroll_batches + staff_driver_payrolls',
                 batchCount: payrollBatchCount,
                 driverPayrollCount,
+                driverProrated: driverPayroll.prorated,
+                driverMonths: driverPayroll.months,
                 itemCount: payrollItemCount,
                 paidStaffCount,
                 totalKehadiran: totalPayrollAttendance,

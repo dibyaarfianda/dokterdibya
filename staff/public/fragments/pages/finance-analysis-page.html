@@ -1,10 +1,43 @@
                     <div class="container-fluid">
+                        <style>
+                            #finance-period-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+                            #finance-period-form label { margin: 0 !important; font-weight: 600; }
+                            #finance-period-form input[type="date"] { width: 160px; }
+                            #finance-period-form .dibya-date-input { width: 160px !important; flex: 0 0 160px; }
+                            #finance-period-form select { width: auto !important; min-width: 170px; }
+                            @media (max-width: 575.98px) {
+                                #finance-period-form .dibya-date-input,
+                                #finance-period-form select,
+                                #finance-period-form button { flex: 1 1 100%; width: 100% !important; min-width: 0; }
+                            }
+                        </style>
+                        <!-- Shared period filter: applies to every profit card on this page -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card card-outline card-secondary mb-3" id="finance-period-filter">
+                                    <div class="card-body py-2">
+                                        <form id="finance-period-form" novalidate>
+                                            <label for="finance-start-date"><i class="far fa-calendar-alt mr-1"></i>Dari tanggal</label>
+                                            <input type="date" id="finance-start-date" class="form-control form-control-sm" required>
+                                            <label for="finance-end-date">Sampai tanggal</label>
+                                            <input type="date" id="finance-end-date" class="form-control form-control-sm" required>
+                                            <select id="finance-range-month" class="form-control form-control-sm" aria-label="Pilih bulan"></select>
+                                            <button type="submit" class="btn btn-sm btn-primary" id="finance-period-apply">
+                                                <i class="fas fa-filter mr-1"></i>Terapkan
+                                            </button>
+                                        </form>
+                                        <small class="text-danger d-none" id="finance-period-error" role="alert"></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Obat Profit Analysis Section -->
                         <div class="row">
                             <div class="col-12">
                                 <div class="card card-dark">
                                     <div class="card-header">
-                                        <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Analisis Profit Obat (Bulan Ini)</h3>
+                                        <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Analisis Profit Obat <small class="finance-period-label ml-1"></small></h3>
                                         <div class="card-tools">
                                             <button class="btn btn-tool" onclick="loadObatProfitAnalysis()">
                                                 <i class="fas fa-sync"></i>
@@ -102,10 +135,8 @@
                             <div class="col-12">
                                 <div class="card card-purple">
                                     <div class="card-header">
-                                        <h3 class="card-title"><i class="fas fa-clinic-medical mr-2"></i>Analisis Keuangan Klinik Privat</h3>
+                                        <h3 class="card-title"><i class="fas fa-clinic-medical mr-2"></i>Analisis Keuangan Klinik Privat <small class="finance-period-label ml-1"></small></h3>
                                         <div class="card-tools">
-                                            <select id="private-clinic-month" class="form-control form-control-sm d-inline-block" style="width: auto;">
-                                            </select>
                                             <button class="btn btn-tool" onclick="loadPrivateClinicAnalysis()">
                                                 <i class="fas fa-sync"></i>
                                             </button>

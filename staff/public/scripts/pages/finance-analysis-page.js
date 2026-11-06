@@ -465,9 +465,9 @@
             if (hasLegacyAnalyticsContainers) {
                 await loadAnalytics();
             }
+            // One shared Dari tanggal / Sampai tanggal filter drives every profit card.
+            initFinancePeriodFilter();
             await loadObatProfitAnalysis();
-            // Initialize and load Private Clinic Analysis
-            initPrivateClinicMonthSelector();
             await loadPrivateClinicAnalysis();
             console.log('[OK] Finance Analysis data loaded successfully');
         } catch (error) {
@@ -475,22 +475,172 @@
         }
     }
 
+    // Shared finance period filter ("Dari tanggal ... Sampai tanggal ...")
+    const CUSTOM_RANGE = 'custom';
+    let financePeriod = null; // { startDate, endDate } as inclusive YYYY-MM-DD
+    let obatLoadSeq = 0;
+    let privateClinicLoadSeq = 0;
+
+    const pad2 = value => String(value).padStart(2, '0');
+
+    function isValidDateInput(value) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false;
+        const [year, month, day] = value.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+    }
+
+    function monthRange(monthValue) {
+        const [year, month] = monthValue.split('-').map(Number);
+        const lastDay = new Date(year, month, 0).getDate();
+        return { startDate: `${monthValue}-01`, endDate: `${monthValue}-${pad2(lastDay)}` };
+    }
+
+    function currentMonthValue() {
+        return formatDateLocal(new Date()).slice(0, 7);
+    }
+
+    function recentMonthValues(count) {
+        const [year, month] = currentMonthValue().split('-').map(Number);
+        const values = [];
+        for (let i = 0; i < count; i++) {
+            const d = new Date(year, month - 1 - i, 1);
+            values.push(`${d.getFullYear()}-${pad2(d.getMonth() + 1)}`);
+        }
+        return values;
+    }
+
+    function wholeMonthOf(startDate, endDate) {
+        if (!isValidDateInput(startDate) || !isValidDateInput(endDate)) return '';
+        const month = startDate.slice(0, 7);
+        const range = monthRange(month);
+        return range.startDate === startDate && range.endDate === endDate ? month : '';
+    }
+
+    function getFinancePeriod() {
+        if (!financePeriod) financePeriod = monthRange(currentMonthValue());
+        return financePeriod;
+    }
+
+    function financePeriodQuery() {
+        const { startDate, endDate } = getFinancePeriod();
+        return `start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`;
+    }
+
+    function showFinancePeriodError(message) {
+        const el = document.getElementById('finance-period-error');
+        if (!el) return;
+        el.textContent = message || '';
+        el.classList.toggle('d-none', !message);
+    }
+
+    function syncMonthShortcut() {
+        const select = document.getElementById('finance-range-month');
+        const startInput = document.getElementById('finance-start-date');
+        const endInput = document.getElementById('finance-end-date');
+        if (!select || !startInput || !endInput) return;
+        const month = wholeMonthOf(startInput.value, endInput.value);
+        const hasOption = Array.from(select.options).some(option => option.value === month);
+        select.value = month && hasOption ? month : CUSTOM_RANGE;
+    }
+
+    function renderFinancePeriodLabels() {
+        const { startDate, endDate } = getFinancePeriod();
+        const start = DibyaDateTime.date(startDate);
+        const end = DibyaDateTime.date(endDate);
+        const text = startDate === endDate ? `(${start})` : `(${start} s/d ${end})`;
+        document.querySelectorAll('.finance-period-label').forEach(el => {
+            el.textContent = text;
+        });
+    }
+
+    function readFinancePeriodInputs() {
+        const startDate = document.getElementById('finance-start-date')?.value || '';
+        const endDate = document.getElementById('finance-end-date')?.value || '';
+        if (!startDate || !endDate) return { error: 'Isi tanggal mulai dan tanggal akhir.' };
+        if (!isValidDateInput(startDate) || !isValidDateInput(endDate)) return { error: 'Format tanggal tidak valid.' };
+        if (startDate > endDate) return { error: 'Tanggal mulai tidak boleh setelah tanggal akhir.' };
+        return { startDate, endDate };
+    }
+
+    async function applyFinancePeriod() {
+        const result = readFinancePeriodInputs();
+        if (result.error) {
+            showFinancePeriodError(result.error);
+            return;
+        }
+        showFinancePeriodError('');
+        financePeriod = { startDate: result.startDate, endDate: result.endDate };
+        syncMonthShortcut();
+        renderFinancePeriodLabels();
+        await Promise.all([loadObatProfitAnalysis(), loadPrivateClinicAnalysis()]);
+    }
+
+    function initFinancePeriodFilter() {
+        const form = document.getElementById('finance-period-form');
+        const select = document.getElementById('finance-range-month');
+        const startInput = document.getElementById('finance-start-date');
+        const endInput = document.getElementById('finance-end-date');
+        if (!form || !select || !startInput || !endInput) return;
+
+        const period = getFinancePeriod();
+
+        select.innerHTML = '';
+        const customOption = document.createElement('option');
+        customOption.value = CUSTOM_RANGE;
+        customOption.textContent = 'Rentang khusus';
+        select.appendChild(customOption);
+        recentMonthValues(12).forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = DibyaDateTime.date(`${value}-01`, { month: 'long', year: 'numeric' });
+            select.appendChild(option);
+        });
+
+        startInput.value = period.startDate;
+        endInput.value = period.endDate;
+        syncMonthShortcut();
+        showFinancePeriodError('');
+        renderFinancePeriodLabels();
+
+        // The fragment can survive page switches; bind listeners only once.
+        if (form.dataset.financePeriodBound === '1') return;
+        form.dataset.financePeriodBound = '1';
+
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            applyFinancePeriod();
+        });
+        select.addEventListener('change', () => {
+            if (select.value === CUSTOM_RANGE) return;
+            const range = monthRange(select.value);
+            startInput.value = range.startDate;
+            endInput.value = range.endDate;
+            applyFinancePeriod();
+        });
+        [startInput, endInput].forEach(input => input.addEventListener('change', () => {
+            syncMonthShortcut();
+            showFinancePeriodError('');
+        }));
+    }
+
     // Load Obat Profit Analysis
     async function loadObatProfitAnalysis() {
+        const seq = ++obatLoadSeq;
         try {
             const token = await getIdToken();
             if (!token) return;
 
-            // Get first day of current month
-            const now = new Date();
-            const startDate = formatDateLocal(new Date(now.getFullYear(), now.getMonth(), 1));
-            const endDate = formatDateLocal(now);
+            const periodQuery = financePeriodQuery();
 
             // Fetch profit data
             const [profitData, summary] = await Promise.all([
-                financeRequestScope.request(`/api/inventory/profit?start_date=${startDate}&end_date=${endDate}`),
-                financeRequestScope.request(`/api/inventory/summary?start_date=${startDate}&end_date=${endDate}`)
+                financeRequestScope.request(`/api/inventory/profit?${periodQuery}`),
+                financeRequestScope.request(`/api/inventory/summary?${periodQuery}`)
             ]);
+
+            // A newer filter was applied while this request was in flight.
+            if (seq !== obatLoadSeq) return;
 
             if (profitData) {
                 // Update KPI cards
@@ -505,7 +655,7 @@
                 const items = profitData.items || [];
 
                 if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada data penjualan obat bulan ini</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada data penjualan obat pada periode ini</td></tr>';
                 } else {
                     tbody.innerHTML = items.map(item => {
                         const revenue = parseFloat(item.revenue) || 0;
@@ -555,36 +705,29 @@
     window.loadObatProfitAnalysis = loadObatProfitAnalysis;
 
     // Private Clinic Analysis Functions
-    function initPrivateClinicMonthSelector() {
-        const select = document.getElementById('private-clinic-month');
-        if (!select) return;
-
-        const now = new Date();
-        select.innerHTML = '';
-
-        // Generate last 12 months
-        for (let i = 0; i < 12; i++) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const label = DibyaDateTime.date(d, { month: 'long', year: 'numeric' });
-            const option = document.createElement('option');
-            option.value = value;
-            option.textContent = label;
-            select.appendChild(option);
+    function driverPayrollLabel(staffCost) {
+        if (!(staffCost.driverPayrollCount > 0)) return 'Gaji Driver (belum ada payroll finalized)';
+        const months = Array.isArray(staffCost.driverMonths) ? staffCost.driverMonths : [];
+        if (!staffCost.driverProrated) {
+            return `Gaji Driver - bagian dokterdibya (${staffCost.driverPayrollCount} bulan finalized)`;
         }
-
-        select.addEventListener('change', () => loadPrivateClinicAnalysis());
+        if (months.length === 1) {
+            const item = months[0];
+            const monthName = DibyaDateTime.date(`${item.month}-01`, { month: 'long', year: 'numeric' });
+            return `Gaji Driver - bagian dokterdibya (prorata ${item.days}/${item.daysInMonth} hari ${monthName})`;
+        }
+        return `Gaji Driver - bagian dokterdibya (${staffCost.driverPayrollCount} bulan finalized, prorata per hari)`;
     }
 
     async function loadPrivateClinicAnalysis() {
+        const seq = ++privateClinicLoadSeq;
         const token = await getIdToken();
         if (!token) return;
 
-        const monthSelect = document.getElementById('private-clinic-month');
-        const month = monthSelect ? monthSelect.value : '';
-
         try {
-            const result = await financeRequestScope.request(`/api/analytics/private-clinic?month=${encodeURIComponent(month)}`);
+            const result = await financeRequestScope.request(`/api/analytics/private-clinic?${financePeriodQuery()}`);
+            // A newer filter was applied while this request was in flight.
+            if (seq !== privateClinicLoadSeq) return;
             const data = result.data;
 
             // Format currency helper
@@ -607,9 +750,6 @@
             const payrollLabel = staffCost.batchCount > 0
                 ? `Gaji Staff (${staffCost.batchCount} batch, ${staffCost.paidStaffCount || 0} staff dibayar, ${staffCost.totalKehadiran || 0} hadir)`
                 : 'Gaji Staff (belum ada payroll finalized)';
-            const driverPayrollLabel = staffCost.driverPayrollCount > 0
-                ? `Gaji Driver - bagian dokterdibya (${staffCost.driverPayrollCount} bulan finalized)`
-                : 'Gaji Driver (belum ada payroll finalized)';
 
             // Update Profit Loss Table
             const plTable = document.getElementById('pc-profit-loss-table');
@@ -624,7 +764,7 @@
                 <tr class="bg-light"><td colspan="2"><strong>BIAYA OPERASIONAL</strong></td></tr>
                 <tr><td class="pl-4">Sewa, Listrik, Air</td><td class="text-right text-muted">Rp 0 <small>(ditanggung RS)</small></td></tr>
                 <tr><td class="pl-4">${payrollLabel}</td><td class="text-right text-danger">(${formatRp(staffCost.totalGajiPraktik || 0)})</td></tr>
-                <tr><td class="pl-4">${driverPayrollLabel}</td><td class="text-right text-danger">(${formatRp(staffCost.totalGajiSupir || 0)})</td></tr>
+                <tr><td class="pl-4">${driverPayrollLabel(staffCost)}</td><td class="text-right text-danger">(${formatRp(staffCost.totalGajiSupir || 0)})</td></tr>
                 <tr class="font-weight-bold bg-success text-white"><td>LABA BERSIH</td><td class="text-right">${formatRp(data.netProfit.labaBersih)}</td></tr>
                 <tr><td class="text-muted">Margin Laba Bersih</td><td class="text-right text-success font-weight-bold">${formatPercent(data.netProfit.marginLabaBersih)}</td></tr>
             `;
