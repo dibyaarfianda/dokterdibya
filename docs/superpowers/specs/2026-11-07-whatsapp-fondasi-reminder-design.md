@@ -197,7 +197,7 @@ Baris yang tertinggal berstatus `claimed` (proses mati di tengah kirim) tidak di
 
 ## 8. Webhook
 
-Path: `/api/whatsapp/webhook`. Route ini publik (tanpa token staf/pasien) — perlu didaftarkan di `config/accessControlRegistry.js` sebagai pengecualian webhook, mengikuti cara `xendit-webhook` (`payment_webhook`) dikecualikan; nama pengecualian ditentukan saat plan setelah membaca registry.
+Path: `/api/whatsapp/webhook`. Route ini publik (tanpa token staf/pasien) — perlu didaftarkan di `config/accessControlRegistry.js` mengikuti pola `xendit-webhook`: tambahkan `'messaging_webhook'` ke `NAMED_EXEMPTIONS`, dan aturan `if (route.sourceFile === 'whatsapp-webhook') return { exemption: 'messaging_webhook', ruleId: 'whatsapp-webhook' };` tepat di bawah aturan `xendit-webhook`. Keamanannya bergantung pada verifikasi HMAC (8.2), bukan token pengguna.
 
 ### 8.1 `GET`
 Jika `hub.mode === 'subscribe'` dan `hub.verify_token === WHATSAPP_CLOUD_VERIFY_TOKEN` → balas `200` dengan teks `hub.challenge`. Selain itu `403`.
