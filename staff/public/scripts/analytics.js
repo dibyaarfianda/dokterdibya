@@ -327,9 +327,9 @@ function renderDoctorTable(data) {
     
     tbody.innerHTML = data.map(doctor => `
         <tr>
-            <td>${doctor.doctor_name}</td>
-            <td>${doctor.total_visits}</td>
-            <td>${doctor.unique_patients}</td>
+            <td>${escapeHtml(doctor.doctor_name)}</td>
+            <td>${escapeHtml(doctor.total_visits)}</td>
+            <td>${escapeHtml(doctor.unique_patients)}</td>
             <td>${formatCurrency(doctor.avg_revenue_per_visit || 0)}</td>
             <td>${formatCurrency(doctor.total_revenue || 0)}</td>
         </tr>
@@ -349,11 +349,11 @@ function renderLowStockTable(data) {
     
     tbody.innerHTML = data.map(item => `
         <tr class="${item.stock === 0 ? 'table-danger' : 'table-warning'}">
-            <td>${item.name}</td>
-            <td>${item.category || '-'}</td>
-            <td>${item.stock}</td>
-            <td>${item.min_stock}</td>
-            <td>${item.shortage}</td>
+            <td>${escapeHtml(item.name)}</td>
+            <td>${escapeHtml(item.category || '-')}</td>
+            <td>${escapeHtml(item.stock)}</td>
+            <td>${escapeHtml(item.min_stock)}</td>
+            <td>${escapeHtml(item.shortage)}</td>
         </tr>
     `).join('');
 }
@@ -374,6 +374,18 @@ function formatCurrency(amount) {
         currency: 'IDR',
         minimumFractionDigits: 0
     }).format(amount);
+}
+
+/**
+ * Escape server text before it goes into innerHTML (text or attribute)
+ */
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
@@ -652,8 +664,8 @@ export function renderTopDrugsTable(drugs) {
     drugs.forEach((drug, index) => {
         html += `
             <tr>
-                <td><span class="badge badge-primary mr-2">${index + 1}</span>${drug.name}</td>
-                <td class="text-right"><strong>${drug.quantity}</strong></td>
+                <td><span class="badge badge-primary mr-2">${index + 1}</span>${escapeHtml(drug.name)}</td>
+                <td class="text-right"><strong>${escapeHtml(drug.quantity)}</strong></td>
                 <td class="text-right text-success">${formatCurrency(drug.revenue)}</td>
             </tr>
         `;
@@ -677,8 +689,8 @@ export function renderTopServicesTable(services) {
     services.forEach((service, index) => {
         html += `
             <tr>
-                <td><span class="badge badge-success mr-2">${index + 1}</span>${service.name}</td>
-                <td class="text-right"><strong>${service.count}x</strong></td>
+                <td><span class="badge badge-success mr-2">${index + 1}</span>${escapeHtml(service.name)}</td>
+                <td class="text-right"><strong>${escapeHtml(service.count)}x</strong></td>
                 <td class="text-right text-success">${formatCurrency(service.revenue)}</td>
             </tr>
         `;

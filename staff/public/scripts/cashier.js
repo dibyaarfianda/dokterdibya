@@ -125,6 +125,16 @@ function formatCurrency(amount) {
     }).format(amount || 0);
 }
 
+// Escape server/session text before it goes into innerHTML (text or attribute).
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function formatCurrencyNoName(number) {
     return (isNaN(number) || number === 0) ? '0' : new Intl.NumberFormat('id-ID').format(number);
 }
@@ -213,7 +223,7 @@ export function updateCashierSummary(patientData, tindakanData, obatData) {
         safeTindakan.forEach((item, index) => {
             html += `<tr>
                 <td>${index + 1}</td>
-                <td>${item.name}</td>
+                <td>${escapeHtml(item.name)}</td>
                 <td class="text-right">${formatCurrency(item.price)}</td>
             </tr>`;
         });
@@ -233,9 +243,9 @@ export function updateCashierSummary(patientData, tindakanData, obatData) {
             const caraPakai = item.category === 'drugs' ? (item.usage || '-') : '-';
             html += `<tr>
                 <td>${index + 1}</td>
-                <td>${item.name}</td>
-                <td>${item.quantity}</td>
-                <td>${caraPakai}</td>
+                <td>${escapeHtml(item.name)}</td>
+                <td>${escapeHtml(item.quantity)}</td>
+                <td>${escapeHtml(caraPakai)}</td>
                 <td class="text-right">${formatCurrency(item.price)}</td>
                 <td class="text-right">${formatCurrency(subtotal)}</td>
             </tr>`;

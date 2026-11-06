@@ -33,6 +33,16 @@ function formatRupiah(amount) {
     return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
 }
 
+// Escape server text before it goes into innerHTML (text or attribute).
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // Parse rupiah to number
 function parseRupiah(str) {
     if (typeof str === 'number') return str;
@@ -473,13 +483,13 @@ async function loadSales() {
 
             return `
                 <tr>
-                    <td><strong>${sale.sale_number}</strong></td>
+                    <td><strong>${escapeHtml(sale.sale_number)}</strong></td>
                     <td>${createdAt}</td>
                     <td>
-                        ${sale.patient_name || '-'}
-                        ${sale.patient_age ? `<br><small class="text-muted">${sale.patient_age}</small>` : ''}
+                        ${escapeHtml(sale.patient_name || '-')}
+                        ${sale.patient_age ? `<br><small class="text-muted">${escapeHtml(sale.patient_age)}</small>` : ''}
                     </td>
-                    <td>${hospitalLabel}</td>
+                    <td>${escapeHtml(hospitalLabel)}</td>
                     <td>${formatRupiah(sale.total)}</td>
                     <td>${statusBadge}</td>
                     <td>
@@ -506,7 +516,7 @@ async function loadSales() {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" class="text-center py-4 text-danger">
-                    <i class="fas fa-exclamation-circle"></i> Gagal memuat data: ${error.message}
+                    <i class="fas fa-exclamation-circle"></i> Gagal memuat data: ${escapeHtml(error.message)}
                 </td>
             </tr>
         `;
@@ -552,7 +562,7 @@ function getStatusBadge(status) {
         payment_pending: '<span class="badge badge-warning">Payment Pending</span>',
         paid: '<span class="badge badge-success">Paid</span>'
     };
-    return badges[status] || status;
+    return badges[status] || escapeHtml(status);
 }
 
 // Payment method labels
@@ -625,13 +635,13 @@ function addObatItemRow(itemData = null) {
         <select class="form-control form-control-sm obat-select" data-index="${index}" onchange="window.onObatSelect(${index})">
             <option value="">-- Pilih Obat --</option>
             ${obatOptions.map(o => `
-                <option value="${o.id}"
-                        data-code="${o.code}"
-                        data-name="${o.name}"
-                        data-price="${o.price}"
-                        data-stock="${o.stock}"
+                <option value="${escapeHtml(o.id)}"
+                        data-code="${escapeHtml(o.code)}"
+                        data-name="${escapeHtml(o.name)}"
+                        data-price="${escapeHtml(o.price)}"
+                        data-stock="${escapeHtml(o.stock)}"
                         ${itemData && itemData.obat_id == o.id ? 'selected' : ''}>
-                    ${o.code} - ${o.name} (Stok: ${o.stock})
+                    ${escapeHtml(o.code)} - ${escapeHtml(o.name)} (Stok: ${escapeHtml(o.stock)})
                 </option>
             `).join('')}
         </select>
@@ -641,12 +651,12 @@ function addObatItemRow(itemData = null) {
         <td>${obatSelect}</td>
         <td>
             <input type="number" class="form-control form-control-sm text-center item-qty"
-                   value="${itemData?.quantity || 1}" min="1" data-index="${index}"
+                   value="${escapeHtml(itemData?.quantity || 1)}" min="1" data-index="${index}"
                    onchange="window.updateItemSubtotal(${index})">
         </td>
         <td>
             <input type="number" class="form-control form-control-sm text-right item-price"
-                   value="${itemData?.price || 0}" min="0" step="1000" data-index="${index}"
+                   value="${escapeHtml(itemData?.price || 0)}" min="0" step="1000" data-index="${index}"
                    onchange="window.updateItemSubtotal(${index})">
         </td>
         <td class="text-right">
@@ -834,14 +844,14 @@ window.viewObatSale = async function(id) {
         content.innerHTML = `
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <p><strong>No. Penjualan:</strong> ${sale.sale_number}</p>
+                    <p><strong>No. Penjualan:</strong> ${escapeHtml(sale.sale_number)}</p>
                     <p><strong>Tanggal:</strong> ${createdAt}</p>
-                    <p><strong>Dibuat oleh:</strong> ${sale.created_by || '-'}</p>
+                    <p><strong>Dibuat oleh:</strong> ${escapeHtml(sale.created_by || '-')}</p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Pasien:</strong> ${sale.patient_name || '-'}</p>
-                    <p><strong>Umur:</strong> ${sale.patient_age || '-'}</p>
-                    <p><strong>Rumah Sakit:</strong> ${hospitalLabel}</p>
+                    <p><strong>Pasien:</strong> ${escapeHtml(sale.patient_name || '-')}</p>
+                    <p><strong>Umur:</strong> ${escapeHtml(sale.patient_age || '-')}</p>
+                    <p><strong>Rumah Sakit:</strong> ${escapeHtml(hospitalLabel)}</p>
                 </div>
             </div>
 
@@ -857,8 +867,8 @@ window.viewObatSale = async function(id) {
                 <tbody>
                     ${(sale.items || []).map(item => `
                         <tr>
-                            <td>${item.obat_code} - ${item.obat_name}</td>
-                            <td class="text-center">${item.quantity}</td>
+                            <td>${escapeHtml(item.obat_code)} - ${escapeHtml(item.obat_name)}</td>
+                            <td class="text-center">${escapeHtml(item.quantity)}</td>
                             <td class="text-right">${formatRupiah(item.price)}</td>
                             <td class="text-right">${formatRupiah(item.total)}</td>
                         </tr>
@@ -875,9 +885,9 @@ window.viewObatSale = async function(id) {
             <div class="row">
                 <div class="col-12">
                     <p><strong>Status:</strong> ${getStatusBadge(sale.status)}</p>
-                    ${sale.payment_method ? `<p><strong>Metode Pembayaran:</strong> ${paymentMethodLabel}</p>` : ''}
-                    ${sale.confirmed_at ? `<p><small class="text-muted">Confirmed: ${DibyaDateTime.dateTime(new Date(sale.confirmed_at))} oleh ${sale.confirmed_by}</small></p>` : ''}
-                    ${sale.paid_at ? `<p><small class="text-muted">Paid: ${DibyaDateTime.dateTime(new Date(sale.paid_at))} oleh ${sale.paid_by}</small></p>` : ''}
+                    ${sale.payment_method ? `<p><strong>Metode Pembayaran:</strong> ${escapeHtml(paymentMethodLabel)}</p>` : ''}
+                    ${sale.confirmed_at ? `<p><small class="text-muted">Confirmed: ${DibyaDateTime.dateTime(new Date(sale.confirmed_at))} oleh ${escapeHtml(sale.confirmed_by)}</small></p>` : ''}
+                    ${sale.paid_at ? `<p><small class="text-muted">Paid: ${DibyaDateTime.dateTime(new Date(sale.paid_at))} oleh ${escapeHtml(sale.paid_by)}</small></p>` : ''}
                 </div>
             </div>
         `;

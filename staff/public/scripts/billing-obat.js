@@ -34,6 +34,16 @@ function formatCurrency(amount) {
     return 'Rp ' + amount.toLocaleString('id-ID');
 }
 
+// Escape server/session text before it goes into innerHTML (text or attribute).
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 // ==================== LOAD OBAT FROM VPS ====================
 async function loadObat() {
     try {
@@ -107,11 +117,11 @@ function renderObatByCategory(category, container, filter = '') {
         
         // Show stock info
         const stockBadge = item.stock <= item.min_stock 
-            ? `<span class="badge badge-danger ml-2">Stok: ${item.stock}</span>`
-            : `<span class="badge badge-secondary ml-2">Stok: ${item.stock}</span>`;
-        
+            ? `<span class="badge badge-danger ml-2">Stok: ${escapeHtml(item.stock)}</span>`
+            : `<span class="badge badge-secondary ml-2">Stok: ${escapeHtml(item.stock)}</span>`;
+
         row.innerHTML = `
-            <span>${item.name} ${stockBadge}</span>
+            <span>${escapeHtml(item.name)} ${stockBadge}</span>
             <span class="badge ${isSelected ? 'badge-light' : 'badge-info'}">${formatCurrency(item.price)}</span>
         `;
         if (canSelectMedications) {
@@ -185,23 +195,23 @@ function updateSelectedObatList() {
                 <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <div class="flex-grow-1">
-                            <strong>${item.name}</strong>
-                            <div class="small text-muted">${formatCurrency(item.price || 0)} x <span id="qty-display-${index}">${item.quantity}</span></div>
+                            <strong>${escapeHtml(item.name)}</strong>
+                            <div class="small text-muted">${formatCurrency(item.price || 0)} x <span id="qty-display-${index}">${escapeHtml(item.quantity)}</span></div>
                         </div>
-                        <button class="btn btn-sm btn-danger btn-xs ml-2" onclick="window.removeObat(${item.id})">
+                        <button class="btn btn-sm btn-danger btn-xs ml-2" data-obat-id="${escapeHtml(item.id)}" onclick="window.removeObat(this.dataset.obatId)">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     <div class="form-group mb-2">
                         <label class="small mb-1">Jumlah:</label>
-                        <input type="number" class="form-control form-control-sm" value="${item.quantity}" min="1" 
+                        <input type="number" class="form-control form-control-sm" value="${escapeHtml(item.quantity)}" min="1"
                                onchange="window.updateObatQuantity(${index}, this.value)" style="width: 80px;">
                     </div>
                     ${needsUsageInstruction ? `
                     <div class="form-group mb-0">
                         <label class="small mb-1">Cara Pakai: <span class="badge badge-danger badge-sm">Wajib</span></label>
                         <textarea class="form-control form-control-sm" rows="2" placeholder="Contoh: 3x sehari sesudah makan" 
-                                  onchange="window.updateObatUsage(${index}, this.value)" required>${item.usage || ''}</textarea>
+                                  onchange="window.updateObatUsage(${index}, this.value)" required>${escapeHtml(item.usage || '')}</textarea>
                     </div>
                     ` : ''}
                 </div>
@@ -291,7 +301,7 @@ export async function initObat() {
                 notification.innerHTML = `
                     <button type="button" class="close" data-dismiss="alert">&times;</button>
                     <strong><i class="fas fa-user-check"></i> Pasien Terpilih:</strong><br>
-                    ${patientNameFromSession} (ID: ${patientId})
+                    ${escapeHtml(patientNameFromSession)} (ID: ${escapeHtml(patientId)})
                 `;
                 document.body.appendChild(notification);
                 setTimeout(() => notification.remove(), 4000);
