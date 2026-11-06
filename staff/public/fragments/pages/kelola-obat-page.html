@@ -45,10 +45,10 @@
                                                     <input type="number" id="kelola-obat-price" class="form-control" placeholder="0" min="0" required>
                                                 </div>
                                             </div>
-                                            <div class="col-md-1">
+                                            <div class="col-md-1 d-none" id="kelola-obat-stock-group">
                                                 <div class="form-group">
-                                                    <label>Stok Awal</label>
-                                                    <input type="number" id="kelola-obat-stock" class="form-control" placeholder="0" min="0" value="0">
+                                                    <label>Stok (baca-saja)</label>
+                                                    <input type="number" id="kelola-obat-stock" class="form-control" placeholder="0" min="0" value="0" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
@@ -165,6 +165,60 @@
                                             <tbody id="kelola-obat-inactive-body"></tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Ajukan Penyesuaian Stok -->
+                    <div class="modal fade" id="kelola-obat-adjustment-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title"><i class="fas fa-balance-scale mr-2"></i>Ajukan Penyesuaian Stok</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                                </div>
+                                <div class="modal-body">
+                                    <input type="hidden" id="adj-obat-id">
+                                    <p class="mb-3"><strong>Obat:</strong> <span id="adj-obat-name"></span></p>
+                                    <div class="form-group">
+                                        <label for="adj-direction">Arah</label>
+                                        <select id="adj-direction" class="form-control">
+                                            <option value="minus" selected>Kurangi stok</option>
+                                            <option value="plus">Tambah stok</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="adj-quantity">Jumlah</label>
+                                        <input type="number" id="adj-quantity" class="form-control" min="1" step="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="adj-category">Kategori Alasan</label>
+                                        <select id="adj-category" class="form-control">
+                                            <option value="rusak">Rusak</option>
+                                            <option value="pecah">Pecah</option>
+                                            <option value="kedaluwarsa">Kedaluwarsa</option>
+                                            <option value="hilang">Hilang</option>
+                                            <option value="salah_hitung">Salah hitung / salah input</option>
+                                            <option value="lainnya">Lainnya</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="adj-batch">Batch</label>
+                                        <select id="adj-batch" class="form-control">
+                                            <option value="">FIFO otomatis</option>
+                                        </select>
+                                        <small id="adj-batch-error" class="text-danger d-none">Daftar batch tidak bisa dimuat</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="adj-note">Catatan Alasan</label>
+                                        <textarea id="adj-note" class="form-control" rows="3" maxlength="1000"></textarea>
+                                    </div>
+                                    <small class="text-muted d-block">Stok tidak langsung berubah. Pengajuan menunggu persetujuan dokter.</small>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-primary" onclick="window.submitAdjustmentRequest()">Kirim Pengajuan</button>
                                 </div>
                             </div>
                         </div>
