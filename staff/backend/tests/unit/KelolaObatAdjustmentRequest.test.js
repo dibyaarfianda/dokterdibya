@@ -90,4 +90,16 @@ describe('kelola obat adjustment request', () => {
         expect(mod).toMatch(/export\s+(async\s+)?function\s+openAdjustmentRequestModal/);
         expect(mod).toMatch(/export\s+(async\s+)?function\s+submitAdjustmentRequest/);
     });
+
+describe('Kelola Obat escapes server text', () => {
+    test('obat text and purchase button are escaped', () => {
+        const src = script();
+        expect(src).not.toContain("<td>${item.name || '-'}</td>");
+        expect(src).not.toContain("openPurchaseModal('${item.id}'");
+        expect(src).toContain("escapeAttr(item.name || '-')");
+        expect(src).toContain('escapeAttr(item.supplier_name');
+        expect(src).toContain('escapeAttr(item.category || ');
+        expect(src).toContain('window.openPurchaseModal(this.dataset.obatId, this.dataset.obatName)');
+    });
+});
 });

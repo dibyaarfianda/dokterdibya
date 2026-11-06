@@ -162,22 +162,6 @@ class ObatService {
         
         return rows;
     }
-    
-    /**
-     * Delete medication
-     */
-    async deleteObat(id) {
-        const affectedRows = await db.deleteById('obat', id);
-        
-        if (affectedRows === 0) {
-            throw new AppError('Obat not found', 404);
-        }
-        
-        // Invalidate cache
-        cache.delPattern('obat:');
-        
-        logger.info('Obat deleted', { obatId: id });
-    }
 }
 
 module.exports = new ObatService();

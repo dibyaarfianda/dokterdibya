@@ -135,7 +135,7 @@ async function listAdjustmentRequests({ status = 'pending', limit = 50, offset =
                   ORDER BY ob.purchase_date DESC, ob.id DESC LIMIT 1) AS latest_batch_cost,
                 DATEDIFF(NOW(), sar.requested_at) AS age_days
          FROM stock_adjustment_requests sar
-         JOIN obat o ON o.id = sar.obat_id
+         LEFT JOIN obat o ON o.id = sar.obat_id
          LEFT JOIN obat_batches b ON b.id = sar.batch_id
          ${where}
          ORDER BY sar.requested_at DESC, sar.id DESC
@@ -146,7 +146,7 @@ async function listAdjustmentRequests({ status = 'pending', limit = 50, offset =
     const [countRows] = await db.query(
         `SELECT COUNT(*) AS total
          FROM stock_adjustment_requests sar
-         JOIN obat o ON o.id = sar.obat_id
+         LEFT JOIN obat o ON o.id = sar.obat_id
          ${where}`,
         filterParams
     );

@@ -67,4 +67,18 @@ describe('Audit Obat page shell', () => {
         expect(MENU_ACTIVITY_SOURCES['nav-drug-audit']).toBeDefined();
         expect(STAFF_NAVIGATION_MAP['nav-drug-audit']).toBe('drug_audit.view');
     });
+
+    test('deleted obat requests get a fallback label', () => {
+        expect(moduleSource()).toContain('Obat terhapus (#');
+    });
+
+    test('bulk approve confirms and guards against double runs', () => {
+        const mod = moduleSource();
+        expect(mod).toContain('penyesuaian terpilih (total');
+        expect(mod).toContain('drug-audit-bulk-approve');
+        expect(fragment()).toContain('id="drug-audit-bulk-approve"');
+        const start = mod.indexOf('async function approveSelectedDrugAuditRequests');
+        const end = mod.indexOf('function renderReconRow');
+        expect(mod.slice(start, end)).toMatch(/\bfinally\b/);
+    });
 });

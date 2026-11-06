@@ -263,7 +263,7 @@ router.delete('/api/obat/:id/permanent', verifyToken, requirePermission('obat_al
         const obatId = req.params.id;
 
         const [obatRows] = await db.query(
-            'SELECT id, name, is_active FROM obat WHERE id = ?',
+            'SELECT id, name, is_active, stock FROM obat WHERE id = ?',
             [obatId]
         );
 
@@ -282,19 +282,37 @@ router.delete('/api/obat/:id/permanent', verifyToken, requirePermission('obat_al
             });
         }
 
+        if (Number(obat.stock) !== 0) {
+            return res.status(409).json({
+                success: false,
+                code: 'OBAT_HAS_STOCK',
+                message: 'Obat masih punya stok. Ajukan penyesuaian sampai stok 0 dan tunggu persetujuan dokter sebelum menghapus permanen.'
+            });
+        }
+
         // Do not allow permanent delete for items that already have transaction history.
         const [historyRows] = await db.query(
             `SELECT
                 (SELECT COUNT(*) FROM stock_movements WHERE obat_id = ?) AS movement_count,
                 (SELECT COUNT(*) FROM obat_batches WHERE obat_id = ?) AS batch_count,
-                (SELECT COUNT(*) FROM obat_sale_items WHERE obat_id = ?) AS sale_item_count`,
-            [obatId, obatId, obatId]
+                (SELECT COUNT(*) FROM obat_sale_items WHERE obat_id = ?) AS sale_item_count,
+                (SELECT COUNT(*) FROM stock_adjustment_requests WHERE obat_id = ?) AS adjustment_request_count`,
+            [obatId, obatId, obatId, obatId]
         );
 
         const history = historyRows[0] || {};
         const movementCount = Number(history.movement_count || 0);
         const batchCount = Number(history.batch_count || 0);
         const saleItemCount = Number(history.sale_item_count || 0);
+        const adjustmentRequestCount = Number(history.adjustment_request_count || 0);
+
+        if (adjustmentRequestCount > 0) {
+            return res.status(409).json({
+                success: false,
+                code: 'OBAT_HAS_ADJUSTMENT_REQUESTS',
+                message: 'Obat ini punya riwayat pengajuan penyesuaian sehingga tidak bisa dihapus permanen.'
+            });
+        }
 
         if (movementCount > 0 || batchCount > 0 || saleItemCount > 0) {
             return res.status(400).json({

@@ -324,7 +324,7 @@ function renderObatTable(obat) {
     // Helper: supplier badge
     function supBadge(item) {
         return item.supplier_name
-            ? `<span class="badge badge-outline-info" title="${item.supplier_code || ''}">${item.supplier_name}</span>`
+            ? `<span class="badge badge-outline-info" title="${escapeAttr(item.supplier_code || '')}">${escapeAttr(item.supplier_name)}</span>`
             : `<span class="badge badge-light text-muted">-</span>`;
     }
 
@@ -344,7 +344,7 @@ function renderObatTable(obat) {
                 ? `<span class="badge badge-danger">${item.stock}</span>`
                 : `<span class="badge badge-success">${item.stock}</span>`;
             const purchaseButton = hasAccountPermission('inventory.purchase') ? `
-                        <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok">
+                        <button class="btn btn-xs btn-success mr-1" data-obat-id="${escapeAttr(item.id)}" data-obat-name="${escapeAttr(item.name || '')}" onclick="window.openPurchaseModal(this.dataset.obatId, this.dataset.obatName)" title="Tambah Stok">
                             <i class="fas fa-plus"></i>
                         </button>` : '';
             const adjustmentButton = hasAccountPermission('inventory.adjust') ? `
@@ -361,8 +361,8 @@ function renderObatTable(obat) {
             return `
                 <tr>
                     <td>${index + 1}</td>
-                    <td>${item.name || '-'}</td>
-                    <td><span class="badge ${catBadge(item.category)}">${item.category || '-'}</span></td>
+                    <td>${escapeAttr(item.name || '-')}</td>
+                    <td><span class="badge ${catBadge(item.category)}">${escapeAttr(item.category || '-')}</span></td>
                     <td>${supBadge(item)}</td>
                     <td>Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                     <td class="text-center">${stockBadge}</td>
@@ -400,8 +400,8 @@ function renderObatTable(obat) {
                 return `
                     <tr class="table-secondary">
                         <td class="text-muted">${index + 1}</td>
-                        <td class="text-muted">${item.name || '-'}</td>
-                        <td><span class="badge ${catBadge(item.category)}">${item.category || '-'}</span></td>
+                        <td class="text-muted">${escapeAttr(item.name || '-')}</td>
+                        <td><span class="badge ${catBadge(item.category)}">${escapeAttr(item.category || '-')}</span></td>
                         <td>${supBadge(item)}</td>
                         <td class="text-muted">Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                         <td class="text-center">${stockBadge}</td>

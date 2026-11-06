@@ -12,6 +12,7 @@ let selected = new Set();
 let reconLoaded = false;
 let bound = false;
 let rejectId = null;
+let bulkApproving = false;
 let listToken = 0;
 let reconToken = 0;
 
@@ -67,6 +68,10 @@ function errorText(res, fallback) {
     return (res && res.data && res.data.message) || fallback;
 }
 
+function obatLabel(r) {
+    return r.name ? r.name : `Obat terhapus (#${r.obat_id})`;
+}
+
 function renderCard(r) {
     const delta = Number(r.quantity_delta) || 0;
     const pending = r.status === 'pending';
@@ -83,7 +88,7 @@ function renderCard(r) {
         : (r.decision_note ? `<div class="drug-audit-meta">Catatan keputusan: ${escapeHtml(r.decision_note)}</div>` : '');
     return `<div class="drug-audit-card" data-request-id="${Number(r.id)}">
         <div class="drug-audit-card-head">
-            <div class="drug-audit-card-title">${check}${escapeHtml(r.name)} <small class="text-muted">${escapeHtml(r.code)}</small>${stale}${statusBadge}</div>
+            <div class="drug-audit-card-title">${check}${escapeHtml(obatLabel(r))} <small class="text-muted">${escapeHtml(r.code)}</small>${stale}${statusBadge}</div>
             <div class="drug-audit-delta ${delta >= 0 ? 'is-plus' : 'is-minus'}">${escapeHtml(formatSigned(delta))} ${escapeHtml(r.unit)}</div>
         </div>
         <div class="drug-audit-meta">${escapeHtml(formatMoney(r.value))} &middot; ${escapeHtml(CATEGORY_LABELS[r.reason_category] || r.reason_category)}</div>
@@ -137,7 +142,7 @@ async function postDecision(id, action, body) {
 async function approveDrugAuditRequest(id) {
     const r = loadedRequests.find((x) => x.id === Number(id));
     if (!r) return;
-    const text = `Setujui penyesuaian ${r.name} ${formatSigned(r.quantity_delta)} ${r.unit} (${formatMoney(r.value)})?`;
+    const text = `Setujui penyesuaian ${obatLabel(r)} ${formatSigned(r.quantity_delta)} ${r.unit} (${formatMoney(r.value)})?`;
     if (!window.confirm(text)) return;
     showMessage('');
     try {
@@ -192,28 +197,41 @@ function toggleDrugAuditSelection(id, checked) {
 }
 
 async function approveSelectedDrugAuditRequests() {
-    const ids = loadedRequests.filter((r) => selected.has(r.id)).map((r) => r.id);
+    if (bulkApproving) return;
+    const rows = loadedRequests.filter((r) => selected.has(r.id));
+    const ids = rows.map((r) => r.id);
     if (!ids.length) return;
-    showMessage('');
-    let done = 0;
-    for (const id of ids) {
-        const r = loadedRequests.find((x) => x.id === id);
-        let res;
-        try {
-            res = await postDecision(id, 'approve');
-        } catch (_e) {
-            res = { ok: false, data: null };
+    const total = rows.reduce((sum, r) => sum + (Number(r.value) || 0), 0);
+    if (!window.confirm(`Setujui ${ids.length} penyesuaian terpilih (total ${formatMoney(total)})?`)) return;
+    bulkApproving = true;
+    const button = el('drug-audit-bulk-approve');
+    if (button) button.disabled = true;
+    try {
+        showMessage('');
+        let done = 0;
+        for (const id of ids) {
+            const r = loadedRequests.find((x) => x.id === id);
+            let res;
+            try {
+                res = await postDecision(id, 'approve');
+            } catch (_e) {
+                res = { ok: false, data: null };
+            }
+            if (!res.ok) {
+                const failure = `${r ? obatLabel(r) : 'Pengajuan'}: ${errorText(res, 'Gagal menyetujui pengajuan')} (${done} dari ${ids.length} disetujui)`;
+                await loadDrugAuditRequests(currentStatus);
+                showMessage(failure);
+                return;
+            }
+            done += 1;
         }
-        if (!res.ok) {
-            const failure = `${r ? r.name : 'Pengajuan'}: ${errorText(res, 'Gagal menyetujui pengajuan')} (${done} dari ${ids.length} disetujui)`;
-            await loadDrugAuditRequests(currentStatus);
-            showMessage(failure);
-            return;
-        }
-        done += 1;
+        await loadDrugAuditRequests(currentStatus);
+        showMessage(`${done} pengajuan disetujui.`, 'success');
+    } finally {
+        bulkApproving = false;
+        const btn = el('drug-audit-bulk-approve');
+        if (btn) btn.disabled = false;
     }
-    await loadDrugAuditRequests(currentStatus);
-    showMessage(`${done} pengajuan disetujui.`, 'success');
 }
 
 function renderReconRow(row) {

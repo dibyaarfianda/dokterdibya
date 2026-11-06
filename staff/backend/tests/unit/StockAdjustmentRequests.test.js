@@ -254,4 +254,17 @@ describe('views and listing', () => {
     test('list rejects unknown status', async () => {
         await expectError(Service.listAdjustmentRequests({ status: 'bogus' }), 400, 'Status tidak valid');
     });
+
+    test('list keeps requests whose obat was deleted', async () => {
+        const { connection, calls } = createFakeConnection([
+            [/SELECT sar\.\*/, [[]]],
+            [/COUNT\(\*\) AS total/, [[{ total: 0 }]]]
+        ]);
+        mockConnection = connection;
+        await Service.listAdjustmentRequests({ status: 'all' });
+        const listSql = calls.find((c) => /SELECT sar\.\*/.test(c.sql)).sql;
+        const countSql = calls.find((c) => /COUNT\(\*\) AS total/.test(c.sql)).sql;
+        expect(listSql).toMatch(/LEFT JOIN obat o ON o\.id = sar\.obat_id/);
+        expect(countSql).toMatch(/LEFT JOIN obat o ON o\.id = sar\.obat_id/);
+    });
 });

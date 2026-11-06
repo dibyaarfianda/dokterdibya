@@ -32,7 +32,8 @@ app.use('/staff/public', express.static(publicRoot));
   try {
     const page = await browser.newPage();
     await page.setViewport({ width: 375, height: 812, isMobile: true, hasTouch: true });
-    page.on('dialog', d => d.accept());
+    const dialogs = [];
+    page.on('dialog', d => { dialogs.push(d.message()); d.accept(); });
     await page.goto(`http://127.0.0.1:${server.address().port}/qa`);
     await page.waitForFunction(() => window.__moduleReady === true, { timeout: 15000 });
     await page.evaluate(() => window.initDrugAuditPage());
@@ -66,6 +67,8 @@ app.use('/staff/public', express.static(publicRoot));
     await page.evaluate(() => window.approveSelectedDrugAuditRequests());
     await page.waitForFunction(() => document.getElementById('drug-audit-message').textContent.includes('2 pengajuan disetujui'), { timeout: 5000 });
     assert.deepEqual(approved, [41, 42]);
+    assert.ok(dialogs.some(m => m === 'Setujui 2 penyesuaian terpilih (total Rp 1.400)?'), 'bulk approve must ask for confirmation');
+    assert.equal(await page.$eval('#drug-audit-bulk-approve', e => e.disabled), false);
     console.log('PASS: bulk approve runs sequentially and reloads');
 
     await page.evaluate(() => $('#drug-audit-tab-reconciliation-link').tab('show'));

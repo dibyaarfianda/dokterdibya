@@ -93,9 +93,17 @@ async function main() {
         console.log(`scenario 6 OK: reconciliation obat 1 = ${row.status} (stock ${row.stock}, batch_total ${row.batch_total})`);
         console.log('stock ledger isolated verification OK');
     } finally {
-        if (pool) await pool.end();
+        try {
+            if (pool) await pool.end();
+        } catch (error) {
+            console.error('pool.end failed (continuing to drop QA database):', error && error.message || error);
+        }
         await admin.query('DROP DATABASE IF EXISTS `' + qaName + '`');
-        await admin.end();
+        try {
+            await admin.end();
+        } catch (error) {
+            console.error('admin.end failed:', error && error.message || error);
+        }
         console.log('Isolated QA database removed');
     }
 }
