@@ -143,6 +143,32 @@ describe('Sunday Clinic online payment completion', () => {
         expect(realtimeSync.broadcast).toHaveBeenCalledWith(expect.objectContaining({ reason: 'payment_reconciliation_required' }));
     });
 
+    test('deducts one total per obat when the same obat sits on two billing lines', async () => {
+        const InventoryService = require('../../services/InventoryService');
+        InventoryService.deductStockFIFO.mockResolvedValue({ success: true, totalCost: 0 });
+        const line = { item_code: 'OB025199', item_name: 'Ossovit', quantity: 30, obat_id: 103 };
+        connection.query.mockImplementation(async sql => {
+            const query = normalizedSql(sql);
+            if (query.startsWith('UPDATE tagihan_payments')) return [{ affectedRows: 0 }];
+            if (query.startsWith('SELECT id, status FROM sunday_clinic_billings')) {
+                return [[{ id: 44, status: 'confirmed' }]];
+            }
+            if (query.startsWith('SELECT bi.item_code')) return [[line, { ...line }]];
+            if (query.startsWith('SELECT ABS(COALESCE(SUM(quantity), 0))')) return [[{ deducted_qty: 0 }]];
+            return [{ affectedRows: 1 }];
+        });
+
+        await handlePaymentSuccess({
+            id: 95, billing_id: 44, mr_id: 'DRD0044', payment_method: 'qris', amount: 390000
+        }, { paid_at: '2026-11-06T07:00:00Z' });
+
+        expect(InventoryService.deductStockFIFO).toHaveBeenCalledTimes(1);
+        expect(InventoryService.deductStockFIFO).toHaveBeenCalledWith(
+            103, 60, 'sunday_clinic_billing', 44, 'System (Xendit Payment)'
+        );
+        expect(connection.commit).toHaveBeenCalledTimes(1);
+    });
+
     test('locks the invoice before writing payment evidence so cancellation and callback use the same lock order', async () => {
         await handlePaymentSuccess({ id: 94, billing_id: 44, mr_id: 'DRD0044', amount: 100 }, {});
         const calls = connection.query.mock.calls.map(([sql]) => normalizedSql(sql));

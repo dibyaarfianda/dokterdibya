@@ -908,14 +908,19 @@ async function handlePaymentSuccess(payment, webhookData) {
             throw new Error(`Data obat tidak valid: ${invalidBillingItems.map(i => i.item_name || i.item_code || 'tanpa nama').join(', ')}`);
         }
 
-        // Deduct stock for each medication
+        // Deduct stock per medication. Aggregate per obat first: one obat can
+        // appear on several billing lines, and the already-deducted total is per obat.
         if (billingItems.length > 0) {
             const InventoryService = require('../services/InventoryService');
 
+            const requiredByObatId = new Map();
             for (const item of billingItems) {
-                const requiredQty = parseInt(item.quantity, 10) || 0;
                 const obatId = Number(item.obat_id);
+                const qty = parseInt(item.quantity, 10) || 0;
+                requiredByObatId.set(obatId, (requiredByObatId.get(obatId) || 0) + qty);
+            }
 
+            for (const [obatId, requiredQty] of requiredByObatId) {
                 if (requiredQty <= 0) {
                     continue;
                 }

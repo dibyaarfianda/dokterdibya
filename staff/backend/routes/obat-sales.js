@@ -452,6 +452,7 @@ router.delete('/:id', verifyToken, async (req, res, next) => {
  */
 router.post('/:id/confirm', verifyToken, async (req, res, next) => {
     const connection = await db.getConnection();
+    let transactionOpen = false;
 
     try {
         const { payment_method } = req.body;
@@ -465,8 +466,13 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
             });
         }
 
+        // Lock the sale row so two confirmations of the same sale (double tap,
+        // two devices) are serialized; the second one then sees it is no longer draft.
+        await connection.beginTransaction();
+        transactionOpen = true;
+
         const [[sale]] = await connection.query(
-            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ?`,
+            `SELECT ${OBAT_SALE_COLUMNS} FROM obat_sales WHERE id = ? FOR UPDATE`,
             [req.params.id]
         );
 
@@ -481,8 +487,6 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
             });
         }
 
-        await connection.beginTransaction();
-
         // Get sale items
         const [items] = await connection.query(
             `SELECT ${OBAT_SALE_ITEM_COLUMNS} FROM obat_sale_items WHERE sale_id = ?`,
@@ -495,65 +499,148 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
         // Check if this is a test sale (patient name = "tes" or "test", case-insensitive)
         const isTestSale = /^tes(t)?$/i.test((sale.patient_name || '').trim());
 
+        // Aggregate per obat: one obat can appear on several lines.
+        const requiredByObatId = new Map();
+        const nameByObatId = new Map();
+        for (const item of items) {
+            const obatId = Number(item.obat_id);
+            requiredByObatId.set(obatId, (requiredByObatId.get(obatId) || 0) + (parseInt(item.quantity, 10) || 0));
+            if (!nameByObatId.has(obatId)) {
+                nameByObatId.set(obatId, item.obat_name || `Obat ID ${obatId}`);
+            }
+        }
+
         if (isTestSale) {
             logger.info('TEST SALE - Skipping stock deduction', {
                 saleNumber: sale.sale_number,
                 patientName: sale.patient_name
             });
-        }
-
-        // Deduct stock for each item using FIFO (skip for test sales)
-        for (const item of items) {
-            if (isTestSale) {
-                // Skip stock deduction for test sales
+            for (const [obatId, quantity] of requiredByObatId) {
                 deductionResults.push({
-                    obatId: item.obat_id,
-                    obatName: item.obat_name,
-                    quantity: item.quantity,
+                    obatId,
+                    obatName: nameByObatId.get(obatId),
+                    quantity,
                     cost: 0,
                     success: true,
                     skipped: true,
                     reason: 'Test sale - stock not deducted'
                 });
-                continue;
             }
+        } else if (requiredByObatId.size > 0) {
+            const obatIds = Array.from(requiredByObatId.keys());
+            const placeholders = obatIds.map(() => '?').join(',');
 
-            try {
-                const result = await InventoryService.deductStockFIFO(
-                    item.obat_id,
-                    item.quantity,
-                    'obat_sale',      // reference_type
-                    sale.id,          // reference_id
-                    req.user.name || req.user.id  // created_by
-                );
+            // Each deduction commits on its own connection, so an earlier attempt
+            // that failed halfway may already have deducted some obat. Read that
+            // committed state (outside this transaction's snapshot) and only
+            // deduct what is still missing, so a retry never deducts twice.
+            const [existingRows] = await db.query(
+                `SELECT obat_id,
+                        -SUM(quantity) AS deducted_qty,
+                        -SUM(quantity * cost_price) AS deducted_cost
+                 FROM stock_movements
+                 WHERE reference_type = 'obat_sale'
+                   AND reference_id = ?
+                   AND movement_type = 'sale'
+                   AND obat_id IN (${placeholders})
+                 GROUP BY obat_id`,
+                [sale.id, ...obatIds]
+            );
+            const deductedByObatId = new Map(existingRows.map(row => [
+                Number(row.obat_id),
+                { qty: Number(row.deducted_qty || 0), cost: Number(row.deducted_cost || 0) }
+            ]));
 
-                totalCost += result.totalCost || 0;
-                deductionResults.push({
-                    obatId: item.obat_id,
-                    obatName: item.obat_name,
-                    quantity: item.quantity,
-                    cost: result.totalCost,
-                    success: true
-                });
-
-                logger.info('Stock deducted for sale', {
-                    saleNumber: sale.sale_number,
-                    obatId: item.obat_id,
-                    obatName: item.obat_name,
-                    quantity: item.quantity,
-                    cost: result.totalCost
-                });
-            } catch (stockError) {
-                logger.error('Stock deduction failed, aborting confirmation', {
-                    saleNumber: sale.sale_number,
-                    obatId: item.obat_id,
-                    error: stockError.message
-                });
-
-                const stockErrorMessage = `Gagal mengurangi stok untuk ${item.obat_name || `Obat ID ${item.obat_id}`}: ${stockError.message}`;
-                const err = new Error(stockErrorMessage);
+            // Check every obat before deducting any, so a shortage on one line
+            // cannot leave another line already deducted.
+            const [stockRows] = await db.query(
+                `SELECT id, name, stock FROM obat WHERE id IN (${placeholders})`,
+                obatIds
+            );
+            const stockByObatId = new Map(stockRows.map(row => [Number(row.id), row]));
+            const insufficient = [];
+            for (const obatId of obatIds) {
+                const alreadyQty = deductedByObatId.get(obatId)?.qty || 0;
+                const remainingQty = Math.max(0, requiredByObatId.get(obatId) - alreadyQty);
+                const row = stockByObatId.get(obatId);
+                const available = Number(row?.stock || 0);
+                if (!row || available < remainingQty) {
+                    insufficient.push(`${row?.name || nameByObatId.get(obatId)} (butuh ${remainingQty}, tersedia ${available})`);
+                }
+            }
+            if (insufficient.length > 0) {
+                const err = new Error(`Stok tidak cukup untuk: ${insufficient.join('; ')}`);
                 err.statusCode = 400;
                 throw err;
+            }
+
+            // Deduct stock per obat using FIFO
+            for (const obatId of obatIds) {
+                const requiredQty = requiredByObatId.get(obatId);
+                const already = deductedByObatId.get(obatId) || { qty: 0, cost: 0 };
+                const remainingQty = Math.max(0, requiredQty - already.qty);
+                const obatName = nameByObatId.get(obatId);
+
+                totalCost += already.cost;
+
+                if (already.qty > requiredQty) {
+                    logger.warn('Obat sale already has more stock deducted than sold', {
+                        saleNumber: sale.sale_number,
+                        obatId,
+                        requiredQty,
+                        alreadyDeducted: already.qty
+                    });
+                }
+
+                if (remainingQty <= 0) {
+                    deductionResults.push({
+                        obatId,
+                        obatName,
+                        quantity: requiredQty,
+                        cost: already.cost,
+                        success: true,
+                        alreadyDeducted: true
+                    });
+                    continue;
+                }
+
+                try {
+                    const result = await InventoryService.deductStockFIFO(
+                        obatId,
+                        remainingQty,
+                        'obat_sale',      // reference_type
+                        sale.id,          // reference_id
+                        req.user.name || req.user.id  // created_by
+                    );
+
+                    totalCost += result.totalCost || 0;
+                    deductionResults.push({
+                        obatId,
+                        obatName,
+                        quantity: requiredQty,
+                        cost: already.cost + (result.totalCost || 0),
+                        success: true
+                    });
+
+                    logger.info('Stock deducted for sale', {
+                        saleNumber: sale.sale_number,
+                        obatId,
+                        obatName,
+                        quantity: remainingQty,
+                        cost: result.totalCost
+                    });
+                } catch (stockError) {
+                    logger.error('Stock deduction failed, aborting confirmation', {
+                        saleNumber: sale.sale_number,
+                        obatId,
+                        error: stockError.message
+                    });
+
+                    const stockErrorMessage = `Gagal mengurangi stok untuk ${obatName}: ${stockError.message}`;
+                    const err = new Error(stockErrorMessage);
+                    err.statusCode = 400;
+                    throw err;
+                }
             }
         }
 
@@ -583,6 +670,7 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
         );
 
         await connection.commit();
+        transactionOpen = false;
 
         const paymentMethodLabels = { cash: 'Tunai', bpjs: 'BPJS', insurance: 'Asuransi' };
         const statusLabels = { paid: 'Dibayar', payment_pending: 'Menunggu Pembayaran' };
@@ -610,7 +698,10 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
             }
         });
     } catch (error) {
-        await connection.rollback();
+        if (transactionOpen) {
+            await connection.rollback();
+            transactionOpen = false;
+        }
         logger.error('Failed to confirm obat sale', { error: error.message });
 
         if (error.statusCode) {
@@ -622,6 +713,14 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
 
         next(error);
     } finally {
+        // Early returns (404 / not draft) leave the locking transaction open.
+        if (transactionOpen) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback obat sale confirmation', { error: rollbackError.message });
+            }
+        }
         connection.release();
     }
 });

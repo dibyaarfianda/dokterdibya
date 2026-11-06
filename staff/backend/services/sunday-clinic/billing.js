@@ -897,12 +897,22 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
             }
         }
 
-        // Deduct stock for each obat using FIFO.
+        // Deduct stock per obat using FIFO. Compare the total billed quantity of
+        // each obat (therapy items are appended, so one obat can sit on several
+        // lines) with what is already deducted for this billing; a retry only
+        // deducts what is still missing.
         // If any deduction fails, abort and keep billing in confirmed status.
+        const obatNameById = new Map();
         for (const item of obatItemsRaw) {
-            try {
-                const requiredQty = parseInt(item.quantity, 10) || 0;
+            const obatId = Number(item.obat_id);
+            if (!obatNameById.has(obatId)) {
+                obatNameById.set(obatId, item.item_name || `Obat ID ${obatId}`);
+            }
+        }
 
+        for (const [obatId, requiredQty] of requiredByObatId) {
+            const itemName = obatNameById.get(obatId);
+            try {
                 const [[existingDeduction]] = await db.query(
                     `SELECT ABS(COALESCE(SUM(quantity), 0)) AS deducted_qty
                      FROM stock_movements
@@ -910,17 +920,17 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
                        AND reference_id = ?
                        AND movement_type = 'sale'
                        AND obat_id = ?`,
-                    [billingLocked.id, Number(item.obat_id)]
+                    [billingLocked.id, obatId]
                 );
 
                 const alreadyDeducted = Number(existingDeduction?.deducted_qty || 0);
                 const remainingQty = Math.max(0, requiredQty - alreadyDeducted);
 
                 if (remainingQty <= 0) {
-                    logger.info(`Skip stock deduction for ${item.item_name} because it is already fully deducted`, {
+                    logger.info(`Skip stock deduction for ${itemName} because it is already fully deducted`, {
                         mrId: normalizedMrId,
                         billingId: billingLocked.id,
-                        obatId: Number(item.obat_id),
+                        obatId,
                         requiredQty,
                         alreadyDeducted
                     });
@@ -928,22 +938,22 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
                 }
 
                 await InventoryService.deductStockFIFO(
-                    Number(item.obat_id),
+                    obatId,
                     remainingQty,
                     'sunday_clinic_billing',
                     billingLocked.id,
                     req.user?.name || 'system'
                 );
-                logger.info(`Stock deducted for ${item.item_name}: ${remainingQty} units`);
+                logger.info(`Stock deducted for ${itemName}: ${remainingQty} units`);
             } catch (stockError) {
-                logger.error(`Stock deduction failed for obat ${item.obat_id} (${item.item_name})`, {
+                logger.error(`Stock deduction failed for obat ${obatId} (${itemName})`, {
                     mrId: normalizedMrId,
                     billingId: billingLocked.id,
                     error: stockError.message
                 });
                 return res.status(500).json({
                     success: false,
-                    message: `Gagal mengurangi stok untuk ${item.item_name}: ${stockError.message}`
+                    message: `Gagal mengurangi stok untuk ${itemName}: ${stockError.message}`
                 });
             }
         }
