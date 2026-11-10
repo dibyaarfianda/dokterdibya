@@ -29,6 +29,10 @@ describe('patient route access policy', () => {
         ['POST', '/api/kick-counter/kick'],
         ['PUT', '/api/contraction-timer/session/7/end'],
         ['GET', '/api/tanya-subscriptions/payment/order-7'],
+        ['GET', '/api/patient/premium/plans'],
+        ['GET', '/api/patient/premium/status'],
+        ['POST', '/api/patient/premium/checkout'],
+        ['GET', '/api/patient/premium/orders/PRM-11111111-2222-3333-4444-555555555555'],
         ['POST', '/api/patient-billing/bill-7/create-payment'],
         ['GET', '/api/announcements/active'],
         ['POST', '/api/announcements/9/like'],
@@ -87,6 +91,12 @@ describe('patient route access policy', () => {
         ['GET', '/api/sunday-clinic/patient-visits/other-patient-id'],
         ['POST', '/api/tanya-subscriptions/webhook'],
         ['POST', '/api/tanya-subscriptions/simulate-payment'],
+        ['POST', '/api/patient/premium/plans'],
+        ['GET', '/api/patient/premium/checkout'],
+        ['POST', '/api/patient/premium/orders/PRM-1'],
+        ['DELETE', '/api/patient/premium/orders/PRM-1'],
+        ['GET', '/api/patient/premium/admin/orders'],
+        ['POST', '/api/webhooks/duitku/callback'],
         ['GET', '/api/polls/staff/list']
     ])('denies staff operation %s %s', (method, url) => {
         expect(isPatientAllowedRoute(method, url)).toBe(false);

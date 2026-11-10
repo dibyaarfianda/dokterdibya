@@ -753,12 +753,20 @@ app.use('/api/community-chat', communityChatRoutes);
 // Tanya Dokter - Subscriptions & Payments
 const tanyaSubscriptionsRoutes = require('./routes/tanya-subscriptions');
 app.use('/api/tanya-subscriptions', tanyaSubscriptionsRoutes);
-// Webhook endpoint (no auth)
+// Same router under /api/tanya-payments (patient session required; it has no payment confirmation route)
 app.use('/api/tanya-payments', tanyaSubscriptionsRoutes);
 
 // Xendit Payment Webhook (for billing online payments)
 const xenditWebhookRoutes = require('./routes/xendit-webhook');
 app.use('/api/webhooks/xendit', xenditWebhookRoutes);
+
+// Duitku Payment Callback (premium patient packages: QRIS + virtual account, signature verified)
+const { createDuitkuWebhookRouter } = require('./routes/duitku-webhook');
+app.use('/api/webhooks/duitku', createDuitkuWebhookRouter());
+
+// Patient premium packages (checkout, status, order polling)
+const { createPatientPremiumRouter } = require('./routes/patient-premium');
+app.use('/api/patient/premium', createPatientPremiumRouter());
 
 // Doctors endpoint (for Q&A doctor selection)
 const doctorsRoutes = require('./routes/doctors');
@@ -897,6 +905,9 @@ logger.info('Appointment schedulers initialized');
 
 const operationDoctorJourneyScheduler = require('./services/OperationDoctorJourneyScheduler');
 operationDoctorJourneyScheduler.initScheduler();
+
+// Premium payments: catch missed Duitku callbacks and close unpaid invoices
+require('./services/PremiumPaymentScheduler').initScheduler();
 
 const usgBulkUploadBotScheduler = require('./services/UsgBulkUploadBotScheduler');
 usgBulkUploadBotScheduler.initScheduler();

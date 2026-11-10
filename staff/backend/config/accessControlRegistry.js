@@ -379,6 +379,7 @@ function resolveRouteAccess(route) {
     }
     if (route.sourceFile === 'rum') return { exemption: 'telemetry', ruleId: 'browser-telemetry' };
     if (route.sourceFile === 'xendit-webhook') return { exemption: 'payment_webhook', ruleId: 'xendit-webhook' };
+    if (route.sourceFile === 'duitku-webhook') return { exemption: 'payment_webhook', ruleId: 'duitku-webhook' };
     if (route.sourceFile === 'whatsapp-webhook') return { exemption: 'messaging_webhook', ruleId: 'whatsapp-webhook' };
     if (route.sourceFile === 'ci-performance') return { exemption: 'ci_oidc', ruleId: 'ci-oidc' };
     if (INTEGRATION_SOURCES.has(route.sourceFile) && !/verifyStaffToken|verifyToken/.test(route.handlerPrefix)) {
