@@ -54,6 +54,8 @@ function fixture() {
     // Network and rendering are external boundaries; exercise the real collection/merge/save code.
     context.renderTerapiItemsList = jest.fn(async () => true);
     context.renderTindakanItemsList = jest.fn(async () => true);
+    // main.js imports computeKontrolDate; the module has no imports, so run the real source here.
+    vm.runInContext(read('sunday-clinic/utils/kontrol-schedule.js').replace(/^export /gm, ''), context);
     const main = read('sunday-clinic/main.js');
     const classSource = main.slice(main.indexOf('class SundayClinicApp {'), main.indexOf('// Export singleton instance'));
     context.apiClient = { saveSection: jest.fn(async (mrId, section, data) => {
