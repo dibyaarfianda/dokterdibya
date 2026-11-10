@@ -32,14 +32,15 @@ function build(overrides = {}) {
     const logger = { warn: jest.fn(), error: jest.fn(), info: jest.fn() };
     const sleep = jest.fn(async () => {});
     const sessionSettings = overrides.sessionSettings || {
-        getSessionSettings: async () => SETTINGS,
+        getSessionSettings: jest.fn(async () => SETTINGS),
+        findSessionSetting: realSettings.findSessionSetting,
         getSlotTimeFromSettings: realSettings.getSlotTimeFromSettings,
         getSessionLabelFromSettings: realSettings.getSessionLabelFromSettings
     };
     const db = overrides.db || makeDb();
     const sender = overrides.sender || makeSender();
     const jobs = createWhatsAppReminderJobs({ db, sender, sessionSettings, logger, now: NOW, sleep });
-    return { jobs, db, sender, logger, sleep };
+    return { jobs, db, sender, logger, sleep, sessionSettings };
 }
 
 const apptRow = (extra = {}) => ({
@@ -65,21 +66,35 @@ describe('WhatsAppReminderJobs', () => {
     test('janji H-1 falls back to session label when slot time is null', async () => {
         const sessionSettings = {
             getSessionSettings: async () => SETTINGS,
+            findSessionSetting: realSettings.findSessionSetting,
             getSlotTimeFromSettings: () => null,
-            getSessionLabelFromSettings: () => '09:00 - 11:00 (Pagi)'
+            getSessionLabelFromSettings: realSettings.getSessionLabelFromSettings
         };
         const { jobs, sender } = build({ db: makeDb({ rows: [apptRow()] }), sessionSettings });
         await jobs.runJanjiH1();
         expect(sender.send.mock.calls[0][0].values.jam).toBe('09:00 - 11:00 (Pagi)');
     });
 
-    test('janji H-1 uses dash when both slot time and label are null', async () => {
+    test('janji H-1 reads session settings strictly', async () => {
+        const { jobs, sessionSettings } = build({ db: makeDb({ rows: [apptRow()] }) });
+        await jobs.runJanjiH1();
+        expect(sessionSettings.getSessionSettings).toHaveBeenCalledWith({ strict: true });
+    });
+
+    test('janji H-1 rejects when session settings cannot be loaded', async () => {
         const sessionSettings = {
-            getSessionSettings: async () => [],
-            getSlotTimeFromSettings: () => null,
-            getSessionLabelFromSettings: () => null
+            getSessionSettings: async () => { throw new Error('db down'); },
+            findSessionSetting: realSettings.findSessionSetting,
+            getSlotTimeFromSettings: realSettings.getSlotTimeFromSettings,
+            getSessionLabelFromSettings: realSettings.getSessionLabelFromSettings
         };
         const { jobs, sender } = build({ db: makeDb({ rows: [apptRow()] }), sessionSettings });
+        await expect(jobs.runJanjiH1()).rejects.toThrow('db down');
+        expect(sender.send).not.toHaveBeenCalled();
+    });
+
+    test('janji H-1 uses dash for an unknown or deactivated session (no legacy hours)', async () => {
+        const { jobs, sender } = build({ db: makeDb({ rows: [apptRow({ session: 3 })] }) });
         await jobs.runJanjiH1();
         expect(sender.send.mock.calls[0][0].values.jam).toBe('-');
     });
@@ -105,6 +120,14 @@ describe('WhatsAppReminderJobs', () => {
             purpose: 'kontrol_h3', refType: 'medical_record', refId: '55', patientId: 'P2', phone: '0813',
             values: { nama: 'Budi', tanggal: DibyaDateTime.date(new Date(2026, 10, 10), FMT) }
         });
+    });
+
+    test('kontrol H-3 SQL skips planning rows when the patient has a newer visit', async () => {
+        const { jobs, db } = build({ db: makeDb({ rows: [] }) });
+        await jobs.runKontrolH3();
+        const q = db.recipientCall();
+        expect(q.sql).toMatch(/NOT EXISTS \(SELECT 1 FROM sunday_clinic_records newer\s+WHERE newer\.patient_id = scr\.patient_id\s+AND newer\.created_at > scr\.created_at\)/);
+        expect((q.sql.match(/\?/g) || []).length).toBe(q.params.length);
     });
 
     test('kontrol H-3 skips rows with empty phone without sending', async () => {

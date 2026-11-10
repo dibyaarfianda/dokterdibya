@@ -55,6 +55,16 @@ test('skips without a log row when Meta is not configured', async () => {
     expect(whatsapp.sendViaMetaCloud).not.toHaveBeenCalled();
 });
 
+test.each([null, undefined, ''])('fails with missing_ref and writes nothing for refId %j', async (refId) => {
+    const db = fakeDb();
+    const wa = fakeWhatsapp();
+    const sender = createWhatsAppTemplateSender({ db, whatsapp: wa, logger: quiet });
+    const res = await sender.send({ ...INPUT, refId });
+    expect(res).toEqual({ status: 'failed', reason: 'missing_ref' });
+    expect(db.calls).toHaveLength(0);
+    expect(wa.sendViaMetaCloud).not.toHaveBeenCalled();
+});
+
 test('skips empty or invalid phone', async () => {
     const { db, sender } = make();
     expect(await sender.send({ ...INPUT, phone: '' })).toEqual({ status: 'skipped', reason: 'invalid_phone' });

@@ -5,6 +5,12 @@ const TRACKED_STATUSES = new Set(['sent', 'delivered', 'read', 'failed']);
 const OPT_OUT_WORDS = new Set(['STOP', 'BERHENTI']);
 const BODY_MAX = 1000;
 
+// Trim, uppercase and strip leading/trailing non-letters (punctuation, emoji), then exact-match.
+function isOptOutText(text) {
+    const normalized = String(text).trim().toUpperCase().replace(/^[^\p{L}]+|[^\p{L}]+$/gu, '');
+    return OPT_OUT_WORDS.has(normalized);
+}
+
 function verifySignature(rawBody, header, appSecret) {
     if (!appSecret || !header || typeof header !== 'string' || !rawBody) return false;
     const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawBody).digest('hex');
@@ -45,6 +51,18 @@ function createWhatsAppWebhookService({
         const phone = formatPhone(msg.from);
         if (!phone) return;
         const text = msg.text.body;
+        // Opt-out first, in its own try/catch: a failing inbound insert must not lose a STOP.
+        if (isOptOutText(text)) {
+            try {
+                await db.query(
+                    'INSERT IGNORE INTO wa_opt_outs (phone, source) VALUES (?, ?)',
+                    [phone, 'inbound_stop']
+                );
+                counts.optOuts++;
+            } catch (err) {
+                logger.warn(`[WhatsAppWebhook] opt-out insert failed code=${(err && err.code) || 'unknown'}`);
+            }
+        }
         await db.query(
             `INSERT IGNORE INTO wa_messages
                 (direction, phone, wa_message_id, status, body_text)
@@ -52,13 +70,6 @@ function createWhatsAppWebhookService({
             [phone, msg.id, text.slice(0, BODY_MAX)]
         );
         counts.inbound++;
-        if (OPT_OUT_WORDS.has(text.trim().toUpperCase())) {
-            await db.query(
-                'INSERT IGNORE INTO wa_opt_outs (phone, source) VALUES (?, ?)',
-                [phone, 'inbound_stop']
-            );
-            counts.optOuts++;
-        }
     }
 
     async function handlePayload(payload) {
@@ -73,14 +84,14 @@ function createWhatsAppWebhookService({
                     try {
                         if (await applyStatus(st)) counts.statuses++;
                     } catch (err) {
-                        logger.warn(`[WhatsAppWebhook] status event failed: ${err.message}`);
+                        logger.warn(`[WhatsAppWebhook] status event failed code=${(err && err.code) || 'unknown'}`);
                     }
                 }
                 for (const msg of Array.isArray(value.messages) ? value.messages : []) {
                     try {
                         await applyMessage(msg, counts);
                     } catch (err) {
-                        logger.warn(`[WhatsAppWebhook] inbound message failed: ${err.message}`);
+                        logger.warn(`[WhatsAppWebhook] inbound message failed code=${(err && err.code) || 'unknown'}`);
                     }
                 }
             }

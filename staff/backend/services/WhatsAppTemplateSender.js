@@ -15,6 +15,8 @@ function createWhatsAppTemplateSender({ db, whatsapp, logger } = {}) {
     async function send({ purpose, refType, refId, patientId, phone, values } = {}) {
         if (!isConfigured()) return { status: 'failed', reason: 'meta_not_configured' };
 
+        if (refId === undefined || refId === null || refId === '') return { status: 'failed', reason: 'missing_ref' };
+
         const template = resolveTemplate(purpose);
         if (!template) return { status: 'failed', reason: 'unknown_template' };
 

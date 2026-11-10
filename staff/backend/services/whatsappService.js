@@ -204,9 +204,12 @@ ${this.clinicName}`;
      * Auto-send based on configured provider with safe fallbacks
      */
     async sendAuto(phone, message, options = {}) {
-        const attempts = this.provider === 'meta'
+        // Free-form Meta text only delivers inside the 24-hour customer window,
+        // so it is opt-in. Template sends call sendViaMetaCloud directly.
+        const metaFreeform = process.env.WA_META_FREEFORM_ENABLED === 'true';
+        const attempts = (this.provider === 'meta'
             ? ['meta', 'fonnte']
-            : ['fonnte', 'meta'];
+            : ['fonnte', 'meta']).filter(method => method !== 'meta' || metaFreeform);
 
         for (const method of attempts) {
             const result = method === 'meta'

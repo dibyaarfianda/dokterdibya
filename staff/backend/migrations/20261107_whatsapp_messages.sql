@@ -17,10 +17,10 @@ CREATE TABLE IF NOT EXISTS wa_messages (
     UNIQUE KEY uq_wa_message_id (wa_message_id),
     KEY idx_wa_phone (phone),
     KEY idx_wa_created (created_at)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS wa_opt_outs (
     phone VARCHAR(20) PRIMARY KEY,       -- format 62xxxxxxxx
     opted_out_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     source VARCHAR(40) NOT NULL          -- inbound_stop | staff
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

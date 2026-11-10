@@ -141,7 +141,8 @@ app.use(metricsMiddleware);
 // Binary monitor metadata may contain original filenames. Preserve req.url/query
 // for routing but remove query data from existing access/performance logs.
 app.use((req, res, next) => {
-    if (req.path.startsWith('/api/integration/comm/clinic-monitor') || req.path === '/api/integration/comm/hospital-observations' || req.path.startsWith('/api/clinic-monitor/')) {
+    // /api/whatsapp/webhook: keep hub.verify_token out of the access log.
+    if (req.path.startsWith('/api/whatsapp/webhook') || req.path.startsWith('/api/integration/comm/clinic-monitor') || req.path === '/api/integration/comm/hospital-observations' || req.path.startsWith('/api/clinic-monitor/')) {
         req.originalUrl = req.path;
     }
     next();

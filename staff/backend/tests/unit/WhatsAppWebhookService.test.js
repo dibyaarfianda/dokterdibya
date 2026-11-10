@@ -89,7 +89,7 @@ describe('WhatsAppWebhookService.handlePayload', () => {
         expect(db.calls).toHaveLength(0);
     });
 
-    test.each(['STOP', ' berhenti ', 'Stop'])('inbound %j opts out', async (text) => {
+    test.each(['STOP', ' berhenti ', 'Stop', 'Stop.', 'STOP!', 'Berhenti 🙏', '"stop"'])('inbound %j opts out', async (text) => {
         const { svc, db } = build();
         const res = await svc.handlePayload(messagePayload(
             { id: 'wamid.in1', from: '6281234567890', type: 'text', text: { body: text } }
@@ -106,6 +106,26 @@ describe('WhatsAppWebhookService.handlePayload', () => {
         ));
         expect(res).toEqual({ statuses: 0, inbound: 1, optOuts: 0 });
         expect(db.find(/wa_opt_outs/)).toHaveLength(0);
+    });
+
+    test('a failing inbound insert cannot lose a STOP (opt-out runs first)', async () => {
+        const db = fakeDb();
+        db.query.mockImplementation(async (sql, params) => {
+            db.calls.push({ sql, params });
+            if (/INSERT IGNORE INTO wa_messages/.test(sql)) throw Object.assign(new Error('secret 6281234567890'), { code: 'ER_X' });
+            return [{ affectedRows: 1 }];
+        });
+        const logger = { warn: jest.fn(), error: jest.fn(), info: jest.fn() };
+        const svc = createWhatsAppWebhookService({ db, logger, formatPhone });
+        const res = await svc.handlePayload(messagePayload(
+            { id: 'wamid.in9', from: '6281234567890', type: 'text', text: { body: 'STOP' } }
+        ));
+        expect(res.optOuts).toBe(1);
+        expect(db.find(/INSERT IGNORE INTO wa_opt_outs/)).toHaveLength(1);
+        const order = db.calls.map(c => (/wa_opt_outs/.test(c.sql) ? 'opt' : 'msg'));
+        expect(order[0]).toBe('opt');
+        expect(JSON.stringify(logger.warn.mock.calls)).not.toMatch(/secret|6281/);
+        expect(JSON.stringify(logger.warn.mock.calls)).toMatch(/ER_X/);
     });
 
     test('inbound text stored once, body truncated to 1000', async () => {
@@ -135,7 +155,7 @@ describe('WhatsAppWebhookService.handlePayload', () => {
         const db = fakeDb();
         let n = 0;
         db.query.mockImplementation(async () => {
-            if (n++ === 0) throw new Error('boom');
+            if (n++ === 0) throw new Error('boom 6281');
             return [{ affectedRows: 1 }];
         });
         const logger = { warn: jest.fn(), error: jest.fn(), info: jest.fn() };

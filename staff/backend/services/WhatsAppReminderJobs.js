@@ -32,6 +32,9 @@ JOIN (SELECT mr_id, MAX(id) AS latest_id FROM medical_records
 JOIN sunday_clinic_records scr ON scr.mr_id = mr.mr_id
 JOIN patients p ON p.id = scr.patient_id
 WHERE scr.visit_location = 'klinik_private'
+  AND NOT EXISTS (SELECT 1 FROM sunday_clinic_records newer
+                  WHERE newer.patient_id = scr.patient_id
+                    AND newer.created_at > scr.created_at)
   AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.kontrol_date')) = ?
   AND NOT EXISTS (SELECT 1 FROM sunday_appointments sa
                   WHERE sa.patient_id = scr.patient_id
@@ -122,13 +125,17 @@ function createWhatsAppReminderJobs({
         if (blocked) return blocked;
 
         const [rows] = await database.query(sql, [targetDate]);
-        const settings = await settingsApi.getSessionSettings();
+        const settings = await settingsApi.getSessionSettings({ strict: true });
         const tanggal = includeTanggal ? formatTanggal(targetDate) : null;
 
         const items = (rows || []).map(row => {
-            const jam = settingsApi.getSlotTimeFromSettings(settings, row.session, row.slot_number)
-                || settingsApi.getSessionLabelFromSettings(settings, row.session)
-                || '-';
+            // Only a real, active session setting yields a time; never fall back to legacy hours.
+            const setting = settingsApi.findSessionSetting(settings, row.session);
+            const jam = setting
+                ? (settingsApi.getSlotTimeFromSettings(settings, row.session, row.slot_number)
+                    || settingsApi.getSessionLabelFromSettings(settings, row.session)
+                    || '-')
+                : '-';
             const values = includeTanggal
                 ? { nama: row.patient_name, tanggal, jam }
                 : { nama: row.patient_name, jam };

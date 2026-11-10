@@ -109,13 +109,13 @@ CREATE TABLE IF NOT EXISTS wa_messages (
     UNIQUE KEY uq_wa_message_id (wa_message_id),
     KEY idx_wa_phone (phone),
     KEY idx_wa_created (created_at)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS wa_opt_outs (
     phone VARCHAR(20) PRIMARY KEY,       -- format 62xxxxxxxx
     opted_out_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     source VARCHAR(40) NOT NULL          -- inbound_stop | staff
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
 Catatan: baris inbound memiliki `purpose` dan `ref_id` NULL; di MariaDB beberapa NULL tidak melanggar UNIQUE, jadi unique key outbound tidak mengganggu inbound.
@@ -173,6 +173,7 @@ Penerima: record `medical_records` `record_type = 'planning'` di mana
 - `JSON_UNQUOTE(JSON_EXTRACT(record_data, '$.kontrol_date')) = CURDATE() + 3`,
 - record tersebut adalah planning **terbaru** untuk `mr_id`-nya,
 - `sunday_clinic_records.visit_location = 'klinik_private'` untuk `mr_id` tersebut,
+- pasien **tidak** punya kunjungan yang lebih baru: `NOT EXISTS (SELECT 1 FROM sunday_clinic_records newer WHERE newer.patient_id = scr.patient_id AND newer.created_at > scr.created_at)` (lokasi apa pun; satu DRD = satu kunjungan, jadi rencana kontrol dari kunjungan lama tidak dikirim bila pasien sudah punya kunjungan baru),
 - pasien (`patients.id = sunday_clinic_records.patient_id`) punya nomor (`whatsapp`, jika kosong `phone`),
 - pasien **tidak** punya `sunday_appointments` dengan `status IN ('pending_confirmation','confirmed')` dan `appointment_date` antara `CURDATE()` dan `kontrol_date + 7 hari`.
 
@@ -206,7 +207,7 @@ Jika `hub.mode === 'subscribe'` dan `hub.verify_token === WHATSAPP_CLOUD_VERIFY_
 1. Hitung `sha256=` + HMAC-SHA256(raw body, `WHATSAPP_CLOUD_APP_SECRET`), bandingkan dengan header `X-Hub-Signature-256` memakai `crypto.timingSafeEqual`. Tidak cocok / header hilang / app secret kosong → `401`, tanpa memproses dan tanpa me-log isi payload.
 2. Parse JSON. Untuk setiap `entry[].changes[].value`:
    - `statuses[]`: update `wa_messages` berdasarkan `wa_message_id` ke `delivered` / `read` / `failed` (ambil `errors[0].title` ke `error_message`). Status tidak boleh mundur (mis. `read` tidak ditimpa `delivered`); `failed` selalu boleh menimpa.
-   - `messages[]` bertipe `text`: simpan baris inbound (`status = 'received'`, `body_text` dipotong 1.000 karakter, `wa_message_id` unik → `INSERT IGNORE` untuk duplikat). Jika teks setelah trim & uppercase sama dengan `STOP` atau `BERHENTI` → `INSERT IGNORE` ke `wa_opt_outs` (`source = 'inbound_stop'`).
+   - `messages[]` bertipe `text`: simpan baris inbound (`status = 'received'`, `body_text` dipotong 1.000 karakter, `wa_message_id` unik → `INSERT IGNORE` untuk duplikat). Teks dinormalisasi dulu: trim, uppercase, lalu hapus karakter non-huruf di awal/akhir (tanda baca, emoji, simbol; regex Unicode `/^[^p{L}]+|[^p{L}]+$/gu`) dan dibandingkan persis dengan `STOP` atau `BERHENTI` (jadi "Stop.", "STOP!", "Berhenti 🙏" → opt-out; "stop dulu ya" bukan). Jika cocok → `INSERT IGNORE` ke `wa_opt_outs` (`source = 'inbound_stop'`). Urutan: INSERT opt-out dijalankan **lebih dulu** dari INSERT baris inbound dan dalam try/catch sendiri, sehingga kegagalan menyimpan pesan inbound tidak menghilangkan STOP. Log kegagalan hanya berisi teks tetap + `err.code`, tidak pernah `err.message` (pesan error DB dapat memuat nilai yang di-insert).
    - Tipe lain diabaikan.
 3. Selalu balas `200` setelah signature valid (termasuk jika sebagian event gagal diproses — kegagalan di-log), agar Meta tidak mengulang terus.
 
@@ -240,6 +241,7 @@ WHATSAPP_CLOUD_APP_SECRET=        # baru: verifikasi X-Hub-Signature-256
 WHATSAPP_CLOUD_VERIFY_TOKEN=      # baru: verifikasi GET webhook
 WA_REMINDER_JANJI_ENABLED=false   # baru
 WA_REMINDER_KONTROL_ENABLED=false # baru
+WA_META_FREEFORM_ENABLED=false    # baru: teks bebas via Meta hanya terkirim di dalam jendela 24 jam
 ```
 
 `WHATSAPP_CLOUD_API_VERSION` default `v21.0` di kode; versi yang masih didukung Meta saat deploy **perlu diverifikasi**.
@@ -253,6 +255,8 @@ WA_REMINDER_KONTROL_ENABLED=false # baru
 5. Isi `.env` di VPS, jalankan migration, reload backend.
 6. Daftarkan webhook `https://dokterdibya.com/api/whatsapp/webhook` + Verify Token; subscribe field `messages`.
 7. Uji: kirim template ke nomor sendiri (lihat 12.3), lalu nyalakan `WA_REMINDER_JANJI_ENABLED`, kemudian `WA_REMINDER_KONTROL_ENABLED`.
+
+   Catatan: `WA_META_FREEFORM_ENABLED` tetap `false` kecuali memang ingin balasan teks bebas via Meta (hanya terkirim di dalam jendela 24 jam pelanggan); pengiriman template tidak bergantung pada flag ini.
 
 [Medium confidence] Syarat coexistence (versi aplikasi minimum, negara yang didukung, stabilitas) bersumber dari dokumentasi pihak ketiga; **perlu verifikasi** di dokumentasi Meta saat onboarding.
 
@@ -293,5 +297,5 @@ WA_REMINDER_KONTROL_ENABLED=false # baru
 - UI log/inbox WhatsApp di panel staf.
 - Checkbox opt-in saat booking.
 - Menghapus `appointmentReminder.js`, `scripts/run-reminders.js`, dan endpoint manual reminder lama.
-- Mengubah `sendWhatsAppAuto()` / fallback wa.me untuk fitur lain.
+- Perilaku `sendAuto()` (whatsappService) dan `sendWhatsAppAuto()` (notification) untuk fitur lain tidak diubah, kecuali: cabang teks bebas Meta di keduanya kini dikunci di balik `WA_META_FREEFORM_ENABLED` (default `false`) agar menyalakan Meta untuk template tidak mengalihkan pengiriman teks bebas yang sudah ada. Fallback Fonnte/wa.me tidak berubah.
 - Reminder janji RS, jadwal operasi via template, reminder 2 jam.

@@ -611,7 +611,9 @@ class NotificationService {
             : ['fonnte', 'meta', 'twilio'];
 
         for (const provider of providerOrder) {
-            if (provider === 'meta' && this.metaEnabled && this.metaAccessToken && this.metaPhoneNumberId) {
+            // Free-form Meta text is opt-in (24-hour customer window only).
+            if (provider === 'meta' && process.env.WA_META_FREEFORM_ENABLED === 'true'
+                && this.metaEnabled && this.metaAccessToken && this.metaPhoneNumberId) {
                 const metaResult = await this.sendMetaCloud(to, message, options);
                 if (metaResult.success) {
                     return metaResult;
