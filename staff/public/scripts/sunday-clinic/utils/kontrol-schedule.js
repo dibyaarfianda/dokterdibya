@@ -51,3 +51,16 @@ export function computeKontrolDate(baseDate, interval, manualDate = '') {
         default: return '';
     }
 }
+
+const DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const MONTH_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
+    'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+// "2026-11-21" -> "Sabtu, 21 November 2026". Built from the calendar parts (no Date-to-ISO
+// conversion, no timezone dependency). Returns '' for anything that is not a real date.
+export function formatKontrolLabel(dateStr) {
+    const p = parseStrictDate(dateStr);
+    if (!p) return '';
+    const weekday = new Date(p.y, p.m - 1, p.d).getDay();
+    return `${DAY_NAMES[weekday]}, ${p.d} ${MONTH_NAMES[p.m - 1]} ${p.y}`;
+}

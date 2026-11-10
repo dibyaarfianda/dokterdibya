@@ -14,11 +14,51 @@
 
 import { renderPreviousPlanningPanel, loadPreviousPlanning } from '../../utils/previous-planning.js';
 import { loadPlannedSc } from '../../utils/planned-sc.js';
+import { KONTROL_INTERVALS, computeKontrolDate, formatKontrolLabel } from '../../utils/kontrol-schedule.js';
+
+const KONTROL_VALUES = KONTROL_INTERVALS.map(item => item.value);
+
+function kontrolSummaryText(interval, recordDatetime, manualDate) {
+    const date = computeKontrolDate(String(recordDatetime || '').split('T')[0], interval, manualDate);
+    const label = formatKontrolLabel(date);
+    return label ? `Kontrol ≈ ${label}` : '';
+}
+
+// Event delegation on #planning-kontrol (re-created on every render, so no duplicate listeners).
+function bindKontrolPicker(contentRoot) {
+    const group = contentRoot.querySelector('#planning-kontrol');
+    if (!group || group.dataset.kontrolBound === '1') return;
+    group.dataset.kontrolBound = '1';
+    const hidden = group.querySelector('#planning-kontrol-interval');
+    const manual = group.querySelector('#planning-kontrol-date-manual');
+    const summary = group.querySelector('#planning-kontrol-summary');
+    const refresh = () => {
+        const interval = hidden.value;
+        group.querySelectorAll('label[data-kontrol-interval]').forEach(label => {
+            label.classList.toggle('active', label.dataset.kontrolInterval === interval);
+        });
+        manual.hidden = interval !== 'tanggal';
+        const recordDatetime = document.getElementById('planning-datetime')?.value || '';
+        summary.textContent = kontrolSummaryText(interval, recordDatetime, manual.value);
+    };
+    group.addEventListener('change', (event) => {
+        const radio = event.target.closest('input[type="radio"][data-kontrol-interval]');
+        if (radio) hidden.value = radio.value;
+        refresh();
+    });
+    group.addEventListener('input', (event) => {
+        if (event.target === manual) refresh();
+    });
+    document.getElementById('planning-datetime')?.addEventListener('input', refresh);
+    document.getElementById('planning-datetime')?.addEventListener('change', refresh);
+    refresh();
+}
 
 export default {
     afterRender(state) {
         const root = document.querySelector('#sunday-clinic-content [data-planning-mr-id]');
         if (!root || root.dataset.planningMrId !== state.currentMrId) return;
+        bindKontrolPicker(root);
         return Promise.all([loadPreviousPlanning(state, root), loadPlannedSc(state, root)]);
     },
     /**
@@ -231,6 +271,10 @@ export default {
             rencana: rencanaValue,
             record_datetime: savedData.record_datetime || statePlan.record_datetime || defaultDatetime
         };
+        const savedKontrolInterval = savedData.kontrol_interval || statePlan.kontrol_interval || '';
+        const kontrolInterval = KONTROL_VALUES.includes(savedKontrolInterval) ? savedKontrolInterval : '';
+        const savedKontrolDate = savedData.kontrol_date || statePlan.kontrol_date || '';
+        const kontrolManualDate = kontrolInterval === 'tanggal' ? savedKontrolDate : '';
         console.log('[Plan] Final planData:', planData);
 
         const escapeHtml = (str) => {
@@ -334,6 +378,18 @@ export default {
                             <textarea class="form-control" id="planning-rencana" rows="4"
                                       placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(planData.rencana)}</textarea>
                             ${showPreviousControl ? renderPreviousPlanningPanel('rencana') : ''}
+                        </div>
+                        <div class="mt-3" id="planning-kontrol" data-kontrol-group>
+                            <label class="font-weight-bold d-block mb-1">Kontrol berikutnya</label>
+                            <input type="hidden" id="planning-kontrol-interval" value="${escapeHtml(kontrolInterval)}">
+                            <div class="btn-group btn-group-toggle flex-wrap" role="radiogroup" aria-label="Kontrol berikutnya">
+                                ${KONTROL_INTERVALS.map(item => `<label class="btn btn-sm btn-outline-secondary${item.value === kontrolInterval ? ' active' : ''}" data-kontrol-interval="${escapeHtml(item.value)}">
+                                    <input type="radio" name="planning-kontrol-choice" autocomplete="off" data-kontrol-interval="${escapeHtml(item.value)}" value="${escapeHtml(item.value)}"${item.value === kontrolInterval ? ' checked' : ''}>${escapeHtml(item.label)}
+                                </label>`).join('')}
+                            </div>
+                            <input type="date" class="form-control form-control-sm mt-2 sc-form-limit-md" id="planning-kontrol-date-manual"
+                                   value="${escapeHtml(kontrolManualDate)}"${kontrolInterval === 'tanggal' ? '' : ' hidden'}>
+                            <small class="text-muted d-block mt-1" id="planning-kontrol-summary" aria-live="polite">${escapeHtml(kontrolSummaryText(kontrolInterval, planData.record_datetime, kontrolManualDate))}</small>
                         </div>
                         <div class="mt-2" data-planned-sc hidden aria-live="polite"></div>
                         <div class="sc-docboard-plan-actions mt-2">

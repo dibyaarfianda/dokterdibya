@@ -43,6 +43,7 @@ import {
     validateDocBoardSchedule
 } from './utils/docboard-planning.js';
 import { loadPlannedSc } from './utils/planned-sc.js';
+import { computeKontrolDate } from './utils/kontrol-schedule.js';
 
 const QUEUE_STATUS_TIMEOUT_MS = 12000;
 
@@ -1406,13 +1407,19 @@ class SundayClinicApp {
      */
     getPlanningFormData() {
         const recordDatetime = document.getElementById('planning-datetime')?.value || '';
+        const recordDate = recordDatetime.split('T')[0] || '';
+        // Both kontrol keys are always emitted ('' when unset) so the unsaved-planning check stays symmetric.
+        const kontrolInterval = document.getElementById('planning-kontrol-interval')?.value || '';
+        const kontrolManual = document.getElementById('planning-kontrol-date-manual')?.value || '';
         return {
             record_datetime: recordDatetime,
-            record_date: recordDatetime.split('T')[0] || '',
+            record_date: recordDate,
             record_time: recordDatetime.split('T')[1] || '',
             tindakan: document.getElementById('planning-tindakan')?.value || '',
             terapi: document.getElementById('planning-terapi')?.value || '',
-            rencana: document.getElementById('planning-rencana')?.value || ''
+            rencana: document.getElementById('planning-rencana')?.value || '',
+            kontrol_interval: kontrolInterval,
+            kontrol_date: computeKontrolDate(recordDate, kontrolInterval, kontrolManual)
         };
     }
 
