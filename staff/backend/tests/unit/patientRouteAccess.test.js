@@ -86,6 +86,7 @@ describe('patient route access policy', () => {
         ['POST', '/api/app/version'],
         ['GET', '/api/sunday-clinic/patient-visits/other-patient-id'],
         ['POST', '/api/tanya-subscriptions/webhook'],
+        ['POST', '/api/tanya-subscriptions/simulate-payment'],
         ['GET', '/api/polls/staff/list']
     ])('denies staff operation %s %s', (method, url) => {
         expect(isPatientAllowedRoute(method, url)).toBe(false);

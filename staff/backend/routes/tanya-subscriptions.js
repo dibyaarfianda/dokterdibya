@@ -139,46 +139,8 @@ router.post('/cancel', verifyPatientToken, async (req, res) => {
     }
 });
 
-router.post('/webhook', async (req, res) => {
-    try {
-        const { order_id, transaction_status, fraud_status, transaction_id, status_code } = req.body;
-        console.log('Webhook:', { order_id, transaction_status, fraud_status });
-        const [payments] = await db.query('SELECT tp.*, ts.patient_id, ts.tier, ts.questions_per_week, ts.billing_day FROM tanya_payments tp JOIN tanya_subscriptions ts ON tp.subscription_id = ts.id WHERE tp.order_id = ?', [order_id]);
-        if (payments.length === 0) return res.status(404).json({ error: 'Payment not found' });
-        const payment = payments[0];
-
-        if ((transaction_status === 'capture' || transaction_status === 'settlement') && (fraud_status === 'accept' || !fraud_status)) {
-            await handlePaymentSuccess(payment, transaction_id, status_code);
-        } else if (transaction_status === 'expire') {
-            await db.query('UPDATE tanya_payments SET payment_status = ? WHERE id = ?', ['expired', payment.id]);
-        } else if (transaction_status === 'cancel' || transaction_status === 'deny') {
-            await db.query('UPDATE tanya_payments SET payment_status = ? WHERE id = ?', ['failed', payment.id]);
-        }
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Webhook error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-async function handlePaymentSuccess(payment, transactionId, statusCode) {
-    await db.query('UPDATE tanya_payments SET payment_status = ?, paid_at = NOW(), midtrans_transaction_id = ?, midtrans_status_code = ? WHERE id = ?', ['paid', transactionId, statusCode, payment.id]);
-    const newExpiryDate = new Date(); newExpiryDate.setMonth(newExpiryDate.getMonth() + 1);
-    const nextBillingDate = calculateNextBillingDate(payment.billing_day);
-    await db.query('UPDATE tanya_subscriptions SET is_active = TRUE, tier = ?, questions_per_week = ?, expires_at = ?, next_billing_date = ? WHERE id = ?', [payment.tier, payment.questions_per_week, newExpiryDate, nextBillingDate, payment.subscription_id]);
-    await db.query('INSERT INTO patient_notifications (patient_id, type, title, message, data, created_at) VALUES (?, ?, ?, ?, ?, NOW())', [payment.patient_id, 'payment_success', 'Pembayaran Berhasil', 'Langganan Premium Anda telah aktif!', JSON.stringify({ orderId: payment.order_id, tier: payment.tier })]);
-}
-
-router.post('/simulate-payment', verifyPatientToken, async (req, res) => {
-    try {
-        const { order_id } = req.body;
-        const [payments] = await db.query('SELECT tp.*, ts.tier, ts.questions_per_week, ts.billing_day FROM tanya_payments tp JOIN tanya_subscriptions ts ON tp.subscription_id = ts.id WHERE tp.order_id = ? AND tp.patient_id = ? AND tp.payment_status = ?', [order_id, req.patient.id, 'pending']);
-        if (payments.length === 0) return res.status(404).json({ success: false, message: 'Pembayaran tidak ditemukan atau sudah diproses' });
-        await handlePaymentSuccess(payments[0], 'SIMULATED-' + Date.now(), '200');
-        res.json({ success: true, message: 'Pembayaran berhasil (simulasi)' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
-});
+// Payments for Tanya Dokter tiers are NOT confirmed here. The former /webhook and
+// /simulate-payment handlers let any caller mark a payment as paid without a gateway,
+// so tiers can only be activated by the verified premium payment flow.
 
 module.exports = router;
