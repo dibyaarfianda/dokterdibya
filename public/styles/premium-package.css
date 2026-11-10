@@ -1,0 +1,57 @@
+/* Premium package page. Scoped to #premium-app so the shared tool shell is untouched. */
+body.patient-tool-shell #premium-app { display: block; }
+body.patient-tool-shell #premium-app .pm-panel { padding: 18px !important; }
+body.patient-tool-shell #premium-app .pm-heading { font-family: var(--display); font-size: 16px !important; line-height: 1.25 !important; margin: 0 0 4px !important; color: var(--ink) !important; }
+body.patient-tool-shell #premium-app .pm-note { font-size: 13px !important; line-height: 1.55 !important; color: var(--muted) !important; margin: 6px 0 0 !important; }
+body.patient-tool-shell #premium-app .pm-label { display: block; font-size: 11px !important; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted) !important; margin: 18px 0 8px !important; }
+body.patient-tool-shell #premium-app .pm-error { margin: 12px 0 0 !important; padding: 11px 13px; border-radius: var(--radius-sm); background: rgba(179, 95, 123, 0.1); border: 1px solid rgba(179, 95, 123, 0.28); color: var(--ink) !important; font-size: 13px !important; line-height: 1.5 !important; }
+
+body.patient-tool-shell #premium-app .pm-status { display: flex !important; align-items: center; gap: 14px; }
+body.patient-tool-shell #premium-app .pm-status .pm-note { margin-top: 2px !important; }
+body.patient-tool-shell #premium-app .pm-status-icon { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-size: 20px; }
+body.patient-tool-shell #premium-app .pm-status-icon.on { background: var(--green-soft); color: var(--green); }
+body.patient-tool-shell #premium-app .pm-status-icon.off { background: var(--surface-muted); color: var(--muted); }
+body.patient-tool-shell #premium-app .pm-status-icon.large { width: 56px; height: 56px; font-size: 26px; margin: 0 auto 12px; }
+
+body.patient-tool-shell #premium-app .pm-done { text-align: center; }
+body.patient-tool-shell #premium-app .pm-pending { border-color: rgba(183, 121, 46, 0.35) !important; background: rgba(183, 121, 46, 0.07) !important; }
+
+body.patient-tool-shell #premium-app .pm-plans { display: grid; gap: 10px; }
+body.patient-tool-shell #premium-app .pm-plan { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; text-align: left; padding: 14px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-solid); color: var(--ink); font: inherit; cursor: pointer; }
+body.patient-tool-shell #premium-app .pm-plan.selected { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-soft); background: var(--green-soft); }
+body.patient-tool-shell #premium-app .pm-plan-main { display: grid; gap: 3px; min-width: 0; }
+body.patient-tool-shell #premium-app .pm-plan-main strong { font-size: 14px; }
+body.patient-tool-shell #premium-app .pm-plan-main small { font-size: 12px; color: var(--muted); line-height: 1.4; }
+body.patient-tool-shell #premium-app .pm-plan-price { font-family: var(--display); font-weight: 800; font-size: 15px; white-space: nowrap; }
+
+body.patient-tool-shell #premium-app .pm-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+body.patient-tool-shell #premium-app .pm-method { display: flex; align-items: center; gap: 9px; padding: 12px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-solid); color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-align: left; }
+body.patient-tool-shell #premium-app .pm-method i { color: var(--green); font-size: 15px; }
+body.patient-tool-shell #premium-app .pm-method.selected { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-soft); background: var(--green-soft); }
+body.patient-tool-shell #premium-app .pm-method:first-child { grid-column: 1 / -1; }
+
+body.patient-tool-shell #premium-app .pm-total { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 13px; }
+body.patient-tool-shell #premium-app .pm-total.first { margin-top: 0; padding-top: 0; border-top: 0; }
+body.patient-tool-shell #premium-app .pm-total strong { font-family: var(--display); font-size: 22px; letter-spacing: -0.02em; }
+
+body.patient-tool-shell #premium-app .pm-btn { display: block; width: 100%; margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--line-strong); background: var(--surface-solid); color: var(--ink); font: inherit; font-size: 14px !important; font-weight: 700; cursor: pointer; text-align: center; }
+body.patient-tool-shell #premium-app .pm-btn.primary { background: var(--ink); border-color: var(--ink); color: #ffffff; }
+body.patient-tool-shell #premium-app .pm-btn.small { width: auto; display: inline-block; margin-top: 10px; padding: 9px 16px; font-size: 13px !important; }
+body.patient-tool-shell #premium-app .pm-btn:disabled { opacity: 0.6; cursor: progress; }
+
+body.patient-tool-shell #premium-app .pm-qr { display: grid; place-items: center; margin: 18px auto 0; min-height: 240px; max-width: 280px; padding: 12px; background: #ffffff; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+body.patient-tool-shell #premium-app .pm-qr canvas { display: block; max-width: 100%; height: auto !important; width: 240px !important; }
+body.patient-tool-shell #premium-app .pm-va { margin-top: 18px; padding: 16px; text-align: center; background: var(--surface-muted); border-radius: var(--radius-sm); }
+body.patient-tool-shell #premium-app .pm-va .pm-label { margin: 0 0 8px !important; }
+body.patient-tool-shell #premium-app .pm-va strong { display: block; font-family: var(--display); font-size: 24px; letter-spacing: 0.06em; word-break: break-all; }
+
+body.patient-tool-shell #premium-app .pm-countdown { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 16px; font-size: 13px; color: var(--muted); }
+body.patient-tool-shell #premium-app .pm-countdown strong { font-family: var(--display); font-size: 18px; color: var(--ink); font-variant-numeric: tabular-nums; }
+body.patient-tool-shell #premium-app .pm-waiting { margin: 12px 0 0 !important; font-size: 12px !important; line-height: 1.5 !important; color: var(--muted) !important; }
+body.patient-tool-shell #premium-app .pm-steps { margin: 16px 0 0; padding-left: 20px; font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+body.patient-tool-shell #premium-app .pm-steps li { margin-bottom: 6px; }
+
+@media (max-width: 520px) {
+    body.patient-tool-shell #premium-app .pm-panel { padding: 16px !important; }
+    body.patient-tool-shell #premium-app .pm-heading { font-size: 15px !important; }
+}

@@ -159,6 +159,20 @@ describe('patientDemoGuard', () => {
         expect(service.updateState).not.toHaveBeenCalled();
     });
 
+    test.each([
+        ['GET', '/api/patient/premium/plans'],
+        ['GET', '/api/patient/premium/status'],
+        ['GET', '/api/patient/premium/orders/PRM-11111111-2222-3333-4444-555555555555'],
+        ['POST', '/api/patient/premium/checkout']
+    ])('never forwards a demo session to the real premium endpoint %s %s', async (method, path) => {
+        const res = response();
+        const next = jest.fn();
+        await guard(request(path, method), res, next);
+        expect(res.statusCode).toBeGreaterThanOrEqual(400);
+        expect(next).not.toHaveBeenCalled();
+        expect(service.updateState).not.toHaveBeenCalled();
+    });
+
     test('fails closed for an unregistered mutation', async () => {
         const res = response();
         const next = jest.fn();

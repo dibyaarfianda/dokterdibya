@@ -29,6 +29,7 @@
         '/riwayat-kunjungan.html': 'SISIwanita - Riwayat Kunjungan',
         '/antrian.html': 'SISIwanita - Antrian Klinik',
         '/estimasi-biaya-kehamilan.html': 'SISIwanita - Estimasi Biaya Kehamilan',
+        '/paket-premium.html': 'SISIwanita - Paket Premium',
         '/feedback.html': 'SISIwanita - Feedback',
         '/tanya-dokter.html': 'SISIwanita - Tanya Dokter',
         '/patient-dashboard.html': 'Portal Pasien - Dashboard Lama',
