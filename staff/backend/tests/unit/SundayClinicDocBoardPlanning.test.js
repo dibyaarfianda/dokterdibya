@@ -33,6 +33,17 @@ describe('Sunday Clinic DocBoard Planning helpers', () => {
     })).toBe(true);
   });
 
+  test('treats kontrol_interval as part of the Planning snapshot but ignores absent legacy keys', () => {
+    expect(runHelper('helper.hasUnsavedPlanning(input.current, input.persisted)', {
+      current: { record_datetime: '2026-10-11T09:00', tindakan: 'USG', terapi: 'Vitamin', rencana: 'Kontrol', kontrol_interval: '1_minggu' },
+      persisted: { record_datetime: '2026-10-11T09:00', tindakan: 'USG', terapi: 'Vitamin', rencana: 'Kontrol', kontrol_interval: '2_minggu' },
+    })).toBe(true);
+    expect(runHelper('helper.hasUnsavedPlanning(input.current, input.persisted)', {
+      current: { record_datetime: '2026-10-11T09:00', tindakan: 'USG', terapi: 'Vitamin', rencana: 'Kontrol', kontrol_interval: '' },
+      persisted: { record_datetime: '2026-10-11T09:00', tindakan: 'USG', terapi: 'Vitamin', rencana: 'Kontrol' },
+    })).toBe(false);
+  });
+
   test('validates required schedule fields, future Jakarta date, and destination-specific type', () => {
     const options = { today: '2026-10-11', procedureCategories: ['Stripping Membrane'], operationTypeIds: [1, 2] };
     expect(runHelper('helper.validateDocBoardSchedule(input.form, input.options)', {
