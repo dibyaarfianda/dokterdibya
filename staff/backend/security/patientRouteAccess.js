@@ -84,7 +84,7 @@ const PATIENT_ROUTE_RULES = [
     createRule('PUT', /^\/api\/contraction-timer\/session\/[^/]+\/(?:assessment|end)$/),
 
     createRule('GET', /^\/api\/tanya-subscriptions\/(?:tiers|my|payments|payment\/[^/]+)$/),
-    createRule('POST', /^\/api\/tanya-subscriptions\/(?:subscribe|cancel|simulate-payment)$/),
+    createRule('POST', /^\/api\/tanya-subscriptions\/(?:subscribe|cancel)$/),
 
     createRule('GET', /^\/api\/patient-billing\/(?:my-bills|[^/]+\/(?:details|payment-details)|[^/]+\/payment-status\/[^/]+)$/),
     createRule('POST', /^\/api\/patient-billing\/[^/]+\/(?:create-payment|create-insurance-payment)$/),
