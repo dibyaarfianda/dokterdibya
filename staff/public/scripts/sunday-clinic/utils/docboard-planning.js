@@ -8,7 +8,9 @@ export function normalizePlanningSnapshot(value = {}) {
         record_datetime: normalizedText(value.record_datetime),
         tindakan: normalizedText(value.tindakan),
         terapi: normalizedText(value.terapi || value.obat),
-        rencana: normalizedText(value.rencana || value.instruksi)
+        rencana: normalizedText(value.rencana || value.instruksi),
+        kontrol_interval: normalizedText(value.kontrol_interval),
+        kontrol_date: normalizedText(value.kontrol_date)
     };
 }
 

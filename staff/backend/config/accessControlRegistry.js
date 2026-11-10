@@ -7,6 +7,7 @@ const NAMED_EXEMPTIONS = new Set([
     'health',
     'integration_api_key',
     'legacy_access_adapter',
+    'messaging_webhook',
     'patient',
     'payment_webhook',
     'public',
@@ -378,6 +379,7 @@ function resolveRouteAccess(route) {
     }
     if (route.sourceFile === 'rum') return { exemption: 'telemetry', ruleId: 'browser-telemetry' };
     if (route.sourceFile === 'xendit-webhook') return { exemption: 'payment_webhook', ruleId: 'xendit-webhook' };
+    if (route.sourceFile === 'whatsapp-webhook') return { exemption: 'messaging_webhook', ruleId: 'whatsapp-webhook' };
     if (route.sourceFile === 'ci-performance') return { exemption: 'ci_oidc', ruleId: 'ci-oidc' };
     if (INTEGRATION_SOURCES.has(route.sourceFile) && !/verifyStaffToken|verifyToken/.test(route.handlerPrefix)) {
         return { exemption: 'integration_api_key', ruleId: `integration-${route.sourceFile}` };

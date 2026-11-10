@@ -537,6 +537,48 @@ async function ensureAttendanceAnnouncementSeeded() {
     }
 }
 
+let whatsAppReminderJobs = null;
+const whatsAppJobRunning = {};
+
+function getWhatsAppReminderJobs() {
+    if (!whatsAppReminderJobs) {
+        const { createWhatsAppReminderJobs } = require('./WhatsAppReminderJobs');
+        whatsAppReminderJobs = createWhatsAppReminderJobs();
+    }
+    return whatsAppReminderJobs;
+}
+
+/**
+ * WhatsApp patient reminders (Meta Cloud API), each gated by an env flag
+ * that is read at run time: janji H-1 (18:00), janji belum konfirmasi (07:00),
+ * kontrol H-3 (09:00).
+ */
+function startWhatsAppReminderScheduler() {
+    const defs = [
+        { name: 'janjiH1', expression: '0 18 * * *', flag: 'WA_REMINDER_JANJI_ENABLED', run: 'runJanjiH1' },
+        { name: 'janjiBelumKonfirmasi', expression: '0 7 * * *', flag: 'WA_REMINDER_JANJI_ENABLED', run: 'runJanjiBelumKonfirmasi' },
+        { name: 'kontrolH3', expression: '0 9 * * *', flag: 'WA_REMINDER_KONTROL_ENABLED', run: 'runKontrolH3' }
+    ];
+
+    defs.forEach(({ name, expression, flag, run }) => {
+        cron.schedule(expression, async () => {
+            if (process.env[flag] !== 'true') return;
+            if (whatsAppJobRunning[name]) return;
+            whatsAppJobRunning[name] = true;
+            try {
+                const result = await getWhatsAppReminderJobs()[run]();
+                logger.info(`[Scheduler] WhatsApp ${name} result`, result);
+            } catch (err) {
+                logger.error(`[Scheduler] WhatsApp ${name} failed:`, err.message);
+            } finally {
+                whatsAppJobRunning[name] = false;
+            }
+        }, { timezone: 'Asia/Jakarta' });
+    });
+
+    logger.info('[Scheduler] WhatsApp reminder scheduler started (18:00 janji H-1, 07:00 janji belum konfirmasi, 09:00 kontrol H-3 WIB; env-flag gated)');
+}
+
 /**
  * Initialize all schedulers
  */
@@ -551,6 +593,7 @@ function initSchedulers() {
     startDailyMetricsScheduler();
     startPracticeConfirmationSender();
     startPracticeConfirmationExpiryJob();
+    startWhatsAppReminderScheduler();
 
     // Run async migrations + seed (non-blocking)
     ensureSundayConfirmationSchema().catch(err =>

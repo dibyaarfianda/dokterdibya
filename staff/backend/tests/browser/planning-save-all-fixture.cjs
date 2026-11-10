@@ -45,6 +45,8 @@ app.requireAccountPermission=async()=>true;app.scheduleMetadataRefresh=()=>{};
 async function notice(type,message){document.getElementById('notice').textContent=type+': '+message;document.getElementById('evidence').textContent=JSON.stringify(await (await fetch('/qa/status')).json(),null,2);}
 app.showSuccess=message=>notice('success',message);app.showError=message=>notice('error',message);window.showToast=notice;
 document.getElementById('save-plan').addEventListener('click',()=>app.savePlanningObstetri());
+window.__qa={plan,state,app};
+try{await plan.afterRender(state.getState());}catch(e){console.warn('afterRender',e);}
 await window.renderTerapiItemsList();
 await window.renderTindakanItemsList();
 </script></html>`);
@@ -54,10 +56,11 @@ app.get('/qa-main.js', (req, res) => {
     res.type('js').send(`import apiClient from '/staff/public/scripts/sunday-clinic/utils/api-client.js';
 import stateManager from '/staff/public/scripts/sunday-clinic/utils/state-manager.js';
 import { SECTIONS } from '/staff/public/scripts/sunday-clinic/utils/constants.js';
+import { computeKontrolDate } from '/staff/public/scripts/sunday-clinic/utils/kontrol-schedule.js';
 ${source.slice(source.indexOf('class SundayClinicApp {'), source.indexOf('// Export singleton instance'))}
 export default new SundayClinicApp();`);
 });
-app.get('/staff/public/scripts/vps-auth-v2.js', (req, res) => res.type('js').send("export const TOKEN_KEY='fixture';"));
+app.get('/staff/public/scripts/vps-auth-v2.js', (req, res) => res.type('js').send("export const TOKEN_KEY='fixture';export const auth={};export const hasPermission=()=>true;export const getIdToken=async()=>'fixture';"));
 app.get('/qa/status', (req, res) => res.json({ billing, planning, writes }));
 app.get('/api/sunday-clinic/billing/TEST001', (req, res) => res.json({ success: true, data: billing }));
 app.post('/api/sunday-clinic/billing/TEST001', (req, res) => {
@@ -77,4 +80,95 @@ app.patch('/api/medical-records/1', (req, res) => {
 });
 app.use('/staff/public', express.static(publicRoot));
 app.use('/api', (req, res) => res.status(404).json({ success: false, message: 'Fixture route unavailable' }));
-app.listen(4178, '127.0.0.1', () => console.log('Planning fixture: http://127.0.0.1:4178/qa'));
+const server = app.listen(4178, '127.0.0.1', () => {
+    console.log('Planning fixture: http://127.0.0.1:4178/qa');
+    if (process.argv.includes('--kontrol-test')) {
+        runKontrolScenario().then(
+            () => { console.log('PASS kontrol scenario'); server.close(); process.exit(0); },
+            (error) => { console.error('FAIL kontrol scenario:', error.message); server.close(); process.exit(1); }
+        );
+    }
+});
+
+// `node planning-save-all-fixture.cjs --kontrol-test` drives the "Kontrol berikutnya" picker headlessly.
+async function runKontrolScenario() {
+    const assert = require('node:assert/strict');
+    const puppeteer = require('puppeteer');
+    const browser = await puppeteer.launch({ headless: 'new', args: ['--no-sandbox'],
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined });
+    try {
+        const page = await browser.newPage();
+        page.on('pageerror', (error) => console.log('pageerror:', error.message));
+        await page.goto('http://127.0.0.1:4178/qa', { waitUntil: 'networkidle0' });
+        await page.waitForSelector('#save-plan');
+        await page.waitForSelector('#planning-kontrol', { timeout: 5000 });
+        const status = async () => (await fetch('http://127.0.0.1:4178/qa/status')).json();
+        const summary = () => page.$eval('#planning-kontrol-summary', (el) => el.textContent.trim());
+        const save = async () => {
+            await page.evaluate(() => { document.getElementById('notice').textContent = ''; });
+            await page.click('#save-plan');
+            await page.waitForFunction(() => /^(success|error)/.test(document.getElementById('notice').textContent), { timeout: 10000 });
+            const notice = await page.$eval('#notice', (el) => el.textContent);
+            assert.match(notice, /^success/, notice);
+        };
+
+        await page.$eval('#planning-datetime', (el) => {
+            el.value = '2026-11-07T09:00';
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        assert.equal(await summary(), '', 'summary empty before a choice');
+        assert.equal(await page.$eval('#planning-kontrol-date-manual', (el) => el.hidden), true);
+
+        await page.click('label[data-kontrol-interval="2_minggu"]');
+        assert.match(await summary(), /^Kontrol ≈ .*21 November 2026$/);
+        assert.equal(await page.$eval('#planning-kontrol-interval', (el) => el.value), '2_minggu');
+        await save();
+        let state = await status();
+        const first = state.writes.filter((w) => w.type === 'planning')[0].body;
+        assert.equal(first.data.kontrol_interval, '2_minggu');
+        assert.equal(first.data.kontrol_date, '2026-11-21');
+
+        // Saved form is not reported as unsaved (symmetric kontrol keys on both sides).
+        const unsaved = await page.evaluate(async () => {
+            const { hasUnsavedPlanning } = await import('/staff/public/scripts/sunday-clinic/utils/docboard-planning.js');
+            return hasUnsavedPlanning(window.__qa.app.getPlanningFormData(), window.__qa.app.getPersistedPlanningData());
+        });
+        assert.equal(unsaved, false, 'freshly saved planning must not be unsaved');
+
+        // Re-render with the saved data: the 2_minggu button comes back active.
+        await page.evaluate(async (planning) => {
+            const { plan, state } = window.__qa;
+            state.setState({ recordData: { ...state.getState().recordData, planning } });
+            document.getElementById('sunday-clinic-content').innerHTML = await plan.render(state.getState());
+            await plan.afterRender(state.getState());
+            document.getElementById('save-plan').addEventListener('click', () => window.__qa.app.savePlanningObstetri());
+            await window.renderTerapiItemsList();
+            await window.renderTindakanItemsList();
+        }, state.planning);
+        assert.equal(await page.$eval('label[data-kontrol-interval="2_minggu"]', (el) => el.classList.contains('active')), true);
+        assert.equal(await page.$eval('#planning-kontrol-interval', (el) => el.value), '2_minggu');
+        assert.match(await summary(), /21 November 2026$/);
+
+        await page.click('label[data-kontrol-interval="tanggal"]');
+        assert.equal(await page.$eval('#planning-kontrol-date-manual', (el) => el.hidden), false);
+        await page.$eval('#planning-kontrol-date-manual', (el) => {
+            el.value = '2026-12-01';
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        assert.match(await summary(), /1 Desember 2026$/);
+        await save();
+        state = await status();
+        assert.equal(state.planning.kontrol_interval, 'tanggal');
+        assert.equal(state.planning.kontrol_date, '2026-12-01');
+
+        await page.click('label[data-kontrol-interval="tidak_perlu"]');
+        assert.equal(await summary(), '');
+        assert.equal(await page.$eval('#planning-kontrol-date-manual', (el) => el.hidden), true);
+        await save();
+        state = await status();
+        assert.equal(state.planning.kontrol_interval, 'tidak_perlu');
+        assert.equal(state.planning.kontrol_date, '');
+    } finally {
+        await browser.close();
+    }
+}
