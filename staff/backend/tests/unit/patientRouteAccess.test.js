@@ -33,6 +33,9 @@ describe('patient route access policy', () => {
         ['GET', '/api/patient/premium/status'],
         ['POST', '/api/patient/premium/checkout'],
         ['GET', '/api/patient/premium/orders/PRM-11111111-2222-3333-4444-555555555555'],
+        ['GET', '/api/patient/checkup-prepay/status'],
+        ['POST', '/api/patient/checkup-prepay/checkout'],
+        ['GET', '/api/patient/checkup-prepay/orders/DPK-11111111-2222-3333-4444-555555555555'],
         ['POST', '/api/patient-billing/bill-7/create-payment'],
         ['GET', '/api/announcements/active'],
         ['POST', '/api/announcements/9/like'],
@@ -96,6 +99,10 @@ describe('patient route access policy', () => {
         ['POST', '/api/patient/premium/orders/PRM-1'],
         ['DELETE', '/api/patient/premium/orders/PRM-1'],
         ['GET', '/api/patient/premium/admin/orders'],
+        ['GET', '/api/patient/checkup-prepay/checkout'],
+        ['POST', '/api/patient/checkup-prepay/status'],
+        ['DELETE', '/api/patient/checkup-prepay/orders/DPK-1'],
+        ['GET', '/api/patient/checkup-prepay/admin/ledger'],
         ['POST', '/api/webhooks/duitku/callback'],
         ['GET', '/api/polls/staff/list']
     ])('denies staff operation %s %s', (method, url) => {
@@ -114,7 +121,8 @@ describe('patient route access policy', () => {
         ['POST', '/api/patients/register'],
         ['POST', '/api/patients/login'],
         ['POST', '/api/patients/auth/google'],
-        ['POST', '/api/patients/google-auth-code']
+        ['POST', '/api/patients/google-auth-code'],
+        ['POST', '/api/patients/review-login']
     ])('recognizes patient bootstrap operation %s %s', (method, url) => {
         expect(isPatientAuthBootstrapRoute(method, url)).toBe(true);
     });
@@ -122,5 +130,7 @@ describe('patient route access policy', () => {
     test('bootstrap matching is exact and method-aware', () => {
         expect(isPatientAuthBootstrapRoute('GET', '/api/patients/login')).toBe(false);
         expect(isPatientAuthBootstrapRoute('POST', '/api/patients/login/anything')).toBe(false);
+        expect(isPatientAuthBootstrapRoute('GET', '/api/patients/review-login')).toBe(false);
+        expect(isPatientAuthBootstrapRoute('POST', '/api/patients/review-login/reset')).toBe(false);
     });
 });

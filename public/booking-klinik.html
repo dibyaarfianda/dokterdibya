@@ -1219,6 +1219,31 @@
             document.getElementById('alert-container').innerHTML = '';
         }
 
+        // Link to the optional "bayar di muka" page, only when the server says this patient can pay
+        // now (sandbox: review accounts only; production: after CHECKUP_PREPAY_LIVE). Never blocks booking.
+        async function findPrepayOption(category) {
+            if (!/^(?:obstetri|gyn_repro|gyn_special)$/.test(category || '')) return null;
+            if (window.PatientSession?.isDemoMode?.()) return null;
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), 2500);
+            try {
+                const response = await fetch(`/api/patient/checkup-prepay/status?_t=${Date.now()}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' },
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
+                if (!response.ok) return null;
+                const status = await response.json();
+                const estimate = (status.estimates || []).find(item => item.code === category && item.ready);
+                if (!status.availability?.available || !estimate) return null;
+                return `/bayar-estimasi.html?kategori=${encodeURIComponent(category)}`;
+            } catch (_error) {
+                return null;
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
         // Handle 401 - redirect to login
         function handle401(response) {
             if (response.status === 401) {
@@ -1510,18 +1535,31 @@
                 }
 
                 // Success
-                showAlert(`
+                const successHtml = `
                     <strong><i class="fa-solid fa-circle-check"></i> Booking Berhasil!</strong><br>
                     Tanggal: ${data.details.date}<br>
                     Waktu: ${data.details.time}<br><br>
                     Status: <strong>Menunggu Konfirmasi</strong><br>
-                    ${bookingPolicy.noticeHtml()}<br>
-                    Anda akan dialihkan ke portal...
-                `, 'success');
+                    ${bookingPolicy.noticeHtml()}<br>`;
+                const prepayHref = await findPrepayOption(bookingData.consultationCategory);
 
-                setTimeout(() => {
-                    window.location.href = '/patient-menu.html';
-                }, 3000);
+                if (prepayHref) {
+                    // Optional: pay the visit estimate in advance (becomes saldo, deducted from the bill).
+                    showAlert(`${successHtml}
+                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
+                            <a href="${prepayHref}" style="padding:10px 14px;border-radius:999px;background:#0a0a0a;color:#fff;font-weight:600;text-decoration:none;">Bayar estimasi di muka (opsional)</a>
+                            <a href="/patient-menu.html" style="padding:10px 14px;border-radius:999px;border:1px solid rgba(0,0,0,0.2);color:inherit;font-weight:600;text-decoration:none;">Ke portal</a>
+                        </div>
+                    `, 'success');
+                } else {
+                    showAlert(`${successHtml}
+                        Anda akan dialihkan ke portal...
+                    `, 'success');
+
+                    setTimeout(() => {
+                        window.location.href = '/patient-menu.html';
+                    }, 3000);
+                }
 
             } catch (error) {
                 console.error('Error:', error);

@@ -25,7 +25,7 @@ function createRule(methods, pattern) {
 const PATIENT_AUTH_BOOTSTRAP_RULES = [
     createRule('POST', /^\/api\/auth\/patient-login$/),
     createRule('POST', /^\/api\/registration-codes\/(?:validate|use)$/),
-    createRule('POST', /^\/api\/patients\/(?:register|login|auth\/google|google-auth-code)$/)
+    createRule('POST', /^\/api\/patients\/(?:register|login|auth\/google|google-auth-code|review-login)$/)
 ];
 
 const PATIENT_ROUTE_RULES = [
@@ -88,6 +88,9 @@ const PATIENT_ROUTE_RULES = [
 
     createRule('GET', /^\/api\/patient\/premium\/(?:plans|status|orders\/[^/]+)$/),
     createRule('POST', /^\/api\/patient\/premium\/checkout$/),
+
+    createRule('GET', /^\/api\/patient\/checkup-prepay\/(?:status|orders\/[^/]+)$/),
+    createRule('POST', /^\/api\/patient\/checkup-prepay\/checkout$/),
 
     createRule('GET', /^\/api\/patient-billing\/(?:my-bills|[^/]+\/(?:details|payment-details)|[^/]+\/payment-status\/[^/]+)$/),
     createRule('POST', /^\/api\/patient-billing\/[^/]+\/(?:create-payment|create-insurance-payment)$/),

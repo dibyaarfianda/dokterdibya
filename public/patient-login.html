@@ -27,6 +27,7 @@
     <!-- Portal Theme Stylesheet -->
     <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260524p">
     <script src="/scripts/patient-native-app-guard.js?v=20260605pwa1"></script>
+    <script src="/scripts/patient-safe-next.js?v=20261118prepay1"></script>
 <!-- Google Identity Services (for popup sign-in) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -624,6 +625,10 @@
                     <a href="#" onclick="resetRegCodeStep(); return false;">Gunakan kode lain</a>
                 </p>
             </div>
+
+            <p class="login-foot review-account-link">
+                <a href="/masuk-akun-uji.html" id="review-account-link">Masuk dengan akun uji</a>
+            </p>
         </section>
     </main>
 
@@ -719,10 +724,15 @@
 
         // ==================== AUTO-LOGIN CHECK ====================
         document.addEventListener('DOMContentLoaded', function() {
+            const reviewLink = document.getElementById('review-account-link');
+            if (reviewLink && window.PatientSafeNext) {
+                reviewLink.href = window.PatientSafeNext.withNext('/masuk-akun-uji.html');
+            }
+
             const token = window.PatientSession?.getToken();
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
             if (token && user.id) {
-                window.location.href = '/patient-menu.html';
+                window.location.href = window.PatientSafeNext?.get() || '/patient-menu.html';
                 return;
             }
 
@@ -818,7 +828,7 @@
             if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
                 return '/patient-intake.html';
             }
-            return '/patient-menu.html';
+            return window.PatientSafeNext?.get() || '/patient-menu.html';
         }
 
         // ==================== GOOGLE IDENTITY SERVICES (Popup) ====================

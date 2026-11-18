@@ -113,6 +113,29 @@ describe('createTransaction', () => {
         expect(result.vaNumber).toBeNull();
     });
 
+    test('returns patients to the sisiwanita.id portal by default, or to the page the caller asks for', async () => {
+        const { client, axios } = loadClient();
+        axios.post.mockResolvedValue({ data: { statusCode: '00', reference: 'R', qrString: 'q', amount: '99000' } });
+        await client.createTransaction(BASE_ORDER);
+        expect(axios.post.mock.calls[0][1].returnUrl).toBe('https://sisiwanita.id/patient-menu.html');
+
+        await client.createTransaction({ ...BASE_ORDER, returnUrl: 'https://sisiwanita.id/bayar-estimasi.html?order=DPK-1' });
+        expect(axios.post.mock.calls[1][1].returnUrl).toBe('https://sisiwanita.id/bayar-estimasi.html?order=DPK-1');
+    });
+
+    test('DUITKU_RETURN_URL overrides the default return page', async () => {
+        const { client, axios } = loadClient({ DUITKU_RETURN_URL: 'https://example.test/back' });
+        axios.post.mockResolvedValue({ data: { statusCode: '00', reference: 'R', qrString: 'q', amount: '99000' } });
+        await client.createTransaction(BASE_ORDER);
+        expect(axios.post.mock.calls[0][1].returnUrl).toBe('https://example.test/back');
+    });
+
+    test('isProduction is true only for DUITKU_PRODUCTION=true', () => {
+        expect(loadClient().client.isProduction()).toBe(false);
+        expect(loadClient({ DUITKU_PRODUCTION: 'TRUE' }).client.isProduction()).toBe(false);
+        expect(loadClient({ DUITKU_PRODUCTION: 'true' }).client.isProduction()).toBe(true);
+    });
+
     test('uses the production host only when DUITKU_PRODUCTION is true', async () => {
         const { client, axios } = loadClient({ DUITKU_PRODUCTION: 'true' });
         axios.post.mockResolvedValue({ data: { statusCode: '00', reference: 'R', vaNumber: '8888', amount: '99000' } });

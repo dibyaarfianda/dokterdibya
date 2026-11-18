@@ -163,7 +163,10 @@ describe('patientDemoGuard', () => {
         ['GET', '/api/patient/premium/plans'],
         ['GET', '/api/patient/premium/status'],
         ['GET', '/api/patient/premium/orders/PRM-11111111-2222-3333-4444-555555555555'],
-        ['POST', '/api/patient/premium/checkout']
+        ['POST', '/api/patient/premium/checkout'],
+        ['GET', '/api/patient/checkup-prepay/status'],
+        ['GET', '/api/patient/checkup-prepay/orders/DPK-11111111-2222-3333-4444-555555555555'],
+        ['POST', '/api/patient/checkup-prepay/checkout']
     ])('never forwards a demo session to the real premium endpoint %s %s', async (method, path) => {
         const res = response();
         const next = jest.fn();
