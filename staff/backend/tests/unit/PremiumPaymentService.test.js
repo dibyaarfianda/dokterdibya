@@ -20,6 +20,7 @@ function createFakeDb(initial = {}) {
         plans: initial.plans || [],
         orders: initial.orders || [],
         entitlements: initial.entitlements || [],
+        ledger: [],
         events: []
     };
     let nextOrderId = 1;
@@ -97,6 +98,14 @@ function createFakeDb(initial = {}) {
         if (/^SELECT plan_code, starts_at, ends_at FROM patient_entitlements WHERE patient_id = \? AND ends_at > \?/.test(sql)) {
             return [state.entitlements.filter(e => e.patient_id === params[0] && e.ends_at > params[1]).sort((a, b) => a.starts_at - b.starts_at)];
         }
+        if (/^INSERT INTO patient_credit_ledger/.test(sql)) {
+            const [patientId, category, amount, gatewayMode, sourceType, sourceId, note] = params;
+            if (state.ledger.some(row => row.source_type === sourceType && row.source_id === sourceId && row.entry_type === 'prepay')) {
+                throw Object.assign(new Error('Duplicate entry'), { code: 'ER_DUP_ENTRY' });
+            }
+            state.ledger.push({ patient_id: patientId, category, entry_type: 'prepay', amount_idr: amount, gateway_mode: gatewayMode, source_type: sourceType, source_id: sourceId, note });
+            return [{}];
+        }
         if (/^INSERT INTO premium_payment_events/.test(sql)) {
             state.events.push({ order_ref: params[0], patient_id: params[1], event_type: params[2], detail: params[3] ? JSON.parse(params[3]) : null });
             return [{}];
@@ -161,7 +170,7 @@ function plan(overrides = {}) {
     return { id: 1, code: 'kehamilan', name: 'Paket Kehamilan', description: 'x', price_idr: 99000, duration_days: 365, features: '[]', is_active: 1, sort_order: 10, ...overrides };
 }
 
-function setup({ plans = [plan()], orders, entitlementRows, configured = true, startAt = T0 } = {}) {
+function setup({ plans = [plan()], orders, entitlementRows, configured = true, startAt = T0, fulfillers } = {}) {
     const fake = createFakeDb({ plans, orders, entitlements: entitlementRows });
     const clockState = { now: startAt };
     const duitku = {
@@ -183,6 +192,7 @@ function setup({ plans = [plan()], orders, entitlementRows, configured = true, s
         duitku,
         entitlements,
         logger,
+        fulfillers,
         clock: () => clockState.now,
         uuid: () => `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`
     });
@@ -620,5 +630,103 @@ describe('status for the patient app', () => {
         const order = await ctx.service.createOrder({ patient: PATIENT, planCode: 'kehamilan', paymentMethod: 'qris' });
         await expect(ctx.service.getOrderForPatient('P0001', order.order_ref)).resolves.toMatchObject({ order_ref: order.order_ref });
         await expect(ctx.service.getOrderForPatient('P9999', order.order_ref)).resolves.toBeNull();
+    });
+});
+
+describe('non-premium Duitku orders (checkup prepay)', () => {
+    const { creditFromPaidOrder } = require('../../services/PatientCreditLedger');
+    const PREPAY_REF = 'DPK-00000000-0000-4000-8000-000000000042';
+
+    function prepayOrder(overrides = {}) {
+        return {
+            id: 42, order_ref: PREPAY_REF, order_type: 'checkup_prepay', product_code: 'obstetri',
+            patient_id: 'P0001', plan_id: null, plan_code: null, duration_days: null,
+            amount_idr: 150000, payment_method: 'qris', gateway_mode: 'sandbox', status: 'pending',
+            gateway_reference: null, va_number: null, qr_string: '0002', payment_url: null, fee_idr: null,
+            expires_at: new Date(T0.getTime() + 60 * 60 * 1000), paid_at: null, last_status_check_at: null,
+            gateway_payload: null, item_snapshot: '{}', created_at: new Date(T0.getTime() - 20 * 60 * 1000),
+            ...overrides
+        };
+    }
+
+    function prepaySetup(overrides) {
+        const ctx = setup({ orders: [prepayOrder(overrides)], fulfillers: { checkup_prepay: creditFromPaidOrder } });
+        ctx.duitku.checkTransaction.mockResolvedValue({ paid: true, pending: false, statusCode: '00', amount: 150000, fee: 1050, reference: 'DS-PRE-1' });
+        return ctx;
+    }
+
+    function callbackBody(overrides = {}) {
+        return { merchantCode: 'DTEST1', amount: '150000', merchantOrderId: PREPAY_REF, resultCode: '00', reference: 'DS-PRE-1', ...overrides };
+    }
+
+    test('a confirmed callback credits saldo once and grants no premium period', async () => {
+        const ctx = prepaySetup();
+        const result = await ctx.service.handleGatewayCallback(callbackBody());
+
+        expect(result).toMatchObject({ handled: true, action: 'activated' });
+        expect(ctx.fake.state.orders[0].status).toBe('paid');
+        expect(ctx.fake.state.ledger).toEqual([expect.objectContaining({
+            patient_id: 'P0001', category: 'obstetri', entry_type: 'prepay', amount_idr: 150000,
+            gateway_mode: 'sandbox', source_type: 'payment_order', source_id: '42'
+        })]);
+        expect(ctx.fake.state.entitlements).toHaveLength(0);
+        const paidEvent = ctx.fake.state.events.find(e => e.event_type === 'paid');
+        expect(paidEvent.detail).toMatchObject({ order_type: 'checkup_prepay', grant: { category: 'obstetri', credit_idr: 150000 } });
+    });
+
+    test('a repeated callback never credits twice', async () => {
+        const ctx = prepaySetup();
+        await ctx.service.handleGatewayCallback(callbackBody());
+        const again = await ctx.service.handleGatewayCallback(callbackBody());
+        expect(again.action).toBe('already_paid');
+        expect(ctx.fake.state.ledger).toHaveLength(1);
+    });
+
+    test('five simultaneous confirmations still credit exactly once', async () => {
+        const ctx = prepaySetup();
+        const results = await Promise.all(Array.from({ length: 5 }, () =>
+            ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 })));
+        expect(results.filter(r => r.status === 'activated')).toHaveLength(1);
+        expect(ctx.fake.state.ledger).toHaveLength(1);
+    });
+
+    test('the unique ledger key turns a duplicate credit into already paid', async () => {
+        const ctx = prepaySetup();
+        ctx.fake.state.ledger.push({ patient_id: 'P0001', category: 'obstetri', entry_type: 'prepay', amount_idr: 150000, gateway_mode: 'sandbox', source_type: 'payment_order', source_id: '42' });
+        const result = await ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 });
+        expect(result.status).toBe('already_paid');
+        expect(ctx.fake.state.ledger).toHaveLength(1);
+        expect(ctx.fake.state.orders[0].status).toBe('paid');
+    });
+
+    test('reconciliation credits a payment whose callback never arrived', async () => {
+        const ctx = prepaySetup();
+        const summary = await ctx.service.reconcilePendingOrders();
+        expect(summary.activated).toBe(1);
+        expect(ctx.fake.state.ledger).toHaveLength(1);
+    });
+
+    test('money after expiry still becomes saldo and is logged as late', async () => {
+        const ctx = prepaySetup({ status: 'expired' });
+        const result = await ctx.service.applyPaidOrder(PREPAY_REF, { source: 'reconcile', amount: 150000 });
+        expect(result.status).toBe('activated');
+        expect(ctx.fake.state.events.map(e => e.event_type)).toContain('paid_after_expiry');
+    });
+
+    test('an order type without a fulfiller is rolled back so Duitku retries', async () => {
+        const ctx = setup({ orders: [prepayOrder()] });
+        await expect(ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 }))
+            .rejects.toMatchObject({ code: 'UNKNOWN_ORDER_TYPE' });
+        expect(ctx.fake.state.orders[0].status).toBe('pending');
+        expect(ctx.fake.state.ledger).toHaveLength(0);
+        expect(ctx.fake.state.entitlements).toHaveLength(0);
+    });
+
+    test('a premium order on the same service still grants a period, not saldo', async () => {
+        const ctx = setup({ fulfillers: { checkup_prepay: creditFromPaidOrder } });
+        const order = await ctx.service.createOrder({ patient: PATIENT, planCode: 'kehamilan', paymentMethod: 'qris' });
+        await ctx.service.applyPaidOrder(order.order_ref, { source: 'callback', amount: 99000 });
+        expect(ctx.fake.state.entitlements).toHaveLength(1);
+        expect(ctx.fake.state.ledger).toHaveLength(0);
     });
 });

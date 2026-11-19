@@ -9,7 +9,7 @@ export function mountPatientCommunityChat() {
     const available = () => Boolean(session.getToken()) && !session.isDemoMode();
     const style = document.createElement('link');
     style.rel = 'stylesheet';
-    style.href = '/styles/patient-community-chat.css?v=20261110premium1';
+    style.href = '/styles/patient-community-chat.css?v=20261118prepay1';
     document.head.appendChild(style);
 
     const root = document.createElement('div');
@@ -44,7 +44,7 @@ export function mountPatientCommunityChat() {
         frame.id = 'patient-community-frame';
         frame.title = 'Percakapan chat komunitas';
         frame.dataset.communityChatVisible = 'false';
-        frame.src = '/community-chat.html?embed=patient&v=20261110premium1';
+        frame.src = '/community-chat.html?embed=patient&v=20261118prepay1';
         frame.addEventListener('load', () => { if (opened) notifyOpened(); });
         content.appendChild(frame);
     }

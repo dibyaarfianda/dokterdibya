@@ -479,6 +479,10 @@ app.use('/api', createAccountModeAccessBoundary());
 // API v1 (modern, service-based)
 app.use('/api/v1', v1Routes);
 
+// Email + password login for payment-gateway review (test) accounts only; Google stays the patient login
+const { createPatientReviewLoginRouter } = require('./routes/patient-review-login');
+app.use('/api/patients/review-login', createPatientReviewLoginRouter());
+
 // Patient authentication routes (must be before patientsRoutes to avoid conflicts)
 app.use('/api/patients', patientsAuthRoutes);
 
@@ -760,13 +764,21 @@ app.use('/api/tanya-payments', tanyaSubscriptionsRoutes);
 const xenditWebhookRoutes = require('./routes/xendit-webhook');
 app.use('/api/webhooks/xendit', xenditWebhookRoutes);
 
-// Duitku Payment Callback (premium patient packages: QRIS + virtual account, signature verified)
+// Duitku Payment Callback (premium packages + checkup prepayments: QRIS + virtual account, signature verified)
 const { createDuitkuWebhookRouter } = require('./routes/duitku-webhook');
 app.use('/api/webhooks/duitku', createDuitkuWebhookRouter());
 
 // Patient premium packages (checkout, status, order polling)
 const { createPatientPremiumRouter } = require('./routes/patient-premium');
 app.use('/api/patient/premium', createPatientPremiumRouter());
+
+// Optional prepayment of the estimated cost of a Klinik Privat visit (Duitku); becomes patient saldo
+const { createPatientCheckupPrepayRouter } = require('./routes/patient-checkup-prepay');
+app.use('/api/patient/checkup-prepay', createPatientCheckupPrepayRouter());
+
+// Public visit estimates for the sisiwanita.id home page (no login)
+const { createPublicCheckupEstimatesRouter } = require('./routes/public-checkup-estimates');
+app.use('/api/public/checkup-estimates', createPublicCheckupEstimatesRouter());
 
 // Doctors endpoint (for Q&A doctor selection)
 const doctorsRoutes = require('./routes/doctors');

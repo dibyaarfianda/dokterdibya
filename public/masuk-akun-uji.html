@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <script src="/scripts/date-time-format.js?v=20261018datetime4"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261018datetime4"></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Masuk Akun Uji - SISIwanita</title>
+    <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
+    <link rel="stylesheet" href="/styles/patient-portal-theme.css?v=20260528portal1">
+    <style>
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; background: var(--bg-page, #ffffff); }
+        .review-login { width: min(420px, 100%); box-sizing: border-box; }
+        .review-login h1 { margin: 6px 0 8px; font-size: 1.4rem; }
+        .review-login p { margin: 0 0 16px; line-height: 1.55; font-size: 14px; }
+        .review-login label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 600; }
+        .review-login .portal-input { width: 100%; box-sizing: border-box; }
+        .review-login .portal-button { width: 100%; margin-top: 18px; }
+        .review-login .review-error { margin-top: 12px; color: #a31515; font-size: 13px; }
+        .review-login .review-back { display: inline-block; margin-top: 16px; font-size: 13px; }
+    </style>
+    <script src="/scripts/socket-credentials.js?v=20260924realtime2"></script>
+    <script src="/scripts/patient-session.js?v=20260924realtime2"></script>
+    <script src="/scripts/patient-safe-next.js?v=20261118prepay1"></script>
+</head>
+<body>
+    <main class="portal-card review-login">
+        <span class="portal-card-kicker">Akun Uji</span>
+        <h1>Masuk dengan akun uji</h1>
+        <p>Halaman ini hanya untuk akun uji yang diberikan klinik kepada mitra (misalnya peninjau pembayaran). Pasien masuk dengan Google di halaman masuk biasa.</p>
+        <form id="review-login-form" novalidate>
+            <label for="review-email">Email</label>
+            <input class="portal-input" id="review-email" name="email" type="email" autocomplete="username" required>
+            <label for="review-password">Password</label>
+            <input class="portal-input" id="review-password" name="password" type="password" autocomplete="current-password" required>
+            <button class="portal-button" id="review-submit" type="submit">Masuk</button>
+            <p class="review-error" id="review-error" role="alert" hidden></p>
+        </form>
+        <a class="review-back" href="/patient-login.html">Kembali ke halaman masuk</a>
+    </main>
+    <script>
+        (function () {
+            var form = document.getElementById('review-login-form');
+            var submit = document.getElementById('review-submit');
+            var errorEl = document.getElementById('review-error');
+
+            function showError(message) {
+                errorEl.textContent = message;
+                errorEl.hidden = false;
+            }
+
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                errorEl.hidden = true;
+                var email = document.getElementById('review-email').value.trim();
+                var password = document.getElementById('review-password').value;
+                if (!email || !password) {
+                    showError('Email dan password wajib diisi.');
+                    return;
+                }
+
+                submit.disabled = true;
+                submit.textContent = 'Memproses...';
+                try {
+                    var response = await fetch('/api/patients/review-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+                        body: JSON.stringify({ email: email, password: password })
+                    });
+                    var data = await response.json().catch(function () { return {}; });
+                    if (!response.ok || !data.success || !data.token) {
+                        throw new Error(data.message || 'Gagal masuk. Silakan coba lagi.');
+                    }
+
+                    window.PatientSession.setToken(data.token, { persistent: true });
+                    window.PatientSession.setUser(data.user || null, { persistent: true });
+                    if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
+                    localStorage.setItem('auth_provider', 'review');
+
+                    var next = window.PatientSafeNext && window.PatientSafeNext.get();
+                    if (data.needs_profile_completion) {
+                        window.location.replace('/complete-profile.html');
+                    } else if (!data.intake_completed) {
+                        window.location.replace('/patient-intake.html');
+                    } else {
+                        window.location.replace(next || '/patient-menu.html');
+                    }
+                } catch (error) {
+                    showError(error.message);
+                    submit.disabled = false;
+                    submit.textContent = 'Masuk';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

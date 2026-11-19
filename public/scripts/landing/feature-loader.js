@@ -8,7 +8,8 @@ const featureLoaders = {
     installPrompt: () => import('./install-prompt.js'),
     navigationInteractions: () => import('./navigation-interactions.js'),
     announcementGuard: () => import('./announcement-guard.js'),
-    footerEffects: () => import('./footer-effects.js')
+    footerEffects: () => import('./footer-effects.js'),
+    checkupEstimates: () => import('./checkup-estimates.js')
 };
 
 export async function loadLandingFeature(name) {

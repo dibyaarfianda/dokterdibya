@@ -81,6 +81,10 @@ loadLandingFeature('footerEffects')
     .then(module => module.init?.())
     .catch(error => reportOptionalFeatureFailure('footerEffects', error));
 
+loadLandingFeature('checkupEstimates')
+    .then(module => module.init?.())
+    .catch(error => reportOptionalFeatureFailure('checkupEstimates', error));
+
 runIdle(() => {
     loadLandingFeature('patientTracking')
         .catch(error => reportOptionalFeatureFailure('patientTracking', error));

@@ -1,0 +1,107 @@
+/* Home page (sisiwanita.id): estimated cost of one Klinik Privat visit, payable in advance.
+   Deliberately static (no motion properties), so the reduced-motion kill-switch in index.html needs no change. */
+.checkup-estimates {
+    margin: 0 0 56px;
+    padding: 28px 0 0;
+}
+.checkup-estimates .ce-kicker {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted, #666666);
+}
+.checkup-estimates .ce-title {
+    margin: 8px 0 6px;
+    font-family: var(--font-display, inherit);
+    font-size: 26px;
+    line-height: 1.2;
+    color: var(--text-primary, #0a0a0a);
+}
+.checkup-estimates .ce-lead,
+.checkup-estimates .ce-note {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary, #525252);
+}
+.checkup-estimates .ce-grid {
+    display: grid;
+    gap: 12px;
+    margin: 18px 0 14px;
+}
+.checkup-estimates .ce-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 18px;
+    border: 1px solid var(--line-strong, rgba(0, 0, 0, 0.12));
+    border-radius: var(--radius, 14px);
+    background: var(--bg-surface, #ffffff);
+}
+.checkup-estimates .ce-card h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--text-primary, #0a0a0a);
+}
+.checkup-estimates .ce-card p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-secondary, #525252);
+}
+.checkup-estimates .ce-card .ce-amount {
+    margin-top: 6px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary, #0a0a0a);
+}
+.checkup-estimates .ce-card.is-unavailable .ce-amount {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted, #666666);
+}
+.checkup-estimates .ce-items {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text-muted, #666666);
+}
+.checkup-estimates .ce-items:empty {
+    display: none;
+}
+.checkup-estimates .ce-cta {
+    margin-top: auto;
+    align-self: flex-start;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: var(--accent, #0a0a0a);
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+.checkup-estimates .ce-card .ce-cta {
+    margin-top: 10px;
+}
+.checkup-estimates .ce-cta[aria-disabled="true"] {
+    background: var(--bg-elevated, #f5f5f5);
+    color: var(--text-muted, #666666);
+    pointer-events: none;
+}
+.checkup-estimates .ce-note {
+    font-size: 12px;
+    color: var(--text-muted, #666666);
+}
+.footer-address {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.72);
+}
+@media (min-width: 768px) {
+    .checkup-estimates .ce-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}

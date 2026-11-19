@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/date-time-format.js?v=20261020applicationbadge1"></script>
-    <script defer src="/scripts/date-time-inputs.js?v=20261020applicationbadge1"></script>
+    <script src="/scripts/date-time-format.js?v=20261118prepay1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261118prepay1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,9 +20,9 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20261020applicationbadge1">
-    <script src="/scripts/socket-credentials.js?v=20261020applicationbadge1"></script>
-    <script src="/scripts/patient-session.js?v=20261020applicationbadge1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20261118prepay1">
+    <script src="/scripts/socket-credentials.js?v=20261118prepay1"></script>
+    <script src="/scripts/patient-session.js?v=20261118prepay1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -33,6 +33,7 @@
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/styles/landing-checkup-estimates.css?v=20261118prepay1">
 
     <!-- Keep portal landing visuals identical to patient-menu without global portal-theme overrides. -->
 
@@ -5038,6 +5039,37 @@
             <!-- Menu Sections (all sub-menus exposed) -->
             <div class="menu-container">
 
+                <!-- Estimasi biaya kunjungan: produk "bayar di muka" (opsional), harga dari /api/public/checkup-estimates -->
+                <section class="checkup-estimates" id="checkup-estimates" aria-labelledby="checkup-estimates-title">
+                    <span class="ce-kicker">Layanan Klinik Privat</span>
+                    <h2 class="ce-title" id="checkup-estimates-title">Estimasi Biaya Kunjungan</h2>
+                    <p class="ce-lead">Bayar estimasi satu kali kunjungan di muka (opsional) lewat QRIS atau Virtual Account BNI, BRI, Mandiri, BCA.</p>
+                    <div class="ce-grid">
+                        <article class="ce-card" data-estimate-card="obstetri">
+                            <h3>Kehamilan (Obstetri)</h3>
+                            <p>Kontrol kehamilan bersama dr. Dibya.</p>
+                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
+                            <ul class="ce-items" data-estimate-items></ul>
+                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=obstetri">Bayar di muka</a>
+                        </article>
+                        <article class="ce-card" data-estimate-card="gyn_repro">
+                            <h3>Program Hamil (Reproduksi)</h3>
+                            <p>Konsultasi program hamil dan kesehatan reproduksi.</p>
+                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
+                            <ul class="ce-items" data-estimate-items></ul>
+                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=gyn_repro">Bayar di muka</a>
+                        </article>
+                        <article class="ce-card" data-estimate-card="gyn_special">
+                            <h3>Ginekologi Umum</h3>
+                            <p>Konsultasi keluhan kandungan dan kesehatan wanita.</p>
+                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
+                            <ul class="ce-items" data-estimate-items></ul>
+                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=gyn_special">Bayar di muka</a>
+                        </article>
+                    </div>
+                    <p class="ce-note">Nominal adalah estimasi; tagihan akhir mengikuti tindakan yang diberikan. Uang muka menjadi saldo dan dipotong dari tagihan kunjungan Anda. Bila batal, saldo tetap tersimpan dan dapat dikembalikan atas permintaan.</p>
+                </section>
+
                 <!-- DOKUMEN -->
                 <div class="doc-section">
                     <div class="doc-hero">
@@ -5292,6 +5324,11 @@
                             <a href="https://www.youtube.com/@dr.dafspog" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
                         </div>
                     </div>
+                    <div class="footer-meta-col">
+                        <span class="footer-meta-title">Telepon &amp; Alamat</span>
+                        <a class="footer-email" href="https://wa.me/62895320726801" target="_blank" rel="noopener noreferrer">WhatsApp 0895-3207-26801</a>
+                        <span class="footer-address">Jl. Balowerti 2 No. 59, Kediri, Jawa Timur</span>
+                    </div>
                 </div>
 
                 <div class="footer-bottom">
@@ -5448,6 +5485,8 @@
             if (normalizedHref === '/' || normalizedHref === '/index.html' || normalizedHref === '/sisiwanita/index.html') {
                 return false;
             }
+            // Prepay page handles its own login redirect (keeps ?kategori through login)
+            if (/^\/bayar-estimasi\.html(?:[?#]|$)/i.test(normalizedHref)) return false;
             return /\.html(?:[?#].*)?$/i.test(normalizedHref);
         }
 
@@ -5787,7 +5826,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20261020applicationbadge1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20261118prepay1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -7782,6 +7821,8 @@
 
             window.addEventListener('resize', scheduleRebuild);
             window.addEventListener('orientationchange', scheduleRebuild);
+            // Content above the stack can change height after load (visit estimates fill in late).
+            window.addEventListener('landing:layout-changed', scheduleRebuild);
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', scheduleRebuild);
             }
@@ -8097,6 +8138,6 @@
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20261020applicationbadge1"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20261118prepay1"></script>
 </body>
 </html>

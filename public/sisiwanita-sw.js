@@ -1,1 +1,1 @@
-importScripts('/sw.js?v=20261110premium1');
+importScripts('/sw.js?v=20261118prepay1');

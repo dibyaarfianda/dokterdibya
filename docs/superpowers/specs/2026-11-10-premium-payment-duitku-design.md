@@ -1,6 +1,7 @@
 # Premium patient packages: QRIS and virtual account via Duitku
 
 Status: Tahap 0 and Tahap 1 implemented. Gateway chosen by Boss on 10 Nov 2026 (Duitku). Clinic billing stays on Xendit.
+On 18 Nov 2026 Boss chose "bayar estimasi kunjungan di muka" as the product sold through Duitku instead of this package; see `2026-11-18-checkup-prepay-duitku-review-design.md`. The premium plan stays inactive, and `payment_orders` is now shared through `order_type`.
 
 ## Scope and rules
 

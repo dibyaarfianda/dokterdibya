@@ -1,7 +1,8 @@
 'use strict';
 
 /**
- * Duitku payment callback for premium packages.
+ * Duitku payment callback for every Duitku order (premium packages and checkup prepayments;
+ * PremiumPaymentService.applyPaidOrder dispatches on payment_orders.order_type).
  * POST /api/webhooks/duitku/callback  (application/x-www-form-urlencoded)
  *
  * Duitku retries until it gets HTTP 200 (up to 5 times):

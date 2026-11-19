@@ -96,25 +96,11 @@ async function ensureBirthTestimonialColumns() {
 /**
  * Generate unique patient ID in format P{year}{sequence}
  * Example: P2025001, P2025002, etc.
- * Matches the web version format
+ * Matches the web version format (shared with scripts via services/PatientMedicalRecordId.js)
  */
+const { generateUniqueMedicalRecordId: generateMedicalRecordIdFor } = require('../services/PatientMedicalRecordId');
 async function generateUniqueMedicalRecordId() {
-    const year = new Date().getFullYear();
-
-    // Get the highest ID for this year
-    const [maxIdResult] = await db.query(
-        `SELECT id FROM patients WHERE id LIKE 'P${year}%' ORDER BY id DESC LIMIT 1`
-    );
-
-    let nextNumber = 1;
-    if (maxIdResult.length > 0) {
-        const lastId = maxIdResult[0].id;
-        const lastNumber = parseInt(lastId.substring(5)); // Remove 'P2025'
-        nextNumber = lastNumber + 1;
-    }
-
-    const patientId = `P${year}${String(nextNumber).padStart(3, '0')}`;
-    return patientId;
+    return generateMedicalRecordIdFor(db);
 }
 
 function formatDateOnlyLocal(value) {

@@ -12,6 +12,11 @@
  *  - a renewal starts when the running period ends, so paying early never burns remaining days;
  *  - Check Transaction is rate limited by Duitku, so reconciliation touches few orders, each at
  *    most once per recheck window.
+ *
+ * payment_orders also holds non-premium Duitku orders (order_type, e.g. 'checkup_prepay' created by
+ * CheckupPrepayService). Callback, reconciliation and locking are shared; once an order of such a
+ * type is marked paid, applyPaidOrder hands it to the matching entry in `fulfillers`, inside the
+ * same transaction, instead of granting a premium period.
  */
 
 const crypto = require('crypto');
@@ -65,7 +70,7 @@ function toPublicOrder(order, methods) {
     };
 }
 
-function createPremiumPaymentService({ db, duitku, entitlements, logger, clock = () => new Date(), uuid = () => crypto.randomUUID() }) {
+function createPremiumPaymentService({ db, duitku, entitlements, logger, fulfillers = {}, clock = () => new Date(), uuid = () => crypto.randomUUID() }) {
     const methods = duitku.PAYMENT_METHODS;
 
     async function recordEvent(orderRef, patientId, eventType, detail, executor = db) {
@@ -227,6 +232,22 @@ function createPremiumPaymentService({ db, duitku, entitlements, logger, clock =
                   WHERE id = ?`,
                 [now, info.reference || null, info.fee === undefined ? null : info.fee, info.payload ? JSON.stringify(info.payload).substring(0, 4000) : null, order.id]
             );
+
+            if (order.order_type && order.order_type !== 'premium') {
+                const fulfill = fulfillers[order.order_type];
+                if (typeof fulfill !== 'function') {
+                    // Roll back so the order stays pending and Duitku retries once the handler exists.
+                    throw new PremiumError('UNKNOWN_ORDER_TYPE', `Tipe order Duitku tidak dikenal: ${order.order_type}`, 500);
+                }
+                const grant = await fulfill(connection, order, now);
+                await connection.commit();
+                await recordEvent(orderRef, order.patient_id, wasLate ? 'paid_after_expiry' : 'paid', {
+                    source: info.source || 'unknown',
+                    order_type: order.order_type,
+                    grant: grant || null
+                });
+                return { status: 'activated', grant: grant || null };
+            }
 
             const [latest] = await connection.query(
                 'SELECT MAX(ends_at) AS ends_at FROM patient_entitlements WHERE patient_id = ? AND plan_code = ? AND ends_at > ?',
@@ -407,7 +428,10 @@ function getPremiumPaymentService() {
             db: require('../db'),
             duitku: require('../utils/duitku-payment'),
             entitlements: require('./PremiumEntitlements'),
-            logger: require('../utils/logger')
+            logger: require('../utils/logger'),
+            fulfillers: {
+                checkup_prepay: require('./PatientCreditLedger').creditFromPaidOrder
+            }
         });
     }
     return defaultService;
@@ -417,6 +441,10 @@ module.exports = {
     PremiumError,
     createPremiumPaymentService,
     getPremiumPaymentService,
+    QRIS_EXPIRY_MINUTES,
+    VA_EXPIRY_MINUTES,
+    MAX_PENDING_ORDERS_PER_PATIENT,
+    FALLBACK_EMAIL,
     RECONCILE_MIN_AGE_MINUTES,
     RECONCILE_RECHECK_MINUTES
 };

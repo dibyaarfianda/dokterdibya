@@ -1,7 +1,8 @@
 /**
  * Duitku payment gateway client (API v2, HMAC-SHA256 signatures).
  *
- * Used only for premium patient packages. Clinic billing stays on Xendit
+ * Used for premium patient packages and for the optional prepayment of the estimated cost of a
+ * Klinik Privat visit (CheckupPrepayService). Clinic bills themselves stay on Xendit
  * (see xendit-payment.js). Written against docs.duitku.com/api/en (Apr 2026):
  *   - inquiry signature    = HMAC_SHA256(merchantCode + merchantOrderId + paymentAmount, apiKey)
  *   - callback signature   = HMAC_SHA256(merchantCode + amount + merchantOrderId, apiKey)
@@ -21,7 +22,8 @@ const MAX_PRODUCT_DETAILS_LENGTH = 255;
 const REQUEST_TIMEOUT_MS = 30000;
 
 const DEFAULT_CALLBACK_URL = 'https://dokterdibya.com/api/webhooks/duitku/callback';
-const DEFAULT_RETURN_URL = 'https://dokterdibya.com/';
+// Patients use the portal on sisiwanita.id (dokterdibya.com "/" redirects there).
+const DEFAULT_RETURN_URL = 'https://sisiwanita.id/patient-menu.html';
 
 // Key the patient app sends -> Duitku paymentMethod code.
 const PAYMENT_METHODS = Object.freeze({
@@ -49,6 +51,11 @@ function readConfig() {
 function isConfigured() {
     const { merchantCode, apiKey } = readConfig();
     return Boolean(merchantCode && apiKey);
+}
+
+/** True only when DUITKU_PRODUCTION is 'true' (real money). Read on every call. */
+function isProduction() {
+    return readConfig().isProduction;
 }
 
 function hmacHex(text, apiKey) {
@@ -129,9 +136,10 @@ function requireConfigured() {
  * @param {string} [params.customerName]
  * @param {string} [params.phone]
  * @param {number} [params.expiryMinutes]
+ * @param {string} [params.returnUrl] - where Duitku's hosted page sends the patient back; defaults to DUITKU_RETURN_URL
  * @returns {Promise<{reference:string, vaNumber:?string, qrString:?string, paymentUrl:?string, amount:number, raw:Object}>}
  */
-async function createTransaction({ orderRef, amount, methodCode, productDetails, email, customerName, phone, expiryMinutes }) {
+async function createTransaction({ orderRef, amount, methodCode, productDetails, email, customerName, phone, expiryMinutes, returnUrl }) {
     requireConfigured();
 
     if (!orderRef || String(orderRef).length > MAX_ORDER_ID_LENGTH) {
@@ -154,7 +162,7 @@ async function createTransaction({ orderRef, amount, methodCode, productDetails,
         email,
         customerVaName: sanitizeVaName(customerName),
         callbackUrl: config.callbackUrl,
-        returnUrl: config.returnUrl,
+        returnUrl: returnUrl || config.returnUrl,
         signature: signInquiry(orderRef, amount)
     };
     if (phone) payload.phoneNumber = String(phone);
@@ -234,6 +242,7 @@ module.exports = {
     MIN_AMOUNT_IDR,
     PAYMENT_METHODS,
     isConfigured,
+    isProduction,
     signInquiry,
     signCallback,
     signCheck,
