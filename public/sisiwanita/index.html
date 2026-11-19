@@ -7821,6 +7821,8 @@
 
             window.addEventListener('resize', scheduleRebuild);
             window.addEventListener('orientationchange', scheduleRebuild);
+            // Content above the stack can change height after load (visit estimates fill in late).
+            window.addEventListener('landing:layout-changed', scheduleRebuild);
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', scheduleRebuild);
             }

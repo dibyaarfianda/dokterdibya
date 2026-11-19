@@ -109,6 +109,19 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         expect(moduleSource).not.toMatch(/innerHTML/);
     });
 
+    test('the sticky "Fitur Portal SW" stack re-measures after the estimates above it finish loading', () => {
+        // The estimate cards sit above the stack and grow when prices arrive (often after the
+        // stack's last timed re-measure at 1.5s). Stale offsets make rows collapse too early.
+        const moduleSource = read('public', 'scripts', 'landing', 'checkup-estimates.js');
+        expect(moduleSource).toContain("window.dispatchEvent(new CustomEvent('landing:layout-changed'");
+        expect(moduleSource.indexOf("new CustomEvent('landing:layout-changed'"))
+            .toBeGreaterThan(moduleSource.indexOf('renderCard(card, estimate || null'));
+
+        const stackStart = landing.indexOf('function rebuildMetrics()');
+        const stackSource = landing.slice(stackStart, landing.indexOf('function applyRowState(', stackStart));
+        expect(stackSource).toContain("window.addEventListener('landing:layout-changed', scheduleRebuild);");
+    });
+
     test('the estimates stylesheet has no transitions (reduced-motion kill-switch stays untouched)', () => {
         const css = read('public', 'styles', 'landing-checkup-estimates.css');
         expect(css).not.toMatch(/transition|animation/);

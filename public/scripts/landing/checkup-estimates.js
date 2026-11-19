@@ -63,4 +63,8 @@ export async function init() {
         const estimate = categories && categories.find(entry => entry.code === card.dataset.estimateCard && entry.ready);
         renderCard(card, estimate || null, Array.isArray(categories));
     });
+
+    // The cards just changed height. Sections below that cache their scroll positions
+    // (the sticky "Fitur Portal SW" stack) must re-measure, or their animation starts too early.
+    window.dispatchEvent(new CustomEvent('landing:layout-changed', { detail: { source: 'checkup-estimates' } }));
 }
