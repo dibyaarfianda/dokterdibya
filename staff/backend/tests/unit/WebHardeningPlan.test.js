@@ -147,13 +147,30 @@ describe('approved web hardening plan', () => {
         expect(sw).not.toMatch(/cachedResponse \|\| caches\.match\('\/patient-menu\.html'\)/);
     });
 
-    test('public HTML allows zoom and does not request an empty image URL', () => {
-        const htmlFiles = walk(path.join(repoRoot, 'public')).filter(file => file.endsWith('.html'));
+    test('public HTML locks zoom only on the approved pages and does not request an empty image URL', () => {
+        // Boss asked (2026-11-20) to lock pinch zoom again on exactly the pages that were unlocked
+        // on 2026-07-31 (48d54c629). Every other public page must stay zoomable.
+        const zoomLockedPages = new Set([
+            'album-usg.html', 'app-ui-preview.html', 'artikel-kesehatan.html', 'bantuan.html', 'dokumen-medis.html',
+            'estimasi-biaya-kehamilan.html', 'feedback.html', 'hasil-lab.html', 'identitas-awal.html', 'info-terbaru.html',
+            'konfirmasi-hadir.html', 'notifikasi.html', 'patient-billing.html', 'patient-menu.html', 'profil.html',
+            'set-password.html', 'sisiwanita/index.html', 'tanya-dokter.html', 'verify-email.html'
+        ]);
+        const publicRoot = path.join(repoRoot, 'public');
+        const htmlFiles = walk(publicRoot).filter(file => file.endsWith('.html'));
         for (const file of htmlFiles) {
+            const relative = path.relative(publicRoot, file).split(path.sep).join('/');
             const source = fs.readFileSync(file, 'utf8');
-            expect(source).not.toMatch(/maximum-scale\s*=\s*1(?:\.0)?/i);
-            expect(source).not.toMatch(/user-scalable\s*=\s*no/i);
+            if (zoomLockedPages.has(relative)) {
+                expect(source).toMatch(/<meta name="viewport" content="[^"]*maximum-scale=1(?:\.0)?, user-scalable=no/);
+            } else {
+                expect(source).not.toMatch(/maximum-scale\s*=\s*1(?:\.0)?/i);
+                expect(source).not.toMatch(/user-scalable\s*=\s*no/i);
+            }
             expect(source).not.toMatch(/<img\b[^>]*\bsrc\s*=\s*(?:"\s*"|'\s*')/i);
+        }
+        for (const page of zoomLockedPages) {
+            expect(fs.existsSync(path.join(publicRoot, page))).toBe(true);
         }
     });
 
