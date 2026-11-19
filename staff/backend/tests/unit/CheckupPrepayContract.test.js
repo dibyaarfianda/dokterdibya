@@ -62,12 +62,15 @@ describe('server wiring', () => {
 describe('sisiwanita.id home page (Duitku review requirements)', () => {
     const landing = read('public', 'sisiwanita', 'index.html');
 
-    test('shows the three visit estimates with a payable product link, placed outside the sticky features section', () => {
+    test('shows the three visit estimates early on the page, before Dokumen and outside the sticky features section', () => {
         const section = landing.indexOf('id="checkup-estimates"');
-        expect(section).toBeGreaterThan(landing.indexOf('<div class="cta-card">'));
-        expect(section).toBeLessThan(landing.indexOf('<section class="journey-showcase"'));
-        const features = landing.indexOf('patient-features-section');
-        expect(features).toBeLessThan(landing.indexOf('<div class="cta-card">'));
+        const menu = landing.indexOf('<div class="menu-container">');
+        const docs = landing.indexOf('<div class="doc-section">');
+        expect(menu).toBeGreaterThan(-1);
+        expect(section).toBeGreaterThan(menu);
+        expect(section).toBeLessThan(docs);
+        // Sits in front of the sticky "Fitur Portal SW" section, never inside it.
+        expect(section).toBeLessThan(landing.indexOf('<div class="proces-section patient-features-section">'));
         for (const code of ['obstetri', 'gyn_repro', 'gyn_special']) {
             expect(landing).toContain(`data-estimate-card="${code}"`);
             expect(landing).toContain(`href="/bayar-estimasi.html?kategori=${code}"`);

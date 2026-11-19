@@ -5039,6 +5039,37 @@
             <!-- Menu Sections (all sub-menus exposed) -->
             <div class="menu-container">
 
+                <!-- Estimasi biaya kunjungan: produk "bayar di muka" (opsional), harga dari /api/public/checkup-estimates -->
+                <section class="checkup-estimates" id="checkup-estimates" aria-labelledby="checkup-estimates-title">
+                    <span class="ce-kicker">Layanan Klinik Privat</span>
+                    <h2 class="ce-title" id="checkup-estimates-title">Estimasi Biaya Kunjungan</h2>
+                    <p class="ce-lead">Bayar estimasi satu kali kunjungan di muka (opsional) lewat QRIS atau Virtual Account BNI, BRI, Mandiri, BCA.</p>
+                    <div class="ce-grid">
+                        <article class="ce-card" data-estimate-card="obstetri">
+                            <h3>Kehamilan (Obstetri)</h3>
+                            <p>Kontrol kehamilan bersama dr. Dibya.</p>
+                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
+                            <ul class="ce-items" data-estimate-items></ul>
+                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=obstetri">Bayar di muka</a>
+                        </article>
+                        <article class="ce-card" data-estimate-card="gyn_repro">
+                            <h3>Program Hamil (Reproduksi)</h3>
+                            <p>Konsultasi program hamil dan kesehatan reproduksi.</p>
+                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
+                            <ul class="ce-items" data-estimate-items></ul>
+                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=gyn_repro">Bayar di muka</a>
+                        </article>
+                        <article class="ce-card" data-estimate-card="gyn_special">
+                            <h3>Ginekologi Umum</h3>
+                            <p>Konsultasi keluhan kandungan dan kesehatan wanita.</p>
+                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
+                            <ul class="ce-items" data-estimate-items></ul>
+                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=gyn_special">Bayar di muka</a>
+                        </article>
+                    </div>
+                    <p class="ce-note">Nominal adalah estimasi; tagihan akhir mengikuti tindakan yang diberikan. Uang muka menjadi saldo dan dipotong dari tagihan kunjungan Anda. Bila batal, saldo tetap tersimpan dan dapat dikembalikan atas permintaan.</p>
+                </section>
+
                 <!-- DOKUMEN -->
                 <div class="doc-section">
                     <div class="doc-hero">
@@ -5170,37 +5201,6 @@
                         </a>
                     </div>
                 </div>
-
-                <!-- Estimasi biaya kunjungan: produk "bayar di muka" (opsional), harga dari /api/public/checkup-estimates -->
-                <section class="checkup-estimates" id="checkup-estimates" aria-labelledby="checkup-estimates-title">
-                    <span class="ce-kicker">Layanan Klinik Privat</span>
-                    <h2 class="ce-title" id="checkup-estimates-title">Estimasi Biaya Kunjungan</h2>
-                    <p class="ce-lead">Bayar estimasi satu kali kunjungan di muka (opsional) lewat QRIS atau Virtual Account BNI, BRI, Mandiri, BCA.</p>
-                    <div class="ce-grid">
-                        <article class="ce-card" data-estimate-card="obstetri">
-                            <h3>Kehamilan (Obstetri)</h3>
-                            <p>Kontrol kehamilan bersama dr. Dibya.</p>
-                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
-                            <ul class="ce-items" data-estimate-items></ul>
-                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=obstetri">Bayar di muka</a>
-                        </article>
-                        <article class="ce-card" data-estimate-card="gyn_repro">
-                            <h3>Program Hamil (Reproduksi)</h3>
-                            <p>Konsultasi program hamil dan kesehatan reproduksi.</p>
-                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
-                            <ul class="ce-items" data-estimate-items></ul>
-                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=gyn_repro">Bayar di muka</a>
-                        </article>
-                        <article class="ce-card" data-estimate-card="gyn_special">
-                            <h3>Ginekologi Umum</h3>
-                            <p>Konsultasi keluhan kandungan dan kesehatan wanita.</p>
-                            <p class="ce-amount" data-estimate-amount>Memuat estimasi&hellip;</p>
-                            <ul class="ce-items" data-estimate-items></ul>
-                            <a class="ce-cta" href="/bayar-estimasi.html?kategori=gyn_special">Bayar di muka</a>
-                        </article>
-                    </div>
-                    <p class="ce-note">Nominal adalah estimasi; tagihan akhir mengikuti tindakan yang diberikan. Uang muka menjadi saldo dan dipotong dari tagihan kunjungan Anda. Bila batal, saldo tetap tersimpan dan dapat dikembalikan atas permintaan.</p>
-                </section>
 
                 <!-- EDUKASI -->
                 <section class="journey-showcase" aria-label="Ruang edukasi pasien">
