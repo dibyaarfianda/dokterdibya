@@ -147,31 +147,21 @@ describe('approved web hardening plan', () => {
         expect(sw).not.toMatch(/cachedResponse \|\| caches\.match\('\/patient-menu\.html'\)/);
     });
 
-    test('public HTML locks zoom only on the approved pages and does not request an empty image URL', () => {
-        // Boss asked (2026-11-20) to lock pinch zoom again on exactly the pages that were unlocked
-        // on 2026-07-31 (48d54c629). Every other public page must stay zoomable.
-        const zoomLockedPages = new Set([
-            'album-usg.html', 'app-ui-preview.html', 'artikel-kesehatan.html', 'bantuan.html', 'dokumen-medis.html',
-            'estimasi-biaya-kehamilan.html', 'feedback.html', 'hasil-lab.html', 'identitas-awal.html', 'info-terbaru.html',
-            'konfirmasi-hadir.html', 'notifikasi.html', 'patient-billing.html', 'patient-menu.html', 'profil.html',
-            'set-password.html', 'sisiwanita/index.html', 'tanya-dokter.html', 'verify-email.html'
-        ]);
+    test('every patient page locks pinch zoom and no page requests an empty image URL', () => {
+        // Boss asked (2026-11-20) that the patient portal cannot be zoomed on Android. Every public page
+        // that declares a viewport must lock it; pages without one (redirect stubs) are skipped.
         const publicRoot = path.join(repoRoot, 'public');
         const htmlFiles = walk(publicRoot).filter(file => file.endsWith('.html'));
+        const zoomable = [];
         for (const file of htmlFiles) {
-            const relative = path.relative(publicRoot, file).split(path.sep).join('/');
             const source = fs.readFileSync(file, 'utf8');
-            if (zoomLockedPages.has(relative)) {
-                expect(source).toMatch(/<meta name="viewport" content="[^"]*maximum-scale=1(?:\.0)?, user-scalable=no/);
-            } else {
-                expect(source).not.toMatch(/maximum-scale\s*=\s*1(?:\.0)?/i);
-                expect(source).not.toMatch(/user-scalable\s*=\s*no/i);
+            const viewport = source.match(/<meta name="viewport" content="([^"]*)"/);
+            if (viewport && !/maximum-scale=1(?:\.0)?, user-scalable=no/.test(viewport[1])) {
+                zoomable.push(path.relative(publicRoot, file).split(path.sep).join('/'));
             }
             expect(source).not.toMatch(/<img\b[^>]*\bsrc\s*=\s*(?:"\s*"|'\s*')/i);
         }
-        for (const page of zoomLockedPages) {
-            expect(fs.existsSync(path.join(publicRoot, page))).toBe(true);
-        }
+        expect(zoomable).toEqual([]);
     });
 
     test('staff shell and service worker cache versions stay synchronized', () => {
