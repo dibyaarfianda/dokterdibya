@@ -1411,7 +1411,8 @@ async function postBillingByMrIdPrintInvoice(req, res, next) {
             { mrId: normalizedMrId, status: billing.status,
                 cancellation_reason: billing.cancellation_reason,
                 cancelled_at: billing.cancelled_at,
-                cancelled_by_name: billing.cancelled_by_name }
+                cancelled_by_name: billing.cancelled_by_name,
+                prepay: await forBilling(connection, billing) }
         );
 
         // Update printed status and store R2 key

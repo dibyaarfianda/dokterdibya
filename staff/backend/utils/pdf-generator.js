@@ -202,6 +202,24 @@ class PDFGenerator {
                 doc.text('GRAND TOTAL', leftMargin + 50, y);
                 doc.text(this.formatRupiah(tindakanTotal + obatTotal), leftMargin, y, { width: contentWidth, align: 'right' });
 
+                // Bayar di muka (Tahap 2): live prepay saldo that paid, or will pay, this bill.
+                const prepay = !cancelled && recordData && recordData.prepay;
+                if (prepay && prepay.mode === 'used' && Number(prepay.deduct_idr) > 0) {
+                    doc.fontSize(9).font('Helvetica');
+                    y += 16;
+                    doc.text('Dibayar dari saldo di muka', leftMargin + 50, y);
+                    doc.text('-' + this.formatRupiah(prepay.deduct_idr), leftMargin, y, { width: contentWidth, align: 'right' });
+                    y += 13;
+                    doc.font('Helvetica-Bold');
+                    doc.text('Dibayar tunai/transfer', leftMargin + 50, y);
+                    doc.text(this.formatRupiah(prepay.remaining_due_idr), leftMargin, y, { width: contentWidth, align: 'right' });
+                } else if (prepay && prepay.mode === 'preview' && Number(prepay.deduct_idr) > 0) {
+                    doc.fontSize(8).font('Helvetica');
+                    y += 16;
+                    doc.text(`Perkiraan potongan saldo ${this.formatRupiah(prepay.deduct_idr)} (dipotong saat pelunasan)`,
+                        leftMargin, y, { width: contentWidth, align: 'right' });
+                }
+
                 if (cancelled) {
                     // Dedicated audit page gives long reasons room without overlapping line items.
                     doc.addPage();

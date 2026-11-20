@@ -1852,6 +1852,26 @@ export default {
                </button>`
             : '';
 
+        // Bayar di muka (Tahap 2): live prepay saldo that pays this bill (server: CheckupPrepayCoverage).
+        const prepay = billing.prepay || {};
+        const prepayInfo = {
+            live: Number(prepay.live_balance_idr) || 0,
+            deduct: Number(prepay.deduct_idr) || 0,
+            remaining: Number(prepay.remaining_due_idr) || 0
+        };
+        const prepayPreview = status === 'confirmed' && prepay.mode === 'preview' && prepayInfo.deduct > 0;
+        const prepayUsed = status === 'paid' && prepay.mode === 'used' && prepayInfo.deduct > 0;
+        const prepayHtml = prepayPreview
+            ? `<div class="alert alert-info py-2 px-3 mb-2 sc-billing-prepay">
+                   <i class="fas fa-wallet mr-1"></i>Saldo di muka ${formatRupiahLocal(prepayInfo.live)} → dipotong ${formatRupiahLocal(prepayInfo.deduct)} · <strong>Sisa dibayar ${formatRupiahLocal(prepayInfo.remaining)}</strong>
+               </div>`
+            : prepayUsed
+                ? `<div class="alert alert-light border py-2 px-3 mb-2 sc-billing-prepay">
+                       <i class="fas fa-wallet mr-1"></i>Dibayar dari saldo ${formatRupiahLocal(prepayInfo.deduct)} · Dibayar tunai/transfer ${formatRupiahLocal(prepayInfo.remaining)}
+                   </div>`
+                : '';
+        const markPaidLabel = prepayPreview ? `Tandai Lunas (sisa ${formatRupiahLocal(prepayInfo.remaining)})` : 'Tandai Lunas';
+
         // Action buttons
         let actionsHtml = '';
         if (status === 'draft') {
@@ -1872,8 +1892,8 @@ export default {
         } else if (status === 'confirmed') {
             actionsHtml = `
                 <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
-                    ${hasAccountPermission('billing.process_payment') ? `<button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid">
-                        <i class="fas fa-money-bill-wave mr-1"></i>Tandai Lunas
+                    ${hasAccountPermission('billing.process_payment') ? `<button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid" data-expected-prepay="${prepayPreview ? prepayInfo.deduct : 0}" data-label="${escapeHtml(markPaidLabel)}">
+                        <i class="fas fa-money-bill-wave mr-1"></i>${escapeHtml(markPaidLabel)}
                     </button>
                     <button type="button" class="btn btn-info btn-sm flex-fill" id="btn-pay-online">
                         <i class="fas fa-qrcode mr-1"></i>Bayar Online
@@ -1995,6 +2015,8 @@ export default {
                         </tbody>
                     </table>
                     </div>
+
+                    ${prepayHtml}
 
                     <div class="sc-billing-meta-stack">
                         ${confirmedByHtml}
@@ -2490,18 +2512,32 @@ export default {
                                     headers: {
                                         'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json'
-                                    }
+                                    },
+                                    // The saldo deduction the cashier saw; the server refuses (409) if it changed.
+                                    body: JSON.stringify({ expected_prepay_idr: Number(this.dataset.expectedPrepay || 0) })
                                 });
 
                                 if (!response.ok) {
-                                    const error = await response.json();
+                                    const error = await response.json().catch(() => ({}));
+                                    if (response.status === 409) {
+                                        // Saldo or status changed since this page was drawn: show why, then redraw.
+                                        if (window.showError) window.showError(error.message || 'Data tagihan berubah. Muat ulang tagihan.');
+                                        else window.showToast?.('error', error.message || 'Data tagihan berubah. Muat ulang tagihan.');
+                                        if (window.handleSectionChange) {
+                                            window.handleSectionChange('billing', { pushHistory: false });
+                                        }
+                                        return;
+                                    }
                                     throw new Error(error.message || 'Gagal menandai pembayaran');
                                 }
 
                                 const result = await response.json();
+                                const paidPrepay = result.prepay || {};
 
                                 if (window.showSuccess) {
-                                    window.showSuccess('Pembayaran berhasil dicatat! Stok obat telah dikurangi.');
+                                    window.showSuccess(Number(paidPrepay.deduct_idr) > 0
+                                        ? `Pembayaran berhasil dicatat! ${formatRupiah(paidPrepay.deduct_idr)} dari saldo, sisa ${formatRupiah(paidPrepay.remaining_due_idr)} diterima.`
+                                        : 'Pembayaran berhasil dicatat! Stok obat telah dikurangi.');
                                 }
 
                                 // Reload billing section to show updated status
@@ -2512,7 +2548,7 @@ export default {
                                 console.error('Error marking payment:', error);
                                 // Re-enable button on error
                                 this.disabled = false;
-                                this.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas';
+                                this.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>' + escapeHtml(this.dataset.label || 'Tandai Lunas');
 
                                 if (window.showError) {
                                     window.showError(error.message || 'Gagal menandai pembayaran');
