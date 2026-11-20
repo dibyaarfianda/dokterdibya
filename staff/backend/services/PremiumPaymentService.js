@@ -70,7 +70,7 @@ function toPublicOrder(order, methods) {
     };
 }
 
-function createPremiumPaymentService({ db, duitku, entitlements, logger, fulfillers = {}, clock = () => new Date(), uuid = () => crypto.randomUUID() }) {
+function createPremiumPaymentService({ db, duitku, entitlements, logger, fulfillers = {}, onPrepayPaid = null, clock = () => new Date(), uuid = () => crypto.randomUUID() }) {
     const methods = duitku.PAYMENT_METHODS;
 
     async function recordEvent(orderRef, patientId, eventType, detail, executor = db) {
@@ -246,6 +246,16 @@ function createPremiumPaymentService({ db, duitku, entitlements, logger, fulfill
                     order_type: order.order_type,
                     grant: grant || null
                 });
+                if (order.order_type === 'checkup_prepay' && typeof onPrepayPaid === 'function') {
+                    // After the commit and never awaited: a notification problem must not turn a
+                    // paid callback into an error that makes Duitku retry.
+                    Promise.resolve()
+                        .then(() => onPrepayPaid(order, grant || null))
+                        .catch(error => logger.warn('[premium-payment] prepay paid notification failed', {
+                            order_ref: orderRef,
+                            error: error && error.message
+                        }));
+                }
                 return { status: 'activated', grant: grant || null };
             }
 
@@ -431,7 +441,8 @@ function getPremiumPaymentService() {
             logger: require('../utils/logger'),
             fulfillers: {
                 checkup_prepay: require('./PatientCreditLedger').creditFromPaidOrder
-            }
+            },
+            onPrepayPaid: (order, grant) => require('./CheckupPrepayNotifier').notifyPrepayPaid(order, grant)
         });
     }
     return defaultService;

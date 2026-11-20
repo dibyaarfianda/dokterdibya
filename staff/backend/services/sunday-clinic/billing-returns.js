@@ -3,6 +3,13 @@
 const crypto = require('crypto');
 const { AppError } = require('../../middleware/errorHandler');
 const { formatDateLocal } = require('../../utils/date');
+const {
+    getUsageForBillings,
+    getReturnCredits,
+    lockLiveBalances,
+    planReturnCredit,
+    recordReturnCredit
+} = require('../PatientCreditLedger');
 
 function fail(message, statusCode = 400) {
     throw new AppError(message, statusCode, true, 'INVALID_BILLING_RETURN');
@@ -14,7 +21,10 @@ function buildReturnPlan(input, invoice, items, previous) {
     if (invoice.status !== 'paid') fail('Retur hanya untuk tagihan yang sudah lunas.', 409);
     if (invoice.pending_changes) fail('Tagihan memiliki perubahan yang belum diselesaikan. Periksa pembayaran asal sebelum retur.', 409);
     if (!['obat', 'money'].includes(input.kind)) fail('Jenis retur tidak valid.');
-    if (!['cash', 'transfer'].includes(input.payment_method)) fail('Pilih tunai atau transfer untuk pengembalian.');
+    // The method may be left out when the whole retur goes back to prepay saldo (resolveReturnMoney).
+    if (input.payment_method != null && input.payment_method !== '' && !['cash', 'transfer'].includes(input.payment_method)) {
+        fail('Pilih tunai atau transfer untuk pengembalian.');
+    }
     if (typeof input.reason !== 'string' || !input.reason.trim() || input.reason.trim().length > 2000) fail('Alasan retur wajib diisi (maksimal 2000 karakter).');
     if (!/^[a-zA-Z0-9_-]{16,80}$/.test(input.request_key || '')) fail('Kunci transaksi retur tidak valid.');
     let amount = Number(input.amount);
@@ -36,6 +46,26 @@ function buildReturnPlan(input, invoice, items, previous) {
     const alreadyReturned = previous.reduce((sum, row) => sum + cents(row.amount), 0);
     if (alreadyReturned + cents(amount) > cents(invoice.total)) fail('Total pengembalian melebihi nilai invoice yang telah dibayar.', 409);
     return { amount, quantity, item, reason: input.reason.trim() };
+}
+
+/**
+ * Where a retur's money goes (bayar di muka, Tahap 2). The part of the bill paid from prepay
+ * saldo goes back to saldo (whole rupiah); only the rest is handed over in cash or transfer.
+ */
+function resolveReturnMoney({ amount, saldoLeft = 0, paymentMethod }) {
+    const saldoAmount = Math.max(0, Math.min(Math.floor(Number(amount) || 0), Math.trunc(Number(saldoLeft) || 0)));
+    const cashAmount = (cents(amount) - saldoAmount * 100) / 100;
+    if (cashAmount <= 0) return { saldo_amount: saldoAmount, cash_amount: 0, payment_method: 'saldo' };
+    if (!['cash', 'transfer'].includes(paymentMethod)) fail('Pilih tunai atau transfer untuk pengembalian.');
+    return { saldo_amount: saldoAmount, cash_amount: cashAmount, payment_method: paymentMethod };
+}
+
+// Live saldo that paid the main bill and has not gone back to saldo through earlier returns.
+async function saldoLeftForMain(client, main, previousMainReturns, { forUpdate = false } = {}) {
+    const usage = (await getUsageForBillings(client, [main.id], { forUpdate })).get(String(main.id));
+    if (!usage) return { saldoLeft: 0, usageRows: [] };
+    const returned = previousMainReturns.reduce((sum, row) => sum + Math.round(Number(row.saldo_amount) || 0), 0);
+    return { saldoLeft: Math.max(0, usage.used_idr - returned), usageRows: usage.rows };
 }
 
 // Staff may backdate a return to the clinic day it belongs to, never before the invoice's own day nor into the future.
@@ -89,8 +119,11 @@ async function listReturns(client, mrId) {
         const isAdditional = invoice !== main;
         const [items] = await client.query(`SELECT id, item_type, item_name, quantity, price, total FROM ${isAdditional ? 'sunday_clinic_additional_billing_items' : 'sunday_clinic_billing_items'} WHERE ${isAdditional ? 'additional_billing_id' : 'billing_id'} = ? ORDER BY id`, [invoice.id]);
         const history = returns.filter(row => Number(row.additional_billing_id || 0) === (isAdditional ? Number(invoice.id) : 0));
+        // Only the main bill can be paid with saldo; the form shows how much of a retur goes back to it.
+        const saldoLeft = isAdditional ? 0 : (await saldoLeftForMain(client, main, history)).saldoLeft;
         invoices.push({ invoice_id: invoice.id, additional_billing_id: isAdditional ? invoice.id : null, reference_number: invoice.reference_number || mrId,
             total: Number(invoice.total), returned_total: history.reduce((sum, row) => sum + Number(row.amount), 0),
+            saldo_left: saldoLeft,
             items: items.filter(item => item.item_type === 'obat').map(item => ({ ...item,
                 remaining_quantity: Number(item.quantity) - history.filter(row => Number(row.source_item_id) === Number(item.id)).reduce((sum, row) => sum + Number(row.quantity), 0)
             })) });
@@ -115,10 +148,12 @@ function returnRequestHash(input) {
 
 async function findSavedReturn(client, mrId, input) {
     if (!/^[a-zA-Z0-9_-]{16,80}$/.test(input.request_key || '')) return null;
-    const [[saved]] = await client.query('SELECT id, amount, request_hash FROM sunday_clinic_billing_returns WHERE mr_id = ? AND request_key = ?', [mrId, input.request_key]);
+    const [[saved]] = await client.query('SELECT id, amount, saldo_amount, request_hash FROM sunday_clinic_billing_returns WHERE mr_id = ? AND request_key = ?', [mrId, input.request_key]);
     if (!saved) return null;
     if (saved.request_hash !== returnRequestHash(input)) fail('Kunci transaksi sudah digunakan untuk retur berbeda.', 409);
-    return { id: saved.id, amount: Number(saved.amount), already_saved: true };
+    const saldoAmount = Number(saved.saldo_amount) || 0;
+    return { id: saved.id, amount: Number(saved.amount), saldo_amount: saldoAmount,
+        cash_amount: (cents(saved.amount) - cents(saldoAmount)) / 100, already_saved: true };
 }
 
 async function createReturn(deps, { mrId, input, actor, accountingDate }) {
@@ -163,13 +198,32 @@ async function createReturn(deps, { mrId, input, actor, accountingDate }) {
                 itemData.obatId || null, itemData.obatId || null, plan.item.item_code, plan.item.item_code, plan.item.item_name]);
             allocations = allocateReturnedStock(sales, previous, plan.quantity);
         }
+        // Bayar di muka (Tahap 2): the saldo-paid part of the main bill goes back to saldo.
+        // Lock the patient's live saldo first, in the same order as mark-paid (bill row, then
+        // saldo); the bill's own usage rows are among them, so the usage read needs no lock.
+        let saldoLeft = 0;
+        let usageRows = [];
+        if (!additionalId) {
+            await lockLiveBalances(connection, main.patient_id);
+            ({ saldoLeft, usageRows } = await saldoLeftForMain(connection, main, previous));
+        }
+        const money = resolveReturnMoney({ amount: plan.amount, saldoLeft, paymentMethod: input.payment_method });
         const [saved] = await connection.query(`INSERT INTO sunday_clinic_billing_returns
-            (billing_id, additional_billing_id, mr_id, patient_id, kind, source_item_id, item_name, quantity, amount,
+            (billing_id, additional_billing_id, mr_id, patient_id, kind, source_item_id, item_name, quantity, amount, saldo_amount,
              reason, payment_method, accounting_date, actor_id, actor_name, request_key, request_hash, stock_allocations)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [main.id, additionalId, mrId, main.patient_id, input.kind, plan.item?.id || null, plan.item?.item_name || null,
-            plan.quantity, plan.amount, plan.reason, input.payment_method, accountingDate, actor.id, actor.name,
+            plan.quantity, plan.amount, money.saldo_amount || null, plan.reason, money.payment_method, accountingDate, actor.id, actor.name,
             input.request_key, hash, JSON.stringify(allocations)]);
+        if (money.saldo_amount > 0) {
+            const priorCredits = await getReturnCredits(connection, previous.map(row => row.id));
+            await recordReturnCredit(connection, {
+                returnId: saved.insertId,
+                patientId: main.patient_id,
+                plan: planReturnCredit(usageRows, priorCredits, money.saldo_amount),
+                actor: actor.name
+            });
+        }
         if (allocations.length) {
             await connection.query('SELECT id FROM obat WHERE id IN (?) ORDER BY id FOR UPDATE',
                 [[...new Set(allocations.map((a) => a.obat_id))]]);
@@ -192,10 +246,11 @@ async function createReturn(deps, { mrId, input, actor, accountingDate }) {
             actorUserId: actor.id, actorName: actor.name, actorRole: actor.role,
             summary: `Retur R${saved.insertId}: ${plan.reason}`,
             beforeSnapshot: { invoice_id: invoice.id, additional_billing_id: additionalId, invoice_total: invoice.total },
-            afterSnapshot: { return_id: saved.insertId, kind: input.kind, amount: plan.amount, quantity: plan.quantity, accounting_date: accountingDate, stock_allocations: allocations }
+            afterSnapshot: { return_id: saved.insertId, kind: input.kind, amount: plan.amount, quantity: plan.quantity, accounting_date: accountingDate, stock_allocations: allocations,
+                saldo_amount: money.saldo_amount, payment_method: money.payment_method }
         });
         await connection.commit();
-        return { id: saved.insertId, amount: plan.amount, already_saved: false };
+        return { id: saved.insertId, amount: plan.amount, saldo_amount: money.saldo_amount, cash_amount: money.cash_amount, already_saved: false };
     } catch (error) {
         await connection.rollback();
         throw error;
@@ -204,4 +259,4 @@ async function createReturn(deps, { mrId, input, actor, accountingDate }) {
     }
 }
 
-module.exports = { buildReturnPlan, resolveReturnAccountingDate, allocateReturnedStock, listReturns, createReturn, findSavedReturn };
+module.exports = { buildReturnPlan, resolveReturnMoney, resolveReturnAccountingDate, allocateReturnedStock, listReturns, createReturn, findSavedReturn };

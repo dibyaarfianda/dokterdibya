@@ -813,7 +813,7 @@ function renderBillingReturns(data, error) {
         </tr></thead><tbody>${data.returns.length ? data.returns.map(row => `<tr>
             <td>${escapeHtml(formatDateTime(row.created_at))}${row.accounting_date ? `<small class="d-block">Dibukukan ${escapeHtml(formatReturnDate(row.accounting_date))}</small>` : ''}<small class="d-block">${escapeHtml(row.actor_name)}</small></td>
             <td>${escapeHtml(data.invoices.find(invoice => Number(invoice.additional_billing_id || 0) === Number(row.additional_billing_id || 0))?.reference_number || row.mr_id)}<small class="d-block">Retur R${Number(row.id)}</small></td>
-            <td>${row.kind === 'obat' ? `${escapeHtml(row.item_name)} × ${Number(row.quantity)}` : 'Pengembalian uang'}<small class="d-block">${escapeHtml(row.reason)} · ${row.payment_method === 'cash' ? 'Tunai' : 'Transfer'}</small></td>
+            <td>${row.kind === 'obat' ? `${escapeHtml(row.item_name)} × ${Number(row.quantity)}` : 'Pengembalian uang'}<small class="d-block">${escapeHtml(row.reason)} · ${row.payment_method === 'saldo' ? 'Kembali ke saldo' : row.payment_method === 'cash' ? 'Tunai' : 'Transfer'}${Number(row.saldo_amount) > 0 && row.payment_method !== 'saldo' ? ` · ${formatRupiah(row.saldo_amount)} ke saldo` : ''}</small></td>
             <td class="text-right text-danger">−${formatRupiah(row.amount)}</td></tr>`).join('') : '<tr><td colspan="4" class="text-center text-muted">Belum ada retur / pengembalian.</td></tr>'}</tbody></table></div>
         <div class="text-right">Total dibayar: <strong>${formatRupiah(data.paid_total)}</strong><br>Retur / minus: <strong class="text-danger">−${formatRupiah(data.return_total)}</strong><br>Penerimaan bersih: <strong>${formatRupiah(data.net_total)}</strong></div>
         <form id="billing-return-form" class="border rounded p-3 mt-3" hidden>
@@ -826,7 +826,8 @@ function renderBillingReturns(data, error) {
             <div class="form-group"><label for="billing-return-quantity">Jumlah dikembalikan</label><input type="number" min="1" step="1" value="1" id="billing-return-quantity" class="form-control"></div></div>
             <div class="form-group"><label for="billing-return-amount">Nominal pengembalian (Rp)</label><input id="billing-return-amount" type="number" min="0.01" step="0.01" class="form-control" required></div>
             <div class="form-group"><label for="billing-return-date">Tanggal retur (masuk closing tanggal ini)</label><input id="billing-return-date" type="date" class="form-control" value="${escapeHtml(data.today || '')}" max="${escapeHtml(data.today || '')}" required><small class="form-text text-muted">Default hari ini. Pilih tanggal mundur bila retur terjadi saat poli sebelumnya. Tanggal yang sudah di-closing ditolak.</small></div>
-            <div class="form-group"><label for="billing-return-method">Metode pengembalian</label><select id="billing-return-method" class="form-control"><option value="cash">Tunai</option><option value="transfer">Transfer</option></select></div>
+            <div id="billing-return-saldo-split" class="alert alert-light border" hidden></div>
+            <div class="form-group" id="billing-return-method-group"><label for="billing-return-method">Metode pengembalian</label><select id="billing-return-method" class="form-control"><option value="cash">Tunai</option><option value="transfer">Transfer</option></select></div>
             <div class="form-group"><label for="billing-return-reason">Alasan / catatan pengembalian</label><textarea id="billing-return-reason" class="form-control" rows="2" maxlength="2000" required></textarea></div>
             </fieldset><button type="submit" id="billing-return-save" class="btn btn-danger">Simpan Pengembalian</button>
         </form></section>`;
@@ -839,6 +840,26 @@ function bindBillingReturns(data, mrId) {
     const storageKey = `clinic-return-pending:${mrId}`;
     let pending = null;
     const error = message => { field('error').textContent = message; field('error').hidden = !message; };
+    // Bayar di muka (Tahap 2): the part of the main bill paid from saldo goes back to saldo
+    // (whole rupiah, server: resolveReturnMoney); a method is asked only for the cash part.
+    const updateSplit = () => {
+        const invoice = data.invoices[Number(field('invoice').value)];
+        const amount = Number(field('amount').value) || 0;
+        const saldoPart = Math.max(0, Math.min(Math.floor(amount), Number(invoice?.saldo_left || 0)));
+        const cashPart = Math.round((amount - saldoPart) * 100) / 100;
+        const box = field('saldo-split');
+        if (box) {
+            box.hidden = saldoPart <= 0;
+            box.textContent = saldoPart > 0
+                ? `${formatRupiah(saldoPart)} kembali ke saldo pasien` + (cashPart > 0
+                    ? ` · ${formatRupiah(cashPart)} diserahkan tunai/transfer`
+                    : ' · tidak ada uang yang diserahkan')
+                : '';
+        }
+        const methodGroup = field('method-group');
+        if (methodGroup) methodGroup.hidden = saldoPart > 0 && cashPart <= 0;
+        return { saldoPart, cashPart };
+    };
     const updateAmount = () => {
         const invoice = data.invoices[Number(field('invoice').value)];
         const isObat = field('kind').value === 'obat';
@@ -854,6 +875,7 @@ function bindBillingReturns(data, mrId) {
             const requested = Number(field('quantity').value);
             field('amount').value = item ? (Math.round(Number(item.total) * 100 * (returned + requested) / Number(item.quantity)) - Math.round(Number(item.total) * 100 * returned / Number(item.quantity))) / 100 : '';
         }
+        updateSplit();
     };
     const updateInvoice = () => {
         const invoice = data.invoices[Number(field('invoice').value)];
@@ -865,6 +887,7 @@ function bindBillingReturns(data, mrId) {
     field('kind').addEventListener('change', () => { field('amount').value = ''; updateAmount(); });
     field('item').addEventListener('change', updateAmount);
     field('quantity').addEventListener('input', updateAmount);
+    field('amount').addEventListener('input', updateSplit);
     document.getElementById('btn-create-billing-return')?.addEventListener('click', () => { form.hidden = !form.hidden; });
     updateInvoice();
     try {
@@ -881,7 +904,7 @@ function bindBillingReturns(data, mrId) {
             field('item').value = pending.item_id || '';
             field('quantity').value = pending.quantity || 1;
             field('reason').value = pending.reason;
-            field('method').value = pending.payment_method;
+            if (pending.payment_method) field('method').value = pending.payment_method;
             if (pending.accounting_date) field('date').value = pending.accounting_date;
             updateAmount();
             if (pending.kind === 'money') field('amount').value = pending.amount;
@@ -899,9 +922,13 @@ function bindBillingReturns(data, mrId) {
             if (!pending) {
                 const invoice = data.invoices[Number(field('invoice').value)];
                 if (!invoice) throw new Error('Invoice asal tidak tersedia.');
+                const split = updateSplit();
                 const payload = { additional_billing_id: invoice.additional_billing_id, kind: field('kind').value,
                     item_id: Number(field('item').value), quantity: Number(field('quantity').value), amount: Number(field('amount').value),
-                    reason: field('reason').value.trim(), payment_method: field('method').value, accounting_date: field('date').value || data.today,
+                    reason: field('reason').value.trim(),
+                    // No method when the whole retur goes back to saldo; the server records 'saldo'.
+                    payment_method: split.saldoPart > 0 && split.cashPart <= 0 ? undefined : field('method').value,
+                    accounting_date: field('date').value || data.today,
                     request_key: crypto.randomUUID() };
                 sessionStorage.setItem(storageKey, JSON.stringify(payload));
                 pending = payload;
@@ -923,7 +950,9 @@ function bindBillingReturns(data, mrId) {
             const returnedMedicine = pending.kind === 'obat';
             sessionStorage.removeItem(storageKey);
             pending = null;
-            window.showSuccess?.(returnedMedicine ? 'Retur obat tercatat dan stok telah dikembalikan.' : 'Pengembalian uang berhasil dicatat.');
+            const toSaldo = Number(result.data?.saldo_amount) || 0;
+            window.showSuccess?.((returnedMedicine ? 'Retur obat tercatat dan stok telah dikembalikan.' : 'Pengembalian uang berhasil dicatat.')
+                + (toSaldo > 0 ? ` ${formatRupiah(toSaldo)} kembali ke saldo pasien.` : ''));
             refreshBillingSection();
         } catch (err) {
             error(`${err.message}${pending ? ' Hasil belum pasti; gunakan tombol ini untuk memeriksa transaksi yang sama.' : ''}`);
@@ -1852,6 +1881,26 @@ export default {
                </button>`
             : '';
 
+        // Bayar di muka (Tahap 2): live prepay saldo that pays this bill (server: CheckupPrepayCoverage).
+        const prepay = billing.prepay || {};
+        const prepayInfo = {
+            live: Number(prepay.live_balance_idr) || 0,
+            deduct: Number(prepay.deduct_idr) || 0,
+            remaining: Number(prepay.remaining_due_idr) || 0
+        };
+        const prepayPreview = status === 'confirmed' && prepay.mode === 'preview' && prepayInfo.deduct > 0;
+        const prepayUsed = status === 'paid' && prepay.mode === 'used' && prepayInfo.deduct > 0;
+        const prepayHtml = prepayPreview
+            ? `<div class="alert alert-info py-2 px-3 mb-2 sc-billing-prepay">
+                   <i class="fas fa-wallet mr-1"></i>Saldo di muka ${formatRupiahLocal(prepayInfo.live)} → dipotong ${formatRupiahLocal(prepayInfo.deduct)} · <strong>Sisa dibayar ${formatRupiahLocal(prepayInfo.remaining)}</strong>
+               </div>`
+            : prepayUsed
+                ? `<div class="alert alert-light border py-2 px-3 mb-2 sc-billing-prepay">
+                       <i class="fas fa-wallet mr-1"></i>Dibayar dari saldo ${formatRupiahLocal(prepayInfo.deduct)} · Dibayar tunai/transfer ${formatRupiahLocal(prepayInfo.remaining)}
+                   </div>`
+                : '';
+        const markPaidLabel = prepayPreview ? `Tandai Lunas (sisa ${formatRupiahLocal(prepayInfo.remaining)})` : 'Tandai Lunas';
+
         // Action buttons
         let actionsHtml = '';
         if (status === 'draft') {
@@ -1872,8 +1921,8 @@ export default {
         } else if (status === 'confirmed') {
             actionsHtml = `
                 <div class="d-flex flex-wrap align-items-center sc-billing-actions" style="gap:6px;">
-                    ${hasAccountPermission('billing.process_payment') ? `<button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid">
-                        <i class="fas fa-money-bill-wave mr-1"></i>Tandai Lunas
+                    ${hasAccountPermission('billing.process_payment') ? `<button type="button" class="btn btn-primary btn-sm flex-fill" id="btn-mark-paid" data-expected-prepay="${prepayPreview ? prepayInfo.deduct : 0}" data-label="${escapeHtml(markPaidLabel)}">
+                        <i class="fas fa-money-bill-wave mr-1"></i>${escapeHtml(markPaidLabel)}
                     </button>
                     <button type="button" class="btn btn-info btn-sm flex-fill" id="btn-pay-online">
                         <i class="fas fa-qrcode mr-1"></i>Bayar Online
@@ -1995,6 +2044,8 @@ export default {
                         </tbody>
                     </table>
                     </div>
+
+                    ${prepayHtml}
 
                     <div class="sc-billing-meta-stack">
                         ${confirmedByHtml}
@@ -2490,18 +2541,32 @@ export default {
                                     headers: {
                                         'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json'
-                                    }
+                                    },
+                                    // The saldo deduction the cashier saw; the server refuses (409) if it changed.
+                                    body: JSON.stringify({ expected_prepay_idr: Number(this.dataset.expectedPrepay || 0) })
                                 });
 
                                 if (!response.ok) {
-                                    const error = await response.json();
+                                    const error = await response.json().catch(() => ({}));
+                                    if (response.status === 409) {
+                                        // Saldo or status changed since this page was drawn: show why, then redraw.
+                                        if (window.showError) window.showError(error.message || 'Data tagihan berubah. Muat ulang tagihan.');
+                                        else window.showToast?.('error', error.message || 'Data tagihan berubah. Muat ulang tagihan.');
+                                        if (window.handleSectionChange) {
+                                            window.handleSectionChange('billing', { pushHistory: false });
+                                        }
+                                        return;
+                                    }
                                     throw new Error(error.message || 'Gagal menandai pembayaran');
                                 }
 
                                 const result = await response.json();
+                                const paidPrepay = result.prepay || {};
 
                                 if (window.showSuccess) {
-                                    window.showSuccess('Pembayaran berhasil dicatat! Stok obat telah dikurangi.');
+                                    window.showSuccess(Number(paidPrepay.deduct_idr) > 0
+                                        ? `Pembayaran berhasil dicatat! ${formatRupiah(paidPrepay.deduct_idr)} dari saldo, sisa ${formatRupiah(paidPrepay.remaining_due_idr)} diterima.`
+                                        : 'Pembayaran berhasil dicatat! Stok obat telah dikurangi.');
                                 }
 
                                 // Reload billing section to show updated status
@@ -2512,7 +2577,7 @@ export default {
                                 console.error('Error marking payment:', error);
                                 // Re-enable button on error
                                 this.disabled = false;
-                                this.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas';
+                                this.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>' + escapeHtml(this.dataset.label || 'Tandai Lunas');
 
                                 if (window.showError) {
                                     window.showError(error.message || 'Gagal menandai pembayaran');

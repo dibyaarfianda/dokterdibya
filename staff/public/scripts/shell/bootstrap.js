@@ -112,6 +112,21 @@ async function bootstrapStaffShell() {
         'sortInvoiceTable'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'invoiceHistory', 'invoice-history'));
     [
+        'showPrepayPage',
+        'prepayShowTab',
+        'prepayLoadOrders',
+        'prepayLoadBalances',
+        'prepayOpenLedger',
+        'prepayShowPatient',
+        'prepayOpenRefund',
+        'prepayCloseRefund',
+        'prepaySubmitRefund',
+        'prepayLoadMapping',
+        'prepayAddMappingItem',
+        'prepayRemoveMappingItem',
+        'prepaySaveMapping'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'prepay', 'prepay'));
+    [
         'showArtikelKesehatanPage',
         'loadArticlesAdmin',
         'showAddArticleModal',
@@ -228,6 +243,11 @@ async function bootstrapStaffShell() {
         scheduleDeferredStartup(
             () => import('./menu-new-badges.js').then(module => module.initMenuNewBadges()),
             1500
+        );
+        // Bayar di muka: toast when a prepay order is paid (event reaches billing.view staff only).
+        scheduleDeferredStartup(
+            () => import('./prepay-paid-toast.js').then(module => module.initPrepayPaidToast()),
+            2000
         );
         runIdle(() => {
             try {

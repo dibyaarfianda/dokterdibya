@@ -35,6 +35,24 @@ describe('checkup prepay migrations', () => {
     });
 });
 
+describe('tahap 2 migration', () => {
+    const migrationPath = path.join(repoRoot, 'staff', 'backend', 'migrations', '20261121_checkup_prepay_tahap2.sql');
+    const tahap2 = fs.existsSync(migrationPath) ? fs.readFileSync(migrationPath, 'utf8').replace(/\r\n/g, '\n') : '';
+
+    test('adds the refund table, the saldo part of returns and the estimate permission idempotently', () => {
+        expect(tahap2).toContain('CREATE TABLE IF NOT EXISTS patient_credit_refunds');
+        expect(tahap2).toContain('request_key VARCHAR(80) NOT NULL UNIQUE');
+        expect(tahap2).toContain("ENUM('cash','transfer','saldo')");
+        expect(tahap2).toMatch(/ADD COLUMN IF NOT EXISTS saldo_amount DECIMAL\(12,2\) NULL/);
+        expect(tahap2).toMatch(/ADD INDEX IF NOT EXISTS idx_credit_ledger_live \(patient_id, gateway_mode\)/);
+        expect(tahap2).toContain('INSERT IGNORE INTO permissions');
+        expect(tahap2).toContain('checkup_prepay.manage_estimate');
+        expect(tahap2).toContain('utf8mb4_unicode_ci');
+        expect(tahap2).not.toMatch(/INSERT INTO patient_credit_ledger/);
+        expect(tahap2).not.toMatch(/sunday_clinic_closing_entries/);
+    });
+});
+
 describe('server wiring', () => {
     const server = read('staff', 'backend', 'server.js');
 

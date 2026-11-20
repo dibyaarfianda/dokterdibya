@@ -1523,3 +1523,16 @@ Duitku approves the merchant only when sisiwanita.id shows products + Rupiah pri
 - QRIS Nobu (`NQ`) fails in sandbox ("Failed to generate QR String Nobu"); docs list only ShopeePay/Nusapay QRIS as sandbox-testable. VA works. VA simulator: https://sandbox.duitku.com/payment/demo/demosuccesstransaction.aspx
 - Callback `amount` arrives without decimals (`"255000"`); Check Transaction with JSON body works.
 - Claude must not run payments in the simulator (hosted test payments are not allowed) — create the order server-side, let the user pay, then verify `payment_orders`, `premium_payment_events` and `patient_credit_ledger`.
+
+### 44. Bayar di Muka Tahap 2 — Saldo Rules (20 November 2026)
+
+Spec: `docs/superpowers/specs/2026-11-20-checkup-prepay-tahap-2-design.md`. Ledger helpers: `staff/backend/services/PatientCreditLedger.js`.
+
+- **Only `gateway_mode = 'live'` saldo is ever spent, returned or refunded.** Sandbox saldo (Duitku review) never touches a real bill.
+- **Mark-paid** (`services/sunday-clinic/billing.js`) takes all live saldo of the patient (bill category first, then oldest credit) in the same transaction as the paid status. The saldo lock and the 409 "Saldo pasien berubah. Muat ulang tagihan." come BEFORE stock deduction. The cashier page sends `expected_prepay_idr`; any mismatch (also saldo that disappeared) is refused.
+- **"Amount still due"** is computed only by `services/CheckupPrepayCoverage.js` (`total − saldo used`). Bill tables are unchanged: `total` stays the sum of items.
+- **Closing** keeps the bill in full on the visit date and adds `saldo_paid_total`, `saldo_returned_total`, `cash_expected_total`, only when > 0 (old closed days keep their fingerprint). Usage is loaded in `loadFinancialSources`, never only on the preview path.
+- **Retur** on a saldo-paid main bill puts the saldo-paid part back into saldo (`payment_method 'saldo'`); only the rest is cash/transfer. Lock order everywhere: bill row → `lockLiveBalances(patient)` → ledger rows.
+- **Ledger reads by bill/return id** use `source_id LIKE '<id>:%'` (unique-key prefix), never `SUBSTRING_INDEX(...) IN (...) FOR UPDATE` (that range-locks every usage row).
+- **Staff page "Pembayaran di Muka"** (`/api/staff-prepay`): view = `billing.view`, refund = `billing.reset`, estimate editor = doctor only (`requireDoctorRole` + protected, non-delegable `checkup_prepay.manage_estimate`).
+- **Go-live** (`CHECKUP_PREPAY_LIVE=true`) only after Duitku approval + production keys; then Boss makes one small real payment and checks toast, red dot, mark-paid, closing line and refund.

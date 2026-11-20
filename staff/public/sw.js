@@ -4,7 +4,7 @@
  * Updated: Real-time friendly for service hours
  */
 
-const STAFF_PWA_VERSION = 'v496';
+const STAFF_PWA_VERSION = 'v497';
 const CACHE_NAME = `dokterdibya-staff-${STAFF_PWA_VERSION}`;
 const STATIC_CACHE = `${CACHE_NAME}-static`;
 const DYNAMIC_CACHE = `${CACHE_NAME}-dynamic`;
@@ -44,6 +44,7 @@ const STAFF_SHELL_SCRIPTS = [
   '/staff/public/scripts/shell/feature-loader.js',
   '/staff/public/scripts/shell/module-helpers.js',
   '/staff/public/scripts/shell/menu-new-badges.js',
+  '/staff/public/scripts/shell/prepay-paid-toast.js',
   '/staff/public/scripts/shell/page-descriptors.js',
   '/staff/public/scripts/shell/page-registry.js',
   '/staff/public/scripts/shell/polling-coordinator.js',

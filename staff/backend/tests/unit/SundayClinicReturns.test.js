@@ -69,3 +69,110 @@ test('return date defaults to today and allows backdating only within the invoic
     }
     expect(resolveReturnAccountingDate('2026-01-01', { today: '2026-10-28', minDate: null })).toBe('2026-01-01');
 });
+
+// Tahap 2: a retur on a main bill paid with prepay saldo puts the saldo-paid part back into saldo.
+describe('returns on bills paid with saldo', () => {
+    const { resolveReturnMoney } = require(servicePath);
+    const sqlOf = sql => String(sql).replace(/\s+/g, ' ').trim();
+
+    test('resolveReturnMoney sends the saldo part back to saldo', () => {
+        expect(resolveReturnMoney({ amount: 20000, saldoLeft: 365000 }))
+            .toEqual({ saldo_amount: 20000, cash_amount: 0, payment_method: 'saldo' });
+        expect(resolveReturnMoney({ amount: 50000, saldoLeft: 30000, paymentMethod: 'cash' }))
+            .toEqual({ saldo_amount: 30000, cash_amount: 20000, payment_method: 'cash' });
+        expect(() => resolveReturnMoney({ amount: 50000, saldoLeft: 30000 })).toThrow('Pilih tunai atau transfer untuk pengembalian.');
+        expect(resolveReturnMoney({ amount: 15000.5, saldoLeft: 100000, paymentMethod: 'transfer' }))
+            .toEqual({ saldo_amount: 15000, cash_amount: 0.5, payment_method: 'transfer' });
+        expect(resolveReturnMoney({ amount: 20000, saldoLeft: 0, paymentMethod: 'transfer' }))
+            .toEqual({ saldo_amount: 0, cash_amount: 20000, payment_method: 'transfer' });
+    });
+
+    test('a supported method is still checked when sent, and may be left out', () => {
+        expect(() => buildReturnPlan({ ...input, payment_method: 'qris' }, invoice, [item], [])).toThrow();
+        expect(() => buildReturnPlan({ ...input, payment_method: undefined }, invoice, [item], [])).not.toThrow();
+    });
+
+    function returnHarness({ additional = null, usageRows = [{ id: 3, source_id: '55:obstetri', category: 'obstetri', amount_idr: -365000 }], previous = [] } = {}) {
+        const statements = [];
+        const main = { id: 55, mr_id: 'DRD9001', patient_id: 'P1', status: 'paid', total: '365000', pending_changes: 0 };
+        const connection = {
+            beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn(),
+            query: jest.fn(async (sql, params) => {
+                const query = sqlOf(sql);
+                statements.push({ query, params });
+                if (query.startsWith('SELECT * FROM sunday_clinic_billings WHERE mr_id')) return [[main]];
+                if (query.startsWith('SELECT visit_location')) return [[{ visit_location: 'klinik_private' }]];
+                if (query.startsWith('SELECT * FROM sunday_clinic_additional_billings')) return [additional ? [additional] : []];
+                if (query.startsWith('SELECT * FROM sunday_clinic_billing_returns')) return [previous];
+                if (query.includes("entry_type = 'usage'")) return [usageRows];
+                if (query.includes("entry_type = 'return_credit'")) return [[]];
+                if (query.includes('FROM patient_credit_ledger')) return [[]];
+                if (query.startsWith('INSERT INTO sunday_clinic_billing_returns')) return [{ insertId: 7 }];
+                if (query.startsWith('INSERT INTO patient_credit_ledger')) return [{ affectedRows: 1 }];
+                return [[]];
+            })
+        };
+        const deps = { db: { getConnection: jest.fn(async () => connection) }, audit: jest.fn() };
+        return { deps, statements };
+    }
+    const moneyReturn = { kind: 'money', amount: 20000, reason: 'Obat tidak jadi', request_key: 'saldo-return-0001' };
+    const actor = { id: 'U1', name: 'Kasir' };
+
+    test('a fully saldo-paid bill: the retur goes back to saldo without asking a method', async () => {
+        const { deps, statements } = returnHarness();
+        const result = await createReturn(deps, { mrId: 'DRD9001', input: moneyReturn, actor, accountingDate: '2026-11-22' });
+        expect(result).toMatchObject({ id: 7, saldo_amount: 20000, cash_amount: 0, already_saved: false });
+        const saved = statements.find(entry => entry.query.startsWith('INSERT INTO sunday_clinic_billing_returns'));
+        expect(saved.query).toContain('saldo_amount');
+        expect(saved.params).toEqual(expect.arrayContaining(['saldo', 20000]));
+        const credit = statements.find(entry => entry.query.startsWith('INSERT INTO patient_credit_ledger'));
+        expect(credit.params).toEqual(expect.arrayContaining(['P1', 'obstetri', 'return_credit', 20000, 'sunday_clinic_return', '7:obstetri']));
+    });
+
+    test('the patient saldo is locked before the bill usage is read, in the same order as mark-paid', async () => {
+        const { deps, statements } = returnHarness();
+        await createReturn(deps, { mrId: 'DRD9001', input: moneyReturn, actor, accountingDate: '2026-11-22' });
+        const lockAt = statements.findIndex(entry => entry.query.includes("WHERE patient_id = ? AND gateway_mode = 'live'") && entry.query.includes('FOR UPDATE'));
+        const usageAt = statements.findIndex(entry => entry.query.includes("entry_type = 'usage'"));
+        expect(lockAt).toBeGreaterThan(-1);
+        expect(usageAt).toBeGreaterThan(lockAt);
+        expect(statements[usageAt].query).not.toContain('FOR UPDATE');
+        expect(statements.filter(entry => entry.query.includes("WHERE patient_id = ? AND gateway_mode = 'live'"))).toHaveLength(1);
+    });
+
+    test('a second retur after the saldo part is used up needs cash or transfer', async () => {
+        const { deps } = returnHarness({
+            usageRows: [{ id: 3, source_id: '55:obstetri', category: 'obstetri', amount_idr: -20000 }],
+            previous: [{ id: 6, additional_billing_id: null, kind: 'money', amount: '20000', saldo_amount: '20000', request_key: 'older-return-00001' }]
+        });
+        await expect(createReturn(deps, { mrId: 'DRD9001', input: moneyReturn, actor, accountingDate: '2026-11-22' }))
+            .rejects.toThrow('Pilih tunai atau transfer untuk pengembalian.');
+        const { deps: cashDeps, statements } = returnHarness({
+            usageRows: [{ id: 3, source_id: '55:obstetri', category: 'obstetri', amount_idr: -20000 }],
+            previous: [{ id: 6, additional_billing_id: null, kind: 'money', amount: '20000', saldo_amount: '20000', request_key: 'older-return-00001' }]
+        });
+        const result = await createReturn(cashDeps, { mrId: 'DRD9001', input: { ...moneyReturn, payment_method: 'cash' }, actor, accountingDate: '2026-11-22' });
+        expect(result).toMatchObject({ saldo_amount: 0, cash_amount: 20000 });
+        expect(statements.some(entry => entry.query.startsWith('INSERT INTO patient_credit_ledger'))).toBe(false);
+    });
+
+    test('additional invoice returns never touch saldo', async () => {
+        const additional = { id: 81, parent_billing_id: 55, mr_id: 'DRD9001', status: 'paid', total: '50000', pending_changes: 0 };
+        const { deps } = returnHarness({ additional });
+        await expect(createReturn(deps, { mrId: 'DRD9001', input: { ...moneyReturn, additional_billing_id: 81 }, actor, accountingDate: '2026-11-22' }))
+            .rejects.toThrow('Pilih tunai atau transfer untuk pengembalian.');
+        const { deps: cashDeps, statements } = returnHarness({ additional });
+        await createReturn(cashDeps, { mrId: 'DRD9001', input: { ...moneyReturn, additional_billing_id: 81, payment_method: 'transfer' }, actor, accountingDate: '2026-11-22' });
+        expect(statements.some(entry => entry.query.includes('FROM patient_credit_ledger'))).toBe(false);
+        expect(statements.some(entry => entry.query.startsWith('INSERT INTO patient_credit_ledger'))).toBe(false);
+    });
+
+    test('the retur form shows the saldo split and only asks a method for the cash part', () => {
+        const ui = fs.readFileSync(path.join(__dirname, '../../../public/scripts/sunday-clinic/components/shared/billing.js'), 'utf8');
+        expect(ui).toContain('kembali ke saldo pasien');
+        expect(ui).toContain('diserahkan tunai/transfer');
+        expect(ui).toContain('billing-return-method-group');
+        expect(ui).toMatch(/saldo_left/);
+        expect(ui).toContain("row.payment_method === 'saldo'");
+    });
+});

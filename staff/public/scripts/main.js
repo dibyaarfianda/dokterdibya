@@ -3322,6 +3322,7 @@ function resumeSavedPageIfRequested(params) {
         'nav-birth-congrats':                   () => window.showBirthCongratsPage?.(),
         'nav-birth-testimonials':               () => window.showBirthTestimonialsPage?.(),
         'nav-invoice-history':                  () => window.showInvoiceHistoryPage?.(),
+        'nav-prepay':                           () => window.showPrepayPage?.(),
         'nav-booking-settings':                 () => showBookingSettingsPage(),
         'nav-birth-class':                      () => showBirthClassPage(),
         'nav-import-fields':                    () => showImportFieldsPage(),

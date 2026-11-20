@@ -26,7 +26,8 @@ const NON_DELEGABLE_PERMISSIONS = new Set([
     ...ACCESS_MANAGEMENT_PERMISSIONS,
     'system.reset',
     'drug_audit.view',
-    'drug_audit.approve'
+    'drug_audit.approve',
+    'checkup_prepay.manage_estimate'
 ]);
 const REQUIRED_STAFF_DRD_PERMISSIONS = new Set([
     'patients.view',

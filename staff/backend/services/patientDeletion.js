@@ -1,5 +1,6 @@
 const db = require('../db');
 const { assertNoCancelledBillingEvidence } = require('./sunday-clinic/billing-cancellation');
+const { assertNoPrepaySaldoEvidence } = require('./PatientCreditLedger');
 
 /**
  * Delete a patient along with all related relational data inside a single transaction.
@@ -24,6 +25,15 @@ async function deletePatientWithRelationsOnConnection(connection, patientId) {
 
         const patient = patients[0];
         await assertNoCancelledBillingEvidence(connection, { patientId });
+        await assertNoPrepaySaldoEvidence(connection, { patientId });
+
+        // Sandbox (test) saldo was never real money: it goes with the patient. Live saldo blocks above.
+        await deleteOptionalChild(connection,
+            "DELETE FROM patient_credit_ledger WHERE patient_id = ? AND gateway_mode = 'sandbox'",
+            [patientId],
+            deletedData,
+            'patient_credit_ledger_sandbox'
+        );
 
         await deleteChild(connection,
             'DELETE FROM billing_items WHERE billing_id IN (SELECT id FROM billings WHERE patient_id = ?)',
@@ -387,6 +397,7 @@ async function deletePatientByEmail(email) {
         const patientId = patients[0].id;
         if (patientId) {
             await assertNoCancelledBillingEvidence(connection, { patientId });
+            await assertNoPrepaySaldoEvidence(connection, { patientId });
         }
 
         // Delete from users table

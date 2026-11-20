@@ -74,6 +74,8 @@ const MENU_ACTIVITY_SOURCES = {
     'nav-estimasi-biaya': [{ table: 'settings', where: "setting_key = 'pregnancy_cost_estimate_medications'" }],
     'nav-invoice-history': [{ table: 'sunday_clinic_billings' }],
     'nav-drug-audit': [{ table: 'stock_adjustment_requests' }],
+    // Bayar di muka: only paid orders, by paid_at (updated_at changes on every reconcile check).
+    'nav-prepay': [{ table: 'payment_orders', where: "order_type = 'checkup_prepay' AND status = 'paid'", columns: ['paid_at'] }],
     'nav-finance-analysis': [{ table: 'sunday_clinic_billings' }],
     'nav-staff-briefing': [{ table: 'staff_daily_briefings' }],
     'nav-bulk-upload-usg': [{ table: 'usg_bulk_upload_jobs' }],

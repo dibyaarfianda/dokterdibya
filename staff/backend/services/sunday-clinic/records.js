@@ -31,6 +31,7 @@ const {
 } = require('./shared');
 const { updateQueueStatus } = require('./queue');
 const { assertNoCancelledBillingEvidence } = require('./billing-cancellation');
+const { assertNoPrepaySaldoEvidence } = require('../PatientCreditLedger');
 const surgeryService = require('../SurgeryService');
 
 async function getCheckExisting(req, res, next) {
@@ -652,6 +653,7 @@ async function deleteRecordsByMrId(req, res, next) {
 
         try {
             await assertNoCancelledBillingEvidence(connection, { mrId });
+            await assertNoPrepaySaldoEvidence(connection, { mrId });
             // Delete additional billing items before their parent bills for explicit cleanup.
             await connection.query(
                 `DELETE FROM sunday_clinic_additional_billing_items
