@@ -207,20 +207,21 @@ function response() {
         assert.equal(created.code, `pkg_${created.id}`);
         const pricedNew = await estimates.pricePackageByCode(created.code);
         assert.equal(pricedNew.ready, true, JSON.stringify(pricedNew.issues));
-        assert.equal(pricedNew.amount_idr, 25000 + 100000 + 2 * 15000);
+        const newPackageAmount = 25000 + 100000 + 2 * 15000;
+        assert.equal(pricedNew.amount_idr, newPackageAmount);
 
         // 10. Saving it again with nothing changed succeeds (no "Paket tidak ditemukan") and keeps the items.
         const loaded = await packageRepository.getPackageByCode(pool, created.code);
         const resaved = await saveInTransaction({ ...loaded });
         assert.equal(resaved.id, created.id);
         assert.equal(resaved.code, created.code);
-        assert.equal((await estimates.pricePackageByCode(created.code)).amount_idr, 155000 + 15000);
+        assert.equal((await estimates.pricePackageByCode(created.code)).amount_idr, newPackageAmount);
         assert.equal(await scalar('SELECT COUNT(*) FROM checkup_prepay_package_items WHERE package_id = ?', [created.id]), 2);
 
         // 11. A paid order credits the category frozen in its snapshot, even after the package is deactivated.
         await insert('patients', { id: 'QA0005', full_name: 'Synthetic QA 5' });
-        const snapshot = { package_code: created.code, package_name: 'Paket QA Baru', category: 'gyn_repro', items: pricedNew.items, amount_idr: 170000, priced_at: new Date().toISOString() };
-        await insert('payment_orders', { id: 950, order_ref: 'QA-ORDER-950', patient_id: 'QA0005', product_code: created.code, amount_idr: 170000, gateway_mode: 'live', item_snapshot: JSON.stringify(snapshot) });
+        const snapshot = { package_code: created.code, package_name: 'Paket QA Baru', category: 'gyn_repro', items: pricedNew.items, amount_idr: newPackageAmount, priced_at: new Date().toISOString() };
+        await insert('payment_orders', { id: 950, order_ref: 'QA-ORDER-950', patient_id: 'QA0005', product_code: created.code, amount_idr: newPackageAmount, gateway_mode: 'live', item_snapshot: JSON.stringify(snapshot) });
         assert.equal(await packageRepository.setPackageActive(pool, created.id, false, { id: 'qa' }), true);
         const [[order]] = await pool.query('SELECT * FROM payment_orders WHERE id = 950');
         const orderConnection = await pool.getConnection();
@@ -229,11 +230,11 @@ function response() {
             const credited = await ledger.creditFromPaidOrder(orderConnection, order);
             await orderConnection.commit();
             assert.equal(credited.category, 'gyn_repro');
-            assert.equal(credited.credit_idr, 170000);
+            assert.equal(credited.credit_idr, newPackageAmount);
         } finally {
             orderConnection.release();
         }
-        assert.equal(await scalar("SELECT SUM(amount_idr) FROM patient_credit_ledger WHERE patient_id = 'QA0005' AND category = 'gyn_repro' AND entry_type = 'prepay' AND source_id = '950'"), 170000);
+        assert.equal(await scalar("SELECT SUM(amount_idr) FROM patient_credit_ledger WHERE patient_id = 'QA0005' AND category = 'gyn_repro' AND entry_type = 'prepay' AND source_id = '950'"), newPackageAmount);
 
         // 12. A pending withdrawal holds its amount: mark-paid of a 365000 bill takes only live - hold.
         await insert('patients', { id: 'QA0004', full_name: 'Synthetic QA 4' });
