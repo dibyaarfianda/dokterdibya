@@ -71,7 +71,7 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         expect(section).toBeLessThan(docs);
         // Sits in front of the sticky "Fitur Portal SW" section, never inside it.
         expect(section).toBeLessThan(landing.indexOf('<div class="proces-section patient-features-section">'));
-        for (const code of ['obstetri', 'gyn_repro', 'gyn_special']) {
+        for (const code of ['obstetri', 'obstetri_usg4d', 'gyn_repro', 'gyn_special']) {
             expect(landing).toContain(`data-estimate-card="${code}"`);
             expect(landing).toContain(`href="/bayar-estimasi.html?kategori=${code}"`);
         }
@@ -138,6 +138,7 @@ describe('login return path and review login page', () => {
 
     test.each([
         ['/bayar-estimasi.html?kategori=obstetri', '/bayar-estimasi.html?kategori=obstetri'],
+        ['/bayar-estimasi.html?kategori=obstetri_usg4d', '/bayar-estimasi.html?kategori=obstetri_usg4d'],
         ['/bayar-estimasi.html?order=DPK-11111111-2222-3333-4444-555555555555&x=1', '/bayar-estimasi.html?order=DPK-11111111-2222-3333-4444-555555555555'],
         ['/bayar-estimasi.html?kategori=<script>', '/bayar-estimasi.html'],
         ['//evil.example/bayar-estimasi.html', null],

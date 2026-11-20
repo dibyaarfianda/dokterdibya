@@ -5,7 +5,7 @@
     // and only with known query parameters, so a crafted ?next= can never send anyone off-site.
     var ALLOWED = {
         '/bayar-estimasi.html': {
-            kategori: /^(?:obstetri|gyn_repro|gyn_special)$/,
+            kategori: /^(?:obstetri|obstetri_usg4d|gyn_repro|gyn_special)$/,
             order: /^DPK-[0-9a-f-]{36}$/i
         }
     };

@@ -175,6 +175,15 @@ describe('createOrder', () => {
         await expect(service.createOrder({ patient: PATIENT, ...input })).rejects.toMatchObject({ code, status: 400 });
     });
 
+    test('the USG 4D product is its own order but is labelled as Kehamilan saldo', async () => {
+        const { service, fake, duitku } = setup({ category: estimate({ code: 'obstetri_usg4d', label: 'Kehamilan + USG 4D', amount_idr: 365000, raw_total: 365000 }) });
+        const order = await service.createOrder({ patient: PATIENT, category: 'obstetri_usg4d', paymentMethod: 'va_bni' });
+
+        expect(fake.state.orders[0]).toMatchObject({ product_code: 'obstetri_usg4d', amount_idr: 365000 });
+        expect(duitku.createTransaction).toHaveBeenCalledWith(expect.objectContaining({ amount: 365000, productDetails: 'Estimasi kunjungan Klinik Privat - Kehamilan + USG 4D' }));
+        expect(order).toMatchObject({ product: 'obstetri_usg4d', category: 'obstetri', category_label: 'Kehamilan + USG 4D', saldo_label: 'Kehamilan (Obstetri)' });
+    });
+
     test('a second tap returns the open order; a changed price creates a new one', async () => {
         const ctx = setup();
         const first = await ctx.service.createOrder({ patient: PATIENT, category: 'obstetri', paymentMethod: 'qris' });

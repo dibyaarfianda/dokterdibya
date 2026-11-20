@@ -24,7 +24,8 @@ const {
     MAX_PENDING_ORDERS_PER_PATIENT,
     FALLBACK_EMAIL
 } = require('./PremiumPaymentService');
-const { CONSULTATION_CATEGORIES, isConsultationCategory } = require('../constants/consultationCategories');
+const { CONSULTATION_CATEGORIES } = require('../constants/consultationCategories');
+const { isCheckupPrepayProduct, productCategory, productLabel } = require('../constants/checkupPrepayProducts');
 const { toPublicEstimate } = require('./CheckupEstimateService');
 
 const ORDER_TYPE = 'checkup_prepay';
@@ -37,8 +38,10 @@ function toPublicOrder(order, methods) {
     const method = methods[order.payment_method] || {};
     return {
         order_ref: order.order_ref,
-        category: order.product_code,
-        category_label: CONSULTATION_CATEGORIES[order.product_code] || order.product_code,
+        product: order.product_code,
+        category: productCategory(order.product_code) || order.product_code,
+        category_label: productLabel(order.product_code),
+        saldo_label: CONSULTATION_CATEGORIES[productCategory(order.product_code)] || productLabel(order.product_code),
         amount_idr: Number(order.amount_idr),
         payment_method: order.payment_method,
         method_label: method.label || order.payment_method,
@@ -96,10 +99,12 @@ function createCheckupPrepayService({
         return Object.entries(methods).map(([key, method]) => ({ key, label: method.label, type: method.type }));
     }
 
+    // `category` is the prepay product code (constants/checkupPrepayProducts.js), e.g. 'obstetri' or
+    // 'obstetri_usg4d'; the field keeps its old name so existing clients and links stay valid.
     async function createOrder({ patient, category, paymentMethod }) {
         const method = methods[paymentMethod];
         if (!method) throw new PremiumError('INVALID_METHOD', 'Metode pembayaran tidak valid', 400);
-        if (!isConsultationCategory(category)) throw new PremiumError('INVALID_CATEGORY', 'Kategori kunjungan tidak valid', 400);
+        if (!isCheckupPrepayProduct(category)) throw new PremiumError('INVALID_CATEGORY', 'Kategori kunjungan tidak valid', 400);
 
         const availability = await getAvailability(patient.id);
         if (!availability.available) {
@@ -181,7 +186,7 @@ function createCheckupPrepayService({
             [transaction.reference, transaction.vaNumber, transaction.qrString, transaction.paymentUrl, orderRef]
         );
         await recordEvent(orderRef, patient.id, 'order_created', {
-            order_type: ORDER_TYPE, category, method: paymentMethod, amount, gateway_mode: availability.mode
+            order_type: ORDER_TYPE, category: productCategory(category), product: category, method: paymentMethod, amount, gateway_mode: availability.mode
         });
 
         const [created] = await db.query('SELECT * FROM payment_orders WHERE order_ref = ? LIMIT 1', [orderRef]);
