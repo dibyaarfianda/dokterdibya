@@ -111,13 +111,30 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         expect(section).toBeLessThan(docs);
         // Sits in front of the sticky "Fitur Portal SW" section, never inside it.
         expect(section).toBeLessThan(landing.indexOf('<div class="proces-section patient-features-section">'));
+        // Cards are rendered from the active packages, not hard-coded.
+        expect(landing).toContain('data-estimate-groups');
+        expect(landing).toContain('data-estimate-fallback');
         for (const code of ['obstetri', 'obstetri_usg4d', 'gyn_repro', 'gyn_special']) {
-            expect(landing).toContain(`data-estimate-card="${code}"`);
-            expect(landing).toContain(`href="/bayar-estimasi.html?kategori=${code}"`);
+            expect(landing).not.toContain(`data-estimate-card="${code}"`);
         }
         expect(landing).toContain('QRIS atau Virtual Account');
         expect(landing).toContain('tagihan akhir mengikuti tindakan');
-        expect(landing).toContain('dikembalikan atas permintaan');
+        expect(landing).toContain('dapat dicairkan ke rekening Anda lewat portal');
+        expect(landing).not.toContain('dikembalikan atas permintaan');
+    });
+
+    test('the estimates module renders the groups with DOM APIs from the active packages', () => {
+        const moduleSource = read('public', 'scripts', 'landing', 'checkup-estimates.js');
+        expect(moduleSource).toContain('renderGroups');
+        expect(moduleSource).toContain('createElement');
+        expect(moduleSource).toContain("'landing:layout-changed'");
+        expect(moduleSource).not.toMatch(/innerHTML/);
+        expect(moduleSource).toContain('/bayar-estimasi.html?kategori=');
+        expect(moduleSource).toContain('encodeURIComponent');
+        for (const heading of ['Kehamilan', 'Program Hamil', 'Ginekologi']) {
+            expect(moduleSource).toContain(`'${heading}'`);
+        }
+        expect(moduleSource).toContain('Estimasi segera tersedia. Hubungi klinik untuk informasi biaya.');
     });
 
     test('the estimate cards are offered by Sisiwanita, not by the doctor personally', () => {
@@ -125,7 +142,7 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         const section = landing.slice(start, landing.indexOf('<div class="doc-section">'));
         expect(section).toContain('Layanan Sisiwanita');
         expect(section).not.toContain('dr. Dibya');
-        expect(section).toContain('Paket kontrol kehamilan di Sisiwanita.');
+        expect(section).toContain('data-estimate-groups');
     });
 
     test('Fitur Portal SW says the portal keeps medical summaries, USG photos and lab results', () => {
@@ -171,7 +188,7 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         const moduleSource = read('public', 'scripts', 'landing', 'checkup-estimates.js');
         expect(moduleSource).toContain("window.dispatchEvent(new CustomEvent('landing:layout-changed'");
         expect(moduleSource.indexOf("new CustomEvent('landing:layout-changed'"))
-            .toBeGreaterThan(moduleSource.indexOf('renderCard(card, estimate || null'));
+            .toBeGreaterThan(moduleSource.indexOf('renderGroups(container'));
 
         const stackStart = landing.indexOf('function rebuildMetrics()');
         const stackSource = landing.slice(stackStart, landing.indexOf('function applyRowState(', stackStart));
