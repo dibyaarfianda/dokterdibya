@@ -259,12 +259,46 @@ describe('login return path and review login page', () => {
         expect(script).not.toMatch(/amount_idr:\s*state/);
     });
 
-    test('the booking success screen offers prepay only when the server says the patient can pay', () => {
+    test('the booking page offers the package estimate and the pay-now choice only when the server allows it', () => {
         const booking = read('public', 'booking-klinik.html');
-        expect(booking).toContain('async function findPrepayOption(category)');
+        expect(booking).not.toMatch(/findPrepayOption/);
+        expect(booking).toContain('loadPrepayOffer(');
         expect(booking).toContain('/api/patient/checkup-prepay/status');
-        expect(booking).toContain('if (!status.availability?.available || !estimate) return null;');
-        expect(booking).toContain('Bayar estimasi di muka (opsional)');
+        expect(booking).toContain('/api/patient/checkup-prepay/suggestion');
+        expect(booking).toContain('prepay-package-select');
+        expect(booking).toContain('availability?.available');
+        expect(booking).toContain('bookingData.prepayPackageCode');
+        expect(booking).toContain("'booking-prepay-package'");
+        for (const copy of [
+            'Perkiraan biaya kunjungan',
+            'Pilih paket sesuai usia kehamilan',
+            'Mau bayar sekarang?',
+            'Bayar sekarang (QRIS / VA)',
+            'Bayar saat periksa',
+            'sudah menutup estimasi',
+            'bayar di muka (deposit)',
+            'otomatis dipotong',
+            'bisa dicairkan'
+        ]) {
+            expect(booking).toContain(copy);
+        }
+        expect(booking).toContain('/bayar-estimasi.html?kategori=');
         expect(booking).toContain("window.location.href = '/patient-menu.html';");
+    });
+
+    test('the booking POST body keeps exactly its old keys and carries no package fields', () => {
+        const booking = read('public', 'booking-klinik.html');
+        const body = booking.match(/body: JSON\.stringify\(\{([\s\S]*?)\}\)\s*\}\);/)[1];
+        const keys = [...body.matchAll(/^\s*([a-z_]+):/gm)].map(m => m[1]);
+        expect(keys).toEqual([
+            'booking_policy_acknowledged',
+            'booking_policy_version',
+            'appointment_date',
+            'session',
+            'slot_number',
+            'chief_complaint',
+            'consultation_category'
+        ]);
+        expect(body).not.toMatch(/prepay|package/i);
     });
 });
