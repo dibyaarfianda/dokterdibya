@@ -1,8 +1,9 @@
 'use strict';
 
 /**
- * Estimated cost of one Klinik Privat visit per booking category, used for the optional
- * "bayar di muka" (prepay) product.
+ * Estimated cost of one Klinik Privat visit per prepay product (constants/checkupPrepayProducts.js),
+ * used for the optional "bayar di muka" (prepay) product. Mapping keys are product codes; each
+ * product credits the saldo of one booking category.
  *
  * The mapping (which tindakan, how many) is stored in settings under SETTINGS_KEY and set with
  * scripts/checkup-prepay-estimate.js. Prices always come live from the tindakan master table, so
@@ -12,11 +13,11 @@
  */
 
 const { MANDATORY_SERVICE_IDS } = require('./EstimasiBiayaDraft');
-const { CONSULTATION_CATEGORIES, CONSULTATION_CATEGORY_CODES, isConsultationCategory } = require('../constants/consultationCategories');
+const { CHECKUP_PREPAY_PRODUCTS, CHECKUP_PREPAY_PRODUCT_CODES, isCheckupPrepayProduct } = require('../constants/checkupPrepayProducts');
 const { MIN_AMOUNT_IDR } = require('../utils/duitku-payment');
 
 const SETTINGS_KEY = 'checkup_prepay_estimate_v1';
-const SETTINGS_DESCRIPTION = 'Tindakan per kategori untuk estimasi biaya kunjungan (bayar di muka)';
+const SETTINGS_DESCRIPTION = 'Tindakan per produk untuk estimasi biaya kunjungan (bayar di muka)';
 const ALLOWED_SERVICE_CATEGORIES = Object.freeze(['LAYANAN', 'TINDAKAN MEDIS']);
 const MAX_ITEMS_PER_CATEGORY = 20;
 const MAX_QUANTITY = 10;
@@ -41,8 +42,8 @@ function normalizeMapping(input) {
     const categories = {};
 
     for (const [code, config] of Object.entries(categoriesIn)) {
-        if (!isConsultationCategory(code)) {
-            errors.push(`Kategori tidak dikenal: ${code}`);
+        if (!isCheckupPrepayProduct(code)) {
+            errors.push(`Produk tidak dikenal: ${code}`);
             continue;
         }
         const rawItems = config && Array.isArray(config.items) ? config.items : [];
@@ -108,11 +109,11 @@ function priceMapping(mapping, tindakanRows, { minAmount = MIN_AMOUNT_IDR } = {}
     const admin = rows.get(ADMIN_TINDAKAN_ID);
     const adminReady = !!admin && Number(admin.is_active) === 1 && hasUsablePrice(admin);
 
-    return CONSULTATION_CATEGORY_CODES.map(code => {
-        const label = CONSULTATION_CATEGORIES[code];
+    return CHECKUP_PREPAY_PRODUCT_CODES.map(code => {
+        const { label, category } = CHECKUP_PREPAY_PRODUCTS[code];
         const config = mapping.categories && mapping.categories[code];
         if (!config || !config.items || !config.items.length) {
-            return { code, label, ready: false, amount_idr: null, raw_total: null, issues: ['Belum diatur'], items: [] };
+            return { code, label, category, ready: false, amount_idr: null, raw_total: null, issues: ['Belum diatur'], items: [] };
         }
 
         const issues = [];
@@ -151,15 +152,16 @@ function priceMapping(mapping, tindakanRows, { minAmount = MIN_AMOUNT_IDR } = {}
             issues.push(`Total Rp${amount.toLocaleString('id-ID')} di bawah minimum pembayaran Rp${minAmount.toLocaleString('id-ID')}`);
         }
         const ready = issues.length === 0;
-        return { code, label, ready, amount_idr: ready ? amount : null, raw_total: rawTotal, issues, items };
+        return { code, label, category, ready, amount_idr: ready ? amount : null, raw_total: rawTotal, issues, items };
     });
 }
 
-/** What patients and the public page may see of a priced category: no ids, no internal issues. */
+/** What patients and the public page may see of a priced product: no ids, no internal issues. */
 function toPublicEstimate(category) {
     return {
         code: category.code,
         label: category.label,
+        category: category.category,
         ready: !!category.ready,
         amount_idr: category.ready ? category.amount_idr : null,
         items: category.ready

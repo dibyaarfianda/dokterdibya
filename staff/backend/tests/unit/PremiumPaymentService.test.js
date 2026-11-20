@@ -722,6 +722,21 @@ describe('non-premium Duitku orders (checkup prepay)', () => {
         expect(ctx.fake.state.entitlements).toHaveLength(0);
     });
 
+    test('a paid USG 4D order credits the Kehamilan (obstetri) saldo category', async () => {
+        const ctx = setup({ orders: [prepayOrder({ product_code: 'obstetri_usg4d', amount_idr: 365000 })], fulfillers: { checkup_prepay: creditFromPaidOrder } });
+        const result = await ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 365000 });
+        expect(result.status).toBe('activated');
+        expect(ctx.fake.state.ledger).toEqual([expect.objectContaining({ category: 'obstetri', amount_idr: 365000, gateway_mode: 'sandbox' })]);
+        expect(result.grant).toMatchObject({ category: 'obstetri', product: 'obstetri_usg4d', credit_idr: 365000 });
+    });
+
+    test('an order whose product maps to no saldo category is rolled back', async () => {
+        const ctx = setup({ orders: [prepayOrder({ product_code: 'tidak_ada' })], fulfillers: { checkup_prepay: creditFromPaidOrder } });
+        await expect(ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 })).rejects.toThrow(/kategori/);
+        expect(ctx.fake.state.orders[0].status).toBe('pending');
+        expect(ctx.fake.state.ledger).toHaveLength(0);
+    });
+
     test('a premium order on the same service still grants a period, not saldo', async () => {
         const ctx = setup({ fulfillers: { checkup_prepay: creditFromPaidOrder } });
         const order = await ctx.service.createOrder({ patient: PATIENT, planCode: 'kehamilan', paymentMethod: 'qris' });

@@ -40,7 +40,7 @@ describe('normalizeMapping', () => {
     });
 
     test.each([
-        ['an unknown category', { lainnya: { items: [{ tindakan_id: 20, quantity: 1 }] } }, /Kategori tidak dikenal/],
+        ['an unknown product', { lainnya: { items: [{ tindakan_id: 20, quantity: 1 }] } }, /Produk tidak dikenal/],
         ['the admin fee, which is added automatically', { obstetri: { items: [{ tindakan_id: ADMIN_TINDAKAN_ID, quantity: 1 }] } }, /ditambahkan otomatis/],
         ['a quantity of zero', { obstetri: { items: [{ tindakan_id: 20, quantity: 0 }] } }, /jumlah harus/],
         ['a quantity above the maximum', { obstetri: { items: [{ tindakan_id: 20, quantity: 11 }] } }, /jumlah harus/],
@@ -67,11 +67,13 @@ describe('normalizeMapping', () => {
 
 describe('priceMapping', () => {
     test('adds the admin fee once, multiplies quantities and rounds the total up to whole rupiah', () => {
-        const [obstetri, gynRepro] = priceMapping(mapping({
+        const priced = priceMapping(mapping({
             obstetri: { items: [{ tindakan_id: 20, quantity: 1 }, { tindakan_id: 30, quantity: 1 }] },
             gyn_repro: { items: [{ tindakan_id: 20, quantity: 2 }] }
         }), [ADMIN, KONSUL, USG]);
-        expect(obstetri).toMatchObject({ code: 'obstetri', label: 'Kehamilan (Obstetri)', ready: true, issues: [] });
+        const obstetri = priced.find(entry => entry.code === 'obstetri');
+        const gynRepro = priced.find(entry => entry.code === 'gyn_repro');
+        expect(obstetri).toMatchObject({ code: 'obstetri', label: 'Kehamilan (Obstetri)', category: 'obstetri', ready: true, issues: [] });
         expect(obstetri.raw_total).toBe(190000.5);
         expect(obstetri.amount_idr).toBe(190001);
         expect(obstetri.items.map(item => item.tindakan_id)).toEqual([ADMIN_TINDAKAN_ID, 20, 30]);
@@ -79,11 +81,22 @@ describe('priceMapping', () => {
         expect(gynRepro.items.filter(item => item.tindakan_id === ADMIN_TINDAKAN_ID)).toHaveLength(1);
     });
 
-    test('a category without configuration is not ready', () => {
+    test('a product without configuration is not ready', () => {
         const result = priceMapping(mapping({}), [ADMIN]);
-        expect(result.map(entry => entry.code)).toEqual(['obstetri', 'gyn_repro', 'gyn_special']);
+        expect(result.map(entry => entry.code)).toEqual(['obstetri', 'obstetri_usg4d', 'gyn_repro', 'gyn_special']);
         expect(result.every(entry => !entry.ready && entry.amount_idr === null)).toBe(true);
         expect(result[0].issues).toEqual(['Belum diatur']);
+    });
+
+    test('the USG 4D product is priced on its own and credits the Kehamilan saldo category', () => {
+        const usg4d = { id: 9, code: 'U4D', name: 'USG 4 Dimensi', category: 'LAYANAN', price: '250000.00', is_active: 1 };
+        const priced = priceMapping(mapping({
+            obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] },
+            obstetri_usg4d: { items: [{ tindakan_id: 20, quantity: 1 }, { tindakan_id: 9, quantity: 1 }] }
+        }), [ADMIN, KONSUL, usg4d]);
+        const product = priced.find(entry => entry.code === 'obstetri_usg4d');
+        expect(product).toMatchObject({ label: 'Kehamilan + USG 4D', category: 'obstetri', ready: true, amount_idr: 365000 });
+        expect(priced.find(entry => entry.code === 'obstetri').amount_idr).toBe(115000);
     });
 
     test.each([
@@ -107,12 +120,14 @@ describe('priceMapping', () => {
     });
 
     test('the public view hides ids and configuration problems', () => {
-        const [ready, notReady] = priceMapping(mapping({ obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] }, gyn_repro: { items: [{ tindakan_id: 99, quantity: 1 }] } }), [ADMIN, KONSUL]);
+        const priced = priceMapping(mapping({ obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] }, gyn_repro: { items: [{ tindakan_id: 99, quantity: 1 }] } }), [ADMIN, KONSUL]);
+        const ready = priced.find(entry => entry.code === 'obstetri');
+        const notReady = priced.find(entry => entry.code === 'gyn_repro');
         expect(toPublicEstimate(ready)).toEqual({
-            code: 'obstetri', label: 'Kehamilan (Obstetri)', ready: true, amount_idr: 115000,
+            code: 'obstetri', label: 'Kehamilan (Obstetri)', category: 'obstetri', ready: true, amount_idr: 115000,
             items: [{ name: 'Biaya Admin', quantity: 1, subtotal_idr: 15000 }, { name: 'Konsultasi Dokter', quantity: 1, subtotal_idr: 100000 }]
         });
-        expect(toPublicEstimate(notReady)).toEqual({ code: 'gyn_repro', label: 'Program Hamil (Reproduksi)', ready: false, amount_idr: null, items: [] });
+        expect(toPublicEstimate(notReady)).toEqual({ code: 'gyn_repro', label: 'Program Hamil (Reproduksi)', category: 'gyn_repro', ready: false, amount_idr: null, items: [] });
     });
 });
 

@@ -12,19 +12,23 @@
  * (source_type, source_id, entry_type) is UNIQUE, so one order can only credit once.
  */
 
+const { productCategory } = require('../constants/checkupPrepayProducts');
+
 const SOURCE_PAYMENT_ORDER = 'payment_order';
 
 /**
  * Fulfiller for paid 'checkup_prepay' orders. Runs on the transaction connection of
  * PremiumPaymentService.applyPaidOrder, so the credit and the paid status commit together.
  * A second call for the same order throws ER_DUP_ENTRY, which applyPaidOrder treats as already paid.
+ * The saldo category comes from the product (e.g. 'obstetri_usg4d' credits 'obstetri').
  */
 async function creditFromPaidOrder(executor, order) {
     const amount = Number(order && order.amount_idr);
     if (!Number.isInteger(amount) || amount <= 0) {
         throw new Error('Nominal order tidak valid untuk saldo');
     }
-    if (!order.product_code) {
+    const category = productCategory(order.product_code);
+    if (!category) {
         throw new Error('Order bayar di muka tanpa kategori tidak bisa menjadi saldo');
     }
     const gatewayMode = order.gateway_mode || null;
@@ -32,9 +36,9 @@ async function creditFromPaidOrder(executor, order) {
         `INSERT INTO patient_credit_ledger
             (patient_id, category, entry_type, amount_idr, gateway_mode, source_type, source_id, note)
          VALUES (?, ?, 'prepay', ?, ?, ?, ?, ?)`,
-        [order.patient_id, order.product_code, amount, gatewayMode, SOURCE_PAYMENT_ORDER, String(order.id), `Bayar di muka ${order.order_ref}`]
+        [order.patient_id, category, amount, gatewayMode, SOURCE_PAYMENT_ORDER, String(order.id), `Bayar di muka ${order.product_code} ${order.order_ref}`.substring(0, 255)]
     );
-    return { category: order.product_code, credit_idr: amount, gateway_mode: gatewayMode };
+    return { category, product: order.product_code, credit_idr: amount, gateway_mode: gatewayMode };
 }
 
 /**

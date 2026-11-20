@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Set which tindakan make up the estimated cost of one Klinik Privat visit per booking category
- * (the "bayar di muka" product). Prices are read live from the tindakan table; the admin fee is
- * added automatically.
+ * Set which tindakan make up the estimated cost of one Klinik Privat visit per prepay product
+ * (constants/checkupPrepayProducts.js, e.g. obstetri, obstetri_usg4d, gyn_repro, gyn_special).
+ * Prices are read live from the tindakan table; the admin fee is added automatically.
  *
  * Usage (from staff/backend):
  *   node scripts/checkup-prepay-estimate.js list-tindakan
@@ -22,7 +22,7 @@ const {
     priceMapping,
     createCheckupEstimateService
 } = require('../services/CheckupEstimateService');
-const { CONSULTATION_CATEGORY_CODES, isConsultationCategory } = require('../constants/consultationCategories');
+const { CHECKUP_PREPAY_PRODUCT_CODES, isCheckupPrepayProduct } = require('../constants/checkupPrepayProducts');
 
 const rupiah = value => (value === null || value === undefined ? '-' : `Rp${Math.round(Number(value)).toLocaleString('id-ID')}`);
 
@@ -74,8 +74,8 @@ async function main() {
     }
 
     if (command === 'set' || command === 'clear') {
-        if (!isConsultationCategory(category)) {
-            throw new Error(`Kategori harus salah satu dari: ${CONSULTATION_CATEGORY_CODES.join(', ')}`);
+        if (!isCheckupPrepayProduct(category)) {
+            throw new Error(`Produk harus salah satu dari: ${CHECKUP_PREPAY_PRODUCT_CODES.join(', ')}`);
         }
         const { mapping } = await estimates.loadMapping();
         const next = { ...mapping, categories: { ...mapping.categories } };

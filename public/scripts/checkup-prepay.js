@@ -17,8 +17,8 @@
 
     var root = document.getElementById('prepay-app');
     var heroStatus = document.getElementById('prepay-hero-status');
-    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261118prepay1';
-    var CATEGORY_PATTERN = /^(?:obstetri|gyn_repro|gyn_special)$/;
+    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261120prepay2';
+    var CATEGORY_PATTERN = /^(?:obstetri|obstetri_usg4d|gyn_repro|gyn_special)$/;
     var ORDER_PATTERN = /^DPK-[0-9a-f-]{36}$/i;
     var POLL_FAST_MS = 3000;
     var POLL_MEDIUM_MS = 10000;
@@ -320,7 +320,7 @@
         root.innerHTML = '<section class="section reveal"><div class="tool-panel pm-panel pm-done">' +
             '<span class="pm-status-icon on large"><i class="fa-solid fa-circle-check"></i></span>' +
             '<h3 class="pm-heading">Pembayaran diterima</h3>' +
-            '<p class="pm-note">Saldo ' + escapeHtml(order.category_label) + escapeHtml(sandboxSuffix(order.gateway_mode)) + ' bertambah ' + escapeHtml(rupiah(order.amount_idr)) +
+            '<p class="pm-note">Saldo ' + escapeHtml(order.saldo_label || order.category_label) + escapeHtml(sandboxSuffix(order.gateway_mode)) + ' bertambah ' + escapeHtml(rupiah(order.amount_idr)) +
             '. Saldo ini dipotong dari tagihan kunjungan Klinik Privat Anda.</p>' +
             '<button type="button" class="pm-btn primary" data-action="done">Lihat saldo</button>' +
             '<button type="button" class="pm-btn secondary" data-action="home">Ke portal</button>' +
