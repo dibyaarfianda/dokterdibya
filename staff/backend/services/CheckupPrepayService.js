@@ -225,7 +225,8 @@ function createCheckupPrepayService({
         );
         return {
             availability,
-            estimates: priced.packages.map(toPublicEstimate),
+            // Not-ready packages (drafts, broken items) are hidden from patients.
+            estimates: priced.packages.filter(item => item.ready).map(toPublicEstimate),
             balances: balances.map(row => ({
                 ...row,
                 category_label: CONSULTATION_CATEGORIES[row.category] || row.category

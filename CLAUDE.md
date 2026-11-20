@@ -1534,7 +1534,7 @@ Spec: `docs/superpowers/specs/2026-11-20-checkup-prepay-tahap-2-design.md`. Ledg
 - **Closing** keeps the bill in full on the visit date and adds `saldo_paid_total`, `saldo_returned_total`, `cash_expected_total`, only when > 0 (old closed days keep their fingerprint). Usage is loaded in `loadFinancialSources`, never only on the preview path.
 - **Retur** on a saldo-paid main bill puts the saldo-paid part back into saldo (`payment_method 'saldo'`); only the rest is cash/transfer. Lock order everywhere: bill row → `lockLiveBalances(patient)` → ledger rows.
 - **Ledger reads by bill/return id** use `source_id LIKE '<id>:%'` (unique-key prefix), never `SUBSTRING_INDEX(...) IN (...) FOR UPDATE` (that range-locks every usage row).
-- **Staff page "Pembayaran di Muka"** (`/api/staff-prepay`): view = `billing.view`, refund = `billing.reset`, estimate editor = doctor only (`requireDoctorRole` + protected, non-delegable `checkup_prepay.manage_estimate`).
+- **Staff page "Pembayaran di Muka"** (`/api/staff-prepay`): view = `billing.view`, refund = `billing.reset`, package/estimate editor: see section 45 (superadmin + doctor, `requireSuperadmin` + the protected overrides).
 - **Go-live** (`CHECKUP_PREPAY_LIVE=true`) only after Duitku approval + production keys; then Boss makes one small real payment and checks toast, red dot, mark-paid, closing line and refund.
 
 ### 45. Bayar di Muka Tahap 3 — Packages and Withdrawals (21 November 2026)

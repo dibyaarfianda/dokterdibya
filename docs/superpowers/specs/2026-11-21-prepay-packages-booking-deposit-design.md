@@ -328,12 +328,13 @@ If the patient's live saldo already covers the estimate, the card instead shows 
 - Staff assets change (prepay page, shell), so bump to the next unused `vNNN` with release staging first.
 - Deploy order:
   1. DB backup;
-  2. migration (twice);
-  3. `migrate-prepay-packages.js --apply`, then check that the four packages price exactly as `checkup-prepay-estimate.js show` did before;
-  4. stage staff assets;
-  5. ff-merge;
-  6. `pm2 reload`;
-  7. verify `/api/public/checkup-estimates` shows the same four prices.
+  2. run the SQL migration (from the fetched commit) twice;
+  3. stage staff assets v498 + pre-cutover verifier;
+  4. ff-merge (the migrate script and `PrepayPackageRepository.js` exist on the server only after this);
+  5. `node scripts/migrate-prepay-packages.js` dry run, then `--apply`;
+  6. `node scripts/checkup-prepay-estimate.js show`: expect Rp155.000 / Rp265.000 / Rp240.000 / Rp240.000;
+  7. `pm2 reload ... --update-env` promptly (until then the old process ignores packages);
+  8. post verifier, health 200, and `/api/public/checkup-estimates` shows the same four amounts.
 
 ## Tests
 

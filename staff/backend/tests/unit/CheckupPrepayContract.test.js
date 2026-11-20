@@ -209,6 +209,20 @@ describe('unavailable package on the payment page', () => {
         expect(source).toContain("link.setAttribute('href', '/')");
         expect(source).toContain('heading.textContent = ');
     });
+
+    test('a linked package that is not ready is unavailable and never swaps to another package', () => {
+        const source = read('public', 'scripts', 'checkup-prepay.js');
+        // (ii) a requested package that exists but is not ready is unavailable
+        const start = source.indexOf('function isPackageUnavailable()');
+        const body = source.slice(start, source.indexOf('function renderPackageUnavailable'));
+        expect(body).toMatch(/var requested = estimateFor\(requestedCategory\);\s*return !requested \|\| !requested\.ready;/);
+        // (iii) the first-ready fallback never replaces a requested package
+        const catStart = source.indexOf('function renderCategories()');
+        const cat = source.slice(catStart, source.indexOf('var cards = state.estimates.map', catStart));
+        expect(cat).toContain('if ((!selected || !selected.ready) && !requestedCategory)');
+        // (iv) picking another card clears the unavailable flag
+        expect(source).toMatch(/action === 'category'\) \{\s*state\.selectedCategory = target\.getAttribute\('data-code'\);\s*state\.packageUnavailable = false;/);
+    });
 });
 
 describe('login return path and review login page', () => {

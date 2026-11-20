@@ -227,6 +227,26 @@ describe('createCheckupEstimateService', () => {
         expect(staff.packages.map(p => p.code)).toEqual(['pkg_1', 'pkg_2']);
     });
 
+    test('the staff list carries the STORED items, including one that made the package not ready', async () => {
+        const inactiveObat = { id: 12, code: 'OBT12', name: 'Obat Off', unit: 'tablet', price: '1000.00', is_active: 0 };
+        const { db, repository } = setup({ packages: [pkg([T(9), O(12, 3)])] });
+        db.query.mockImplementation(async (sql, params) => {
+            if (/FROM tindakan WHERE id IN/.test(sql)) return [[ADMIN, USG4D].filter(row => params[0].includes(row.id))];
+            if (/FROM obat WHERE id IN/.test(sql)) return [[inactiveObat].filter(row => params[0].includes(row.id))];
+            throw new Error(`unexpected SQL ${sql}`);
+        });
+        const service = createCheckupEstimateService({ db, repository });
+        const [staffPkg] = (await service.priceAllForStaff()).packages;
+        expect(staffPkg.ready).toBe(false);
+        expect(staffPkg.items.some(item => item.item_type === 'obat')).toBe(false);
+        expect(staffPkg.stored_items).toEqual([
+            { item_type: 'tindakan', ref_id: 9, quantity: 1, sort_order: 0 },
+            { item_type: 'obat', ref_id: 12, quantity: 3, sort_order: 1 }
+        ]);
+        // the public shape never exposes it
+        expect(toPublicEstimate(staffPkg)).not.toHaveProperty('stored_items');
+    });
+
     test('pricePackageByCode is null for a missing or inactive package', async () => {
         const { db, repository } = setup();
         const service = createCheckupEstimateService({ db, repository });

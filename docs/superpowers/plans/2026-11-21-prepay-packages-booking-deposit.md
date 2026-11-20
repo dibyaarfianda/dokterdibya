@@ -602,12 +602,12 @@ Migration (idempotent; header says to run after `20261121_checkup_prepay_tahap2.
 - [ ] **Step 3: Final whole-branch review** (fresh reviewer, most capable model) with this plan's Review Focus. Then the fix pass.
 - [ ] **Step 4: Merge and deploy** (Boss's standing instruction):
   1. DB backup;
-  2. migration twice;
-  3. `node scripts/migrate-prepay-packages.js` dry run, then `--apply`;
-  4. **check** that `/api/public/checkup-estimates` shows the same four amounts as before (Rp155.000, Rp265.000, Rp240.000, Rp240.000);
-  5. stage staff `v498`, then the pre-cutover verifier;
-  6. ff-merge;
-  7. `pm2 reload --update-env`;
-  8. post verifier and health 200;
+  2. run the SQL migration (from the fetched commit) twice;
+  3. stage staff assets `v498` + pre-cutover verifier;
+  4. ff-merge (`scripts/migrate-prepay-packages.js` and `services/PrepayPackageRepository.js` exist on the server only after this);
+  5. `node scripts/migrate-prepay-packages.js` dry run, then `--apply`;
+  6. `node scripts/checkup-prepay-estimate.js show`: expect Rp155.000 / Rp265.000 / Rp240.000 / Rp240.000;
+  7. `pm2 reload ... --update-env` promptly (until then the old process ignores packages);
+  8. post verifier, health 200, and `/api/public/checkup-estimates` shows the same four amounts;
   9. live check: the home page renders the four cards from packages, `/bayar-estimasi.html?kategori=obstetri` still works, and the staff Paket tab is visible to the doctor.
 - [ ] **Step 5: Commit the docs and memory updates.** Report to Boss: what is live, what stays off until go-live (the booking offer and Saldo menu show only for payable accounts), and the deferred items.

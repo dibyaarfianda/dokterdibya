@@ -135,6 +135,27 @@ describe('Pembayaran di Muka page shell', () => {
         expect(JSON.parse(JSON.stringify(api.payloadItems(priced, 1))).map(item => `${item.item_type}:${item.ref_id}`)).toEqual(['tindakan:9', 'obat:1', 'obat:77']);
     });
 
+    test('editing a package starts from its STORED items so a problem item is not silently dropped', () => {
+        const source = moduleSource();
+        // call site: the editor rows come from stored_items, never from the priced items
+        expect(source).toContain('editorItemsFromPriced(existing.stored_items, packageState.catalog?.admin?.id)');
+        expect(source).not.toContain('editorItemsFromPriced(existing.items');
+        const vm = require('vm');
+        const start = source.indexOf('// <editor-item-helpers>');
+        const end = source.indexOf('// </editor-item-helpers>');
+        const api = vm.runInNewContext(`${source.slice(start, end).replace(/export /g, '')};({ editorItemsFromPriced, payloadItems })`, {});
+        // priced items lack the inactive obat #12; the stored items still carry it
+        const existing = {
+            items: [{ item_type: 'tindakan', ref_id: 1, quantity: 1 }, { item_type: 'tindakan', ref_id: 9, quantity: 1 }],
+            stored_items: [{ item_type: 'tindakan', ref_id: 9, quantity: 1, sort_order: 0 }, { item_type: 'obat', ref_id: 12, quantity: 3, sort_order: 1 }]
+        };
+        const rows = api.editorItemsFromPriced(existing.stored_items, 1);
+        expect(JSON.parse(JSON.stringify(api.payloadItems(rows, 1)))).toEqual([
+            { item_type: 'tindakan', ref_id: 9, quantity: 1 },
+            { item_type: 'obat', ref_id: 12, quantity: 3 }
+        ]);
+    });
+
     test('the orders table shows the order ref (spec §8 columns)', () => {
         expect(fragment()).toMatch(/<th>Order<\/th>/);
         expect(moduleSource()).toContain('escapeHtml(row.order_ref');

@@ -228,7 +228,8 @@
         }
         var available = state.availability.available;
         var selected = estimateFor(state.selectedCategory);
-        if (!selected || !selected.ready) {
+        // Never swap a requested package for another one; an unavailable request is handled in renderOverview.
+        if ((!selected || !selected.ready) && !requestedCategory) {
             selected = state.estimates.find(function (item) { return item.ready; }) || null;
             state.selectedCategory = selected ? selected.code : '';
         }
@@ -281,7 +282,9 @@
     // only a way back home. Built with DOM APIs so no server string reaches innerHTML.
     function isPackageUnavailable() {
         if (state.packageUnavailable) return true;
-        return !!requestedCategory && !estimateFor(requestedCategory);
+        if (!requestedCategory) return false;
+        var requested = estimateFor(requestedCategory);
+        return !requested || !requested.ready;
     }
 
     function renderPackageUnavailable() {
@@ -581,6 +584,7 @@
         var action = target.getAttribute('data-action');
         if (action === 'category') {
             state.selectedCategory = target.getAttribute('data-code');
+            state.packageUnavailable = false;
             state.error = '';
             renderOverview();
         } else if (action === 'method') {

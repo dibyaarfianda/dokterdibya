@@ -275,13 +275,19 @@ describe('reading orders and status', () => {
         await expect(ctx.service.getOrderForPatient('P9999', order.order_ref)).resolves.toBeNull();
     });
 
+    test('status hides packages that are not ready (spec section 2)', async () => {
+        const ctx = setup();
+        const status = await ctx.service.getStatus(PATIENT.id);
+        expect(status.estimates.map(item => item.code)).toEqual(['obstetri']);
+        expect(status.estimates.every(item => item.ready)).toBe(true);
+    });
+
     test('status combines availability, public estimates, saldo and recent orders', async () => {
         const ctx = setup();
         await ctx.service.createOrder({ patient: PATIENT, category: 'obstetri', paymentMethod: 'qris' });
         const status = await ctx.service.getStatus(PATIENT.id);
         expect(status.availability).toEqual({ available: true, mode: 'sandbox', reason: null });
         expect(status.estimates[0]).toMatchObject({ code: 'obstetri', name: 'Kehamilan (Obstetri)', label: 'Kehamilan (Obstetri)', ready: true, amount_idr: 115000, items: [{ name: 'Biaya Admin', quantity: 1, subtotal_idr: 15000 }] });
-        expect(status.estimates[1]).toMatchObject({ code: 'gyn_repro', ready: false, items: [] });
         expect(status.balances).toEqual([{ category: 'obstetri', gateway_mode: 'sandbox', balance_idr: 115000, category_label: 'Kehamilan (Obstetri)' }]);
         expect(status.orders).toHaveLength(1);
         expect(status.payment_methods).toEqual([{ key: 'qris', label: 'QRIS', type: 'qris' }, { key: 'va_bni', label: 'VA BNI', type: 'va' }]);

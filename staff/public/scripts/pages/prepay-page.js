@@ -540,7 +540,7 @@ export async function prepayEditPackage(id) {
         ? {
             id: existing.id, code: existing.code, name: existing.name, description: existing.description, category: existing.category,
             week_min: existing.week_min, week_max: existing.week_max, sort_order: existing.sort_order, issues: existing.ready ? [] : (existing.issues || []),
-            items: editorItemsFromPriced(existing.items, packageState.catalog?.admin?.id)
+            items: editorItemsFromPriced(existing.stored_items, packageState.catalog?.admin?.id)
         }
         : { id: null, code: null, name: '', description: '', category: 'obstetri', week_min: null, week_max: null, sort_order: (packageState.list.length + 1) * 10, issues: [], items: [] };
     renderPackageEditor();

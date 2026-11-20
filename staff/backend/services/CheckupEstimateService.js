@@ -197,7 +197,15 @@ function pricePackage(pkgInput, { tindakan = new Map(), obat = new Map() } = {},
         amount_idr: ready ? amount : null,
         raw_total: rawTotal,
         issues,
-        items
+        items,
+        // Staff editor only: the items as STORED, including ones left out of `items` because they are
+        // inactive, missing, unpriced or not allowed. toPublicEstimate never copies this.
+        stored_items: (pkgInput.items || []).map((item, index) => ({
+            item_type: item.item_type,
+            ref_id: Number(item.ref_id),
+            quantity: item.quantity,
+            sort_order: item.sort_order === undefined ? index : item.sort_order
+        }))
     };
 }
 
