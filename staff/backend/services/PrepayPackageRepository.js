@@ -1,5 +1,7 @@
 'use strict';
 
+const crypto = require('crypto');
+
 /**
  * Storage for editable "bayar di muka" packages (tables from migrations/20261122_checkup_prepay_packages.sql).
  * Pure data access: input validation is PrepayPackageValidation's job, transactions belong to the caller.
@@ -94,7 +96,7 @@ async function insertItems(connection, packageId, items) {
 
 /**
  * Create (no input.id) or update a package and replace all of its items. The caller owns the
- * transaction. A new package without input.code gets pkg_<id>; a given code (legacy copy) is kept.
+ * transaction. A new package without input.code is inserted with a unique tmp_ placeholder (code is NOT NULL UNIQUE), then renamed to pkg_<id>; a given code (legacy copy) is kept.
  */
 async function savePackage(connection, input, actor) {
     const by = actorId(actor);
@@ -106,7 +108,7 @@ async function savePackage(connection, input, actor) {
                 (code, name, description, category, week_min, week_max, is_active, sort_order, created_by, updated_by)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                input.code || null, input.name, input.description || null, input.category,
+                input.code || `tmp_${crypto.randomBytes(8).toString('hex')}`, input.name, input.description || null, input.category,
                 nullableNumber(input.week_min), nullableNumber(input.week_max), active,
                 Number(input.sort_order) || 0, by, by
             ]
@@ -134,9 +136,10 @@ async function savePackage(connection, input, actor) {
         ]
     );
     if (!result.affectedRows) throw new Error('Paket tidak ditemukan');
+    const [codeRows] = await connection.query('SELECT code FROM checkup_prepay_packages WHERE id = ?', [id]);
     await connection.query('DELETE FROM checkup_prepay_package_items WHERE package_id = ?', [id]);
     await insertItems(connection, id, input.items);
-    return { id, code: input.code };
+    return { id, code: codeRows[0].code };
 }
 
 async function setPackageActive(executor, id, active, actor) {

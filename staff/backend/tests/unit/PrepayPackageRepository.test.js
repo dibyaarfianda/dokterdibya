@@ -66,6 +66,7 @@ describe('savePackage', () => {
         const sqls = connection.calls.map(call => call.sql);
         expect(sqls[0]).toMatch(/^INSERT INTO checkup_prepay_packages/);
         expect(connection.calls[0].params).toContain('5');
+        expect(connection.calls[0].params[0]).toMatch(/^tmp_[0-9a-f]{16}$/);
         expect(sqls[1]).toMatch(/^UPDATE checkup_prepay_packages SET code = \? WHERE id = \?/);
         expect(connection.calls[1].params).toEqual(['pkg_77', 77]);
         expect(sqls.slice(2).every(sql => /^INSERT INTO checkup_prepay_package_items/.test(sql))).toBe(true);
@@ -80,25 +81,28 @@ describe('savePackage', () => {
         const result = await savePackage(connection, { ...base, code: 'obstetri', items: [] }, null);
         expect(result).toEqual({ id: 9, code: 'obstetri' });
         expect(connection.calls.map(call => call.sql).some(sql => /SET code = \?/.test(sql))).toBe(false);
-        expect(connection.calls[0].params).toContain('obstetri');
+        expect(connection.calls[0].params[0]).toBe('obstetri');
         expect(connection.calls[0].params).toContain(null);
     });
 
     test('update changes the row, deletes all items, then re-inserts them', async () => {
         const connection = stubExecutor([
             () => [{ affectedRows: 1 }],
+            () => [[{ code: 'pkg_12' }]],
             () => [{ affectedRows: 2 }],
             () => [{ affectedRows: 1 }],
             () => [{ affectedRows: 1 }]
         ]);
-        const result = await savePackage(connection, { ...base, id: 12, code: 'pkg_12' }, { id: 5 });
+        const result = await savePackage(connection, { ...base, id: 12 }, { id: 5 });
         expect(result).toEqual({ id: 12, code: 'pkg_12' });
         const sqls = connection.calls.map(call => call.sql);
         expect(sqls[0]).toMatch(/^UPDATE checkup_prepay_packages SET /);
-        expect(sqls[1]).toBe('DELETE FROM checkup_prepay_package_items WHERE package_id = ?');
+        expect(sqls[1]).toBe('SELECT code FROM checkup_prepay_packages WHERE id = ?');
         expect(connection.calls[1].params).toEqual([12]);
-        expect(sqls[2]).toMatch(/^INSERT INTO checkup_prepay_package_items/);
-        expect(sqls).toHaveLength(4);
+        expect(sqls[2]).toBe('DELETE FROM checkup_prepay_package_items WHERE package_id = ?');
+        expect(connection.calls[2].params).toEqual([12]);
+        expect(sqls[3]).toMatch(/^INSERT INTO checkup_prepay_package_items/);
+        expect(sqls).toHaveLength(5);
     });
 
     test('update of a missing package throws before touching items', async () => {
