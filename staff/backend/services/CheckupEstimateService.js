@@ -7,16 +7,15 @@
  * change there changes the estimate. The admin fee (MANDATORY_SERVICE_IDS.admin) is added once per
  * package automatically and is never an item. Consultation tindakan can never be in a package.
  *
- * The settings-mapping helpers at the bottom are the legacy model; Task 6 removes them.
+ * The settings-mapping helpers at the bottom are the legacy model, kept only for the deploy-time migration script.
  */
 
 const { MANDATORY_SERVICE_IDS } = require('./EstimasiBiayaDraft');
-const { CHECKUP_PREPAY_PRODUCTS, CHECKUP_PREPAY_PRODUCT_CODES, isCheckupPrepayProduct } = require('../constants/checkupPrepayProducts');
+const { isCheckupPrepayProduct } = require('../constants/checkupPrepayProducts');
 const { MIN_AMOUNT_IDR } = require('../utils/duitku-payment');
 const { CONSULTATION_CATEGORY_CODES } = require('../constants/consultationCategories');
 
 const SETTINGS_KEY = 'checkup_prepay_estimate_v1';
-const SETTINGS_DESCRIPTION = 'Tindakan per produk untuk estimasi biaya kunjungan (bayar di muka)';
 const ALLOWED_SERVICE_CATEGORIES = Object.freeze(['LAYANAN', 'TINDAKAN MEDIS']);
 const MAX_ITEMS_PER_CATEGORY = 20;
 const MAX_QUANTITY = 10;
@@ -298,47 +297,11 @@ function createCheckupEstimateService({ db, repository = require('./PrepayPackag
         cache = null;
     }
 
-    // ---- Legacy settings mapping (Task 6 removes this) ----
-    async function loadMapping() {
-        const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1', [SETTINGS_KEY]);
-        if (!rows.length || !rows[0].setting_value) return normalizeMapping({});
-        let parsed;
-        try {
-            parsed = JSON.parse(rows[0].setting_value);
-        } catch (_error) {
-            return { mapping: normalizeMapping({}).mapping, errors: ['Pengaturan estimasi rusak (bukan JSON)'] };
-        }
-        return normalizeMapping(parsed);
-    }
-
-    async function loadTindakan(ids) {
-        const unique = [...new Set(ids)].filter(id => Number.isSafeInteger(id) && id > 0);
-        if (!unique.length) return [];
-        const [rows] = await db.query(
-            `SELECT id, code, name, category, price, is_active FROM tindakan WHERE id IN (${unique.map(() => '?').join(',')})`,
-            unique
-        );
-        return rows;
-    }
-
-    async function saveMapping(mapping) {
-        const { mapping: normalized, errors } = normalizeMapping(mapping);
-        if (errors.length) throw new Error(errors.join('\n'));
-        const stored = { ...normalized, updated_at: clock().toISOString() };
-        await db.query(
-            `INSERT INTO settings (setting_key, setting_value, description) VALUES (?, ?, ?)
-             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)`,
-            [SETTINGS_KEY, JSON.stringify(stored), SETTINGS_DESCRIPTION]
-        );
-        invalidate();
-        return stored;
-    }
-
-    return { priceAll, pricePackageByCode, priceAllForStaff, loadCatalog, invalidate, loadMapping, loadTindakan, saveMapping };
+    return { priceAll, pricePackageByCode, priceAllForStaff, loadCatalog, invalidate };
 }
 
-// ---- Legacy settings mapping helpers. Still used by the old /estimate-mapping routes, the CLI set/clear
-// and scripts/migrate-prepay-packages.js. Task 6 removes them. ----
+// ---- Legacy settings mapping, kept ONLY for scripts/migrate-prepay-packages.js, which reads the old
+// checkup_prepay_estimate_v1 setting with SETTINGS_KEY and normalizeMapping at deploy time. Nothing else uses it. ----
 
 /**
  * Validate a mapping. Returns the valid part plus a list of problems; callers that write the
@@ -400,72 +363,6 @@ function normalizeMapping(input) {
     };
 }
 
-/** Every tindakan id the mapping needs priced, including the admin fee. */
-function tindakanIdsFor(mapping) {
-    const ids = new Set([ADMIN_TINDAKAN_ID]);
-    Object.values(mapping.categories || {}).forEach(config => {
-        (config.items || []).forEach(item => ids.add(item.tindakan_id));
-    });
-    return [...ids];
-}
-
-/**
- * Price every category from tindakan rows. Pure: no database access.
- * A category is ready only when every line has an active master row with a usable price and the
- * rounded-up total reaches the Duitku minimum.
- */
-function priceMapping(mapping, tindakanRows, { minAmount = MIN_AMOUNT_IDR } = {}) {
-    const rows = new Map((tindakanRows || []).map(row => [Number(row.id), row]));
-    const admin = rows.get(ADMIN_TINDAKAN_ID);
-    const adminReady = !!admin && Number(admin.is_active) === 1 && hasUsablePrice(admin);
-
-    return CHECKUP_PREPAY_PRODUCT_CODES.map(code => {
-        const { label, category } = CHECKUP_PREPAY_PRODUCTS[code];
-        const config = mapping.categories && mapping.categories[code];
-        if (!config || !config.items || !config.items.length) {
-            return { code, label, category, ready: false, amount_idr: null, raw_total: null, issues: ['Belum diatur'], items: [] };
-        }
-
-        const issues = [];
-        const items = [];
-        if (adminReady) {
-            const price = Number(admin.price);
-            items.push({ tindakan_id: ADMIN_TINDAKAN_ID, code: admin.code || null, name: admin.name, unit_price: price, quantity: 1, subtotal: price });
-        } else {
-            issues.push(`Biaya admin (tindakan ${ADMIN_TINDAKAN_ID}) belum tersedia atau nonaktif`);
-        }
-
-        config.items.forEach(item => {
-            const master = rows.get(item.tindakan_id);
-            const problems = [];
-            if (!master || Number(master.is_active) !== 1) problems.push('tidak ada atau nonaktif');
-            if (master && !ALLOWED_SERVICE_CATEGORIES.includes(master.category)) problems.push(`kategori ${master.category || '-'} tidak diizinkan`);
-            if (!hasUsablePrice(master)) problems.push('harga belum tersedia');
-            if (problems.length) {
-                issues.push(`Tindakan ${item.tindakan_id}: ${problems.join('; ')}`);
-                return;
-            }
-            const price = Number(master.price);
-            items.push({
-                tindakan_id: item.tindakan_id,
-                code: master.code || null,
-                name: master.name,
-                unit_price: price,
-                quantity: item.quantity,
-                subtotal: price * item.quantity
-            });
-        });
-
-        const rawTotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-        const amount = Math.ceil(rawTotal);
-        if (!issues.length && amount < minAmount) {
-            issues.push(`Total Rp${amount.toLocaleString('id-ID')} di bawah minimum pembayaran Rp${minAmount.toLocaleString('id-ID')}`);
-        }
-        const ready = issues.length === 0;
-        return { code, label, category, ready, amount_idr: ready ? amount : null, raw_total: rawTotal, issues, items };
-    });
-}
-
 let defaultService = null;
 function getCheckupEstimateService() {
     if (!defaultService) defaultService = createCheckupEstimateService({ db: require('../db') });
@@ -483,8 +380,6 @@ module.exports = {
     MAX_ITEMS_PER_CATEGORY,
     MAX_QUANTITY,
     normalizeMapping,
-    tindakanIdsFor,
-    priceMapping,
     toPublicEstimate,
     createCheckupEstimateService,
     getCheckupEstimateService

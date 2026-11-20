@@ -61,12 +61,55 @@ describe('Pembayaran di Muka page shell', () => {
         const mod = moduleSource();
         expect(mod).toContain("hasAccountPermission?.('billing.reset')");
         expect(mod).toContain("hasAccountPermission?.('checkup_prepay.manage_estimate')");
+        expect(mod).toContain("hasAccountPermission?.('billing.view')");
         expect(mod).toContain('Uji (sandbox)');
         expect(mod + fragment()).toContain('Catat setelah uang diserahkan; sistem tidak mengirim uang');
         expect(mod).toContain('Belum siap: kartu tidak tampil di halaman utama');
         expect(mod).toContain('prepay-refund-key:');
         expect(mod).toContain('crypto.randomUUID()');
         expect(mod).toContain('window.showPatientDetail');
+    });
+
+    test('the Paket and Pencairan tabs replace Harga Estimasi', () => {
+        const frag = fragment();
+        const mod = moduleSource();
+        expect(frag).toContain('id="prepay-panel-packages"');
+        expect(frag).toContain('id="prepay-panel-refund-requests"');
+        expect(frag).not.toContain('Harga Estimasi');
+        expect(mod).not.toContain('Harga Estimasi');
+        expect(mod + frag).not.toContain('/estimate-mapping');
+        expect(mod).toContain('/packages');
+        expect(mod).toContain('/refund-requests');
+        expect(mod).toContain('dihitung dari harga saat ini');
+        expect(mod).toContain('Paket lain di minggu yang sama');
+        expect(mod).toContain('+ Tambah tindakan');
+        expect(mod).toContain('+ Tambah obat');
+        const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        for (const name of ['prepayLoadPackages', 'prepayEditPackage', 'prepayAddPackageItem', 'prepayRemovePackageItem',
+            'prepaySavePackage', 'prepayTogglePackage', 'prepayLoadRefundRequests', 'prepayCompleteRefundRequest', 'prepayRejectRefundRequest']) {
+            expect(bootstrap).toContain(`'${name}'`);
+        }
+        expect(bootstrap).not.toContain("'prepayLoadMapping'");
+    });
+
+    test('Pencairan rows: nama berbeda badge, transfer and reject behind billing.reset, fixed confirm copy', () => {
+        const mod = moduleSource();
+        expect(mod).toContain('nama berbeda');
+        expect(mod).toContain('Sudah ditransfer');
+        expect(mod).toContain('Tolak');
+        expect(mod).toContain('sudah ditransfer ke');
+        expect(mod).toContain('window.prompt(');
+        // each server string in the rows goes through escapeHtml
+        expect(mod).toContain('escapeHtml(row.bank_name');
+        expect(mod).toContain('escapeHtml(row.account_holder');
+        expect(mod).toContain('escapeHtml(row.account_number');
+    });
+
+    test('the paid toast also announces withdrawal requests and refreshes the red dots', () => {
+        const toast = read('staff', 'public', 'scripts', 'shell', 'prepay-paid-toast.js');
+        expect(toast).toContain('checkup_prepay_refund_requested');
+        expect(toast).toContain('Pengajuan pencairan saldo: ');
+        expect(read('staff', 'public', 'scripts', 'shell', 'menu-new-badges.js')).toContain("'checkup_prepay_refund_requested'");
     });
 
     test('the orders table shows the order ref (spec §8 columns)', () => {

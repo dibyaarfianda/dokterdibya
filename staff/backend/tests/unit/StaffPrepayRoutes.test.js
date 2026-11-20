@@ -22,8 +22,10 @@ jest.mock('../../services/StaffPrepayService', () => ({
     listBalances: jest.fn(async () => []),
     getPatientLedger: jest.fn(async () => ({ patient: { id: 'P1', name: 'Pasien' }, balances: { live: [], sandbox: [] }, entries: [] })),
     createRefund: jest.fn(async () => ({ id: 3, amount_idr: 20000, already_saved: false })),
-    getEstimateMapping: jest.fn(async () => ({ mapping: {}, categories: [], tindakan: [] })),
-    saveEstimateMapping: jest.fn(async () => ({ mapping: {}, categories: [] }))
+    listPackagesForStaff: jest.fn(async () => ({ priced_at: 'now', packages: [] })),
+    getCatalog: jest.fn(async () => ({ tindakan: [], obat: [], admin: { id: 1, name: 'Admin', price: 25000 } })),
+    savePackage: jest.fn(async () => ({ id: 7, code: 'pkg_7', name: 'Paket' })),
+    setPackageActive: jest.fn(async (id, active) => ({ id, is_active: active }))
 }));
 
 let mockRefundRequests = null;
@@ -60,8 +62,11 @@ describe('access control', () => {
         expectPermission('GET', '/balances', 'billing.view');
         expectPermission('GET', '/patients/:patientId/ledger', 'billing.view');
         expectPermission('POST', '/refunds', 'billing.reset');
-        expectPermission('GET', '/estimate-mapping', 'checkup_prepay.manage_estimate');
-        expectPermission('PUT', '/estimate-mapping', 'checkup_prepay.manage_estimate');
+        expectPermission('GET', '/packages', 'checkup_prepay.manage_estimate');
+        expectPermission('GET', '/packages/catalog', 'checkup_prepay.manage_estimate');
+        expectPermission('POST', '/packages', 'checkup_prepay.manage_estimate');
+        expectPermission('PUT', '/packages/:id', 'checkup_prepay.manage_estimate');
+        expectPermission('PATCH', '/packages/:id/active', 'checkup_prepay.manage_estimate');
         expectPermission('GET', '/refund-requests', 'billing.view');
         expectPermission('POST', '/refund-requests/:id/complete', 'billing.reset');
         expectPermission('POST', '/refund-requests/:id/reject', 'billing.reset');
@@ -113,11 +118,50 @@ describe('HTTP API', () => {
         }));
     });
 
-    test('the estimate editor is for the doctor only', async () => {
+    test('the package editor is for the superadmin or doctor only, not a delegated permission', async () => {
         const staffAll = as(STAFF, ['billing.view', 'billing.reset', 'checkup_prepay.manage_estimate']);
-        expect((await request(app).get('/api/staff-prepay/estimate-mapping').set(staffAll)).status).toBe(403);
-        expect((await request(app).put('/api/staff-prepay/estimate-mapping').set(staffAll).send({ mapping: {} })).status).toBe(403);
-        expect((await request(app).get('/api/staff-prepay/estimate-mapping').set(as(DOCTOR))).status).toBe(200);
+        const body = { name: 'Paket', category: 'obstetri', items: [{ item_type: 'tindakan', ref_id: 9, quantity: 1 }] };
+        expect((await request(app).post('/api/staff-prepay/packages').set(staffAll).send(body)).status).toBe(403);
+        expect((await request(app).put('/api/staff-prepay/packages/7').set(staffAll).send(body)).status).toBe(403);
+        expect((await request(app).patch('/api/staff-prepay/packages/7/active').set(staffAll).send({ active: false })).status).toBe(403);
+        expect((await request(app).get('/api/staff-prepay/packages').set(staffAll)).status).toBe(403);
+        expect((await request(app).get('/api/staff-prepay/packages/catalog').set(staffAll)).status).toBe(403);
+        expect(service.savePackage).not.toHaveBeenCalled();
+
+        const superadmin = { id: 'A1', name: 'Admin Super', role: 'admin', role_id: ROLE_IDS.ADMIN, is_superadmin: 1 };
+        const bySuperadmin = await request(app).post('/api/staff-prepay/packages').set(as(superadmin)).send(body);
+        expect(bySuperadmin.status).toBe(200);
+        expect(service.savePackage).toHaveBeenLastCalledWith(body, { id: 'A1', name: 'Admin Super' });
+        const byDoctor = await request(app).post('/api/staff-prepay/packages').set(as(DOCTOR)).send(body);
+        expect(byDoctor.status).toBe(200);
+        expect(byDoctor.body.data).toMatchObject({ id: 7 });
+    });
+
+    test('package routes: list, catalog, update by id, activate by id; the old estimate-mapping is gone', async () => {
+        expect((await request(app).get('/api/staff-prepay/packages').set(as(DOCTOR))).status).toBe(200);
+        expect((await request(app).get('/api/staff-prepay/packages/catalog').set(as(DOCTOR))).body.data.admin).toMatchObject({ id: 1 });
+        const body = { name: 'Paket', category: 'obstetri', items: [] };
+        const put = await request(app).put('/api/staff-prepay/packages/7').set(as(DOCTOR)).send(body);
+        expect(put.status).toBe(200);
+        expect(service.savePackage).toHaveBeenLastCalledWith({ ...body, id: 7 }, { id: 'D1', name: 'Dokter' });
+        // A body id never turns a create into an update of another package.
+        await request(app).post('/api/staff-prepay/packages').set(as(DOCTOR)).send({ ...body, id: 99 });
+        expect(service.savePackage).toHaveBeenLastCalledWith(body, { id: 'D1', name: 'Dokter' });
+        expect((await request(app).put('/api/staff-prepay/packages/abc').set(as(DOCTOR)).send(body)).status).toBe(404);
+
+        const off = await request(app).patch('/api/staff-prepay/packages/7/active').set(as(DOCTOR)).send({ active: false });
+        expect(off.status).toBe(200);
+        expect(service.setPackageActive).toHaveBeenLastCalledWith(7, false, { id: 'D1', name: 'Dokter' });
+
+        expect((await request(app).get('/api/staff-prepay/estimate-mapping').set(as(DOCTOR))).status).toBe(404);
+        expect((await request(app).put('/api/staff-prepay/estimate-mapping').set(as(DOCTOR)).send({ mapping: {} })).status).toBe(404);
+    });
+
+    test('a save the service refuses keeps its 400 message', async () => {
+        service.savePackage.mockRejectedValueOnce(Object.assign(new Error('Item 1: konsultasi tidak boleh di paket'), { statusCode: 400 }));
+        const res = await request(app).post('/api/staff-prepay/packages').set(as(DOCTOR)).send({ name: 'X' });
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ success: false, message: 'Item 1: konsultasi tidak boleh di paket' });
     });
 
     describe('withdrawal requests', () => {
@@ -319,29 +363,93 @@ describe('StaffPrepayService', () => {
         expect(h.db.getConnection).not.toHaveBeenCalled();
     });
 
-    test('saving a mapping with an inactive tindakan keeps it but marks the product not ready', async () => {
-        const { createCheckupEstimateService } = require('../../services/CheckupEstimateService');
-        const db = {
-            query: jest.fn(async sql => {
-                const query = sqlOf(sql);
-                if (query.startsWith('INSERT INTO settings')) return [{ affectedRows: 1 }];
-                if (query.startsWith('SELECT setting_value')) {
-                    return [[{ setting_value: JSON.stringify({ categories: { obstetri: { items: [{ tindakan_id: 40, quantity: 1 }] } } }) }]];
-                }
-                if (query.includes('FROM tindakan WHERE id IN')) {
-                    return [[{ id: 1, code: 'S01', name: 'Admin', category: 'LAYANAN', price: 25000, is_active: 1 },
-                        { id: 40, code: 'K40', name: 'Konsultasi', category: 'LAYANAN', price: 150000, is_active: 0 }]];
-                }
-                return [[]];
-            })
-        };
-        const repository = {
-            listPackages: jest.fn(async () => [{ id: 1, code: 'obstetri', name: 'Kehamilan (Obstetri)', description: null, category: 'obstetri', week_min: null, week_max: null, is_active: true, sort_order: 10, items: [{ item_type: 'tindakan', ref_id: 40, quantity: 1, sort_order: 0 }] }])
-        };
-        const estimates = createCheckupEstimateService({ db, repository });
-        const result = await real.saveEstimateMapping({ categories: { obstetri: { items: [{ tindakan_id: 40, quantity: 1 }] } } }, { estimates });
-        const obstetri = result.categories.find(entry => entry.code === 'obstetri');
-        expect(obstetri.ready).toBe(false);
-        expect(obstetri.issues.join(' ')).toContain('nonaktif');
+    describe('package editor service', () => {
+        const actor = { id: 'D1', name: 'Dokter' };
+        const BEFORE = { id: 7, code: 'pkg_7', name: 'Lama', description: null, category: 'obstetri', week_min: 20, week_max: 24, is_active: true, sort_order: 10,
+            items: [{ item_type: 'tindakan', ref_id: 9, quantity: 1, sort_order: 0 }] };
+
+        function harness({ tindakanRows = [{ id: 9, name: 'USG 4 Dimensi', category: 'LAYANAN' }, { id: 56, name: 'Konsul Singkat', category: 'LAYANAN' }], before = BEFORE } = {}) {
+            const connection = { beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn() };
+            const db = {
+                getConnection: jest.fn(async () => connection),
+                query: jest.fn(async (sql, params) => {
+                    if (sqlOf(sql).includes('FROM tindakan WHERE id IN')) return [tindakanRows.filter(row => params[0].includes(row.id))];
+                    return [[]];
+                })
+            };
+            const repository = {
+                listPackages: jest.fn(async () => (before ? [before] : [])),
+                savePackage: jest.fn(async (_c, input) => ({ id: input.id || 8, code: input.id ? 'pkg_7' : 'pkg_8' })),
+                setPackageActive: jest.fn(async () => true)
+            };
+            const estimates = {
+                invalidate: jest.fn(),
+                priceAllForStaff: jest.fn(async () => ({ packages: [{ id: 7, ready: true, amount_idr: 190000 }, { id: 8, ready: true, amount_idr: 120000 }] }))
+            };
+            const activityLogger = { log: jest.fn(async () => 1) };
+            return { db, connection, repository, estimates, activityLogger, opts: { db, repository, estimates, activityLogger } };
+        }
+        const form = (items, extra = {}) => ({ name: 'Baru', category: 'obstetri', week_min: 20, week_max: 26, items, ...extra });
+
+        test('a save with a consultation item is refused with 400 and the message, before any write', async () => {
+            const h = harness();
+            await expect(real.savePackage(form([{ item_type: 'tindakan', ref_id: 56, quantity: 1 }]), actor, h.opts))
+                .rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('konsultasi tidak boleh di paket') });
+            expect(h.db.getConnection).not.toHaveBeenCalled();
+            expect(h.activityLogger.log).not.toHaveBeenCalled();
+        });
+
+        test('an update saves in one transaction, drops the cache and writes a before to after audit line', async () => {
+            const h = harness();
+            const result = await real.savePackage(form([{ item_type: 'tindakan', ref_id: 9, quantity: 2 }], { id: 7 }), actor, h.opts);
+            expect(result).toMatchObject({ id: 7, amount_idr: 190000 });
+            expect(h.connection.commit).toHaveBeenCalled();
+            expect(h.repository.savePackage).toHaveBeenCalledWith(h.connection, expect.objectContaining({ id: 7, name: 'Baru', is_active: true }), actor);
+            expect(h.estimates.invalidate).toHaveBeenCalled();
+            expect(h.activityLogger.log).toHaveBeenCalledTimes(1);
+            const [userId, userName, action, details] = h.activityLogger.log.mock.calls[0];
+            expect([userId, userName, action]).toEqual(['D1', 'Dokter', 'Paket Bayar di Muka']);
+            expect(details).toContain('pkg_7');
+            expect(details).toContain('"Lama" -> "Baru"');
+            expect(details).toContain('minggu 20-24 -> minggu 20-26');
+            expect(details).toContain('tindakan:9x1 -> tindakan:9x2');
+        });
+
+        test('an update of a missing package is 404 and rolls back', async () => {
+            const h = harness({ before: null });
+            await expect(real.savePackage(form([{ item_type: 'tindakan', ref_id: 9, quantity: 1 }], { id: 7 }), actor, h.opts))
+                .rejects.toMatchObject({ statusCode: 404 });
+            expect(h.connection.rollback).toHaveBeenCalled();
+            expect(h.repository.savePackage).not.toHaveBeenCalled();
+            expect(h.activityLogger.log).not.toHaveBeenCalled();
+        });
+
+        test('a create is audited as new and an update that omits is_active keeps the package state', async () => {
+            const created = harness();
+            await real.savePackage(form([{ item_type: 'tindakan', ref_id: 9, quantity: 1 }]), actor, created.opts);
+            expect(created.activityLogger.log.mock.calls[0][3]).toContain('pkg_8 dibuat');
+            const off = harness({ before: { ...BEFORE, is_active: false } });
+            await real.savePackage(form([{ item_type: 'tindakan', ref_id: 9, quantity: 1 }], { id: 7 }), actor, off.opts);
+            expect(off.repository.savePackage.mock.calls[0][1].is_active).toBe(false);
+        });
+
+        test('activating or deactivating is audited and a non-boolean is refused', async () => {
+            const h = harness();
+            const result = await real.setPackageActive(7, false, actor, h.opts);
+            expect(result).toMatchObject({ id: 7 });
+            expect(h.repository.setPackageActive).toHaveBeenCalledWith(h.db, 7, false, actor);
+            expect(h.estimates.invalidate).toHaveBeenCalled();
+            const [, , action, details] = h.activityLogger.log.mock.calls[0];
+            expect(action).toBe('Paket Bayar di Muka');
+            expect(details).toContain('aktif -> nonaktif');
+            await expect(real.setPackageActive(7, 'no', actor, h.opts)).rejects.toMatchObject({ statusCode: 400 });
+            await expect(real.setPackageActive(99, true, actor, harness({ before: null }).opts)).rejects.toMatchObject({ statusCode: 404 });
+        });
+
+        test('the catalog carries the admin fee line', async () => {
+            const db = { query: jest.fn(async () => [[{ id: 1, name: 'Administrasi', price: '25000.00' }]]) };
+            const estimates = { loadCatalog: jest.fn(async () => ({ tindakan: [], obat: [] })) };
+            expect(await real.getCatalog({ db, estimates })).toEqual({ tindakan: [], obat: [], admin: { id: 1, name: 'Administrasi', price: 25000 } });
+        });
     });
 });

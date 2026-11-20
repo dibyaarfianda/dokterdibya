@@ -3,8 +3,9 @@
 /**
  * Staff page "Pembayaran di Muka" (bayar di muka, Tahap 2).
  * Read: billing.view. Saldo refund: billing.reset (same as billing returns).
- * Estimate editor: doctor only (protected, non-delegable checkup_prepay.manage_estimate in the
- * access registry; requireDoctorRole here, as Audit Obat does).
+ * Package editor (tab Paket): doctor/superadmin only. requireSuperadmin here; the access registry
+ * maps these routes to the protected, non-delegable checkup_prepay.manage_estimate, so it admits
+ * nobody a delegation could add.
  * Withdrawal requests (Tahap 3, tab "Pencairan"): list billing.view, complete/reject billing.reset.
  * The full account number is listed only for billing.reset holders (and the doctor); others get
  * it masked.
@@ -12,7 +13,7 @@
  */
 
 const express = require('express');
-const { verifyToken, requirePermission, requireDoctorRole } = require('../middleware/auth');
+const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const { accessControlService } = require('../services/AccessControlService');
 const service = require('../services/StaffPrepayService');
@@ -157,20 +158,59 @@ router.post('/refund-requests/:id/reject', verifyToken, requirePermission('billi
     }
 });
 
-router.get('/estimate-mapping', verifyToken, requireDoctorRole, async (req, res) => {
+const PACKAGE_ID = /^[1-9]\d{0,9}$/;
+
+router.get('/packages', verifyToken, requireSuperadmin, async (req, res) => {
     noStore(res);
     try {
-        res.json({ success: true, data: await service.getEstimateMapping() });
+        res.json({ success: true, data: await service.listPackagesForStaff() });
     } catch (error) {
         respondError(res, error);
     }
 });
 
-router.put('/estimate-mapping', verifyToken, requireDoctorRole, async (req, res) => {
+router.get('/packages/catalog', verifyToken, requireSuperadmin, async (req, res) => {
     noStore(res);
     try {
-        const data = await service.saveEstimateMapping(req.body?.mapping);
-        res.json({ success: true, data, message: 'Harga estimasi tersimpan.' });
+        res.json({ success: true, data: await service.getCatalog() });
+    } catch (error) {
+        respondError(res, error);
+    }
+});
+
+router.post('/packages', verifyToken, requireSuperadmin, async (req, res) => {
+    noStore(res);
+    try {
+        // A client-sent id would turn a create into an update of another package.
+        const { id: _ignored, ...body } = req.body || {};
+        const data = await service.savePackage(body, actorOf(req));
+        res.json({ success: true, data, message: 'Paket tersimpan.' });
+    } catch (error) {
+        respondError(res, error);
+    }
+});
+
+router.put('/packages/:id', verifyToken, requireSuperadmin, async (req, res) => {
+    noStore(res);
+    if (!PACKAGE_ID.test(String(req.params.id || ''))) {
+        return res.status(404).json({ success: false, message: 'Paket tidak ditemukan.' });
+    }
+    try {
+        const data = await service.savePackage({ ...(req.body || {}), id: Number(req.params.id) }, actorOf(req));
+        res.json({ success: true, data, message: 'Paket tersimpan.' });
+    } catch (error) {
+        respondError(res, error);
+    }
+});
+
+router.patch('/packages/:id/active', verifyToken, requireSuperadmin, async (req, res) => {
+    noStore(res);
+    if (!PACKAGE_ID.test(String(req.params.id || ''))) {
+        return res.status(404).json({ success: false, message: 'Paket tidak ditemukan.' });
+    }
+    try {
+        const data = await service.setPackageActive(Number(req.params.id), req.body?.active, actorOf(req));
+        res.json({ success: true, data, message: data && data.is_active ? 'Paket diaktifkan.' : 'Paket dinonaktifkan.' });
     } catch (error) {
         respondError(res, error);
     }

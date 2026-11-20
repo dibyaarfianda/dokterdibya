@@ -4,10 +4,16 @@
     #prepay-page .prepay-table td, #prepay-page .prepay-table th { vertical-align: middle !important; }
     #prepay-page .prepay-amount { white-space: nowrap !important; text-align: right !important; }
     #prepay-page .prepay-ledger { border: 1px solid #e5e7eb !important; border-radius: 10px !important; padding: 12px !important; margin-top: 12px !important; }
-    #prepay-page .prepay-mapping-product { border: 1px solid #e5e7eb !important; border-radius: 10px !important; padding: 12px !important; margin-bottom: 12px !important; }
-    #prepay-page .prepay-mapping-row { display: flex !important; gap: 6px !important; align-items: center !important; margin-bottom: 6px !important; }
-    #prepay-page .prepay-mapping-row select { flex: 1 1 auto !important; min-width: 0 !important; }
-    #prepay-page .prepay-mapping-row input { width: 72px !important; flex: 0 0 72px !important; }
+    #prepay-page .prepay-package-editor { border: 1px solid #e5e7eb !important; border-radius: 10px !important; padding: 14px !important; margin-bottom: 14px !important; }
+    #prepay-page .prepay-item-row { display: flex !important; flex-wrap: wrap !important; gap: 6px !important; align-items: center !important; margin-bottom: 8px !important; }
+    #prepay-page .prepay-item-row .prepay-item-kind { flex: 0 0 64px !important; font-size: 12px !important; color: #6b7280 !important; }
+    #prepay-page .prepay-item-row select { flex: 1 1 200px !important; min-width: 0 !important; }
+    #prepay-page .prepay-item-row input { width: 76px !important; flex: 0 0 76px !important; }
+    #prepay-page .prepay-item-row .prepay-item-subtotal { flex: 0 0 110px !important; text-align: right !important; white-space: nowrap !important; }
+    #prepay-page .prepay-item-admin { display: flex !important; justify-content: space-between !important; gap: 8px !important; padding: 6px 8px !important; margin-bottom: 8px !important; background: #f3f4f6 !important; border-radius: 6px !important; font-size: 13px !important; }
+    #prepay-page .prepay-package-total { font-weight: 600 !important; text-align: right !important; margin-top: 6px !important; }
+    #prepay-page .prepay-package-issues { margin: 4px 0 0 !important; padding-left: 18px !important; font-size: 12px !important; color: #6b7280 !important; }
+    #prepay-page .prepay-note { max-width: 220px !important; white-space: normal !important; }
 </style>
 <div class="row">
     <div class="col-12">
@@ -19,7 +25,8 @@
                 <ul class="nav nav-tabs prepay-tabs" role="tablist">
                     <li class="nav-item"><a class="nav-link active" data-prepay-tab="orders" onclick="window.prepayShowTab('orders'); return false;" href="#">Pembayaran</a></li>
                     <li class="nav-item"><a class="nav-link" data-prepay-tab="balances" onclick="window.prepayShowTab('balances'); return false;" href="#">Saldo Pasien</a></li>
-                    <li class="nav-item d-none" id="prepay-tab-mapping-item"><a class="nav-link" data-prepay-tab="mapping" onclick="window.prepayShowTab('mapping'); return false;" href="#">Harga Estimasi</a></li>
+                    <li class="nav-item d-none" id="prepay-tab-refund-requests-item"><a class="nav-link" data-prepay-tab="refund-requests" onclick="window.prepayShowTab('refund-requests'); return false;" href="#">Pencairan</a></li>
+                    <li class="nav-item d-none" id="prepay-tab-packages-item"><a class="nav-link" data-prepay-tab="packages" onclick="window.prepayShowTab('packages'); return false;" href="#">Paket</a></li>
                 </ul>
 
                 <section class="prepay-panel" id="prepay-panel-orders">
@@ -95,10 +102,34 @@
                     </form>
                 </section>
 
-                <section class="prepay-panel" id="prepay-panel-mapping" hidden>
-                    <p class="text-muted mb-2">Tindakan yang membentuk estimasi tiap produk di halaman utama sisiwanita.id. Biaya admin ditambahkan otomatis. Harga diambil langsung dari daftar tindakan.</p>
-                    <div id="prepay-mapping-root"><div class="text-muted">Memuat…</div></div>
-                    <button type="button" id="prepay-mapping-save" class="btn btn-primary" onclick="window.prepaySaveMapping()"><i class="fas fa-save mr-1"></i>Simpan Harga Estimasi</button>
+                <section class="prepay-panel" id="prepay-panel-refund-requests" hidden>
+                    <p class="text-muted mb-2">Pengajuan pencairan saldo dari pasien. Transfer dilakukan manual; tekan "Sudah ditransfer" setelah uang dikirim. Biaya transfer ditanggung klinik.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover prepay-table">
+                            <thead><tr>
+                                <th>Pasien</th><th class="prepay-amount">Nominal</th><th>Bank</th><th>No. rekening</th>
+                                <th>Atas nama</th><th>Tanggal</th><th>Status</th><th></th>
+                            </tr></thead>
+                            <tbody id="prepay-refund-requests-tbody"><tr><td colspan="8" class="text-center text-muted py-3">Memuat…</td></tr></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="prepay-panel" id="prepay-panel-packages" hidden>
+                    <div class="d-flex justify-content-between align-items-start flex-wrap mb-2">
+                        <p class="text-muted mb-2 mr-2">Paket bayar di muka yang tampil di sisiwanita.id. Harga dihitung langsung dari daftar tindakan dan obat; biaya admin ditambahkan otomatis. Konsultasi tidak boleh masuk paket.</p>
+                        <button type="button" class="btn btn-primary btn-sm mb-2" onclick="window.prepayEditPackage(null)"><i class="fas fa-plus mr-1"></i>Paket baru</button>
+                    </div>
+                    <div id="prepay-package-editor" class="prepay-package-editor" hidden></div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover prepay-table">
+                            <thead><tr>
+                                <th>Paket</th><th>Kategori</th><th>Minggu</th><th class="prepay-amount">Estimasi</th>
+                                <th>Siap</th><th>Aktif</th><th class="text-center">Urutan</th><th></th>
+                            </tr></thead>
+                            <tbody id="prepay-packages-tbody"><tr><td colspan="8" class="text-center text-muted py-3">Memuat…</td></tr></tbody>
+                        </table>
+                    </div>
                 </section>
             </div>
         </div>

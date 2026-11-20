@@ -121,10 +121,16 @@ async function bootstrapStaffShell() {
         'prepayOpenRefund',
         'prepayCloseRefund',
         'prepaySubmitRefund',
-        'prepayLoadMapping',
-        'prepayAddMappingItem',
-        'prepayRemoveMappingItem',
-        'prepaySaveMapping'
+        'prepayLoadPackages',
+        'prepayEditPackage',
+        'prepayClosePackageEditor',
+        'prepayAddPackageItem',
+        'prepayRemovePackageItem',
+        'prepaySavePackage',
+        'prepayTogglePackage',
+        'prepayLoadRefundRequests',
+        'prepayCompleteRefundRequest',
+        'prepayRejectRefundRequest'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'prepay', 'prepay'));
     [
         'showArtikelKesehatanPage',

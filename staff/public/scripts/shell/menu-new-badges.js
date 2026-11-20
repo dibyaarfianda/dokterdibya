@@ -23,7 +23,8 @@ const SOCKET_EVENTS = [
     'staff-announcement:new',
     'announcement:new',
     'poll:created',
-    'checkup_prepay_paid'
+    'checkup_prepay_paid',
+    'checkup_prepay_refund_requested'
 ];
 
 let initialized = false;

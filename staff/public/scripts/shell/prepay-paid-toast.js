@@ -1,12 +1,15 @@
 /**
- * Bayar di muka (Tahap 2): a small panel toast when a patient's prepay order is paid.
+ * Bayar di muka: a small panel toast when a patient's prepay order is paid (Tahap 2) or a patient
+ * asks to withdraw saldo (Tahap 3).
  *
- * Backend: PremiumPaymentService → CheckupPrepayNotifier broadcasts 'checkup_prepay_paid' to
- * staff holding billing.view. The sidebar red dot for "Pembayaran di Muka" is refreshed by
- * shell/menu-new-badges.js on the same event. Panel only: no WhatsApp.
+ * Backend: PremiumPaymentService → CheckupPrepayNotifier broadcasts 'checkup_prepay_paid', and
+ * PatientRefundRequestService broadcasts 'checkup_prepay_refund_requested', to staff holding
+ * billing.view. The sidebar red dot for "Pembayaran di Muka" is refreshed by
+ * shell/menu-new-badges.js on the same events. Panel only: no WhatsApp.
  */
 
 const EVENT = 'checkup_prepay_paid';
+const EVENT_REFUND_REQUESTED = 'checkup_prepay_refund_requested';
 const METHOD_LABELS = {
     qris: 'QRIS',
     va_bni: 'VA BNI',
@@ -30,7 +33,11 @@ export function prepayToastText(event = {}) {
         + (event.gateway_mode === 'sandbox' ? ' (uji)' : '');
 }
 
-function showToast(event) {
+export function refundRequestToastText(event = {}) {
+    return `Pengajuan pencairan saldo: ${event.patientName || 'Pasien'} ${formatRupiah(event.amount_idr)}`;
+}
+
+function showToast(event, text = prepayToastText(event)) {
     const toast = document.createElement('div');
     toast.className = 'staff-prepay-toast';
     toast.setAttribute('role', 'status');
@@ -40,7 +47,7 @@ function showToast(event) {
         'box-shadow:0 6px 20px rgba(0,0,0,.18)', 'font-size:13px', 'line-height:1.4', 'cursor:pointer'
     ].join(';');
     // textContent only: the patient name comes from the server.
-    toast.textContent = prepayToastText(event);
+    toast.textContent = text;
     toast.addEventListener('click', () => toast.remove());
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 10000);
@@ -52,6 +59,9 @@ function bindSocket() {
     socketBound = socket;
     socket.on(EVENT, event => {
         try { showToast(event || {}); } catch (error) { console.warn('[prepay-toast] failed', error); }
+    });
+    socket.on(EVENT_REFUND_REQUESTED, event => {
+        try { showToast(event || {}, refundRequestToastText(event || {})); } catch (error) { console.warn('[prepay-toast] failed', error); }
     });
 }
 

@@ -5,11 +5,8 @@ jest.mock('../../utils/logger', () => ({ info: jest.fn(), warn: jest.fn(), error
 const fs = require('fs');
 const path = require('path');
 const {
-    SETTINGS_KEY,
     ADMIN_TINDAKAN_ID,
     normalizeMapping,
-    tindakanIdsFor,
-    priceMapping,
     toPublicEstimate,
     createCheckupEstimateService,
     CONSULTATION_PATTERN,
@@ -20,12 +17,6 @@ const {
 const { CONSULTATION_CATEGORIES } = require('../../constants/consultationCategories');
 
 const ADMIN = { id: ADMIN_TINDAKAN_ID, code: 'ADM', name: 'Biaya Admin', category: 'ADMINISTRATIF', price: '15000.00', is_active: 1 };
-const KONSUL = { id: 20, code: 'KNS', name: 'Konsultasi Dokter', category: 'LAYANAN', price: '100000.00', is_active: 1 };
-const USG = { id: 30, code: 'USG', name: 'USG Abdomen', category: 'TINDAKAN MEDIS', price: '75000.50', is_active: 1 };
-
-function mapping(categories) {
-    return normalizeMapping({ categories }).mapping;
-}
 
 describe('consultation categories', () => {
     test('labels match the booking route labels', () => {
@@ -61,66 +52,6 @@ describe('normalizeMapping', () => {
     test('an empty or broken input is an empty mapping', () => {
         expect(normalizeMapping(null).mapping.categories).toEqual({});
         expect(normalizeMapping({ categories: 'x' }).mapping.categories).toEqual({});
-    });
-
-    test('lists every tindakan id to price, including the admin fee once', () => {
-        const ids = tindakanIdsFor(mapping({ obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] }, gyn_repro: { items: [{ tindakan_id: 20, quantity: 1 }, { tindakan_id: 30, quantity: 1 }] } }));
-        expect(ids.sort((a, b) => a - b)).toEqual([ADMIN_TINDAKAN_ID, 20, 30].sort((a, b) => a - b));
-    });
-});
-
-describe('priceMapping', () => {
-    test('adds the admin fee once, multiplies quantities and rounds the total up to whole rupiah', () => {
-        const priced = priceMapping(mapping({
-            obstetri: { items: [{ tindakan_id: 20, quantity: 1 }, { tindakan_id: 30, quantity: 1 }] },
-            gyn_repro: { items: [{ tindakan_id: 20, quantity: 2 }] }
-        }), [ADMIN, KONSUL, USG]);
-        const obstetri = priced.find(entry => entry.code === 'obstetri');
-        const gynRepro = priced.find(entry => entry.code === 'gyn_repro');
-        expect(obstetri).toMatchObject({ code: 'obstetri', label: 'Kehamilan (Obstetri)', category: 'obstetri', ready: true, issues: [] });
-        expect(obstetri.raw_total).toBe(190000.5);
-        expect(obstetri.amount_idr).toBe(190001);
-        expect(obstetri.items.map(item => item.tindakan_id)).toEqual([ADMIN_TINDAKAN_ID, 20, 30]);
-        expect(gynRepro.amount_idr).toBe(15000 + 2 * 100000);
-        expect(gynRepro.items.filter(item => item.tindakan_id === ADMIN_TINDAKAN_ID)).toHaveLength(1);
-    });
-
-    test('a product without configuration is not ready', () => {
-        const result = priceMapping(mapping({}), [ADMIN]);
-        expect(result.map(entry => entry.code)).toEqual(['obstetri', 'obstetri_usg4d', 'gyn_repro', 'gyn_special']);
-        expect(result.every(entry => !entry.ready && entry.amount_idr === null)).toBe(true);
-        expect(result[0].issues).toEqual(['Belum diatur']);
-    });
-
-    test('the USG 4D product is priced on its own and credits the Kehamilan saldo category', () => {
-        const usg4d = { id: 9, code: 'U4D', name: 'USG 4 Dimensi', category: 'LAYANAN', price: '250000.00', is_active: 1 };
-        const priced = priceMapping(mapping({
-            obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] },
-            obstetri_usg4d: { items: [{ tindakan_id: 20, quantity: 1 }, { tindakan_id: 9, quantity: 1 }] }
-        }), [ADMIN, KONSUL, usg4d]);
-        const product = priced.find(entry => entry.code === 'obstetri_usg4d');
-        expect(product).toMatchObject({ label: 'Kehamilan + USG 4D', category: 'obstetri', ready: true, amount_idr: 365000 });
-        expect(priced.find(entry => entry.code === 'obstetri').amount_idr).toBe(115000);
-    });
-
-    test.each([
-        ['an inactive tindakan', [ADMIN, { ...KONSUL, is_active: 0 }], /nonaktif/],
-        ['a missing tindakan', [ADMIN], /tidak ada atau nonaktif/],
-        ['a tindakan from a category that is not a service', [ADMIN, { ...KONSUL, category: 'LABORATORIUM' }], /kategori LABORATORIUM/],
-        ['a tindakan without a price', [ADMIN, { ...KONSUL, price: null }], /harga belum tersedia/],
-        ['a missing admin fee', [KONSUL], /Biaya admin/]
-    ])('is not ready with %s', (_name, rows, pattern) => {
-        const [obstetri] = priceMapping(mapping({ obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] } }), rows);
-        expect(obstetri.ready).toBe(false);
-        expect(obstetri.amount_idr).toBeNull();
-        expect(obstetri.issues.join('\n')).toMatch(pattern);
-    });
-
-    test('a total below the Duitku minimum is not ready', () => {
-        const cheap = { ...KONSUL, price: '1000' };
-        const [obstetri] = priceMapping(mapping({ obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] } }), [{ ...ADMIN, price: '1000' }, cheap]);
-        expect(obstetri.ready).toBe(false);
-        expect(obstetri.issues.join('\n')).toMatch(/minimum/);
     });
 });
 
@@ -338,21 +269,5 @@ describe('createCheckupEstimateService', () => {
         const catalog = await createCheckupEstimateService({ db, repository: {} }).loadCatalog();
         expect(catalog.tindakan).toEqual([{ id: 9, code: 'U4D', name: 'USG 4 Dimensi', category: 'LAYANAN', price: 250000 }]);
         expect(catalog.obat).toEqual([{ id: 7, code: 'OBT7', name: 'Kalsium', unit: 'tablet', price: 1500 }]);
-    });
-
-    test('legacy: a corrupted setting is reported by loadMapping', async () => {
-        const { db, repository } = setup({ settingValue: '{not json' });
-        const result = await createCheckupEstimateService({ db, repository }).loadMapping();
-        expect(result.errors).toEqual([expect.stringMatching(/rusak/)]);
-    });
-
-    test('legacy: saveMapping stores the normalized mapping and refuses invalid input', async () => {
-        const { db, repository } = setup();
-        const service = createCheckupEstimateService({ db, repository, clock: () => new Date('2026-11-18T10:00:00+07:00') });
-        await expect(service.saveMapping({ categories: { obstetri: { items: [{ tindakan_id: ADMIN_TINDAKAN_ID, quantity: 1 }] } } })).rejects.toThrow(/otomatis/);
-        await service.saveMapping({ categories: { obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] } } });
-        const insert = db.query.mock.calls.find(([sql]) => /INSERT INTO settings/.test(sql));
-        expect(insert[1][0]).toBe(SETTINGS_KEY);
-        expect(JSON.parse(insert[1][1])).toMatchObject({ version: 1, categories: { obstetri: { items: [{ tindakan_id: 20, quantity: 1 }] } } });
     });
 });

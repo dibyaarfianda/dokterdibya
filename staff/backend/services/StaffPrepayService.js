@@ -2,7 +2,7 @@
 
 /**
  * Staff page "Pembayaran di Muka" (bayar di muka, Tahap 2): prepay orders, patient saldo and
- * its history, saldo refunds, and the estimate mapping editor.
+ * its history, saldo refunds, and the package editor (tab Paket).
  *
  * Patient names are read with a separate query (no JOIN on VARCHAR ids across tables with
  * different collations). Refunds lock the patient's live saldo like mark-paid and returns do.
@@ -235,30 +235,127 @@ function defaultEstimates() {
     return require('./CheckupEstimateService').getCheckupEstimateService();
 }
 
-/** Mapping, priced products, and the tindakan staff may pick (same list as the CLI). */
-async function getEstimateMapping({ db = require('../db'), estimates = defaultEstimates() } = {}) {
-    const { ALLOWED_SERVICE_CATEGORIES, ADMIN_TINDAKAN_ID } = require('./CheckupEstimateService');
-    const { mapping, errors } = await estimates.loadMapping();
-    const priced = await estimates.priceAllForStaff();
-    const [tindakan] = await db.query(
-        `SELECT id, code, name, category, price FROM tindakan
-          WHERE is_active = 1 AND (category IN (?, ?) OR id = ?)
-          ORDER BY category, name`,
-        [...ALLOWED_SERVICE_CATEGORIES, ADMIN_TINDAKAN_ID]
-    );
-    return { mapping, mapping_errors: errors, categories: priced.packages, tindakan: tindakan || [], admin_tindakan_id: ADMIN_TINDAKAN_ID };
+const PACKAGE_AUDIT_ACTION = 'Paket Bayar di Muka';
+const defaultRepository = () => require('./PrepayPackageRepository');
+const defaultActivityLogger = () => require('./activityLogger');
+
+const describeWeeks = pkg => (pkg.week_min === null || pkg.week_min === undefined ? 'semua minggu' : `minggu ${pkg.week_min}-${pkg.week_max}`);
+const describeItems = items => (items || []).map(item => `${item.item_type}:${item.ref_id}x${item.quantity}`).join(', ') || '-';
+const describeActive = pkg => (pkg.is_active ? 'aktif' : 'nonaktif');
+
+/** One line for the activity log: the code, then before -> after of every editable field. */
+function packageAuditSummary(code, before, after) {
+    if (!before) {
+        return `${code} dibuat: "${after.name}", kategori ${after.category}, ${describeWeeks(after)}, ${describeActive(after)}, item ${describeItems(after.items)}`;
+    }
+    return `${code}: nama "${before.name}" -> "${after.name}"; kategori ${before.category} -> ${after.category}; `
+        + `${describeWeeks(before)} -> ${describeWeeks(after)}; ${describeActive(before)} -> ${describeActive(after)}; `
+        + `item ${describeItems(before.items)} -> ${describeItems(after.items)}`;
 }
 
-/** Save like the CLI: invalid input is refused (400); an under-minimum product is saved but not ready. */
-async function saveEstimateMapping(mapping, { estimates = defaultEstimates() } = {}) {
-    let stored;
+async function writePackageAudit(activityLogger, actor, summary) {
+    const safeActor = actor || {};
     try {
-        stored = await estimates.saveMapping(mapping);
-    } catch (error) {
-        throw serviceError(error.message || 'Pemetaan estimasi tidak valid.');
+        await activityLogger.log(safeActor.id || null, safeActor.name || null, PACKAGE_AUDIT_ACTION, summary);
+    } catch (_error) {
+        // The package is already saved; a failed audit line must not turn that into an error.
     }
+}
+
+async function pricedPackage(estimates, id) {
     const priced = await estimates.priceAllForStaff();
-    return { mapping: stored, categories: priced.packages };
+    return (priced.packages || []).find(entry => Number(entry.id) === Number(id)) || null;
+}
+
+/** All packages (active and inactive) with their live price, ready flag and issues. */
+async function listPackagesForStaff({ estimates = defaultEstimates() } = {}) {
+    return estimates.priceAllForStaff();
+}
+
+/** What the package editor may pick from, plus the admin fee line (tindakan #1, shown not editable). */
+async function getCatalog({ db = require('../db'), estimates = defaultEstimates() } = {}) {
+    const { ADMIN_TINDAKAN_ID } = require('./CheckupEstimateService');
+    const catalog = await estimates.loadCatalog();
+    const [adminRows] = await db.query('SELECT id, name, price FROM tindakan WHERE id = ?', [ADMIN_TINDAKAN_ID]);
+    const admin = adminRows && adminRows[0];
+    return {
+        ...catalog,
+        admin: admin
+            ? { id: Number(admin.id), name: admin.name, price: admin.price === null || admin.price === undefined ? null : Number(admin.price) }
+            : { id: ADMIN_TINDAKAN_ID, name: 'Biaya admin', price: null }
+    };
+}
+
+/**
+ * Create (no input.id) or update a package. Input is validated (consultation tindakan refused),
+ * then saved with its items in one transaction; the public estimate cache is dropped and the
+ * change is written to the activity log. Returns the freshly priced package.
+ */
+async function savePackage(input, actor, {
+    db = require('../db'),
+    estimates = defaultEstimates(),
+    repository = defaultRepository(),
+    activityLogger = defaultActivityLogger()
+} = {}) {
+    const source = input && typeof input === 'object' ? input : {};
+    const isUpdate = source.id !== undefined && source.id !== null;
+    const id = isUpdate ? Number(source.id) : null;
+    if (isUpdate && (!Number.isSafeInteger(id) || id < 1)) throw serviceError('Paket tidak ditemukan.', 404);
+
+    const tindakanIds = [...new Set((Array.isArray(source.items) ? source.items : [])
+        .filter(item => item && item.item_type === 'tindakan')
+        .map(item => Number(item.ref_id))
+        .filter(ref => Number.isSafeInteger(ref) && ref > 0))];
+    const tindakan = new Map();
+    if (tindakanIds.length) {
+        const [rows] = await db.query('SELECT id, name, category FROM tindakan WHERE id IN (?)', [tindakanIds]);
+        (rows || []).forEach(row => tindakan.set(Number(row.id), row));
+    }
+    const { normalizePackageInput } = require('./CheckupEstimateService');
+    const { value, errors } = normalizePackageInput(source, { tindakan });
+    if (errors.length) throw serviceError(errors.join('; '));
+
+    const connection = await db.getConnection();
+    let before = null;
+    let saved;
+    try {
+        await connection.beginTransaction();
+        if (isUpdate) {
+            before = (await repository.listPackages(connection)).find(entry => Number(entry.id) === id) || null;
+            if (!before) throw serviceError('Paket tidak ditemukan.', 404);
+            // An edit that does not mention is_active keeps the package as it is.
+            if (source.is_active === undefined || source.is_active === null) value.is_active = before.is_active;
+        }
+        saved = await repository.savePackage(connection, isUpdate ? { ...value, id } : value, actor);
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+
+    estimates.invalidate();
+    await writePackageAudit(activityLogger, actor, packageAuditSummary(saved.code, before, value));
+    return pricedPackage(estimates, saved.id);
+}
+
+/** Switch a package on or off (off = hidden from patients, kept for history). Audited like a save. */
+async function setPackageActive(id, active, actor, {
+    db = require('../db'),
+    estimates = defaultEstimates(),
+    repository = defaultRepository(),
+    activityLogger = defaultActivityLogger()
+} = {}) {
+    const packageId = Number(id);
+    if (typeof active !== 'boolean') throw serviceError('Status aktif harus true atau false.');
+    if (!Number.isSafeInteger(packageId) || packageId < 1) throw serviceError('Paket tidak ditemukan.', 404);
+    const before = (await repository.listPackages(db)).find(entry => Number(entry.id) === packageId) || null;
+    if (!before) throw serviceError('Paket tidak ditemukan.', 404);
+    if (!await repository.setPackageActive(db, packageId, active, actor)) throw serviceError('Paket tidak ditemukan.', 404);
+    estimates.invalidate();
+    await writePackageAudit(activityLogger, actor, packageAuditSummary(before.code, before, { ...before, is_active: active }));
+    return pricedPackage(estimates, packageId);
 }
 
 module.exports = {
@@ -268,6 +365,8 @@ module.exports = {
     createRefund,
     createRefundWithin,
     refundRequestHash,
-    getEstimateMapping,
-    saveEstimateMapping
+    listPackagesForStaff,
+    getCatalog,
+    savePackage,
+    setPackageActive
 };
