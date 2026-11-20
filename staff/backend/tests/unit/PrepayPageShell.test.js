@@ -112,6 +112,29 @@ describe('Pembayaran di Muka page shell', () => {
         expect(read('staff', 'public', 'scripts', 'shell', 'menu-new-badges.js')).toContain("'checkup_prepay_refund_requested'");
     });
 
+    test('the package editor never sends the admin line (tindakan 1) as an item', () => {
+        const vm = require('vm');
+        const source = moduleSource();
+        const start = source.indexOf('// <editor-item-helpers>');
+        const end = source.indexOf('// </editor-item-helpers>');
+        expect(start).toBeGreaterThan(-1);
+        const api = vm.runInNewContext(`${source.slice(start, end).replace(/export /g, '')};({ editorItemsFromPriced, payloadItems })`, {});
+        const priced = [
+            { item_type: 'tindakan', ref_id: 1, name: 'Admin', quantity: 1 },
+            { item_type: 'tindakan', ref_id: 9, quantity: 1 },
+            { item_type: 'obat', ref_id: 1, quantity: 2 },
+            { item_type: 'obat', ref_id: 77, quantity: 30 }
+        ];
+        expect(JSON.parse(JSON.stringify(api.editorItemsFromPriced(priced, 1)))).toEqual([
+            { item_type: 'tindakan', ref_id: 9, quantity: 1 },
+            { item_type: 'obat', ref_id: 1, quantity: 2 },
+            { item_type: 'obat', ref_id: 77, quantity: 30 }
+        ]);
+        expect(api.editorItemsFromPriced(priced, undefined).some(item => item.item_type === 'tindakan' && item.ref_id === 1)).toBe(false);
+        // The payload builder is a second guard: even a state holding the admin line does not send it.
+        expect(JSON.parse(JSON.stringify(api.payloadItems(priced, 1))).map(item => `${item.item_type}:${item.ref_id}`)).toEqual(['tindakan:9', 'obat:1', 'obat:77']);
+    });
+
     test('the orders table shows the order ref (spec §8 columns)', () => {
         expect(fragment()).toMatch(/<th>Order<\/th>/);
         expect(moduleSource()).toContain('escapeHtml(row.order_ref');

@@ -312,6 +312,25 @@ const CATEGORY_LABELS = {
     gyn_special: 'Ginekologi Umum'
 };
 
+// <editor-item-helpers>
+const FALLBACK_ADMIN_ID = 1;
+const isAdminLine = (item, adminId) => item.item_type === 'tindakan' && Number(item.ref_id) === Number(adminId || FALLBACK_ADMIN_ID);
+
+// The server's priced items start with the admin fee line (tindakan 1). It is added by the server and
+// must never be an editable item: the server refuses it as an item.
+function editorItemsFromPriced(items, adminId) {
+    return (items || [])
+        .filter(item => !isAdminLine(item, adminId))
+        .map(item => ({ item_type: item.item_type, ref_id: Number(item.ref_id), quantity: Number(item.quantity) || 1 }));
+}
+
+function payloadItems(items, adminId) {
+    return (items || [])
+        .filter(item => !isAdminLine(item, adminId))
+        .map(item => ({ item_type: item.item_type, ref_id: Number(item.ref_id), quantity: Number(item.quantity) }));
+}
+// </editor-item-helpers>
+
 const weekText = pkg => (pkg.week_min === null || pkg.week_min === undefined ? '-' : `${pkg.week_min}–${pkg.week_max}`);
 
 // Ranges are inclusive; a package without a range (or an edit with no range yet) overlaps every week.
@@ -521,7 +540,7 @@ export async function prepayEditPackage(id) {
         ? {
             id: existing.id, code: existing.code, name: existing.name, description: existing.description, category: existing.category,
             week_min: existing.week_min, week_max: existing.week_max, sort_order: existing.sort_order, issues: existing.ready ? [] : (existing.issues || []),
-            items: (existing.items || []).map(item => ({ item_type: item.item_type, ref_id: Number(item.ref_id), quantity: Number(item.quantity) || 1 }))
+            items: editorItemsFromPriced(existing.items, packageState.catalog?.admin?.id)
         }
         : { id: null, code: null, name: '', description: '', category: 'obstetri', week_min: null, week_max: null, sort_order: (packageState.list.length + 1) * 10, issues: [], items: [] };
     renderPackageEditor();
@@ -568,7 +587,7 @@ export async function prepaySavePackage() {
         week_min: null,
         week_max: null,
         sort_order: Number(byId('prepay-pkg-sort')?.value) || 0,
-        items: editing.items.map(item => ({ item_type: item.item_type, ref_id: Number(item.ref_id), quantity: Number(item.quantity) }))
+        items: payloadItems(editing.items, packageState.catalog?.admin?.id)
     };
     if (category === 'obstetri') {
         const min = byId('prepay-pkg-week-min')?.value;

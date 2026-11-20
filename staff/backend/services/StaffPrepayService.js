@@ -257,8 +257,13 @@ async function writePackageAudit(activityLogger, actor, summary) {
     const safeActor = actor || {};
     try {
         await activityLogger.log(safeActor.id || null, safeActor.name || null, PACKAGE_AUDIT_ACTION, summary);
-    } catch (_error) {
-        // The package is already saved; a failed audit line must not turn that into an error.
+    } catch (error) {
+        // The package is already saved, so this does not fail the request; but it must leave a trace.
+        require('../utils/logger').warn('[staff-prepay] audit write failed', {
+            action: PACKAGE_AUDIT_ACTION,
+            actorId: safeActor.id || null,
+            error: error && error.message
+        });
     }
 }
 

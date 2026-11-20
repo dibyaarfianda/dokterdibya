@@ -446,6 +446,17 @@ describe('StaffPrepayService', () => {
             await expect(real.setPackageActive(99, true, actor, harness({ before: null }).opts)).rejects.toMatchObject({ statusCode: 404 });
         });
 
+        test('a failed audit write does not fail the save but is logged', async () => {
+            const logger = require('../../utils/logger');
+            const warn = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+            const h = harness();
+            h.activityLogger.log.mockRejectedValueOnce(new Error('disk full'));
+            const result = await real.savePackage(form([{ item_type: 'tindakan', ref_id: 9, quantity: 1 }], { id: 7 }), actor, h.opts);
+            expect(result).toMatchObject({ id: 7, amount_idr: 190000 });
+            expect(warn).toHaveBeenCalledWith('[staff-prepay] audit write failed', expect.objectContaining({ action: 'Paket Bayar di Muka', actorId: 'D1', error: 'disk full' }));
+            warn.mockRestore();
+        });
+
         test('the catalog carries the admin fee line', async () => {
             const db = { query: jest.fn(async () => [[{ id: 1, name: 'Administrasi', price: '25000.00' }]]) };
             const estimates = { loadCatalog: jest.fn(async () => ({ tindakan: [], obat: [] })) };
