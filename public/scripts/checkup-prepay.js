@@ -17,7 +17,7 @@
 
     var root = document.getElementById('prepay-app');
     var heroStatus = document.getElementById('prepay-hero-status');
-    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261120prepay2';
+    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261122paket1';
     var CATEGORY_PATTERN = /^[a-z0-9_]{2,40}$/;
     var ORDER_PATTERN = /^DPK-[0-9a-f-]{36}$/i;
     var POLL_FAST_MS = 3000;
