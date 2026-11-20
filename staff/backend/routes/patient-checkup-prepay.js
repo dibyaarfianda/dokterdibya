@@ -4,6 +4,7 @@
  * Patient prepayment of the estimated cost of one Klinik Privat visit (Duitku QRIS + VA).
  *
  * GET  /api/patient/checkup-prepay/status            availability, estimates, saldo, latest orders
+ * GET  /api/patient/checkup-prepay/suggestion        ?date=&category= packages + the one fitting the gestational age
  * POST /api/patient/checkup-prepay/checkout          { category, payment_method } -> QRIS string or VA number
  * GET  /api/patient/checkup-prepay/orders/:orderRef  one of the patient's own prepay orders (polled)
  *
@@ -15,6 +16,9 @@ const express = require('express');
 const defaultLogger = require('../utils/logger');
 const { verifyPatientToken: defaultVerifyPatientToken } = require('../middleware/auth');
 const { PremiumError } = require('../services/PremiumPaymentService');
+const { CONSULTATION_CATEGORY_CODES } = require('../constants/consultationCategories');
+const { toPublicEstimate } = require('../services/CheckupEstimateService');
+const { isValidDateString, gestationalWeeksOn, findPregnancyReference, choosePackage } = require('../services/GestationalAge');
 
 const ORDER_REF_PATTERN = /^DPK-[0-9a-f-]{36}$/i;
 
@@ -28,11 +32,13 @@ function noStore(req, res, next) {
 function createPatientCheckupPrepayRouter({
     service,
     db,
+    estimates,
     verifyPatientToken = defaultVerifyPatientToken,
     logger = defaultLogger
 } = {}) {
     const router = express.Router();
     const prepay = () => service || require('../services/CheckupPrepayService').getCheckupPrepayService();
+    const estimateService = () => estimates || require('../services/CheckupEstimateService').getCheckupEstimateService();
     const database = () => db || require('../db');
 
     function fail(res, error, fallbackMessage) {
@@ -49,6 +55,47 @@ function createPatientCheckupPrepayRouter({
             res.json({ success: true, ...status });
         } catch (error) {
             fail(res, error, 'Gagal memuat estimasi dan saldo');
+        }
+    });
+
+    router.get('/suggestion', verifyPatientToken, noStore, async (req, res) => {
+        try {
+            const date = typeof req.query.date === 'string' ? req.query.date : '';
+            const category = typeof req.query.category === 'string' ? req.query.category : '';
+            if (!isValidDateString(date)) {
+                return res.status(400).json({ success: false, message: 'Tanggal tidak valid' });
+            }
+            if (!CONSULTATION_CATEGORY_CODES.includes(category)) {
+                return res.status(400).json({ success: false, message: 'Kategori tidak valid' });
+            }
+
+            const { packages: all } = await estimateService().priceAll();
+            const packages = (all || [])
+                .filter(p => p.category === category && p.ready)
+                .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0) || (Number(a.id) || 0) - (Number(b.id) || 0));
+
+            let age = null;
+            let source = null;
+            let suggestedCode = null;
+            if (category === 'obstetri') {
+                const reference = await findPregnancyReference(database(), req.patient.id);
+                age = reference ? gestationalWeeksOn(reference, date) : null;
+                if (age) {
+                    source = reference.kind;
+                    suggestedCode = choosePackage(packages, age.weeks);
+                }
+            }
+
+            res.json({
+                success: true,
+                weeks: age ? age.weeks : null,
+                days: age ? age.days : null,
+                source,
+                suggested_code: suggestedCode,
+                packages: packages.map(toPublicEstimate)
+            });
+        } catch (error) {
+            fail(res, error, 'Gagal memuat saran paket');
         }
     });
 
