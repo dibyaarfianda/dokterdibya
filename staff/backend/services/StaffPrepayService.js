@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const {
     getBalances,
     lockLiveBalances,
+    getPendingRefundHold,
     planUsage,
     recordRefundRows,
     SOURCE_BILLING
@@ -162,46 +163,66 @@ function validateRefund({ patientId, amountIdr, method, reason, requestKey }) {
     return trimmed;
 }
 
+const rupiah = value => Number(value).toLocaleString('id-ID');
+
 /**
- * Record a saldo refund staff already handed over. Live saldo only; never more than the
- * live balance. The same request_key returns the saved refund (safe retry).
+ * The refund itself, on a transaction the caller owns (no begin/commit/release here).
+ * Live saldo only; never more than live - hold, where hold is the saldo under pending
+ * withdrawal requests. `forRequestId` = this refund completes that request, so its own
+ * amount is not held against it. The same request_key returns the saved refund (safe retry).
+ * Lock order (Tahap 3, same everywhere): live saldo rows, then the pending request rows,
+ * then the refund key.
  */
-async function createRefund({ patientId, amountIdr, method, reason, requestKey, actor = {} }, { db = require('../db') } = {}) {
+async function createRefundWithin(connection, { patientId, amountIdr, method, reason, requestKey, actor = {}, forRequestId = null }) {
     const cleanReason = validateRefund({ patientId, amountIdr, method, reason, requestKey });
     const hash = refundRequestHash({ patient_id: patientId, amount_idr: amountIdr, method, reason: cleanReason });
+    const safeActor = actor || {};
+    const balances = await lockLiveBalances(connection, patientId);
+    const hold = await getPendingRefundHold(connection, patientId, { forUpdate: true, excludeRequestId: forRequestId });
+    const [savedRows] = await connection.query(
+        'SELECT id, amount_idr, request_hash FROM patient_credit_refunds WHERE request_key = ? FOR UPDATE',
+        [requestKey]
+    );
+    const saved = savedRows && savedRows[0];
+    if (saved) {
+        if (saved.request_hash !== hash) throw serviceError('Kunci transaksi sudah digunakan untuk refund berbeda.', 409);
+        return { id: Number(saved.id), amount_idr: Number(saved.amount_idr), already_saved: true };
+    }
+    const live = balances.reduce((sum, entry) => sum + Math.max(0, entry.balance_idr), 0);
+    const available = Math.max(0, live - hold);
+    if (amountIdr > available) {
+        throw serviceError(hold > 0
+            ? `Nominal refund melebihi saldo live yang bisa dipakai (Rp ${rupiah(available)}; Rp ${rupiah(hold)} sedang diajukan pencairan).`
+            : `Nominal refund melebihi saldo live pasien (Rp ${rupiah(live)}).`);
+    }
+    const [inserted] = await connection.query(
+        `INSERT INTO patient_credit_refunds
+            (patient_id, amount_idr, method, reason, request_key, request_hash, created_by, created_by_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [patientId, amountIdr, method, cleanReason, requestKey, hash,
+            safeActor.id ? String(safeActor.id).substring(0, 64) : null, safeActor.name ? String(safeActor.name).substring(0, 120) : null]
+    );
+    await recordRefundRows(connection, {
+        refundId: inserted.insertId,
+        patientId,
+        plan: planUsage(balances, amountIdr, null),
+        actor: safeActor.name || safeActor.id || null
+    });
+    return { id: Number(inserted.insertId), amount_idr: amountIdr, already_saved: false };
+}
+
+/**
+ * Record a saldo refund staff already handed over: createRefundWithin on its own connection
+ * and transaction. Invalid input is refused before a connection is taken.
+ */
+async function createRefund({ patientId, amountIdr, method, reason, requestKey, actor = {} }, { db = require('../db') } = {}) {
+    validateRefund({ patientId, amountIdr, method, reason, requestKey });
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
-        const [savedRows] = await connection.query(
-            'SELECT id, amount_idr, request_hash FROM patient_credit_refunds WHERE request_key = ? FOR UPDATE',
-            [requestKey]
-        );
-        const saved = savedRows && savedRows[0];
-        if (saved) {
-            if (saved.request_hash !== hash) throw serviceError('Kunci transaksi sudah digunakan untuk refund berbeda.', 409);
-            await connection.commit();
-            return { id: Number(saved.id), amount_idr: Number(saved.amount_idr), already_saved: true };
-        }
-        const balances = await lockLiveBalances(connection, patientId);
-        const live = balances.reduce((sum, entry) => sum + Math.max(0, entry.balance_idr), 0);
-        if (amountIdr > live) {
-            throw serviceError(`Nominal refund melebihi saldo live pasien (Rp ${live.toLocaleString('id-ID')}).`);
-        }
-        const [inserted] = await connection.query(
-            `INSERT INTO patient_credit_refunds
-                (patient_id, amount_idr, method, reason, request_key, request_hash, created_by, created_by_name)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [patientId, amountIdr, method, cleanReason, requestKey, hash,
-                actor.id ? String(actor.id).substring(0, 64) : null, actor.name ? String(actor.name).substring(0, 120) : null]
-        );
-        await recordRefundRows(connection, {
-            refundId: inserted.insertId,
-            patientId,
-            plan: planUsage(balances, amountIdr, null),
-            actor: actor.name || actor.id || null
-        });
+        const result = await createRefundWithin(connection, { patientId, amountIdr, method, reason, requestKey, actor });
         await connection.commit();
-        return { id: Number(inserted.insertId), amount_idr: amountIdr, already_saved: false };
+        return result;
     } catch (error) {
         await connection.rollback();
         throw error;
@@ -245,6 +266,7 @@ module.exports = {
     listBalances,
     getPatientLedger,
     createRefund,
+    createRefundWithin,
     refundRequestHash,
     getEstimateMapping,
     saveEstimateMapping

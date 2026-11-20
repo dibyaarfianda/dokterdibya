@@ -14,6 +14,7 @@ const EVENT_PERMISSIONS = Object.freeze({
     'billing_confirmed': 'billing.view',
     'billing_paid': 'billing.view',
     'checkup_prepay_paid': 'billing.view',
+    'checkup_prepay_refund_requested': 'billing.view',
     'revision_requested': 'billing.view',
     'sunday_clinic_closing_updated': 'finance_analysis.view',
     'visit:completed': 'visits.view',

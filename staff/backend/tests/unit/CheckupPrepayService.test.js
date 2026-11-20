@@ -69,7 +69,7 @@ function fakeDb() {
     return { db, state };
 }
 
-function setup({ configured = true, production = false, live = false, reviewer = true, category = estimate() } = {}) {
+function setup({ configured = true, production = false, live = false, reviewer = true, category = estimate(), ledger: ledgerOverrides = {} } = {}) {
     const fake = fakeDb();
     const duitku = {
         PAYMENT_METHODS,
@@ -87,7 +87,12 @@ function setup({ configured = true, production = false, live = false, reviewer =
         priceAll: jest.fn(async () => ({ packages: [category, estimate({ code: 'gyn_repro', name: 'Program Hamil (Reproduksi)', label: 'Program Hamil (Reproduksi)', ready: false, amount_idr: null, items: [] })] }))
     };
     const reviewAccounts = { isActiveReviewPatient: jest.fn(async () => reviewer) };
-    const ledger = { getBalances: jest.fn(async () => [{ category: 'obstetri', gateway_mode: 'sandbox', balance_idr: 115000 }]) };
+    const ledger = {
+        getBalances: jest.fn(async () => [{ category: 'obstetri', gateway_mode: 'sandbox', balance_idr: 115000 }]),
+        getPendingRefundHold: jest.fn(async () => 0),
+        hasSaldoHistory: jest.fn(async () => false),
+        ...ledgerOverrides
+    };
     const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
     let counter = 0;
     const service = createCheckupPrepayService({
@@ -281,5 +286,63 @@ describe('reading orders and status', () => {
         expect(status.orders).toHaveLength(1);
         expect(status.payment_methods).toEqual([{ key: 'qris', label: 'QRIS', type: 'qris' }, { key: 'va_bni', label: 'VA BNI', type: 'va' }]);
         expect(JSON.stringify(status)).not.toMatch(/tindakan_id|NQ"|I1"/);
+    });
+});
+
+describe('getStatus: available saldo and the Saldo Deposit menu (Tahap 3)', () => {
+    test('a pending withdrawal request is not available: live 255000 - hold 200000', async () => {
+        const ctx = setup({
+            production: true,
+            live: true,
+            ledger: {
+                getBalances: jest.fn(async () => [
+                    { category: 'obstetri', gateway_mode: 'live', balance_idr: 255000 },
+                    { category: 'obstetri', gateway_mode: 'sandbox', balance_idr: 115000 }
+                ]),
+                getPendingRefundHold: jest.fn(async () => 200000)
+            }
+        });
+        const status = await ctx.service.getStatus(PATIENT.id);
+        expect(status.available_idr).toBe(55000);
+        expect(ctx.ledger.getPendingRefundHold).toHaveBeenCalledWith(ctx.fake.db, PATIENT.id);
+        expect(status.saldo_menu_visible).toBe(true);
+    });
+
+    test('a hold larger than the live saldo never goes below zero; sandbox saldo is never available', async () => {
+        const ctx = setup({
+            ledger: {
+                getBalances: jest.fn(async () => [{ category: 'obstetri', gateway_mode: 'live', balance_idr: 10000 }]),
+                getPendingRefundHold: jest.fn(async () => 20000)
+            }
+        });
+        expect((await ctx.service.getStatus(PATIENT.id)).available_idr).toBe(0);
+        const sandboxOnly = setup();
+        expect((await sandboxOnly.service.getStatus(PATIENT.id)).available_idr).toBe(0);
+    });
+
+    test('a Google patient with no history in production mode does not see the menu', async () => {
+        const ctx = setup({ production: true, live: false, reviewer: false, ledger: { getBalances: jest.fn(async () => []) } });
+        const status = await ctx.service.getStatus('P0000777');
+        expect(status.availability.available).toBe(false);
+        expect(status.saldo_menu_visible).toBe(false);
+        expect(ctx.ledger.hasSaldoHistory).toHaveBeenCalledWith(ctx.fake.db, 'P0000777');
+    });
+
+    test('a review account in sandbox sees the menu', async () => {
+        const ctx = setup({ reviewer: true, ledger: { getBalances: jest.fn(async () => []) } });
+        const status = await ctx.service.getStatus(PATIENT.id);
+        expect(status.availability).toMatchObject({ available: true, mode: 'sandbox' });
+        expect(status.saldo_menu_visible).toBe(true);
+    });
+
+    test('a patient whose only history is an old refund request sees the menu', async () => {
+        const ctx = setup({
+            production: true,
+            live: false,
+            ledger: { getBalances: jest.fn(async () => []), hasSaldoHistory: jest.fn(async () => true) }
+        });
+        const status = await ctx.service.getStatus('P0000778');
+        expect(status.availability.available).toBe(false);
+        expect(status.saldo_menu_visible).toBe(true);
     });
 });

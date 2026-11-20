@@ -26,6 +26,12 @@ jest.mock('../../services/StaffPrepayService', () => ({
     saveEstimateMapping: jest.fn(async () => ({ mapping: {}, categories: [] }))
 }));
 
+let mockRefundRequests = null;
+jest.mock('../../services/PatientRefundRequestService', () => ({
+    ...jest.requireActual('../../services/PatientRefundRequestService'),
+    getPatientRefundRequestService: () => mockRefundRequests
+}));
+
 const service = require('../../services/StaffPrepayService');
 const { PERMISSION_CATALOG } = require('../../config/accessControlCatalog');
 const { getDelegableCatalog } = require('../../services/AccessControlManagementService');
@@ -56,6 +62,16 @@ describe('access control', () => {
         expectPermission('POST', '/refunds', 'billing.reset');
         expectPermission('GET', '/estimate-mapping', 'checkup_prepay.manage_estimate');
         expectPermission('PUT', '/estimate-mapping', 'checkup_prepay.manage_estimate');
+        expectPermission('GET', '/refund-requests', 'billing.view');
+        expectPermission('POST', '/refund-requests/:id/complete', 'billing.reset');
+        expectPermission('POST', '/refund-requests/:id/reject', 'billing.reset');
+    });
+
+    test('the withdrawal routes are explicit overrides, not inferred from the path words', () => {
+        const { ROUTE_PERMISSION_OVERRIDES } = require('../../config/accessControlRegistry');
+        expect(ROUTE_PERMISSION_OVERRIDES.get('staff-prepay:GET:/refund-requests')).toBe('billing.view');
+        expect(ROUTE_PERMISSION_OVERRIDES.get('staff-prepay:POST:/refund-requests/:id/complete')).toBe('billing.reset');
+        expect(ROUTE_PERMISSION_OVERRIDES.get('staff-prepay:POST:/refund-requests/:id/reject')).toBe('billing.reset');
     });
 
     test('the estimate permission is protected and never delegable', () => {
@@ -104,6 +120,86 @@ describe('HTTP API', () => {
         expect((await request(app).get('/api/staff-prepay/estimate-mapping').set(as(DOCTOR))).status).toBe(200);
     });
 
+    describe('withdrawal requests', () => {
+        const refundService = () => ({
+            listForStaff: jest.fn(async () => []),
+            completeRequest: jest.fn(async ({ id }) => ({ id, status: 'done', refund_id: 30 })),
+            rejectRequest: jest.fn(async ({ id }) => ({ id, status: 'rejected' }))
+        });
+
+        test('the list needs billing.view; only billing.reset or the doctor see full account numbers', async () => {
+            mockRefundRequests = refundService();
+            expect((await request(app).get('/api/staff-prepay/refund-requests').set(as(STAFF, []))).status).toBe(403);
+
+            const viewOnly = await request(app).get('/api/staff-prepay/refund-requests').set(as(STAFF, ['billing.view']));
+            expect(viewOnly.status).toBe(200);
+            expect(viewOnly.headers['cache-control']).toMatch(/no-store/);
+            expect(mockRefundRequests.listForStaff).toHaveBeenLastCalledWith({ canSeeAccount: false });
+
+            await request(app).get('/api/staff-prepay/refund-requests').set(as(STAFF, ['billing.view', 'billing.reset']));
+            expect(mockRefundRequests.listForStaff).toHaveBeenLastCalledWith({ canSeeAccount: true });
+            await request(app).get('/api/staff-prepay/refund-requests').set(as(DOCTOR));
+            expect(mockRefundRequests.listForStaff).toHaveBeenLastCalledWith({ canSeeAccount: true });
+        });
+
+        test('the account number is not in a billing.view-only response', async () => {
+            const { createPatientRefundRequestService } = jest.requireActual('../../services/PatientRefundRequestService');
+            const row = {
+                id: 5, patient_id: 'P1', amount_idr: 200000, bank_name: 'BCA', account_number: '1234567890', account_holder: 'Siti Aminah',
+                status: 'pending', request_key: 'req-key-aaaaaaaaaaaa', refund_id: null, decision_note: null, decided_by: null,
+                decided_at: null, created_at: '2026-11-21 09:00:00'
+            };
+            const db = {
+                query: jest.fn(async sql => {
+                    const query = String(sql).replace(/\s+/g, ' ');
+                    if (query.includes("WHERE status = 'pending'")) return [[row]];
+                    if (query.includes('FROM patients WHERE id IN')) return [[{ id: 'P1', full_name: 'Ny. Siti Aminah' }]];
+                    return [[]];
+                })
+            };
+            mockRefundRequests = createPatientRefundRequestService({ db, staffPrepay: {}, realtime: { broadcast: jest.fn() } });
+
+            const viewOnly = await request(app).get('/api/staff-prepay/refund-requests').set(as(STAFF, ['billing.view']));
+            expect(viewOnly.status).toBe(200);
+            expect(JSON.stringify(viewOnly.body)).not.toContain('1234567890');
+            expect(viewOnly.body.data[0]).toMatchObject({ id: 5, account_number: '•••• 7890', name_differs: false, patient_name: 'Ny. Siti Aminah' });
+
+            const reset = await request(app).get('/api/staff-prepay/refund-requests').set(as(STAFF, ['billing.view', 'billing.reset']));
+            expect(reset.body.data[0].account_number).toBe('1234567890');
+        });
+
+        test('complete and reject need billing.reset and pass the actor', async () => {
+            mockRefundRequests = refundService();
+            const viewOnly = as(STAFF, ['billing.view']);
+            const cashier = as(STAFF, ['billing.view', 'billing.reset']);
+            expect((await request(app).post('/api/staff-prepay/refund-requests/5/complete').set(viewOnly)).status).toBe(403);
+            expect((await request(app).post('/api/staff-prepay/refund-requests/5/reject').set(viewOnly).send({ note: 'Rekening salah' })).status).toBe(403);
+            expect(mockRefundRequests.completeRequest).not.toHaveBeenCalled();
+            expect(mockRefundRequests.rejectRequest).not.toHaveBeenCalled();
+
+            const done = await request(app).post('/api/staff-prepay/refund-requests/5/complete').set(cashier);
+            expect(done.status).toBe(200);
+            expect(done.body.data).toEqual({ id: 5, status: 'done', refund_id: 30 });
+            expect(mockRefundRequests.completeRequest).toHaveBeenCalledWith({ id: 5, actor: { id: 'S1', name: 'Kasir' } });
+
+            const rejected = await request(app).post('/api/staff-prepay/refund-requests/6/reject').set(cashier).send({ note: 'Rekening salah' });
+            expect(rejected.status).toBe(200);
+            expect(mockRefundRequests.rejectRequest).toHaveBeenCalledWith({ id: 6, note: 'Rekening salah', actor: { id: 'S1', name: 'Kasir' } });
+        });
+
+        test('a malformed id is 404 and service status codes are kept', async () => {
+            mockRefundRequests = refundService();
+            const bad = await request(app).post('/api/staff-prepay/refund-requests/5%20OR%201/complete').set(as(DOCTOR));
+            expect(bad.status).toBe(404);
+            expect(mockRefundRequests.completeRequest).not.toHaveBeenCalled();
+
+            mockRefundRequests.completeRequest.mockRejectedValueOnce(Object.assign(new Error('Pengajuan ini sudah ditutup.'), { statusCode: 409 }));
+            const closed = await request(app).post('/api/staff-prepay/refund-requests/5/complete').set(as(DOCTOR));
+            expect(closed.status).toBe(409);
+            expect(closed.body).toEqual({ success: false, message: 'Pengajuan ini sudah ditutup.' });
+        });
+    });
+
     test('service errors keep their status and message', async () => {
         service.createRefund.mockRejectedValueOnce(Object.assign(new Error('Nominal refund melebihi saldo live pasien.'), { statusCode: 400 }));
         const res = await request(app).post('/api/staff-prepay/refunds').set(as(DOCTOR))
@@ -135,7 +231,7 @@ describe('StaffPrepayService', () => {
         expect(rows[0]).toMatchObject({ patient_name: 'P9', product_label: 'Kehamilan (Obstetri)', va_number: '988', fee_idr: 3000 });
     });
 
-    function refundHarness({ balances = [{ category: 'obstetri', amount_idr: 255000, created_at: '2026-11-20 07:48:00' }], saved = null } = {}) {
+    function refundHarness({ balances = [{ category: 'obstetri', amount_idr: 255000, created_at: '2026-11-20 07:48:00' }], saved = null, pending = [] } = {}) {
         const statements = [];
         const connection = {
             beginTransaction: jest.fn(), commit: jest.fn(), rollback: jest.fn(), release: jest.fn(),
@@ -144,6 +240,7 @@ describe('StaffPrepayService', () => {
                 statements.push({ query, params });
                 if (query.startsWith('SELECT id, amount_idr, request_hash FROM patient_credit_refunds')) return [saved ? [saved] : []];
                 if (query.includes('FROM patient_credit_ledger') && query.includes('FOR UPDATE')) return [balances];
+                if (query.includes('FROM patient_credit_refund_requests') && query.includes("status = 'pending'")) return [pending];
                 if (query.startsWith('INSERT INTO patient_credit_refunds')) return [{ insertId: 3 }];
                 if (query.startsWith('INSERT INTO patient_credit_ledger')) return [{ affectedRows: 1 }];
                 return [[]];
@@ -175,6 +272,43 @@ describe('StaffPrepayService', () => {
         await expect(real.createRefund(refund, { db: same.db })).resolves.toEqual({ id: 3, amount_idr: 20000, already_saved: true });
         const other = refundHarness({ saved: { id: 3, amount_idr: 20000, request_hash: hash } });
         await expect(real.createRefund({ ...refund, reason: 'Lain' }, { db: other.db })).rejects.toMatchObject({ statusCode: 409 });
+    });
+
+    test('a direct refund cannot dip into saldo held by a pending withdrawal request', async () => {
+        const h = refundHarness({ pending: [{ id: 5, amount_idr: 200000, request_key: 'req-key-aaaaaaaaaaaa' }] });
+        await expect(real.createRefund({ ...refund, amountIdr: 100000 }, { db: h.db })).rejects.toMatchObject({
+            statusCode: 400, message: expect.stringMatching(/55[.,]000/)
+        });
+        expect(h.statements.some(entry => entry.query.startsWith('INSERT'))).toBe(false);
+        const ok = refundHarness({ pending: [{ id: 5, amount_idr: 200000, request_key: 'req-key-aaaaaaaaaaaa' }] });
+        await expect(real.createRefund({ ...refund, amountIdr: 55000 }, { db: ok.db })).resolves.toMatchObject({ amount_idr: 55000 });
+    });
+
+    test('lock order: live saldo, then the pending requests (FOR UPDATE), then the refund key', async () => {
+        const h = refundHarness();
+        await real.createRefund(refund, { db: h.db });
+        const reads = h.statements.map(entry => entry.query).filter(query => query.startsWith('SELECT'));
+        expect(reads[0]).toMatch(/FROM patient_credit_ledger .* FOR UPDATE$/);
+        expect(reads[1]).toMatch(/FROM patient_credit_refund_requests .*status = 'pending'.* FOR UPDATE$/);
+        expect(reads[2]).toMatch(/^SELECT id, amount_idr, request_hash FROM patient_credit_refunds .* FOR UPDATE$/);
+    });
+
+    test('createRefundWithin runs on the caller transaction and may spend the hold of its own request', async () => {
+        const h = refundHarness({ pending: [{ id: 5, amount_idr: 200000, request_key: 'req-key-aaaaaaaaaaaa' }, { id: 8, amount_idr: 50000, request_key: 'req-key-bbbbbbbbbbbb' }] });
+        const result = await real.createRefundWithin(h.connection, {
+            patientId: 'P1', amountIdr: 200000, method: 'transfer', reason: 'Pencairan atas permintaan pasien #5',
+            requestKey: 'refund-request-5', actor: { id: 'S1', name: 'Kasir' }, forRequestId: 5
+        });
+        expect(result).toEqual({ id: 3, amount_idr: 200000, already_saved: false });
+        expect(h.connection.beginTransaction).not.toHaveBeenCalled();
+        expect(h.connection.commit).not.toHaveBeenCalled();
+        expect(h.connection.release).not.toHaveBeenCalled();
+        // The other pending request (8) still holds its 50000: 255000 - 50000 = 205000 is the cap.
+        const over = refundHarness({ pending: [{ id: 5, amount_idr: 210000, request_key: 'req-key-aaaaaaaaaaaa' }, { id: 8, amount_idr: 50000, request_key: 'req-key-bbbbbbbbbbbb' }] });
+        await expect(real.createRefundWithin(over.connection, {
+            patientId: 'P1', amountIdr: 210000, method: 'transfer', reason: 'Pencairan atas permintaan pasien #5',
+            requestKey: 'refund-request-5', actor: {}, forRequestId: 5
+        })).rejects.toMatchObject({ statusCode: 400 });
     });
 
     test('invalid refund input never reaches the database', async () => {

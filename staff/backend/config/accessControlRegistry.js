@@ -273,6 +273,9 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['staff-prepay:GET:/estimate-mapping', 'checkup_prepay.manage_estimate'],
     ['staff-prepay:PUT:/estimate-mapping', 'checkup_prepay.manage_estimate'],
     ['staff-prepay:POST:/refunds', 'billing.reset'],
+    ['staff-prepay:GET:/refund-requests', 'billing.view'],
+    ['staff-prepay:POST:/refund-requests/:id/complete', 'billing.reset'],
+    ['staff-prepay:POST:/refund-requests/:id/reject', 'billing.reset'],
     ['medify-batch:POST:/credentials', 'integrations.write'],
     ['docboard:POST:/from-drd/preview', 'docboard.view'],
     // Scheduling belongs to DocBoard; clinical notes/outcomes retain their

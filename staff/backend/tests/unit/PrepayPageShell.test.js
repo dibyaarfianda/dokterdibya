@@ -88,7 +88,8 @@ describe('Pembayaran di Muka page shell', () => {
         const { MENU_ACTIVITY_SOURCES } = require('../../config/menu-activity-sources');
         const { STAFF_NAVIGATION_MAP } = require('../../config/accessControlRegistry');
         expect(MENU_ACTIVITY_SOURCES['nav-prepay']).toEqual([
-            { table: 'payment_orders', where: "order_type = 'checkup_prepay' AND status = 'paid'", columns: ['paid_at'] }
+            { table: 'payment_orders', where: "order_type = 'checkup_prepay' AND status = 'paid'", columns: ['paid_at'] },
+            { table: 'patient_credit_refund_requests', columns: ['created_at'] }
         ]);
         expect(STAFF_NAVIGATION_MAP['nav-prepay']).toBe('billing.view');
     });

@@ -210,6 +210,15 @@ function createCheckupPrepayService({
         const availability = await getAvailability(patientId);
         const priced = await estimates.priceAll();
         const balances = await ledger.getBalances(patientId, { db });
+        // Tahap 3: saldo under a pending withdrawal request is held (plain read: display only).
+        const live = balances
+            .filter(row => row.gateway_mode === 'live')
+            .reduce((sum, row) => sum + Math.max(0, Math.trunc(Number(row.balance_idr) || 0)), 0);
+        const hold = live > 0 ? await ledger.getPendingRefundHold(db, patientId) : 0;
+        // "Saldo Deposit" menu: shown to whoever can pay now or already has any saldo history.
+        const saldoMenuVisible = Boolean(availability.available)
+            || balances.length > 0
+            || await ledger.hasSaldoHistory(db, patientId);
         const [orders] = await db.query(
             'SELECT * FROM payment_orders WHERE patient_id = ? AND order_type = ? ORDER BY created_at DESC LIMIT 5',
             [patientId, ORDER_TYPE]
@@ -221,6 +230,8 @@ function createCheckupPrepayService({
                 ...row,
                 category_label: CONSULTATION_CATEGORIES[row.category] || row.category
             })),
+            available_idr: Math.max(0, live - hold),
+            saldo_menu_visible: saldoMenuVisible,
             orders: orders.map(order => toPublicOrder(order, methods)),
             payment_methods: paymentMethodList()
         };

@@ -11,7 +11,7 @@
  * - anything else: 'none'.
  */
 
-const { getLiveBalances, getUsageForBillings } = require('./PatientCreditLedger');
+const { getLiveBalances, getPendingRefundHold, getUsageForBillings } = require('./PatientCreditLedger');
 
 const round2 = value => Math.round(Number(value) * 100) / 100;
 
@@ -41,7 +41,9 @@ async function forBilling(executor, billing) {
     if (billing.status === 'confirmed' && billing.patient_id) {
         const balances = await getLiveBalances(executor, billing.patient_id);
         const live = balances.reduce((sum, entry) => sum + Math.max(0, Number(entry.balance_idr) || 0), 0);
-        const deduct = Math.min(live, Math.max(0, Math.floor(total)));
+        // Tahap 3: saldo under a pending withdrawal request is held (plain read: preview only).
+        const hold = live > 0 ? await getPendingRefundHold(executor, billing.patient_id) : 0;
+        const deduct = Math.min(Math.max(0, live - hold), Math.max(0, Math.floor(total)));
         if (deduct <= 0) return coverage('none', total);
         return coverage('preview', total, { live, deduct });
     }

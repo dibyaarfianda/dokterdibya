@@ -20,10 +20,10 @@ function patientAuth(req, res, next) {
     return res.status(401).json({ success: false, message: 'Missing authorization header' });
 }
 
-function buildApp({ service, db = {}, estimates }) {
+function buildApp({ service, db = {}, estimates, refundRequests = {} }) {
     const app = express();
     app.use(express.json());
-    app.use('/api/patient/checkup-prepay', createPatientCheckupPrepayRouter({ service, db, estimates, verifyPatientToken: patientAuth, logger }));
+    app.use('/api/patient/checkup-prepay', createPatientCheckupPrepayRouter({ service, db, estimates, refundRequests, verifyPatientToken: patientAuth, logger }));
     return app;
 }
 
@@ -109,6 +109,72 @@ describe('patient checkup prepay routes', () => {
         expect(own.body.order.status).toBe('paid');
         const other = await request(app).get(`/api/patient/checkup-prepay/orders/${REF}`).set('x-test-patient', 'P0002');
         expect(other.status).toBe(404);
+    });
+});
+
+describe('saldo and withdrawal requests (Tahap 3)', () => {
+    const BASE = '/api/patient/checkup-prepay';
+    beforeEach(() => jest.clearAllMocks());
+
+    test.each([
+        ['get', `${BASE}/saldo`],
+        ['post', `${BASE}/refund-requests`],
+        ['post', `${BASE}/refund-requests/7/cancel`]
+    ])('%s %s requires a patient session', async (method, url) => {
+        const res = await request(buildApp({ service: {}, refundRequests: {} }))[method](url);
+        expect(res.status).toBe(401);
+    });
+
+    test('GET /saldo reads only the session patient and is never cached', async () => {
+        const saldo = { balances: { live: 255000, sandbox: 0 }, available_idr: 55000, history: [], requests: [] };
+        const refundRequests = { getSaldo: jest.fn().mockResolvedValue(saldo) };
+        const res = await request(buildApp({ service: {}, refundRequests })).get(`${BASE}/saldo?patient_id=P9999`).set('x-test-patient', 'P0001');
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ success: true, ...saldo });
+        expect(refundRequests.getSaldo).toHaveBeenCalledWith('P0001');
+        expect(res.headers['cache-control']).toMatch(/no-store/);
+    });
+
+    test('POST /refund-requests uses the session patient and its stored name, never the body', async () => {
+        const refundRequests = { createRequest: jest.fn().mockResolvedValue({ id: 5, status: 'pending' }) };
+        const db = { query: jest.fn().mockResolvedValue([[{ full_name: 'Ny. Siti Aminah' }]]) };
+        const res = await request(buildApp({ service: {}, db, refundRequests }))
+            .post(`${BASE}/refund-requests`).set('x-test-patient', 'P0001')
+            .send({ amount_idr: 200000, bank_name: 'BCA', account_number: '1234567890', account_holder: 'Siti Aminah', request_key: 'req-key-aaaaaaaaaaaa', patient_id: 'P9999', patient_name: 'X' });
+        expect(res.status).toBe(201);
+        expect(res.body).toEqual({ success: true, data: { id: 5, status: 'pending' } });
+        expect(res.headers['cache-control']).toMatch(/no-store/);
+        expect(db.query).toHaveBeenCalledWith(expect.stringContaining('FROM patients WHERE id = ?'), ['P0001']);
+        expect(refundRequests.createRequest).toHaveBeenCalledWith({
+            patient: { id: 'P0001', name: 'Ny. Siti Aminah' },
+            amountIdr: 200000,
+            bankName: 'BCA',
+            accountNumber: '1234567890',
+            accountHolder: 'Siti Aminah',
+            requestKey: 'req-key-aaaaaaaaaaaa'
+        });
+    });
+
+    test('business errors keep their status, code and message', async () => {
+        const refundRequests = { createRequest: jest.fn().mockRejectedValue(new PremiumError('SANDBOX_SALDO', 'Saldo uji tidak dapat dicairkan', 400)) };
+        const db = { query: jest.fn().mockResolvedValue([[{ full_name: 'Uji' }]]) };
+        const res = await request(buildApp({ service: {}, db, refundRequests }))
+            .post(`${BASE}/refund-requests`).set('x-test-patient', 'P0001').send({ amount_idr: 10000 });
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({ success: false, code: 'SANDBOX_SALDO', message: 'Saldo uji tidak dapat dicairkan' });
+    });
+
+    test('POST /refund-requests/:id/cancel cancels the session patient own request', async () => {
+        const refundRequests = { cancelRequest: jest.fn().mockResolvedValue({ id: 7, status: 'cancelled' }) };
+        const app = buildApp({ service: {}, refundRequests });
+        const res = await request(app).post(`${BASE}/refund-requests/7/cancel`).set('x-test-patient', 'P0001').send({ patient_id: 'P9999' });
+        expect(res.status).toBe(200);
+        expect(res.body).toEqual({ success: true, data: { id: 7, status: 'cancelled' } });
+        expect(refundRequests.cancelRequest).toHaveBeenCalledWith({ patientId: 'P0001', id: 7 });
+
+        const bad = await request(app).post(`${BASE}/refund-requests/7%20OR%201/cancel`).set('x-test-patient', 'P0001');
+        expect(bad.status).toBe(404);
+        expect(refundRequests.cancelRequest).toHaveBeenCalledTimes(1);
     });
 });
 

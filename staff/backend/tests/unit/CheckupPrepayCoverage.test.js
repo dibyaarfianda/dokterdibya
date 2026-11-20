@@ -2,6 +2,7 @@
 
 jest.mock('../../services/PatientCreditLedger', () => ({
     getLiveBalances: jest.fn(),
+    getPendingRefundHold: jest.fn(async () => 0),
     getUsageForBillings: jest.fn()
 }));
 
@@ -21,6 +22,20 @@ test('saldo larger than the bill only covers the bill', async () => {
     L.getLiveBalances.mockResolvedValue([{ category: 'obstetri', balance_idr: 255000 }, { category: 'gyn_repro', balance_idr: 340000 }]);
     expect(await C.forBilling({}, { id: 1, patient_id: 'P1', status: 'confirmed', total: 300000 }))
         .toMatchObject({ mode: 'preview', live_balance_idr: 595000, deduct_idr: 300000, remaining_due_idr: 0 });
+});
+
+test('a pending withdrawal request holds its amount in the preview (plain read)', async () => {
+    L.getLiveBalances.mockResolvedValue([{ category: 'obstetri', balance_idr: 255000 }]);
+    L.getPendingRefundHold.mockResolvedValueOnce(200000);
+    expect(await C.forBilling({}, { id: 1, patient_id: 'P1', status: 'confirmed', total: 365000 }))
+        .toEqual({ mode: 'preview', live_balance_idr: 255000, deduct_idr: 55000, remaining_due_idr: 310000, used: [] });
+    expect(L.getPendingRefundHold).toHaveBeenCalledWith({}, 'P1');
+});
+
+test('a hold that covers the whole live saldo previews nothing', async () => {
+    L.getLiveBalances.mockResolvedValue([{ category: 'obstetri', balance_idr: 255000 }]);
+    L.getPendingRefundHold.mockResolvedValueOnce(255000);
+    expect((await C.forBilling({}, { id: 1, patient_id: 'P1', status: 'confirmed', total: 365000 })).mode).toBe('none');
 });
 
 test('a paid bill reports the recorded usage', async () => {
