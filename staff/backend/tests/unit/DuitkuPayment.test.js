@@ -205,3 +205,11 @@ describe('checkTransaction', () => {
         await expect(client.checkTransaction('ORDER-1')).rejects.toThrow('socket hang up');
     });
 });
+
+describe('payment methods offered to patients', () => {
+    test('QRIS uses ShopeePay QRIS (SP): Nobu QRIS (NQ) could not generate a QR in the Duitku sandbox', () => {
+        const { client } = loadClient();
+        expect(client.PAYMENT_METHODS.qris).toEqual({ code: 'SP', type: 'qris', label: 'QRIS' });
+        expect(Object.values(client.PAYMENT_METHODS).map(method => method.code)).not.toContain('NQ');
+    });
+});
