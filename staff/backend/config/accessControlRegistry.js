@@ -129,6 +129,7 @@ const SOURCE_POLICIES = Object.freeze({
     'community-chat-attention': CRUD('community_chat.view', 'community_chat.write', 'community_chat.write', 'community_chat.delete'),
     'dashboard-stats': CRUD('dashboard.view', 'dashboard.view', 'dashboard.view', 'dashboard.view'),
     'drug-audit': CRUD('drug_audit.view', 'drug_audit.approve', 'drug_audit.approve', 'drug_audit.approve', { finalize: 'drug_audit.approve' }),
+    'staff-prepay': CRUD('billing.view', 'billing.reset', 'checkup_prepay.manage_estimate', 'billing.reset'),
     docboard: CRUD('docboard.view', 'docboard.write', 'docboard.write', 'docboard.delete', { sync: 'docboard.write', reset: 'docboard.write' }),
     'email-settings': CRUD('system.monitor', 'system.write', 'system.write', 'system.write'),
     'estimasi-biaya': CRUD('cost_estimates.view', 'cost_estimates.write', 'cost_estimates.write', 'cost_estimates.delete', { publish: 'cost_estimates.publish' }),
@@ -268,6 +269,9 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['staff-payroll:PATCH:/driver-payrolls/:month/name', 'staff_payroll.write'],
     ['staff-payroll:DELETE:/driver-payrolls/:month', 'staff_payroll.delete'],
     ['estimasi-biaya-draft:POST:/preview', 'cost_estimates.view'],
+    ['staff-prepay:GET:/estimate-mapping', 'checkup_prepay.manage_estimate'],
+    ['staff-prepay:PUT:/estimate-mapping', 'checkup_prepay.manage_estimate'],
+    ['staff-prepay:POST:/refunds', 'billing.reset'],
     ['medify-batch:POST:/credentials', 'integrations.write'],
     ['docboard:POST:/from-drd/preview', 'docboard.view'],
     // Scheduling belongs to DocBoard; clinical notes/outcomes retain their

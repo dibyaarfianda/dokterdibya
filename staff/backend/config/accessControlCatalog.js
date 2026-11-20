@@ -231,6 +231,8 @@ const NEW_PERMISSIONS = [
     permission('staff_payroll.export', 'Ekspor gajian staff', 'Tim', 'export', [{ kind: 'doctor' }]),
     permission('drug_audit.view', 'Baca audit obat', 'Obat dan Inventori', 'view', [{ kind: 'doctor' }], { protected: true }),
     permission('drug_audit.approve', 'Putuskan pengajuan dan opname audit obat', 'Obat dan Inventori', 'finalize', [{ kind: 'doctor' }], { protected: true }),
+    // Prices patients pay through Duitku (bayar di muka): doctor only, never delegated.
+    permission('checkup_prepay.manage_estimate', 'Ubah harga estimasi bayar di muka', 'Keuangan', 'manage', [{ kind: 'doctor' }], { protected: true }),
     permission('staff_points.view', 'Baca poin staff', 'Tim', 'view', [{ kind: 'menu', value: 'staff_points' }]),
     permission('staff_points.write', 'Kelola poin staff', 'Tim', 'write', [{ kind: 'doctor' }]),
     permission('staff_points.reset', 'Reset poin staff', 'Tim', 'reset', [{ kind: 'doctor' }]),
