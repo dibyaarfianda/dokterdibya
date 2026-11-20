@@ -2,11 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const Module = require('module');
 const assert = require('assert/strict');
-// Bayar di muka, Tahap 2 — explicit opt-in integration check. Copies schemas only, writes
+// Bayar di muka, Tahap 2 + 3 — explicit opt-in integration check. Copies schemas only, writes
 // synthetic data exclusively to a unique codex_prepay_qa_* database, then drops that database.
 // Proves on real MySQL: mark-paid takes live saldo (never sandbox) in its own transaction,
 // a changed saldo is refused before any stock movement, closing shows the saldo split,
 // a retur goes back to saldo, and a saldo refund is recorded once.
+// Tahap 3: the legacy mapping is copied into packages, a package with tindakan + obat is priced and
+// can be re-saved, a paid order credits the category frozen in its snapshot, a pending withdrawal
+// request holds its amount (mark-paid takes only live - hold) and staff completion refunds it once.
 // The billing services load the auth middleware, which exits the process without a JWT secret
 // (that would skip the DROP below). This script never signs or checks a token.
 process.env.JWT_SECRET ||= 'codex-prepay-qa-only';
@@ -18,7 +21,8 @@ if (!/^codex_prepay_qa_\d+$/.test(qaName)) throw new Error('Unsafe QA database n
 const tables = ['sunday_clinic_billings', 'sunday_clinic_records', 'sunday_clinic_billing_items', 'sunday_clinic_additional_billings',
     'sunday_clinic_additional_billing_items', 'sunday_clinic_billing_audit_logs', 'sunday_clinic_additional_billing_audit_logs', 'obat',
     'obat_batches', 'stock_movements', 'sunday_clinic_closings', 'sunday_clinic_closing_entries', 'sunday_clinic_billing_revisions',
-    'patients', 'sunday_appointments', 'tagihan_payments', 'sunday_clinic_billing_returns', 'patient_credit_ledger', 'permissions'];
+    'patients', 'sunday_appointments', 'tagihan_payments', 'sunday_clinic_billing_returns', 'patient_credit_ledger', 'permissions',
+    'tindakan', 'settings', 'payment_orders'];
 
 function response() {
     return {
@@ -37,12 +41,17 @@ function response() {
         for (const table of tables) await admin.query(`CREATE TABLE \`${qaName}\`.\`${table}\` LIKE dibyaklinik.\`${table}\``);
         pool = mysql.createPool({ user: 'root', socketPath: '/run/mysqld/mysqld.sock', database: qaName, connectionLimit: 6, multipleStatements: true });
         await pool.query(fs.readFileSync(path.join(root, 'migrations/20261121_checkup_prepay_tahap2.sql'), 'utf8'));
+        await pool.query(fs.readFileSync(path.join(root, 'migrations/20261122_checkup_prepay_packages.sql'), 'utf8'));
         require.cache[req.resolve('./db')] = { exports: pool };
         const billing = req('./services/sunday-clinic/billing');
         const returns = req('./services/sunday-clinic/billing-returns');
         const closing = req('./services/SundayClinicClosingService');
         const ledger = req('./services/PatientCreditLedger');
         const staffPrepay = req('./services/StaffPrepayService');
+        const packageRepository = req('./services/PrepayPackageRepository');
+        const { createCheckupEstimateService, SETTINGS_KEY } = req('./services/CheckupEstimateService');
+        const { createPatientRefundRequestService } = req('./services/PatientRefundRequestService');
+        const { migrate: migratePackages } = req('./scripts/migrate-prepay-packages');
         const audit = req('./services/SundayClinicBillingAuditService').logBillingAudit;
         const date = req('./utils/date').formatDateLocal();
 
@@ -144,7 +153,132 @@ function response() {
         await assert.rejects(ledger.assertNoPrepaySaldoEvidence(pool, { mrId: 'QA001' }), /dibayar dengan saldo/);
         await assert.rejects(ledger.assertNoPrepaySaldoEvidence(pool, { patientId: 'QA0001' }), /dibayar dengan saldo/);
 
-        console.log(JSON.stringify({ passed: true, tests: ['live saldo on mark-paid', 'sandbox never pays', '409 before stock', 'closing saldo split', 'retur back to saldo', 'refund once', 'deletion guard'], clinicalWrites: 0 }));
+        // ---- Tahap 3 ----
+        const quiet = () => {};
+        const estimates = createCheckupEstimateService({ db: pool });
+
+        // 8. The live-like legacy mapping becomes four packages with the same codes and prices.
+        const priceOf = { 1: 25000, 6: 130000, 8: 215000, 9: 240000, 10: 100000 };
+        for (const [id, price] of Object.entries(priceOf)) {
+            await insert('tindakan', { id: Number(id), code: `QAT${id}`, name: id === '1' ? 'Biaya Admin' : `Layanan QA ${id}`, category: 'LAYANAN', price, is_active: 1 });
+        }
+        await insert('obat', { id: 5, code: 'QAOBAT5', name: 'Obat Paket QA', price: 15000, unit: 'tablet', stock: 50, is_active: 1 });
+        const legacy = {
+            version: 1,
+            updated_at: null,
+            categories: {
+                obstetri: { items: [{ tindakan_id: 6, quantity: 1 }] },
+                obstetri_usg4d: { items: [{ tindakan_id: 9, quantity: 1 }] },
+                gyn_repro: { items: [{ tindakan_id: 8, quantity: 1 }] },
+                gyn_special: { items: [{ tindakan_id: 8, quantity: 1 }] }
+            }
+        };
+        await insert('settings', { setting_key: SETTINGS_KEY, setting_value: JSON.stringify(legacy) });
+        const copied = await migratePackages(pool, { apply: true, log: quiet });
+        assert.deepEqual(copied.created, ['obstetri', 'obstetri_usg4d', 'gyn_repro', 'gyn_special']);
+        assert.deepEqual((await migratePackages(pool, { apply: true, log: quiet })).created, []);
+        const expectedAmount = { obstetri: 25000 + 130000, obstetri_usg4d: 25000 + 240000, gyn_repro: 25000 + 215000, gyn_special: 25000 + 215000 };
+        const staffView = await estimates.priceAllForStaff();
+        assert.equal(staffView.packages.length, 4);
+        for (const priced of staffView.packages) {
+            assert.equal(priced.ready, true, JSON.stringify(priced.issues));
+            assert.equal(priced.amount_idr, expectedAmount[priced.code], priced.code);
+        }
+
+        // 9. A new package with one tindakan and one obat prices as admin + tindakan + obat x qty.
+        const saveInTransaction = async input => {
+            const connection = await pool.getConnection();
+            try {
+                await connection.beginTransaction();
+                const saved = await packageRepository.savePackage(connection, input, { id: 'qa', name: 'QA Dokter' });
+                await connection.commit();
+                return saved;
+            } catch (error) {
+                await connection.rollback();
+                throw error;
+            } finally {
+                connection.release();
+            }
+        };
+        const created = await saveInTransaction({
+            name: 'Paket QA Baru', description: null, category: 'gyn_repro', week_min: null, week_max: null, is_active: true, sort_order: 50,
+            items: [{ item_type: 'tindakan', ref_id: 10, quantity: 1, sort_order: 0 }, { item_type: 'obat', ref_id: 5, quantity: 2, sort_order: 1 }]
+        });
+        assert.equal(created.code, `pkg_${created.id}`);
+        const pricedNew = await estimates.pricePackageByCode(created.code);
+        assert.equal(pricedNew.ready, true, JSON.stringify(pricedNew.issues));
+        assert.equal(pricedNew.amount_idr, 25000 + 100000 + 2 * 15000);
+
+        // 10. Saving it again with nothing changed succeeds (no "Paket tidak ditemukan") and keeps the items.
+        const loaded = await packageRepository.getPackageByCode(pool, created.code);
+        const resaved = await saveInTransaction({ ...loaded });
+        assert.equal(resaved.id, created.id);
+        assert.equal(resaved.code, created.code);
+        assert.equal((await estimates.pricePackageByCode(created.code)).amount_idr, 155000 + 15000);
+        assert.equal(await scalar('SELECT COUNT(*) FROM checkup_prepay_package_items WHERE package_id = ?', [created.id]), 2);
+
+        // 11. A paid order credits the category frozen in its snapshot, even after the package is deactivated.
+        await insert('patients', { id: 'QA0005', full_name: 'Synthetic QA 5' });
+        const snapshot = { package_code: created.code, package_name: 'Paket QA Baru', category: 'gyn_repro', items: pricedNew.items, amount_idr: 170000, priced_at: new Date().toISOString() };
+        await insert('payment_orders', { id: 950, order_ref: 'QA-ORDER-950', patient_id: 'QA0005', product_code: created.code, amount_idr: 170000, gateway_mode: 'live', item_snapshot: JSON.stringify(snapshot) });
+        assert.equal(await packageRepository.setPackageActive(pool, created.id, false, { id: 'qa' }), true);
+        const [[order]] = await pool.query('SELECT * FROM payment_orders WHERE id = 950');
+        const orderConnection = await pool.getConnection();
+        try {
+            await orderConnection.beginTransaction();
+            const credited = await ledger.creditFromPaidOrder(orderConnection, order);
+            await orderConnection.commit();
+            assert.equal(credited.category, 'gyn_repro');
+            assert.equal(credited.credit_idr, 170000);
+        } finally {
+            orderConnection.release();
+        }
+        assert.equal(await scalar("SELECT SUM(amount_idr) FROM patient_credit_ledger WHERE patient_id = 'QA0005' AND category = 'gyn_repro' AND entry_type = 'prepay' AND source_id = '950'"), 170000);
+
+        // 12. A pending withdrawal holds its amount: mark-paid of a 365000 bill takes only live - hold.
+        await insert('patients', { id: 'QA0004', full_name: 'Synthetic QA 4' });
+        await insert('sunday_clinic_records', { id: 4, mr_id: 'QA004', patient_id: 'QA0004', visit_location: 'klinik_private', mr_category: 'obstetri', status: 'draft', created_at: `${date} 09:30:00` });
+        await insert('sunday_clinic_billings', { id: 4, mr_id: 'QA004', patient_id: 'QA0004', subtotal: 365000, total: 365000, status: 'confirmed', accounting_date: date, pending_changes: 0 });
+        await insert('sunday_clinic_billing_items', { id: 41, billing_id: 4, item_type: 'tindakan', item_code: 'T40', item_name: 'Layanan QA', quantity: 1, price: 365000, total: 365000 });
+        await insert('patient_credit_ledger', { patient_id: 'QA0004', category: 'obstetri', entry_type: 'prepay', amount_idr: 255000, gateway_mode: 'live', source_type: 'payment_order', source_id: '904' });
+        const refundRequests = createPatientRefundRequestService({
+            db: pool,
+            staffPrepay,
+            realtime: { broadcast: quiet },
+            logger: { info: quiet, warn: quiet, error: quiet },
+            activityLogger: { log: async () => {} }
+        });
+        const requested = await refundRequests.createRequest({
+            patient: { id: 'QA0004', name: 'Synthetic QA 4' }, amountIdr: 200000, bankName: 'BCA',
+            accountNumber: '1234567890', accountHolder: 'Synthetic QA 4', requestKey: 'qa-refund-request-0001'
+        });
+        assert.equal(requested.status, 'pending');
+        assert.equal(await ledger.getPendingRefundHold(pool, 'QA0004'), 200000);
+        const paid4 = await markPaid('QA004', { expected_prepay_idr: 55000 });
+        assert.equal(paid4.statusCode, 200, JSON.stringify(paid4.body));
+        assert.deepEqual(paid4.body.prepay, { deduct_idr: 55000, remaining_due_idr: 310000 });
+        assert.equal(await liveBalance('QA0004'), 200000);
+        assert.equal(await ledger.getPendingRefundHold(pool, 'QA0004'), 200000);
+
+        // 13. Staff "Sudah ditransfer" records exactly one refund and releases the hold; a repeat changes nothing.
+        const actor = { id: 'qa', name: 'QA Dokter' };
+        const done = await refundRequests.completeRequest({ id: requested.id, actor });
+        assert.equal(done.status, 'done');
+        assert.equal(await scalar("SELECT COUNT(*) FROM patient_credit_refunds WHERE patient_id = 'QA0004'"), 1);
+        assert.equal(await scalar("SELECT amount_idr FROM patient_credit_refunds WHERE patient_id = 'QA0004'"), 200000);
+        assert.equal(await ledger.getPendingRefundHold(pool, 'QA0004'), 0);
+        assert.equal(await liveBalance('QA0004'), 0);
+        const repeat = await refundRequests.completeRequest({ id: requested.id, actor });
+        assert.equal(repeat.refund_id, done.refund_id);
+        assert.equal(await scalar("SELECT COUNT(*) FROM patient_credit_refunds WHERE patient_id = 'QA0004'"), 1);
+        assert.equal(await scalar("SELECT COUNT(*) FROM patient_credit_ledger WHERE patient_id = 'QA0004' AND entry_type = 'refund'"), 1);
+
+        console.log(JSON.stringify({
+            passed: true,
+            tests: ['live saldo on mark-paid', 'sandbox never pays', '409 before stock', 'closing saldo split', 'retur back to saldo', 'refund once', 'deletion guard',
+                'legacy mapping to packages', 'new package pricing', 'unchanged re-save', 'order credits snapshot category', 'withdrawal hold caps mark-paid', 'complete request refunds once'],
+            clinicalWrites: 0
+        }));
     } finally {
         if (pool) await pool.end();
         await admin.query('DROP DATABASE IF EXISTS `' + qaName + '`');

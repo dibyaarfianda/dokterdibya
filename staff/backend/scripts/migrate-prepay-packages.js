@@ -10,16 +10,15 @@
  * Usage (from staff/backend):
  *   node scripts/migrate-prepay-packages.js            (dry run)
  *   node scripts/migrate-prepay-packages.js --apply
+ *
+ * migrate(db, options) is exported so verify-checkup-prepay-usage-isolated.js runs the same copy.
  */
-require('dotenv').config({ quiet: true });
-
-const db = require('../db');
 const { SETTINGS_KEY, normalizeMapping } = require('../services/CheckupEstimateService');
 const { buildPackagesFromMapping, getPackageByCode, savePackage } = require('../services/PrepayPackageRepository');
 
 const SCRIPT_ACTOR = Object.freeze({ id: 'script:migrate-prepay-packages', name: 'migrate-prepay-packages' });
 
-async function readMapping() {
+async function readMapping(db) {
     const [rows] = await db.query('SELECT setting_value FROM settings WHERE setting_key = ? LIMIT 1', [SETTINGS_KEY]);
     if (!rows.length || !rows[0].setting_value) throw new Error(`Pengaturan ${SETTINGS_KEY} tidak ditemukan atau kosong`);
     let parsed;
@@ -33,29 +32,33 @@ async function readMapping() {
     return mapping;
 }
 
-async function main() {
-    const apply = process.argv.includes('--apply');
-    const packages = buildPackagesFromMapping(await readMapping());
+/**
+ * The copy itself, on any pool (the CLI passes ../db, the isolated QA script its scratch pool).
+ * Returns { created, skipped } as code lists.
+ */
+async function migrate(db, { apply = false, log = console.log } = {}) {
+    const packages = buildPackagesFromMapping(await readMapping(db));
     if (!packages.length) {
-        console.log('Tidak ada produk lama untuk disalin.');
-        return;
+        log('Tidak ada produk lama untuk disalin.');
+        return { created: [], skipped: [] };
     }
 
     const toCreate = [];
     for (const pkg of packages) {
         const existing = await getPackageByCode(db, pkg.code);
         const items = pkg.items.map(item => `${item.item_type}#${item.ref_id} x${item.quantity}`).join(', ');
-        console.log(`[${pkg.code}] ${pkg.name} (${pkg.category}) urutan ${pkg.sort_order}: ${items}${existing ? '  -> sudah ada, dilewati' : ''}`);
+        log(`[${pkg.code}] ${pkg.name} (${pkg.category}) urutan ${pkg.sort_order}: ${items}${existing ? '  -> sudah ada, dilewati' : ''}`);
         if (!existing) toCreate.push(pkg);
     }
+    const skipped = packages.filter(pkg => !toCreate.includes(pkg)).map(pkg => pkg.code);
 
     if (!apply) {
-        console.log(`\nDry run: ${toCreate.length} paket akan dibuat. Tambahkan --apply untuk menyimpan.`);
-        return;
+        log(`\nDry run: ${toCreate.length} paket akan dibuat. Tambahkan --apply untuk menyimpan.`);
+        return { created: [], skipped };
     }
     if (!toCreate.length) {
-        console.log('\nSemua paket sudah ada. Tidak ada yang diubah.');
-        return;
+        log('\nSemua paket sudah ada. Tidak ada yang diubah.');
+        return { created: [], skipped };
     }
 
     const connection = await db.getConnection();
@@ -71,12 +74,19 @@ async function main() {
     } finally {
         connection.release();
     }
-    console.log(`\nTersimpan: ${toCreate.length} paket dibuat.`);
+    log(`\nTersimpan: ${toCreate.length} paket dibuat.`);
+    return { created: toCreate.map(pkg => pkg.code), skipped };
 }
 
-main()
-    .catch(error => {
-        console.error(error.message);
-        process.exitCode = 1;
-    })
-    .finally(() => db.end());
+module.exports = { migrate };
+
+if (require.main === module) {
+    require('dotenv').config({ quiet: true });
+    const db = require('../db');
+    migrate(db, { apply: process.argv.includes('--apply') })
+        .catch(error => {
+            console.error(error.message);
+            process.exitCode = 1;
+        })
+        .finally(() => db.end());
+}
