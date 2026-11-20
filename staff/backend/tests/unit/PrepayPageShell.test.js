@@ -69,6 +69,21 @@ describe('Pembayaran di Muka page shell', () => {
         expect(mod).toContain('window.showPatientDetail');
     });
 
+    test('the orders table shows the order ref (spec §8 columns)', () => {
+        expect(fragment()).toMatch(/<th>Order<\/th>/);
+        expect(moduleSource()).toContain('escapeHtml(row.order_ref');
+        expect(fragment()).toContain('colspan="8"');
+    });
+
+    test('a refund retry key is reused only for the identical refund', () => {
+        const mod = moduleSource();
+        // The key is stored with the request it belongs to; a changed amount, method or reason gets a new key,
+        // so an unclear earlier save can never lock the patient's refunds behind a 409.
+        expect(mod).toContain('function refundKeyFor(patientId, payload)');
+        expect(mod).toMatch(/saved\.payload === fingerprint/);
+        expect(mod).toContain('JSON.stringify({ key, payload: fingerprint })');
+    });
+
     test('menu source and navigation permission exist', () => {
         const { MENU_ACTIVITY_SOURCES } = require('../../config/menu-activity-sources');
         const { STAFF_NAVIGATION_MAP } = require('../../config/accessControlRegistry');

@@ -107,7 +107,7 @@ export async function prepayShowTab(tab) {
 export async function prepayLoadOrders() {
     const tbody = byId('prepay-orders-tbody');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Memuat…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Memuat…</td></tr>';
     const params = new URLSearchParams({
         status: byId('prepay-order-status')?.value || 'paid',
         mode: byId('prepay-order-mode')?.value || 'live'
@@ -120,7 +120,7 @@ export async function prepayLoadOrders() {
         const result = await scope().request(`${API}/orders?${params.toString()}`);
         const rows = Array.isArray(result?.data) ? result.data : [];
         if (!rows.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-3">Belum ada pembayaran di muka.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-3">Belum ada pembayaran di muka.</td></tr>';
             return;
         }
         tbody.innerHTML = rows.map(row => `<tr>
@@ -131,10 +131,11 @@ export async function prepayLoadOrders() {
             <td class="prepay-amount">${row.fee_idr === null || row.fee_idr === undefined ? '-' : rupiah(row.fee_idr)}</td>
             <td>${escapeHtml(METHOD_LABELS[row.payment_method] || row.payment_method || '-')}${row.va_number ? `<small class="d-block text-muted">${escapeHtml(row.va_number)}</small>` : ''}</td>
             <td>${STATUS_BADGES[row.status] || escapeHtml(row.status || '-')}</td>
+            <td><small class="text-muted text-nowrap">${escapeHtml(row.order_ref || '-')}</small></td>
         </tr>`).join('');
     } catch (error) {
         if (isAbort(error)) return;
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-3">${escapeHtml(error.message || 'Gagal memuat data')}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-3">${escapeHtml(error.message || 'Gagal memuat data')}</td></tr>`;
     }
 }
 
@@ -212,14 +213,17 @@ function refundKeyName(patientId) {
     return `prepay-refund-key:${patientId}`;
 }
 
-function refundKey(patientId) {
-    // Kept until the refund is saved, so a retry after an unclear network error cannot double-record.
+function refundKeyFor(patientId, payload) {
+    // The key is kept with the exact request it belongs to: retrying the same refund after an
+    // unclear network error reuses it (never recorded twice), while a changed amount, method or
+    // reason gets a fresh key instead of being refused as "kunci sudah digunakan".
+    const fingerprint = JSON.stringify(payload);
     try {
         const name = refundKeyName(patientId);
-        const saved = sessionStorage.getItem(name);
-        if (saved) return saved;
+        const saved = JSON.parse(sessionStorage.getItem(name) || 'null');
+        if (saved && saved.key && saved.payload === fingerprint) return saved.key;
         const key = crypto.randomUUID();
-        sessionStorage.setItem(name, key);
+        sessionStorage.setItem(name, JSON.stringify({ key, payload: fingerprint }));
         return key;
     } catch (_error) {
         return crypto.randomUUID();
@@ -269,16 +273,11 @@ export async function prepaySubmitRefund(event) {
     if (!window.confirm(`Catat refund ${rupiah(amount)} untuk ${refundPatient.name}? Pastikan uang sudah diserahkan.`)) return;
     button.disabled = true;
     try {
+        const payload = { patient_id: refundPatient.id, amount_idr: amount, method: byId('prepay-refund-method').value, reason };
         const result = await staffApiRequest(`${API}/refunds`, {
             method: 'POST',
             retries: 0,
-            body: JSON.stringify({
-                patient_id: refundPatient.id,
-                amount_idr: amount,
-                method: byId('prepay-refund-method').value,
-                reason,
-                request_key: refundKey(refundPatient.id)
-            })
+            body: JSON.stringify({ ...payload, request_key: refundKeyFor(refundPatient.id, payload) })
         });
         try { sessionStorage.removeItem(refundKeyName(refundPatient.id)); } catch (_error) { /* storage unavailable */ }
         const patientId = refundPatient.id;
