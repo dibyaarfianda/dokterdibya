@@ -601,6 +601,12 @@
                             <p>Estimasi Biaya</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-prepay">
+                        <a href="#" class="nav-link" data-staff-call="showPrepayPage">
+                            <i class="nav-icon fas fa-wallet"></i>
+                            <p>Pembayaran di Muka</p>
+                        </a>
+                    </li>
                     <li class="nav-item d-none" id="nav-invoice-history">
                         <a href="#" class="nav-link" data-staff-call="showInvoiceHistoryPage">
                             <i class="nav-icon fas fa-file-invoice-dollar"></i>
@@ -2558,6 +2564,8 @@
                 </div>
                 <!-- INVOICE HISTORY PAGE (lazy) -->
                 <div id="invoice-history-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/invoice-history-page.html"></div>
+                <!-- PEMBAYARAN DI MUKA PAGE (lazy, bayar di muka Tahap 2) -->
+                <div id="prepay-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/prepay-page.html"></div>
 
                 <div id="analytics-page" class="d-none"></div>
 

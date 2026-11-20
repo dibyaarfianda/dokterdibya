@@ -119,6 +119,10 @@ const featureLoaders = {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/invoice-history-page.js?v=${version}`);
     },
+    prepay: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/prepay-page.js?v=${version}`);
+    },
     contentModeration: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/content-moderation-page.js?v=${version}`);

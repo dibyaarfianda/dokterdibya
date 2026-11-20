@@ -21,6 +21,7 @@ const fragmentPages = [
     ['birth-congrats', 'birth-congrats-page', 'nav-birth-congrats', 'Ucapan Kelahiran'],
     ['birth-testimonials', 'birth-testimonials-page', 'nav-birth-testimonials', 'Testimoni Pasien'],
     ['invoice-history', 'invoice-history-page', 'nav-invoice-history', 'Riwayat Invoice'],
+    ['prepay', 'prepay-page', 'nav-prepay', 'Pembayaran di Muka'],
     ['artikel-kesehatan', 'artikel-kesehatan-page', 'nav-artikel-kesehatan', 'Ruang Membaca'],
     ['ruang-cerita', 'ruang-cerita-page', 'nav-ruang-cerita', 'Ruang Cerita']
 ];

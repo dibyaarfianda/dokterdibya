@@ -112,6 +112,21 @@ async function bootstrapStaffShell() {
         'sortInvoiceTable'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'invoiceHistory', 'invoice-history'));
     [
+        'showPrepayPage',
+        'prepayShowTab',
+        'prepayLoadOrders',
+        'prepayLoadBalances',
+        'prepayOpenLedger',
+        'prepayShowPatient',
+        'prepayOpenRefund',
+        'prepayCloseRefund',
+        'prepaySubmitRefund',
+        'prepayLoadMapping',
+        'prepayAddMappingItem',
+        'prepayRemoveMappingItem',
+        'prepaySaveMapping'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'prepay', 'prepay'));
+    [
         'showArtikelKesehatanPage',
         'loadArticlesAdmin',
         'showAddArticleModal',

@@ -26,7 +26,7 @@
         'nav-bulk-upload-usg', 'management-nav-block-list'
     ]);
     const FINANCE_IDS = new Set([
-        'nav-invoice-history', 'nav-finance-analysis', 'nav-staff-briefing',
+        'nav-invoice-history', 'nav-prepay', 'nav-finance-analysis', 'nav-staff-briefing',
         'nav-private', 'nav-staff-activity'
     ]);
     const SYSTEM_IDS = new Set(['nav-jadwal-booking']);
