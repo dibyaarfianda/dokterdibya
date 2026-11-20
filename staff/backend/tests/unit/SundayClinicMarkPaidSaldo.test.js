@@ -143,6 +143,35 @@ describe('mark-paid with prepay saldo', () => {
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ prepay: { deduct_idr: 100000, remaining_due_idr: 0.5 } }));
     });
 
+    test('saldo the cashier saw that is gone by the click returns 409 instead of charging the full bill', async () => {
+        setup();
+        Ledger.planUsage.mockReturnValue([]);
+        const res = await markPaid({ expected_prepay_idr: 255000 });
+        expect(res.statusCode).toBe(409);
+        expect(res.json).toHaveBeenCalledWith({ success: false, message: SALDO_CHANGED });
+        expect(calls).not.toContain('paid-update');
+    });
+
+    test('a failure after the usage insert rolls back the usage with the paid status', async () => {
+        const lockConnection = setup();
+        Ledger.planUsage.mockReturnValue([{ category: 'obstetri', amount_idr: 255000 }]);
+        lockConnection.query.mockImplementation(async sql => {
+            const query = sqlOf(sql);
+            if (query.startsWith('SELECT GET_LOCK')) return [[{ acquired: 1 }]];
+            if (query.includes('FROM sunday_clinic_billings') && query.includes('FOR UPDATE')) return [[{ id: 55, mr_id: 'DRD1600', patient_id: 'P1', status: 'confirmed', total: 365000 }]];
+            if (query.startsWith('SELECT mr_category FROM sunday_clinic_records')) return [[{ mr_category: 'obstetri' }]];
+            if (query.startsWith('UPDATE sunday_clinic_billings')) throw new Error('lost connection');
+            return [[]];
+        });
+        const res = response();
+        const next = jest.fn();
+        await postBillingByMrIdMarkPaid({ params: { mrId: 'DRD1600' }, body: { expected_prepay_idr: 255000 }, user: { name: 'Kasir' } }, res, next);
+        expect(Ledger.recordUsage).toHaveBeenCalled();
+        expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'lost connection' }));
+        expect(lockConnection.rollback).toHaveBeenCalled();
+        expect(lockConnection.commit).not.toHaveBeenCalled();
+    });
+
     test('a zero total bill needs no expected amount and records nothing', async () => {
         setup({ total: 0 });
         Ledger.planUsage.mockReturnValue([]);

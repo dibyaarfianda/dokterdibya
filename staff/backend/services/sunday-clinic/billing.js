@@ -835,8 +835,10 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
             saldoRecord?.mr_category || null
         );
         const saldoPlanned = saldoPlan.reduce((sum, entry) => sum + entry.amount_idr, 0);
-        // The cashier must have seen exactly this amount; an old cached page sends nothing.
-        if (saldoPlanned > 0 && Number(req.body?.expected_prepay_idr) !== saldoPlanned) {
+        // The cashier must have seen exactly this amount, both ways: saldo that appeared (an old
+        // cached page sends nothing) and saldo the page showed that is gone by the click.
+        const saldoExpected = Number(req.body?.expected_prepay_idr || 0);
+        if ((saldoPlanned > 0 || saldoExpected > 0) && saldoExpected !== saldoPlanned) {
             return res.status(409).json({ success: false, message: SALDO_CHANGED_MESSAGE });
         }
 
