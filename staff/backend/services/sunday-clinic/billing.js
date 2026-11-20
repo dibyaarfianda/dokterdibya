@@ -31,6 +31,10 @@ const { updateQueueStatus } = require('./queue');
 const xenditPayment = require('../../utils/xendit-payment');
 const { cancelMainBilling, cancelAdditionalBilling } = require('./billing-cancellation');
 const { forBilling } = require('../CheckupPrepayCoverage');
+const { lockLiveBalances, planUsage, recordUsage } = require('../PatientCreditLedger');
+
+const SALDO_CHANGED_MESSAGE = 'Saldo pasien berubah. Muat ulang tagihan.';
+const formatThousands = value => String(Math.trunc(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 const BILLING_COLUMNS = [
     'id', 'mr_id', 'patient_id', 'subtotal', 'total', 'status', 'pending_changes',
@@ -816,6 +820,26 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
             });
         }
 
+        // Live prepay saldo (bayar di muka, Tahap 2) pays this bill first. Planned under the
+        // patient's saldo lock BEFORE any stock movement: stock is deducted on other
+        // connections, so refusing after it would leave stock out for a bill that stays
+        // confirmed. The lock is held until this transaction commits or rolls back.
+        const [[saldoRecord]] = await lockConnection.query(
+            'SELECT mr_category FROM sunday_clinic_records WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+        const saldoBalances = await lockLiveBalances(lockConnection, billingLocked.patient_id);
+        const saldoPlan = planUsage(
+            saldoBalances,
+            Math.max(0, Math.floor(Number(billingLocked.total) || 0)),
+            saldoRecord?.mr_category || null
+        );
+        const saldoPlanned = saldoPlan.reduce((sum, entry) => sum + entry.amount_idr, 0);
+        // The cashier must have seen exactly this amount; an old cached page sends nothing.
+        if (saldoPlanned > 0 && Number(req.body?.expected_prepay_idr) !== saldoPlanned) {
+            return res.status(409).json({ success: false, message: SALDO_CHANGED_MESSAGE });
+        }
+
         const beforeSnapshot = await getBillingSnapshot(db, billingLocked.id);
 
         const InventoryService = require('../InventoryService');
@@ -963,6 +987,15 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
 
         // Update status to paid only after stock deduction succeeds.
         const paidBy = req.user.name || req.user.id || 'Staff';
+        // Same transaction as the paid status: a rollback undoes both.
+        const saldoUsed = saldoPlanned > 0
+            ? await recordUsage(lockConnection, {
+                billingId: billingLocked.id,
+                patientId: billingLocked.patient_id,
+                plan: saldoPlan,
+                actor: paidBy
+            })
+            : 0;
         const [paidResult] = await lockConnection.query(
             `UPDATE sunday_clinic_billings
              SET status = 'paid',
@@ -984,7 +1017,8 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
             billingId: billingLocked.id,
             mrId: normalizedMrId,
             action: 'billing_marked_paid',
-            summary: `Tagihan ditandai lunas (${payment_method || 'metode tidak dicatat'})`,
+            summary: `Tagihan ditandai lunas (${payment_method || 'metode tidak dicatat'})`
+                + (saldoUsed > 0 ? ` · saldo Rp ${formatThousands(saldoUsed)}` : ''),
             beforeSnapshot,
             afterSnapshot
         });
@@ -1038,7 +1072,11 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
         res.json({
             success: true,
             message: 'Pembayaran berhasil dicatat.',
-            patientName
+            patientName,
+            prepay: {
+                deduct_idr: saldoUsed,
+                remaining_due_idr: Math.round(((Number(billingLocked.total) || 0) - saldoUsed) * 100) / 100
+            }
         });
     } catch (error) {
         logger.error('Failed to mark billing as paid', { error: error.message });
