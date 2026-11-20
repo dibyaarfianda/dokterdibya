@@ -223,6 +223,20 @@ function planReturnCredit(usageRows, priorCredits, amountIdr) {
     return plan;
 }
 
+/** Saldo already put back by earlier returns, per category. @returns {Promise<Array<{category, amount_idr}>>} */
+async function getReturnCredits(executor, returnIds) {
+    const ids = [...new Set((returnIds || []).map(id => String(id)).filter(Boolean))];
+    if (!ids.length) return [];
+    const [rows] = await executor.query(
+        `SELECT category, amount_idr
+           FROM patient_credit_ledger
+          WHERE source_type = '${SOURCE_RETURN}' AND entry_type = 'return_credit' AND gateway_mode = 'live'
+            AND SUBSTRING_INDEX(source_id, ':', 1) IN (?)`,
+        [ids]
+    );
+    return (rows || []).map(row => ({ category: row.category, amount_idr: toInt(row.amount_idr) }));
+}
+
 async function recordReturnCredit(connection, { returnId, patientId, plan, actor }) {
     await insertLiveRows(connection, {
         patientId, entryType: 'return_credit', sign: 1, sourceType: SOURCE_RETURN, sourceKey: returnId,
@@ -285,6 +299,7 @@ module.exports = {
     recordUsage,
     getUsageForBillings,
     planReturnCredit,
+    getReturnCredits,
     recordReturnCredit,
     recordRefundRows,
     assertNoPrepaySaldoEvidence

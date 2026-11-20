@@ -87,6 +87,9 @@ test('the closing screen shows the saldo lines only when the summary has them', 
     expect(source).toContain('Retur ke saldo');
     expect(source).toContain('Perkiraan tunai/transfer');
     expect(source).toContain('formatCurrency(summary.cash_expected_total)');
+    // Each transaction row says how much of it was saldo, and a full saldo retur reads as such.
+    expect(source).toContain("transaction.payment_method === 'saldo' ? 'Kembali ke saldo'");
+    expect(source).toContain('formatCurrency(transaction.saldo_amount)');
 });
 
 test('closed entries keep the saldo part in their snapshot', async () => {

@@ -222,7 +222,7 @@ function renderTransactions(transactions) {
                                 <td data-label="Jenis Tagihan">${escapeHtml(sourceType)}<div class="text-muted small">${escapeHtml(reference)}</div></td>
                                 <td data-label="Dibayar">${escapeHtml(formatDate(transaction.paid_at || transaction.effective_paid_at, true))}</td>
                                 <td data-label="Petugas">${escapeHtml(transaction.paid_by || '-')}</td>
-                                <td data-label="Metode">${escapeHtml(transaction.payment_method || 'Tidak tercatat')}</td>
+                                <td data-label="Metode">${escapeHtml(transaction.payment_method === 'saldo' ? 'Kembali ke saldo' : (transaction.payment_method || 'Tidak tercatat'))}${Number(transaction.saldo_amount) > 0 && transaction.payment_method !== 'saldo' ? `<small class="d-block">Saldo di muka ${formatCurrency(transaction.saldo_amount)}</small>` : ''}</td>
                                 <td data-label="Nominal" class="text-right font-weight-bold">${formatCurrency(amount)}</td>
                             </tr>
                             <tr class="sc-closing-items-row">
