@@ -30,6 +30,7 @@ const {
 const { updateQueueStatus } = require('./queue');
 const xenditPayment = require('../../utils/xendit-payment');
 const { cancelMainBilling, cancelAdditionalBilling } = require('./billing-cancellation');
+const { forBilling } = require('../CheckupPrepayCoverage');
 
 const BILLING_COLUMNS = [
     'id', 'mr_id', 'patient_id', 'subtotal', 'total', 'status', 'pending_changes',
@@ -142,6 +143,8 @@ async function getBillingByMrId(req, res, next) {
                 ...billingRow,
                 has_pending_payment: !!pendingPayment,
                 pending_payment: pendingPayment || null,
+                // Live prepay saldo that pays (or paid) this bill; see CheckupPrepayCoverage.
+                prepay: await forBilling(db, billingRow),
                 items: itemRows.map(item => ({
                     ...item,
                     item_data: parseJson(item.item_data, {})
