@@ -170,7 +170,7 @@ function plan(overrides = {}) {
     return { id: 1, code: 'kehamilan', name: 'Paket Kehamilan', description: 'x', price_idr: 99000, duration_days: 365, features: '[]', is_active: 1, sort_order: 10, ...overrides };
 }
 
-function setup({ plans = [plan()], orders, entitlementRows, configured = true, startAt = T0, fulfillers } = {}) {
+function setup({ plans = [plan()], orders, entitlementRows, configured = true, startAt = T0, fulfillers, onPrepayPaid } = {}) {
     const fake = createFakeDb({ plans, orders, entitlements: entitlementRows });
     const clockState = { now: startAt };
     const duitku = {
@@ -193,6 +193,7 @@ function setup({ plans = [plan()], orders, entitlementRows, configured = true, s
         entitlements,
         logger,
         fulfillers,
+        onPrepayPaid,
         clock: () => clockState.now,
         uuid: () => `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`
     });
@@ -743,5 +744,45 @@ describe('non-premium Duitku orders (checkup prepay)', () => {
         await ctx.service.applyPaidOrder(order.order_ref, { source: 'callback', amount: 99000 });
         expect(ctx.fake.state.entitlements).toHaveLength(1);
         expect(ctx.fake.state.ledger).toHaveLength(0);
+    });
+
+    // Tahap 2: staff are told in the panel, after the credit is committed, never inside it.
+    describe('onPrepayPaid', () => {
+        const flush = () => new Promise(resolve => setImmediate(resolve));
+
+        test('runs once with the order and the grant after a paid prepay order', async () => {
+            const onPrepayPaid = jest.fn();
+            const ctx = setup({ orders: [prepayOrder()], fulfillers: { checkup_prepay: creditFromPaidOrder }, onPrepayPaid });
+            ctx.duitku.checkTransaction.mockResolvedValue({ paid: true, pending: false, statusCode: '00', amount: 150000, fee: 1050, reference: 'DS-PRE-1' });
+            await ctx.service.handleGatewayCallback(callbackBody());
+            await ctx.service.handleGatewayCallback(callbackBody());
+            await flush();
+            expect(onPrepayPaid).toHaveBeenCalledTimes(1);
+            expect(onPrepayPaid).toHaveBeenCalledWith(
+                expect.objectContaining({ order_ref: PREPAY_REF, order_type: 'checkup_prepay', patient_id: 'P0001' }),
+                expect.objectContaining({ category: 'obstetri', credit_idr: 150000 })
+            );
+        });
+
+        test('a failing hook does not change the paid result', async () => {
+            const onPrepayPaid = jest.fn(async () => { throw new Error('socket down'); });
+            const ctx = setup({ orders: [prepayOrder()], fulfillers: { checkup_prepay: creditFromPaidOrder }, onPrepayPaid });
+            const result = await ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 });
+            await flush();
+            expect(result.status).toBe('activated');
+            expect(ctx.fake.state.ledger).toHaveLength(1);
+            expect(ctx.logger.warn).toHaveBeenCalled();
+        });
+
+        test('is never called for a rolled-back credit or a premium order', async () => {
+            const onPrepayPaid = jest.fn();
+            const broken = setup({ orders: [prepayOrder({ product_code: 'tidak_ada' })], fulfillers: { checkup_prepay: creditFromPaidOrder }, onPrepayPaid });
+            await expect(broken.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 })).rejects.toThrow();
+            const premium = setup({ fulfillers: { checkup_prepay: creditFromPaidOrder }, onPrepayPaid });
+            const order = await premium.service.createOrder({ patient: PATIENT, planCode: 'kehamilan', paymentMethod: 'qris' });
+            await premium.service.applyPaidOrder(order.order_ref, { source: 'callback', amount: 99000 });
+            await flush();
+            expect(onPrepayPaid).not.toHaveBeenCalled();
+        });
     });
 });

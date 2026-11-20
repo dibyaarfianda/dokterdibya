@@ -44,6 +44,7 @@ const STAFF_SHELL_SCRIPTS = [
   '/staff/public/scripts/shell/feature-loader.js',
   '/staff/public/scripts/shell/module-helpers.js',
   '/staff/public/scripts/shell/menu-new-badges.js',
+  '/staff/public/scripts/shell/prepay-paid-toast.js',
   '/staff/public/scripts/shell/page-descriptors.js',
   '/staff/public/scripts/shell/page-registry.js',
   '/staff/public/scripts/shell/polling-coordinator.js',

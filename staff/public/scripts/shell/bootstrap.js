@@ -229,6 +229,11 @@ async function bootstrapStaffShell() {
             () => import('./menu-new-badges.js').then(module => module.initMenuNewBadges()),
             1500
         );
+        // Bayar di muka: toast when a prepay order is paid (event reaches billing.view staff only).
+        scheduleDeferredStartup(
+            () => import('./prepay-paid-toast.js').then(module => module.initPrepayPaidToast()),
+            2000
+        );
         runIdle(() => {
             try {
                 initSessionManager();
