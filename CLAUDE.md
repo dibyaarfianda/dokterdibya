@@ -1483,3 +1483,23 @@ User confirmed with "luar biasa, ini baru GPT JOB" after the Gerakan Bayi trial 
 1. Add an entry for its `<li id>` in `menu-activity-sources.js` (unit test `StaffMenuBadges.test.js` fails if a menu has no source).
 2. Do NOT add a numeric `<span class="badge">` to the sidebar; the dot is injected automatically.
 3. To make a menu quieter, remove/adjust its sources in the registry, not the frontend.
+
+### 42. Session Log - 20 November 2026
+
+**Patient Portal Pinch-Zoom Lock (User Confirmed "beres")**
+
+User wanted the patient portal not zoomable on Android.
+
+**What actually fixed it:**
+1. Every `public/**/*.html` page with a viewport meta now has `maximum-scale=1.0, user-scalable=no` (PR #29 restored the 19 pages unlocked on 2026-07-31; PR #30 locked the other 64 that had never been locked).
+2. `WebHardeningPlan.test.js` enforces it: any public page with a zoomable viewport fails the test. Add the lock to every NEW patient page.
+3. No cache bump needed: the patient service worker fetches HTML network-only, and nginx sends `no-store` for HTML.
+
+**Critical lesson:**
+- If a patient page still zooms on Android after the lock is live, check **Chrome → Settings → Accessibility → "Force enable zoom"** on that phone. It overrides `user-scalable=no` (that was the cause here). iOS Safari ignores `user-scalable=no` entirely.
+- Before blaming the code, confirm the page is in the locked set and verify the live meta with `curl -s https://sisiwanita.id/<page> | grep viewport`.
+
+**Related (same session): content above the sticky "Fitur Portal SW" stack**
+- The stack in `public/sisiwanita/index.html` caches row offsets (rebuilds only at 0.5s/1.5s, on resize, or on `landing:layout-changed`). Any section placed ABOVE it whose height changes after load (e.g. the visit-estimate cards filled from an API) must dispatch `window.dispatchEvent(new CustomEvent('landing:layout-changed'))` after rendering, or desktop rows collapse too early. Phones use the static stack mode and are unaffected.
+
+**Deploy note:** `www-data` on the VPS cannot reach GitHub (host key). Deploy by creating a git bundle locally (`git bundle create x.bundle <server-head>..origin/main`), copying it to the server, `sudo -u www-data git fetch <bundle> refs/remotes/origin/main`, then `git merge --ff-only FETCH_HEAD` in `/var/www/dokterdibya`; reload the backend with `pm2 reload ecosystem.config.js --only dibyaklinik-backend` from `staff/backend` only when backend code changed.
