@@ -26,8 +26,10 @@ const DEFAULT_CALLBACK_URL = 'https://dokterdibya.com/api/webhooks/duitku/callba
 const DEFAULT_RETURN_URL = 'https://sisiwanita.id/patient-menu.html';
 
 // Key the patient app sends -> Duitku paymentMethod code.
+// QRIS = ShopeePay QRIS (SP; any QRIS app can pay it). Nobu QRIS (NQ) could not generate a QR in
+// the Duitku sandbox (2026-11-20); SP is enabled on the merchant project. Max expiry 60 minutes.
 const PAYMENT_METHODS = Object.freeze({
-    qris: { code: 'NQ', type: 'qris', label: 'QRIS' },
+    qris: { code: 'SP', type: 'qris', label: 'QRIS' },
     va_bni: { code: 'I1', type: 'va', label: 'VA BNI' },
     va_bri: { code: 'BR', type: 'va', label: 'VA BRI' },
     va_mandiri: { code: 'M2', type: 'va', label: 'VA Mandiri' },
