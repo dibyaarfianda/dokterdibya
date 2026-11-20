@@ -20,6 +20,7 @@
         '/fertility-calendar.html': 'aplikasi',
         '/jadwal-vitamin.html': 'aplikasi',
         '/estimasi-biaya-kehamilan.html': 'aplikasi',
+        '/saldo-saya.html': 'aplikasi',
         '/perjalanan-ibu.html': 'edukasi',
         '/artikel.html': 'edukasi',
         '/artikel-kesehatan.html': 'edukasi',

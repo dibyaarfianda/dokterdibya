@@ -88,6 +88,7 @@ const PRECACHE_FILES = [
     '/scripts/landing/announcement-guard.js',
     '/scripts/landing/footer-effects.js',
     '/scripts/landing/checkup-estimates.js',
+  '/scripts/saldo-saya.js',
   '/styles/landing-checkup-estimates.css',
   '/js/patient-tracker.js',
   '/patient-login.html',
