@@ -53,6 +53,28 @@ describe('tahap 2 migration', () => {
     });
 });
 
+describe('tahap 3 package migration', () => {
+    const migrationPath = path.join(repoRoot, 'staff', 'backend', 'migrations', '20261122_checkup_prepay_packages.sql');
+    const tahap3 = fs.existsSync(migrationPath) ? fs.readFileSync(migrationPath, 'utf8').replace(/\r\n/g, '\n') : '';
+
+    test('creates the package, item and refund request tables idempotently without seeding data', () => {
+        expect(tahap3).toContain('CREATE TABLE IF NOT EXISTS checkup_prepay_packages');
+        expect(tahap3).toContain('CREATE TABLE IF NOT EXISTS checkup_prepay_package_items');
+        expect(tahap3).toContain('CREATE TABLE IF NOT EXISTS patient_credit_refund_requests');
+        expect(tahap3).toContain('20261121_checkup_prepay_tahap2.sql');
+        expect(tahap3).toMatch(/UNIQUE KEY uq_prepay_packages_code \(code\)/);
+        expect(tahap3).toMatch(/UNIQUE KEY uq_refund_requests_key \(request_key\)/);
+        expect(tahap3).toMatch(/UNIQUE KEY uq_prepay_package_items \(package_id, item_type, ref_id\)/);
+        expect(tahap3).toContain('ON DELETE CASCADE');
+        expect(tahap3).toContain("ENUM('tindakan','obat')");
+        expect(tahap3).toContain("ENUM('pending','done','rejected','cancelled')");
+        expect(tahap3).toMatch(/KEY idx_refund_requests_status \(status, created_at\)/);
+        expect(tahap3).toMatch(/KEY idx_refund_requests_patient \(patient_id, status\)/);
+        expect(tahap3).toContain('utf8mb4_unicode_ci');
+        expect(tahap3).not.toMatch(/INSERT/i);
+    });
+});
+
 describe('server wiring', () => {
     const server = read('staff', 'backend', 'server.js');
 
