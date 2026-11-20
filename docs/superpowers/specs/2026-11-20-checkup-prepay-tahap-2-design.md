@@ -1,6 +1,6 @@
 # Bayar di muka, Tahap 2: staff visibility and automatic saldo deduction
 
-Status: design, approved approach 1 (2026-11-20). Not built.
+Status: Tahap 2 built (2026-11-20), branch `claude/checkup-prepay-tahap2`; plan `docs/superpowers/plans/2026-11-20-checkup-prepay-tahap-2.md`. `CHECKUP_PREPAY_LIVE` stays off until the go-live steps below.
 Builds on: `2026-11-18-checkup-prepay-duitku-review-design.md` (Tahap 1, live in sandbox since 2026-11-20).
 
 ## Why
