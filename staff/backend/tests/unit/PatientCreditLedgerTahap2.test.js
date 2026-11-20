@@ -101,6 +101,10 @@ describe('ledger reads and writes', () => {
         expect(query.mock.calls[0][0]).toMatch(/entry_type = 'usage'/);
         expect(query.mock.calls[0][0]).toMatch(/gateway_mode = 'live'/);
         expect(query.mock.calls[0][0]).toMatch(/FOR UPDATE/);
+        // Index-usable (unique key prefix): locks only these bills' rows, never the whole usage range.
+        expect(query.mock.calls[0][0]).not.toMatch(/SUBSTRING_INDEX/);
+        expect(query.mock.calls[0][0]).toMatch(/source_id LIKE \? OR source_id LIKE \?/);
+        expect(query.mock.calls[0][1]).toEqual(['9:%', '12:%']);
         expect(usage.get('9')).toEqual({
             used_idr: 300000,
             rows: [{ id: 3, category: 'obstetri', amount_idr: 255000 }, { id: 4, category: 'gyn_repro', amount_idr: 45000 }]

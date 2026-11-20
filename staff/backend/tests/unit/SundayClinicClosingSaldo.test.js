@@ -67,7 +67,7 @@ test('loading sources reads live saldo usage, locked when closing', async () => 
             statements.push(String(sql).replace(/\s+/g, ' '));
             if (/FROM sunday_clinic_billings b JOIN/.test(String(sql).replace(/\s+/g, ' '))) return [[paidMain]];
             if (/FROM patient_credit_ledger/.test(sql)) {
-                expect(params[0]).toEqual(['55']);
+                expect(params).toEqual(['55:%']);
                 return [[{ id: 1, source_id: '55:obstetri', category: 'obstetri', amount_idr: -255000 }]];
             }
             return [[]];

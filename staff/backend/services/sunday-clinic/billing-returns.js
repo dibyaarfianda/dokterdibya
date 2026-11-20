@@ -199,9 +199,14 @@ async function createReturn(deps, { mrId, input, actor, accountingDate }) {
             allocations = allocateReturnedStock(sales, previous, plan.quantity);
         }
         // Bayar di muka (Tahap 2): the saldo-paid part of the main bill goes back to saldo.
-        const { saldoLeft, usageRows } = additionalId
-            ? { saldoLeft: 0, usageRows: [] }
-            : await saldoLeftForMain(connection, main, previous, { forUpdate: true });
+        // Lock the patient's live saldo first, in the same order as mark-paid (bill row, then
+        // saldo); the bill's own usage rows are among them, so the usage read needs no lock.
+        let saldoLeft = 0;
+        let usageRows = [];
+        if (!additionalId) {
+            await lockLiveBalances(connection, main.patient_id);
+            ({ saldoLeft, usageRows } = await saldoLeftForMain(connection, main, previous));
+        }
         const money = resolveReturnMoney({ amount: plan.amount, saldoLeft, paymentMethod: input.payment_method });
         const [saved] = await connection.query(`INSERT INTO sunday_clinic_billing_returns
             (billing_id, additional_billing_id, mr_id, patient_id, kind, source_item_id, item_name, quantity, amount, saldo_amount,
@@ -211,7 +216,6 @@ async function createReturn(deps, { mrId, input, actor, accountingDate }) {
             plan.quantity, plan.amount, money.saldo_amount || null, plan.reason, money.payment_method, accountingDate, actor.id, actor.name,
             input.request_key, hash, JSON.stringify(allocations)]);
         if (money.saldo_amount > 0) {
-            await lockLiveBalances(connection, main.patient_id);
             const priorCredits = await getReturnCredits(connection, previous.map(row => row.id));
             await recordReturnCredit(connection, {
                 returnId: saved.insertId,

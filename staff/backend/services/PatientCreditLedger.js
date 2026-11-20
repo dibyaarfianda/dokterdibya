@@ -176,17 +176,23 @@ async function recordUsage(connection, { billingId, patientId, plan, actor }) {
  * Live usage per main bill id.
  * @returns {Promise<Map<string, {used_idr:number, rows:Array<{id:number, category:string, amount_idr:number}>}>>}
  */
+// Bill ids are numeric. 'source_id LIKE "<id>:%"' is a constant-prefix match on the unique
+// (source_type, source_id, entry_type) key, so a locking read touches only these bills' rows
+// (a SUBSTRING_INDEX predicate would range-lock every usage row). '12:%' never matches '123:'.
+const numericIds = values => [...new Set((values || []).map(id => String(id)).filter(id => /^\d+$/.test(id)))];
+const sourcePrefixClause = ids => `(${ids.map(() => 'source_id LIKE ?').join(' OR ')})`;
+
 async function getUsageForBillings(executor, billingIds, { forUpdate = false } = {}) {
-    const ids = [...new Set((billingIds || []).map(id => String(id)).filter(Boolean))];
+    const ids = numericIds(billingIds);
     const usage = new Map();
     if (!ids.length) return usage;
     const [rows] = await executor.query(
         `SELECT id, source_id, category, amount_idr
            FROM patient_credit_ledger
           WHERE source_type = '${SOURCE_BILLING}' AND entry_type = 'usage' AND gateway_mode = 'live'
-            AND SUBSTRING_INDEX(source_id, ':', 1) IN (?)
+            AND ${sourcePrefixClause(ids)}
           ORDER BY id${forUpdate ? ' FOR UPDATE' : ''}`,
-        [ids]
+        ids.map(id => `${id}:%`)
     );
     for (const row of rows || []) {
         const billingId = String(row.source_id).split(':')[0];
@@ -225,14 +231,14 @@ function planReturnCredit(usageRows, priorCredits, amountIdr) {
 
 /** Saldo already put back by earlier returns, per category. @returns {Promise<Array<{category, amount_idr}>>} */
 async function getReturnCredits(executor, returnIds) {
-    const ids = [...new Set((returnIds || []).map(id => String(id)).filter(Boolean))];
+    const ids = numericIds(returnIds);
     if (!ids.length) return [];
     const [rows] = await executor.query(
         `SELECT category, amount_idr
            FROM patient_credit_ledger
           WHERE source_type = '${SOURCE_RETURN}' AND entry_type = 'return_credit' AND gateway_mode = 'live'
-            AND SUBSTRING_INDEX(source_id, ':', 1) IN (?)`,
-        [ids]
+            AND ${sourcePrefixClause(ids)}`,
+        ids.map(id => `${id}:%`)
     );
     return (rows || []).map(row => ({ category: row.category, amount_idr: toInt(row.amount_idr) }));
 }

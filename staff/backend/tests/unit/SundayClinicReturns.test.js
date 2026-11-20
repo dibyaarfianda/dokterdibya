@@ -129,6 +129,17 @@ describe('returns on bills paid with saldo', () => {
         expect(credit.params).toEqual(expect.arrayContaining(['P1', 'obstetri', 'return_credit', 20000, 'sunday_clinic_return', '7:obstetri']));
     });
 
+    test('the patient saldo is locked before the bill usage is read, in the same order as mark-paid', async () => {
+        const { deps, statements } = returnHarness();
+        await createReturn(deps, { mrId: 'DRD9001', input: moneyReturn, actor, accountingDate: '2026-11-22' });
+        const lockAt = statements.findIndex(entry => entry.query.includes("WHERE patient_id = ? AND gateway_mode = 'live'") && entry.query.includes('FOR UPDATE'));
+        const usageAt = statements.findIndex(entry => entry.query.includes("entry_type = 'usage'"));
+        expect(lockAt).toBeGreaterThan(-1);
+        expect(usageAt).toBeGreaterThan(lockAt);
+        expect(statements[usageAt].query).not.toContain('FOR UPDATE');
+        expect(statements.filter(entry => entry.query.includes("WHERE patient_id = ? AND gateway_mode = 'live'"))).toHaveLength(1);
+    });
+
     test('a second retur after the saldo part is used up needs cash or transfer', async () => {
         const { deps } = returnHarness({
             usageRows: [{ id: 3, source_id: '55:obstetri', category: 'obstetri', amount_idr: -20000 }],
