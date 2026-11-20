@@ -98,6 +98,22 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         expect(landing).toContain('dikembalikan atas permintaan');
     });
 
+    test('the estimate cards are offered by Sisiwanita, not by the doctor personally', () => {
+        const start = landing.indexOf('id="checkup-estimates"');
+        const section = landing.slice(start, landing.indexOf('<div class="doc-section">'));
+        expect(section).toContain('Layanan Sisiwanita');
+        expect(section).not.toContain('dr. Dibya');
+        expect(section).toContain('Paket kontrol kehamilan di Sisiwanita.');
+    });
+
+    test('Fitur Portal SW says the portal keeps medical summaries, USG photos and lab results', () => {
+        const start = landing.indexOf('<div class="proces-section patient-features-section">');
+        const features = landing.slice(start, landing.indexOf('<div class="proces-spacer"></div>', start));
+        expect(features).toContain('resume medis, foto USG, dan hasil lab');
+        expect(features).toMatch(/<h3 class="proces-title">RESUME, USG &amp; LAB<\/h3>/);
+        expect(features).toContain('Resume medis, foto USG, dan hasil laboratorium Anda tersimpan di portal');
+    });
+
     test('lists support email, phone and business address', () => {
         expect(landing).toContain('href="mailto:admin@dokterdibya.com"');
         expect(landing).toContain('href="https://wa.me/62895320726801"');
