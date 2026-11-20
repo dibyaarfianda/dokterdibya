@@ -114,8 +114,7 @@ function createCheckupPrepayService({
             throw new PremiumError('PREPAY_NOT_AVAILABLE', 'Pembayaran di muka segera tersedia.', 403);
         }
 
-        const priced = await estimates.priceCategory(category);
-        const estimate = priced.category;
+        const estimate = await estimates.pricePackageByCode(category);
         if (!estimate || !estimate.ready) {
             throw new PremiumError('ESTIMATE_NOT_READY', 'Estimasi untuk kategori ini belum tersedia.', 409);
         }
@@ -143,9 +142,7 @@ function createCheckupPrepayService({
         const expiryMinutes = method.type === 'qris' ? QRIS_EXPIRY_MINUTES : VA_EXPIRY_MINUTES;
         const expiresAt = new Date(now.getTime() + expiryMinutes * MS_PER_MINUTE);
         const snapshot = {
-            mapping_version: priced.mapping && priced.mapping.version,
-            mapping_updated_at: priced.mapping && priced.mapping.updated_at,
-            priced_at: priced.priced_at,
+            priced_at: now,
             raw_total: estimate.raw_total,
             items: estimate.items
         };
@@ -165,7 +162,7 @@ function createCheckupPrepayService({
                 orderRef,
                 amount,
                 methodCode: method.code,
-                productDetails: `Estimasi kunjungan Klinik Privat - ${estimate.label}`,
+                productDetails: `Estimasi kunjungan Klinik Privat - ${estimate.name}`,
                 email: patient.email || environment().DUITKU_FALLBACK_EMAIL || FALLBACK_EMAIL,
                 customerName: patient.name,
                 phone: patient.phone,
@@ -211,7 +208,7 @@ function createCheckupPrepayService({
         );
         return {
             availability,
-            estimates: priced.categories.map(toPublicEstimate),
+            estimates: priced.packages.map(toPublicEstimate),
             balances: balances.map(row => ({
                 ...row,
                 category_label: CONSULTATION_CATEGORIES[row.category] || row.category

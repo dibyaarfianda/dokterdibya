@@ -15,6 +15,7 @@ const PAYMENT_METHODS = {
 function estimate(overrides = {}) {
     return {
         code: 'obstetri',
+        name: 'Kehamilan (Obstetri)',
         label: 'Kehamilan (Obstetri)',
         ready: true,
         amount_idr: 115000,
@@ -80,8 +81,8 @@ function setup({ configured = true, production = false, live = false, reviewer =
         }))
     };
     const estimates = {
-        priceCategory: jest.fn(async code => ({ category: category && category.code === code ? category : null, mapping: { version: 1, updated_at: '2026-11-18T03:00:00.000Z' }, priced_at: T0 })),
-        priceAll: jest.fn(async () => ({ categories: [category, estimate({ code: 'gyn_repro', label: 'Program Hamil (Reproduksi)', ready: false, amount_idr: null, items: [] })] }))
+        pricePackageByCode: jest.fn(async code => (category && category.code === code ? category : null)),
+        priceAll: jest.fn(async () => ({ packages: [category, estimate({ code: 'gyn_repro', name: 'Program Hamil (Reproduksi)', label: 'Program Hamil (Reproduksi)', ready: false, amount_idr: null, items: [] })] }))
     };
     const reviewAccounts = { isActiveReviewPatient: jest.fn(async () => reviewer) };
     const ledger = { getBalances: jest.fn(async () => [{ category: 'obstetri', gateway_mode: 'sandbox', balance_idr: 115000 }]) };
@@ -148,7 +149,7 @@ describe('createOrder', () => {
             returnUrl: `https://sisiwanita.id/bayar-estimasi.html?order=${encodeURIComponent(ref)}`
         }));
         expect(fake.state.orders[0]).toMatchObject({ order_type: ORDER_TYPE, product_code: 'obstetri', amount_idr: 115000, gateway_mode: 'sandbox', status: 'pending' });
-        expect(JSON.parse(fake.state.orders[0].item_snapshot)).toMatchObject({ mapping_version: 1, raw_total: 115000, items: [expect.objectContaining({ name: 'Biaya Admin' })] });
+        expect(JSON.parse(fake.state.orders[0].item_snapshot)).toMatchObject({ raw_total: 115000, items: [expect.objectContaining({ name: 'Biaya Admin' })] });
         expect(order).toMatchObject({ order_ref: ref, category: 'obstetri', category_label: 'Kehamilan (Obstetri)', amount_idr: 115000, method_type: 'qris', gateway_mode: 'sandbox', qr_string: '000201...' });
         expect(order).not.toHaveProperty('patient_id');
         expect(order).not.toHaveProperty('item_snapshot');
@@ -176,7 +177,7 @@ describe('createOrder', () => {
     });
 
     test('the USG 4D product is its own order but is labelled as Kehamilan saldo', async () => {
-        const { service, fake, duitku } = setup({ category: estimate({ code: 'obstetri_usg4d', label: 'Kehamilan + USG 4D', amount_idr: 365000, raw_total: 365000 }) });
+        const { service, fake, duitku } = setup({ category: estimate({ code: 'obstetri_usg4d', name: 'Kehamilan + USG 4D', label: 'Kehamilan + USG 4D', amount_idr: 365000, raw_total: 365000 }) });
         const order = await service.createOrder({ patient: PATIENT, category: 'obstetri_usg4d', paymentMethod: 'va_bni' });
 
         expect(fake.state.orders[0]).toMatchObject({ product_code: 'obstetri_usg4d', amount_idr: 365000 });
@@ -191,7 +192,7 @@ describe('createOrder', () => {
         expect(second.order_ref).toBe(first.order_ref);
         expect(ctx.duitku.createTransaction).toHaveBeenCalledTimes(1);
 
-        ctx.estimates.priceCategory.mockResolvedValueOnce({ category: estimate({ amount_idr: 125000 }), mapping: { version: 1 }, priced_at: T0 });
+        ctx.estimates.pricePackageByCode.mockResolvedValueOnce(estimate({ amount_idr: 125000 }));
         const third = await ctx.service.createOrder({ patient: PATIENT, category: 'obstetri', paymentMethod: 'qris' });
         expect(third.order_ref).not.toBe(first.order_ref);
         expect(third.amount_idr).toBe(125000);
@@ -229,7 +230,7 @@ describe('reading orders and status', () => {
         await ctx.service.createOrder({ patient: PATIENT, category: 'obstetri', paymentMethod: 'qris' });
         const status = await ctx.service.getStatus(PATIENT.id);
         expect(status.availability).toEqual({ available: true, mode: 'sandbox', reason: null });
-        expect(status.estimates[0]).toEqual({ code: 'obstetri', label: 'Kehamilan (Obstetri)', ready: true, amount_idr: 115000, items: [{ name: 'Biaya Admin', quantity: 1, subtotal_idr: 15000 }] });
+        expect(status.estimates[0]).toMatchObject({ code: 'obstetri', name: 'Kehamilan (Obstetri)', label: 'Kehamilan (Obstetri)', ready: true, amount_idr: 115000, items: [{ name: 'Biaya Admin', quantity: 1, subtotal_idr: 15000 }] });
         expect(status.estimates[1]).toMatchObject({ code: 'gyn_repro', ready: false, items: [] });
         expect(status.balances).toEqual([{ category: 'obstetri', gateway_mode: 'sandbox', balance_idr: 115000, category_label: 'Kehamilan (Obstetri)' }]);
         expect(status.orders).toHaveLength(1);

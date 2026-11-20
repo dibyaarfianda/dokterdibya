@@ -218,14 +218,14 @@ function defaultEstimates() {
 async function getEstimateMapping({ db = require('../db'), estimates = defaultEstimates() } = {}) {
     const { ALLOWED_SERVICE_CATEGORIES, ADMIN_TINDAKAN_ID } = require('./CheckupEstimateService');
     const { mapping, errors } = await estimates.loadMapping();
-    const priced = await estimates.priceAll({ fresh: true });
+    const priced = await estimates.priceAllForStaff();
     const [tindakan] = await db.query(
         `SELECT id, code, name, category, price FROM tindakan
           WHERE is_active = 1 AND (category IN (?, ?) OR id = ?)
           ORDER BY category, name`,
         [...ALLOWED_SERVICE_CATEGORIES, ADMIN_TINDAKAN_ID]
     );
-    return { mapping, mapping_errors: errors, categories: priced.categories, tindakan: tindakan || [], admin_tindakan_id: ADMIN_TINDAKAN_ID };
+    return { mapping, mapping_errors: errors, categories: priced.packages, tindakan: tindakan || [], admin_tindakan_id: ADMIN_TINDAKAN_ID };
 }
 
 /** Save like the CLI: invalid input is refused (400); an under-minimum product is saved but not ready. */
@@ -236,8 +236,8 @@ async function saveEstimateMapping(mapping, { estimates = defaultEstimates() } =
     } catch (error) {
         throw serviceError(error.message || 'Pemetaan estimasi tidak valid.');
     }
-    const priced = await estimates.priceAll({ fresh: true });
-    return { mapping: stored, categories: priced.categories };
+    const priced = await estimates.priceAllForStaff();
+    return { mapping: stored, categories: priced.packages };
 }
 
 module.exports = {

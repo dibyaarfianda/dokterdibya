@@ -36,6 +36,16 @@ function printPriced(categories) {
     });
 }
 
+function printPackages(packages) {
+    packages.forEach(pkgRow => {
+        console.log(`\n[${pkgRow.code}] ${pkgRow.name}${pkgRow.is_active ? '' : ' (nonaktif)'} -> ${pkgRow.ready ? rupiah(pkgRow.amount_idr) : 'BELUM SIAP'}`);
+        pkgRow.items.forEach(item => {
+            console.log(`   - ${item.item_type} #${item.ref_id} ${item.name} x${item.quantity} @ ${rupiah(item.unit_price)} = ${rupiah(item.subtotal)}`);
+        });
+        pkgRow.issues.forEach(issue => console.log(`   ! ${issue}`));
+    });
+}
+
 function parseItems(spec) {
     return String(spec || '')
         .split(',')
@@ -67,9 +77,8 @@ async function main() {
     }
 
     if (command === 'show') {
-        const result = await estimates.priceAll({ fresh: true });
-        if (result.mapping_errors.length) console.log('Masalah pengaturan tersimpan:\n - ' + result.mapping_errors.join('\n - '));
-        printPriced(result.categories);
+        const result = await estimates.priceAllForStaff();
+        printPackages(result.packages);
         return;
     }
 

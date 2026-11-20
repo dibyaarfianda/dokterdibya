@@ -201,7 +201,10 @@ describe('StaffPrepayService', () => {
                 return [[]];
             })
         };
-        const estimates = createCheckupEstimateService({ db });
+        const repository = {
+            listPackages: jest.fn(async () => [{ id: 1, code: 'obstetri', name: 'Kehamilan (Obstetri)', description: null, category: 'obstetri', week_min: null, week_max: null, is_active: true, sort_order: 10, items: [{ item_type: 'tindakan', ref_id: 40, quantity: 1, sort_order: 0 }] }])
+        };
+        const estimates = createCheckupEstimateService({ db, repository });
         const result = await real.saveEstimateMapping({ categories: { obstetri: { items: [{ tindakan_id: 40, quantity: 1 }] } } }, { estimates });
         const obstetri = result.categories.find(entry => entry.code === 'obstetri');
         expect(obstetri.ready).toBe(false);
