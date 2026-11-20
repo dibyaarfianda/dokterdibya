@@ -54,9 +54,11 @@ const MESSAGES = Object.freeze({
     sandbox: 'Saldo uji tidak dapat dicairkan',
     pending: 'Masih ada pengajuan pencairan yang sedang diproses.',
     keyUsed: 'Kunci pengajuan sudah dipakai. Muat ulang halaman lalu coba lagi.',
+    keyReused: 'Kunci pengajuan sudah dipakai untuk data berbeda. Muat ulang halaman lalu ajukan lagi.',
     notFound: 'Pengajuan pencairan tidak ditemukan.',
     notCancellable: 'Pengajuan ini sudah diproses dan tidak dapat dibatalkan.',
     closed: 'Pengajuan ini sudah ditutup.',
+    cancelledByPatient: 'Pasien sudah membatalkan pengajuan ini. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.',
     note: 'Alasan penolakan wajib diisi (3–500 karakter).'
 });
 
@@ -133,10 +135,27 @@ function createPatientRefundRequestService({
 
     async function findByKey(executor, requestKey) {
         const [rows] = await executor.query(
-            'SELECT id, patient_id, status FROM patient_credit_refund_requests WHERE request_key = ? LIMIT 1',
+            `SELECT id, patient_id, status, amount_idr, bank_name, account_number, account_holder
+               FROM patient_credit_refund_requests WHERE request_key = ? LIMIT 1`,
             [requestKey]
         );
         return (rows && rows[0]) || null;
+    }
+
+    /**
+     * A retry key hit answers with the saved request only when it is the same patient and the
+     * same payload (normalised as on insert). A key reused for different data is refused, like
+     * a refund key with a different request_hash: a corrected account number must never be
+     * answered with the old request.
+     */
+    function savedRequestFor(saved, { patientId, amount, bank, account, holder }) {
+        if (!saved || String(saved.patient_id) !== patientId) throw new PremiumError('REQUEST_KEY_USED', MESSAGES.keyUsed, 409);
+        const samePayload = toInt(saved.amount_idr) === amount
+            && String(saved.bank_name) === bank
+            && String(saved.account_number) === account
+            && String(saved.account_holder) === holder;
+        if (!samePayload) throw new PremiumError('REQUEST_KEY_REUSED', MESSAGES.keyReused, 409);
+        return { id: Number(saved.id), status: saved.status };
     }
 
     async function closeRequest(connection, id, { status, refundId = null, note = null, decidedBy = null }) {
@@ -188,23 +207,21 @@ function createPatientRefundRequestService({
 
     /**
      * Patient asks to withdraw `amountIdr` of live saldo. Returns { id, status }; the same
-     * request_key returns the saved request.
+     * request_key with the same payload returns the saved request, with different data 409.
      */
     async function createRequest(input = {}) {
-        const { patientId, amount, bank, account, holder, key } = validateRequest(input);
+        const payload = validateRequest(input);
+        const { patientId, amount, bank, account, holder, key } = payload;
         let outcome;
         try {
             outcome = await inTransaction(async connection => {
                 const balances = await lockLiveBalances(connection, patientId);
                 const pending = await getPendingRefundRequests(connection, patientId, { forUpdate: true });
-                const ownPending = pending.find(row => row.request_key === key);
-                if (ownPending) return { id: ownPending.id, status: 'pending', created: false };
-                // Plain read: the first consistent read of this transaction, taken after the saldo lock.
+                // Plain read: the first consistent read of this transaction, taken after the saldo
+                // lock, so it also sees the patient's own pending request. Checked before the
+                // one-pending rule so a safe retry is answered, never refused.
                 const saved = await findByKey(connection, key);
-                if (saved) {
-                    if (String(saved.patient_id) !== patientId) throw new PremiumError('REQUEST_KEY_USED', MESSAGES.keyUsed, 409);
-                    return { id: Number(saved.id), status: saved.status, created: false };
-                }
+                if (saved) return { ...savedRequestFor(saved, payload), created: false };
 
                 const live = positiveSum(balances);
                 if (live <= 0) {
@@ -228,10 +245,8 @@ function createPatientRefundRequestService({
             });
         } catch (error) {
             if (!error || error.code !== 'ER_DUP_ENTRY') throw error;
-            // Same key inserted concurrently: answer with the saved request (rolled back already).
-            const saved = await findByKey(db, key);
-            if (!saved || String(saved.patient_id) !== patientId) throw new PremiumError('REQUEST_KEY_USED', MESSAGES.keyUsed, 409);
-            return { id: Number(saved.id), status: saved.status };
+            // Same key inserted concurrently (rolled back already): the same rule as above.
+            return savedRequestFor(await findByKey(db, key), payload);
         }
 
         if (outcome.created) {
@@ -297,6 +312,9 @@ function createPatientRefundRequestService({
             const request = await findRequest(connection, requestId, { forUpdate: true });
             if (!request || String(request.patient_id) !== String(first.patient_id)) throw serviceError(MESSAGES.notFound, 404);
             if (request.status === 'done') return { refundId: toId(request.refund_id), changed: false };
+            // Staff may already have transferred by hand: point them to a direct refund instead of
+            // a bare "closed", or the payout is never recorded against the saldo.
+            if (request.status === 'cancelled') throw serviceError(MESSAGES.cancelledByPatient, 409);
             if (request.status !== 'pending') throw serviceError(MESSAGES.closed, 409);
 
             const refund = await staffPrepay.createRefundWithin(connection, {

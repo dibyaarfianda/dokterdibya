@@ -21,6 +21,8 @@ const ACCOUNT = '1234567890';
 const KEY_A = 'req-key-aaaaaaaaaaaa';
 const KEY_B = 'req-key-bbbbbbbbbbbb';
 const ACTOR = { id: 'S1', name: 'Kasir' };
+const KEY_REUSED = 'Kunci pengajuan sudah dipakai untuk data berbeda. Muat ulang halaman lalu ajukan lagi.';
+const CANCELLED_BY_PATIENT = 'Pasien sudah membatalkan pengajuan ini. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.';
 
 const liveRow = over => ({ patient_id: 'P1', category: 'obstetri', entry_type: 'prepay', amount_idr: 255000, gateway_mode: 'live', source_type: 'payment_order', source_id: '9', created_at: new Date('2026-11-20T07:48:00+07:00'), ...over });
 const REQUEST_DEFAULTS = {
@@ -33,7 +35,9 @@ const REQUEST_DEFAULTS = {
  * In-memory stand-in for MySQL: one row lock per patient ledger (taken by the live-saldo
  * FOR UPDATE read, held until commit/rollback/release) and an undo log per transaction.
  */
-function harness({ ledger, requests = [], patients = { P1: 'Ny. Siti Aminah', P2: 'Budi Santoso' } } = {}) {
+// hideKeyFromTransactions: the lookup by request_key inside a transaction misses (a concurrent
+// insert committed after it), so the INSERT hits the unique key and throws ER_DUP_ENTRY.
+function harness({ ledger, requests = [], patients = { P1: 'Ny. Siti Aminah', P2: 'Budi Santoso' }, hideKeyFromTransactions = false } = {}) {
     const state = {
         ledger: (ledger || [liveRow()]).map((row, index) => ({ id: index + 1, ...row })),
         requests: requests.map(row => ({ ...REQUEST_DEFAULTS, ...row })),
@@ -100,6 +104,7 @@ function harness({ ledger, requests = [], patients = { P1: 'Ny. Siti Aminah', P2
                 .map(row => ({ id: row.id, amount_idr: row.amount_idr, request_key: row.request_key }))];
         }
         if (sql.includes('FROM patient_credit_refund_requests WHERE request_key = ?')) {
+            if (owner && hideKeyFromTransactions) return [[]];
             return [copy(state.requests.filter(row => row.request_key === params[0]))];
         }
         if (sql.startsWith('INSERT INTO patient_credit_refund_requests')) {
@@ -323,10 +328,68 @@ describe('createRequest', () => {
         expect(h.state.requests).toHaveLength(1);
     });
 
+    test('the same key with a different amount, bank, account or holder is refused with 409 and no new row', async () => {
+        const h = harness();
+        const { service, realtime } = build(h);
+        await service.createRequest(request());
+        for (const changed of [
+            { accountNumber: '1234567891' },
+            { amountIdr: 150000 },
+            { bankName: 'Mandiri' },
+            { accountHolder: 'Budi Santoso' }
+        ]) {
+            await expect(service.createRequest(request(changed))).rejects.toMatchObject({ status: 409, message: KEY_REUSED });
+        }
+        expect(h.state.requests).toHaveLength(1);
+        expect(h.state.requests[0]).toMatchObject({ account_number: ACCOUNT, amount_idr: 200000, bank_name: 'BCA', account_holder: 'Siti Aminah' });
+        expect(realtime.broadcast).toHaveBeenCalledTimes(1);
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('the same key with the same payload, normalised as on insert, returns the saved request', async () => {
+        const h = harness();
+        const { service } = build(h);
+        const first = await service.createRequest(request());
+        await expect(service.createRequest(request({ bankName: '  BCA ', accountNumber: ` ${ACCOUNT} `, accountHolder: 'Siti   Aminah ' })))
+            .resolves.toEqual(first);
+        expect(h.state.requests).toHaveLength(1);
+    });
+
     test('a request key used by another patient is refused', async () => {
         const h = harness({ ledger: [liveRow(), liveRow({ patient_id: 'P2' })], requests: [{ id: 1, request_key: KEY_A, status: 'cancelled' }] });
         const { service } = build(h);
         await expect(service.createRequest(request({ patient: { id: 'P2', name: 'Budi Santoso' } }))).rejects.toMatchObject({ status: 409 });
+    });
+
+    describe('a key inserted concurrently (the INSERT throws ER_DUP_ENTRY)', () => {
+        const insertTried = h => h.statements.some(s => s.owner !== 'pool' && s.sql.startsWith('INSERT INTO patient_credit_refund_requests'));
+
+        test("another patient's key is refused with 409", async () => {
+            const h = harness({ hideKeyFromTransactions: true, requests: [{ id: 1, patient_id: 'P2', request_key: KEY_A, status: 'cancelled' }] });
+            const { service, realtime } = build(h);
+            await expect(service.createRequest(request())).rejects.toMatchObject({ status: 409 });
+            expect(insertTried(h)).toBe(true);
+            expect(h.connections[0].rollback).toHaveBeenCalled();
+            expect(h.state.requests).toHaveLength(1);
+            expect(realtime.broadcast).not.toHaveBeenCalled();
+            expect(everyConnectionClosed(h)).toBe(true);
+        });
+
+        test('the same patient with a different payload is refused with 409', async () => {
+            const h = harness({ hideKeyFromTransactions: true, requests: [{ id: 1, request_key: KEY_A, status: 'cancelled', account_number: '1234567891' }] });
+            const { service } = build(h);
+            await expect(service.createRequest(request())).rejects.toMatchObject({ status: 409, message: KEY_REUSED });
+            expect(insertTried(h)).toBe(true);
+            expect(h.state.requests).toHaveLength(1);
+        });
+
+        test('the same patient with the same payload gets the saved request', async () => {
+            const h = harness({ hideKeyFromTransactions: true, requests: [{ id: 1, request_key: KEY_A, status: 'cancelled' }] });
+            const { service, realtime } = build(h);
+            await expect(service.createRequest(request())).resolves.toEqual({ id: 1, status: 'cancelled' });
+            expect(insertTried(h)).toBe(true);
+            expect(realtime.broadcast).not.toHaveBeenCalled();
+        });
     });
 
     test('two requests racing for the same saldo: the second sees the first hold and gets 400', async () => {
@@ -382,9 +445,22 @@ describe('completeRequest', () => {
         ] });
         const { service } = build(h);
         await expect(service.completeRequest({ id: 99, actor: ACTOR })).rejects.toMatchObject({ statusCode: 404 });
-        await expect(service.completeRequest({ id: 6, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409 });
-        await expect(service.completeRequest({ id: 7, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409 });
+        await expect(service.completeRequest({ id: 6, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: 'Pengajuan ini sudah ditutup.' });
+        await expect(service.completeRequest({ id: 7, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: CANCELLED_BY_PATIENT });
         expect(h.state.refunds).toHaveLength(0);
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('completing a request the patient already cancelled tells staff to record a direct refund', async () => {
+        const h = harness({ requests: [{ id: 5, amount_idr: 200000 }] });
+        const { service } = build(h);
+        await service.cancelRequest({ patientId: 'P1', id: 5 });
+        await expect(service.completeRequest({ id: 5, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: CANCELLED_BY_PATIENT });
+        expect(h.state.refunds).toHaveLength(0);
+        expect(h.state.ledger.filter(row => row.entry_type === 'refund')).toHaveLength(0);
+        const live = (await Ledger.getLiveBalances(h.db, 'P1')).reduce((sum, entry) => sum + entry.balance_idr, 0);
+        expect(live).toBe(255000);
+        expect(h.state.requests[0].status).toBe('cancelled');
         expect(everyConnectionClosed(h)).toBe(true);
     });
 
