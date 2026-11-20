@@ -1,6 +1,6 @@
 # Bayar di muka, Tahap 3: editable packages, deposit at booking, refund requests
 
-Status: Built on branch claude/prepay-packages-design (2026-11-21); deployment pending.
+Status: Deployed 2026-11-21 (PR #37, b9d72bbd2; staff assets v498, patient assets 20261122paket1). The four existing products were copied to packages with unchanged prices. Booking offer and Saldo menu show only for accounts that can pay (review accounts until `CHECKUP_PREPAY_LIVE`).
 Builds on: `2026-11-18-checkup-prepay-duitku-review-design.md` (Tahap 1) and `2026-11-20-checkup-prepay-tahap-2-design.md` (Tahap 2, live).
 Approved mockup: v3 (booking Konfirmasi with suggested package, success screen choice, portal Saldo, staff package editor).
 
