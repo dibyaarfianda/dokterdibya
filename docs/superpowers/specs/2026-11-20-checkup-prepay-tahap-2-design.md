@@ -173,7 +173,8 @@ The layout is the builder's call.
   - **Why the formula holds:** `grand_total` already subtracts all returns. Adding back the part that went to saldo leaves exactly the money that moved through the drawer or a transfer.
     - A Rp365.000 bill paid fully from saldo, with a Rp20.000 return to saldo the same day, gives 345.000 − 365.000 + 20.000 = 0.
     - The same return on a later day gives −20.000 + 20.000 = 0 that day.
-- **Store:** `insertClosingEntries` also saves `saldo_amount` in a new nullable column (section 10), so closed days keep the per-source split. The summary totals survive through `summary_json`.
+- **Store:** `insertClosingEntries` also writes `saldo_amount` into each entry's existing `source_snapshot` JSON, and `getClosingDetail` maps it back onto the entry. Closed days therefore keep the per-source split without a new column on `sunday_clinic_closing_entries`. The summary totals survive through `summary_json`.
+  - *(Changed while planning, 2026-11-20: the column was replaced by the existing JSON snapshot.)*
 
 The closing UI shows "Dibayar dari saldo di muka", "Retur ke saldo" and "Perkiraan tunai/transfer" when present. `grand_total` and the breakdown per category do not change.
 
@@ -268,7 +269,6 @@ The closing UI shows "Dibayar dari saldo di muka", "Retur ke saldo" and "Perkira
   - columns: `id`, `patient_id`, `amount_idr`, `method ENUM('tunai','transfer')`, `reason TEXT`, `request_key VARCHAR(80) UNIQUE`, `request_hash`, `created_by`, `created_by_name`, `created_at`;
   - utf8mb4_unicode_ci.
 - `ALTER TABLE patient_credit_ledger ADD INDEX IF NOT EXISTS idx_credit_ledger_live (patient_id, gateway_mode)`.
-- `ALTER TABLE sunday_clinic_closing_entries ADD COLUMN IF NOT EXISTS saldo_amount` (nullable, same numeric type as `total`).
 - `ALTER TABLE sunday_clinic_billing_returns`:
   - `ADD COLUMN IF NOT EXISTS saldo_amount DECIMAL(12,2) NULL`;
   - `MODIFY payment_method ENUM('cash','transfer','saldo') NOT NULL`.
