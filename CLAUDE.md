@@ -1503,3 +1503,23 @@ User wanted the patient portal not zoomable on Android.
 - The stack in `public/sisiwanita/index.html` caches row offsets (rebuilds only at 0.5s/1.5s, on resize, or on `landing:layout-changed`). Any section placed ABOVE it whose height changes after load (e.g. the visit-estimate cards filled from an API) must dispatch `window.dispatchEvent(new CustomEvent('landing:layout-changed'))` after rendering, or desktop rows collapse too early. Phones use the static stack mode and are unaffected.
 
 **Deploy note:** `www-data` on the VPS cannot reach GitHub (host key). Deploy by creating a git bundle locally (`git bundle create x.bundle <server-head>..origin/main`), copying it to the server, `sudo -u www-data git fetch <bundle> refs/remotes/origin/main`, then `git merge --ff-only FETCH_HEAD` in `/var/www/dokterdibya`; reload the backend with `pm2 reload ecosystem.config.js --only dibyaklinik-backend` from `staff/backend` only when backend code changed.
+
+### 43. Session Log - 20 November 2026 (Duitku Review Readiness)
+
+**Duitku "Bayar Estimasi Kunjungan di Muka" — sandbox end-to-end verified (User Confirmed "good job")**
+
+Duitku approves the merchant only when sisiwanita.id shows products + Rupiah prices, support contacts, a checkout to payment, sandbox integration, and a 60-working-day test account. All five are live.
+
+**What it is:**
+- Product = optional prepayment of the estimated cost of one Klinik Privat visit. Products: `staff/backend/constants/checkupPrepayProducts.js` (`obstetri`, `obstetri_usg4d`, `gyn_repro`, `gyn_special`); each credits one saldo category (booking category).
+- Price = configured tindakan (live prices from `tindakan`) + admin fee (tindakan #1). Mapping in settings `checkup_prepay_estimate_v1`, set with `node scripts/checkup-prepay-estimate.js list-tindakan | show | set <product> <id:qty,...> --apply`.
+- Paid order → one `patient_credit_ledger` row (`gateway_mode` sandbox/live), via the `fulfillers` hook in `PremiumPaymentService.applyPaidOrder`. Spec: `docs/superpowers/specs/2026-11-18-checkup-prepay-duitku-review-design.md`.
+- Guard: sandbox → only active review accounts can pay; production → only when `CHECKUP_PREPAY_LIVE=true`. **Never set it before Tahap 2** (automatic deduction of `live` saldo from the visit bill, refunds, closing).
+- Review (test) account: `node scripts/patient-review-account.js create|reset-password|extend|revoke|status`; login at `/masuk-akun-uji.html`. Write the CLI output to a root-only file (`umask 077; ... > /root/akun-uji-duitku.txt`) — never paste the password in chat.
+
+**Duitku facts verified in sandbox (merchant DS37782):**
+- Signatures are HMAC-SHA256 (MD5 is obsolete per docs.duitku.com/api/id). The code matches the docs.
+- API keys have **no fixed format** (docs show 32-hex and 20-char alphanumeric examples). To test a key, call **Get Payment Method** (`merchantcode + amount + datetime`): `00 SUCCESS` = key OK, `403 Invalid Signature.` = wrong key (our first pasted key was wrong).
+- QRIS Nobu (`NQ`) fails in sandbox ("Failed to generate QR String Nobu"); docs list only ShopeePay/Nusapay QRIS as sandbox-testable. VA works. VA simulator: https://sandbox.duitku.com/payment/demo/demosuccesstransaction.aspx
+- Callback `amount` arrives without decimals (`"255000"`); Check Transaction with JSON body works.
+- Claude must not run payments in the simulator (hosted test payments are not allowed) — create the order server-side, let the user pay, then verify `payment_orders`, `premium_payment_events` and `patient_credit_ledger`.
