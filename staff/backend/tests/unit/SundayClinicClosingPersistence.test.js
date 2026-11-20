@@ -119,6 +119,8 @@ describe('Sunday Clinic closing persistence', () => {
                 if (query.includes('FROM tagihan_payments tp')) return [[], []];
                 if (query.includes('FROM sunday_clinic_billing_revisions br')) return [[], []];
                 if (query.includes('FROM sunday_clinic_billing_returns r')) return [[], []];
+                // Tahap 2: live prepay saldo used per main bill (none here).
+                if (query.includes('FROM patient_credit_ledger') && query.includes('FOR UPDATE')) return [[], []];
                 if (query.startsWith('INSERT INTO sunday_clinic_closings')) return [{ insertId: 7 }, []];
                 if (query.startsWith('INSERT INTO sunday_clinic_closing_entries')) return [{ affectedRows: 1 }, []];
                 if (query.includes('FROM sunday_clinic_closings') && query.includes('WHERE id')) return [[header], []];

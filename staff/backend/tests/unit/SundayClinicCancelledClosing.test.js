@@ -177,6 +177,8 @@ describe('cancelled invoice accounting', () => {
                     item_snapshot: insertedEntry[12], source_snapshot: insertedEntry[13]
                 }], []];
                 if (compact.includes('SELECT RELEASE_LOCK')) return [[{ released: 1 }], []];
+                // Tahap 2: live prepay saldo used per main bill (none here).
+                if (compact.includes('FROM patient_credit_ledger')) return [[], []];
                 throw new Error(`Unexpected SQL: ${compact}`);
             })
         };

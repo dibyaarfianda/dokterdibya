@@ -5,6 +5,7 @@ const db = require('../db');
 const { ROLE_NAMES } = require('../constants/roles');
 const { AppError } = require('../middleware/errorHandler');
 const { formatDateLocal } = require('../utils/date');
+const { getUsageForBillings } = require('./PatientCreditLedger');
 
 const PRIVATE_CLINIC_LOCATION = 'klinik_private';
 const ADMIN_ITEM_CODES = new Set(['S01', 'S02', 'S03', 'S04']);
@@ -151,7 +152,9 @@ function buildClosingPreview({
     additionalItems = [],
     pendingPayments = [],
     pendingRevisions = [],
-    returns = []
+    returns = [],
+    // Live prepay saldo used per main bill id (Tahap 2): Map<string billingId, number>.
+    saldoUsage = new Map()
 } = {}) {
     const closingRecords = recordsRequiredForClosing(records);
     const recordByMrId = new Map(closingRecords.map(record => [String(record.mr_id), record]));
@@ -278,6 +281,11 @@ function buildClosingPreview({
             paid_by: billing.paid_by || null,
             items: normalizedItems
         };
+        // Only present when > 0, so days without saldo keep their fingerprint.
+        const saldoPaid = sourceType === 'main' && status === 'paid'
+            ? normalizeMoney(saldoUsage.get(String(sourceId)) || 0)
+            : 0;
+        if (saldoPaid > 0) source.saldo_amount = saldoPaid;
         if (status === 'cancelled') {
             source.cancellation_reason = billing.cancellation_reason || null;
             source.cancelled_at = billing.cancelled_at || null;
@@ -342,6 +350,9 @@ function buildClosingPreview({
             items: [{ item_type: 'return', item_name: entry.kind === 'obat' ? `Retur ${entry.item_name}` : 'Pengembalian uang',
                 quantity: Number(entry.quantity) || 1, price: total / (Number(entry.quantity) || 1), total, category: 'retur' }]
         };
+        // Part of the retur that went back to the patient's saldo instead of the drawer.
+        const saldoBack = normalizeMoney(entry.saldo_amount || 0);
+        if (saldoBack > 0) source.saldo_amount = saldoBack;
         sources.push(source);
         transactions.push(source);
     }
@@ -365,6 +376,19 @@ function buildClosingPreview({
         cancelled_count: cancelledBillings.length,
         cancelled_total: normalizeMoney(cancelledBillings.reduce((sum, billing) => sum + billing.total, 0))
     };
+    // Bayar di muka (Tahap 2). grand_total already subtracts every retur; adding back the part
+    // that went to saldo leaves exactly the money that moved through the drawer or a transfer.
+    const saldoPaidTotal = normalizeMoney(transactions
+        .filter(transaction => transaction.source_type === 'main')
+        .reduce((sum, transaction) => sum + (transaction.saldo_amount || 0), 0));
+    const saldoReturnedTotal = normalizeMoney(transactions
+        .filter(transaction => transaction.source_type === 'return')
+        .reduce((sum, transaction) => sum + (transaction.saldo_amount || 0), 0));
+    if (saldoPaidTotal > 0) summary.saldo_paid_total = saldoPaidTotal;
+    if (saldoReturnedTotal > 0) summary.saldo_returned_total = saldoReturnedTotal;
+    if (saldoPaidTotal > 0 || saldoReturnedTotal > 0) {
+        summary.cash_expected_total = normalizeMoney(summary.grand_total - saldoPaidTotal + saldoReturnedTotal);
+    }
 
     const fingerprint = buildSourceFingerprint({
         clinicDate,
@@ -531,7 +555,20 @@ async function loadFinancialSources(client, clinicDate, options = {}) {
         WHERE r.accounting_date = ? ORDER BY r.id${lockClause}
     `, [clinicDate]);
 
+    // Live prepay saldo used per main bill (Tahap 2). Loaded on every path (preview, close,
+    // reconcile) with the same lock option, so all three compute the same fingerprint.
+    let saldoUsage = new Map();
+    if (mainIds.length) {
+        try {
+            const usage = await getUsageForBillings(client, mainIds, { forUpdate: Boolean(options.forUpdate) });
+            saldoUsage = new Map([...usage].map(([billingId, entry]) => [billingId, entry.used_idr]));
+        } catch (error) {
+            if (!error || error.code !== 'ER_NO_SUCH_TABLE') throw error;
+        }
+    }
+
     return {
+        saldoUsage,
         returns,
         records,
         mainBillings,
@@ -580,6 +617,12 @@ async function findClosingHeader(client, { id = null, clinicDate = null, forUpda
     return normalizeClosingHeader(rows[0]);
 }
 
+// A closed entry keeps the saldo part of a bill or retur in its source snapshot (Tahap 2).
+function withSnapshotSaldo(entry) {
+    const saldo = normalizeMoney(entry.source_snapshot?.saldo_amount || 0);
+    return saldo > 0 ? { ...entry, saldo_amount: saldo } : entry;
+}
+
 async function getClosingDetail(client, idOrHeader) {
     const header = typeof idOrHeader === 'object' && idOrHeader
         ? idOrHeader
@@ -597,7 +640,7 @@ async function getClosingDetail(client, idOrHeader) {
         WHERE closing_id = ?
         ORDER BY source_type, source_id
     `, [header.id]);
-    const entries = entryRows.map(row => ({
+    const entries = entryRows.map(row => withSnapshotSaldo({
         id: Number(row.id),
         closing_id: Number(row.closing_id),
         source_type: row.source_type,
@@ -836,6 +879,7 @@ async function insertClosingEntries(connection, closingId, entries) {
             paid_at: transaction.paid_at,
             paid_by: transaction.paid_by
         };
+        if (transaction.saldo_amount > 0) sourceSnapshot.saldo_amount = transaction.saldo_amount;
         if (transaction.status === 'cancelled') {
             sourceSnapshot.cancellation_reason = transaction.cancellation_reason || null;
             sourceSnapshot.cancelled_at = transaction.cancelled_at || null;
@@ -1039,6 +1083,7 @@ module.exports = {
     buildSourceFingerprint,
     buildClosingPreview,
     loadFinancialSources,
+    insertClosingEntries,
     getClosingPreview,
     getClosingDetail,
     getClosingDetailWithReconciliation,

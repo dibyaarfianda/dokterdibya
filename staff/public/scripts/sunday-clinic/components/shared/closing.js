@@ -314,6 +314,13 @@ function renderPreview(data) {
             ${Number(summary.return_count) ? `<div class="sc-closing-summary-card"><span>Retur / Pengembalian</span><strong class="text-danger">−${formatCurrency(summary.return_total)}</strong><small>${Number(summary.return_count)} transaksi</small></div>` : ''}
             <div class="sc-closing-summary-card sc-closing-summary-total"><span>Total Pendapatan</span><strong>${formatCurrency(summary.grand_total)}</strong><small>${Number(summary.patient_count || 0)} pasien · ${Number(summary.transaction_count || 0)} transaksi</small></div>
         </div>
+        ${('saldo_paid_total' in summary || 'saldo_returned_total' in summary) ? `
+            <div class="sc-closing-breakdown-grid sc-closing-saldo-grid">
+                ${Number(summary.saldo_paid_total) ? `<div><span>Dibayar dari saldo di muka</span><strong>${formatCurrency(summary.saldo_paid_total)}</strong></div>` : ''}
+                ${Number(summary.saldo_returned_total) ? `<div><span>Retur ke saldo</span><strong>${formatCurrency(summary.saldo_returned_total)}</strong></div>` : ''}
+                <div><span>Perkiraan tunai/transfer</span><strong>${formatCurrency(summary.cash_expected_total)}</strong></div>
+            </div>
+        ` : ''}
         ${(Number(summary.cancelled_count || 0) || cancelledBillings.length) ? `
             <div class="alert alert-secondary mt-3 mb-0 sc-closing-cancelled-summary">
                 <strong>Tagihan Dibatalkan:</strong> ${Number(summary.cancelled_count ?? cancelledBillings.length)} tagihan · nominal asli ${formatCurrency(summary.cancelled_total)}.
