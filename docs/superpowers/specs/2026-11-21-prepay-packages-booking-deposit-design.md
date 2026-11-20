@@ -120,7 +120,7 @@ Today patients barely see the prepay offer:
    - `checkup_prepay_packages` plus `checkup_prepay_package_items`.
    - The four current products become rows with the same codes.
    - Pricing, the home page and booking read active packages.
-   - Pros: stable identity per package, validation (week overlap, banned consultation items) that is easy to enforce, no whole-document overwrite when two staff edit.
+   - Pros: stable identity per package, validation (week ranges, banned consultation items) that is easy to enforce, no whole-document overwrite when two staff edit.
    - Cons: the largest change (migration, service rewrite, dynamic home cards, tests).
 2. **A larger settings JSON.**
    - Fewer files.
