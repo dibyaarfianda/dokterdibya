@@ -53,6 +53,28 @@ describe('tahap 2 migration', () => {
     });
 });
 
+describe('tahap 3 package migration', () => {
+    const migrationPath = path.join(repoRoot, 'staff', 'backend', 'migrations', '20261122_checkup_prepay_packages.sql');
+    const tahap3 = fs.existsSync(migrationPath) ? fs.readFileSync(migrationPath, 'utf8').replace(/\r\n/g, '\n') : '';
+
+    test('creates the package, item and refund request tables idempotently without seeding data', () => {
+        expect(tahap3).toContain('CREATE TABLE IF NOT EXISTS checkup_prepay_packages');
+        expect(tahap3).toContain('CREATE TABLE IF NOT EXISTS checkup_prepay_package_items');
+        expect(tahap3).toContain('CREATE TABLE IF NOT EXISTS patient_credit_refund_requests');
+        expect(tahap3).toContain('20261121_checkup_prepay_tahap2.sql');
+        expect(tahap3).toMatch(/UNIQUE KEY uq_prepay_packages_code \(code\)/);
+        expect(tahap3).toMatch(/UNIQUE KEY uq_refund_requests_key \(request_key\)/);
+        expect(tahap3).toMatch(/UNIQUE KEY uq_prepay_package_items \(package_id, item_type, ref_id\)/);
+        expect(tahap3).toContain('ON DELETE CASCADE');
+        expect(tahap3).toContain("ENUM('tindakan','obat')");
+        expect(tahap3).toContain("ENUM('pending','done','rejected','cancelled')");
+        expect(tahap3).toMatch(/KEY idx_refund_requests_status \(status, created_at\)/);
+        expect(tahap3).toMatch(/KEY idx_refund_requests_patient \(patient_id, status\)/);
+        expect(tahap3).toContain('utf8mb4_unicode_ci');
+        expect(tahap3).not.toMatch(/INSERT/i);
+    });
+});
+
 describe('server wiring', () => {
     const server = read('staff', 'backend', 'server.js');
 
@@ -89,13 +111,30 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         expect(section).toBeLessThan(docs);
         // Sits in front of the sticky "Fitur Portal SW" section, never inside it.
         expect(section).toBeLessThan(landing.indexOf('<div class="proces-section patient-features-section">'));
+        // Cards are rendered from the active packages, not hard-coded.
+        expect(landing).toContain('data-estimate-groups');
+        expect(landing).toContain('data-estimate-fallback');
         for (const code of ['obstetri', 'obstetri_usg4d', 'gyn_repro', 'gyn_special']) {
-            expect(landing).toContain(`data-estimate-card="${code}"`);
-            expect(landing).toContain(`href="/bayar-estimasi.html?kategori=${code}"`);
+            expect(landing).not.toContain(`data-estimate-card="${code}"`);
         }
         expect(landing).toContain('QRIS atau Virtual Account');
         expect(landing).toContain('tagihan akhir mengikuti tindakan');
-        expect(landing).toContain('dikembalikan atas permintaan');
+        expect(landing).toContain('dapat dicairkan ke rekening Anda lewat portal');
+        expect(landing).not.toContain('dikembalikan atas permintaan');
+    });
+
+    test('the estimates module renders the groups with DOM APIs from the active packages', () => {
+        const moduleSource = read('public', 'scripts', 'landing', 'checkup-estimates.js');
+        expect(moduleSource).toContain('renderGroups');
+        expect(moduleSource).toContain('createElement');
+        expect(moduleSource).toContain("'landing:layout-changed'");
+        expect(moduleSource).not.toMatch(/innerHTML/);
+        expect(moduleSource).toContain('/bayar-estimasi.html?kategori=');
+        expect(moduleSource).toContain('encodeURIComponent');
+        for (const heading of ['Kehamilan', 'Program Hamil', 'Ginekologi']) {
+            expect(moduleSource).toContain(`'${heading}'`);
+        }
+        expect(moduleSource).toContain('Estimasi segera tersedia. Hubungi klinik untuk informasi biaya.');
     });
 
     test('the estimate cards are offered by Sisiwanita, not by the doctor personally', () => {
@@ -103,7 +142,7 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         const section = landing.slice(start, landing.indexOf('<div class="doc-section">'));
         expect(section).toContain('Layanan Sisiwanita');
         expect(section).not.toContain('dr. Dibya');
-        expect(section).toContain('Paket kontrol kehamilan di Sisiwanita.');
+        expect(section).toContain('data-estimate-groups');
     });
 
     test('Fitur Portal SW says the portal keeps medical summaries, USG photos and lab results', () => {
@@ -149,7 +188,7 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
         const moduleSource = read('public', 'scripts', 'landing', 'checkup-estimates.js');
         expect(moduleSource).toContain("window.dispatchEvent(new CustomEvent('landing:layout-changed'");
         expect(moduleSource.indexOf("new CustomEvent('landing:layout-changed'"))
-            .toBeGreaterThan(moduleSource.indexOf('renderCard(card, estimate || null'));
+            .toBeGreaterThan(moduleSource.indexOf('renderGroups(container'));
 
         const stackStart = landing.indexOf('function rebuildMetrics()');
         const stackSource = landing.slice(stackStart, landing.indexOf('function applyRowState(', stackStart));
@@ -159,6 +198,30 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
     test('the estimates stylesheet has no transitions (reduced-motion kill-switch stays untouched)', () => {
         const css = read('public', 'styles', 'landing-checkup-estimates.css');
         expect(css).not.toMatch(/transition|animation/);
+    });
+});
+
+describe('unavailable package on the payment page', () => {
+    test('checkup-prepay.js shows "Paket tidak tersedia" with a link home and handles PACKAGE_UNAVAILABLE', () => {
+        const source = read('public', 'scripts', 'checkup-prepay.js');
+        expect(source).toContain('Paket tidak tersedia');
+        expect(source).toContain("'PACKAGE_UNAVAILABLE'");
+        expect(source).toContain("link.setAttribute('href', '/')");
+        expect(source).toContain('heading.textContent = ');
+    });
+
+    test('a linked package that is not ready is unavailable and never swaps to another package', () => {
+        const source = read('public', 'scripts', 'checkup-prepay.js');
+        // (ii) a requested package that exists but is not ready is unavailable
+        const start = source.indexOf('function isPackageUnavailable()');
+        const body = source.slice(start, source.indexOf('function renderPackageUnavailable'));
+        expect(body).toMatch(/var requested = estimateFor\(requestedCategory\);\s*return !requested \|\| !requested\.ready;/);
+        // (iii) the first-ready fallback never replaces a requested package
+        const catStart = source.indexOf('function renderCategories()');
+        const cat = source.slice(catStart, source.indexOf('var cards = state.estimates.map', catStart));
+        expect(cat).toContain('if ((!selected || !selected.ready) && !requestedCategory)');
+        // (iv) picking another card clears the unavailable flag
+        expect(source).toMatch(/action === 'category'\) \{\s*state\.selectedCategory = target\.getAttribute\('data-code'\);\s*state\.packageUnavailable = false;/);
     });
 });
 
@@ -174,7 +237,10 @@ describe('login return path and review login page', () => {
         ['/bayar-estimasi.html?kategori=obstetri', '/bayar-estimasi.html?kategori=obstetri'],
         ['/bayar-estimasi.html?kategori=obstetri_usg4d', '/bayar-estimasi.html?kategori=obstetri_usg4d'],
         ['/bayar-estimasi.html?order=DPK-11111111-2222-3333-4444-555555555555&x=1', '/bayar-estimasi.html?order=DPK-11111111-2222-3333-4444-555555555555'],
+        ['/bayar-estimasi.html?kategori=pkg_12', '/bayar-estimasi.html?kategori=pkg_12'],
         ['/bayar-estimasi.html?kategori=<script>', '/bayar-estimasi.html'],
+        ['/bayar-estimasi.html?kategori=A', '/bayar-estimasi.html'],
+        ['/bayar-estimasi.html?kategori=../x', '/bayar-estimasi.html'],
         ['//evil.example/bayar-estimasi.html', null],
         ['https://evil.example/bayar-estimasi.html', null],
         ['/\\evil.example', null],
@@ -207,12 +273,46 @@ describe('login return path and review login page', () => {
         expect(script).not.toMatch(/amount_idr:\s*state/);
     });
 
-    test('the booking success screen offers prepay only when the server says the patient can pay', () => {
+    test('the booking page offers the package estimate and the pay-now choice only when the server allows it', () => {
         const booking = read('public', 'booking-klinik.html');
-        expect(booking).toContain('async function findPrepayOption(category)');
+        expect(booking).not.toMatch(/findPrepayOption/);
+        expect(booking).toContain('loadPrepayOffer(');
         expect(booking).toContain('/api/patient/checkup-prepay/status');
-        expect(booking).toContain('if (!status.availability?.available || !estimate) return null;');
-        expect(booking).toContain('Bayar estimasi di muka (opsional)');
+        expect(booking).toContain('/api/patient/checkup-prepay/suggestion');
+        expect(booking).toContain('prepay-package-select');
+        expect(booking).toContain('availability?.available');
+        expect(booking).toContain('bookingData.prepayPackageCode');
+        expect(booking).toContain("'booking-prepay-package'");
+        for (const copy of [
+            'Perkiraan biaya kunjungan',
+            'Pilih paket sesuai usia kehamilan',
+            'Mau bayar sekarang?',
+            'Bayar sekarang (QRIS / VA)',
+            'Bayar saat periksa',
+            'sudah menutup estimasi',
+            'bayar di muka (deposit)',
+            'otomatis dipotong',
+            'bisa dicairkan'
+        ]) {
+            expect(booking).toContain(copy);
+        }
+        expect(booking).toContain('/bayar-estimasi.html?kategori=');
         expect(booking).toContain("window.location.href = '/patient-menu.html';");
+    });
+
+    test('the booking POST body keeps exactly its old keys and carries no package fields', () => {
+        const booking = read('public', 'booking-klinik.html');
+        const body = booking.match(/body: JSON\.stringify\(\{([\s\S]*?)\}\)\s*\}\);/)[1];
+        const keys = [...body.matchAll(/^\s*([a-z_]+):/gm)].map(m => m[1]);
+        expect(keys).toEqual([
+            'booking_policy_acknowledged',
+            'booking_policy_version',
+            'appointment_date',
+            'session',
+            'slot_number',
+            'chief_complaint',
+            'consultation_category'
+        ]);
+        expect(body).not.toMatch(/prepay|package/i);
     });
 });

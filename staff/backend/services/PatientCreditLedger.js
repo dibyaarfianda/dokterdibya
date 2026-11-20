@@ -12,7 +12,8 @@
  * (source_type, source_id, entry_type) is UNIQUE, so one order can only credit once.
  */
 
-const { productCategory } = require('../constants/checkupPrepayProducts');
+const { productCategoryForCode, parseOrderSnapshot } = require('../constants/checkupPrepayProducts');
+const { isConsultationCategory } = require('../constants/consultationCategories');
 
 const SOURCE_PAYMENT_ORDER = 'payment_order';
 
@@ -27,7 +28,13 @@ async function creditFromPaidOrder(executor, order) {
     if (!Number.isInteger(amount) || amount <= 0) {
         throw new Error('Nominal order tidak valid untuk saldo');
     }
-    const category = productCategory(order.product_code);
+    // The category frozen in the order snapshot wins (package edits must not move paid money),
+    // then the package row, then the legacy product map.
+    const snapshot = parseOrderSnapshot(order);
+    const snapshotCategory = snapshot && typeof snapshot.category === 'string' && isConsultationCategory(snapshot.category)
+        ? snapshot.category
+        : null;
+    const category = snapshotCategory || await productCategoryForCode(executor, order.product_code);
     if (!category) {
         throw new Error('Order bayar di muka tanpa kategori tidak bisa menjadi saldo');
     }
@@ -259,6 +266,60 @@ async function recordRefundRows(connection, { refundId, patientId, plan, actor }
     return planTotal(plan);
 }
 
+// ---------------------------------------------------------------------------
+// Tahap 3. A pending withdrawal request (patient_credit_refund_requests) holds its amount:
+// every spend of live saldo uses live - hold. Lock order everywhere: lockLiveBalances(patient)
+// first, then the pending request rows FOR UPDATE, then ledger/refund writes.
+// ---------------------------------------------------------------------------
+
+/**
+ * Pending withdrawal requests of one patient. Inside a transaction pass forUpdate: under
+ * REPEATABLE READ a plain read can miss a request committed after the transaction's snapshot.
+ * A server without the table (migration not run yet) has no requests.
+ * @returns {Promise<Array<{id:number, amount_idr:number, request_key:string}>>}
+ */
+async function getPendingRefundRequests(executor, patientId, { forUpdate = false } = {}) {
+    try {
+        const [rows] = await executor.query(
+            `SELECT id, amount_idr, request_key
+               FROM patient_credit_refund_requests
+              WHERE patient_id = ? AND status = 'pending'
+              ORDER BY id${forUpdate ? ' FOR UPDATE' : ''}`,
+            [patientId]
+        );
+        return (rows || []).map(row => ({ id: Number(row.id), amount_idr: toInt(row.amount_idr), request_key: row.request_key }));
+    } catch (error) {
+        if (error && error.code === 'ER_NO_SUCH_TABLE') return [];
+        throw error;
+    }
+}
+
+/**
+ * Sum of the patient's pending withdrawal amounts. `excludeRequestId` leaves one request out
+ * (completing that very request may spend its own hold).
+ * @returns {Promise<number>}
+ */
+async function getPendingRefundHold(executor, patientId, { forUpdate = false, excludeRequestId = null } = {}) {
+    const pending = await getPendingRefundRequests(executor, patientId, { forUpdate });
+    const excluded = excludeRequestId === null || excludeRequestId === undefined ? null : String(excludeRequestId);
+    return pending
+        .filter(row => String(row.id) !== excluded)
+        .reduce((sum, row) => sum + Math.max(0, row.amount_idr), 0);
+}
+
+/** Any ledger row (any gateway mode) or any withdrawal request: the patient has saldo history. */
+async function hasSaldoHistory(executor, patientId) {
+    for (const table of ['patient_credit_ledger', 'patient_credit_refund_requests']) {
+        try {
+            const [rows] = await executor.query(`SELECT 1 FROM ${table} WHERE patient_id = ? LIMIT 1`, [patientId]);
+            if (rows && rows.length) return true;
+        } catch (error) {
+            if (!error || error.code !== 'ER_NO_SUCH_TABLE') throw error;
+        }
+    }
+    return false;
+}
+
 /**
  * Deleting a record or a patient must not erase money history. Refuses a record whose
  * main bill was paid with saldo, and a patient with any live saldo row.
@@ -308,5 +369,8 @@ module.exports = {
     getReturnCredits,
     recordReturnCredit,
     recordRefundRows,
+    getPendingRefundRequests,
+    getPendingRefundHold,
+    hasSaldoHistory,
     assertNoPrepaySaldoEvidence
 };

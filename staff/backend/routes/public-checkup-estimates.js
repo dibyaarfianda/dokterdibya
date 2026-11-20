@@ -26,7 +26,7 @@ function createPublicCheckupEstimatesRouter({ estimates, logger = defaultLogger 
     router.get('/', noStore, async (req, res) => {
         try {
             const result = await service().priceAll();
-            const categories = result.categories.filter(category => category.ready).map(toPublicEstimate);
+            const categories = result.packages.filter(entry => entry.ready).map(toPublicEstimate);
             res.json({ success: true, categories, priced_at: result.priced_at });
         } catch (error) {
             logger.error('[PublicCheckupEstimates] Failed to price estimates', { message: error.message });

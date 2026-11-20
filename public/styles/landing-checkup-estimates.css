@@ -26,10 +26,38 @@
     line-height: 1.6;
     color: var(--text-secondary, #525252);
 }
+.checkup-estimates .ce-groups {
+    margin: 18px 0 14px;
+}
+.checkup-estimates .ce-group + .ce-group {
+    margin-top: 22px;
+}
+.checkup-estimates .ce-group-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted, #666666);
+}
+.checkup-estimates .ce-fallback {
+    margin: 18px 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--text-muted, #666666);
+}
+.checkup-estimates .ce-fallback[hidden] {
+    display: none;
+}
+.checkup-estimates .ce-card .ce-weeks {
+    font-size: 12px;
+    font-weight: 600;
+}
 .checkup-estimates .ce-grid {
     display: grid;
     gap: 12px;
-    margin: 18px 0 14px;
+    margin: 10px 0 0;
 }
 .checkup-estimates .ce-card {
     display: flex;
@@ -40,7 +68,7 @@
     border-radius: var(--radius, 14px);
     background: var(--bg-surface, #ffffff);
 }
-.checkup-estimates .ce-card h3 {
+.checkup-estimates .ce-card h4 {
     margin: 0;
     font-size: 16px;
     color: var(--text-primary, #0a0a0a);
@@ -56,11 +84,6 @@
     font-size: 22px;
     font-weight: 700;
     color: var(--text-primary, #0a0a0a);
-}
-.checkup-estimates .ce-card.is-unavailable .ce-amount {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-muted, #666666);
 }
 .checkup-estimates .ce-items {
     margin: 0;

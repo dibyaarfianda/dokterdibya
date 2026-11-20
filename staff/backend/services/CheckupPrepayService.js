@@ -25,7 +25,7 @@ const {
     FALLBACK_EMAIL
 } = require('./PremiumPaymentService');
 const { CONSULTATION_CATEGORIES } = require('../constants/consultationCategories');
-const { isCheckupPrepayProduct, productCategory, productLabel } = require('../constants/checkupPrepayProducts');
+const { isPackageCodeFormat, productCategory, orderLabel, parseOrderSnapshot } = require('../constants/checkupPrepayProducts');
 const { toPublicEstimate } = require('./CheckupEstimateService');
 
 const ORDER_TYPE = 'checkup_prepay';
@@ -36,12 +36,17 @@ const MS_PER_MINUTE = 60 * 1000;
 function toPublicOrder(order, methods) {
     if (!order) return null;
     const method = methods[order.payment_method] || {};
+    const snapshot = parseOrderSnapshot(order);
+    const saldoCategory = (snapshot && typeof snapshot.category === 'string' && snapshot.category)
+        || productCategory(order.product_code)
+        || order.product_code;
+    const label = orderLabel(order);
     return {
         order_ref: order.order_ref,
         product: order.product_code,
-        category: productCategory(order.product_code) || order.product_code,
-        category_label: productLabel(order.product_code),
-        saldo_label: CONSULTATION_CATEGORIES[productCategory(order.product_code)] || productLabel(order.product_code),
+        category: saldoCategory,
+        category_label: label,
+        saldo_label: CONSULTATION_CATEGORIES[saldoCategory] || label,
         amount_idr: Number(order.amount_idr),
         payment_method: order.payment_method,
         method_label: method.label || order.payment_method,
@@ -104,7 +109,7 @@ function createCheckupPrepayService({
     async function createOrder({ patient, category, paymentMethod }) {
         const method = methods[paymentMethod];
         if (!method) throw new PremiumError('INVALID_METHOD', 'Metode pembayaran tidak valid', 400);
-        if (!isCheckupPrepayProduct(category)) throw new PremiumError('INVALID_CATEGORY', 'Kategori kunjungan tidak valid', 400);
+        if (!isPackageCodeFormat(category)) throw new PremiumError('INVALID_CATEGORY', 'Kategori kunjungan tidak valid', 400);
 
         const availability = await getAvailability(patient.id);
         if (!availability.available) {
@@ -114,10 +119,9 @@ function createCheckupPrepayService({
             throw new PremiumError('PREPAY_NOT_AVAILABLE', 'Pembayaran di muka segera tersedia.', 403);
         }
 
-        const priced = await estimates.priceCategory(category);
-        const estimate = priced.category;
-        if (!estimate || !estimate.ready) {
-            throw new PremiumError('ESTIMATE_NOT_READY', 'Estimasi untuk kategori ini belum tersedia.', 409);
+        const estimate = await estimates.pricePackageByCode(category);
+        if (!estimate || !estimate.ready || estimate.is_active === false) {
+            throw new PremiumError('PACKAGE_UNAVAILABLE', 'Paket tidak tersedia', 404);
         }
         const amount = estimate.amount_idr;
         const now = clock();
@@ -143,11 +147,12 @@ function createCheckupPrepayService({
         const expiryMinutes = method.type === 'qris' ? QRIS_EXPIRY_MINUTES : VA_EXPIRY_MINUTES;
         const expiresAt = new Date(now.getTime() + expiryMinutes * MS_PER_MINUTE);
         const snapshot = {
-            mapping_version: priced.mapping && priced.mapping.version,
-            mapping_updated_at: priced.mapping && priced.mapping.updated_at,
-            priced_at: priced.priced_at,
-            raw_total: estimate.raw_total,
-            items: estimate.items
+            package_code: estimate.code,
+            package_name: estimate.name,
+            category: estimate.category,
+            items: estimate.items,
+            amount_idr: amount,
+            priced_at: now
         };
 
         // Insert before calling Duitku so a callback can always find the order.
@@ -165,7 +170,7 @@ function createCheckupPrepayService({
                 orderRef,
                 amount,
                 methodCode: method.code,
-                productDetails: `Estimasi kunjungan Klinik Privat - ${estimate.label}`,
+                productDetails: `Estimasi kunjungan Klinik Privat - ${estimate.name}`,
                 email: patient.email || environment().DUITKU_FALLBACK_EMAIL || FALLBACK_EMAIL,
                 customerName: patient.name,
                 phone: patient.phone,
@@ -186,7 +191,7 @@ function createCheckupPrepayService({
             [transaction.reference, transaction.vaNumber, transaction.qrString, transaction.paymentUrl, orderRef]
         );
         await recordEvent(orderRef, patient.id, 'order_created', {
-            order_type: ORDER_TYPE, category: productCategory(category), product: category, method: paymentMethod, amount, gateway_mode: availability.mode
+            order_type: ORDER_TYPE, category: estimate.category, product: category, method: paymentMethod, amount, gateway_mode: availability.mode
         });
 
         const [created] = await db.query('SELECT * FROM payment_orders WHERE order_ref = ? LIMIT 1', [orderRef]);
@@ -205,17 +210,29 @@ function createCheckupPrepayService({
         const availability = await getAvailability(patientId);
         const priced = await estimates.priceAll();
         const balances = await ledger.getBalances(patientId, { db });
+        // Tahap 3: saldo under a pending withdrawal request is held (plain read: display only).
+        const live = balances
+            .filter(row => row.gateway_mode === 'live')
+            .reduce((sum, row) => sum + Math.max(0, Math.trunc(Number(row.balance_idr) || 0)), 0);
+        const hold = live > 0 ? await ledger.getPendingRefundHold(db, patientId) : 0;
+        // "Saldo Deposit" menu: shown to whoever can pay now or already has any saldo history.
+        const saldoMenuVisible = Boolean(availability.available)
+            || balances.length > 0
+            || await ledger.hasSaldoHistory(db, patientId);
         const [orders] = await db.query(
             'SELECT * FROM payment_orders WHERE patient_id = ? AND order_type = ? ORDER BY created_at DESC LIMIT 5',
             [patientId, ORDER_TYPE]
         );
         return {
             availability,
-            estimates: priced.categories.map(toPublicEstimate),
+            // Not-ready packages (drafts, broken items) are hidden from patients.
+            estimates: priced.packages.filter(item => item.ready).map(toPublicEstimate),
             balances: balances.map(row => ({
                 ...row,
                 category_label: CONSULTATION_CATEGORIES[row.category] || row.category
             })),
+            available_idr: Math.max(0, live - hold),
+            saldo_menu_visible: saldoMenuVisible,
             orders: orders.map(order => toPublicOrder(order, methods)),
             payment_methods: paymentMethodList()
         };

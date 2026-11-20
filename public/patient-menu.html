@@ -9,10 +9,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#ffffff">
     <title>Portal Pasien - SISIwanita</title>
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20261120prepay2">
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20261122paket1">
     <script>
-        window.PATIENT_SHELL_VERSION = '20261120prepay2';
-        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20261120prepay2';
+        window.PATIENT_SHELL_VERSION = '20261122paket1';
+        window.PATIENT_SERVICE_WORKER_URL = '/sw.js?v=20261122paket1';
     </script>
     <link rel="icon" type="image/png" href="/images/pwa-icons/sw2v8-any-192x192.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/images/pwa-icons/sw2v8-any-180.png">
@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/styles/patient-my-corner.css?v=20260606roomthemes">
     <script src="/scripts/socket-credentials.js?v=20261020applicationbadge1"></script>
-    <script src="/scripts/patient-session.js?v=20261120prepay2"></script>
+    <script src="/scripts/patient-session.js?v=20261122paket1"></script>
     <script src="/scripts/patient-native-app-guard.js?v=20260605pwa1"></script>
     <style>
         :root {
@@ -1498,6 +1498,8 @@
             overflow: hidden;
             transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
         }
+        #menu-saldo-deposit[hidden] { display: none !important; }
+        a.tap-card { text-decoration: none; }
         .tap-card:hover { transform: translateY(-2px); box-shadow: 0 12px 26px rgba(17,17,17,0.08); border-color: var(--line-strong); }
         .tap-card .icon {
             width: 38px;
@@ -3106,6 +3108,10 @@
                         <span class="icon community-color"><i class="fa-solid fa-users"></i></span>
                         <span><h3>Chat Komunitas</h3><p>Ruang ngobrol pasien</p></span>
                     </button>
+                    <a class="tap-card soundable" id="menu-saldo-deposit" href="/saldo-saya.html" data-shell-action="go" data-shell-href="/saldo-saya.html" hidden>
+                        <span class="icon doc-color"><i class="fa-solid fa-wallet"></i></span>
+                        <span><h3>Saldo Deposit</h3><p>Saldo bayar di muka</p></span>
+                    </a>
                     <button class="tap-card soundable" data-shell-action="open-bug-report-modal">
                         <span class="icon report-color"><i class="fa-solid fa-bug"></i></span>
                         <span><h3>Lapor Bug/Error</h3><p>Pengembangan Portal</p></span>
@@ -3309,8 +3315,29 @@
     </div>
 
     <script src="/scripts/booking-break-display.js?v=20260923-1"></script>
-    <script type="module" src="/scripts/patient-menu-shell.js?v=20261120prepay2"></script>
+    <script type="module" src="/scripts/patient-menu-shell.js?v=20261122paket1"></script>
 
-<script type="module" src="/scripts/patient-inbox-badge.js?v=20261120prepay2"></script>
+<script type="module" src="/scripts/patient-inbox-badge.js?v=20261122paket1"></script>
+<script>
+    // Show the "Saldo Deposit" entry only when the server says the patient has, or can start, a deposit.
+    (function showSaldoDepositEntry() {
+        var link = document.getElementById('menu-saldo-deposit');
+        var session = window.PatientSession;
+        if (!link || !session || !session.getToken() || (session.isDemoMode && session.isDemoMode())) return;
+        var controller = window.AbortController ? new AbortController() : null;
+        var timer = window.setTimeout(function () { if (controller) controller.abort(); }, 2500);
+        fetch('/api/patient/checkup-prepay/status?_t=' + Date.now(), {
+            headers: { Authorization: 'Bearer ' + session.getToken(), 'Cache-Control': 'no-cache' },
+            cache: 'no-store',
+            signal: controller ? controller.signal : undefined
+        }).then(function (response) {
+            return response.ok ? response.json() : null;
+        }).then(function (status) {
+            if (status && status.saldo_menu_visible === true) link.hidden = false;
+        }).catch(function () { /* stays hidden */ }).then(function () {
+            window.clearTimeout(timer);
+        });
+    })();
+</script>
 </body>
 </html>

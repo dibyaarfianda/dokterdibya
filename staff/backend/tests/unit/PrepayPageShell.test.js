@@ -61,12 +61,99 @@ describe('Pembayaran di Muka page shell', () => {
         const mod = moduleSource();
         expect(mod).toContain("hasAccountPermission?.('billing.reset')");
         expect(mod).toContain("hasAccountPermission?.('checkup_prepay.manage_estimate')");
+        expect(mod).toContain("hasAccountPermission?.('billing.view')");
         expect(mod).toContain('Uji (sandbox)');
         expect(mod + fragment()).toContain('Catat setelah uang diserahkan; sistem tidak mengirim uang');
         expect(mod).toContain('Belum siap: kartu tidak tampil di halaman utama');
         expect(mod).toContain('prepay-refund-key:');
         expect(mod).toContain('crypto.randomUUID()');
         expect(mod).toContain('window.showPatientDetail');
+    });
+
+    test('the Paket and Pencairan tabs replace Harga Estimasi', () => {
+        const frag = fragment();
+        const mod = moduleSource();
+        expect(frag).toContain('id="prepay-panel-packages"');
+        expect(frag).toContain('id="prepay-panel-refund-requests"');
+        expect(frag).not.toContain('Harga Estimasi');
+        expect(mod).not.toContain('Harga Estimasi');
+        expect(mod + frag).not.toContain('/estimate-mapping');
+        expect(mod).toContain('/packages');
+        expect(mod).toContain('/refund-requests');
+        expect(mod).toContain('dihitung dari harga saat ini');
+        expect(mod).toContain('Paket lain di minggu yang sama');
+        expect(mod).toContain('+ Tambah tindakan');
+        expect(mod).toContain('+ Tambah obat');
+        const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
+        for (const name of ['prepayLoadPackages', 'prepayEditPackage', 'prepayAddPackageItem', 'prepayRemovePackageItem',
+            'prepaySavePackage', 'prepayTogglePackage', 'prepayLoadRefundRequests', 'prepayCompleteRefundRequest', 'prepayRejectRefundRequest']) {
+            expect(bootstrap).toContain(`'${name}'`);
+        }
+        expect(bootstrap).not.toContain("'prepayLoadMapping'");
+    });
+
+    test('Pencairan rows: nama berbeda badge, transfer and reject behind billing.reset, fixed confirm copy', () => {
+        const mod = moduleSource();
+        expect(mod).toContain('nama berbeda');
+        expect(mod).toContain('Sudah ditransfer');
+        expect(mod).toContain('Tolak');
+        expect(mod).toContain('sudah ditransfer ke');
+        expect(mod).toContain('window.prompt(');
+        // each server string in the rows goes through escapeHtml
+        expect(mod).toContain('escapeHtml(row.bank_name');
+        expect(mod).toContain('escapeHtml(row.account_holder');
+        expect(mod).toContain('escapeHtml(row.account_number');
+    });
+
+    test('the paid toast also announces withdrawal requests and refreshes the red dots', () => {
+        const toast = read('staff', 'public', 'scripts', 'shell', 'prepay-paid-toast.js');
+        expect(toast).toContain('checkup_prepay_refund_requested');
+        expect(toast).toContain('Pengajuan pencairan saldo: ');
+        expect(read('staff', 'public', 'scripts', 'shell', 'menu-new-badges.js')).toContain("'checkup_prepay_refund_requested'");
+    });
+
+    test('the package editor never sends the admin line (tindakan 1) as an item', () => {
+        const vm = require('vm');
+        const source = moduleSource();
+        const start = source.indexOf('// <editor-item-helpers>');
+        const end = source.indexOf('// </editor-item-helpers>');
+        expect(start).toBeGreaterThan(-1);
+        const api = vm.runInNewContext(`${source.slice(start, end).replace(/export /g, '')};({ editorItemsFromPriced, payloadItems })`, {});
+        const priced = [
+            { item_type: 'tindakan', ref_id: 1, name: 'Admin', quantity: 1 },
+            { item_type: 'tindakan', ref_id: 9, quantity: 1 },
+            { item_type: 'obat', ref_id: 1, quantity: 2 },
+            { item_type: 'obat', ref_id: 77, quantity: 30 }
+        ];
+        expect(JSON.parse(JSON.stringify(api.editorItemsFromPriced(priced, 1)))).toEqual([
+            { item_type: 'tindakan', ref_id: 9, quantity: 1 },
+            { item_type: 'obat', ref_id: 1, quantity: 2 },
+            { item_type: 'obat', ref_id: 77, quantity: 30 }
+        ]);
+        expect(api.editorItemsFromPriced(priced, undefined).some(item => item.item_type === 'tindakan' && item.ref_id === 1)).toBe(false);
+        // The payload builder is a second guard: even a state holding the admin line does not send it.
+        expect(JSON.parse(JSON.stringify(api.payloadItems(priced, 1))).map(item => `${item.item_type}:${item.ref_id}`)).toEqual(['tindakan:9', 'obat:1', 'obat:77']);
+    });
+
+    test('editing a package starts from its STORED items so a problem item is not silently dropped', () => {
+        const source = moduleSource();
+        // call site: the editor rows come from stored_items, never from the priced items
+        expect(source).toContain('editorItemsFromPriced(existing.stored_items, packageState.catalog?.admin?.id)');
+        expect(source).not.toContain('editorItemsFromPriced(existing.items');
+        const vm = require('vm');
+        const start = source.indexOf('// <editor-item-helpers>');
+        const end = source.indexOf('// </editor-item-helpers>');
+        const api = vm.runInNewContext(`${source.slice(start, end).replace(/export /g, '')};({ editorItemsFromPriced, payloadItems })`, {});
+        // priced items lack the inactive obat #12; the stored items still carry it
+        const existing = {
+            items: [{ item_type: 'tindakan', ref_id: 1, quantity: 1 }, { item_type: 'tindakan', ref_id: 9, quantity: 1 }],
+            stored_items: [{ item_type: 'tindakan', ref_id: 9, quantity: 1, sort_order: 0 }, { item_type: 'obat', ref_id: 12, quantity: 3, sort_order: 1 }]
+        };
+        const rows = api.editorItemsFromPriced(existing.stored_items, 1);
+        expect(JSON.parse(JSON.stringify(api.payloadItems(rows, 1)))).toEqual([
+            { item_type: 'tindakan', ref_id: 9, quantity: 1 },
+            { item_type: 'obat', ref_id: 12, quantity: 3 }
+        ]);
     });
 
     test('the orders table shows the order ref (spec §8 columns)', () => {
@@ -88,7 +175,8 @@ describe('Pembayaran di Muka page shell', () => {
         const { MENU_ACTIVITY_SOURCES } = require('../../config/menu-activity-sources');
         const { STAFF_NAVIGATION_MAP } = require('../../config/accessControlRegistry');
         expect(MENU_ACTIVITY_SOURCES['nav-prepay']).toEqual([
-            { table: 'payment_orders', where: "order_type = 'checkup_prepay' AND status = 'paid'", columns: ['paid_at'] }
+            { table: 'payment_orders', where: "order_type = 'checkup_prepay' AND status = 'paid'", columns: ['paid_at'] },
+            { table: 'patient_credit_refund_requests', columns: ['created_at'] }
         ]);
         expect(STAFF_NAVIGATION_MAP['nav-prepay']).toBe('billing.view');
     });

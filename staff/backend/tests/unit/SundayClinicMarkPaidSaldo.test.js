@@ -23,6 +23,7 @@ jest.mock('../../services/PatientCreditLedger', () => ({
     planUsage: jest.fn(),
     recordUsage: jest.fn(),
     getLiveBalances: jest.fn(async () => []),
+    getPendingRefundHold: jest.fn(async () => 0),
     getUsageForBillings: jest.fn(async () => new Map())
 }));
 
@@ -105,7 +106,8 @@ describe('mark-paid with prepay saldo', () => {
         Ledger.planUsage.mockReturnValue([{ category: 'obstetri', amount_idr: 255000 }]);
         const res = await markPaid({ expected_prepay_idr: 255000 });
         expect(res.statusCode).toBe(200);
-        expect(Ledger.planUsage).toHaveBeenCalledWith([{ category: 'obstetri', balance_idr: 255000 }], 365000, 'obstetri');
+        // Tahap 3: the amount planned is min(floor(total), live - hold) = min(365000, 255000).
+        expect(Ledger.planUsage).toHaveBeenCalledWith([{ category: 'obstetri', balance_idr: 255000 }], 255000, 'obstetri');
         expect(Ledger.recordUsage).toHaveBeenCalledWith(expect.anything(), {
             billingId: 55, patientId: 'P1', plan: [{ category: 'obstetri', amount_idr: 255000 }], actor: 'Kasir'
         });
@@ -170,6 +172,49 @@ describe('mark-paid with prepay saldo', () => {
         expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'lost connection' }));
         expect(lockConnection.rollback).toHaveBeenCalled();
         expect(lockConnection.commit).not.toHaveBeenCalled();
+    });
+
+    test('Review Focus 3: a pending withdrawal request holds its amount, read under the saldo lock', async () => {
+        const lockConnection = setup();
+        Ledger.getPendingRefundHold.mockImplementationOnce(async () => { calls.push('hold'); return 200000; });
+        Ledger.planUsage.mockImplementation((_balances, amount) => [{ category: 'obstetri', amount_idr: amount }]);
+
+        const stale = await markPaid({ expected_prepay_idr: 255000 });
+        expect(stale.statusCode).toBe(409);
+        expect(stale.json).toHaveBeenCalledWith({ success: false, message: SALDO_CHANGED });
+        expect(Ledger.planUsage).toHaveBeenCalledWith([{ category: 'obstetri', balance_idr: 255000 }], 55000, 'obstetri');
+        expect(Ledger.getPendingRefundHold).toHaveBeenCalledWith(lockConnection, 'P1', { forUpdate: true });
+        expect(calls.slice(0, 2)).toEqual(['lock-saldo', 'hold']);
+        expect(Ledger.recordUsage).not.toHaveBeenCalled();
+
+        setup();
+        Ledger.getPendingRefundHold.mockResolvedValueOnce(200000);
+        const res = await markPaid({ expected_prepay_idr: 55000 });
+        expect(res.statusCode).toBe(200);
+        expect(Ledger.recordUsage).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+            plan: [{ category: 'obstetri', amount_idr: 55000 }]
+        }));
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ prepay: { deduct_idr: 55000, remaining_due_idr: 310000 } }));
+    });
+
+    test('a patient without live saldo never reads the hold (no extra locks)', async () => {
+        setup();
+        Ledger.lockLiveBalances.mockImplementationOnce(async () => []);
+        Ledger.planUsage.mockReturnValue([]);
+        const res = await markPaid({});
+        expect(res.statusCode).toBe(200);
+        expect(Ledger.getPendingRefundHold).not.toHaveBeenCalled();
+        expect(Ledger.planUsage).toHaveBeenCalledWith([], 0, 'obstetri');
+    });
+
+    test('a hold as large as the live saldo leaves nothing to deduct', async () => {
+        setup();
+        Ledger.getPendingRefundHold.mockResolvedValueOnce(255000);
+        Ledger.planUsage.mockImplementation((_balances, amount) => (amount > 0 ? [{ category: 'obstetri', amount_idr: amount }] : []));
+        const res = await markPaid({});
+        expect(res.statusCode).toBe(200);
+        expect(Ledger.planUsage).toHaveBeenCalledWith(expect.any(Array), 0, 'obstetri');
+        expect(Ledger.recordUsage).not.toHaveBeenCalled();
     });
 
     test('a zero total bill needs no expected amount and records nothing', async () => {

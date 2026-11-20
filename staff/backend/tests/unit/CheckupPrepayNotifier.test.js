@@ -33,6 +33,13 @@ describe('notifyPrepayPaid', () => {
         }));
     });
 
+    test('labels an editable package by the name frozen in the order snapshot', async () => {
+        const realtime = { broadcast: jest.fn() };
+        const packageOrder = { ...order, product_code: 'pkg_7', item_snapshot: JSON.stringify({ package_name: 'Paket Trimester 1' }) };
+        await notifyPrepayPaid(packageOrder, null, { db: { query: jest.fn(async () => [[]]) }, realtime });
+        expect(realtime.broadcast).toHaveBeenCalledWith(expect.objectContaining({ product: 'pkg_7', productLabel: 'Paket Trimester 1' }));
+    });
+
     test('falls back to the patient id when the name is missing', async () => {
         const realtime = { broadcast: jest.fn() };
         await notifyPrepayPaid(order, null, { db: { query: jest.fn(async () => [[]]) }, realtime });

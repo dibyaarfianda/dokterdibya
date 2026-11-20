@@ -21,7 +21,8 @@ function createFakeDb(initial = {}) {
         orders: initial.orders || [],
         entitlements: initial.entitlements || [],
         ledger: [],
-        events: []
+        events: [],
+        packages: initial.packages || []
     };
     let nextOrderId = 1;
     let nextEntitlementId = 1;
@@ -106,6 +107,12 @@ function createFakeDb(initial = {}) {
             state.ledger.push({ patient_id: patientId, category, entry_type: 'prepay', amount_idr: amount, gateway_mode: gatewayMode, source_type: sourceType, source_id: sourceId, note });
             return [{}];
         }
+        if (/FROM checkup_prepay_packages WHERE code = \? LIMIT 1/.test(sql)) {
+            return [state.packages.filter(pkg => pkg.code === params[0])];
+        }
+        if (/FROM checkup_prepay_package_items WHERE package_id IN/.test(sql)) {
+            return [[]];
+        }
         if (/^INSERT INTO premium_payment_events/.test(sql)) {
             state.events.push({ order_ref: params[0], patient_id: params[1], event_type: params[2], detail: params[3] ? JSON.parse(params[3]) : null });
             return [{}];
@@ -170,8 +177,8 @@ function plan(overrides = {}) {
     return { id: 1, code: 'kehamilan', name: 'Paket Kehamilan', description: 'x', price_idr: 99000, duration_days: 365, features: '[]', is_active: 1, sort_order: 10, ...overrides };
 }
 
-function setup({ plans = [plan()], orders, entitlementRows, configured = true, startAt = T0, fulfillers, onPrepayPaid } = {}) {
-    const fake = createFakeDb({ plans, orders, entitlements: entitlementRows });
+function setup({ plans = [plan()], orders, entitlementRows, packages, configured = true, startAt = T0, fulfillers, onPrepayPaid } = {}) {
+    const fake = createFakeDb({ plans, orders, entitlements: entitlementRows, packages });
     const clockState = { now: startAt };
     const duitku = {
         PAYMENT_METHODS,
@@ -731,8 +738,41 @@ describe('non-premium Duitku orders (checkup prepay)', () => {
         expect(result.grant).toMatchObject({ category: 'obstetri', product: 'obstetri_usg4d', credit_idr: 365000 });
     });
 
+    describe('category taken from the order snapshot', () => {
+        const { clearPackageCategoryCache = () => {} } = require('../../constants/checkupPrepayProducts');
+        const pkgRow = (overrides = {}) => ({ id: 7, code: 'pkg_7', name: 'Paket 7', description: null, category: 'obstetri', week_min: null, week_max: null, is_active: 0, sort_order: 10, ...overrides });
+        beforeEach(() => clearPackageCategoryCache());
+
+        test('a legacy order without a snapshot category still credits obstetri', async () => {
+            const ctx = setup({ orders: [prepayOrder({ product_code: 'obstetri_usg4d', amount_idr: 365000, item_snapshot: '{"raw_total":365000}' })], fulfillers: { checkup_prepay: creditFromPaidOrder } });
+            await ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 365000 });
+            expect(ctx.fake.state.ledger).toEqual([expect.objectContaining({ category: 'obstetri', amount_idr: 365000 })]);
+        });
+
+        test('a package order credits the snapshot category even if the package is now inactive and moved', async () => {
+            const ctx = setup({
+                orders: [prepayOrder({ product_code: 'pkg_7', item_snapshot: JSON.stringify({ package_code: 'pkg_7', category: 'gyn_repro' }) })],
+                packages: [pkgRow({ category: 'obstetri', is_active: 0 })],
+                fulfillers: { checkup_prepay: creditFromPaidOrder }
+            });
+            const result = await ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 });
+            expect(ctx.fake.state.ledger).toEqual([expect.objectContaining({ category: 'gyn_repro', amount_idr: 150000 })]);
+            expect(result.grant).toMatchObject({ category: 'gyn_repro', product: 'pkg_7' });
+        });
+
+        test('a snapshot without a category falls back to the package row', async () => {
+            const ctx = setup({
+                orders: [prepayOrder({ product_code: 'pkg_7', item_snapshot: '{"raw_total":150000}' })],
+                packages: [pkgRow({ category: 'gyn_special' })],
+                fulfillers: { checkup_prepay: creditFromPaidOrder }
+            });
+            await ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 });
+            expect(ctx.fake.state.ledger).toEqual([expect.objectContaining({ category: 'gyn_special' })]);
+        });
+    });
+
     test('an order whose product maps to no saldo category is rolled back', async () => {
-        const ctx = setup({ orders: [prepayOrder({ product_code: 'tidak_ada' })], fulfillers: { checkup_prepay: creditFromPaidOrder } });
+        const ctx = setup({ orders: [prepayOrder({ product_code: 'tidak_ada', item_snapshot: '{"package_code":"tidak_ada"}' })], fulfillers: { checkup_prepay: creditFromPaidOrder } });
         await expect(ctx.service.applyPaidOrder(PREPAY_REF, { source: 'callback', amount: 150000 })).rejects.toThrow(/kategori/);
         expect(ctx.fake.state.orders[0].status).toBe('pending');
         expect(ctx.fake.state.ledger).toHaveLength(0);

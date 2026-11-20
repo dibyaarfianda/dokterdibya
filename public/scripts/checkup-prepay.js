@@ -17,8 +17,8 @@
 
     var root = document.getElementById('prepay-app');
     var heroStatus = document.getElementById('prepay-hero-status');
-    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261120prepay2';
-    var CATEGORY_PATTERN = /^(?:obstetri|obstetri_usg4d|gyn_repro|gyn_special)$/;
+    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261122paket1';
+    var CATEGORY_PATTERN = /^[a-z0-9_]{2,40}$/;
     var ORDER_PATTERN = /^DPK-[0-9a-f-]{36}$/i;
     var POLL_FAST_MS = 3000;
     var POLL_MEDIUM_MS = 10000;
@@ -39,6 +39,7 @@
         methods: [],
         orders: [],
         selectedCategory: requestedCategory,
+        packageUnavailable: false,
         selectedMethod: 'qris',
         order: null,
         view: 'overview',
@@ -227,7 +228,8 @@
         }
         var available = state.availability.available;
         var selected = estimateFor(state.selectedCategory);
-        if (!selected || !selected.ready) {
+        // Never swap a requested package for another one; an unavailable request is handled in renderOverview.
+        if ((!selected || !selected.ready) && !requestedCategory) {
             selected = state.estimates.find(function (item) { return item.ready; }) || null;
             state.selectedCategory = selected ? selected.code : '';
         }
@@ -276,7 +278,43 @@
             '</div></section>';
     }
 
+    // The linked package (?kategori=) is missing or inactive, or checkout said so: no pay button,
+    // only a way back home. Built with DOM APIs so no server string reaches innerHTML.
+    function isPackageUnavailable() {
+        if (state.packageUnavailable) return true;
+        if (!requestedCategory) return false;
+        var requested = estimateFor(requestedCategory);
+        return !requested || !requested.ready;
+    }
+
+    function renderPackageUnavailable() {
+        var section = document.createElement('section');
+        section.className = 'section reveal';
+        var panel = document.createElement('div');
+        panel.className = 'tool-panel pm-panel';
+        var heading = document.createElement('h3');
+        heading.className = 'pm-heading';
+        heading.textContent = 'Paket tidak tersedia';
+        var note = document.createElement('p');
+        note.className = 'pm-note';
+        note.textContent = 'Paket yang Anda pilih tidak tersedia saat ini. Silakan pilih paket lain di halaman utama.';
+        var link = document.createElement('a');
+        link.className = 'pm-btn secondary';
+        link.setAttribute('href', '/');
+        link.textContent = 'Kembali ke beranda';
+        panel.appendChild(heading);
+        panel.appendChild(note);
+        panel.appendChild(link);
+        section.appendChild(panel);
+        root.textContent = '';
+        root.appendChild(section);
+    }
+
     function renderOverview() {
+        if (isPackageUnavailable()) {
+            renderPackageUnavailable();
+            return;
+        }
         root.innerHTML = renderBalances() + renderPendingNotice() + renderCategories();
     }
 
@@ -520,6 +558,7 @@
             showPayment(data.order);
         } catch (error) {
             state.busy = false;
+            if (error.code === 'PACKAGE_UNAVAILABLE') state.packageUnavailable = true;
             if (error.code === 'PREPAY_NOT_AVAILABLE') state.availability = { available: false, mode: state.availability.mode, reason: 'not_open_yet' };
             state.error = error.message || 'Gagal membuat pembayaran. Silakan coba lagi.';
             renderOverview();
@@ -545,6 +584,7 @@
         var action = target.getAttribute('data-action');
         if (action === 'category') {
             state.selectedCategory = target.getAttribute('data-code');
+            state.packageUnavailable = false;
             state.error = '';
             renderOverview();
         } else if (action === 'method') {

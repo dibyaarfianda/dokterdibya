@@ -4,8 +4,9 @@
     // Where to send a patient after login. Only a short list of portal pages may be returned to,
     // and only with known query parameters, so a crafted ?next= can never send anyone off-site.
     var ALLOWED = {
+        '/saldo-saya.html': {},
         '/bayar-estimasi.html': {
-            kategori: /^(?:obstetri|obstetri_usg4d|gyn_repro|gyn_special)$/,
+            kategori: /^[a-z0-9_]{2,40}$/,
             order: /^DPK-[0-9a-f-]{36}$/i
         }
     };

@@ -1115,6 +1115,8 @@
                 </div>
             </div>
 
+            <div id="prepay-offer"></div>
+
             <div id="booking-policy-notice"></div>
             <label style="display:flex;align-items:flex-start;gap:10px;line-height:1.6;font-size:13px;cursor:pointer;">
                 <input type="checkbox" id="booking-policy-acknowledgement" required style="margin-top:4px;min-width:18px;min-height:18px;">
@@ -1178,7 +1180,8 @@
             slotTime: null,
             consultationCategory: 'obstetri',
             consultationCategoryLabel: 'Kehamilan (Obstetri)',
-            chiefComplaint: null
+            chiefComplaint: null,
+            prepayPackageCode: null
         };
 
         const categoryLabels = {
@@ -1221,27 +1224,215 @@
 
         // Link to the optional "bayar di muka" page, only when the server says this patient can pay
         // now (sandbox: review accounts only; production: after CHECKUP_PREPAY_LIVE). Never blocks booking.
-        async function findPrepayOption(category) {
-            if (!/^(?:obstetri|gyn_repro|gyn_special)$/.test(category || '')) return null;
-            if (window.PatientSession?.isDemoMode?.()) return null;
+        // Step 4 shows the package estimate; the success screen then lets the patient pay now or at the visit.
+        // Everything here is optional: any failure renders nothing and never blocks or delays the booking.
+        const PREPAY_CATEGORY_PATTERN = /^(?:obstetri|gyn_repro|gyn_special)$/;
+        const PREPAY_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        let prepayStatus = null;
+        let prepayPackages = [];
+        let prepayOfferKey = null;
+        let prepayOfferSeq = 0;
+
+        function prepayDemoMode() {
+            return !!window.PatientSession?.isDemoMode?.();
+        }
+
+        function formatRupiah(value) {
+            return 'Rp' + String(Math.round(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function formatDateIndonesian(ymd) {
+            const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || '');
+            if (!match) return '';
+            return `${Number(match[3])} ${PREPAY_MONTHS[Number(match[2]) - 1] || ''} ${match[1]}`;
+        }
+
+        async function prepayFetchJson(path) {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), 2500);
             try {
-                const response = await fetch(`/api/patient/checkup-prepay/status?_t=${Date.now()}`, {
+                const separator = path.includes('?') ? '&' : '?';
+                const response = await fetch(`${path}${separator}_t=${Date.now()}`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' },
                     cache: 'no-store',
                     signal: controller.signal
                 });
                 if (!response.ok) return null;
-                const status = await response.json();
-                const estimate = (status.estimates || []).find(item => item.code === category && item.ready);
-                if (!status.availability?.available || !estimate) return null;
-                return `/bayar-estimasi.html?kategori=${encodeURIComponent(category)}`;
+                const json = await response.json();
+                return json && json.success === false ? null : json;
             } catch (_error) {
                 return null;
             } finally {
                 clearTimeout(timer);
             }
+        }
+
+        function prepayEl(tag, text, style) {
+            const node = document.createElement(tag);
+            if (text != null) node.textContent = text;
+            if (style) node.style.cssText = style;
+            return node;
+        }
+
+        function prepayRow(label, value, style) {
+            const row = prepayEl('div', null, 'display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:4px 0;' + (style || ''));
+            row.appendChild(prepayEl('span', label));
+            row.appendChild(prepayEl('span', value, 'white-space:nowrap;'));
+            return row;
+        }
+
+        function prepayBullet(parts) {
+            const item = document.createElement('li');
+            parts.forEach(part => {
+                if (typeof part === 'string') item.appendChild(document.createTextNode(part));
+                else item.appendChild(prepayEl('strong', part.bold));
+            });
+            return item;
+        }
+
+        function clearPrepaySelection() {
+            bookingData.prepayPackageCode = null;
+            try { sessionStorage.removeItem('booking-prepay-package'); } catch (_error) { /* storage unavailable */ }
+        }
+
+        function selectedPrepayPackage() {
+            return prepayPackages.find(pkg => pkg.code === bookingData.prepayPackageCode) || null;
+        }
+
+        function storePrepaySelection(pkg) {
+            if (!pkg) { clearPrepaySelection(); return; }
+            bookingData.prepayPackageCode = pkg.code;
+            try {
+                sessionStorage.setItem('booking-prepay-package', JSON.stringify({ code: pkg.code, name: pkg.name, amount_idr: pkg.amount_idr }));
+            } catch (_error) { /* storage unavailable */ }
+        }
+
+        function renderPrepayDetail(box) {
+            box.replaceChildren();
+            const pkg = selectedPrepayPackage();
+            if (!pkg) return;
+            let itemsTotal = 0;
+            (pkg.items || []).forEach(item => {
+                itemsTotal += Number(item.subtotal_idr) || 0;
+                const quantity = Number(item.quantity) > 1 ? ` × ${item.quantity}` : '';
+                box.appendChild(prepayRow(`${item.name}${quantity}`, formatRupiah(item.subtotal_idr)));
+            });
+            const admin = Number(pkg.amount_idr) - itemsTotal;
+            if (admin > 0) box.appendChild(prepayRow('Biaya admin', formatRupiah(admin)));
+            box.appendChild(prepayRow('Estimasi', formatRupiah(pkg.amount_idr), 'font-weight:700;border-top:1px solid rgba(0,0,0,0.12);margin-top:6px;padding-top:8px;'));
+        }
+
+        function renderPrepayCard(host, suggestion, category, date) {
+            const card = prepayEl('div', null, 'border:1px solid rgba(0,0,0,0.12);border-radius:16px;padding:16px;margin:16px 0;');
+            card.id = 'prepay-offer-card';
+            card.appendChild(prepayEl('div', 'Perkiraan biaya kunjungan', 'font-weight:600;font-size:15px;'));
+
+            if (category === 'obstetri' && suggestion.weeks != null && (suggestion.source === 'hpht' || suggestion.source === 'hpl')) {
+                const origin = suggestion.source === 'hpht' ? 'HPHT' : 'HPL';
+                card.appendChild(prepayEl('div', `Usia kehamilan Anda pada ${formatDateIndonesian(date)} ± ${suggestion.weeks} minggu (dari ${origin} terakhir).`, 'font-size:13px;margin:6px 0 10px;opacity:0.8;'));
+            }
+
+            const select = document.createElement('select');
+            select.id = 'prepay-package-select';
+            select.style.cssText = 'width:100%;max-width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid rgba(0,0,0,0.2);font-size:14px;margin-bottom:8px;background:#fff;color:inherit;';
+            const suggested = suggestion.suggested_code || null;
+            const single = suggestion.packages.length === 1 && category !== 'obstetri';
+            const preselect = (suggested && suggestion.packages.find(pkg => pkg.code === suggested)) || (single ? suggestion.packages[0] : null);
+            if (!preselect) {
+                const empty = document.createElement('option');
+                empty.value = '';
+                empty.textContent = 'Pilih paket sesuai usia kehamilan';
+                select.appendChild(empty);
+            }
+            suggestion.packages.forEach(pkg => {
+                const option = document.createElement('option');
+                option.value = pkg.code;
+                option.textContent = `${pkg.name} - ${formatRupiah(pkg.amount_idr)}`;
+                select.appendChild(option);
+            });
+            card.appendChild(select);
+
+            const detail = prepayEl('div');
+            detail.id = 'prepay-package-detail';
+            card.appendChild(detail);
+
+            const onChange = () => {
+                storePrepaySelection(prepayPackages.find(pkg => pkg.code === select.value) || null);
+                renderPrepayDetail(detail);
+            };
+            select.addEventListener('change', onChange);
+            if (preselect) select.value = preselect.code;
+            onChange();
+
+            const bullets = document.createElement('ul');
+            bullets.style.cssText = 'margin:12px 0 0;padding-left:18px;font-size:12.5px;line-height:1.6;';
+            bullets.appendChild(prepayBullet(['Bisa ', { bold: 'bayar di muka (deposit)' }, ' agar di kasir lebih cepat.']));
+            bullets.appendChild(prepayBullet(['Deposit ', { bold: 'otomatis dipotong' }, ' dari tagihan saat periksa; tagihan akhir mengikuti tindakan dan obat yang diberikan.']));
+            bullets.appendChild(prepayBullet(['Kelebihan jadi ', { bold: 'saldo' }, ' dan ', { bold: 'bisa dicairkan' }, ' ke rekening lewat portal.']));
+            card.appendChild(bullets);
+
+            host.appendChild(card);
+        }
+
+        async function loadPrepayOffer(category, date) {
+            const host = document.getElementById('prepay-offer');
+            if (!host) return;
+            const key = `${category}|${date}`;
+            if (key === prepayOfferKey) return;
+            const seq = ++prepayOfferSeq;
+            prepayOfferKey = null;
+            prepayStatus = null;
+            prepayPackages = [];
+            clearPrepaySelection();
+            host.replaceChildren();
+            try {
+                if (prepayDemoMode() || !PREPAY_CATEGORY_PATTERN.test(category || '') || !/^\d{4}-\d{2}-\d{2}$/.test(date || '')) return;
+                const status = await prepayFetchJson('/api/patient/checkup-prepay/status');
+                if (seq !== prepayOfferSeq) return;
+                if (!status || !status.availability?.available) return;
+                prepayStatus = status;
+                const suggestion = await prepayFetchJson(`/api/patient/checkup-prepay/suggestion?date=${encodeURIComponent(date)}&category=${encodeURIComponent(category)}`);
+                if (seq !== prepayOfferSeq) return;
+                if (!suggestion || !Array.isArray(suggestion.packages) || !suggestion.packages.length) return;
+                prepayPackages = suggestion.packages;
+                renderPrepayCard(host, suggestion, category, date);
+                prepayOfferKey = key;
+            } catch (_error) {
+                if (seq === prepayOfferSeq) {
+                    host.replaceChildren();
+                    clearPrepaySelection();
+                }
+            }
+        }
+
+        function prepayButton(label, href, primary) {
+            const link = prepayEl('a', label, 'display:block;text-align:center;padding:12px 14px;border-radius:999px;font-weight:600;text-decoration:none;margin-top:8px;' + (primary
+                ? 'background:#0a0a0a;color:#fff;'
+                : 'border:1px solid rgba(0,0,0,0.2);color:inherit;'));
+            link.href = href;
+            return link;
+        }
+
+        // Builds the pay-now card for the success screen, or null when today's 3-second redirect applies.
+        async function buildPrepayChoice() {
+            const pkg = selectedPrepayPackage();
+            if (!pkg) return null;
+            let status = prepayStatus;
+            if (!status && !prepayDemoMode()) status = await prepayFetchJson('/api/patient/checkup-prepay/status');
+            if (!status || !status.availability?.available) return null;
+            const card = prepayEl('div', null, 'border:1px solid rgba(0,0,0,0.12);border-radius:16px;padding:16px;margin-top:12px;background:#fff;color:#0a0a0a;');
+            if (Number(status.available_idr) >= Number(pkg.amount_idr)) {
+                card.appendChild(prepayEl('div', `Saldo Anda ${formatRupiah(status.available_idr)} sudah menutup estimasi`, 'font-weight:600;'));
+                card.appendChild(prepayEl('p', pkg.name, 'font-size:13px;margin:4px 0 0;opacity:0.8;'));
+                card.appendChild(prepayButton('Ke portal', '/patient-menu.html', true));
+                return card;
+            }
+            card.appendChild(prepayEl('div', 'Mau bayar sekarang?', 'font-weight:600;'));
+            card.appendChild(prepayEl('p', pkg.name, 'font-size:13px;margin:4px 0 0;opacity:0.8;'));
+            card.appendChild(prepayEl('div', formatRupiah(pkg.amount_idr), 'font-size:22px;font-weight:700;margin:6px 0 4px;'));
+            card.appendChild(prepayButton('Bayar sekarang (QRIS / VA)', `/bayar-estimasi.html?kategori=${encodeURIComponent(pkg.code)}`, true));
+            card.appendChild(prepayButton('Bayar saat periksa', '/patient-menu.html', false));
+            return card;
         }
 
         // Handle 401 - redirect to login
@@ -1471,6 +1662,11 @@
             document.getElementById('btn-next').style.display = currentStep < 4 ? 'flex' : 'none';
             document.getElementById('btn-submit').style.display = currentStep === 4 ? 'flex' : 'none';
 
+            if (currentStep === 4) {
+                // Optional estimate card; never awaited so it cannot delay the confirmation step.
+                loadPrepayOffer(bookingData.consultationCategory, bookingData.date).catch(() => {});
+            }
+
             validateStep(currentStep);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -1541,16 +1737,17 @@
                     Waktu: ${data.details.time}<br><br>
                     Status: <strong>Menunggu Konfirmasi</strong><br>
                     ${bookingPolicy.noticeHtml()}<br>`;
-                const prepayHref = await findPrepayOption(bookingData.consultationCategory);
+                let prepayChoice = null;
+                try {
+                    prepayChoice = await buildPrepayChoice();
+                } catch (_error) {
+                    prepayChoice = null;
+                }
 
-                if (prepayHref) {
-                    // Optional: pay the visit estimate in advance (becomes saldo, deducted from the bill).
-                    showAlert(`${successHtml}
-                        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;">
-                            <a href="${prepayHref}" style="padding:10px 14px;border-radius:999px;background:#0a0a0a;color:#fff;font-weight:600;text-decoration:none;">Bayar estimasi di muka (opsional)</a>
-                            <a href="/patient-menu.html" style="padding:10px 14px;border-radius:999px;border:1px solid rgba(0,0,0,0.2);color:inherit;font-weight:600;text-decoration:none;">Ke portal</a>
-                        </div>
-                    `, 'success');
+                if (prepayChoice) {
+                    // Optional: pay the package estimate now (becomes saldo, deducted from the bill) or at the visit.
+                    showAlert(successHtml, 'success');
+                    document.querySelector('#alert-container .alert')?.appendChild(prepayChoice);
                 } else {
                     showAlert(`${successHtml}
                         Anda akan dialihkan ke portal...

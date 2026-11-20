@@ -2,7 +2,7 @@
 
 /**
  * Staff page "Pembayaran di Muka" (bayar di muka, Tahap 2): prepay orders, patient saldo and
- * its history, saldo refunds, and the estimate mapping editor.
+ * its history, saldo refunds, and the package editor (tab Paket).
  *
  * Patient names are read with a separate query (no JOIN on VARCHAR ids across tables with
  * different collations). Refunds lock the patient's live saldo like mark-paid and returns do.
@@ -12,11 +12,12 @@ const crypto = require('crypto');
 const {
     getBalances,
     lockLiveBalances,
+    getPendingRefundHold,
     planUsage,
     recordRefundRows,
     SOURCE_BILLING
 } = require('./PatientCreditLedger');
-const { productLabel } = require('../constants/checkupPrepayProducts');
+const { orderLabel } = require('../constants/checkupPrepayProducts');
 const { CONSULTATION_CATEGORIES } = require('../constants/consultationCategories');
 
 const ORDER_LIMIT = 500;
@@ -51,7 +52,7 @@ async function listOrders({ status = 'paid', mode = 'live', from = null, to = nu
     if (to) { where.push('DATE(COALESCE(paid_at, created_at)) <= ?'); params.push(to); }
     const [rows] = await db.query(
         `SELECT order_ref, patient_id, product_code, amount_idr, fee_idr, payment_method, va_number,
-                status, gateway_mode, created_at, paid_at, expires_at
+                status, gateway_mode, created_at, paid_at, expires_at, item_snapshot
            FROM payment_orders
           WHERE ${where.join(' AND ')}
           ORDER BY COALESCE(paid_at, created_at) DESC, id DESC
@@ -64,7 +65,7 @@ async function listOrders({ status = 'paid', mode = 'live', from = null, to = nu
         patient_id: row.patient_id,
         patient_name: nameOr(names, row.patient_id),
         product_code: row.product_code,
-        product_label: productLabel(row.product_code),
+        product_label: orderLabel(row),
         amount_idr: Number(row.amount_idr) || 0,
         fee_idr: row.fee_idr === null || row.fee_idr === undefined ? null : Number(row.fee_idr),
         payment_method: row.payment_method,
@@ -162,46 +163,66 @@ function validateRefund({ patientId, amountIdr, method, reason, requestKey }) {
     return trimmed;
 }
 
+const rupiah = value => Number(value).toLocaleString('id-ID');
+
 /**
- * Record a saldo refund staff already handed over. Live saldo only; never more than the
- * live balance. The same request_key returns the saved refund (safe retry).
+ * The refund itself, on a transaction the caller owns (no begin/commit/release here).
+ * Live saldo only; never more than live - hold, where hold is the saldo under pending
+ * withdrawal requests. `forRequestId` = this refund completes that request, so its own
+ * amount is not held against it. The same request_key returns the saved refund (safe retry).
+ * Lock order (Tahap 3, same everywhere): live saldo rows, then the pending request rows,
+ * then the refund key.
  */
-async function createRefund({ patientId, amountIdr, method, reason, requestKey, actor = {} }, { db = require('../db') } = {}) {
+async function createRefundWithin(connection, { patientId, amountIdr, method, reason, requestKey, actor = {}, forRequestId = null }) {
     const cleanReason = validateRefund({ patientId, amountIdr, method, reason, requestKey });
     const hash = refundRequestHash({ patient_id: patientId, amount_idr: amountIdr, method, reason: cleanReason });
+    const safeActor = actor || {};
+    const balances = await lockLiveBalances(connection, patientId);
+    const hold = await getPendingRefundHold(connection, patientId, { forUpdate: true, excludeRequestId: forRequestId });
+    const [savedRows] = await connection.query(
+        'SELECT id, amount_idr, request_hash FROM patient_credit_refunds WHERE request_key = ? FOR UPDATE',
+        [requestKey]
+    );
+    const saved = savedRows && savedRows[0];
+    if (saved) {
+        if (saved.request_hash !== hash) throw serviceError('Kunci transaksi sudah digunakan untuk refund berbeda.', 409);
+        return { id: Number(saved.id), amount_idr: Number(saved.amount_idr), already_saved: true };
+    }
+    const live = balances.reduce((sum, entry) => sum + Math.max(0, entry.balance_idr), 0);
+    const available = Math.max(0, live - hold);
+    if (amountIdr > available) {
+        throw serviceError(hold > 0
+            ? `Nominal refund melebihi saldo live yang bisa dipakai (Rp ${rupiah(available)}; Rp ${rupiah(hold)} sedang diajukan pencairan).`
+            : `Nominal refund melebihi saldo live pasien (Rp ${rupiah(live)}).`);
+    }
+    const [inserted] = await connection.query(
+        `INSERT INTO patient_credit_refunds
+            (patient_id, amount_idr, method, reason, request_key, request_hash, created_by, created_by_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [patientId, amountIdr, method, cleanReason, requestKey, hash,
+            safeActor.id ? String(safeActor.id).substring(0, 64) : null, safeActor.name ? String(safeActor.name).substring(0, 120) : null]
+    );
+    await recordRefundRows(connection, {
+        refundId: inserted.insertId,
+        patientId,
+        plan: planUsage(balances, amountIdr, null),
+        actor: safeActor.name || safeActor.id || null
+    });
+    return { id: Number(inserted.insertId), amount_idr: amountIdr, already_saved: false };
+}
+
+/**
+ * Record a saldo refund staff already handed over: createRefundWithin on its own connection
+ * and transaction. Invalid input is refused before a connection is taken.
+ */
+async function createRefund({ patientId, amountIdr, method, reason, requestKey, actor = {} }, { db = require('../db') } = {}) {
+    validateRefund({ patientId, amountIdr, method, reason, requestKey });
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
-        const [savedRows] = await connection.query(
-            'SELECT id, amount_idr, request_hash FROM patient_credit_refunds WHERE request_key = ? FOR UPDATE',
-            [requestKey]
-        );
-        const saved = savedRows && savedRows[0];
-        if (saved) {
-            if (saved.request_hash !== hash) throw serviceError('Kunci transaksi sudah digunakan untuk refund berbeda.', 409);
-            await connection.commit();
-            return { id: Number(saved.id), amount_idr: Number(saved.amount_idr), already_saved: true };
-        }
-        const balances = await lockLiveBalances(connection, patientId);
-        const live = balances.reduce((sum, entry) => sum + Math.max(0, entry.balance_idr), 0);
-        if (amountIdr > live) {
-            throw serviceError(`Nominal refund melebihi saldo live pasien (Rp ${live.toLocaleString('id-ID')}).`);
-        }
-        const [inserted] = await connection.query(
-            `INSERT INTO patient_credit_refunds
-                (patient_id, amount_idr, method, reason, request_key, request_hash, created_by, created_by_name)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [patientId, amountIdr, method, cleanReason, requestKey, hash,
-                actor.id ? String(actor.id).substring(0, 64) : null, actor.name ? String(actor.name).substring(0, 120) : null]
-        );
-        await recordRefundRows(connection, {
-            refundId: inserted.insertId,
-            patientId,
-            plan: planUsage(balances, amountIdr, null),
-            actor: actor.name || actor.id || null
-        });
+        const result = await createRefundWithin(connection, { patientId, amountIdr, method, reason, requestKey, actor });
         await connection.commit();
-        return { id: Number(inserted.insertId), amount_idr: amountIdr, already_saved: false };
+        return result;
     } catch (error) {
         await connection.rollback();
         throw error;
@@ -214,30 +235,132 @@ function defaultEstimates() {
     return require('./CheckupEstimateService').getCheckupEstimateService();
 }
 
-/** Mapping, priced products, and the tindakan staff may pick (same list as the CLI). */
-async function getEstimateMapping({ db = require('../db'), estimates = defaultEstimates() } = {}) {
-    const { ALLOWED_SERVICE_CATEGORIES, ADMIN_TINDAKAN_ID } = require('./CheckupEstimateService');
-    const { mapping, errors } = await estimates.loadMapping();
-    const priced = await estimates.priceAll({ fresh: true });
-    const [tindakan] = await db.query(
-        `SELECT id, code, name, category, price FROM tindakan
-          WHERE is_active = 1 AND (category IN (?, ?) OR id = ?)
-          ORDER BY category, name`,
-        [...ALLOWED_SERVICE_CATEGORIES, ADMIN_TINDAKAN_ID]
-    );
-    return { mapping, mapping_errors: errors, categories: priced.categories, tindakan: tindakan || [], admin_tindakan_id: ADMIN_TINDAKAN_ID };
+const PACKAGE_AUDIT_ACTION = 'Paket Bayar di Muka';
+const defaultRepository = () => require('./PrepayPackageRepository');
+const defaultActivityLogger = () => require('./activityLogger');
+
+const describeWeeks = pkg => (pkg.week_min === null || pkg.week_min === undefined ? 'semua minggu' : `minggu ${pkg.week_min}-${pkg.week_max}`);
+const describeItems = items => (items || []).map(item => `${item.item_type}:${item.ref_id}x${item.quantity}`).join(', ') || '-';
+const describeActive = pkg => (pkg.is_active ? 'aktif' : 'nonaktif');
+
+/** One line for the activity log: the code, then before -> after of every editable field. */
+function packageAuditSummary(code, before, after) {
+    if (!before) {
+        return `${code} dibuat: "${after.name}", kategori ${after.category}, ${describeWeeks(after)}, ${describeActive(after)}, item ${describeItems(after.items)}`;
+    }
+    return `${code}: nama "${before.name}" -> "${after.name}"; kategori ${before.category} -> ${after.category}; `
+        + `${describeWeeks(before)} -> ${describeWeeks(after)}; ${describeActive(before)} -> ${describeActive(after)}; `
+        + `item ${describeItems(before.items)} -> ${describeItems(after.items)}`;
 }
 
-/** Save like the CLI: invalid input is refused (400); an under-minimum product is saved but not ready. */
-async function saveEstimateMapping(mapping, { estimates = defaultEstimates() } = {}) {
-    let stored;
+async function writePackageAudit(activityLogger, actor, summary) {
+    const safeActor = actor || {};
     try {
-        stored = await estimates.saveMapping(mapping);
+        await activityLogger.log(safeActor.id || null, safeActor.name || null, PACKAGE_AUDIT_ACTION, summary);
     } catch (error) {
-        throw serviceError(error.message || 'Pemetaan estimasi tidak valid.');
+        // The package is already saved, so this does not fail the request; but it must leave a trace.
+        require('../utils/logger').warn('[staff-prepay] audit write failed', {
+            action: PACKAGE_AUDIT_ACTION,
+            actorId: safeActor.id || null,
+            error: error && error.message
+        });
     }
-    const priced = await estimates.priceAll({ fresh: true });
-    return { mapping: stored, categories: priced.categories };
+}
+
+async function pricedPackage(estimates, id) {
+    const priced = await estimates.priceAllForStaff();
+    return (priced.packages || []).find(entry => Number(entry.id) === Number(id)) || null;
+}
+
+/** All packages (active and inactive) with their live price, ready flag and issues. */
+async function listPackagesForStaff({ estimates = defaultEstimates() } = {}) {
+    return estimates.priceAllForStaff();
+}
+
+/** What the package editor may pick from, plus the admin fee line (tindakan #1, shown not editable). */
+async function getCatalog({ db = require('../db'), estimates = defaultEstimates() } = {}) {
+    const { ADMIN_TINDAKAN_ID } = require('./CheckupEstimateService');
+    const catalog = await estimates.loadCatalog();
+    const [adminRows] = await db.query('SELECT id, name, price FROM tindakan WHERE id = ?', [ADMIN_TINDAKAN_ID]);
+    const admin = adminRows && adminRows[0];
+    return {
+        ...catalog,
+        admin: admin
+            ? { id: Number(admin.id), name: admin.name, price: admin.price === null || admin.price === undefined ? null : Number(admin.price) }
+            : { id: ADMIN_TINDAKAN_ID, name: 'Biaya admin', price: null }
+    };
+}
+
+/**
+ * Create (no input.id) or update a package. Input is validated (consultation tindakan refused),
+ * then saved with its items in one transaction; the public estimate cache is dropped and the
+ * change is written to the activity log. Returns the freshly priced package.
+ */
+async function savePackage(input, actor, {
+    db = require('../db'),
+    estimates = defaultEstimates(),
+    repository = defaultRepository(),
+    activityLogger = defaultActivityLogger()
+} = {}) {
+    const source = input && typeof input === 'object' ? input : {};
+    const isUpdate = source.id !== undefined && source.id !== null;
+    const id = isUpdate ? Number(source.id) : null;
+    if (isUpdate && (!Number.isSafeInteger(id) || id < 1)) throw serviceError('Paket tidak ditemukan.', 404);
+
+    const tindakanIds = [...new Set((Array.isArray(source.items) ? source.items : [])
+        .filter(item => item && item.item_type === 'tindakan')
+        .map(item => Number(item.ref_id))
+        .filter(ref => Number.isSafeInteger(ref) && ref > 0))];
+    const tindakan = new Map();
+    if (tindakanIds.length) {
+        const [rows] = await db.query('SELECT id, name, category FROM tindakan WHERE id IN (?)', [tindakanIds]);
+        (rows || []).forEach(row => tindakan.set(Number(row.id), row));
+    }
+    const { normalizePackageInput } = require('./CheckupEstimateService');
+    const { value, errors } = normalizePackageInput(source, { tindakan });
+    if (errors.length) throw serviceError(errors.join('; '));
+
+    const connection = await db.getConnection();
+    let before = null;
+    let saved;
+    try {
+        await connection.beginTransaction();
+        if (isUpdate) {
+            before = (await repository.listPackages(connection)).find(entry => Number(entry.id) === id) || null;
+            if (!before) throw serviceError('Paket tidak ditemukan.', 404);
+            // An edit that does not mention is_active keeps the package as it is.
+            if (source.is_active === undefined || source.is_active === null) value.is_active = before.is_active;
+        }
+        saved = await repository.savePackage(connection, isUpdate ? { ...value, id } : value, actor);
+        await connection.commit();
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+
+    estimates.invalidate();
+    await writePackageAudit(activityLogger, actor, packageAuditSummary(saved.code, before, value));
+    return pricedPackage(estimates, saved.id);
+}
+
+/** Switch a package on or off (off = hidden from patients, kept for history). Audited like a save. */
+async function setPackageActive(id, active, actor, {
+    db = require('../db'),
+    estimates = defaultEstimates(),
+    repository = defaultRepository(),
+    activityLogger = defaultActivityLogger()
+} = {}) {
+    const packageId = Number(id);
+    if (typeof active !== 'boolean') throw serviceError('Status aktif harus true atau false.');
+    if (!Number.isSafeInteger(packageId) || packageId < 1) throw serviceError('Paket tidak ditemukan.', 404);
+    const before = (await repository.listPackages(db)).find(entry => Number(entry.id) === packageId) || null;
+    if (!before) throw serviceError('Paket tidak ditemukan.', 404);
+    if (!await repository.setPackageActive(db, packageId, active, actor)) throw serviceError('Paket tidak ditemukan.', 404);
+    estimates.invalidate();
+    await writePackageAudit(activityLogger, actor, packageAuditSummary(before.code, before, { ...before, is_active: active }));
+    return pricedPackage(estimates, packageId);
 }
 
 module.exports = {
@@ -245,7 +368,10 @@ module.exports = {
     listBalances,
     getPatientLedger,
     createRefund,
+    createRefundWithin,
     refundRequestHash,
-    getEstimateMapping,
-    saveEstimateMapping
+    listPackagesForStaff,
+    getCatalog,
+    savePackage,
+    setPackageActive
 };

@@ -31,7 +31,7 @@ const { updateQueueStatus } = require('./queue');
 const xenditPayment = require('../../utils/xendit-payment');
 const { cancelMainBilling, cancelAdditionalBilling } = require('./billing-cancellation');
 const { forBilling } = require('../CheckupPrepayCoverage');
-const { lockLiveBalances, planUsage, recordUsage } = require('../PatientCreditLedger');
+const { lockLiveBalances, getPendingRefundHold, planUsage, recordUsage } = require('../PatientCreditLedger');
 
 const SALDO_CHANGED_MESSAGE = 'Saldo pasien berubah. Muat ulang tagihan.';
 const formatThousands = value => String(Math.trunc(Number(value) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -829,9 +829,17 @@ async function postBillingByMrIdMarkPaid(req, res, next) {
             [normalizedMrId]
         );
         const saldoBalances = await lockLiveBalances(lockConnection, billingLocked.patient_id);
+        // Tahap 3: a pending withdrawal request holds its amount. Read after the saldo lock on the
+        // same connection, with a locking read (a plain read could miss a request committed after
+        // this transaction's snapshot). Usable saldo = live - hold. Without live saldo the hold
+        // cannot change the plan, so its (gap-locking) read is skipped.
+        const saldoLive = saldoBalances.reduce((sum, entry) => sum + Math.max(0, Math.trunc(Number(entry.balance_idr) || 0)), 0);
+        const saldoHold = saldoLive > 0
+            ? await getPendingRefundHold(lockConnection, billingLocked.patient_id, { forUpdate: true })
+            : 0;
         const saldoPlan = planUsage(
             saldoBalances,
-            Math.max(0, Math.floor(Number(billingLocked.total) || 0)),
+            Math.min(Math.max(0, Math.floor(Number(billingLocked.total) || 0)), Math.max(0, saldoLive - saldoHold)),
             saldoRecord?.mr_category || null
         );
         const saldoPlanned = saldoPlan.reduce((sum, entry) => sum + entry.amount_idr, 0);
