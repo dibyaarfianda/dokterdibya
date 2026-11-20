@@ -1,6 +1,6 @@
 # Bayar di muka, Tahap 3: editable packages, deposit at booking, refund requests
 
-Status: design (approach 1 chosen by Boss, 2026-11-21). Not built.
+Status: Built on branch claude/prepay-packages-design (2026-11-21); deployment pending.
 Builds on: `2026-11-18-checkup-prepay-duitku-review-design.md` (Tahap 1) and `2026-11-20-checkup-prepay-tahap-2-design.md` (Tahap 2, live).
 Approved mockup: v3 (booking Konfirmasi with suggested package, success screen choice, portal Saldo, staff package editor).
 

@@ -265,7 +265,7 @@ Migration (idempotent; header says to run after `20261121_checkup_prepay_tahap2.
   - **from HPHT:**
     - `gestationalWeeksOn({kind:'hpht',date:'2026-06-14'}, '2026-11-29')` → `{weeks:24, days:0}`;
     - an on-date before the HPHT → null.
-  - **from HPL:** `{kind:'hpl', date:'2027-03-21'}` on `2026-11-29` → 16 weeks.
+  - **from HPL:** `{kind:'hpl', date:'2027-03-21'}` on `2026-11-29` → 24 weeks.
   - **Review Focus 5:**
     - an HPL 15 days before the appointment → null;
     - an HPHT 300 days before → null (> 42 weeks).

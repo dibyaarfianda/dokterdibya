@@ -1512,7 +1512,7 @@ Duitku approves the merchant only when sisiwanita.id shows products + Rupiah pri
 
 **What it is:**
 - Product = optional prepayment of the estimated cost of one Klinik Privat visit. Products: `staff/backend/constants/checkupPrepayProducts.js` (`obstetri`, `obstetri_usg4d`, `gyn_repro`, `gyn_special`); each credits one saldo category (booking category).
-- Price = configured tindakan (live prices from `tindakan`) + admin fee (tindakan #1). Mapping in settings `checkup_prepay_estimate_v1`, set with `node scripts/checkup-prepay-estimate.js list-tindakan | show | set <product> <id:qty,...> --apply`.
+- Price = configured tindakan (live prices from `tindakan`) + admin fee (tindakan #1). Since Tahap 3 the products are editable packages (see §45), changed in the staff panel "Pembayaran di Muka → Paket"; the old settings mapping `checkup_prepay_estimate_v1` is only the source of the one-time copy (`scripts/migrate-prepay-packages.js`). `scripts/checkup-prepay-estimate.js` keeps `list-tindakan` and `show` only (no `set`).
 - Paid order → one `patient_credit_ledger` row (`gateway_mode` sandbox/live), via the `fulfillers` hook in `PremiumPaymentService.applyPaidOrder`. Spec: `docs/superpowers/specs/2026-11-18-checkup-prepay-duitku-review-design.md`.
 - Guard: sandbox → only active review accounts can pay; production → only when `CHECKUP_PREPAY_LIVE=true`. **Never set it before Tahap 2** (automatic deduction of `live` saldo from the visit bill, refunds, closing).
 - Review (test) account: `node scripts/patient-review-account.js create|reset-password|extend|revoke|status`; login at `/masuk-akun-uji.html`. Write the CLI output to a root-only file (`umask 077; ... > /root/akun-uji-duitku.txt`) — never paste the password in chat.
@@ -1536,3 +1536,14 @@ Spec: `docs/superpowers/specs/2026-11-20-checkup-prepay-tahap-2-design.md`. Ledg
 - **Ledger reads by bill/return id** use `source_id LIKE '<id>:%'` (unique-key prefix), never `SUBSTRING_INDEX(...) IN (...) FOR UPDATE` (that range-locks every usage row).
 - **Staff page "Pembayaran di Muka"** (`/api/staff-prepay`): view = `billing.view`, refund = `billing.reset`, estimate editor = doctor only (`requireDoctorRole` + protected, non-delegable `checkup_prepay.manage_estimate`).
 - **Go-live** (`CHECKUP_PREPAY_LIVE=true`) only after Duitku approval + production keys; then Boss makes one small real payment and checks toast, red dot, mark-paid, closing line and refund.
+
+### 45. Bayar di Muka Tahap 3 — Packages and Withdrawals (21 November 2026)
+
+Spec: `docs/superpowers/specs/2026-11-21-prepay-packages-booking-deposit-design.md`. QA: `staff/backend/scripts/verify-checkup-prepay-usage-isolated.js` (scratch DB on the VPS, covers packages, hold and withdrawal).
+
+- **Packages** live in `checkup_prepay_packages` + `checkup_prepay_package_items` (tindakan + obat). Price = admin (tindakan #1, added once, never an item) + Σ current price × qty, rounded up; ready only if ≥ Rp10.000. A tindakan matching `/\bkonsul|konseling/i` can never be in a package. Edited only by superadmin/doctor (`requireSuperadmin` + protected `checkup_prepay.manage_estimate` override). The four legacy codes were copied once by `scripts/migrate-prepay-packages.js`.
+- **An order's saldo category comes from its `item_snapshot`** (`{package_code, package_name, category, items, amount_idr, priced_at}`), so deactivating or editing a package never moves paid money.
+- **Kehamilan suggestion** (`GET /suggestion`): first active package by `sort_order`, then id, whose inclusive week range contains the age on the appointment date (newest HPHT/HPL record; unknown outside 0–42 weeks or HPL > 14 days past). A package without a range only matches when no ranged package does.
+- **Withdrawal requests** (`patient_credit_refund_requests`, `PatientRefundRequestService`): a pending request HOLDS its amount; every spend (mark-paid, refund, new request) uses `live − hold`. Lock order: `lockLiveBalances(patient)` → request rows FOR UPDATE → writes; inside transactions read the hold with a locking read (`getPendingRefundHold(..., {forUpdate:true})`). "Sudah ditransfer" records the refund via `StaffPrepayService.createRefundWithin` in the same transaction (a second call returns the saved result).
+- **Account numbers** are shown in full only to the owner patient and staff with `billing.reset`, masked elsewhere, never logged. Sandbox saldo is never withdrawable ("Saldo uji").
+- **Versions:** patient assets `20261122paket1`, staff `v498`.
