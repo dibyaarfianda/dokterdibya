@@ -12,7 +12,8 @@
  * (source_type, source_id, entry_type) is UNIQUE, so one order can only credit once.
  */
 
-const { productCategory } = require('../constants/checkupPrepayProducts');
+const { productCategoryForCode, parseOrderSnapshot } = require('../constants/checkupPrepayProducts');
+const { isConsultationCategory } = require('../constants/consultationCategories');
 
 const SOURCE_PAYMENT_ORDER = 'payment_order';
 
@@ -27,7 +28,13 @@ async function creditFromPaidOrder(executor, order) {
     if (!Number.isInteger(amount) || amount <= 0) {
         throw new Error('Nominal order tidak valid untuk saldo');
     }
-    const category = productCategory(order.product_code);
+    // The category frozen in the order snapshot wins (package edits must not move paid money),
+    // then the package row, then the legacy product map.
+    const snapshot = parseOrderSnapshot(order);
+    const snapshotCategory = snapshot && typeof snapshot.category === 'string' && isConsultationCategory(snapshot.category)
+        ? snapshot.category
+        : null;
+    const category = snapshotCategory || await productCategoryForCode(executor, order.product_code);
     if (!category) {
         throw new Error('Order bayar di muka tanpa kategori tidak bisa menjadi saldo');
     }

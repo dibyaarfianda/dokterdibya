@@ -184,6 +184,16 @@ describe('sisiwanita.id home page (Duitku review requirements)', () => {
     });
 });
 
+describe('unavailable package on the payment page', () => {
+    test('checkup-prepay.js shows "Paket tidak tersedia" with a link home and handles PACKAGE_UNAVAILABLE', () => {
+        const source = read('public', 'scripts', 'checkup-prepay.js');
+        expect(source).toContain('Paket tidak tersedia');
+        expect(source).toContain("'PACKAGE_UNAVAILABLE'");
+        expect(source).toContain("link.setAttribute('href', '/')");
+        expect(source).toContain('heading.textContent = ');
+    });
+});
+
 describe('login return path and review login page', () => {
     function loadSafeNext(search) {
         const source = read('public', 'scripts', 'patient-safe-next.js');
@@ -196,7 +206,10 @@ describe('login return path and review login page', () => {
         ['/bayar-estimasi.html?kategori=obstetri', '/bayar-estimasi.html?kategori=obstetri'],
         ['/bayar-estimasi.html?kategori=obstetri_usg4d', '/bayar-estimasi.html?kategori=obstetri_usg4d'],
         ['/bayar-estimasi.html?order=DPK-11111111-2222-3333-4444-555555555555&x=1', '/bayar-estimasi.html?order=DPK-11111111-2222-3333-4444-555555555555'],
+        ['/bayar-estimasi.html?kategori=pkg_12', '/bayar-estimasi.html?kategori=pkg_12'],
         ['/bayar-estimasi.html?kategori=<script>', '/bayar-estimasi.html'],
+        ['/bayar-estimasi.html?kategori=A', '/bayar-estimasi.html'],
+        ['/bayar-estimasi.html?kategori=../x', '/bayar-estimasi.html'],
         ['//evil.example/bayar-estimasi.html', null],
         ['https://evil.example/bayar-estimasi.html', null],
         ['/\\evil.example', null],

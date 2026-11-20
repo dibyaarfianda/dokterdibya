@@ -25,7 +25,7 @@ const {
     FALLBACK_EMAIL
 } = require('./PremiumPaymentService');
 const { CONSULTATION_CATEGORIES } = require('../constants/consultationCategories');
-const { isCheckupPrepayProduct, productCategory, productLabel } = require('../constants/checkupPrepayProducts');
+const { isPackageCodeFormat, productCategory, orderLabel, parseOrderSnapshot } = require('../constants/checkupPrepayProducts');
 const { toPublicEstimate } = require('./CheckupEstimateService');
 
 const ORDER_TYPE = 'checkup_prepay';
@@ -36,12 +36,17 @@ const MS_PER_MINUTE = 60 * 1000;
 function toPublicOrder(order, methods) {
     if (!order) return null;
     const method = methods[order.payment_method] || {};
+    const snapshot = parseOrderSnapshot(order);
+    const saldoCategory = (snapshot && typeof snapshot.category === 'string' && snapshot.category)
+        || productCategory(order.product_code)
+        || order.product_code;
+    const label = orderLabel(order);
     return {
         order_ref: order.order_ref,
         product: order.product_code,
-        category: productCategory(order.product_code) || order.product_code,
-        category_label: productLabel(order.product_code),
-        saldo_label: CONSULTATION_CATEGORIES[productCategory(order.product_code)] || productLabel(order.product_code),
+        category: saldoCategory,
+        category_label: label,
+        saldo_label: CONSULTATION_CATEGORIES[saldoCategory] || label,
         amount_idr: Number(order.amount_idr),
         payment_method: order.payment_method,
         method_label: method.label || order.payment_method,
@@ -104,7 +109,7 @@ function createCheckupPrepayService({
     async function createOrder({ patient, category, paymentMethod }) {
         const method = methods[paymentMethod];
         if (!method) throw new PremiumError('INVALID_METHOD', 'Metode pembayaran tidak valid', 400);
-        if (!isCheckupPrepayProduct(category)) throw new PremiumError('INVALID_CATEGORY', 'Kategori kunjungan tidak valid', 400);
+        if (!isPackageCodeFormat(category)) throw new PremiumError('INVALID_CATEGORY', 'Kategori kunjungan tidak valid', 400);
 
         const availability = await getAvailability(patient.id);
         if (!availability.available) {
@@ -115,8 +120,8 @@ function createCheckupPrepayService({
         }
 
         const estimate = await estimates.pricePackageByCode(category);
-        if (!estimate || !estimate.ready) {
-            throw new PremiumError('ESTIMATE_NOT_READY', 'Estimasi untuk kategori ini belum tersedia.', 409);
+        if (!estimate || !estimate.ready || estimate.is_active === false) {
+            throw new PremiumError('PACKAGE_UNAVAILABLE', 'Paket tidak tersedia', 404);
         }
         const amount = estimate.amount_idr;
         const now = clock();
@@ -142,9 +147,12 @@ function createCheckupPrepayService({
         const expiryMinutes = method.type === 'qris' ? QRIS_EXPIRY_MINUTES : VA_EXPIRY_MINUTES;
         const expiresAt = new Date(now.getTime() + expiryMinutes * MS_PER_MINUTE);
         const snapshot = {
-            priced_at: now,
-            raw_total: estimate.raw_total,
-            items: estimate.items
+            package_code: estimate.code,
+            package_name: estimate.name,
+            category: estimate.category,
+            items: estimate.items,
+            amount_idr: amount,
+            priced_at: now
         };
 
         // Insert before calling Duitku so a callback can always find the order.
@@ -183,7 +191,7 @@ function createCheckupPrepayService({
             [transaction.reference, transaction.vaNumber, transaction.qrString, transaction.paymentUrl, orderRef]
         );
         await recordEvent(orderRef, patient.id, 'order_created', {
-            order_type: ORDER_TYPE, category: productCategory(category), product: category, method: paymentMethod, amount, gateway_mode: availability.mode
+            order_type: ORDER_TYPE, category: estimate.category, product: category, method: paymentMethod, amount, gateway_mode: availability.mode
         });
 
         const [created] = await db.query('SELECT * FROM payment_orders WHERE order_ref = ? LIMIT 1', [orderRef]);

@@ -7,7 +7,7 @@
  * (security/realtimePermissions.js); the staff shell shows a toast and refreshes red dots.
  */
 
-const { productLabel } = require('../constants/checkupPrepayProducts');
+const { orderLabel } = require('../constants/checkupPrepayProducts');
 
 async function notifyPrepayPaid(order, _grant, { db = require('../db'), realtime = require('../realtime-sync') } = {}) {
     if (!order) return false;
@@ -22,7 +22,7 @@ async function notifyPrepayPaid(order, _grant, { db = require('../db'), realtime
         type: 'checkup_prepay_paid',
         patientName: patientName || String(order.patient_id || 'Pasien'),
         product: order.product_code || null,
-        productLabel: productLabel(order.product_code) || order.product_code || null,
+        productLabel: orderLabel(order) || order.product_code || null,
         amount_idr: Number(order.amount_idr) || 0,
         payment_method: order.payment_method || null,
         gateway_mode: order.gateway_mode || null,

@@ -17,6 +17,8 @@ function estimate(overrides = {}) {
         code: 'obstetri',
         name: 'Kehamilan (Obstetri)',
         label: 'Kehamilan (Obstetri)',
+        category: 'obstetri',
+        is_active: true,
         ready: true,
         amount_idr: 115000,
         raw_total: 115000,
@@ -149,7 +151,14 @@ describe('createOrder', () => {
             returnUrl: `https://sisiwanita.id/bayar-estimasi.html?order=${encodeURIComponent(ref)}`
         }));
         expect(fake.state.orders[0]).toMatchObject({ order_type: ORDER_TYPE, product_code: 'obstetri', amount_idr: 115000, gateway_mode: 'sandbox', status: 'pending' });
-        expect(JSON.parse(fake.state.orders[0].item_snapshot)).toMatchObject({ raw_total: 115000, items: [expect.objectContaining({ name: 'Biaya Admin' })] });
+        expect(JSON.parse(fake.state.orders[0].item_snapshot)).toEqual({
+            package_code: 'obstetri',
+            package_name: 'Kehamilan (Obstetri)',
+            category: 'obstetri',
+            items: [expect.objectContaining({ name: 'Biaya Admin' })],
+            amount_idr: 115000,
+            priced_at: T0.toISOString()
+        });
         expect(order).toMatchObject({ order_ref: ref, category: 'obstetri', category_label: 'Kehamilan (Obstetri)', amount_idr: 115000, method_type: 'qris', gateway_mode: 'sandbox', qr_string: '000201...' });
         expect(order).not.toHaveProperty('patient_id');
         expect(order).not.toHaveProperty('item_snapshot');
@@ -160,7 +169,8 @@ describe('createOrder', () => {
         ['a patient who is not a review account in sandbox', { reviewer: false }, 'PREPAY_NOT_AVAILABLE', 403],
         ['production before the live flag', { production: true, live: false }, 'PREPAY_NOT_AVAILABLE', 403],
         ['an unconfigured gateway', { configured: false }, 'GATEWAY_NOT_CONFIGURED', 503],
-        ['a category whose estimate is not ready', { category: estimate({ ready: false, amount_idr: null }) }, 'ESTIMATE_NOT_READY', 409]
+        ['a package that turned not ready', { category: estimate({ ready: false, amount_idr: null }) }, 'PACKAGE_UNAVAILABLE', 404],
+        ['a package that is inactive', { category: estimate({ is_active: false }) }, 'PACKAGE_UNAVAILABLE', 404]
     ])('refuses %s without writing an order or calling Duitku', async (_name, options, code, status) => {
         const { service, fake, duitku } = setup(options);
         await expect(service.createOrder({ patient: PATIENT, category: 'obstetri', paymentMethod: 'qris' })).rejects.toMatchObject({ code, status });
@@ -168,8 +178,43 @@ describe('createOrder', () => {
         expect(duitku.createTransaction).not.toHaveBeenCalled();
     });
 
+    test('a missing package is unavailable (404), not an invalid category', async () => {
+        const { service, fake, duitku } = setup();
+        await expect(service.createOrder({ patient: PATIENT, category: 'pkg_99', paymentMethod: 'qris' }))
+            .rejects.toMatchObject({ code: 'PACKAGE_UNAVAILABLE', status: 404, message: 'Paket tidak tersedia' });
+        expect(fake.state.orders).toHaveLength(0);
+        expect(duitku.createTransaction).not.toHaveBeenCalled();
+    });
+
+    test('an editable package orders at the fresh server price, labelled by its own name and category', async () => {
+        const { service, fake, duitku, estimates } = setup({
+            category: estimate({ code: 'pkg_7', name: 'Paket Trimester 1', label: 'Paket Trimester 1', category: 'gyn_repro', amount_idr: 410000, raw_total: 408500 })
+        });
+        const order = await service.createOrder({ patient: PATIENT, category: 'pkg_7', paymentMethod: 'qris', amount_idr: 1 });
+
+        expect(estimates.pricePackageByCode).toHaveBeenCalledWith('pkg_7');
+        expect(duitku.createTransaction).toHaveBeenCalledWith(expect.objectContaining({
+            amount: 410000,
+            productDetails: 'Estimasi kunjungan Klinik Privat - Paket Trimester 1'
+        }));
+        expect(fake.state.orders[0]).toMatchObject({ product_code: 'pkg_7', amount_idr: 410000 });
+        expect(JSON.parse(fake.state.orders[0].item_snapshot)).toMatchObject({ package_code: 'pkg_7', package_name: 'Paket Trimester 1', category: 'gyn_repro', amount_idr: 410000 });
+        expect(fake.state.events[0].detail).toMatchObject({ category: 'gyn_repro', product: 'pkg_7', amount: 410000 });
+        expect(order).toMatchObject({ product: 'pkg_7', category: 'gyn_repro', category_label: 'Paket Trimester 1', saldo_label: 'Program Hamil (Reproduksi)', amount_idr: 410000 });
+    });
+
+    test('an old order without a package name keeps its legacy label; bad snapshot JSON does not break it', () => {
+        const { toPublicOrder } = require('../../services/CheckupPrepayService');
+        const base = { order_ref: 'DPK-1', product_code: 'obstetri_usg4d', amount_idr: 365000, payment_method: 'qris', status: 'paid' };
+        expect(toPublicOrder({ ...base, item_snapshot: '{"raw_total":1}' }, PAYMENT_METHODS))
+            .toMatchObject({ category: 'obstetri', category_label: 'Kehamilan + USG 4D', saldo_label: 'Kehamilan (Obstetri)' });
+        expect(toPublicOrder({ ...base, item_snapshot: '{not json' }, PAYMENT_METHODS))
+            .toMatchObject({ category: 'obstetri', category_label: 'Kehamilan + USG 4D' });
+    });
+
     test.each([
-        ['an unknown category', { category: 'umum', paymentMethod: 'qris' }, 'INVALID_CATEGORY'],
+        ['a malformed code', { category: '../x', paymentMethod: 'qris' }, 'INVALID_CATEGORY'],
+        ['an uppercase code', { category: 'A', paymentMethod: 'qris' }, 'INVALID_CATEGORY'],
         ['an unknown method', { category: 'obstetri', paymentMethod: 'gopay' }, 'INVALID_METHOD']
     ])('rejects %s', async (_name, input, code) => {
         const { service } = setup();

@@ -16,7 +16,7 @@ const {
     recordRefundRows,
     SOURCE_BILLING
 } = require('./PatientCreditLedger');
-const { productLabel } = require('../constants/checkupPrepayProducts');
+const { orderLabel } = require('../constants/checkupPrepayProducts');
 const { CONSULTATION_CATEGORIES } = require('../constants/consultationCategories');
 
 const ORDER_LIMIT = 500;
@@ -51,7 +51,7 @@ async function listOrders({ status = 'paid', mode = 'live', from = null, to = nu
     if (to) { where.push('DATE(COALESCE(paid_at, created_at)) <= ?'); params.push(to); }
     const [rows] = await db.query(
         `SELECT order_ref, patient_id, product_code, amount_idr, fee_idr, payment_method, va_number,
-                status, gateway_mode, created_at, paid_at, expires_at
+                status, gateway_mode, created_at, paid_at, expires_at, item_snapshot
            FROM payment_orders
           WHERE ${where.join(' AND ')}
           ORDER BY COALESCE(paid_at, created_at) DESC, id DESC
@@ -64,7 +64,7 @@ async function listOrders({ status = 'paid', mode = 'live', from = null, to = nu
         patient_id: row.patient_id,
         patient_name: nameOr(names, row.patient_id),
         product_code: row.product_code,
-        product_label: productLabel(row.product_code),
+        product_label: orderLabel(row),
         amount_idr: Number(row.amount_idr) || 0,
         fee_idr: row.fee_idr === null || row.fee_idr === undefined ? null : Number(row.fee_idr),
         payment_method: row.payment_method,
