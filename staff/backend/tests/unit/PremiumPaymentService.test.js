@@ -739,7 +739,7 @@ describe('non-premium Duitku orders (checkup prepay)', () => {
     });
 
     describe('category taken from the order snapshot', () => {
-        const { clearPackageCategoryCache } = require('../../constants/checkupPrepayProducts');
+        const { clearPackageCategoryCache = () => {} } = require('../../constants/checkupPrepayProducts');
         const pkgRow = (overrides = {}) => ({ id: 7, code: 'pkg_7', name: 'Paket 7', description: null, category: 'obstetri', week_min: null, week_max: null, is_active: 0, sort_order: 10, ...overrides });
         beforeEach(() => clearPackageCategoryCache());
 
