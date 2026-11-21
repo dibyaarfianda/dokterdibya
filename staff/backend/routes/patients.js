@@ -27,6 +27,7 @@ const { loadCurrentPregnancies, listFields } = require('../services/CurrentPregn
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
 const { createPregnancyEpisodeService, assertCanClose } = require('../services/PregnancyEpisodeService');
 const { markPatientDelivered } = require('../services/MarkDelivered');
+const { buildPregnancyData } = require('../services/PatientPregnancyData');
 const { pregnancyErrorResponse } = require('../services/PregnancyErrorResponse');
 
 let pregnancyEpisodes = null;
@@ -1373,130 +1374,8 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
     res.set('Expires', '0');
 
     try {
-        const patientId = req.patient.id;
-        console.log('[PREGNANCY_DEBUG] Endpoint called for patient:', patientId);
-
-        // Check if patient has given birth
-        const [birthRows] = await db.query(`
-            SELECT
-                baby_name,
-                DATE_FORMAT(birth_date, '%d %b %Y') as birth_date,
-                birth_time,
-                birth_weight,
-                birth_length,
-                photo_url,
-                photo_r2_key,
-                message as doctor_message
-            FROM birth_congratulations
-            WHERE patient_id = ? AND is_published = 1
-            ORDER BY created_at DESC
-            LIMIT 1
-        `, [patientId]);
-
-        if (birthRows.length > 0) {
-            const birth = birthRows[0];
-            console.log('[BIRTH_DEBUG] Found birth data for patient:', patientId, 'baby_name:', birth.baby_name);
-
-            // Use backend proxy URL to avoid direct R2 connectivity issues on patient devices
-            let photoUrl = birth.photo_url;
-            if (birth.photo_r2_key) {
-                photoUrl = getR2ProxyUrl(birth.photo_r2_key);
-            }
-
-            return res.json({
-                success: true,
-                data: {
-                    is_pregnant: false,
-                    has_given_birth: true,
-                    birth_date: birth.birth_date,
-                    birth_time: birth.birth_time,
-                    baby_name: birth.baby_name,
-                    baby_weight: birth.birth_weight,
-                    baby_length: birth.birth_length,
-                    baby_photo_url: photoUrl,
-                    doctor_message: birth.doctor_message
-                }
-            });
-        }
-
-        // Get HPHT from latest obstetri record
-        const [obstetriRows] = await db.query(`
-            SELECT
-                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
-            FROM sunday_clinic_records scr
-            JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                AND mr.record_type = 'anamnesa'
-            WHERE scr.patient_id = ?
-                AND scr.mr_category = 'obstetri'
-                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
-            ORDER BY scr.last_activity_at DESC
-            LIMIT 1
-        `, [patientId]);
-
-        if (obstetriRows.length > 0 && obstetriRows[0].hpht) {
-            const hpht = new Date(obstetriRows[0].hpht);
-
-            if (!isNaN(hpht.getTime())) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const daysPregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-                const weeks = Math.floor(daysPregnant / 7);
-                const days = daysPregnant % 7;
-
-                // Calculate HPL (HPHT + 280 days)
-                const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                const hplFormatted = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-
-                // Calculate trimester
-                let trimester = 1;
-                if (weeks >= 13 && weeks < 27) trimester = 2;
-                else if (weeks >= 27) trimester = 3;
-
-                // Calculate progress (0.0 - 1.0)
-                const progress = Math.min(daysPregnant / 280, 1.0);
-
-                // Only return as pregnant if <= 42 weeks
-                if (weeks <= 42) {
-                    // Get baby size for current week
-                    const babySize = BABY_SIZES[weeks] || BABY_SIZES[Math.min(weeks, 40)] || { emoji: "👶", size: "Bayi", length: "-" };
-
-                    // Get tip for closest milestone week
-                    const milestoneWeeks = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40];
-                    const closestMilestone = milestoneWeeks.reduce((prev, curr) =>
-                        Math.abs(curr - weeks) < Math.abs(prev - weeks) ? curr : prev
-                    );
-                    const tip = PREGNANCY_TIPS[closestMilestone] || "";
-
-                    return res.json({
-                        success: true,
-                        data: {
-                            is_pregnant: true,
-                            has_given_birth: false,
-                            weeks: weeks,
-                            days: days,
-                            trimester: trimester,
-                            hpht: obstetriRows[0].hpht,
-                            hpl: hplFormatted,
-                            progress: progress,
-                            baby_size: babySize,
-                            tip: tip
-                        }
-                    });
-                }
-            }
-        }
-
-        // No pregnancy data
-        res.json({
-            success: true,
-            data: {
-                is_pregnant: false,
-                has_given_birth: false
-            }
-        });
+        const data = await buildPregnancyData(db, req.patient.id, new Date(), { getR2ProxyUrl, BABY_SIZES, PREGNANCY_TIPS });
+        res.json({ success: true, data });
     } catch (error) {
         console.error('Error fetching pregnancy data:', error);
         res.status(500).json({
