@@ -1910,7 +1910,7 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
         try {
             await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', insertResult.insertId, { id: null });
         } catch (flagError) {
-            console.warn('Birth self-report saved but pregnancy flag failed:', flagError.message);
+            logger.warn('Birth self-report saved but pregnancy flag failed', { error: flagError.message, patientId });
         }
 
         res.json({
@@ -2242,10 +2242,12 @@ router.post('/api/patients/:patientId/birth-congratulations', verifyStaffToken, 
                 WHERE patient_id = ?
             `, [baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color, patientId]);
 
-            try {
-                await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', existing[0].id, req.user);
-            } catch (flagError) {
-                console.warn('Birth congratulations updated but pregnancy flag failed:', flagError.message);
+            for (const row of existing) {
+                try {
+                    await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', row.id, req.user);
+                } catch (flagError) {
+                    logger.warn('Birth congratulations updated but pregnancy flag failed', { error: flagError.message, patientId });
+                }
             }
 
             res.json({ success: true, message: 'Birth congratulations updated' });
@@ -2260,7 +2262,7 @@ router.post('/api/patients/:patientId/birth-congratulations', verifyStaffToken, 
             try {
                 await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', insertResult.insertId, req.user);
             } catch (flagError) {
-                console.warn('Birth congratulations created but pregnancy flag failed:', flagError.message);
+                logger.warn('Birth congratulations created but pregnancy flag failed', { error: flagError.message, patientId });
             }
 
             res.json({ success: true, message: 'Birth congratulations created' });

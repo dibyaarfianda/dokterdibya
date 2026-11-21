@@ -759,10 +759,24 @@ describe('PregnancyEpisodeService.flagReportedBirth', () => {
         const conn = await db.getConnection();
         await svc.flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER, conn);
         const again = await svc.flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER, conn);
-        expect(again).toEqual({ linked: true, pregnancy_id: 1 });
+        expect(again).toEqual({ linked: true, already: true, pregnancy_id: 1 });
         expect(db.state.pregnancies).toHaveLength(1);
         expect(db.state.pregnancies[0]).toMatchObject({ status: 'ongoing', needs_review: 1, review_reason: REASON });
         expect(db.state.tx.begin).toBe(0);
+    });
+
+    test('an already-linked birth row keeps its pregnancy: nothing moves, nothing flagged', async () => {
+        const db = makeDb({ pregnancies: [
+            ongoingPreg({ id: 1, status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-11-10' }),
+            ongoingPreg({ id: 2, sequence: 2, hpht: '2026-12-01' })
+        ] });
+        db.state.links.push({ table: 'birth_congratulations', pregnancy_id: 1, id: 7 });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER);
+        expect(res).toEqual({ linked: true, already: true, pregnancy_id: 1 });
+        expect(db.state.pregnancies[1].needs_review).toBeUndefined();
+        expect(db.state.pregnancies[1].review_reason).toBeUndefined();
+        expect(db.state.links).toHaveLength(1);
+        expect(db.state.sql.some(s => /^UPDATE /.test(s))).toBe(false);
     });
 
     test('rejects an unknown link table', async () => {

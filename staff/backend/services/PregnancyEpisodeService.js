@@ -602,6 +602,10 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         if (!LINK_TABLES.includes(linkTable)) fail(400, 'Tabel tautan tidak valid');
         return withConn(conn, async c => {
             const rows = await lockPregnancies(c, patientId);
+            // A birth row already linked (e.g. by "Sudah Lahir") keeps its pregnancy: never move or flag.
+            const [linkRows] = await c.query(`SELECT pregnancy_id FROM ${linkTable} WHERE id = ? FOR UPDATE`, [linkId]);
+            const existingId = linkRows && linkRows[0] ? linkRows[0].pregnancy_id : null;
+            if (existingId) return { linked: true, already: true, pregnancy_id: existingId };
             const ongoing = ongoingOf(rows);
             if (!ongoing) return { linked: false };
             await c.query(`UPDATE ${linkTable} SET pregnancy_id = ? WHERE id = ?`, [ongoing.id, linkId]);

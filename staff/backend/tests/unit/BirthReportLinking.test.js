@@ -21,7 +21,8 @@ describe('reported births link and flag the ongoing pregnancy', () => {
         expect(flagAt).toBeGreaterThan(insertAt);
         expect(body).toMatch(/flagReportedBirth\(\s*patientId,\s*'birth_congratulations',\s*insertResult\.insertId/);
         expect(body).not.toMatch(/endOngoing\(/);
-        expect(body).toMatch(/console\.(warn|error)\(/);
+        expect(body).toMatch(/logger\.warn\(/);
+        expect(body).not.toMatch(/console\.warn\(/);
     });
 
     test('staff upsert flags after both insert and update and never closes', () => {
@@ -29,7 +30,9 @@ describe('reported births link and flag the ongoing pregnancy', () => {
         expect(body).not.toMatch(/endOngoing\(/);
         expect(body.indexOf('UPDATE birth_congratulations SET')).toBeLessThan(body.indexOf('flagReportedBirth('));
         expect(body.indexOf('INSERT INTO birth_congratulations')).toBeLessThan(body.lastIndexOf('flagReportedBirth('));
-        expect(body).toMatch(/flagReportedBirth\(\s*patientId,\s*'birth_congratulations',\s*existing\[0\]\.id/);
+        expect(body).toMatch(/for \(const row of existing\)[\s\S]*flagReportedBirth\(\s*patientId,\s*'birth_congratulations',\s*row\.id/);
+        expect(body).toMatch(/logger\.warn\(/);
+        expect(body).not.toMatch(/console\.warn\(/);
         expect(body).toMatch(/flagReportedBirth\(\s*patientId,\s*'birth_congratulations',\s*insertResult\.insertId/);
     });
 });
