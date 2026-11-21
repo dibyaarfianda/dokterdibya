@@ -221,9 +221,12 @@ test('patient precache contains versioned same-origin static assets and only the
     expect(urls).toBeTruthy();
     const items = (await urls).addAll.mock.calls[0][0];
     expect(items.length).toBeGreaterThan(0);
-    expect(items.filter(item => /\.html(?:\?|$)/.test(item))).toEqual(['/ruang-cerita.html']);
+    // The chat shell is release-pinned on purpose (fast patient chat, 2026-10-25).
+    const chatShell = `/community-chat.html?v=${cacheVersion}`;
+    expect(items.filter(item => /\.html(?:\?|$)/.test(item))).toEqual(['/ruang-cerita.html', chatShell]);
     for (const item of items) {
         if (item === '/ruang-cerita.html') continue; // Static shared markup; private drafts only use no-store APIs.
+        if (item === chatShell) continue; // Static chat shell; messages only use no-store APIs.
         expect(item).toMatch(/^\/[^?]+\?v=[^?]+$/);
         expect(new URL(item, 'https://example.test').searchParams.get('v')).toBe(cacheVersion);
         expect(item).not.toMatch(/\.html(?:\?|$)/);

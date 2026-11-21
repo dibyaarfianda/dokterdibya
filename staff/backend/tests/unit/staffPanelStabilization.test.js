@@ -648,7 +648,7 @@ describe('staff panel stabilization sources', () => {
         expect(dashboard).toContain('const LIVE_QUEUE_ERROR_BACKOFF_MS = 60000;');
         expect(dashboard).toContain("page: 'dashboard'");
 
-        expect(antrianOnline).toContain('const ONLINE_QUEUE_POLL_INTERVAL_MS = 45000;');
+        expect(antrianOnline).toContain('const ONLINE_QUEUE_POLL_INTERVAL_MS = 30000;');
         expect(antrianOnline).toContain('const ONLINE_QUEUE_ERROR_BACKOFF_MS = 60000;');
         expect(antrianOnline).toContain("page: 'antrian-online'");
 

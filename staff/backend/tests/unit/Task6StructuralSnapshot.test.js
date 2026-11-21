@@ -7,8 +7,11 @@ const root = path.resolve(__dirname, '../../../..');
 const baseline = {
     // Account-mode Staff now has a deliberate zero-grant shell in both viewports.
     // Team Chat launcher is now a keyboard-accessible button with dialog state.
-    'staff/public/index-adminlte.html': '8e41984eb887142cd996d7960f0a928cf264c0b7f842d3257939d58f8c1f29d9',
-    'public/patient-menu.html': 'da9c28107e03efa0947adcfdda6acb081e7ed298ef7c266c41354957f1a846a3'
+    // 2026-11-22: sidebar red dots replace numeric badges, welcome card removed, Inbox Pasien,
+    // Pembayaran di Muka, Audit Obat, Laboratorium, pregnancy review panel, advanced search
+    // date range; patient menu: zoom lock, shared queue view, Pesan, Saldo, no app badge.
+    'staff/public/index-adminlte.html': 'dc9a14742e9b4ac4cdd242e7ce83f3c2c452ebf429e978e37a645bc33454bccf',
+    'public/patient-menu.html': 'b263818b5c03a86f510ad5b661c4af58dadd2beb166c3b923f4180676471aba0'
 };
 
 function maskedStructuralHash(html) {

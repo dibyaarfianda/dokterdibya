@@ -65,7 +65,9 @@ test('authenticated shell local script entries use one exact current release', (
     const invalid = entries.filter(src => {
         const url = new URL(src, 'https://dokterdibya.com/staff/public/index-adminlte.html');
         if (url.origin !== 'https://dokterdibya.com') return false;
-        return url.search !== `?v=${version}` || !url.pathname.startsWith('/staff/public/');
+        // Shared with the patient portal queue page since 2026-10-19 (one renderer, no duplicate).
+        const sharedPatientAsset = url.pathname === '/scripts/patient-queue-view.js';
+        return url.search !== `?v=${version}` || !(url.pathname.startsWith('/staff/public/') || sharedPatientAsset);
     });
     expect(invalid).toEqual([]);
 });

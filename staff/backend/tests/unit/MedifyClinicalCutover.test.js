@@ -55,7 +55,7 @@ test('Medify republish replaces the document content read by the patient resolve
     try {
         const router = require('../../routes/patient-documents');
         const handler = router.stack.find(layer => layer.route?.path === '/:id/content').route.stack.at(-1).handle;
-        const response = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        const response = { set: jest.fn().mockReturnThis(), status: jest.fn().mockReturnThis(), json: jest.fn() };
         await handler({ params: { id: '9' }, patient: { patientId: 'fixture-a' } }, response);
         expect(response.json).toHaveBeenCalledWith(expect.objectContaining({
             document: expect.objectContaining({ content: 'New synthetic resume' })
