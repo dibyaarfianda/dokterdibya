@@ -59,6 +59,7 @@ test('deferred bootstrap timing waits for profile, overlaps independent reads, t
         loadUnreadDocCounts: noop, initializeLiveQueueHome: noop, stopCommunityBadge: null,
         startCommunityBadge: () => noop, isGuestMode: () => false, updateRuangBacaBadges: noop,
         checkActiveBooking: noop, loadBirthClassHomeCard: noop, checkAttendanceConfirmation: noop,
+        showPendingPatientPopup: noop,
         checkBirthPending: async () => { calls.push('birth-pending'); return false; },
         loadBirthCongratsHome: async () => { calls.push('birth-congrats'); return false; },
         loadPregnancyTrackerHome: noop, autoShowPatientInstallPrompt: noop

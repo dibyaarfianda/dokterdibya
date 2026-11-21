@@ -207,7 +207,7 @@ const SOURCE_POLICIES = Object.freeze({
 });
 
 const PATIENT_DEFAULT_SOURCES = new Set([
-    'contraction-timer', 'doctors', 'fertility-calendar', 'kick-counter',
+    'community-chat-notifications', 'contraction-timer', 'doctors', 'fertility-calendar', 'kick-counter',
     'patient-estimasi-biaya', 'patient-notifications', 'patient-workdesk',
     'patients-auth', 'subscriptions'
 ]);
@@ -385,6 +385,8 @@ function resolveRouteAccess(route) {
         return { permission: 'access.manage', ruleId: 'legacy-role-adapter-protected' };
     }
     if (route.sourceFile === 'chat') return { exemption: 'staff_chat', ruleId: 'staff-chat' };
+    // Per-staff "new" menu dots: each staff member reads and writes only their own seen state.
+    if (route.sourceFile === 'staff-menu-badges') return { exemption: 'staff_identity', ruleId: 'staff-menu-badges-self' };
     if (route.sourceFile === 'community-chat' && route.routePath === '/me/profile' && ['GET', 'PUT'].includes(route.method)) {
         return { exemption: 'staff_profile', ruleId: 'community-profile-self-service' };
     }

@@ -3,7 +3,8 @@ const realSettings = require('../../services/booking-session-settings');
 const { createWhatsAppReminderJobs } = require('../../services/WhatsAppReminderJobs');
 
 const FMT = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-const NOW = () => new Date(2026, 10, 7, 18, 0);
+// A fixed WIB instant, so the run date is 2026-11-07 in Jakarta on any runner clock (CI is UTC).
+const NOW = () => new Date('2026-11-07T18:00:00+07:00');
 const SETTINGS = [{ session: 1, label: '09:00 - 11:00 (Pagi)', startTime: '09:00', slotDuration: 10 }];
 const PREFLIGHT = /SELECT 1 FROM wa_messages LIMIT 1/;
 

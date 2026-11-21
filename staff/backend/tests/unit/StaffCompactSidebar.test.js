@@ -9,6 +9,21 @@ const scriptPath = path.join(repoRoot, 'staff/public/scripts/shell/compact-sideb
 const shellCss = fs.readFileSync(path.join(repoRoot, 'staff/public/styles/staff-shell.css'), 'utf8');
 const accountAccessSource = fs.readFileSync(path.join(repoRoot, 'staff/public/scripts/shell/account-access.js'), 'utf8');
 
+const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+
+// Headless Linux Chromium reports no hover/fine pointer, and neither CDP nor launch flags can
+// emulate one. Stand in for a small desktop window with a mouse: answer the module's pointer
+// query as a mouse would and apply the shell CSS that the same query gates.
+async function useMousePointer(page) {
+    await page.evaluate(query => {
+        const nativeMatchMedia = window.matchMedia.bind(window);
+        window.matchMedia = media => (media === query
+            ? { matches: true, media, onchange: null, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, dispatchEvent: () => false }
+            : nativeMatchMedia(media));
+    }, FINE_POINTER_QUERY);
+    await page.addStyleTag({ content: shellCss.split(`(min-width: 992px), ${FINE_POINTER_QUERY}`).join('all') });
+}
+
 describe('compact desktop staff sidebar', () => {
     let browser;
     let page;
@@ -478,6 +493,7 @@ describe('compact desktop staff sidebar', () => {
 
     test.each([854, 640, 390])('small desktop starts with compact navigation at %s pixels', async width => {
         await page.setViewport({ width, height: 844 });
+        await useMousePointer(page);
         const result = await page.evaluate(() => {
             const initialized = window.staffCompactSidebar.init({ role_id: 1 });
             return {
@@ -492,6 +508,7 @@ describe('compact desktop staff sidebar', () => {
     });
 
     test('desktop resize preserves the menu, open group, search, and collapsed rail', async () => {
+        await useMousePointer(page);
         await page.evaluate(() => {
             window.staffCompactSidebar.init({ role_id: 1 });
             window.sidebarSearchBeforeResize = document.getElementById('staff-compact-search');

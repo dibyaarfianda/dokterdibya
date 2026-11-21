@@ -6,6 +6,8 @@ const { Server } = require('socket.io');
 const { ROLE_IDS, ROLE_NAMES } = require('../constants/roles');
 
 const STAFF_PUBLIC = path.resolve(__dirname, '../../public');
+// The Staff shell also loads the queue renderer shared with the patient portal (/scripts/).
+const SHARED_PATIENT_QUEUE_VIEW = path.resolve(__dirname, '../../../public/scripts/patient-queue-view.js');
 const STAFF_CACHE_VERSION = fs.readFileSync(path.join(STAFF_PUBLIC, 'index-adminlte.html'), 'utf8')
     .match(/window\.STAFF_CACHE_VERSION\s*=\s*'([^']+)'/)?.[1];
 if (!STAFF_CACHE_VERSION) throw new Error('Staff cache version unavailable');
@@ -48,9 +50,11 @@ function syntheticApi(method, pathname) {
             breaks: [], queue_label: 'Fixture' };
         if (pathname === '/api/registration-codes/public') return { success: true, code: null };
         if (pathname === '/api/support-chat/staff/count') return { success: true, count: 0 };
+        if (pathname === '/api/staff-menu-badges') return { success: true, badges: {} };
     }
     if (method === 'POST') {
-        if (pathname === '/api/logs' || pathname === '/api/rum') return { success: true };
+        if (pathname === '/api/logs' || pathname === '/api/rum'
+            || pathname === '/api/staff-menu-badges/seen') return { success: true };
         if (pathname === '/api/notifications/badge-counts') return { success: true,
             counts: { klinik_private: 0, rsia_melinda: 0, rsud_gambiran: 0,
                 rs_bhayangkara: 0, artikel: 0 } };
@@ -70,6 +74,10 @@ async function startStaffPerformanceFixture({ port = 0 } = {}) {
     app.get('/staff/public/sw.js', (_req, res) => {
         res.set('Cache-Control', 'no-store');
         res.sendFile(path.join(STAFF_PUBLIC, 'sw.js'));
+    });
+    app.get('/scripts/patient-queue-view.js', (_req, res) => {
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        res.sendFile(SHARED_PATIENT_QUEUE_VIEW);
     });
     app.use('/staff/public', express.static(STAFF_PUBLIC, {
         fallthrough: false,
