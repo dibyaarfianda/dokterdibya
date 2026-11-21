@@ -723,12 +723,12 @@
 
                 return `
                     <tr>
-                        <td><code class="font-weight-bold">${patient.id}</code></td>
-                        <td>${patient.full_name || '-'}</td>
-                        <td>${patient.whatsapp || patient.phone || '-'}</td>
+                        <td><code class="font-weight-bold">${escapeHtmlSafe(patient.id)}</code></td>
+                        <td>${escapeHtmlSafe(patient.full_name || '-')}</td>
+                        <td>${escapeHtmlSafe(patient.whatsapp || patient.phone || '-')}</td>
                         <td>${regDate}</td>
                         <td>
-                            <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${patient.id}')" title="Lihat Detail">
+                            <button class="btn btn-xs btn-info" onclick="${onclickCall('viewPatientDetail', [patient.id])}" title="Lihat Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </td>
@@ -754,7 +754,7 @@
             'gyn_repro': '<span class="badge badge-purple" style="background:#9c27b0;color:#fff">Gyn Repro</span>',
             'gyn_special': '<span class="badge badge-warning">Gyn</span>'
         };
-        return typeMap[type] || `<span class="badge badge-secondary">${type}</span>`;
+        return typeMap[type] || `<span class="badge badge-secondary">${escapeHtmlSafe(type)}</span>`;
     }
     window.formatPatientType = formatPatientType;
 
@@ -1090,7 +1090,20 @@
     const PREGNANCY_OUTCOME_LABELS = { keguguran: 'Keguguran', lahir_mati: 'Lahir Mati' };
 
     function jsStringEscape(value) {
-        return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return String(value || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/\r/g, '\\r')
+            .replace(/\n/g, '\\n')
+            .replace(new RegExp(String.fromCharCode(0x2028), 'g'), '\\u2028')
+            .replace(new RegExp(String.fromCharCode(0x2029), 'g'), '\\u2029');
+    }
+
+    // Safe onclick attribute value: each argument is JS-string-escaped, then the whole
+    // call is HTML-escaped (the browser HTML-decodes the attribute before running it).
+    function onclickCall(fnName, args, suffix = '') {
+        const argList = args.map(arg => `'${jsStringEscape(arg)}'`).join(', ');
+        return escapeHtmlSafe(`${fnName}(${argList}${suffix})`);
     }
 
     function localDateString(date) {
@@ -1127,9 +1140,7 @@
         tbody.innerHTML = items.map(patient => {
             const fullNameRaw = String(patient.full_name || '-');
             const patientName = escapeHtmlSafe(fullNameRaw);
-            const patientId = escapeHtmlSafe(patient.patient_id || '');
             const patientIdRaw = String(patient.patient_id || '');
-            const patientNameJs = fullNameRaw.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             const phone = escapeHtmlSafe(patient.contact_phone || patient.whatsapp || patient.phone || '-');
             const diagnosis = escapeHtmlSafe(patient.last_diagnosis || '-');
             const diagnosisShort = diagnosis.length > 90 ? `${diagnosis.slice(0, 90)}...` : diagnosis;
@@ -1138,13 +1149,13 @@
             const riskBadge = riskType === 'overdue'
                 ? `<span class="badge badge-danger ml-1">Lewat HPL ${hplDate}</span>`
                 : `<span class="badge badge-warning ml-1">Mendekati HPL ${hplDate}</span>`;
-            const actionButton = `<button type="button" class="btn btn-xs btn-success" onclick="markAsDelivered('${patientIdRaw}', '${patientNameJs}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`
+            const actionButton = `<button type="button" class="btn btn-xs btn-success" onclick="${onclickCall('markAsDelivered', [patientIdRaw, fullNameRaw], ', this')}" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`
                 + ` <button type="button" class="btn btn-xs btn-secondary" onclick="${pregnancyEndOnclick(patientIdRaw, fullNameRaw)}" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
 
             return `
                 <tr>
                     <td>
-                        <a href="#" onclick="showPatientMRList('${patientId}', '${patientName}'); return false;">${patientName}</a>
+                        <a href="#" onclick="${onclickCall('showPatientMRList', [patientIdRaw, fullNameRaw])}; return false;">${patientName}</a>
                         ${riskBadge}
                     </td>
                     <td>${phone}</td>
@@ -1498,17 +1509,20 @@
         const locationLabels = { 'klinik_private': 'Prv', 'rsia_melinda': 'Mel', 'rsud_gambiran': 'Gmb', 'rs_bhayangkara': 'Bhy' };
         const locationBadge = patient.visit_location
             ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>` : '';
-        const escapedName = (patient.full_name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const patientIdRaw = String(patient.id || '');
+        const patientNameRaw = String(patient.full_name || '');
+        const safePatientId = escapeHtmlSafe(patientIdRaw);
+        const safeMrId = escapeHtmlSafe(String(patient.mr_id || '').toUpperCase());
         const mrIdUrl = window.buildSundayClinicAppUrl
-            ? window.buildSundayClinicAppUrl(patient.mr_id, 'identitas')
-            : `/staff/public/index-adminlte.html?page=sunday-clinic&mr=${encodeURIComponent(patient.mr_id)}&section=identitas`;
+            ? escapeHtmlSafe(window.buildSundayClinicAppUrl(patient.mr_id, 'identitas'))
+            : escapeHtmlSafe(`/staff/public/index-adminlte.html?page=sunday-clinic&mr=${encodeURIComponent(patient.mr_id)}&section=identitas`);
         const mrIdCell = patient.mr_id
-            ? `<div><a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}</div>${visitHistoryBadge}`
+            ? `<div><a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${safeMrId}</small></a>${locationBadge}</div>${visitHistoryBadge}`
             : `<span class="text-muted">-</span>${visitHistoryBadge ? `<div>${visitHistoryBadge}</div>` : ''}`;
         const nameMeta = patient.mr_id
-            ? `${patient.id} - <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
-            : `${patient.id}${visitHistoryBadge ? ` - ${visitHistoryBadge}` : ''}`;
-        const nameCell = `<div><a href="#" class="text-primary font-weight-semibold" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.full_name || '-'}</a></div><div class="small text-muted">${nameMeta}</div>`;
+            ? `${safePatientId} - <a href="${mrIdUrl}" class="text-primary" title="Buka Rekam Medis"><small>${safeMrId}</small></a>${locationBadge}`
+            : `${safePatientId}${visitHistoryBadge ? ` - ${visitHistoryBadge}` : ''}`;
+        const nameCell = `<div><a href="#" class="text-primary font-weight-semibold" onclick="${onclickCall('showPatientMRList', [patientIdRaw, patientNameRaw])}; return false;" title="Lihat Daftar Rekam Medis">${escapeHtmlSafe(patientNameRaw || '-')}</a></div><div class="small text-muted">${nameMeta}</div>`;
         let hplCell = '-';
         if (patient.is_obstetri && patient.hpl && !patient.pregnancy_end) {
             const hplDate = new Date(patient.hpl);
@@ -1528,7 +1542,7 @@
         const canBulkDelete = hasPatientToolsPermission('patients.bulk_delete');
         let deliveryButton = '';
         if (canEdit && patient.is_obstetri && !patient.pregnancy_end) {
-            deliveryButton = `<button type="button" class="btn btn-sm btn-success js-delivery-btn" data-account-permission="patients.edit" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`
+            deliveryButton = `<button type="button" class="btn btn-sm btn-success js-delivery-btn" data-account-permission="patients.edit" onclick="${onclickCall('markAsDelivered', [patientIdRaw, patientNameRaw], ', this')}" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`
                 + `<button type="button" class="btn btn-sm btn-secondary js-pregnancy-end-btn" data-account-permission="patients.edit" onclick="${pregnancyEndOnclick(patient.id, patient.full_name)}" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
         }
         const bulkDeleteCheckbox = canBulkDelete
@@ -1536,20 +1550,20 @@
             : '';
         const statusButton = canEdit
             ? `<button type="button" class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}" data-account-permission="patients.edit"
-                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${escapedName}', this)"
+                    onclick="${onclickCall('togglePatientStatus', [patientIdRaw, patient.status, patientNameRaw], ', this')}"
                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                     <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
                 </button>`
             : '';
         const suspendButton = canEdit
             ? `<button type="button" class="btn btn-sm ${suspension ? 'btn-outline-success' : 'btn-outline-danger'}" data-account-permission="patients.edit"
-                    onclick="openPatientAccountSuspension('${patient.id}', '${escapedName}')"
+                    onclick="${onclickCall('openPatientAccountSuspension', [patientIdRaw, patientNameRaw])}"
                     title="${suspension ? 'Cabut penangguhan akun' : 'Tangguhkan akun pasien'}">
                     <i class="fas fa-${suspension ? 'user-check' : 'user-lock'}"></i>
                 </button>`
             : '';
         const deleteButton = canDelete
-            ? `<button type="button" class="btn btn-sm btn-danger" data-account-permission="patients.delete" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
+            ? `<button type="button" class="btn btn-sm btn-danger" data-account-permission="patients.delete" onclick="${onclickCall('deletePatient', [patientIdRaw, patientNameRaw])}" title="Hapus">
                     <i class="fas fa-trash"></i>
                 </button>`
             : '';
@@ -1557,7 +1571,7 @@
             <tr>
                 <td class="text-nowrap">
                     ${bulkDeleteCheckbox}
-                    <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
+                    <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${safePatientId}" title="Detail">
                         <i class="fas fa-eye"></i>
                     </button>
                     ${deliveryButton}
@@ -2201,10 +2215,10 @@ Apakah Anda yakin ingin melanjutkan?`;
                             ? '<span class="badge badge-success">Aktif</span>'
                             : '<span class="badge badge-secondary">Nonaktif</span>';
                     }
-                    const escapedName = patientName.replace(/'/g, "\\'");
                     btnEl.disabled = false;
                     btnEl.className = `btn btn-sm btn-${newStatus === 'active' ? 'warning' : 'success'}`;
-                    btnEl.setAttribute('onclick', `togglePatientStatus('${patientId}', '${newStatus}', '${escapedName}', this)`);
+                    // setAttribute takes the raw value (no HTML decoding), so only JS-string escaping is needed
+                    btnEl.setAttribute('onclick', `togglePatientStatus('${jsStringEscape(patientId)}', '${jsStringEscape(newStatus)}', '${jsStringEscape(patientName)}', this)`);
                     btnEl.setAttribute('title', newStatus === 'active' ? 'Nonaktifkan' : 'Aktifkan');
                     btnEl.innerHTML = `<i class="fas fa-${newStatus === 'active' ? 'ban' : 'check'}"></i>`;
                 }

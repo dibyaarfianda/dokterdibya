@@ -92,10 +92,31 @@ describe('staff panel stabilization sources', () => {
         const patientTools = readNormalizedFile('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
 
         expect(patientTools).toContain('const nameMeta = patient.mr_id');
-        expect(patientTools).toContain('${patient.id} - <a href="${mrIdUrl}"');
+        expect(patientTools).toContain('${safePatientId} - <a href="${mrIdUrl}"');
         expect(patientTools).toContain("visitHistoryBadge ? ` - ${visitHistoryBadge}`");
         expect(patientTools).not.toContain('ï¿½');
         expect(patientTools).not.toContain('�');
+    });
+
+    test('Kelola Pasien and HPL rows escape patient-controlled values', () => {
+        const patientTools = readNormalizedFile('staff', 'public', 'scripts', 'legacy', 'patient-tools.js');
+        const start = patientTools.indexOf('function renderManagePatientRow(patient)');
+        const end = patientTools.indexOf('async function loadWebPatients', start);
+        const manageRow = patientTools.slice(start, end);
+        const hplStart = patientTools.indexOf('function renderHplRiskRows(');
+        const hplRows = patientTools.slice(hplStart, patientTools.indexOf('window.loadHplRiskPatients', hplStart));
+
+        expect(start).toBeGreaterThan(-1);
+        expect(hplStart).toBeGreaterThan(-1);
+        expect(patientTools).toContain('function onclickCall(fnName, args, suffix = \'\')');
+        for (const block of [manageRow, hplRows]) {
+            // raw values must never be interpolated into markup or inline handlers
+            expect(block).not.toMatch(/\$\{patient\.(id|full_name|mr_id|patient_id|phone|whatsapp)\b/);
+            expect(block).not.toContain('${patient.status}');
+            expect(block).not.toContain('escapedName');
+            expect(block).not.toMatch(/onclick="(?!\$\{)/);
+        }
+        expect(manageRow).toContain("${escapeHtmlSafe(patientNameRaw || '-')}</a>");
     });
 
     test('Sunday Clinic PWA overrides the staff shell with its scoped compact clinical tokens', () => {
