@@ -1098,6 +1098,10 @@
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     }
 
+    function pregnancyEndOnclick(patientId, patientName) {
+        return escapeHtmlSafe(`markPregnancyEnded('${jsStringEscape(patientId)}', '${jsStringEscape(patientName)}', this)`);
+    }
+
     function buildPregnancyOutcomeBadge(patientId, patientName, pregnancyEnd) {
         const label = PREGNANCY_OUTCOME_LABELS[pregnancyEnd.type] || 'Kehamilan Berakhir';
         const payload = jsStringEscape(JSON.stringify({
@@ -1135,7 +1139,7 @@
                 ? `<span class="badge badge-danger ml-1">Lewat HPL ${hplDate}</span>`
                 : `<span class="badge badge-warning ml-1">Mendekati HPL ${hplDate}</span>`;
             const actionButton = `<button type="button" class="btn btn-xs btn-success" onclick="markAsDelivered('${patientIdRaw}', '${patientNameJs}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`
-                + ` <button type="button" class="btn btn-xs btn-secondary" onclick="markPregnancyEnded('${patientIdRaw}', '${patientNameJs}', this)" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
+                + ` <button type="button" class="btn btn-xs btn-secondary" onclick="${pregnancyEndOnclick(patientIdRaw, fullNameRaw)}" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
 
             return `
                 <tr>
@@ -1525,7 +1529,7 @@
         let deliveryButton = '';
         if (canEdit && patient.is_obstetri && !patient.pregnancy_end) {
             deliveryButton = `<button type="button" class="btn btn-sm btn-success js-delivery-btn" data-account-permission="patients.edit" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`
-                + `<button type="button" class="btn btn-sm btn-secondary js-pregnancy-end-btn" data-account-permission="patients.edit" onclick="markPregnancyEnded('${patient.id}', '${escapedName}', this)" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
+                + `<button type="button" class="btn btn-sm btn-secondary js-pregnancy-end-btn" data-account-permission="patients.edit" onclick="${pregnancyEndOnclick(patient.id, patient.full_name)}" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
         }
         const bulkDeleteCheckbox = canBulkDelete
             ? `<input type="checkbox" class="patient-bulk-delete-check mr-1" data-account-permission="patients.bulk_delete" data-patient-id="${escapeHtmlSafe(patient.id)}" data-patient-name="${escapeHtmlSafe(patient.full_name || patient.id)}" onchange="togglePatientBulkSelection(this)" aria-label="Pilih ${escapeHtmlSafe(patient.full_name || patient.id)} untuk dihapus">`
