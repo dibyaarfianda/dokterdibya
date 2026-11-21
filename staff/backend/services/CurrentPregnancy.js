@@ -46,7 +46,8 @@ function newestFirst(a, b) {
 /**
  * One batch read for many patients.
  * -> Map<patientId, { ongoing: Row|null, lastEnded: Row|null }>
- * ongoing = newest status='ongoing'; lastEnded = newest ended clinic pregnancy, only when nothing is ongoing.
+ * ongoing = newest status='ongoing'; lastEnded = newest ended pregnancy that is clinic-sourced or has a
+ * linked birth card / non-voided outcome, only when nothing is ongoing.
  */
 async function loadCurrentPregnancies(db, patientIds) {
     const map = new Map();
@@ -67,11 +68,37 @@ async function loadCurrentPregnancies(db, patientIds) {
         byPatient.get(key).push(row);
     }
 
+    // lastEnded (only when nothing is ongoing) = newest ended row that is a clinic pregnancy, or an
+    // external one the clinic knows ended (a linked birth card or a non-voided outcome) — ruling R7.
+    const endedLists = new Map();
+    const candidateIds = [];
     for (const [patientId, list] of byPatient) {
         list.sort(newestFirst);
         const ongoing = list.find(r => r.status === 'ongoing') || null;
-        const lastEnded = ongoing ? null : (list.find(r => r.status === 'ended' && r.source === 'clinic') || null);
-        map.set(patientId, { ongoing, lastEnded });
+        map.set(patientId, { ongoing, lastEnded: null });
+        if (ongoing) continue;
+        const ended = [];
+        for (const r of list) {
+            if (r.status !== 'ended') continue;
+            ended.push(r);
+            if (r.source === 'clinic') break; // older rows can never win over this one
+            candidateIds.push(r.id);
+        }
+        endedLists.set(patientId, ended);
+    }
+
+    const linkedIds = new Set();
+    if (candidateIds.length > 0) {
+        const [links] = await db.query(
+            `SELECT pregnancy_id FROM birth_congratulations WHERE pregnancy_id IN (?)
+             UNION
+             SELECT pregnancy_id FROM pregnancy_outcomes WHERE voided_at IS NULL AND pregnancy_id IN (?)`,
+            [candidateIds, candidateIds]
+        );
+        for (const l of links || []) linkedIds.add(String(l.pregnancy_id));
+    }
+    for (const [patientId, ended] of endedLists) {
+        map.get(patientId).lastEnded = ended.find(r => r.source === 'clinic' || linkedIds.has(String(r.id))) || null;
     }
 
     const endedIds = [...map.values()]

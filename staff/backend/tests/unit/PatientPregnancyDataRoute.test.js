@@ -10,12 +10,13 @@ const deps = {
 };
 const LOSS_WORDS = /abortus|keguguran|lahir_mati|ektopik|outcome/i;
 
-function fakeDb({ pregnancies = [], linkedCard = null, fallbackCard = null } = {}) {
+function fakeDb({ pregnancies = [], linkedCard = null, fallbackCard = null, linkedPregnancyIds = [] } = {}) {
     const calls = [];
     return {
         calls,
         query: jest.fn(async (sql, params) => {
             calls.push({ sql, params });
+            if (/UNION/.test(sql)) return [params[0].filter(id => linkedPregnancyIds.includes(id)).map(id => ({ pregnancy_id: id }))];
             if (/FROM pregnancies/.test(sql)) return [pregnancies];
             if (/FROM pregnancy_outcomes/.test(sql)) return [[]];
             if (/FROM birth_congratulations/.test(sql)) {
@@ -59,6 +60,26 @@ describe('buildPregnancyData', () => {
         });
         const linked = db.calls.find(c => /FROM birth_congratulations/.test(c.sql));
         expect(linked.params).toEqual([9, 5]);
+    });
+
+    test('external ended lahir_hidup with a linked published card -> birth payload (R7)', async () => {
+        const db = fakeDb({
+            pregnancies: [{ id: 6, patient_id: 9, sequence: 1, source: 'external', status: 'ended', outcome: 'lahir_hidup', hpht: null, hpl: null, ended_on: '2026-11-10' }],
+            linkedCard: card,
+            linkedPregnancyIds: [6]
+        });
+        const out = await buildPregnancyData(db, 9, NOW, deps);
+        expect(out).toMatchObject({ is_pregnant: false, has_given_birth: true, baby_name: 'Bayi A' });
+        const linked = db.calls.find(c => /FROM birth_congratulations/.test(c.sql) && !/UNION/.test(c.sql));
+        expect(linked.params).toEqual([9, 6]);
+    });
+
+    test('external ended lahir_hidup without any link -> neutral', async () => {
+        const db = fakeDb({
+            pregnancies: [{ id: 6, patient_id: 9, sequence: 1, source: 'external', status: 'ended', outcome: 'lahir_hidup', hpht: null, hpl: null }],
+            linkedCard: card
+        });
+        expect(await buildPregnancyData(db, 9, NOW, deps)).toEqual({ is_pregnant: false, has_given_birth: false });
     });
 
     test('ended lahir_hidup, no linked card -> falls back to newest card dated on/after hpht', async () => {

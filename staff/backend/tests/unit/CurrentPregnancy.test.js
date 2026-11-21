@@ -7,12 +7,20 @@ const {
     PREGNANCY_END_TYPES
 } = require('../../services/CurrentPregnancy');
 
-function makeDb(pregnancies, outcomes = []) {
+function makeDb(pregnancies, outcomes = [], births = []) {
     const calls = [];
     return {
         calls,
         async query(sql, params) {
             calls.push({ sql, params });
+            if (/UNION/.test(sql)) {
+                const [cardIds, outcomeIds] = params;
+                const hits = [
+                    ...births.filter(b => cardIds.includes(b.pregnancy_id)),
+                    ...outcomes.filter(o => outcomeIds.includes(o.pregnancy_id) && !o.voided_at)
+                ].map(x => ({ pregnancy_id: x.pregnancy_id }));
+                return [hits];
+            }
             if (/FROM pregnancies/.test(sql)) {
                 const ids = params[0];
                 return [pregnancies.filter(p => ids.includes(p.patient_id))];
@@ -61,6 +69,56 @@ describe('loadCurrentPregnancies', () => {
         ]);
         const cur = (await loadCurrentPregnancies(db, ['P1'])).get('P1');
         expect(cur.lastEnded.id).toBe(4);
+    });
+
+    test('newest external ended row with a linked birth card -> it is lastEnded (R7)', async () => {
+        const db = makeDb(
+            [
+                row({ id: 4, sequence: 1, status: 'ended', outcome: 'lahir_hidup', ended_on: '2020-01-01' }),
+                row({ id: 5, sequence: 2, source: 'external', status: 'ended', outcome: 'lahir_hidup', ended_on: '2025-06-01' })
+            ],
+            [],
+            [{ id: 70, pregnancy_id: 5 }]
+        );
+        const cur = (await loadCurrentPregnancies(db, ['P1'])).get('P1');
+        expect(cur.lastEnded.id).toBe(5);
+        expect(db.calls.filter(c => /UNION/.test(c.sql))).toHaveLength(1);
+    });
+
+    test('external ended row with a non-voided outcome counts; a voided one does not', async () => {
+        const db = makeDb(
+            [row({ id: 5, source: 'external', status: 'ended', outcome: 'abortus', ended_on: '2025-06-01' })],
+            [{ id: 9, pregnancy_id: 5, note: null, voided_at: null }]
+        );
+        expect((await loadCurrentPregnancies(db, ['P1'])).get('P1').lastEnded.id).toBe(5);
+        const voided = makeDb(
+            [row({ id: 5, source: 'external', status: 'ended', outcome: 'abortus', ended_on: '2025-06-01' })],
+            [{ id: 9, pregnancy_id: 5, note: null, voided_at: '2026-01-01' }]
+        );
+        expect((await loadCurrentPregnancies(voided, ['P1'])).get('P1').lastEnded).toBeNull();
+    });
+
+    test('one batched link query for many patients; skipped when no external candidate', async () => {
+        const db = makeDb(
+            [
+                row({ id: 5, patient_id: 'P1', source: 'external', status: 'ended', outcome: 'lahir_hidup' }),
+                row({ id: 6, patient_id: 'P2', source: 'external', status: 'ended', outcome: 'lahir_hidup' }),
+                row({ id: 7, patient_id: 'P3', status: 'ended', outcome: 'lahir_hidup' })
+            ],
+            [],
+            [{ id: 1, pregnancy_id: 6 }]
+        );
+        const map = await loadCurrentPregnancies(db, ['P1', 'P2', 'P3']);
+        expect(map.get('P1').lastEnded).toBeNull();
+        expect(map.get('P2').lastEnded.id).toBe(6);
+        expect(map.get('P3').lastEnded.id).toBe(7);
+        const union = db.calls.filter(c => /UNION/.test(c.sql));
+        expect(union).toHaveLength(1);
+        expect(union[0].params).toEqual([[5, 6], [5, 6]]);
+
+        const clinicOnly = makeDb([row({ id: 7, status: 'ended', outcome: 'lahir_hidup' })]);
+        await loadCurrentPregnancies(clinicOnly, ['P1']);
+        expect(clinicOnly.calls.filter(c => /UNION/.test(c.sql))).toHaveLength(0);
     });
 
     test('ongoing present -> lastEnded is null', async () => {
