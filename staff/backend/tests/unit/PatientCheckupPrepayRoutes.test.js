@@ -185,8 +185,8 @@ describe('GET /suggestion', () => {
         sort_order: 10, is_active: true, ready: true, amount_idr: 255000, raw_total: 255000, issues: [],
         items: [{ name: 'USG', quantity: 1, subtotal: 255000 }], ...over
     });
-    const anamnesaRow = { hpht: '2026-06-14', hpl: null, recorded_at: new Date('2026-10-01T00:00:00Z') };
-    const makeDb = () => ({ query: jest.fn().mockResolvedValueOnce([[anamnesaRow]]).mockResolvedValueOnce([[]]) });
+    const pregnancyRow = { id: 5, hpht: '2026-06-14', hpl: null };
+    const makeDb = () => ({ query: jest.fn().mockResolvedValueOnce([[pregnancyRow]]) });
     const makeEstimates = (packages) => ({ priceAll: jest.fn().mockResolvedValue({ priced_at: 'now', packages }) });
 
     test('requires a patient session', async () => {
@@ -215,7 +215,7 @@ describe('GET /suggestion', () => {
     });
 
     test('an ended pregnancy returns no weeks and no suggestion but still lists the packages', async () => {
-        const db = { query: jest.fn().mockResolvedValueOnce([[{ hpht: null, hpl: '2027-02-05', recorded_at: new Date('2026-10-01T00:00:00Z') }]]).mockResolvedValueOnce([[]]) };
+        const db = { query: jest.fn().mockResolvedValueOnce([[{ id: 5, hpht: null, hpl: '2027-02-05' }]]) };
         const estimates = makeEstimates([priced({ id: 1, code: 'hamil_a', week_min: 0, week_max: 42 })]);
         const endState = jest.fn().mockResolvedValue({ ended_on: '2026-07-10' });
         const res = await request(buildApp({ service: {}, db, estimates, endState }))
@@ -235,6 +235,19 @@ describe('GET /suggestion', () => {
             .get(`${URL}?date=2026-11-29&category=obstetri`).set('x-test-patient', 'P0001');
         expect(endState).toHaveBeenCalledWith(db, 'P0001', '2026-06-14', expect.anything());
         expect(res.body).toMatchObject({ weeks: 24, suggested_code: 'hamil_a' });
+    });
+
+    test('dates the suggestion from the ongoing pregnancy row (HPL first), never from USG records', async () => {
+        const db = { query: jest.fn().mockResolvedValueOnce([[{ id: 5, hpht: '2026-06-01', hpl: '2027-03-21' }]]) };
+        const estimates = makeEstimates([priced({ id: 1, code: 'hamil_a' })]);
+        const res = await request(buildApp({ service: {}, db, estimates }))
+            .get(`${URL}?date=2026-11-29&category=obstetri`).set('x-test-patient', 'P0001');
+        expect(res.body).toMatchObject({ weeks: 24, days: 0, source: 'hpl', suggested_code: 'hamil_a' });
+        expect(db.query).toHaveBeenCalledTimes(1);
+        expect(db.query.mock.calls[0][0]).toMatch(/FROM pregnancies/);
+        expect(db.query.mock.calls[0][0]).toMatch(/status = 'ongoing'/);
+        expect(db.query.mock.calls[0][1]).toEqual(['P0001']);
+        expect(JSON.stringify(db.query.mock.calls)).not.toMatch(/record_type/);
     });
 
     test('a non-obstetri category has no weeks and no suggestion, and the patient records are not read', async () => {
