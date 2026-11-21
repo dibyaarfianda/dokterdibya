@@ -112,6 +112,31 @@ describe('DRD to DocBoard canonical schedule service', () => {
     expect(preview.diagnosis).toContain('Perkiraan UK saat jadwal: 37 minggu 0 hari');
   });
 
+  test('a linked pregnancy counts as pregnant only while it has not ended on/before the schedule date', async () => {
+    const run = async (pregnancy) => {
+      const service = new DrdDocBoardScheduleService({
+        repository: {
+          loadSnapshot: jest.fn().mockResolvedValue(canonicalSnapshot({
+            patient: { id: 'P001', name: 'Ny. Sari', age: 31 },
+            visit: { category: 'ginekologi_umum', location: 'rsia_melinda', createdAt: '2026-08-01 09:00:00' },
+            diagnosis: { diagnosis_utama: 'Kista ovarium' },
+            anamnesa: {},
+            planning: { rencana: 'Kontrol 20/10/2026 jam 08.00 di Melinda' },
+            pregnancy,
+          })),
+        },
+        surgeryService: {}, docboardService: {}, now: () => NOW,
+      });
+      return (await service.preview({ mr_id: 'DRD1001', schedule_date: '2026-10-20' })).pregnancy.pregnant;
+    };
+    expect(await run({ id: 5, hpht: '2026-02-03', status: 'ended', ended_on: '2026-10-01' })).toBe(false);
+    expect(await run({ id: 5, hpht: '2026-02-03', status: 'ended', ended_on: '2026-10-20' })).toBe(false);
+    expect(await run({ id: 5, hpht: '2026-02-03', status: 'ended', ended_on: null })).toBe(false);
+    expect(await run({ id: 5, hpht: '2026-02-03', status: 'ended', ended_on: '2026-10-25' })).toBe(true);
+    expect(await run({ id: 5, hpht: '2026-02-03', status: 'ongoing', ended_on: null })).toBe(true);
+    expect(await run(null)).toBe(false);
+  });
+
   test('projects saved gestational age from the anamnesis record timestamp, not the visit date', async () => {
     const service = new DrdDocBoardScheduleService({
       repository: {

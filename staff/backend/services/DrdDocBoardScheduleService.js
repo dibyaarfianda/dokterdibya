@@ -421,6 +421,14 @@ class DrdDocBoardRepository {
   }
 }
 
+// A linked pregnancy only says "pregnant" while it has not ended on/before the given date.
+function linkedPregnancyActive(pregnancy, onDate) {
+  if (!pregnancy) return false;
+  if (pregnancy.status !== 'ended') return true;
+  const endedOn = toDateString(pregnancy.ended_on);
+  return Boolean(endedOn && onDate && endedOn > onDate);
+}
+
 function pregnancyLikely(snapshot, diagnosisText) {
   return snapshot.patient?.isPregnant === true
     || snapshot.visit?.category === 'obstetri'
@@ -490,7 +498,7 @@ class DrdDocBoardScheduleService {
     ));
     const suggestions = parsePlanningSuggestions(rencana, this.now(), operationTypes);
     const scheduleDate = requestedDate || suggestions.scheduleDate;
-    const pregnant = pregnancyLikely(snapshot, baseDiagnosis) || Boolean(snapshot.pregnancy);
+    const pregnant = pregnancyLikely(snapshot, baseDiagnosis) || linkedPregnancyActive(snapshot.pregnancy, scheduleDate || today);
     const pregnancy = projectGestationalAge(snapshot.anamnesa, scheduleDate, {
       pregnant,
       pregnancy: snapshot.pregnancy || null,
