@@ -20,10 +20,10 @@ function patientAuth(req, res, next) {
     return res.status(401).json({ success: false, message: 'Missing authorization header' });
 }
 
-function buildApp({ service, db = {}, estimates, refundRequests = {} }) {
+function buildApp({ service, db = {}, estimates, refundRequests = {}, endState = jest.fn().mockResolvedValue(null) }) {
     const app = express();
     app.use(express.json());
-    app.use('/api/patient/checkup-prepay', createPatientCheckupPrepayRouter({ service, db, estimates, refundRequests, verifyPatientToken: patientAuth, logger }));
+    app.use('/api/patient/checkup-prepay', createPatientCheckupPrepayRouter({ service, db, estimates, refundRequests, endState, verifyPatientToken: patientAuth, logger }));
     return app;
 }
 
@@ -212,6 +212,29 @@ describe('GET /suggestion', () => {
         expect(res.body.packages[0]).not.toHaveProperty('id');
         for (const call of db.query.mock.calls) expect(call[1]).toContain('P0001');
         expect(JSON.stringify(db.query.mock.calls)).not.toContain('P9999');
+    });
+
+    test('an ended pregnancy returns no weeks and no suggestion but still lists the packages', async () => {
+        const db = { query: jest.fn().mockResolvedValueOnce([[{ hpht: null, hpl: '2027-02-05', recorded_at: new Date('2026-10-01T00:00:00Z') }]]).mockResolvedValueOnce([[]]) };
+        const estimates = makeEstimates([priced({ id: 1, code: 'hamil_a', week_min: 0, week_max: 42 })]);
+        const endState = jest.fn().mockResolvedValue({ ended_on: '2026-07-10' });
+        const res = await request(buildApp({ service: {}, db, estimates, endState }))
+            .get(`${URL}?date=2026-11-29&category=obstetri`).set('x-test-patient', 'P0001');
+        expect(res.status).toBe(200);
+        expect(endState).toHaveBeenCalledWith(db, 'P0001', '2026-05-01');
+        expect(res.body).toMatchObject({ success: true, weeks: null, days: null, source: null, suggested_code: null });
+        expect(res.body.packages.map(p => p.code)).toEqual(['hamil_a']);
+        expect(JSON.stringify(res.body)).not.toMatch(/ended|keguguran|lahir_mati|outcome/);
+    });
+
+    test('a pregnancy that has not ended keeps the suggestion', async () => {
+        const db = makeDb();
+        const estimates = makeEstimates([priced({ id: 1, code: 'hamil_a' })]);
+        const endState = jest.fn().mockResolvedValue(null);
+        const res = await request(buildApp({ service: {}, db, estimates, endState }))
+            .get(`${URL}?date=2026-11-29&category=obstetri`).set('x-test-patient', 'P0001');
+        expect(endState).toHaveBeenCalledWith(db, 'P0001', '2026-06-14');
+        expect(res.body).toMatchObject({ weeks: 24, suggested_code: 'hamil_a' });
     });
 
     test('a non-obstetri category has no weeks and no suggestion, and the patient records are not read', async () => {

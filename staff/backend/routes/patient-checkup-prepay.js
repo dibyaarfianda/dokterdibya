@@ -22,6 +22,7 @@ const { verifyPatientToken: defaultVerifyPatientToken } = require('../middleware
 const { PremiumError } = require('../services/PremiumPaymentService');
 const { CONSULTATION_CATEGORY_CODES } = require('../constants/consultationCategories');
 const { toPublicEstimate } = require('../services/CheckupEstimateService');
+const { trackerEndState, hphtFromReference } = require('../services/PregnancyEnd');
 const { isValidDateString, gestationalWeeksOn, findPregnancyReference, choosePackage } = require('../services/GestationalAge');
 
 const ORDER_REF_PATTERN = /^DPK-[0-9a-f-]{36}$/i;
@@ -39,6 +40,7 @@ function createPatientCheckupPrepayRouter({
     db,
     estimates,
     refundRequests,
+    endState = trackerEndState,
     verifyPatientToken = defaultVerifyPatientToken,
     logger = defaultLogger
 } = {}) {
@@ -86,7 +88,8 @@ function createPatientCheckupPrepayRouter({
             let suggestedCode = null;
             if (category === 'obstetri') {
                 const reference = await findPregnancyReference(database(), req.patient.id);
-                age = reference ? gestationalWeeksOn(reference, date) : null;
+                const ended = reference ? await endState(database(), req.patient.id, hphtFromReference(reference)) : null;
+                age = reference && !ended ? gestationalWeeksOn(reference, date) : null;
                 if (age) {
                     source = reference.kind;
                     suggestedCode = choosePackage(packages, age.weeks);
