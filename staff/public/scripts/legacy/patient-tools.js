@@ -2100,7 +2100,11 @@ Apakah Anda yakin ingin melanjutkan?`;
                 window.loadHplRiskPatients();
             }
 
-            Swal.fire({ icon: 'success', title: 'Penandaan disimpan', timer: 2000, showConfirmButton: false });
+            if (result.warning) {
+                Swal.fire({ icon: 'info', title: 'Penandaan disimpan', text: result.warning });
+            } else {
+                Swal.fire({ icon: 'success', title: 'Penandaan disimpan', timer: 2000, showConfirmButton: false });
+            }
         } catch (error) {
             console.error('Error marking pregnancy ended:', error);
             Swal.fire({ icon: 'error', title: 'Gagal', text: error.message });

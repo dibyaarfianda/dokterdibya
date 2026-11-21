@@ -25,6 +25,14 @@ const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorEr
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
 const { loadEndEvents, pregnancyListFields, endedSqlCondition } = require('../services/PregnancyEnd');
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
+const { createPregnancyEpisodeService } = require('../services/PregnancyEpisodeService');
+const { markPatientDelivered } = require('../services/MarkDelivered');
+
+let pregnancyEpisodes = null;
+function getPregnancyEpisodes() {
+    if (!pregnancyEpisodes) pregnancyEpisodes = createPregnancyEpisodeService({ db });
+    return pregnancyEpisodes;
+}
 const {
     BulkPatientDeletionService,
     BulkPatientDeletionError
@@ -1818,36 +1826,20 @@ router.patch('/api/patients/:id/status', verifyStaffToken, async (req, res) => {
 // MARK PATIENT AS DELIVERED (creates birth_congratulations entry, supports multiple children)
 router.post('/api/patients/:id/mark-delivered', verifyStaffToken, async (req, res) => {
     try {
-        const patientId = req.params.id;
-
-        // Check if patient exists
-        const [patientRows] = await db.query('SELECT id, full_name FROM patients WHERE id = ?', [patientId]);
-        if (patientRows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
-        }
-
-        // Determine child_number (support multiple children)
-        const [existingBirths] = await db.query(
-            'SELECT MAX(child_number) as max_child FROM birth_congratulations WHERE patient_id = ?',
-            [patientId]
-        );
-        const nextChildNumber = (existingBirths[0].max_child || 0) + 1;
-
-        // Create birth_congratulations entry (minimal - patient fills the rest)
-        await db.query(
-            `INSERT INTO birth_congratulations (patient_id, child_number, birth_date, is_published, patient_data_submitted, patient_dismissed, created_at)
-             VALUES (?, ?, CURDATE(), 0, 0, 0, NOW())`,
-            [patientId, nextChildNumber]
-        );
-
-        // Invalidate cache
-        cache.delPattern('patients:');
-
-        res.json({
-            success: true,
-            child_number: nextChildNumber,
-            message: `Pasien ${patientRows[0].full_name} berhasil ditandai sudah melahirkan (anak ke-${nextChildNumber})`
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        const result = await markPatientDelivered({
+            db,
+            episodes: getPregnancyEpisodes(),
+            patientId: req.params.id,
+            actor: req.user,
+            today
         });
+        if (result.status === 200) {
+            // Invalidate cache
+            cache.delPattern('patients:');
+        }
+        res.status(result.status).json(result.body);
     } catch (error) {
         console.error('Error marking patient as delivered:', error);
         res.status(500).json({
@@ -1859,7 +1851,7 @@ router.post('/api/patients/:id/mark-delivered', verifyStaffToken, async (req, re
 });
 
 // MARK PREGNANCY ENDED (keguguran / lahir mati) - no birth_congratulations, no notifications
-const pregnancyOutcomeService = createPregnancyOutcomeService({ db });
+const pregnancyOutcomeService = createPregnancyOutcomeService({ db, episodes: getPregnancyEpisodes() });
 
 function handlePregnancyOutcomeError(error, res, context) {
     if (error instanceof PregnancyOutcomeError) {
@@ -1875,10 +1867,13 @@ router.post('/api/patients/:id/pregnancy-outcome', verifyStaffToken, async (req,
         const data = await pregnancyOutcomeService.record(
             req.params.id,
             { outcome_type, event_date, note },
-            req.user.id
+            req.user
         );
         cache.delPattern('patients:');
-        res.status(201).json({ success: true, data });
+        const { warning, ...saved } = data;
+        const body = { success: true, data: saved };
+        if (warning) body.warning = warning;
+        res.status(201).json(body);
     } catch (error) {
         handlePregnancyOutcomeError(error, res, 'record');
     }
@@ -1886,7 +1881,7 @@ router.post('/api/patients/:id/pregnancy-outcome', verifyStaffToken, async (req,
 
 router.delete('/api/patients/:id/pregnancy-outcome/:outcomeId', verifyStaffToken, async (req, res) => {
     try {
-        await pregnancyOutcomeService.voidOutcome(req.params.id, req.params.outcomeId, req.user.id);
+        await pregnancyOutcomeService.voidOutcome(req.params.id, req.params.outcomeId, req.user);
         cache.delPattern('patients:');
         res.json({ success: true });
     } catch (error) {
