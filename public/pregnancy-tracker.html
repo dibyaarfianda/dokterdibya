@@ -519,7 +519,7 @@
                 ? 'Pratinjau HPHT'
                 : data.source === 'mock'
                     ? 'Mock data'
-                    : 'USG terakhir';
+                    : 'Catatan dokter';
             const babySize = data.babySize || getBabySize(weeks);
             const developments = Array.isArray(data.developments) && data.developments.length
                 ? data.developments
@@ -571,7 +571,7 @@
                                 <div class="stat-kicker">Taksiran Persalinan</div>
                                 <div class="stat-value">${escapeHtml(data.eddFormatted || '-')}</div>
                             </div>
-                            <div class="stat-sub">HPL berdasarkan ${data.source === 'local' ? 'HPHT' : 'USG'}</div>
+                            <div class="stat-sub">HPL ${data.source === 'local' ? 'berdasarkan HPHT' : 'dari catatan dokter'}</div>
                         </div>
                         <div class="tool-panel stat-tile">
                             <div>

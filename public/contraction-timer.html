@@ -644,7 +644,7 @@
                 if (tracker?.success && tracker.data) {
                     const data = normalizeTrackerData(tracker.data);
                     state.gestationalAge = { weeks: Number(data.weeksPregnant || 0), days: Number(data.daysExtra || 0) };
-                    state.gestationalSource = data.source === 'local' ? 'HPHT lokal' : data.source === 'mock' ? 'Mock data' : 'USG terakhir';
+                    state.gestationalSource = data.source === 'local' ? 'HPHT lokal' : data.source === 'mock' ? 'Mock data' : 'Catatan dokter';
                     setGestationalSource();
                     return;
                 }
