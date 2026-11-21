@@ -1087,6 +1087,30 @@
         return DibyaDateTime.date(d);
     }
 
+    const PREGNANCY_OUTCOME_LABELS = { keguguran: 'Keguguran', lahir_mati: 'Lahir Mati' };
+
+    function jsStringEscape(value) {
+        return String(value || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
+
+    function localDateString(date) {
+        const d = date || new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function buildPregnancyOutcomeBadge(patientId, patientName, pregnancyEnd) {
+        const label = PREGNANCY_OUTCOME_LABELS[pregnancyEnd.type] || 'Kehamilan Berakhir';
+        const payload = jsStringEscape(JSON.stringify({
+            id: pregnancyEnd.id || null,
+            type: pregnancyEnd.type,
+            date: pregnancyEnd.date || '',
+            note: pregnancyEnd.note || ''
+        }));
+        // escapeHtmlSafe also protects the attribute: the browser HTML-decodes it before the JS runs
+        const onclick = escapeHtmlSafe(`showPregnancyOutcome('${jsStringEscape(patientId)}', '${jsStringEscape(patientName)}', '${payload}')`);
+        return `<span class="badge badge-secondary" role="button" style="cursor:pointer" title="Tanggal: ${escapeHtmlSafe(pregnancyEnd.date || '-')}" onclick="${onclick}"><i class="fas fa-ribbon mr-1"></i>${escapeHtmlSafe(label)}</span>`;
+    }
+
     function renderHplRiskRows(items, tbodyId, riskType) {
         const tbody = document.getElementById(tbodyId);
         if (!tbody) return;
@@ -1110,7 +1134,8 @@
             const riskBadge = riskType === 'overdue'
                 ? `<span class="badge badge-danger ml-1">Lewat HPL ${hplDate}</span>`
                 : `<span class="badge badge-warning ml-1">Mendekati HPL ${hplDate}</span>`;
-            const actionButton = `<button type="button" class="btn btn-xs btn-success" onclick="markAsDelivered('${patientIdRaw}', '${patientNameJs}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`;
+            const actionButton = `<button type="button" class="btn btn-xs btn-success" onclick="markAsDelivered('${patientIdRaw}', '${patientNameJs}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`
+                + ` <button type="button" class="btn btn-xs btn-secondary" onclick="markPregnancyEnded('${patientIdRaw}', '${patientNameJs}', this)" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
 
             return `
                 <tr>
@@ -1481,7 +1506,7 @@
             : `${patient.id}${visitHistoryBadge ? ` - ${visitHistoryBadge}` : ''}`;
         const nameCell = `<div><a href="#" class="text-primary font-weight-semibold" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.full_name || '-'}</a></div><div class="small text-muted">${nameMeta}</div>`;
         let hplCell = '-';
-        if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
+        if (patient.is_obstetri && patient.hpl && !patient.pregnancy_end) {
             const hplDate = new Date(patient.hpl);
             const hplFormatted = DibyaDateTime.date(hplDate);
             const weeksPregnant = Math.floor(patient.days_pregnant / 7);
@@ -1489,15 +1514,18 @@
             if (patient.days_pregnant >= 280) { bgClass = 'bg-danger'; textClass = 'text-white'; icon = '<i class="fas fa-exclamation-triangle mr-1"></i>'; }
             else if (patient.days_pregnant >= 259) { bgClass = 'bg-warning'; icon = '<i class="fas fa-clock mr-1"></i>'; }
             hplCell = `<span class="${bgClass} ${textClass} px-1 rounded" title="Usia kehamilan: ${weeksPregnant} minggu">${icon}${hplFormatted}</span>`;
-        } else if (patient.has_delivered) {
+        } else if (patient.pregnancy_end && patient.pregnancy_end.type === 'birth') {
             hplCell = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
+        } else if (patient.pregnancy_end) {
+            hplCell = buildPregnancyOutcomeBadge(patient.id, patient.full_name, patient.pregnancy_end);
         }
         const canEdit = hasPatientToolsPermission('patients.edit');
         const canDelete = hasPatientToolsPermission('patients.delete');
         const canBulkDelete = hasPatientToolsPermission('patients.bulk_delete');
         let deliveryButton = '';
-        if (canEdit && patient.is_obstetri && !patient.has_delivered) {
-            deliveryButton = `<button type="button" class="btn btn-sm btn-success" data-account-permission="patients.edit" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+        if (canEdit && patient.is_obstetri && !patient.pregnancy_end) {
+            deliveryButton = `<button type="button" class="btn btn-sm btn-success js-delivery-btn" data-account-permission="patients.edit" onclick="markAsDelivered('${patient.id}', '${escapedName}', this)" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`
+                + `<button type="button" class="btn btn-sm btn-secondary js-pregnancy-end-btn" data-account-permission="patients.edit" onclick="markPregnancyEnded('${patient.id}', '${escapedName}', this)" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
         }
         const bulkDeleteCheckbox = canBulkDelete
             ? `<input type="checkbox" class="patient-bulk-delete-check mr-1" data-account-permission="patients.bulk_delete" data-patient-id="${escapeHtmlSafe(patient.id)}" data-patient-name="${escapeHtmlSafe(patient.full_name || patient.id)}" onchange="togglePatientBulkSelection(this)" aria-label="Pilih ${escapeHtmlSafe(patient.full_name || patient.id)} untuk dihapus">`
@@ -1535,7 +1563,7 @@
                 </td>
                 <td>${nameCell}</td>
                 <td>${formatPatientType(patient.last_visit_type)}</td>
-                <td data-order="${hplDateSort}">${hplCell}</td>
+                <td data-order="${hplDateSort}" data-hpl-cell="1">${hplCell}</td>
                 <td>${resumeStatusBadge}</td>
                 <td data-order="${registerDateSort}">${registerDate}</td>
                 <td data-order="${visitDateSort}">${visitDate}</td>
@@ -1963,6 +1991,161 @@ Apakah Anda yakin ingin melanjutkan?`;
                 btnEl.disabled = false;
                 btnEl.innerHTML = originalHtml;
             }
+        }
+    };
+
+    // Mark pregnancy as ended without a birth (keguguran / lahir mati). Silent: never notifies the patient.
+    window.markPregnancyEnded = async function(patientId, patientName, btnEl) {
+        if (!hasPatientToolsPermission('patients.edit')) return;
+
+        const today = localDateString(new Date());
+        const confirmResult = await Swal.fire({
+            title: 'Kehamilan Berakhir',
+            html: `
+                <div class="text-left">
+                    <p class="mb-2"><strong>${escapeHtmlSafe(patientName)}</strong></p>
+                    <p class="small text-muted mb-3">Pasien tidak akan menerima pesan atau notifikasi apa pun.</p>
+                    <div class="mb-3">
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="pregEndKeguguran" name="pregEndType" value="keguguran" class="custom-control-input">
+                            <label class="custom-control-label" for="pregEndKeguguran">Keguguran</label>
+                        </div>
+                        <div class="custom-control custom-radio">
+                            <input type="radio" id="pregEndLahirMati" name="pregEndType" value="lahir_mati" class="custom-control-input">
+                            <label class="custom-control-label" for="pregEndLahirMati">Lahir Mati</label>
+                        </div>
+                    </div>
+                    <label for="pregEndDate" class="small mb-1">Tanggal kejadian</label>
+                    <input type="date" id="pregEndDate" class="form-control mb-3" value="${today}" max="${today}">
+                    <label for="pregEndNote" class="small mb-1">Catatan (opsional)</label>
+                    <textarea id="pregEndNote" class="form-control" rows="3" maxlength="500"></textarea>
+                </div>`,
+            showCancelButton: true,
+            confirmButtonText: 'Simpan',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#6c757d',
+            focusConfirm: false,
+            preConfirm: () => {
+                const typeEl = document.querySelector('input[name="pregEndType"]:checked');
+                const date = document.getElementById('pregEndDate').value;
+                const note = document.getElementById('pregEndNote').value.trim();
+                if (!typeEl) { Swal.showValidationMessage('Pilih Keguguran atau Lahir Mati'); return false; }
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { Swal.showValidationMessage('Tanggal kejadian wajib diisi'); return false; }
+                if (date > today) { Swal.showValidationMessage('Tanggal tidak boleh di masa depan'); return false; }
+                return { outcome_type: typeEl.value, event_date: date, note };
+            }
+        });
+
+        if (!confirmResult.isConfirmed || !confirmResult.value) return;
+
+        const body = { outcome_type: confirmResult.value.outcome_type, event_date: confirmResult.value.event_date };
+        if (confirmResult.value.note) body.note = confirmResult.value.note;
+
+        const originalHtml = btnEl ? btnEl.innerHTML : '';
+        if (btnEl) {
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        }
+
+        try {
+            const response = await fetch(`/api/patients/${encodeURIComponent(patientId)}/pregnancy-outcome`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : '')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || result.success === false) {
+                throw new Error(result.message || 'Gagal menyimpan penandaan');
+            }
+
+            const saved = result.data || {};
+            const row = btnEl ? btnEl.closest('tr') : null;
+            if (row) {
+                const hplCell = row.querySelector('[data-hpl-cell]');
+                if (hplCell) {
+                    hplCell.innerHTML = buildPregnancyOutcomeBadge(patientId, patientName, {
+                        id: saved.id,
+                        type: saved.outcome_type || body.outcome_type,
+                        date: saved.event_date || body.event_date,
+                        note: body.note || ''
+                    });
+                }
+                row.querySelectorAll('.js-delivery-btn, .js-pregnancy-end-btn').forEach(el => el.remove());
+            }
+            if (btnEl && btnEl.isConnected) btnEl.remove();
+
+            if (typeof window.loadHplRiskPatients === 'function') {
+                window.loadHplRiskPatients();
+            }
+
+            Swal.fire({ icon: 'success', title: 'Penandaan disimpan', timer: 2000, showConfirmButton: false });
+        } catch (error) {
+            console.error('Error marking pregnancy ended:', error);
+            Swal.fire({ icon: 'error', title: 'Gagal', text: error.message });
+            if (btnEl) {
+                btnEl.disabled = false;
+                btnEl.innerHTML = originalHtml;
+            }
+        }
+    };
+
+    // Show a recorded pregnancy outcome; staff with patients.edit may cancel the marking.
+    window.showPregnancyOutcome = async function(patientId, patientName, outcomeJson) {
+        let outcome = {};
+        try { outcome = typeof outcomeJson === 'string' ? JSON.parse(outcomeJson) : (outcomeJson || {}); } catch (_) { outcome = {}; }
+        const label = PREGNANCY_OUTCOME_LABELS[outcome.type] || 'Kehamilan Berakhir';
+        const canEdit = Boolean(hasPatientToolsPermission('patients.edit') && outcome.id);
+
+        const result = await Swal.fire({
+            title: 'Kehamilan Berakhir',
+            html: `
+                <div class="text-left">
+                    <p class="mb-2"><strong>${escapeHtmlSafe(patientName)}</strong></p>
+                    <p class="mb-1"><span class="text-muted">Jenis:</span> ${escapeHtmlSafe(label)}</p>
+                    <p class="mb-1"><span class="text-muted">Tanggal:</span> ${escapeHtmlSafe(outcome.date || '-')}</p>
+                    <p class="mb-0"><span class="text-muted">Catatan:</span> ${escapeHtmlSafe(outcome.note || '-')}</p>
+                </div>`,
+            showCancelButton: canEdit,
+            showConfirmButton: canEdit,
+            confirmButtonText: 'Batalkan penandaan',
+            cancelButtonText: 'Tutup',
+            confirmButtonColor: '#dc3545',
+            showCloseButton: true
+        });
+
+        if (!canEdit || !result.isConfirmed) return;
+
+        const confirmCancel = await Swal.fire({
+            title: 'Batalkan penandaan?',
+            text: 'Pasien akan kembali dihitung sebagai hamil.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, batalkan',
+            cancelButtonText: 'Kembali',
+            confirmButtonColor: '#dc3545'
+        });
+        if (!confirmCancel.isConfirmed) return;
+
+        try {
+            const response = await fetch(`/api/patients/${encodeURIComponent(patientId)}/pregnancy-outcome/${encodeURIComponent(outcome.id)}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${(window.getAuthToken ? window.getAuthToken() : '')}` }
+            });
+            const body = await response.json().catch(() => ({}));
+            if (!response.ok || body.success === false) {
+                throw new Error(body.message || 'Gagal membatalkan penandaan');
+            }
+            await loadWebPatients();
+            if (typeof window.loadHplRiskPatients === 'function') {
+                window.loadHplRiskPatients();
+            }
+            Swal.fire({ icon: 'success', title: 'Penandaan dibatalkan', timer: 2000, showConfirmButton: false });
+        } catch (error) {
+            console.error('Error cancelling pregnancy outcome:', error);
+            Swal.fire({ icon: 'error', title: 'Gagal', text: error.message });
         }
     };
 
