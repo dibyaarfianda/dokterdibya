@@ -13,11 +13,12 @@ function parseCols(sql, re) {
 }
 
 /** In-memory fake of the tables the service touches, keyed on SQL fragments. */
-function makeDb({ pregnancies = [], visits = [], anamnesa = {} } = {}) {
+function makeDb({ pregnancies = [], visits = [], anamnesa = {}, resumes = [] } = {}) {
     const state = {
         pregnancies: pregnancies.map(p => ({ ...p })),
         visits: visits.map(v => ({ ...v })),
         anamnesa,
+        resumes,
         links: [],
         nextId: 100,
         tx: { begin: 0, commit: 0, rollback: 0, release: 0 },
@@ -25,7 +26,7 @@ function makeDb({ pregnancies = [], visits = [], anamnesa = {} } = {}) {
     };
     async function query(sql, params = []) {
         state.sql.push(sql);
-        if (/FROM medical_records/.test(sql)) {
+        if (/^SELECT record_data FROM medical_records/.test(sql)) {
             const rec = state.anamnesa[params[0]];
             const owner = state.visits.find(v => v.mr_id === params[0]);
             return [rec && owner && owner.patient_id === params[1] ? [{ record_data: JSON.stringify(rec) }] : []];
@@ -38,6 +39,19 @@ function makeDb({ pregnancies = [], visits = [], anamnesa = {} } = {}) {
             const l = state.links.filter(x => x.id === params[0] && x.table === tbl).pop();
             return [[{ pregnancy_id: l ? l.pregnancy_id : null }]];
         }
+        if (/^SELECT mr_id FROM sunday_clinic_records\s+WHERE pregnancy_id = \?/.test(sql)) {
+            const rows = state.visits
+                .filter(v => v.pregnancy_id === params[0])
+                .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+            return [rows.slice(0, 1).map(v => ({ mr_id: v.mr_id }))];
+        }
+        const count = sql.match(/^SELECT COUNT\(\*\) AS n FROM (\w+) WHERE pregnancy_id = \?/);
+        if (count) {
+            const n = count[1] === 'sunday_clinic_records'
+                ? state.visits.filter(v => v.pregnancy_id === params[0]).length
+                : state.links.filter(l => l.table === count[1] && l.pregnancy_id === params[0]).length;
+            return [[{ n }]];
+        }
         if (/FROM sunday_clinic_records/.test(sql) && /mr_category = 'obstetri'/.test(sql)) {
             const rows = state.visits
                 .filter(v => v.patient_id === params[0])
@@ -49,7 +63,10 @@ function makeDb({ pregnancies = [], visits = [], anamnesa = {} } = {}) {
                 const latest = state.visits
                     .filter(v => v.pregnancy_id === p.id)
                     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
-                return { ...p, latest_mr_id: latest ? latest.mr_id : null };
+                const resume = state.visits
+                    .filter(v => v.pregnancy_id === p.id && state.resumes.includes(v.mr_id))
+                    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
+                return { ...p, latest_mr_id: latest ? latest.mr_id : null, latest_resume_mr_id: resume ? resume.mr_id : null };
             });
             return [rows];
         }
@@ -84,10 +101,13 @@ function makeDb({ pregnancies = [], visits = [], anamnesa = {} } = {}) {
             return [{ affectedRows: before - state.pregnancies.length }];
         }
         if (/^UPDATE sunday_clinic_records SET pregnancy_id/.test(sql)) {
-            const [pid, mr, patient] = params;
-            state.visits.filter(v => v.mr_id === mr && v.patient_id === patient).forEach(v => { v.pregnancy_id = pid; });
-            state.links.push({ table: 'sunday_clinic_records', pregnancy_id: pid, mr_id: mr });
-            return [{ affectedRows: 1 }];
+            const [pid, mr, patient, from] = params;
+            const allowed = v => !/pregnancy_id IS NULL/.test(sql) || v.pregnancy_id == null
+                || (/OR pregnancy_id = \?/.test(sql) && v.pregnancy_id === from);
+            const hit = state.visits.filter(v => v.mr_id === mr && v.patient_id === patient && allowed(v));
+            hit.forEach(v => { v.pregnancy_id = pid; });
+            if (hit.length) state.links.push({ table: 'sunday_clinic_records', pregnancy_id: pid, mr_id: mr });
+            return [{ affectedRows: hit.length }];
         }
         const link = sql.match(/^UPDATE (pregnancy_outcomes|birth_congratulations) SET pregnancy_id = \? WHERE id = \?/);
         if (link) {
@@ -486,5 +506,204 @@ describe('PregnancyEpisodeService.listNeedsReview', () => {
             { patient_id: 'P0002', full_name: 'Ibu B', pregnancy_id: 4, reason: 'Cara lahir belum diisi' },
             { patient_id: 'P0003', full_name: 'Ibu C', pregnancy_id: 3, reason: 'Perlu dicek' }
         ]);
+    });
+});
+
+describe('final review fixes', () => {
+    const endedBirth = (over = {}) => ({
+        id: 1, patient_id: 'P1', sequence: 1, source: 'clinic', hpht: '2025-12-01', hpl: '2026-09-07',
+        status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-09-01', delivery_method: 'Spt B (Spontan)', ...over
+    });
+
+    test('#1 re-saving the newest visit of an ended pregnancy creates nothing and keeps the link', async () => {
+        const db = makeDb({ pregnancies: [endedBirth()], visits: [visit('DRD1', '2026-08-01 08:00:00', { pregnancy_id: 1 })], anamnesa: { DRD1: { hpht: '2025-12-01' } } });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD1', DOKTER);
+        expect(res.action).toBe('none');
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.pregnancies[0].status).toBe('ended');
+        expect(db.state.pregnancies[0].needs_review).toBeUndefined();
+        expect(db.state.visits[0].pregnancy_id).toBe(1);
+    });
+
+    test('#1 an unlinked visit within 14 days of an ended HPHT links to that pregnancy', async () => {
+        const db = makeDb({ pregnancies: [endedBirth()], visits: [visit('DRD1', '2026-08-01 08:00:00')], anamnesa: { DRD1: { hpht: '2025-12-10' } } });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD1', DOKTER);
+        expect(res.action).toBe('none');
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.visits[0].pregnancy_id).toBe(1);
+    });
+
+    test('#1 HPHT on/before the newest end date flags that ended pregnancy for review', async () => {
+        const db = makeDb({ pregnancies: [endedBirth()], visits: [visit('DRD1', '2026-11-01 08:00:00')], anamnesa: { DRD1: { hpht: '2026-06-01' } } });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD1', DOKTER);
+        expect(res.action).toBe('none');
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.pregnancies[0]).toMatchObject({ needs_review: 1, review_reason: 'HPHT kunjungan tidak cocok dengan kehamilan yang sudah selesai' });
+        expect(db.state.visits[0].pregnancy_id).toBeNull();
+    });
+
+    test('#1 an HPHT after the newest end date still starts a new pregnancy', async () => {
+        const db = makeDb({ pregnancies: [endedBirth()], visits: [visit('DRD1', '2026-11-01 08:00:00')], anamnesa: { DRD1: { hpht: '2026-10-01' } } });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD1', DOKTER);
+        expect(res.action).toBe('start');
+        expect(db.state.pregnancies).toHaveLength(2);
+        expect(db.state.visits[0].pregnancy_id).toBe(res.pregnancy.id);
+    });
+
+    test('#1 linkVisit never moves an already-linked visit (none with ongoing)', async () => {
+        const db = makeDb({
+            pregnancies: [endedBirth({ id: 5, hpht: '2024-01-01', ended_on: '2024-10-01' }), ongoingPreg({ id: 6, sequence: 2, hpht: '2026-05-01' })],
+            visits: [visit('DRD1', '2026-11-01 08:00:00', { pregnancy_id: 5 })],
+            anamnesa: { DRD1: { hpht: '' } }
+        });
+        await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD1', DOKTER);
+        expect(db.state.visits[0].pregnancy_id).toBe(5);
+    });
+
+    test('#1 startWithPreviousEnd moves the visit off the pregnancy it closes', async () => {
+        const db = makeDb({
+            pregnancies: [ongoingPreg({ hpht: '2025-12-01' })],
+            visits: [visit('DRD1', '2026-11-01 08:00:00', { pregnancy_id: 1 })],
+            anamnesa: { DRD1: { hpht: '2026-10-01' } }
+        });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).startWithPreviousEnd('P1', 'DRD1', { outcome: 'lahir_hidup', ended_on: '2026-09-01', delivery_method: 'Spt B (Spontan)' }, DOKTER);
+        expect(db.state.visits[0].pregnancy_id).toBe(res.pregnancy.id);
+    });
+
+    test('#2 editing an external birth without GA keeps the term; GA decides when known', async () => {
+        const db = makeDb({ pregnancies: [{ id: 7, patient_id: 'P1', sequence: 1, source: 'external', status: 'ended', outcome: 'lahir_hidup', year: 2019, delivery_method: 'Spt B (Spontan)', term: 'preterm' }] });
+        const svc = createPregnancyEpisodeService({ db, now: NOW });
+        const res = await svc.updateHistory('P1', 7, { delivery_indication: 'x', complication_notes: 'y' }, DOKTER);
+        expect(res.pregnancy.term).toBe('preterm');
+        const res2 = await svc.updateHistory('P1', 7, { term: 'postterm' }, DOKTER);
+        expect(res2.pregnancy.term).toBe('postterm');
+        const res3 = await svc.updateHistory('P1', 7, { term: null }, DOKTER);
+        expect(res3.pregnancy.term).toBeNull();
+        await expectError(svc.updateHistory('P1', 7, { term: 'kapan2' }, DOKTER), 400, 'Usia kehamilan saat lahir tidak valid');
+        const ext = await svc.addExternal('P1', { year: 2018, outcome: 'lahir_hidup', delivery_method: 'Spt B (Spontan)', term: 'aterm' }, DOKTER);
+        expect(ext.pregnancy.term).toBe('aterm');
+        const withGa = await svc.addExternal('P1', { hpht: '2020-01-01', ended_on: '2020-08-01', outcome: 'lahir_hidup', delivery_method: 'Spt B (Spontan)', term: 'aterm' }, DOKTER);
+        expect(withGa.pregnancy.term).toBe('preterm');
+    });
+
+    test('#2 startWithPreviousEnd accepts a term when GA cannot be computed', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg({ hpht: null })], visits: [visit('DRD1', '2026-11-01 08:00:00')], anamnesa: { DRD1: { hpht: '2026-10-01' } } });
+        await createPregnancyEpisodeService({ db, now: NOW }).startWithPreviousEnd('P1', 'DRD1', { outcome: 'lahir_hidup', ended_on: '2026-09-01', delivery_method: 'Spt B (Spontan)', term: 'preterm' }, DOKTER);
+        expect(db.state.pregnancies[0]).toMatchObject({ status: 'ended', term: 'preterm' });
+    });
+
+    test('#3 stored review reason wins in listNeedsReview; a recomputed review clears it', async () => {
+        const qdb = { query: jest.fn().mockResolvedValue([[
+            { pregnancy_id: 5, patient_id: 'P1', full_name: 'A', outcome: 'lahir_hidup', delivery_method: null, review_reason: 'Riwayat persalinan berbeda antar kunjungan' },
+            { pregnancy_id: 4, patient_id: 'P2', full_name: 'B', outcome: 'lahir_hidup', delivery_method: null, review_reason: null }
+        ]]) };
+        const list = await createPregnancyEpisodeService({ db: qdb, now: NOW }).listNeedsReview();
+        expect(qdb.query.mock.calls[0][0]).toMatch(/p\.review_reason/);
+        expect(list.map(r => r.reason)).toEqual(['Riwayat persalinan berbeda antar kunjungan', 'Cara lahir belum diisi']);
+
+        const db = makeDb({ pregnancies: [endedBirth({ needs_review: 1, review_reason: 'HPHT kunjungan tidak cocok dengan kehamilan yang sudah selesai' })] });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).updateHistory('P1', 1, { complication_notes: 'ok' }, DOKTER);
+        expect(res.pregnancy).toMatchObject({ needs_review: 0, review_reason: null });
+    });
+
+    test('#4 a second live birth within 3 days attaches to the ended pregnancy (no insert)', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        const svc = createPregnancyEpisodeService({ db, now: NOW });
+        await svc.endOngoing('P1', { outcome: 'lahir_hidup', ended_on: '2026-11-10', linkTable: 'birth_congratulations', linkId: 41 }, DOKTER);
+        const second = await svc.endOngoing('P1', { outcome: 'lahir_hidup', ended_on: '2026-11-12', linkTable: 'birth_congratulations', linkId: 42 }, DOKTER);
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(second.pregnancy.id).toBe(1);
+        expect(db.state.links.filter(l => l.table === 'birth_congratulations')).toEqual([
+            { table: 'birth_congratulations', pregnancy_id: 1, id: 41 },
+            { table: 'birth_congratulations', pregnancy_id: 1, id: 42 }
+        ]);
+        // More than 3 days later is a separate pregnancy.
+        await svc.endOngoing('P1', { outcome: 'lahir_hidup', ended_on: '2026-11-20', linkTable: 'birth_congratulations', linkId: 43 }, DOKTER);
+        expect(db.state.pregnancies).toHaveLength(2);
+    });
+
+    test('#4 two mark-delivered calls within 3 days: one pregnancy, two linked birth rows', async () => {
+        const { markPatientDelivered } = require('../../services/MarkDelivered');
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        let birthId = 40;
+        const baseQuery = db.query;
+        const query = async (sql, params) => {
+            if (sql.includes('FROM patients')) return [[{ id: 'P1', full_name: 'Ibu Ani' }]];
+            if (sql.includes('MAX(child_number)')) return [[{ max_child: birthId - 40 }]];
+            if (sql.includes('INSERT INTO birth_congratulations')) return [{ insertId: ++birthId }];
+            return baseQuery(sql, params);
+        };
+        const conn = { ...(await db.getConnection()), query };
+        const wrapped = { query, getConnection: async () => conn };
+        const episodes = createPregnancyEpisodeService({ db: wrapped, now: NOW });
+        await markPatientDelivered({ db: wrapped, episodes, patientId: 'P1', actor: DOKTER, today: '2026-11-20' });
+        await markPatientDelivered({ db: wrapped, episodes, patientId: 'P1', actor: DOKTER, today: '2026-11-21' });
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.links.filter(l => l.table === 'birth_congratulations')).toEqual([
+            { table: 'birth_congratulations', pregnancy_id: 1, id: 41 },
+            { table: 'birth_congratulations', pregnancy_id: 1, id: 42 }
+        ]);
+    });
+
+    test('#5 removeExternal refuses with 409 when anything still links to the pregnancy', async () => {
+        const ext = { id: 8, patient_id: 'P1', sequence: 1, source: 'external', status: 'ended', outcome: 'lahir_hidup', year: 2020 };
+        const msg = 'Kehamilan ini terhubung dengan data kelahiran/keguguran atau kunjungan dan tidak dapat dihapus';
+        const db1 = makeDb({ pregnancies: [ext] });
+        db1.state.links.push({ table: 'birth_congratulations', pregnancy_id: 8, id: 3 });
+        await expectError(createPregnancyEpisodeService({ db: db1, now: NOW }).removeExternal('P1', 8, DOKTER), 409, msg);
+        expect(db1.state.pregnancies).toHaveLength(1);
+        const db2 = makeDb({ pregnancies: [ext] });
+        db2.state.links.push({ table: 'pregnancy_outcomes', pregnancy_id: 8, id: 3 });
+        await expectError(createPregnancyEpisodeService({ db: db2, now: NOW }).removeExternal('P1', 8, DOKTER), 409, msg);
+        const db3 = makeDb({ pregnancies: [ext], visits: [visit('DRD1', '2020-01-01 08:00:00', { pregnancy_id: 8 })] });
+        await expectError(createPregnancyEpisodeService({ db: db3, now: NOW }).removeExternal('P1', 8, DOKTER), 409, msg);
+        const db4 = makeDb({ pregnancies: [ext] });
+        await createPregnancyEpisodeService({ db: db4, now: NOW }).removeExternal('P1', 8, DOKTER);
+        expect(db4.state.pregnancies).toHaveLength(0);
+    });
+
+    test('#6 an older visit does not change dating; it flags the pregnancy for review', async () => {
+        const db = makeDb({
+            pregnancies: [ongoingPreg()],
+            visits: [visit('DRD1', '2026-03-01 08:00:00', { pregnancy_id: 1 }), visit('DRD2', '2026-05-01 08:00:00', { pregnancy_id: 1 })],
+            anamnesa: { DRD1: { hpht: '2026-02-10', hpl: '2026-11-17' } }
+        });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD1', DOKTER);
+        expect(res.action).toBe('update');
+        expect(db.state.pregnancies[0]).toMatchObject({ hpht: '2026-02-01', hpl: '2026-11-08', needs_review: 1, review_reason: 'HPHT berbeda di kunjungan lama' });
+    });
+
+    test('#6 the newest visit changes dating; a missing HPL becomes HPHT + 280 days', async () => {
+        const db = makeDb({
+            pregnancies: [ongoingPreg()],
+            visits: [visit('DRD1', '2026-03-01 08:00:00', { pregnancy_id: 1 }), visit('DRD2', '2026-05-01 08:00:00', { pregnancy_id: 1 })],
+            anamnesa: { DRD2: { hpht: '2026-02-10' } }
+        });
+        await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD2', DOKTER);
+        expect(db.state.pregnancies[0]).toMatchObject({ hpht: '2026-02-10', hpl: '2026-11-17' });
+        expect(db.state.pregnancies[0].needs_review).toBeUndefined();
+    });
+
+    test('#12 a future end date is refused outside mark-delivered', async () => {
+        const msg = 'Tanggal selesai tidak boleh di masa depan';
+        const start = makeDb({ pregnancies: [ongoingPreg({ hpht: '2026-05-01' })], visits: [visit('DRD1', '2026-11-01 08:00:00')], anamnesa: { DRD1: { hpht: '2026-12-01' } } });
+        await expectError(createPregnancyEpisodeService({ db: start, now: NOW }).startWithPreviousEnd('P1', 'DRD1', { outcome: 'abortus', ended_on: '2026-11-22' }, DOKTER), 400, msg);
+        const hist = makeDb({ pregnancies: [endedBirth()] });
+        const svc = createPregnancyEpisodeService({ db: hist, now: NOW });
+        await expectError(svc.updateHistory('P1', 1, { ended_on: '2026-11-22' }, DOKTER), 400, msg);
+        await expectError(svc.addExternal('P1', { outcome: 'abortus', ended_on: '2026-11-22' }, DOKTER), 400, msg);
+        const today = await svc.addExternal('P1', { outcome: 'abortus', ended_on: '2026-11-21' }, DOKTER);
+        expect(today.pregnancy.ended_on).toBe('2026-11-21');
+    });
+
+    test('#13 list adds latest_resume_mr_id from the newest linked visit with a resume', async () => {
+        const db = makeDb({
+            pregnancies: [endedBirth()],
+            visits: [visit('DRD1', '2026-03-01 08:00:00', { pregnancy_id: 1 }), visit('DRD2', '2026-05-01 08:00:00', { pregnancy_id: 1 }), visit('DRD3', '2026-08-01 08:00:00', { pregnancy_id: 1 })],
+            resumes: ['DRD1', 'DRD2']
+        });
+        const rows = await createPregnancyEpisodeService({ db, now: NOW }).list('P1');
+        expect(rows[0]).toMatchObject({ latest_mr_id: 'DRD3', latest_resume_mr_id: 'DRD2' });
+        expect(db.state.sql.find(s => /^SELECT p\.\*/.test(s))).toMatch(/record_type = 'resume_medis'[\s\S]*ORDER BY r2\.created_at DESC, r2\.id DESC LIMIT 1\) AS latest_resume_mr_id/);
     });
 });

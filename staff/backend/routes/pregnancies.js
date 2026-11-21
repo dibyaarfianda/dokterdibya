@@ -25,7 +25,7 @@ const PATIENT_ID = /^[A-Za-z0-9_-]{1,50}$/;
 const NUMERIC_ID = /^[1-9]\d{0,15}$/;
 const END_FIELDS = [
     'outcome', 'ended_on', 'delivery_method', 'delivery_indication',
-    'complications', 'complication_notes', 'babies', 'kuretase', 'ga_weeks_at_end'
+    'complications', 'complication_notes', 'babies', 'kuretase', 'ga_weeks_at_end', 'term'
 ];
 
 function noStore(req, res, next) {

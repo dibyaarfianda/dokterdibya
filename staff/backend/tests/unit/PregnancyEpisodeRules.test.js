@@ -168,4 +168,12 @@ describe('toRiwayatPersalinanList', () => {
     test('empty input', () => {
         expect(rules.toRiwayatPersalinanList(null)).toEqual([]);
     });
+
+    test('unknown term stays null instead of Aterm; postterm maps to Aterm', () => {
+        const out = rules.toRiwayatPersalinanList([
+            { id: 1, status: 'ended', outcome: 'lahir_hidup', year: 2018, term: null, delivery_method: null },
+            { id: 2, status: 'ended', outcome: 'lahir_hidup', year: 2019, term: 'postterm', delivery_method: null }
+        ]);
+        expect(out.map(e => e.persalinan)).toEqual([null, 'Aterm']);
+    });
 });

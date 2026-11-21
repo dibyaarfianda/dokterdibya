@@ -116,7 +116,8 @@ function toRiwayatPersalinanList(pregnancies) {
                 type: 'DELIVERY',
                 tahun: year,
                 bulan: ended ? Number(ended.slice(5, 7)) : null,
-                persalinan: p.term === 'preterm' ? 'Preterm' : 'Aterm',
+                // Unknown term stays unknown (never guessed as Aterm); the editor has no Postterm option.
+                persalinan: p.term === 'preterm' ? 'Preterm' : (p.term === 'aterm' || p.term === 'postterm' ? 'Aterm' : null),
                 metode_persalinan: p.delivery_method || null,
                 berat_lahir: first && first.weight_g ? first.weight_g : null,
                 jenis_kelamin: first && first.sex ? first.sex : null,

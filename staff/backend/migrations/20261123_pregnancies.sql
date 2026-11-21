@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS pregnancies (
     kuretase ENUM('Ya','Tidak') NULL,
     term ENUM('aterm','preterm','postterm') NULL,
     needs_review TINYINT(1) NOT NULL DEFAULT 0,
+    review_reason VARCHAR(255) NULL,
     fingerprint VARCHAR(64) NULL,
     created_by VARCHAR(64) NULL,
     updated_by VARCHAR(64) NULL,
@@ -76,6 +77,7 @@ BEGIN
     END IF;
 END$$
 
+CALL pregnancies_add_column_if_missing('pregnancies', 'review_reason', 'review_reason VARCHAR(255) NULL AFTER needs_review')$$
 CALL pregnancies_add_column_if_missing('sunday_clinic_records', 'pregnancy_id', 'pregnancy_id INT NULL')$$
 CALL pregnancies_add_index_if_missing('sunday_clinic_records', 'idx_sunday_clinic_records_pregnancy_id', 'INDEX idx_sunday_clinic_records_pregnancy_id (pregnancy_id)')$$
 CALL pregnancies_add_column_if_missing('pregnancy_outcomes', 'pregnancy_id', 'pregnancy_id INT NULL')$$

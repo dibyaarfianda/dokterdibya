@@ -21,6 +21,13 @@ const LINK_TABLES = ['pregnancy_outcomes', 'birth_congratulations'];
 const COMPLICATION_CODES = PREGNANCY_COMPLICATIONS.map(c => c.code);
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NEWEST_VISIT_MESSAGE = 'Hanya kunjungan obstetri terbaru yang dapat memulai kehamilan baru';
+const TERMS = ['aterm', 'preterm', 'postterm'];
+const FULL_TERM_DAYS = 280;
+// Births this close to an already-ended live birth are the same pregnancy (twins / double click).
+const TWIN_WINDOW_DAYS = 3;
+const REVIEW_ENDED_MISMATCH = 'HPHT kunjungan tidak cocok dengan kehamilan yang sudah selesai';
+const REVIEW_OLD_VISIT_HPHT = 'HPHT berbeda di kunjungan lama';
+const LINKED_DELETE_MESSAGE = 'Kehamilan ini terhubung dengan data kelahiran/keguguran atau kunjungan dan tidak dapat dihapus';
 
 class PregnancyEpisodeError extends Error {
     constructor(status, message) {
@@ -44,6 +51,12 @@ function parseDate(value) {
 function dayNumber(str) {
     const [y, m, d] = str.split('-').map(Number);
     return Math.round(Date.UTC(y, m - 1, d) / DAY_MS);
+}
+
+function addDays(str, days) {
+    const date = new Date((dayNumber(str) + days) * DAY_MS);
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
 function parseJson(raw, fallback) {
@@ -127,7 +140,7 @@ function termForGa(ga) {
  * ctx: { hpht, newHpht, requireDate, allowUnknown, requireBirthDetails }
  */
 function normalizeEnd(input, ctx = {}) {
-    const { hpht = null, newHpht = null, requireDate = true, allowUnknown = false, requireBirthDetails = true } = ctx;
+    const { hpht = null, newHpht = null, requireDate = true, allowUnknown = false, requireBirthDetails = true, today = null } = ctx;
     const src = input || {};
     const outcome = src.outcome;
     const isUnknown = allowUnknown && outcome === 'unknown';
@@ -137,6 +150,7 @@ function normalizeEnd(input, ctx = {}) {
     if (src.ended_on !== undefined && src.ended_on !== null && src.ended_on !== '') {
         endedOn = parseDate(src.ended_on);
         if (!endedOn) fail(400, 'Tanggal selesai tidak valid');
+        if (today && endedOn > today) fail(400, 'Tanggal selesai tidak boleh di masa depan');
     } else if (requireDate) {
         fail(400, 'Tanggal selesai tidak valid');
     }
@@ -174,6 +188,12 @@ function normalizeEnd(input, ctx = {}) {
         else if (src.kuretase !== undefined && src.kuretase !== null && src.kuretase !== '') fail(400, 'Kuretase tidak valid');
     }
 
+    let givenTerm = null;
+    if (src.term !== undefined && src.term !== null && src.term !== '') {
+        if (!TERMS.includes(src.term)) fail(400, 'Usia kehamilan saat lahir tidak valid');
+        givenTerm = src.term;
+    }
+
     const ga = endedOn && hphtStr ? gaWeeksAt(hphtStr, endedOn) : null;
     let warning = null;
     const expected = lossTypeForGa(ga);
@@ -193,8 +213,11 @@ function normalizeEnd(input, ctx = {}) {
         complication_notes: complicationNotes,
         babies: babies.length ? JSON.stringify(babies) : null,
         kuretase,
-        term: isBirth ? termForGa(ga) : null,
-        needs_review: isBirth && !deliveryMethod ? 1 : 0
+        // GA decides the term when it is known; otherwise keep the term that was given (external history).
+        term: isBirth ? (termForGa(ga) || givenTerm) : null,
+        needs_review: isBirth && !deliveryMethod ? 1 : 0,
+        // A recomputed review state drops any stored reason (the review list derives one when needed).
+        review_reason: null
     };
     return { cols, warning };
 }
@@ -280,9 +303,20 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         if (!rows || rows.length === 0) fail(404, 'Kunjungan tidak ditemukan untuk pasien ini');
     }
 
-    async function linkVisit(conn, pregnancyId, mrId, patientId) {
+    /**
+     * Link a visit to a pregnancy. An already-linked visit is never moved, except away from
+     * `replaceFrom` (the pregnancy that startWithPreviousEnd closes for this very visit).
+     */
+    async function linkVisit(conn, pregnancyId, mrId, patientId, { replaceFrom = null } = {}) {
+        if (replaceFrom) {
+            await conn.query(
+                'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND patient_id = ? AND (pregnancy_id IS NULL OR pregnancy_id = ?)',
+                [pregnancyId, mrId, patientId, replaceFrom]
+            );
+            return;
+        }
         await conn.query(
-            'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND patient_id = ?',
+            'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND patient_id = ? AND pregnancy_id IS NULL',
             [pregnancyId, mrId, patientId]
         );
     }
@@ -301,14 +335,65 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         };
     }
 
-    async function assertNewestObstetriVisit(conn, patientId, mrId) {
+    async function newestObstetriMrId(conn, patientId) {
         const [rows] = await conn.query(
             `SELECT mr_id FROM sunday_clinic_records
              WHERE patient_id = ? AND mr_category = 'obstetri'
              ORDER BY created_at DESC, id DESC LIMIT 1`,
             [patientId]
         );
-        if (!rows || !rows[0] || rows[0].mr_id !== mrId) fail(409, NEWEST_VISIT_MESSAGE);
+        return rows && rows[0] ? rows[0].mr_id : null;
+    }
+
+    async function assertNewestObstetriVisit(conn, patientId, mrId) {
+        if ((await newestObstetriMrId(conn, patientId)) !== mrId) fail(409, NEWEST_VISIT_MESSAGE);
+    }
+
+    async function newestLinkedMrId(conn, pregnancyId) {
+        const [rows] = await conn.query(
+            `SELECT mr_id FROM sunday_clinic_records
+             WHERE pregnancy_id = ?
+             ORDER BY created_at DESC, id DESC LIMIT 1`,
+            [pregnancyId]
+        );
+        return rows && rows[0] ? rows[0].mr_id : null;
+    }
+
+    /** Only the pregnancy's newest linked visit or the patient's newest obstetri visit may change dating. */
+    async function mayChangeDating(conn, patientId, pregnancyId, mrId) {
+        if ((await newestLinkedMrId(conn, pregnancyId)) === mrId) return true;
+        return (await newestObstetriMrId(conn, patientId)) === mrId;
+    }
+
+    /**
+     * A visit HPHT against the patient's ended pregnancies:
+     *   { kind: 'same', pregnancy }     within 14 days of an ended pregnancy's HPHT
+     *   { kind: 'mismatch', pregnancy } on/before the newest ended pregnancy's end date
+     *   null                            a genuinely new pregnancy
+     */
+    function matchEnded(rows, hpht) {
+        const ended = rows.filter(p => p.status === 'ended');
+        let same = null;
+        for (const p of ended) {
+            if (!p.hpht || !withinSameWindow(p.hpht, hpht)) continue;
+            const diff = Math.abs(dayNumber(p.hpht) - dayNumber(hpht));
+            if (!same || diff <= same.diff) same = { pregnancy: p, diff };
+        }
+        if (same) return { kind: 'same', pregnancy: same.pregnancy };
+        let newest = null;
+        for (const p of ended) {
+            if (p.ended_on && (!newest || p.ended_on >= newest.ended_on)) newest = p;
+        }
+        if (newest && hpht <= newest.ended_on) return { kind: 'mismatch', pregnancy: newest };
+        return null;
+    }
+
+    function validHpl(hpl, hpht) {
+        return hpl && hpht && hpl > hpht ? hpl : null;
+    }
+
+    function todayStr() {
+        return toDateString(now());
     }
 
     async function createOngoing(conn, patientId, rows, { hpht, hpl }, actor) {
@@ -331,7 +416,11 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         const [rows] = await db.query(
             `SELECT p.*,
                 (SELECT r.mr_id FROM sunday_clinic_records r
-                 WHERE r.pregnancy_id = p.id ORDER BY r.created_at DESC, r.mr_id DESC LIMIT 1) AS latest_mr_id
+                 WHERE r.pregnancy_id = p.id ORDER BY r.created_at DESC, r.mr_id DESC LIMIT 1) AS latest_mr_id,
+                (SELECT r2.mr_id FROM sunday_clinic_records r2
+                 WHERE r2.pregnancy_id = p.id
+                   AND EXISTS (SELECT 1 FROM medical_records m WHERE m.mr_id = r2.mr_id AND m.record_type = 'resume_medis')
+                 ORDER BY r2.created_at DESC, r2.id DESC LIMIT 1) AS latest_resume_mr_id
              FROM pregnancies p WHERE p.patient_id = ?`,
             [patientId]
         );
@@ -356,19 +445,33 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
                 newHpht: hpht
             });
 
+            if (action === 'start') {
+                // Re-saving a visit of a pregnancy that already ended must not start a fake new one.
+                const match = matchEnded(rows, hpht);
+                if (match && match.kind === 'same') {
+                    await linkVisit(conn, match.pregnancy.id, mrId, patientId);
+                    return { action: 'none', pregnancy: match.pregnancy };
+                }
+                if (match) {
+                    await updateRow(conn, match.pregnancy.id, { needs_review: 1, review_reason: REVIEW_ENDED_MISMATCH }, actor);
+                    return { action: 'none' };
+                }
+            }
+
             if (action === 'none') {
                 if (ongoing) {
-                    await conn.query(
-                        'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND patient_id = ? AND pregnancy_id IS NULL',
-                        [ongoing.id, mrId, patientId]
-                    );
+                    await linkVisit(conn, ongoing.id, mrId, patientId);
                     return { action, pregnancy: ongoing };
                 }
                 return { action };
             }
 
             if (action === 'update') {
-                await updateRow(conn, ongoing.id, { hpht, hpl: hpl || ongoing.hpl || null }, actor);
+                if (await mayChangeDating(conn, patientId, ongoing.id, mrId)) {
+                    await updateRow(conn, ongoing.id, { hpht, hpl: validHpl(hpl, hpht) || addDays(hpht, FULL_TERM_DAYS) }, actor);
+                } else if (hpht !== ongoing.hpht) {
+                    await updateRow(conn, ongoing.id, { needs_review: 1, review_reason: REVIEW_OLD_VISIT_HPHT }, actor);
+                }
                 await linkVisit(conn, ongoing.id, mrId, patientId);
                 return { action, pregnancy: await fetchOne(conn, ongoing.id) };
             }
@@ -407,12 +510,13 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 
             let warning = null;
             if (ongoing) {
-                const end = normalizeEnd(previousEnd, { hpht: ongoing.hpht, newHpht: hpht });
+                const end = normalizeEnd(previousEnd, { hpht: ongoing.hpht, newHpht: hpht, today: todayStr() });
                 warning = end.warning;
                 await updateRow(conn, ongoing.id, { ...end.cols, status: 'ended' }, actor);
             }
             const pregnancy = await createOngoing(conn, patientId, rows, { hpht, hpl }, actor);
-            await linkVisit(conn, pregnancy.id, mrId, patientId);
+            // This visit carries the new HPHT: it may move off the pregnancy that was just closed.
+            await linkVisit(conn, pregnancy.id, mrId, patientId, { replaceFrom: ongoing ? ongoing.id : null });
             const result = { action: 'start', pregnancy };
             if (warning) result.warning = warning;
             return result;
@@ -438,6 +542,22 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
             // Mark-delivered / pregnancy-outcome callers may not know the delivery details yet:
             // the birth is flagged needs_review and completed later through updateHistory.
             const end = normalizeEnd(payload, { hpht: ongoing ? ongoing.hpht : null, requireBirthDetails: false });
+            if (!ongoing && end.cols.outcome === 'lahir_hidup' && end.cols.ended_on) {
+                // Twins / a second "Sudah Lahir": attach to the live birth that just ended, never insert.
+                const target = dayNumber(end.cols.ended_on);
+                let twin = null;
+                for (const p of rows) {
+                    if (p.status !== 'ended' || p.outcome !== 'lahir_hidup' || !p.ended_on) continue;
+                    if (Math.abs(dayNumber(p.ended_on) - target) > TWIN_WINDOW_DAYS) continue;
+                    if (!twin || p.ended_on >= twin.ended_on) twin = p;
+                }
+                if (twin) {
+                    if (linkTable && linkId !== undefined && linkId !== null) {
+                        await c.query(`UPDATE ${linkTable} SET pregnancy_id = ? WHERE id = ?`, [twin.id, linkId]);
+                    }
+                    return { pregnancy: await fetchOne(c, twin.id), attached: true };
+                }
+            }
             let id;
             if (ongoing) {
                 await updateRow(c, ongoing.id, { ...end.cols, status: 'ended' }, actor);
@@ -496,6 +616,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
             const merged = {
                 outcome: f.outcome !== undefined ? f.outcome : row.outcome,
                 ended_on: f.ended_on !== undefined ? f.ended_on : row.ended_on,
+                term: f.term !== undefined ? f.term : row.term,
                 delivery_method: f.delivery_method !== undefined ? f.delivery_method : row.delivery_method,
                 delivery_indication: f.delivery_indication !== undefined ? f.delivery_indication : row.delivery_indication,
                 complications: f.complications !== undefined ? f.complications : row.complications,
@@ -506,7 +627,8 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
             const end = normalizeEnd(merged, {
                 hpht,
                 requireDate: !(external && year),
-                allowUnknown: external
+                allowUnknown: external,
+                today: todayStr()
             });
             const cols = { ...end.cols };
             if (external) {
@@ -527,7 +649,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         const f = fields || {};
         return withConn(null, async conn => {
             const year = parseYear(f.year);
-            const end = normalizeEnd(f, { hpht: f.hpht ? parseDate(f.hpht) : null, requireDate: !year, allowUnknown: true });
+            const end = normalizeEnd(f, { hpht: f.hpht ? parseDate(f.hpht) : null, requireDate: !year, allowUnknown: true, today: todayStr() });
             const hpht = f.hpht ? parseDate(f.hpht) : null;
             if (f.hpht && !hpht) fail(400, 'HPHT tidak valid');
             const finalYear = end.cols.ended_on ? Number(end.cols.ended_on.slice(0, 4)) : year;
@@ -550,23 +672,36 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 
     async function removeExternal(patientId, pregnancyId, actor) {
         void actor;
-        const [result] = await db.query(
-            "DELETE FROM pregnancies WHERE id = ? AND patient_id = ? AND source = 'external'",
-            [pregnancyId, patientId]
-        );
-        if (!result || result.affectedRows === 0) fail(404, 'Kehamilan tidak ditemukan');
-        return { removed: true };
+        return withConn(null, async conn => {
+            const [found] = await conn.query(
+                'SELECT * FROM pregnancies WHERE id = ? AND patient_id = ? FOR UPDATE',
+                [pregnancyId, patientId]
+            );
+            const row = found && found[0];
+            if (!row || row.source !== 'external') fail(404, 'Kehamilan tidak ditemukan');
+            for (const table of ['birth_congratulations', 'pregnancy_outcomes', 'sunday_clinic_records']) {
+                const [linked] = await conn.query(`SELECT COUNT(*) AS n FROM ${table} WHERE pregnancy_id = ?`, [pregnancyId]);
+                if (linked && linked[0] && Number(linked[0].n) > 0) fail(409, LINKED_DELETE_MESSAGE);
+            }
+            const [result] = await conn.query(
+                "DELETE FROM pregnancies WHERE id = ? AND patient_id = ? AND source = 'external'",
+                [pregnancyId, patientId]
+            );
+            if (!result || result.affectedRows === 0) fail(404, 'Kehamilan tidak ditemukan');
+            return { removed: true };
+        });
     }
 
     async function listNeedsReview() {
         const [rows] = await db.query(
-            `SELECT p.id AS pregnancy_id, p.patient_id, pt.full_name, p.outcome, p.delivery_method
+            `SELECT p.id AS pregnancy_id, p.patient_id, pt.full_name, p.outcome, p.delivery_method, p.review_reason
              FROM pregnancies p JOIN patients pt ON pt.id = p.patient_id
              WHERE p.needs_review = 1 ORDER BY p.updated_at DESC LIMIT 200`
         );
         return (rows || []).map(r => {
             let reason = 'Perlu dicek';
-            if (r.outcome === 'unknown') reason = 'Akhir kehamilan tidak diketahui';
+            if (r.review_reason) reason = String(r.review_reason);
+            else if (r.outcome === 'unknown') reason = 'Akhir kehamilan tidak diketahui';
             else if (BIRTH_OUTCOMES.includes(r.outcome) && !r.delivery_method) reason = 'Cara lahir belum diisi';
             return { patient_id: r.patient_id, full_name: r.full_name, pregnancy_id: r.pregnancy_id, reason };
         });
