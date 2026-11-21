@@ -160,10 +160,15 @@ describe('PatientMergeService transaction', () => {
 
             const result = await service.transferDirectPatientTables(connection, 'P100', ['P200', 'P300'], 'Pasien Utama');
 
-            expect(connection.query).toHaveBeenCalledWith(
-                expect.stringContaining('UPDATE pregnancies SET fingerprint = NULL WHERE id IN (?, ?)'),
-                [20, 30]
-            );
+            const clearCall = connection.query.mock.calls.find(([sql]) => sql.includes('SET fingerprint = NULL'));
+            expect(clearCall[0]).toContain('WHERE id IN (?, ?)');
+            expect(clearCall[1]).toEqual(['Kemungkinan duplikat setelah gabung pasien', 20, 30]);
+            // Flag the kept duplicate; an already-flagged row keeps its own reason. review_reason is
+            // assigned before needs_review (MariaDB SET is evaluated left to right).
+            const flat = clearCall[0].replace(/\s+/g, ' ');
+            expect(flat).toContain("review_reason = CASE WHEN needs_review = 1 AND COALESCE(review_reason, '') <> '' THEN review_reason ELSE ? END");
+            expect(flat.indexOf('review_reason = CASE')).toBeLessThan(flat.indexOf('needs_review = 1 WHERE'));
+            expect(flat).toContain('needs_review = 1 WHERE id IN');
             const sqls = connection.query.mock.calls.map(([sql]) => sql);
             expect(sqls.some(sql => sql.includes('UPDATE IGNORE `pregnancies`'))).toBe(false);
             expect(sqls.some(sql => sql.includes('DELETE FROM `pregnancies`'))).toBe(false);
@@ -172,6 +177,23 @@ describe('PatientMergeService transaction', () => {
             expect(clearIndex).toBeGreaterThan(-1);
             expect(moveIndex).toBeGreaterThan(clearIndex);
             expect(result.summary.pregnancies).toEqual({ moved: 2, conflicts_discarded: 0, fingerprints_cleared: 2 });
+        });
+
+        test('fingerprint collision detection ignores case and spaces in patient ids, like SQL does', async () => {
+            const service = new PatientMergeService({ query: jest.fn() });
+            const connection = pregnancyConnection({
+                fingerprints: [
+                    { id: 10, patient_id: 'p100 ', fingerprint: 'abc' },
+                    { id: 20, patient_id: 'p200', fingerprint: 'abc' },
+                    { id: 30, patient_id: 'P300', fingerprint: 'xyz' }
+                ]
+            });
+
+            const result = await service.transferDirectPatientTables(connection, 'P100', ['P200', 'p300'], 'Pasien Utama');
+
+            const clearCall = connection.query.mock.calls.find(([sql]) => sql.includes('SET fingerprint = NULL'));
+            expect(clearCall[1]).toEqual(['Kemungkinan duplikat setelah gabung pasien', 20]);
+            expect(result.summary.pregnancies.fingerprints_cleared).toBe(1);
         });
 
         test('merge normalisation re-numbers sequences 1..n and keeps only the newest-HPHT ongoing pregnancy', async () => {
@@ -192,7 +214,10 @@ describe('PatientMergeService transaction', () => {
 
             const calls = connection.query.mock.calls;
             const orderSql = calls.find(([sql]) => sql.includes('SELECT id, sequence'))[0];
-            expect(orderSql).toContain('ORDER BY COALESCE(hpht, MAKEDATE(year, 1)) ASC, id ASC');
+            // Rows with neither hpht nor year sort LAST.
+            expect(orderSql.replace(/\s+/g, ' ')).toContain(
+                'ORDER BY (COALESCE(hpht, MAKEDATE(year, 1)) IS NULL) ASC, COALESCE(hpht, MAKEDATE(year, 1)) ASC, id ASC'
+            );
             const ongoingSql = calls.find(([sql]) => sql.includes("status = 'ongoing'") && sql.trim().startsWith('SELECT'))[0];
             expect(ongoingSql).toContain('DESC, id DESC');
 

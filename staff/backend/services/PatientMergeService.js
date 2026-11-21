@@ -14,6 +14,7 @@ const TRANSFER_EXCLUDED_TABLES = new Set([
 ]);
 const PREGNANCY_TABLE = 'pregnancies';
 const PREGNANCY_MERGE_REVIEW_REASON = 'Digabung dari pasien lain';
+const PREGNANCY_DUPLICATE_REVIEW_REASON = 'Kemungkinan duplikat setelah gabung pasien';
 
 class PatientMergeError extends Error {
     constructor(message, statusCode = 400, code = 'PATIENT_MERGE_ERROR', details = null) {
@@ -361,10 +362,12 @@ class PatientMergeService {
         );
         // The unique key compares case-insensitively and ignores trailing spaces.
         const keyOf = row => String(row.fingerprint).trim().toLowerCase();
-        const seen = new Set(rows.filter(row => String(row.patient_id) === targetPatientId).map(keyOf));
+        // patient_id also compares case-insensitively in SQL.
+        const idKey = value => String(value || '').trim().toUpperCase();
+        const seen = new Set(rows.filter(row => idKey(row.patient_id) === idKey(targetPatientId)).map(keyOf));
         const clearIds = [];
         for (const sourcePatientId of sourcePatientIds) {
-            for (const row of rows.filter(item => String(item.patient_id) === sourcePatientId)) {
+            for (const row of rows.filter(item => idKey(item.patient_id) === idKey(sourcePatientId))) {
                 const key = keyOf(row);
                 if (seen.has(key)) {
                     clearIds.push(row.id);
@@ -375,8 +378,18 @@ class PatientMergeService {
         }
         if (clearIds.length === 0) return 0;
         await connection.query(
-            `UPDATE pregnancies SET fingerprint = NULL WHERE id IN (${placeholders(clearIds)})`,
-            clearIds
+            // Likely the same pregnancy recorded on both duplicates: keep it, but flag it so the
+            // G/P/A totals are checked. review_reason is assigned before needs_review because
+            // MariaDB evaluates SET left to right; an existing flagged reason is kept.
+            `UPDATE pregnancies
+             SET fingerprint = NULL,
+                 review_reason = CASE
+                     WHEN needs_review = 1 AND COALESCE(review_reason, '') <> '' THEN review_reason
+                     ELSE ?
+                 END,
+                 needs_review = 1
+             WHERE id IN (${placeholders(clearIds)})`,
+            [PREGNANCY_DUPLICATE_REVIEW_REASON, ...clearIds]
         );
         return clearIds.length;
     }
@@ -389,7 +402,8 @@ class PatientMergeService {
             `SELECT id, sequence, status
              FROM pregnancies
              WHERE patient_id = ?
-             ORDER BY COALESCE(hpht, MAKEDATE(year, 1)) ASC, id ASC`,
+             ORDER BY (COALESCE(hpht, MAKEDATE(year, 1)) IS NULL) ASC,
+                      COALESCE(hpht, MAKEDATE(year, 1)) ASC, id ASC`,
             [targetPatientId]
         );
         for (const [index, row] of rows.entries()) {
