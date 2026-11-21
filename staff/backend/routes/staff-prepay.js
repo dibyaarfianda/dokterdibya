@@ -6,7 +6,7 @@
  * Package editor (tab Paket): doctor/superadmin only. requireSuperadmin here; the access registry
  * maps these routes to the protected, non-delegable checkup_prepay.manage_estimate, so it admits
  * nobody a delegation could add.
- * Withdrawal requests (Tahap 3, tab "Pencairan"): list billing.view, complete/reject billing.reset.
+ * Withdrawal requests (Tahap 3, tab "Pencairan"): list billing.view, start/complete/reject billing.reset.
  * The full account number is listed only for billing.reset holders (and the doctor); others get
  * it masked.
  * Paths avoid "payment"/"paid": the access registry treats those words as payment actions.
@@ -127,6 +127,20 @@ router.get('/refund-requests', verifyToken, requirePermission('billing.view'), a
     try {
         const canSeeAccount = await callerHolds(req, 'billing.reset');
         res.json({ success: true, data: await refundRequests().listForStaff({ canSeeAccount }) });
+    } catch (error) {
+        respondError(res, error);
+    }
+});
+
+// "Mulai transfer": from now on the patient cannot cancel this request.
+router.post('/refund-requests/:id/start', verifyToken, requirePermission('billing.reset'), async (req, res) => {
+    noStore(res);
+    if (!REQUEST_ID.test(String(req.params.id || ''))) {
+        return res.status(404).json({ success: false, message: 'Pengajuan pencairan tidak ditemukan.' });
+    }
+    try {
+        const data = await refundRequests().startRequest({ id: Number(req.params.id), actor: actorOf(req) });
+        res.json({ success: true, data, message: 'Pengajuan ditandai sedang ditransfer. Pasien tidak dapat membatalkannya lagi.' });
     } catch (error) {
         respondError(res, error);
     }

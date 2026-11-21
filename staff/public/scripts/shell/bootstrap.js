@@ -129,6 +129,7 @@ async function bootstrapStaffShell() {
         'prepaySavePackage',
         'prepayTogglePackage',
         'prepayLoadRefundRequests',
+        'prepayStartRefundRequest',
         'prepayCompleteRefundRequest',
         'prepayRejectRefundRequest'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'prepay', 'prepay'));

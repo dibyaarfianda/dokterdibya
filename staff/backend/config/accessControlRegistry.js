@@ -279,6 +279,7 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['staff-prepay:PATCH:/packages/:id/active', 'checkup_prepay.manage_estimate'],
     ['staff-prepay:POST:/refunds', 'billing.reset'],
     ['staff-prepay:GET:/refund-requests', 'billing.view'],
+    ['staff-prepay:POST:/refund-requests/:id/start', 'billing.reset'],
     ['staff-prepay:POST:/refund-requests/:id/complete', 'billing.reset'],
     ['staff-prepay:POST:/refund-requests/:id/reject', 'billing.reset'],
     ['medify-batch:POST:/credentials', 'integrations.write'],

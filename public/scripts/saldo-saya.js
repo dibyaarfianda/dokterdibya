@@ -30,7 +30,8 @@
         refund: 'Dicairkan'
     };
     var STATUS_LABELS = {
-        pending: 'Diproses',
+        pending: 'Menunggu',
+        processing: 'Sedang ditransfer',
         done: 'Selesai',
         rejected: 'Ditolak',
         cancelled: 'Dibatalkan'
@@ -204,7 +205,11 @@
             if (request.status === 'rejected' && request.decision_note) {
                 left.appendChild(el('small', '', 'Alasan: ' + request.decision_note));
             }
+            if (request.status === 'processing') {
+                left.appendChild(el('small', '', 'Klinik sedang mentransfer dana ini, jadi pengajuan tidak dapat dibatalkan.'));
+            }
             row.appendChild(left);
+            // Only a request still waiting can be cancelled; once the clinic starts the transfer it cannot.
             if (request.status === 'pending') {
                 var cancel = el('button', 'pm-btn secondary small', 'Batalkan');
                 cancel.type = 'button';
@@ -344,7 +349,7 @@
             return;
         }
         setHero(rupiah(live) + (saldo.balances.sandbox > 0 ? ' · Saldo uji ' + rupiah(saldo.balances.sandbox) : ''));
-        var pending = requests.some(function (request) { return request.status === 'pending'; });
+        var pending = requests.some(function (request) { return request.status === 'pending' || request.status === 'processing'; });
         setRoot([
             renderBalanceCard(saldo),
             renderForm(saldo, pending),
@@ -423,6 +428,8 @@
             state.busy = false;
             button.disabled = false;
             toast(error.message || 'Gagal membatalkan pengajuan.');
+            // 409: the clinic started the transfer (or closed it) meanwhile; show the current state.
+            if (error.status === 409) await load();
         }
     }
 

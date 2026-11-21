@@ -75,6 +75,21 @@ describe('tahap 3 package migration', () => {
     });
 });
 
+describe('withdrawal "Sedang ditransfer" migration', () => {
+    const migrationPath = path.join(repoRoot, 'staff', 'backend', 'migrations', '20261122_refund_request_processing.sql');
+    const processing = fs.existsSync(migrationPath) ? fs.readFileSync(migrationPath, 'utf8').replace(/\r\n/g, '\n') : '';
+
+    test('appends the processing status and adds who/when columns idempotently, without data changes', () => {
+        expect(processing).toContain('ALTER TABLE patient_credit_refund_requests');
+        // Appended at the end: existing rows keep their ENUM index and the change needs no table copy.
+        expect(processing).toContain("MODIFY COLUMN status ENUM('pending','done','rejected','cancelled','processing') NOT NULL DEFAULT 'pending'");
+        expect(processing).toMatch(/ADD COLUMN IF NOT EXISTS processing_by VARCHAR\(64\) NULL/);
+        expect(processing).toMatch(/ADD COLUMN IF NOT EXISTS processing_at TIMESTAMP NULL DEFAULT NULL/);
+        expect(processing).toContain('20261122_checkup_prepay_packages.sql');
+        expect(processing).not.toMatch(/INSERT|UPDATE patient_credit_refund_requests SET|DELETE/i);
+    });
+});
+
 describe('server wiring', () => {
     const server = read('staff', 'backend', 'server.js');
 
