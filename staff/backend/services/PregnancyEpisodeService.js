@@ -558,8 +558,23 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         return { removed: true };
     }
 
+    async function listNeedsReview() {
+        const [rows] = await db.query(
+            `SELECT p.id AS pregnancy_id, p.patient_id, pt.full_name, p.outcome, p.delivery_method
+             FROM pregnancies p JOIN patients pt ON pt.id = p.patient_id
+             WHERE p.needs_review = 1 ORDER BY p.updated_at DESC LIMIT 200`
+        );
+        return (rows || []).map(r => {
+            let reason = 'Perlu dicek';
+            if (r.outcome === 'unknown') reason = 'Akhir kehamilan tidak diketahui';
+            else if (BIRTH_OUTCOMES.includes(r.outcome) && !r.delivery_method) reason = 'Cara lahir belum diisi';
+            return { patient_id: r.patient_id, full_name: r.full_name, pregnancy_id: r.pregnancy_id, reason };
+        });
+    }
+
     return {
         list,
+        listNeedsReview,
         resolveFromVisit,
         startWithPreviousEnd,
         updateHistory,

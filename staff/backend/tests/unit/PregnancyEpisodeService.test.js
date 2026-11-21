@@ -463,3 +463,28 @@ describe('PregnancyEpisodeService.endOngoing', () => {
         await expectError(svc.endOngoing('P1', { ...birth, ended_on: '2026-01-01' }, DOKTER), 400, 'Tanggal selesai tidak boleh sebelum HPHT kehamilan tersebut');
     });
 });
+
+describe('PregnancyEpisodeService.listNeedsReview', () => {
+    test('lists flagged pregnancies with a reason, newest first, capped at 200', async () => {
+        const db = {
+            query: jest.fn().mockResolvedValue([[
+                { pregnancy_id: 5, patient_id: 'P0001', full_name: 'Ibu A', outcome: 'unknown', delivery_method: null },
+                { pregnancy_id: 4, patient_id: 'P0002', full_name: 'Ibu B', outcome: 'lahir_hidup', delivery_method: null },
+                { pregnancy_id: 3, patient_id: 'P0003', full_name: 'Ibu C', outcome: 'lahir_mati', delivery_method: 'Spt B (Spontan)' }
+            ]])
+        };
+        const service = createPregnancyEpisodeService({ db, now: NOW });
+        const result = await service.listNeedsReview();
+
+        const sql = db.query.mock.calls[0][0];
+        expect(sql).toMatch(/FROM pregnancies p/);
+        expect(sql).toMatch(/JOIN patients pt ON pt\.id = p\.patient_id/);
+        expect(sql).toMatch(/needs_review = 1/);
+        expect(sql).toMatch(/ORDER BY p\.updated_at DESC LIMIT 200/);
+        expect(result).toEqual([
+            { patient_id: 'P0001', full_name: 'Ibu A', pregnancy_id: 5, reason: 'Akhir kehamilan tidak diketahui' },
+            { patient_id: 'P0002', full_name: 'Ibu B', pregnancy_id: 4, reason: 'Cara lahir belum diisi' },
+            { patient_id: 'P0003', full_name: 'Ibu C', pregnancy_id: 3, reason: 'Perlu dicek' }
+        ]);
+    });
+});
