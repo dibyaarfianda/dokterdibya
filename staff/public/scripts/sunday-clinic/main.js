@@ -2295,22 +2295,26 @@ class SundayClinicApp {
             // Refresh metadata in background to keep save flow snappy.
             this.scheduleMetadataRefresh();
 
+            // Pregnancy episodes: only after a successful save, obstetri visits only.
+            // Failures here never undo or hide the saved anamnesa. This runs BEFORE the diagnosis:
+            // runAfterSave clears window.__pregnancyHistoryTotals and the card's re-mount republishes
+            // it, so the diagnosis never uses a snapshot taken before the new pregnancy was created.
+            // If the step fails or is cancelled the holder stays cleared (per-visit/form logic).
+            if (this.currentCategory === MR_CATEGORIES.OBSTETRI && window.PregnancyHistoryCard) {
+                try {
+                    await window.PregnancyHistoryCard.runAfterSave(stateManager.getState());
+                } catch (pregnancyError) {
+                    console.error('[SundayClinic] Pregnancy resolve failed:', pregnancyError);
+                    if (typeof window.PregnancyHistoryCard.clearTotals === 'function') window.PregnancyHistoryCard.clearTotals();
+                }
+            }
+
             // Auto-generate diagnosis from latest local state.
             await this.autoGenerateAndPersistDiagnosis({ anamnesa: data });
 
             // Re-enable button
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
-
-            // Pregnancy episodes: only after a successful save, obstetri visits only.
-            // Failures here never undo or hide the saved anamnesa.
-            if (this.currentCategory === MR_CATEGORIES.OBSTETRI && window.PregnancyHistoryCard) {
-                try {
-                    await window.PregnancyHistoryCard.runAfterSave(stateManager.getState());
-                } catch (pregnancyError) {
-                    console.error('[SundayClinic] Pregnancy resolve failed:', pregnancyError);
-                }
-            }
 
         } catch (error) {
             console.error('Error saving anamnesa:', error);

@@ -98,6 +98,7 @@ function computeDiagnosisCounts(pregnancies) {
     for (const p of Array.isArray(pregnancies) ? pregnancies : []) {
         if (!p || isOngoing(p)) continue;
         if (p.outcome !== 'lahir_hidup' && p.outcome !== 'lahir_mati') continue;
+        // Unknown-term deliveries count as aterm here (never dropped from the P string).
         if (p.term === 'preterm') out.preterm += 1; else out.aterm += 1;
         if (p.delivery_method === 'SC (Caesar)') out.sc_count += 1;
     }

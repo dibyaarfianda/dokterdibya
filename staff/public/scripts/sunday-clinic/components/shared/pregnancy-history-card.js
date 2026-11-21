@@ -488,6 +488,8 @@ const PregnancyHistoryCard = {
      * Returns a short status string for tests.
      */
     async runAfterSave(state) {
+        // The diagnosis may only use totals republished after resolve (see mount).
+        this.clearTotals();
         const patientId = this.patientIdOf(state);
         const mrId = this.mrIdOf(state);
         if (!patientId || !mrId) return 'skipped';
