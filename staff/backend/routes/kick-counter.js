@@ -10,6 +10,7 @@ const router = express.Router();
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken } = require('../middleware/auth');
+const { findOngoingPregnancyId } = require('../services/SessionPregnancyLink');
 
 const MAX_ACTIVE_SESSION_MINUTES = 120;
 
@@ -120,12 +121,14 @@ router.post('/session', async (req, res) => {
             });
         }
 
+        const pregnancyId = await findOngoingPregnancyId(db, patientId);
+
         // Create new session
         const [result] = await db.query(
             `INSERT INTO kick_counter_sessions
-             (patient_id, session_date, start_time, status)
-             VALUES (?, ?, NOW(), 'active')`,
-            [patientId, sessionDate]
+             (patient_id, session_date, start_time, status, pregnancy_id)
+             VALUES (?, ?, NOW(), 'active', ?)`,
+            [patientId, sessionDate, pregnancyId]
         );
 
         const [session] = await db.query(

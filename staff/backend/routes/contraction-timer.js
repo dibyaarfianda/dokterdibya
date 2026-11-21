@@ -10,6 +10,7 @@ const router = express.Router();
 const db = require('../db');
 const { validateOperationalSchemaScope } = require('../services/OperationalSchemaValidator');
 const { verifyPatientToken } = require('../middleware/auth');
+const { findOngoingPregnancyId } = require('../services/SessionPregnancyLink');
 const {
     assessContractionPattern,
     normalizeGestationalAge
@@ -240,11 +241,12 @@ router.post('/session', async (req, res) => {
         }
 
         const source = String(req.body.source || 'unknown').slice(0, 30);
+        const pregnancyId = await findOngoingPregnancyId(db, patientId);
         const now = new Date();
         const [result] = await db.query(
             `INSERT INTO contraction_sessions
-             (patient_id, session_date, gestational_age_weeks, gestational_age_days, source, status, started_at, assessment_final, assessment_reason)
-             VALUES (?, ?, ?, ?, ?, 'active', NOW(), ?, ?)`,
+             (patient_id, session_date, gestational_age_weeks, gestational_age_days, source, status, started_at, assessment_final, assessment_reason, pregnancy_id)
+             VALUES (?, ?, ?, ?, ?, 'active', NOW(), ?, ?, ?)`,
             [
                 patientId,
                 formatDateLocal(now),
@@ -252,7 +254,8 @@ router.post('/session', async (req, res) => {
                 gestationalAge?.days ?? null,
                 source,
                 initialAssessment.code,
-                JSON.stringify(initialAssessment)
+                JSON.stringify(initialAssessment),
+                pregnancyId
             ]
         );
 
