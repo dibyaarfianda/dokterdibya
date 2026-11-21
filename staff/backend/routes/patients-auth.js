@@ -21,6 +21,7 @@ const { validatePatientName } = require('../../../public/scripts/patient-name-ru
 const { ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
+const { trackerEndState, toDateString: pregnancyDateString } = require('../services/PregnancyEnd');
 const { verifyStaffToken, isDelegatedAccountPermission } = require('../middleware/auth');
 const {
     BLOCKED_PATIENT_MESSAGE,
@@ -2456,6 +2457,18 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
         const daysPregnant = Math.floor((today - hphtEstimate) / (1000 * 60 * 60 * 24));
         const weeksPregnant = Math.floor(daysPregnant / 7);
         const daysExtra = daysPregnant % 7;
+
+        // A recorded birth/miscarriage/stillbirth ends the pregnancy: hide the tracker without saying which
+        const ended = await trackerEndState(db, patientId, pregnancyDateString(hphtEstimate), logger);
+        if (ended) {
+            return res.json({
+                success: true,
+                data: null,
+                pregnancy_ended: true,
+                ended_on: ended.ended_on,
+                message: 'Data kehamilan belum tersedia.'
+            });
+        }
 
         // Days until EDD
         const daysUntilEdd = Math.floor((eddDate - today) / (1000 * 60 * 60 * 24));

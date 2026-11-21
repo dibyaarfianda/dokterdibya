@@ -431,7 +431,8 @@
                 }
 
                 const localHpht = localStorage.getItem(HPHT_KEY);
-                if (localHpht) {
+                const endedBlocksLocal = !!(result && result.pregnancy_ended && !(localHpht && result.ended_on && localHpht > result.ended_on));
+                if (localHpht && !endedBlocksLocal) {
                     renderPregnancyTracker(createTrackerDataFromHpht(localHpht, 'local'));
                     showToast('Menampilkan pratinjau HPHT dari perangkat ini', 'info', 2200);
                     return;

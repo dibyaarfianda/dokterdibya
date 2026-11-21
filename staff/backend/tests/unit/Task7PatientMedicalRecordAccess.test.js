@@ -43,6 +43,8 @@ describe('Task 7 patient and medical-record route matrix', () => {
         ['DELETE', '/api/v1/patients/P-1', 'patients.delete'],
         ['POST', '/api/patients/fix-names', 'patients.reset'],
         ['POST', '/api/patients/P-1/mark-delivered', 'patients.edit'],
+        ['POST', '/api/patients/P-1/pregnancy-outcome', 'patients.edit'],
+        ['DELETE', '/api/patients/P-1/pregnancy-outcome/7', 'patients.edit'],
         ['POST', '/api/patients/merge', 'patients.merge'],
         ['POST', '/api/patients/bulk-delete', 'patients.bulk_delete'],
         ['POST', '/api/admin/sync-web-patients', 'patients.reset'],
