@@ -23,6 +23,7 @@ const PatientListService = require('../services/PatientListService');
 const PatientAccountSuspensionService = require('../services/PatientAccountSuspensionService');
 const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
+const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
 const {
     BulkPatientDeletionService,
     BulkPatientDeletionError
@@ -1878,6 +1879,42 @@ router.post('/api/patients/:id/mark-delivered', verifyStaffToken, async (req, re
             message: 'Gagal menandai pasien melahirkan',
             error: error.message
         });
+    }
+});
+
+// MARK PREGNANCY ENDED (keguguran / lahir mati) - no birth_congratulations, no notifications
+const pregnancyOutcomeService = createPregnancyOutcomeService({ db });
+
+function handlePregnancyOutcomeError(error, res, context) {
+    if (error instanceof PregnancyOutcomeError) {
+        return res.status(error.status).json({ success: false, message: error.message });
+    }
+    logger.error('Pregnancy outcome failed', { context, error: error.message });
+    return res.status(500).json({ success: false, message: 'Gagal menyimpan penandaan kehamilan' });
+}
+
+router.post('/api/patients/:id/pregnancy-outcome', verifyStaffToken, async (req, res) => {
+    try {
+        const { outcome_type, event_date, note } = req.body || {};
+        const data = await pregnancyOutcomeService.record(
+            req.params.id,
+            { outcome_type, event_date, note },
+            req.user.id
+        );
+        cache.delPattern('patients:');
+        res.status(201).json({ success: true, data });
+    } catch (error) {
+        handlePregnancyOutcomeError(error, res, 'record');
+    }
+});
+
+router.delete('/api/patients/:id/pregnancy-outcome/:outcomeId', verifyStaffToken, async (req, res) => {
+    try {
+        await pregnancyOutcomeService.voidOutcome(req.params.id, req.params.outcomeId, req.user.id);
+        cache.delPattern('patients:');
+        res.json({ success: true });
+    } catch (error) {
+        handlePregnancyOutcomeError(error, res, 'void');
     }
 });
 

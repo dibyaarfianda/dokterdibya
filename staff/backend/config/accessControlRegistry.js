@@ -233,6 +233,8 @@ const ROUTE_PERMISSION_OVERRIDES = new Map([
     ['staff-announcements:POST:/:id/read', 'staff_announcements.view'],
     ['patients:POST:/api/patients/fix-names', 'patients.reset'],
     ['patients:POST:/api/patients/:id/mark-delivered', 'patients.edit'],
+    ['patients:POST:/api/patients/:id/pregnancy-outcome', 'patients.edit'],
+    ['patients:DELETE:/api/patients/:id/pregnancy-outcome/:outcomeId', 'patients.edit'],
     ['patients-auth:POST:/:id/account-suspension', 'patients.edit'],
     ['patients-auth:DELETE:/:id/account-suspension', 'patients.edit'],
     ['auth:GET:/api/admin/web-patients', 'patients.view'],
