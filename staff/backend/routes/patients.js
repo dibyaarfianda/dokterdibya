@@ -53,6 +53,7 @@ const _enrichFailures = {
     resumeDocs: 0,
     usgDocs: 0,
     obstetriHpl: 0,
+    currentPregnancy: 0,
     birthRecords: 0,
     blocklist: 0,
     lastVisitType: 0,
