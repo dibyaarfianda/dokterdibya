@@ -1410,7 +1410,8 @@
                             // Single element
                             const element = elements;
                             if (element.type === 'checkbox') {
-                                element.checked = value === 'true' || value === true;
+                                // FormData saves a checked box without a value attribute as "on"
+                                element.checked = value === 'on' || value === 'true' || value === true;
                             } else {
                                 element.value = value;
                             }
@@ -1625,14 +1626,18 @@
             return validateStepScope(steps[currentStep]);
         }
 
+        // Hidden steps are skipped by isElementVisible, so show each step while
+        // checking it; otherwise a required box on an earlier step is never caught.
         function validateAllSteps() {
             for (let i = 0; i < steps.length; i++) {
+                steps.forEach((step, index) => step.classList.toggle('active', index === i));
                 if (!validateStepScope(steps[i])) {
                     currentStep = i;
                     showStep(currentStep);
                     return false;
                 }
             }
+            steps.forEach((step, index) => step.classList.toggle('active', index === currentStep));
             return true;
         }
 
