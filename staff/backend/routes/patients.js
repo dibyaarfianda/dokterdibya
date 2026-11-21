@@ -25,7 +25,7 @@ const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorEr
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
 const { loadEndEvents, pregnancyListFields, endedSqlCondition } = require('../services/PregnancyEnd');
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
-const { createPregnancyEpisodeService } = require('../services/PregnancyEpisodeService');
+const { createPregnancyEpisodeService, assertCanClose } = require('../services/PregnancyEpisodeService');
 const { markPatientDelivered } = require('../services/MarkDelivered');
 const { pregnancyErrorResponse } = require('../services/PregnancyErrorResponse');
 
@@ -1827,6 +1827,8 @@ router.patch('/api/patients/:id/status', verifyStaffToken, async (req, res) => {
 // MARK PATIENT AS DELIVERED (creates birth_congratulations entry, supports multiple children)
 router.post('/api/patients/:id/mark-delivered', verifyStaffToken, async (req, res) => {
     try {
+        // Marking a birth closes the pregnancy: dokter/bidan only (user decision 2026-11-22).
+        assertCanClose(req.user);
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         const result = await markPatientDelivered({
@@ -1859,6 +1861,7 @@ function handlePregnancyOutcomeError(error, res, context) {
 
 router.post('/api/patients/:id/pregnancy-outcome', verifyStaffToken, async (req, res) => {
     try {
+        assertCanClose(req.user);
         const { outcome_type, event_date, note } = req.body || {};
         const data = await pregnancyOutcomeService.record(
             req.params.id,
@@ -1877,6 +1880,7 @@ router.post('/api/patients/:id/pregnancy-outcome', verifyStaffToken, async (req,
 
 router.delete('/api/patients/:id/pregnancy-outcome/:outcomeId', verifyStaffToken, async (req, res) => {
     try {
+        assertCanClose(req.user);
         await pregnancyOutcomeService.voidOutcome(req.params.id, req.params.outcomeId, req.user);
         cache.delPattern('patients:');
         res.json({ success: true });

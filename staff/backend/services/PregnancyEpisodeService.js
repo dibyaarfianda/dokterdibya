@@ -723,5 +723,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 module.exports = {
     PregnancyEpisodeError,
     createPregnancyEpisodeService,
-    OUTCOMES
+    OUTCOMES,
+    // Also used by the quick "Sudah Lahir" / "Kehamilan Berakhir" routes: closing a pregnancy is dokter/bidan only.
+    assertCanClose
 };
