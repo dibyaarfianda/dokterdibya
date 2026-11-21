@@ -50,6 +50,39 @@ describe('DRD to DocBoard canonical schedule service', () => {
     ).label).toBe('32 minggu 2 hari');
   });
 
+  test('linked pregnancy dating wins over a stale anamnesa HPHT', () => {
+    const result = projectGestationalAge(
+      { hpht: '2025-06-01' },
+      '2026-09-01',
+      { pregnant: true, pregnancy: { hpht: '2026-01-01', hpl: '2026-10-08', status: 'ongoing', ended_on: null } },
+    );
+    expect(result.label).toBe('34 minggu 5 hari');
+    expect(result.warning).toBe('');
+  });
+
+  test('linked pregnancy with only an HPL derives the HPHT; JS Date values are accepted', () => {
+    expect(projectGestationalAge({}, '2026-09-01', { pregnant: true, pregnancy: { hpl: '2026-10-08', status: 'ongoing' } }).label)
+      .toBe('34 minggu 5 hari');
+    expect(projectGestationalAge({}, '2026-09-01', { pregnant: true, pregnancy: { hpht: new Date(2026, 0, 1), status: 'ongoing' } }).label)
+      .toBe('34 minggu 5 hari');
+  });
+
+  test('no label and no warning when the linked pregnancy ended on or before the schedule date', () => {
+    for (const ended_on of ['2026-08-01', '2026-09-01']) {
+      const result = projectGestationalAge({ hpht: '2026-01-01' }, '2026-09-01', {
+        pregnant: true, pregnancy: { hpht: '2026-01-01', status: 'ended', ended_on },
+      });
+      expect(result).toEqual({ label: '', weeks: null, days: null, source: '', warning: '' });
+    }
+  });
+
+  test('label still shown when the linked pregnancy ended after the schedule date', () => {
+    const result = projectGestationalAge({}, '2026-09-01', {
+      pregnant: true, pregnancy: { hpht: '2026-01-01', status: 'ended', ended_on: '2026-09-20' },
+    });
+    expect(result.label).toBe('34 minggu 5 hari');
+  });
+
   test('does not project a gestational age when saved pregnancy sources conflict', () => {
     const result = projectGestationalAge(
       { hpht: '2026-01-01', hpl: '2026-11-20' },
