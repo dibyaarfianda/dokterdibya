@@ -43,6 +43,15 @@ function eddFromPregnancy(row) {
     return hpht ? fromDayNumber(dayNumber(hpht) + FULL_TERM_DAYS) : null;
 }
 
+/** A pregnancies row -> { kind: 'hpl' | 'hpht', date } for gestationalWeeksOn(), else null. */
+function referenceFromPregnancy(row) {
+    if (!row) return null;
+    const hpl = toDateString(row.hpl);
+    if (hpl) return { kind: 'hpl', date: hpl };
+    const hpht = toDateString(row.hpht);
+    return hpht ? { kind: 'hpht', date: hpht } : null;
+}
+
 /** The patient's ongoing pregnancy (dated from the obstetri anamnesa), newest first, or null. */
 async function findOngoingPregnancy(db, patientId) {
     const [rows] = await db.query(
@@ -56,4 +65,4 @@ async function findOngoingPregnancy(db, patientId) {
     return rows[0] || null;
 }
 
-module.exports = { trackerDates, eddFromPregnancy, findOngoingPregnancy };
+module.exports = { trackerDates, eddFromPregnancy, referenceFromPregnancy, findOngoingPregnancy };

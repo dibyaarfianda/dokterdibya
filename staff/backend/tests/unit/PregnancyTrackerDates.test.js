@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { trackerDates, eddFromPregnancy, findOngoingPregnancy } = require('../../services/PregnancyTrackerDates');
+const { trackerDates, eddFromPregnancy, referenceFromPregnancy, findOngoingPregnancy } = require('../../services/PregnancyTrackerDates');
 
 describe('trackerDates', () => {
     test('counts whole calendar days at any hour of the local day', () => {
@@ -46,6 +46,13 @@ describe('trackerDates', () => {
         expect(eddFromPregnancy({ hpht: '2024-02-29', hpl: '' })).toBe('2024-12-05');
         expect(eddFromPregnancy({ hpht: null, hpl: null })).toBeNull();
         expect(eddFromPregnancy(null)).toBeNull();
+    });
+
+    test('referenceFromPregnancy: HPL first, else HPHT, else nothing', () => {
+        expect(referenceFromPregnancy({ hpht: '2026-06-01', hpl: '2027-03-21' })).toEqual({ kind: 'hpl', date: '2027-03-21' });
+        expect(referenceFromPregnancy({ hpht: new Date(2026, 5, 14), hpl: null })).toEqual({ kind: 'hpht', date: '2026-06-14' });
+        expect(referenceFromPregnancy({ hpht: null, hpl: null })).toBeNull();
+        expect(referenceFromPregnancy(null)).toBeNull();
     });
 
     test('findOngoingPregnancy asks only for the ongoing row of that patient', async () => {
