@@ -114,6 +114,7 @@ export default {
                     </button>
                 </div>
                 ${metaHtml}
+                <div id="pregnancy-history-card"></div>
                 <div class="form-group mb-3 sc-form-limit-md">
                     <label class="font-weight-bold text-primary">
                         <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
@@ -304,7 +305,41 @@ export default {
             this.setupHPHTCalculator();
             this.setupSaveHandler();
             this.initRiwayatPersalinan(state);
+            this.mountPregnancyHistory(state);
         }, 100);
+    },
+
+    /**
+     * Load the pregnancy history card (never breaks the form on failure).
+     */
+    async mountPregnancyHistory(state) {
+        try {
+            const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+            const mod = await import('../shared/pregnancy-history-card.js?v=' + version);
+            const Card = mod.default;
+            await Card.mount(state, {
+                category: 'obstetri',
+                onLoaded: (data) => Card.prefillTotals(data.totals),
+                onHistoryChanged: (data) => this.replaceRPFromPregnancies(data.riwayat_persalinan || [])
+            });
+        } catch (error) {
+            console.error('[AnamnesaObstetri] Pregnancy history card failed:', error);
+        }
+    },
+
+    /**
+     * Replace the editor entries with the pregnancy-table history (no auto save).
+     */
+    replaceRPFromPregnancies(list) {
+        const sexMap = { L: 'Laki-laki', P: 'Perempuan' };
+        this._rpEntries = (Array.isArray(list) ? list : []).map(entry => ({
+            ...entry,
+            jenis_kelamin: sexMap[entry.jenis_kelamin] || entry.jenis_kelamin || null,
+            _fromPregnancy: true,
+            _id: this._rpNextId++
+        }));
+        this.renderAllRPCards(null);
+        this.recalcGPAL();
     },
 
     /**
@@ -636,7 +671,7 @@ export default {
                 if (entry.type === 'DELIVERY') {
                     clean.bulan = entry.bulan || null;
                     clean.persalinan = entry.persalinan || 'Aterm';
-                    clean.metode_persalinan = entry.metode_persalinan || 'Spt B (Spontan)';
+                    clean.metode_persalinan = entry.metode_persalinan || (entry._fromPregnancy ? null : 'Spt B (Spontan)');
                     clean.berat_lahir = entry.berat_lahir || null;
                     clean.jenis_kelamin = entry.jenis_kelamin || null;
                     clean.kuretase = null;
