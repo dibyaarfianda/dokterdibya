@@ -21,7 +21,8 @@ const { validatePatientName } = require('../../../public/scripts/patient-name-ru
 const { ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
-const { trackerEndState, toDateString: pregnancyDateString } = require('../services/PregnancyEnd');
+const { trackerEndState } = require('../services/PregnancyEnd');
+const { trackerDates } = require('../services/PregnancyTrackerDates');
 const { verifyStaffToken, isDelegatedAccountPermission } = require('../middleware/auth');
 const {
     BLOCKED_PATIENT_MESSAGE,
@@ -2446,20 +2447,19 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
             });
         }
 
-        // Calculate pregnancy week from EDD
-        // Pregnancy is ~40 weeks, so HPHT = EDD - 280 days
-        const eddDate = new Date(edd);
-        const today = new Date();
-        const hphtEstimate = new Date(eddDate);
-        hphtEstimate.setDate(hphtEstimate.getDate() - 280);
-
-        // Calculate days pregnant
-        const daysPregnant = Math.floor((today - hphtEstimate) / (1000 * 60 * 60 * 24));
-        const weeksPregnant = Math.floor(daysPregnant / 7);
-        const daysExtra = daysPregnant % 7;
+        // Calendar days in local time (GMT+7); new Date(edd) is UTC midnight and was a day short before 07:00
+        const dates = trackerDates(edd);
+        if (!dates) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'HPL belum tersedia dari USG'
+            });
+        }
+        const { weeksPregnant, daysExtra, daysUntilEdd } = dates;
 
         // A recorded birth/miscarriage/stillbirth ends the pregnancy: hide the tracker without saying which
-        const ended = await trackerEndState(db, patientId, pregnancyDateString(hphtEstimate), logger);
+        const ended = await trackerEndState(db, patientId, dates.hpht, logger);
         if (ended) {
             return res.json({
                 success: true,
@@ -2470,8 +2470,6 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
             });
         }
 
-        // Days until EDD
-        const daysUntilEdd = Math.floor((eddDate - today) / (1000 * 60 * 60 * 24));
 
         // Auto-hide if HPL + 14 days (2 weeks) has passed
         // This assumes patient has delivered
