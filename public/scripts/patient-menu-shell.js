@@ -1934,6 +1934,10 @@ import { createPatientExitController } from './patient-shell/exit-controller.js?
             try {
                 const response = await fetch('/api/patients/pregnancy-tracker?_t=' + Date.now(), { headers: { 'Authorization': 'Bearer ' + getToken(), 'Cache-Control': 'no-cache' } });
                 const result = await response.json();
+                if (result && result.pregnancy_ended) {
+                    document.body.classList.add('pregnancy-ended');
+                    return;
+                }
                 if (!result.success || !result.data) {
                     big.textContent = 'Belum ada';
                     desc.textContent = 'Buka tracker untuk mulai mengisi data kehamilan.';
