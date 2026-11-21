@@ -12,7 +12,7 @@ function context() {
     };
     const swalResults = [];
     const ctx = vm.createContext({
-        window: { hasAccountPermission: () => true, getToken: () => 'fake', showToast: jest.fn() },
+        window: { hasAccountPermission: () => true, getAuthToken: () => 'fake', showToast: jest.fn() },
         document: { getElementById: node },
         Swal: { fire: jest.fn(async () => swalResults.shift() || { isConfirmed: false }) },
         fetch: jest.fn(),
@@ -121,4 +121,55 @@ test('component sources wire the card, prefill rule and null delivery method', (
     }
     const main = fs.readFileSync(path.join(root, '../main.js'), 'utf8');
     expect(main).toContain('window.PregnancyHistoryCard.runAfterSave');
+});
+
+function fakeRoot(fields) {
+    const els = {
+        '#peg-date': { value: fields.date || '' }, '#peg-method': { value: fields.method || '' },
+        '#peg-indication': { value: fields.indication || '' }, '#peg-comp-notes': { value: fields.notes || '' },
+        '#peg-kuretase': { value: fields.kuretase || '' }, '#peg-year': { value: fields.year || '' }
+    };
+    return {
+        querySelector: sel => sel === 'input[name="peg-outcome"]:checked' ? (fields.outcome ? { value: fields.outcome } : null) : (els[sel] || null),
+        querySelectorAll: sel => sel === 'input[name="peg-comp"]:checked' ? (fields.comps || []).map(value => ({ value })) : []
+    };
+}
+
+test('delete button only for external rows', () => {
+    const { Card } = context();
+    const clinicEnded = Object.assign({}, clinicPregnancy);
+    const html = Card.render(state, [clinicEnded, externalOnly]);
+    expect(html.match(/data-preg-action="delete"/g)).toHaveLength(1);
+    expect(html).toContain('data-preg-action="delete" data-preg-id="3"');
+});
+
+test('history change overwrites G/P/A from server totals, initial load does not', () => {
+    const { node, Card } = context();
+    node('anamnesa-gravida').value = '9';
+    Card.prefillTotals({ gravida: 2, para: 1, abortus: 0, anak_hidup: 0 });
+    expect(node('anamnesa-gravida').value).toBe('9');
+    Card.prefillTotals({ gravida: 2, para: 1, abortus: 0, anak_hidup: 0 }, true);
+    expect(node('anamnesa-gravida').value).toBe('2');
+    expect(node('anamnesa-anak-hidup').value).toBe('0');
+});
+
+test('edit payload sends every editable key with null for cleared values', () => {
+    const { Card } = context();
+    const { payload } = Card.readEndForm(fakeRoot({ outcome: 'lahir_hidup', date: '2020-05-01', method: 'Spt B (Spontan)', indication: '' }), { edit: true });
+    expect(payload.delivery_indication).toBeNull();
+    expect(payload.complication_notes).toBeNull();
+    expect(payload.kuretase).toBeNull();
+    expect(payload.complications).toEqual([]);
+    expect(payload.babies).toEqual([]);
+});
+
+test('abortus is pre-selected only when GA is under 20 weeks', async () => {
+    const { ctx, Card } = context();
+    await Card.openEndForm({ hpht: '2026-01-01', values: { ended_on: '2026-05-07' } });
+    const html18 = ctx.Swal.fire.mock.calls[0][0].html;
+    expect(html18).toContain('value="abortus" checked');
+    await Card.openEndForm({ hpht: '2026-01-01', values: { ended_on: '2026-08-06' } });
+    const html30 = ctx.Swal.fire.mock.calls[1][0].html;
+    expect(html30).not.toMatch(/name="peg-outcome" value="\w+" checked/);
+    expect(html30).toContain('≥20 minggu: bila bayi meninggal, catat sebagai Lahir mati');
 });

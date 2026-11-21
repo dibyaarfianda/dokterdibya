@@ -65,12 +65,18 @@ function lossSuggestion(hpht, endedOn) {
     return ga < 20 ? 'abortus' : 'lahir_mati';
 }
 
+function suggestText(suggested) {
+    if (suggested === 'abortus') return `Saran dari usia kehamilan: ${OUTCOME_LABELS.abortus}`;
+    if (suggested === 'lahir_mati') return '≥20 minggu: bila bayi meninggal, catat sebagai Lahir mati';
+    return '';
+}
+
 function toast(type, message) {
     if (typeof window.showToast === 'function') window.showToast(type, message);
 }
 
 function authHeaders() {
-    const token = typeof window.getToken === 'function' ? window.getToken() : null;
+    const token = typeof window.getAuthToken === 'function' ? window.getAuthToken() : (typeof window.getToken === 'function' ? window.getToken() : null);
     return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
 }
 
@@ -117,7 +123,9 @@ function renderRow(p, editable) {
     const review = p.needs_review ? ' <span class="badge badge-warning">Perlu dicek</span>' : '';
     const actions = editable && p.status !== 'ongoing'
         ? `<button type="button" class="btn btn-xs btn-outline-primary mr-1" data-preg-action="edit" data-preg-id="${esc(p.id)}">Ubah</button>` +
-          `<button type="button" class="btn btn-xs btn-outline-danger" data-preg-action="delete" data-preg-id="${esc(p.id)}">Hapus</button>`
+          (p.source === 'external'
+              ? `<button type="button" class="btn btn-xs btn-outline-danger" data-preg-action="delete" data-preg-id="${esc(p.id)}">Hapus</button>`
+              : '')
         : '';
     return `<tr>
         <td>${esc(year)}</td>
@@ -154,7 +162,7 @@ function endFormHtml(opts) {
     return `<div class="text-left" id="peg-form" data-hpht="${esc(o.hpht || '')}" data-suggested="${esc(suggested || '')}">
         ${o.external ? `<div class="form-group"><label>Tahun</label><input type="number" id="peg-year" class="form-control" min="1950" max="${new Date().getFullYear()}" value="${esc(v.year || '')}"></div>` : ''}
         <div class="form-group"><label>Hasil kehamilan</label><div>${radios}</div>
-            <small class="text-muted" id="peg-suggest">${suggested ? `Saran dari usia kehamilan: ${esc(OUTCOME_LABELS[suggested])}` : ''}</small></div>
+            <small class="text-muted" id="peg-suggest">${esc(suggestText(suggested))}</small></div>
         <div class="form-group"><label>Tanggal selesai</label><input type="date" id="peg-date" class="form-control" max="${todayLocal()}" value="${esc(v.ended_on || '')}"></div>
         <div class="form-group" id="peg-birth-block"><label>Cara lahir</label><select id="peg-method" class="form-control">${methods}</select>
             <input type="text" id="peg-indication" class="form-control mt-1" maxlength="255" placeholder="Indikasi (wajib untuk SC/Vakum/Forceps)" value="${esc(v.delivery_indication || '')}"></div>
@@ -214,6 +222,13 @@ function readEndForm(root, opts) {
         const year = Number((get('#peg-year') || {}).value);
         if (year) payload.year = year;
     }
+    if (opts && opts.edit) {
+        // Edits must be able to clear fields: send every editable key.
+        const keys = { ended_on: null, delivery_method: null, delivery_indication: null, complication_notes: null, kuretase: null };
+        Object.keys(keys).forEach(k => { if (payload[k] === undefined) payload[k] = null; });
+        if (!payload.babies) payload.babies = [];
+        if (opts.external && payload.year === undefined) payload.year = null;
+    }
     return { payload };
 }
 
@@ -231,10 +246,14 @@ function wireEndForm(root, opts) {
         const date = (root.querySelector('#peg-date') || {}).value;
         const suggested = lossSuggestion(opts.hpht, date);
         const note = root.querySelector('#peg-suggest');
-        if (note) note.textContent = suggested ? `Saran dari usia kehamilan: ${OUTCOME_LABELS[suggested]}` : '';
+        if (note) note.textContent = suggestText(suggested);
         const picked = root.querySelector('input[name="peg-outcome"]:checked');
-        if (suggested && (!picked || picked.dataset.auto === '1')) {
-            const radio = root.querySelector(`input[name="peg-outcome"][value="${suggested}"]`);
+        if (picked && picked.dataset.auto === '1' && suggested !== 'abortus') {
+            picked.checked = false;
+            picked.dataset.auto = '';
+        }
+        if (suggested === 'abortus' && !root.querySelector('input[name="peg-outcome"]:checked')) {
+            const radio = root.querySelector('input[name="peg-outcome"][value="abortus"]');
             if (radio) { radio.checked = true; radio.dataset.auto = '1'; }
         }
         sync();
@@ -253,7 +272,7 @@ function wireEndForm(root, opts) {
 
 async function openEndForm(opts) {
     const o = opts || {};
-    const preselect = !(o.values && o.values.outcome) ? lossSuggestion(o.hpht, (o.values || {}).ended_on) : null;
+    const preselect = !(o.values && o.values.outcome) && lossSuggestion(o.hpht, (o.values || {}).ended_on) === 'abortus' ? 'abortus' : null;
     const values = Object.assign({}, o.values || {});
     if (preselect) values.outcome = preselect;
     const result = await Swal.fire({
@@ -286,6 +305,9 @@ const PregnancyHistoryCard = {
     COMPLICATIONS,
     esc,
     lossSuggestion,
+    readEndForm,
+    endFormHtml,
+    openEndForm,
 
     /** Placeholder to put in a component's HTML. */
     placeholder() {
@@ -364,7 +386,7 @@ const PregnancyHistoryCard = {
     },
 
     /** Prefill G/P/A inputs only when empty. */
-    prefillTotals(totals) {
+    prefillTotals(totals, force) {
         if (!totals) return;
         const map = {
             'anamnesa-gravida': totals.gravida,
@@ -374,7 +396,7 @@ const PregnancyHistoryCard = {
         };
         Object.keys(map).forEach(id => {
             const el = document.getElementById(id);
-            if (el && String(el.value || '').trim() === '' && map[id] !== undefined && map[id] !== null) {
+            if (el && (force || String(el.value || '').trim() === '') && map[id] !== undefined && map[id] !== null) {
                 el.value = String(map[id]);
             }
         });
@@ -408,6 +430,7 @@ const PregnancyHistoryCard = {
         const payload = await openEndForm({
             title: 'Ubah riwayat kehamilan',
             external: row.source === 'external',
+            edit: true,
             hpht: row.hpht,
             values: Object.assign({}, row, { year: row.year }),
             confirmText: 'Simpan'
@@ -474,6 +497,7 @@ const PregnancyHistoryCard = {
         }
         const data = await this.mount(state, this._opts || { category: 'obstetri' });
         if (data && this._opts && typeof this._opts.onHistoryChanged === 'function') this._opts.onHistoryChanged(data);
+        toast('info', SAVE_HINT);
         return 'started';
     }
 };

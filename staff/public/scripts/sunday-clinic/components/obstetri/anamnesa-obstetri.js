@@ -320,7 +320,10 @@ export default {
             await Card.mount(state, {
                 category: 'obstetri',
                 onLoaded: (data) => Card.prefillTotals(data.totals),
-                onHistoryChanged: (data) => this.replaceRPFromPregnancies(data.riwayat_persalinan || [])
+                onHistoryChanged: (data) => {
+                    this.replaceRPFromPregnancies(data.riwayat_persalinan || []);
+                    Card.prefillTotals(data.totals, true);
+                }
             });
         } catch (error) {
             console.error('[AnamnesaObstetri] Pregnancy history card failed:', error);
@@ -339,7 +342,6 @@ export default {
             _id: this._rpNextId++
         }));
         this.renderAllRPCards(null);
-        this.recalcGPAL();
     },
 
     /**
