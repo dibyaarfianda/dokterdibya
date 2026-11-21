@@ -118,6 +118,17 @@ describe('Pembayaran di Muka page shell', () => {
         expect(mod).toMatch(/status === 'processing'[\s\S]{0,400}prepayCompleteRefundRequest/);
     });
 
+    test('"Tolak" on a request being transferred warns first; action buttons are disabled while a call runs', () => {
+        const mod = moduleSource();
+        const reject = mod.slice(mod.indexOf('export async function prepayRejectRefundRequest'));
+        // The warning comes before the reason prompt and names who is transferring.
+        expect(reject).toMatch(/row\.status === 'processing'[\s\S]{0,600}window\.confirm\([\s\S]{0,400}Tolak HANYA bila uang tidak terkirim[\s\S]*window\.prompt\(/);
+        expect(reject).toContain('row.processing_by');
+        const runner = mod.slice(mod.indexOf('async function runRefundRequestAction'), mod.indexOf('export async function prepayStartRefundRequest'));
+        expect(runner).toContain("#prepay-refund-requests-tbody button");
+        expect(runner).toContain('.disabled = true');
+    });
+
     test('the paid toast also announces withdrawal requests and refreshes the red dots', () => {
         const toast = read('staff', 'public', 'scripts', 'shell', 'prepay-paid-toast.js');
         expect(toast).toContain('checkup_prepay_refund_requested');

@@ -42,9 +42,15 @@ function response() {
         pool = mysql.createPool({ user: 'root', socketPath: '/run/mysqld/mysqld.sock', database: qaName, connectionLimit: 6, multipleStatements: true });
         await pool.query(fs.readFileSync(path.join(root, 'migrations/20261121_checkup_prepay_tahap2.sql'), 'utf8'));
         await pool.query(fs.readFileSync(path.join(root, 'migrations/20261122_checkup_prepay_packages.sql'), 'utf8'));
-        // Twice: the processing-status migration must be safe to run again.
-        await pool.query(fs.readFileSync(path.join(root, 'migrations/20261122_refund_request_processing.sql'), 'utf8'));
-        await pool.query(fs.readFileSync(path.join(root, 'migrations/20261122_refund_request_processing.sql'), 'utf8'));
+        // Twice: the processing-status migration must be safe to run again and change nothing the second time.
+        const processingMigration = fs.readFileSync(path.join(root, 'migrations/20261122_refund_request_processing.sql'), 'utf8');
+        const requestsTableDefinition = async () => (await pool.query('SHOW CREATE TABLE patient_credit_refund_requests'))[0][0]['Create Table'];
+        await pool.query(processingMigration);
+        const afterFirstRun = await requestsTableDefinition();
+        assert.match(afterFirstRun, /`status` enum\('pending','done','rejected','cancelled','processing'\)/);
+        assert.match(afterFirstRun, /`processing_by` varchar\(64\)/);
+        await pool.query(processingMigration);
+        assert.equal(await requestsTableDefinition(), afterFirstRun);
         require.cache[req.resolve('./db')] = { exports: pool };
         const billing = req('./services/sunday-clinic/billing');
         const returns = req('./services/sunday-clinic/billing-returns');

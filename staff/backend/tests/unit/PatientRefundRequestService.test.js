@@ -479,7 +479,9 @@ describe('completeRequest', () => {
         ] });
         const { service } = build(h);
         await expect(service.completeRequest({ id: 99, actor: ACTOR })).rejects.toMatchObject({ statusCode: 404 });
-        await expect(service.completeRequest({ id: 6, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: 'Pengajuan ini sudah ditutup.' });
+        await expect(service.completeRequest({ id: 6, actor: ACTOR })).rejects.toMatchObject({
+            statusCode: 409, message: 'Pengajuan ini sudah ditolak. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.'
+        });
         await expect(service.completeRequest({ id: 7, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: CANCELLED_BY_PATIENT });
         expect(h.state.refunds).toHaveLength(0);
         expect(everyConnectionClosed(h)).toBe(true);
@@ -646,6 +648,18 @@ describe('a request staff are transferring', () => {
         await expect(service.rejectRequest({ id: 5, note: 'Transfer gagal, rekening tidak aktif', actor: ACTOR })).resolves.toEqual({ id: 5, status: 'rejected' });
         expect(h.state.requests[0]).toMatchObject({ status: 'rejected', decision_note: 'Transfer gagal, rekening tidak aktif' });
         expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(0);
+    });
+
+    test('"Sudah ditransfer" after a colleague pressed "Tolak" says who rejected it and to record a direct refund', async () => {
+        const h = processingHarness();
+        const { service } = build(h);
+        await service.rejectRequest({ id: 5, note: 'Rekening sepertinya salah', actor: { id: 'S2', name: 'Bidan' } });
+        await expect(service.completeRequest({ id: 5, actor: ACTOR })).rejects.toMatchObject({
+            statusCode: 409,
+            message: 'Pengajuan ini sudah ditolak oleh Bidan. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.'
+        });
+        expect(h.state.refunds).toHaveLength(0);
+        expect(everyConnectionClosed(h)).toBe(true);
     });
 
     test('a refund the live saldo no longer covers rolls back and keeps it processing', async () => {

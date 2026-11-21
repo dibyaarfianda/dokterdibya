@@ -369,6 +369,12 @@ function createPatientRefundRequestService({
             // Staff may already have transferred by hand: point them to a direct refund instead of
             // a bare "closed", or the payout is never recorded against the saldo.
             if (request.status === 'cancelled') throw serviceError(MESSAGES.cancelledByPatient, 409);
+            // A colleague may have pressed "Tolak" while this staff member was transferring: the
+            // hold is gone, so the payout must be recorded as a direct refund or it is paid twice.
+            if (request.status === 'rejected') {
+                const by = request.decided_by ? ` oleh ${request.decided_by}` : '';
+                throw serviceError(`Pengajuan ini sudah ditolak${by}. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.`, 409);
+            }
             if (!OPEN_STATUSES.includes(request.status)) throw serviceError(MESSAGES.closed, 409);
 
             const refund = await staffPrepay.createRefundWithin(connection, {

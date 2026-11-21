@@ -719,6 +719,8 @@ export async function prepayLoadRefundRequests() {
 async function runRefundRequestAction(work) {
     if (refundRequestBusy) return;
     refundRequestBusy = true;
+    // Visible too: every action button is disabled until the list reloads.
+    document.querySelectorAll('#prepay-refund-requests-tbody button').forEach(button => { button.disabled = true; });
     try {
         await work();
     } finally {
@@ -763,6 +765,8 @@ export async function prepayRejectRefundRequest(id) {
     if (!canRefund() || refundRequestBusy) return;
     const row = refundRequestsById.get(Number(id));
     if (!row) return;
+    // Rejecting releases the hold: if the money already left, that would pay the patient twice.
+    if (row.status === 'processing' && !window.confirm(`Pengajuan ini sedang ditransfer oleh ${row.processing_by || 'staf'} sejak ${localDateTime(row.processing_at)}.\n\nTolak HANYA bila uang tidak terkirim. Bila uang sudah terkirim, tekan "Sudah ditransfer".`)) return;
     const answer = window.prompt(`Alasan menolak pencairan ${rupiah(row.amount_idr)} untuk ${row.patient_name} (3–500 karakter):`);
     if (answer === null) return;
     const note = answer.trim();
