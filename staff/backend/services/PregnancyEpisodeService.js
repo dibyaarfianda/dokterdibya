@@ -272,16 +272,27 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         return result.insertId;
     }
 
-    async function linkVisit(conn, pregnancyId, mrId) {
-        await conn.query('UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ?', [pregnancyId, mrId]);
+    async function assertVisitOfPatient(conn, patientId, mrId) {
+        const [rows] = await conn.query(
+            'SELECT mr_id FROM sunday_clinic_records WHERE mr_id = ? AND patient_id = ? FOR UPDATE',
+            [mrId, patientId]
+        );
+        if (!rows || rows.length === 0) fail(404, 'Kunjungan tidak ditemukan untuk pasien ini');
     }
 
-    async function readVisitAnamnesa(conn, mrId) {
+    async function linkVisit(conn, pregnancyId, mrId, patientId) {
+        await conn.query(
+            'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND patient_id = ?',
+            [pregnancyId, mrId, patientId]
+        );
+    }
+
+    async function readVisitAnamnesa(conn, patientId, mrId) {
         const [rows] = await conn.query(
             `SELECT record_data FROM medical_records
-             WHERE mr_id = ? AND record_type = 'anamnesa'
+             WHERE mr_id = ? AND patient_id = ? AND record_type = 'anamnesa'
              ORDER BY version DESC, updated_at DESC LIMIT 1`,
-            [mrId]
+            [mrId, patientId]
         );
         const data = rows && rows[0] ? parseJson(rows[0].record_data, null) : null;
         return {
@@ -294,7 +305,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         const [rows] = await conn.query(
             `SELECT mr_id FROM sunday_clinic_records
              WHERE patient_id = ? AND mr_category = 'obstetri'
-             ORDER BY created_at DESC, mr_id DESC LIMIT 1`,
+             ORDER BY created_at DESC, id DESC LIMIT 1`,
             [patientId]
         );
         if (!rows || !rows[0] || rows[0].mr_id !== mrId) fail(409, NEWEST_VISIT_MESSAGE);
@@ -336,7 +347,8 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 
     async function resolveFromVisit(patientId, mrId, actor) {
         return withConn(null, async conn => {
-            const { hpht, hpl } = await readVisitAnamnesa(conn, mrId);
+            await assertVisitOfPatient(conn, patientId, mrId);
+            const { hpht, hpl } = await readVisitAnamnesa(conn, patientId, mrId);
             const rows = await lockPregnancies(conn, patientId);
             const ongoing = ongoingOf(rows);
             const action = decideEpisodeAction({
@@ -347,8 +359,8 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
             if (action === 'none') {
                 if (ongoing) {
                     await conn.query(
-                        'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND pregnancy_id IS NULL',
-                        [ongoing.id, mrId]
+                        'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND patient_id = ? AND pregnancy_id IS NULL',
+                        [ongoing.id, mrId, patientId]
                     );
                     return { action, pregnancy: ongoing };
                 }
@@ -357,7 +369,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 
             if (action === 'update') {
                 await updateRow(conn, ongoing.id, { hpht, hpl: hpl || ongoing.hpl || null }, actor);
-                await linkVisit(conn, ongoing.id, mrId);
+                await linkVisit(conn, ongoing.id, mrId, patientId);
                 return { action, pregnancy: await fetchOne(conn, ongoing.id) };
             }
 
@@ -366,7 +378,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 
             if (action === 'start') {
                 const pregnancy = await createOngoing(conn, patientId, rows, { hpht, hpl }, actor);
-                await linkVisit(conn, pregnancy.id, mrId);
+                await linkVisit(conn, pregnancy.id, mrId, patientId);
                 return { action, pregnancy };
             }
 
@@ -380,7 +392,8 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 
     async function startWithPreviousEnd(patientId, mrId, previousEnd, actor) {
         return withConn(null, async conn => {
-            const { hpht, hpl } = await readVisitAnamnesa(conn, mrId);
+            await assertVisitOfPatient(conn, patientId, mrId);
+            const { hpht, hpl } = await readVisitAnamnesa(conn, patientId, mrId);
             if (!hpht) fail(400, 'HPHT kehamilan baru wajib diisi');
             const rows = await lockPregnancies(conn, patientId);
             await assertNewestObstetriVisit(conn, patientId, mrId);
@@ -388,7 +401,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
 
             // Idempotent retry / double click: the new pregnancy already exists.
             if (ongoing && withinSameWindow(ongoing.hpht, hpht)) {
-                await linkVisit(conn, ongoing.id, mrId);
+                await linkVisit(conn, ongoing.id, mrId, patientId);
                 return { action: 'start', pregnancy: ongoing, already: true };
             }
 
@@ -399,7 +412,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
                 await updateRow(conn, ongoing.id, { ...end.cols, status: 'ended' }, actor);
             }
             const pregnancy = await createOngoing(conn, patientId, rows, { hpht, hpl }, actor);
-            await linkVisit(conn, pregnancy.id, mrId);
+            await linkVisit(conn, pregnancy.id, mrId, patientId);
             const result = { action: 'start', pregnancy };
             if (warning) result.warning = warning;
             return result;
@@ -413,7 +426,15 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         }
         return withConn(conn, async c => {
             const rows = await lockPregnancies(c, patientId);
-            const ongoing = ongoingOf(rows);
+            // Idempotency: a source row already linked to a pregnancy updates that pregnancy
+            // (never inserts another one and never ends a different ongoing pregnancy).
+            let linked = null;
+            if (linkTable && linkId !== undefined && linkId !== null) {
+                const [linkRows] = await c.query(`SELECT pregnancy_id FROM ${linkTable} WHERE id = ? FOR UPDATE`, [linkId]);
+                const existingId = linkRows && linkRows[0] ? linkRows[0].pregnancy_id : null;
+                if (existingId) linked = rows.find(p => p.id === existingId) || null;
+            }
+            const ongoing = linked || ongoingOf(rows);
             // Mark-delivered / pregnancy-outcome callers may not know the delivery details yet:
             // the birth is flagged needs_review and completed later through updateHistory.
             const end = normalizeEnd(payload, { hpht: ongoing ? ongoing.hpht : null, requireBirthDetails: false });
