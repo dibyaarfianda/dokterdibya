@@ -22,7 +22,7 @@ const { ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/role
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
 const { trackerEndState } = require('../services/PregnancyEnd');
-const { trackerDates } = require('../services/PregnancyTrackerDates');
+const { trackerDates, eddFromPregnancy, findOngoingPregnancy } = require('../services/PregnancyTrackerDates');
 const { verifyStaffToken, isDelegatedAccountPermission } = require('../middleware/auth');
 const {
     BLOCKED_PATIENT_MESSAGE,
@@ -2401,7 +2401,7 @@ router.post('/reset-password', async (req, res) => {
 /**
  * GET /pregnancy-tracker
  * Get pregnancy tracker data for logged-in patient
- * Uses EDD from latest USG record
+ * Uses the HPL of the patient's ongoing pregnancy (pregnancies table)
  */
 router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
     // Prevent browser caching
@@ -2411,39 +2411,15 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
     try {
         const patientId = req.user.id;
 
-        // Get latest USG record with EDD for this patient
-        const [usgRecords] = await db.query(`
-            SELECT
-                record_data,
-                created_at as record_date
-            FROM medical_records
-            WHERE patient_id = ?
-            AND record_type = 'usg'
-            AND JSON_EXTRACT(record_data, '$.edd') IS NOT NULL
-            AND JSON_EXTRACT(record_data, '$.edd') != ''
-            AND JSON_EXTRACT(record_data, '$.edd') != 'null'
-            ORDER BY created_at DESC
-            LIMIT 1
-        `, [patientId]);
-
-        if (!usgRecords || usgRecords.length === 0) {
-            return res.json({
-                success: true,
-                data: null,
-                message: 'Belum ada data USG dengan HPL'
-            });
-        }
-
-        const usgData = typeof usgRecords[0].record_data === 'string'
-            ? JSON.parse(usgRecords[0].record_data)
-            : usgRecords[0].record_data;
-
-        const edd = usgData.edd; // EDD = Estimated Delivery Date = HPL
+        // HPL of the ongoing pregnancy (pregnancies table, dated from the obstetri anamnesa).
+        // Not the newest USG: a wrongly filled trimester tab there showed 39 weeks to a 19-week patient.
+        const pregnancy = await findOngoingPregnancy(db, patientId);
+        const edd = eddFromPregnancy(pregnancy); // EDD = Estimated Delivery Date = HPL
         if (!edd) {
             return res.json({
                 success: true,
                 data: null,
-                message: 'HPL belum tersedia dari USG'
+                message: 'HPL belum tersedia'
             });
         }
 
@@ -2453,7 +2429,7 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
             return res.json({
                 success: true,
                 data: null,
-                message: 'HPL belum tersedia dari USG'
+                message: 'HPL belum tersedia'
             });
         }
         const { weeksPregnant, daysExtra, daysUntilEdd } = dates;
@@ -2469,7 +2445,6 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
                 message: 'Data kehamilan belum tersedia.'
             });
         }
-
 
         // Auto-hide if HPL + 14 days (2 weeks) has passed
         // This assumes patient has delivered
@@ -2568,7 +2543,7 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
                 progressPercent: Math.min(100, Math.round((weeksPregnant / 40) * 100)),
                 babySize: babySize,
                 tip: tip,
-                usgDate: usgRecords[0].record_date
+                usgDate: pregnancy.updated_at
             }
         });
 

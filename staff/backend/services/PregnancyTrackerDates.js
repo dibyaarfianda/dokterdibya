@@ -34,4 +34,26 @@ function trackerDates(edd, now = new Date()) {
     };
 }
 
-module.exports = { trackerDates };
+/** A pregnancies row -> HPL 'YYYY-MM-DD': its hpl, else hpht + 280 days, else null. */
+function eddFromPregnancy(row) {
+    if (!row) return null;
+    const hpl = toDateString(row.hpl);
+    if (hpl) return hpl;
+    const hpht = toDateString(row.hpht);
+    return hpht ? fromDayNumber(dayNumber(hpht) + FULL_TERM_DAYS) : null;
+}
+
+/** The patient's ongoing pregnancy (dated from the obstetri anamnesa), newest first, or null. */
+async function findOngoingPregnancy(db, patientId) {
+    const [rows] = await db.query(
+        `SELECT id, hpht, hpl, updated_at
+           FROM pregnancies
+          WHERE patient_id = ? AND status = 'ongoing'
+          ORDER BY sequence DESC, id DESC
+          LIMIT 1`,
+        [patientId]
+    );
+    return rows[0] || null;
+}
+
+module.exports = { trackerDates, eddFromPregnancy, findOngoingPregnancy };
