@@ -23,7 +23,6 @@ const PatientListService = require('../services/PatientListService');
 const PatientAccountSuspensionService = require('../services/PatientAccountSuspensionService');
 const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
-const { endedSqlCondition } = require('../services/PregnancyEnd');
 const { loadCurrentPregnancies, listFields } = require('../services/CurrentPregnancy');
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
 const { createPregnancyEpisodeService, assertCanClose } = require('../services/PregnancyEpisodeService');
@@ -1117,10 +1116,10 @@ router.post('/api/patients/fix-names', verifyStaffToken, async (req, res) => {
 // IMPORTANT: These routes MUST be defined BEFORE /api/patients/:id to avoid route conflicts
 
 // GET near-due pregnancies (37-40 weeks from HPHT, 3 weeks before due)
-// Returns unique patients (by patient_id), showing most recent obstetri record
+// Returns unique patients (by patient_id), from the ongoing pregnancy
 router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, res) => {
     try {
-        // Get the latest obstetri record per patient with valid HPHT
+        // Ongoing pregnancy per patient from the pregnancies table
         const query = `
             SELECT
                 p.id as patient_id,
@@ -1129,10 +1128,9 @@ router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, r
                 p.phone,
                 latest.mr_id,
                 latest.visit_location,
-                latest.hpht,
-                DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
-                FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
-                DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
+                DATE_FORMAT(cur.hpht_eff, '%Y-%m-%d') as hpht,
+                (280 - DATEDIFF(cur.hpl_eff, CURDATE())) as days_pregnant,
+                DATE_FORMAT(cur.hpl_eff, '%Y-%m-%d') as hpl,
                 latest.last_activity_at as last_visit,
                 (
                     SELECT COALESCE(
@@ -1148,24 +1146,27 @@ router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, r
             FROM patients p
             JOIN (
                 SELECT
-                    scr.patient_id,
+                    pg.id,
+                    pg.patient_id,
+                    COALESCE(pg.hpl, DATE_ADD(pg.hpht, INTERVAL 280 DAY)) as hpl_eff,
+                    COALESCE(pg.hpht, DATE_SUB(pg.hpl, INTERVAL 280 DAY)) as hpht_eff,
+                    ROW_NUMBER() OVER (PARTITION BY pg.patient_id ORDER BY sequence DESC, id DESC) as rn
+                FROM pregnancies pg
+                WHERE pg.status = 'ongoing'
+            ) cur ON cur.patient_id = p.id AND cur.rn = 1
+            LEFT JOIN (
+                SELECT
+                    scr.pregnancy_id,
                     scr.mr_id,
                     scr.visit_location,
                     scr.last_activity_at,
-                    JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
-                    ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
+                    ROW_NUMBER() OVER (PARTITION BY scr.pregnancy_id ORDER BY scr.last_activity_at DESC) as rn
                 FROM sunday_clinic_records scr
-                JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                    AND mr.record_type = 'anamnesa'
-                WHERE scr.mr_category = 'obstetri'
-                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
-            ) latest ON p.id = latest.patient_id AND latest.rn = 1
+                WHERE scr.pregnancy_id IS NOT NULL
+            ) latest ON latest.pregnancy_id = cur.id AND latest.rn = 1
             WHERE ${visiblePatientCondition('p')}
-            AND NOT ${endedSqlCondition('p.id', 'latest.hpht')}
-            AND DATEDIFF(CURDATE(), latest.hpht) >= 259
-            AND DATEDIFF(CURDATE(), latest.hpht) < 280
+            AND cur.hpl_eff IS NOT NULL
+            AND (280 - DATEDIFF(cur.hpl_eff, CURDATE())) BETWEEN 259 AND 279
             ORDER BY days_pregnant DESC
         `;
 
@@ -1211,10 +1212,10 @@ router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, r
 });
 
 // GET overdue pregnancies (>40 weeks from HPHT, not yet delivered)
-// Returns unique patients (by patient_id), showing most recent obstetri record
+// Returns unique patients (by patient_id), from the ongoing pregnancy
 router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, res) => {
     try {
-        // Get the latest obstetri record per patient with valid HPHT
+        // Ongoing pregnancy per patient from the pregnancies table
         const query = `
             SELECT
                 p.id as patient_id,
@@ -1223,10 +1224,9 @@ router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, re
                 p.phone,
                 latest.mr_id,
                 latest.visit_location,
-                latest.hpht,
-                DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
-                FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
-                DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
+                DATE_FORMAT(cur.hpht_eff, '%Y-%m-%d') as hpht,
+                (280 - DATEDIFF(cur.hpl_eff, CURDATE())) as days_pregnant,
+                DATE_FORMAT(cur.hpl_eff, '%Y-%m-%d') as hpl,
                 latest.last_activity_at as last_visit,
                 (
                     SELECT COALESCE(
@@ -1242,23 +1242,27 @@ router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, re
             FROM patients p
             JOIN (
                 SELECT
-                    scr.patient_id,
+                    pg.id,
+                    pg.patient_id,
+                    COALESCE(pg.hpl, DATE_ADD(pg.hpht, INTERVAL 280 DAY)) as hpl_eff,
+                    COALESCE(pg.hpht, DATE_SUB(pg.hpl, INTERVAL 280 DAY)) as hpht_eff,
+                    ROW_NUMBER() OVER (PARTITION BY pg.patient_id ORDER BY sequence DESC, id DESC) as rn
+                FROM pregnancies pg
+                WHERE pg.status = 'ongoing'
+            ) cur ON cur.patient_id = p.id AND cur.rn = 1
+            LEFT JOIN (
+                SELECT
+                    scr.pregnancy_id,
                     scr.mr_id,
                     scr.visit_location,
                     scr.last_activity_at,
-                    JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
-                    ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
+                    ROW_NUMBER() OVER (PARTITION BY scr.pregnancy_id ORDER BY scr.last_activity_at DESC) as rn
                 FROM sunday_clinic_records scr
-                JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                    AND mr.record_type = 'anamnesa'
-                WHERE scr.mr_category = 'obstetri'
-                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
-            ) latest ON p.id = latest.patient_id AND latest.rn = 1
+                WHERE scr.pregnancy_id IS NOT NULL
+            ) latest ON latest.pregnancy_id = cur.id AND latest.rn = 1
             WHERE ${visiblePatientCondition('p')}
-            AND NOT ${endedSqlCondition('p.id', 'latest.hpht')}
-            AND DATEDIFF(CURDATE(), latest.hpht) >= 280
+            AND cur.hpl_eff IS NOT NULL
+            AND (280 - DATEDIFF(cur.hpl_eff, CURDATE())) >= 280
             ORDER BY days_pregnant DESC
         `;
 
