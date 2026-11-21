@@ -1,6 +1,6 @@
 # Kehamilan per Pasien (Episode Kehamilan) — Riwayat untuk Antisipasi
 
-Status: draft (2026-11-21)
+Status: approved by the user (2026-11-21)
 
 ## Intent
 
@@ -163,7 +163,7 @@ lainnya (with notes). Multiple allowed.
   role constants (`ROLE_NAMES.DOKTER`, `ROLE_NAMES.BIDAN`) or a dedicated permission granted
   to exactly those roles in the account-access system — builder checks which mechanism the
   `patients`/medical-record routes use today; other staff can view the history.
-- **Ectopic in G/P/A (designer's call, pending user confirmation):** counted in Abortus.
+- **Ectopic in G/P/A (confirmed by the user 2026-11-21):** counted in Abortus.
 - **Resume link in Kelola Pasien:** points to the newest stored resume medis among that
   pregnancy's visits; when none exists, show "Belum ada resume" (external pregnancies show
   no link).
