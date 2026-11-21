@@ -247,12 +247,26 @@ describe('Saldo Saya form states (real code)', () => {
             requests: [{ id: 7, amount_idr: 100000, bank_name: 'BCA', account_number: '1234567890', account_holder: 'Ani Wijaya', status: 'pending', decision_note: null, created_at: '2026-11-21 08:00:00' }]
         }));
         expect(page.root.textContent).toContain('Pengajuan sebelumnya masih diproses.');
+        expect(page.root.textContent).toContain('Rp100.000 · Menunggu');
         expect(controls(page).every(node => node.disabled)).toBe(true);
         expect(submitButton(page).disabled).toBe(true);
         expect(findAll(page.root, node => node.tagName === 'BUTTON' && node.textContent === 'Batalkan')).toHaveLength(1);
         page.fill(validValues);
         await page.submit();
         expect(page.posts).toHaveLength(0);
+    });
+
+    test('a request the clinic is transferring keeps the form locked, explains why, and has no cancel button', async () => {
+        const page = await loadPage(saldoBody({
+            available_idr: 0,
+            requests: [{ id: 7, amount_idr: 100000, bank_name: 'BCA', account_number: '1234567890', account_holder: 'Ani Wijaya', status: 'processing', processing_at: '2026-11-21 10:05:00', decision_note: null, created_at: '2026-11-21 08:00:00' }]
+        }));
+        expect(page.root.textContent).toContain('Rp100.000 · Sedang ditransfer');
+        expect(page.root.textContent).toContain('Klinik sedang mentransfer dana ini, jadi pengajuan tidak dapat dibatalkan.');
+        expect(page.root.textContent).toContain('Pengajuan sebelumnya masih diproses.');
+        expect(controls(page).every(node => node.disabled)).toBe(true);
+        expect(submitButton(page).disabled).toBe(true);
+        expect(findAll(page.root, node => node.tagName === 'BUTTON' && node.textContent === 'Batalkan')).toHaveLength(0);
     });
 
     test('no history and no requests gives the empty message and no form', async () => {

@@ -86,7 +86,7 @@ describe('Pembayaran di Muka page shell', () => {
         expect(mod).toContain('+ Tambah obat');
         const bootstrap = read('staff', 'public', 'scripts', 'shell', 'bootstrap.js');
         for (const name of ['prepayLoadPackages', 'prepayEditPackage', 'prepayAddPackageItem', 'prepayRemovePackageItem',
-            'prepaySavePackage', 'prepayTogglePackage', 'prepayLoadRefundRequests', 'prepayCompleteRefundRequest', 'prepayRejectRefundRequest']) {
+            'prepaySavePackage', 'prepayTogglePackage', 'prepayLoadRefundRequests', 'prepayStartRefundRequest', 'prepayCompleteRefundRequest', 'prepayRejectRefundRequest']) {
             expect(bootstrap).toContain(`'${name}'`);
         }
         expect(bootstrap).not.toContain("'prepayLoadMapping'");
@@ -103,6 +103,19 @@ describe('Pembayaran di Muka page shell', () => {
         expect(mod).toContain('escapeHtml(row.bank_name');
         expect(mod).toContain('escapeHtml(row.account_holder');
         expect(mod).toContain('escapeHtml(row.account_number');
+    });
+
+    test('Pencairan rows: "Mulai transfer" before "Sudah ditransfer"; the processing badge names who started', () => {
+        const mod = moduleSource();
+        expect(mod).toContain('Mulai transfer');
+        expect(mod).toContain('/start');
+        expect(mod).toContain('pasien tidak dapat membatalkan');
+        expect(mod).toContain("processing: '<span class=\"badge badge-info\">Sedang ditransfer</span>'");
+        expect(mod).toContain('escapeHtml(row.processing_by');
+        expect(mod).toContain('prepayStartRefundRequest');
+        // A pending row offers only the start, a processing row only the transfer confirmation.
+        expect(mod).toMatch(/status === 'pending'[\s\S]{0,400}prepayStartRefundRequest/);
+        expect(mod).toMatch(/status === 'processing'[\s\S]{0,400}prepayCompleteRefundRequest/);
     });
 
     test('the paid toast also announces withdrawal requests and refreshes the red dots', () => {

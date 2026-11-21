@@ -645,6 +645,7 @@ export async function prepayTogglePackage(id) {
 
 const REQUEST_STATUS_BADGES = {
     pending: '<span class="badge badge-warning">Menunggu</span>',
+    processing: '<span class="badge badge-info">Sedang ditransfer</span>',
     done: '<span class="badge badge-success">Sudah ditransfer</span>',
     rejected: '<span class="badge badge-danger">Ditolak</span>',
     cancelled: '<span class="badge badge-secondary">Dibatalkan pasien</span>'
@@ -659,11 +660,28 @@ function localDateTime(value) {
     return `${two(date.getDate())}/${two(date.getMonth() + 1)}/${date.getFullYear()} ${two(date.getHours())}:${two(date.getMinutes())}`;
 }
 
+// Open = pending (waiting) or processing (staff pressed "Mulai transfer"; the patient can no longer cancel).
+const OPEN_REQUEST_STATUSES = ['pending', 'processing'];
+let refundRequestBusy = false;
+
+function refundRequestActionsHtml(row) {
+    if (!canRefund()) return '';
+    const id = Number(row.id);
+    const reject = `<button type="button" class="btn btn-sm btn-outline-danger ml-1" data-id="${id}" onclick="window.prepayRejectRefundRequest(Number(this.dataset.id))">Tolak</button>`;
+    // Step 1 locks the request against a patient cancel; only then does step 2 record the transfer.
+    if (row.status === 'pending') {
+        return `<button type="button" class="btn btn-sm btn-primary" data-id="${id}" onclick="window.prepayStartRefundRequest(Number(this.dataset.id))">Mulai transfer</button>${reject}`;
+    }
+    if (row.status === 'processing') {
+        return `<button type="button" class="btn btn-sm btn-success" data-id="${id}" onclick="window.prepayCompleteRefundRequest(Number(this.dataset.id))">Sudah ditransfer</button>${reject}`;
+    }
+    return '';
+}
+
 function refundRequestRowHtml(row) {
-    const pending = row.status === 'pending';
-    const actions = pending && canRefund()
-        ? `<button type="button" class="btn btn-sm btn-success" data-id="${Number(row.id)}" onclick="window.prepayCompleteRefundRequest(Number(this.dataset.id))">Sudah ditransfer</button>
-           <button type="button" class="btn btn-sm btn-outline-danger ml-1" data-id="${Number(row.id)}" onclick="window.prepayRejectRefundRequest(Number(this.dataset.id))">Tolak</button>`
+    const actions = refundRequestActionsHtml(row);
+    const startedBy = row.status === 'processing'
+        ? `<small class="d-block text-muted">oleh ${escapeHtml(row.processing_by || 'staf')} · ${escapeHtml(localDateTime(row.processing_at))}</small>`
         : '';
     return `<tr>
         <td>${patientButton(row.patient_id, row.patient_name)}</td>
@@ -672,7 +690,7 @@ function refundRequestRowHtml(row) {
         <td class="text-nowrap">${escapeHtml(row.account_number || '-')}</td>
         <td>${escapeHtml(row.account_holder || '-')}${row.name_differs ? ' <span class="badge badge-warning">nama berbeda</span>' : ''}</td>
         <td class="text-nowrap">${escapeHtml(localDateTime(row.created_at))}</td>
-        <td>${REQUEST_STATUS_BADGES[row.status] || escapeHtml(row.status || '-')}${row.decision_note ? `<small class="d-block text-muted prepay-note">${escapeHtml(row.decision_note)}</small>` : ''}</td>
+        <td>${REQUEST_STATUS_BADGES[row.status] || escapeHtml(row.status || '-')}${startedBy}${row.decision_note ? `<small class="d-block text-muted prepay-note">${escapeHtml(row.decision_note)}</small>` : ''}</td>
         <td class="text-right text-nowrap">${actions}</td>
     </tr>`;
 }
@@ -685,8 +703,9 @@ export async function prepayLoadRefundRequests() {
         const result = await scope().request(`${API}/refund-requests`);
         const rows = Array.isArray(result?.data) ? result.data : [];
         refundRequestsById = new Map(rows.map(row => [Number(row.id), row]));
-        // The API returns pending first; keep that order and show closed ones after.
-        const ordered = [...rows.filter(row => row.status === 'pending'), ...rows.filter(row => row.status !== 'pending')];
+        // The API returns open requests first; keep that order and show closed ones after.
+        const isOpen = row => OPEN_REQUEST_STATUSES.includes(row.status);
+        const ordered = [...rows.filter(isOpen), ...rows.filter(row => !isOpen(row))];
         tbody.innerHTML = ordered.length
             ? ordered.map(refundRequestRowHtml).join('')
             : '<tr><td colspan="8" class="text-center text-muted py-3">Belum ada pengajuan pencairan.</td></tr>';
@@ -696,23 +715,52 @@ export async function prepayLoadRefundRequests() {
     }
 }
 
-export async function prepayCompleteRefundRequest(id) {
-    if (!canRefund()) return;
-    const row = refundRequestsById.get(Number(id));
-    if (!row) return;
-    if (!window.confirm(`Pastikan ${rupiah(row.amount_idr)} sudah ditransfer ke ${row.bank_name} ${row.account_number} a.n. ${row.account_holder}.`)) return;
+// One withdrawal action at a time: a double click must never send a second start or transfer.
+async function runRefundRequestAction(work) {
+    if (refundRequestBusy) return;
+    refundRequestBusy = true;
     try {
-        const result = await staffApiRequest(`${API}/refund-requests/${Number(row.id)}/complete`, { method: 'POST', retries: 0 });
-        flash(result?.message || 'Pencairan tercatat sudah ditransfer.');
-    } catch (error) {
-        // 409 carries the reason (already closed, or cancelled by the patient): show it as the server wrote it.
-        flash(error.message || 'Pencairan belum tercatat.', 'danger');
+        await work();
+    } finally {
+        refundRequestBusy = false;
     }
     await prepayLoadRefundRequests();
 }
 
+export async function prepayStartRefundRequest(id) {
+    if (!canRefund() || refundRequestBusy) return;
+    const row = refundRequestsById.get(Number(id));
+    if (!row || row.status !== 'pending') return;
+    if (!window.confirm(`Mulai transfer ${rupiah(row.amount_idr)} ke ${row.bank_name} ${row.account_number} a.n. ${row.account_holder}?\n\nSetelah ini pasien tidak dapat membatalkan pengajuan. Tekan "Sudah ditransfer" setelah uang terkirim.`)) return;
+    await runRefundRequestAction(async () => {
+        try {
+            const result = await staffApiRequest(`${API}/refund-requests/${Number(row.id)}/start`, { method: 'POST', retries: 0 });
+            flash(result?.message || 'Pengajuan ditandai sedang ditransfer.');
+        } catch (error) {
+            // 409 says who already started it, or that the patient cancelled: show it as the server wrote it.
+            flash(error.message || 'Pengajuan belum ditandai.', 'danger');
+        }
+    });
+}
+
+export async function prepayCompleteRefundRequest(id) {
+    if (!canRefund() || refundRequestBusy) return;
+    const row = refundRequestsById.get(Number(id));
+    if (!row) return;
+    if (!window.confirm(`Pastikan ${rupiah(row.amount_idr)} sudah ditransfer ke ${row.bank_name} ${row.account_number} a.n. ${row.account_holder}.`)) return;
+    await runRefundRequestAction(async () => {
+        try {
+            const result = await staffApiRequest(`${API}/refund-requests/${Number(row.id)}/complete`, { method: 'POST', retries: 0 });
+            flash(result?.message || 'Pencairan tercatat sudah ditransfer.');
+        } catch (error) {
+            // 409 carries the reason (already closed, or cancelled by the patient): show it as the server wrote it.
+            flash(error.message || 'Pencairan belum tercatat.', 'danger');
+        }
+    });
+}
+
 export async function prepayRejectRefundRequest(id) {
-    if (!canRefund()) return;
+    if (!canRefund() || refundRequestBusy) return;
     const row = refundRequestsById.get(Number(id));
     if (!row) return;
     const answer = window.prompt(`Alasan menolak pencairan ${rupiah(row.amount_idr)} untuk ${row.patient_name} (3–500 karakter):`);
@@ -722,17 +770,18 @@ export async function prepayRejectRefundRequest(id) {
         flash('Alasan penolakan wajib diisi (3–500 karakter).', 'danger');
         return;
     }
-    try {
-        const result = await staffApiRequest(`${API}/refund-requests/${Number(row.id)}/reject`, {
-            method: 'POST',
-            retries: 0,
-            body: JSON.stringify({ note })
-        });
-        flash(result?.message || 'Pengajuan pencairan ditolak.');
-    } catch (error) {
-        flash(error.message || 'Pengajuan belum ditolak.', 'danger');
-    }
-    await prepayLoadRefundRequests();
+    await runRefundRequestAction(async () => {
+        try {
+            const result = await staffApiRequest(`${API}/refund-requests/${Number(row.id)}/reject`, {
+                method: 'POST',
+                retries: 0,
+                body: JSON.stringify({ note })
+            });
+            flash(result?.message || 'Pengajuan pencairan ditolak.');
+        } catch (error) {
+            flash(error.message || 'Pengajuan belum ditolak.', 'danger');
+        }
+    });
 }
 
 document.addEventListener('page:changed', event => {
@@ -760,6 +809,7 @@ Object.assign(window, {
     prepaySavePackage,
     prepayTogglePackage,
     prepayLoadRefundRequests,
+    prepayStartRefundRequest,
     prepayCompleteRefundRequest,
     prepayRejectRefundRequest
 });
