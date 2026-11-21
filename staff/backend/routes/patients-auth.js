@@ -21,7 +21,6 @@ const { validatePatientName } = require('../../../public/scripts/patient-name-ru
 const { ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 const patientActivityLogger = require('../services/patientActivityLogger');
 const pushService = require('../services/pushNotificationService');
-const { trackerEndState } = require('../services/PregnancyEnd');
 const { trackerDates, eddFromPregnancy, findOngoingPregnancy } = require('../services/PregnancyTrackerDates');
 const { verifyStaffToken, isDelegatedAccountPermission } = require('../middleware/auth');
 const {
@@ -2419,7 +2418,7 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
             return res.json({
                 success: true,
                 data: null,
-                message: 'HPL belum tersedia'
+                message: 'Data kehamilan belum tersedia.'
             });
         }
 
@@ -2429,22 +2428,10 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
             return res.json({
                 success: true,
                 data: null,
-                message: 'HPL belum tersedia'
-            });
-        }
-        const { weeksPregnant, daysExtra, daysUntilEdd } = dates;
-
-        // A recorded birth/miscarriage/stillbirth ends the pregnancy: hide the tracker without saying which
-        const ended = await trackerEndState(db, patientId, dates.hpht, logger);
-        if (ended) {
-            return res.json({
-                success: true,
-                data: null,
-                pregnancy_ended: true,
-                ended_on: ended.ended_on,
                 message: 'Data kehamilan belum tersedia.'
             });
         }
+        const { weeksPregnant, daysExtra, daysUntilEdd } = dates;
 
         // Auto-hide if HPL + 14 days (2 weeks) has passed
         // This assumes patient has delivered

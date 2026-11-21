@@ -22,7 +22,6 @@ const { verifyPatientToken: defaultVerifyPatientToken } = require('../middleware
 const { PremiumError } = require('../services/PremiumPaymentService');
 const { CONSULTATION_CATEGORY_CODES } = require('../constants/consultationCategories');
 const { toPublicEstimate } = require('../services/CheckupEstimateService');
-const { trackerEndState, hphtFromReference } = require('../services/PregnancyEnd');
 const { isValidDateString, gestationalWeeksOn, choosePackage } = require('../services/GestationalAge');
 const { referenceFromPregnancy, findOngoingPregnancy } = require('../services/PregnancyTrackerDates');
 
@@ -41,7 +40,6 @@ function createPatientCheckupPrepayRouter({
     db,
     estimates,
     refundRequests,
-    endState = trackerEndState,
     verifyPatientToken = defaultVerifyPatientToken,
     logger = defaultLogger
 } = {}) {
@@ -91,8 +89,7 @@ function createPatientCheckupPrepayRouter({
                 // Dated from the ongoing pregnancy (obstetri anamnesa), not the newest USG: a wrongly
                 // filled trimester tab there would suggest a 39-week package to a 19-week patient.
                 const reference = referenceFromPregnancy(await findOngoingPregnancy(database(), req.patient.id));
-                const ended = reference ? await endState(database(), req.patient.id, hphtFromReference(reference), logger) : null;
-                age = reference && !ended ? gestationalWeeksOn(reference, date) : null;
+                age = reference ? gestationalWeeksOn(reference, date) : null;
                 if (age) {
                     source = reference.kind;
                     suggestedCode = choosePackage(packages, age.weeks);
