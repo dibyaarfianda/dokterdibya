@@ -68,6 +68,7 @@ describe('access control', () => {
         expectPermission('PUT', '/packages/:id', 'checkup_prepay.manage_estimate');
         expectPermission('PATCH', '/packages/:id/active', 'checkup_prepay.manage_estimate');
         expectPermission('GET', '/refund-requests', 'billing.view');
+        expectPermission('POST', '/refund-requests/:id/start', 'billing.reset');
         expectPermission('POST', '/refund-requests/:id/complete', 'billing.reset');
         expectPermission('POST', '/refund-requests/:id/reject', 'billing.reset');
     });
@@ -75,6 +76,7 @@ describe('access control', () => {
     test('the withdrawal routes are explicit overrides, not inferred from the path words', () => {
         const { ROUTE_PERMISSION_OVERRIDES } = require('../../config/accessControlRegistry');
         expect(ROUTE_PERMISSION_OVERRIDES.get('staff-prepay:GET:/refund-requests')).toBe('billing.view');
+        expect(ROUTE_PERMISSION_OVERRIDES.get('staff-prepay:POST:/refund-requests/:id/start')).toBe('billing.reset');
         expect(ROUTE_PERMISSION_OVERRIDES.get('staff-prepay:POST:/refund-requests/:id/complete')).toBe('billing.reset');
         expect(ROUTE_PERMISSION_OVERRIDES.get('staff-prepay:POST:/refund-requests/:id/reject')).toBe('billing.reset');
     });
@@ -167,6 +169,7 @@ describe('HTTP API', () => {
     describe('withdrawal requests', () => {
         const refundService = () => ({
             listForStaff: jest.fn(async () => []),
+            startRequest: jest.fn(async ({ id }) => ({ id, status: 'processing', processing_by: 'Kasir', processing_at: '2026-11-21T03:00:00.000Z' })),
             completeRequest: jest.fn(async ({ id }) => ({ id, status: 'done', refund_id: 30 })),
             rejectRequest: jest.fn(async ({ id }) => ({ id, status: 'rejected' }))
         });
@@ -196,7 +199,7 @@ describe('HTTP API', () => {
             const db = {
                 query: jest.fn(async sql => {
                     const query = String(sql).replace(/\s+/g, ' ');
-                    if (query.includes("WHERE status = 'pending'")) return [[row]];
+                    if (/WHERE status (= 'pending'|IN \('pending','processing'\))/.test(query)) return [[row]];
                     if (query.includes('FROM patients WHERE id IN')) return [[{ id: 'P1', full_name: 'Ny. Siti Aminah' }]];
                     return [[]];
                 })
@@ -229,6 +232,27 @@ describe('HTTP API', () => {
             const rejected = await request(app).post('/api/staff-prepay/refund-requests/6/reject').set(cashier).send({ note: 'Rekening salah' });
             expect(rejected.status).toBe(200);
             expect(mockRefundRequests.rejectRequest).toHaveBeenCalledWith({ id: 6, note: 'Rekening salah', actor: { id: 'S1', name: 'Kasir' } });
+        });
+
+        test('"Mulai transfer" needs billing.reset, passes the actor and keeps the 409 reason', async () => {
+            mockRefundRequests = refundService();
+            expect((await request(app).post('/api/staff-prepay/refund-requests/5/start').set(as(STAFF, ['billing.view']))).status).toBe(403);
+            expect(mockRefundRequests.startRequest).not.toHaveBeenCalled();
+
+            const started = await request(app).post('/api/staff-prepay/refund-requests/5/start').set(as(STAFF, ['billing.view', 'billing.reset']));
+            expect(started.status).toBe(200);
+            expect(started.headers['cache-control']).toMatch(/no-store/);
+            expect(started.body).toMatchObject({ success: true, data: { id: 5, status: 'processing', processing_by: 'Kasir' } });
+            expect(mockRefundRequests.startRequest).toHaveBeenCalledWith({ id: 5, actor: { id: 'S1', name: 'Kasir' } });
+
+            const bad = await request(app).post('/api/staff-prepay/refund-requests/5%20OR%201/start').set(as(DOCTOR));
+            expect(bad.status).toBe(404);
+            expect(mockRefundRequests.startRequest).toHaveBeenCalledTimes(1);
+
+            mockRefundRequests.startRequest.mockRejectedValueOnce(Object.assign(new Error('Pengajuan ini sudah mulai ditransfer oleh Bidan.'), { statusCode: 409 }));
+            const again = await request(app).post('/api/staff-prepay/refund-requests/5/start').set(as(DOCTOR));
+            expect(again.status).toBe(409);
+            expect(again.body).toEqual({ success: false, message: 'Pengajuan ini sudah mulai ditransfer oleh Bidan.' });
         });
 
         test('a malformed id is 404 and service status codes are kept', async () => {
@@ -284,7 +308,8 @@ describe('StaffPrepayService', () => {
                 statements.push({ query, params });
                 if (query.startsWith('SELECT id, amount_idr, request_hash FROM patient_credit_refunds')) return [saved ? [saved] : []];
                 if (query.includes('FROM patient_credit_ledger') && query.includes('FOR UPDATE')) return [balances];
-                if (query.includes('FROM patient_credit_refund_requests') && query.includes("status = 'pending'")) return [pending];
+                // Open requests (pending or processing) hold their amount.
+                if (query.includes('FROM patient_credit_refund_requests') && query.includes("status IN ('pending','processing')")) return [pending];
                 if (query.startsWith('INSERT INTO patient_credit_refunds')) return [{ insertId: 3 }];
                 if (query.startsWith('INSERT INTO patient_credit_ledger')) return [{ affectedRows: 1 }];
                 return [[]];
@@ -333,7 +358,7 @@ describe('StaffPrepayService', () => {
         await real.createRefund(refund, { db: h.db });
         const reads = h.statements.map(entry => entry.query).filter(query => query.startsWith('SELECT'));
         expect(reads[0]).toMatch(/FROM patient_credit_ledger .* FOR UPDATE$/);
-        expect(reads[1]).toMatch(/FROM patient_credit_refund_requests .*status = 'pending'.* FOR UPDATE$/);
+        expect(reads[1]).toMatch(/FROM patient_credit_refund_requests .*status IN \('pending','processing'\).* FOR UPDATE$/);
         expect(reads[2]).toMatch(/^SELECT id, amount_idr, request_hash FROM patient_credit_refunds .* FOR UPDATE$/);
     });
 

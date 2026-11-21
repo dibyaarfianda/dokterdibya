@@ -32,7 +32,7 @@ describe('portal Saldo Saya page', () => {
         expect(script).toContain('Saldo uji tidak dapat dicairkan');
         expect(script).toContain('Belum ada saldo deposit.');
         expect(script).toContain('Pengajuan sebelumnya masih diproses.');
-        ['Diproses', 'Selesai', 'Ditolak', 'Dibatalkan'].forEach(label => expect(script).toContain(`'${label}'`));
+        ['Menunggu', 'Sedang ditransfer', 'Selesai', 'Ditolak', 'Dibatalkan'].forEach(label => expect(script).toContain(`'${label}'`));
         ['BCA', 'BRI', 'BNI', 'Mandiri', 'BSI', 'CIMB Niaga', 'Permata', 'Lainnya'].forEach(bank => expect(script).toContain(`'${bank}'`));
     });
 

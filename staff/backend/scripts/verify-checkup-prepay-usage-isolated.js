@@ -42,6 +42,15 @@ function response() {
         pool = mysql.createPool({ user: 'root', socketPath: '/run/mysqld/mysqld.sock', database: qaName, connectionLimit: 6, multipleStatements: true });
         await pool.query(fs.readFileSync(path.join(root, 'migrations/20261121_checkup_prepay_tahap2.sql'), 'utf8'));
         await pool.query(fs.readFileSync(path.join(root, 'migrations/20261122_checkup_prepay_packages.sql'), 'utf8'));
+        // Twice: the processing-status migration must be safe to run again and change nothing the second time.
+        const processingMigration = fs.readFileSync(path.join(root, 'migrations/20261122_refund_request_processing.sql'), 'utf8');
+        const requestsTableDefinition = async () => (await pool.query('SHOW CREATE TABLE patient_credit_refund_requests'))[0][0]['Create Table'];
+        await pool.query(processingMigration);
+        const afterFirstRun = await requestsTableDefinition();
+        assert.match(afterFirstRun, /`status` enum\('pending','done','rejected','cancelled','processing'\)/);
+        assert.match(afterFirstRun, /`processing_by` varchar\(64\)/);
+        await pool.query(processingMigration);
+        assert.equal(await requestsTableDefinition(), afterFirstRun);
         require.cache[req.resolve('./db')] = { exports: pool };
         const billing = req('./services/sunday-clinic/billing');
         const returns = req('./services/sunday-clinic/billing-returns');
@@ -274,10 +283,40 @@ function response() {
         assert.equal(await scalar("SELECT COUNT(*) FROM patient_credit_refunds WHERE patient_id = 'QA0004'"), 1);
         assert.equal(await scalar("SELECT COUNT(*) FROM patient_credit_ledger WHERE patient_id = 'QA0004' AND entry_type = 'refund'"), 1);
 
+        // 14. "Mulai transfer": the patient can no longer cancel, the hold stays (mark-paid still
+        // takes only live - hold), a second start is refused, then "Sudah ditransfer" refunds once.
+        await insert('patient_credit_ledger', { patient_id: 'QA0004', category: 'obstetri', entry_type: 'prepay', amount_idr: 150000, gateway_mode: 'live', source_type: 'payment_order', source_id: '905' });
+        const second = await refundRequests.createRequest({
+            patient: { id: 'QA0004', name: 'Synthetic QA 4' }, amountIdr: 100000, bankName: 'BNI',
+            accountNumber: '9876543210', accountHolder: 'Synthetic QA 4', requestKey: 'qa-refund-request-0002'
+        });
+        const started = await refundRequests.startRequest({ id: second.id, actor });
+        assert.equal(started.status, 'processing');
+        assert.equal(started.processing_by, 'QA Dokter');
+        assert.ok(started.processing_at, 'processing_at is set');
+        const [[startedRow]] = await pool.query('SELECT status, processing_by FROM patient_credit_refund_requests WHERE id = ?', [second.id]);
+        assert.deepEqual({ ...startedRow }, { status: 'processing', processing_by: 'QA Dokter' });
+        await assert.rejects(refundRequests.cancelRequest({ patientId: 'QA0004', id: second.id }), error => error.status === 409 && error.code === 'REQUEST_PROCESSING');
+        await assert.rejects(refundRequests.startRequest({ id: second.id, actor: { id: 'qa2', name: 'QA Kasir' } }), error => error.statusCode === 409 && /oleh QA Dokter\.$/.test(error.message));
+        assert.equal(await ledger.getPendingRefundHold(pool, 'QA0004'), 100000);
+        await insert('sunday_clinic_records', { id: 5, mr_id: 'QA005', patient_id: 'QA0004', visit_location: 'klinik_private', mr_category: 'obstetri', status: 'draft', created_at: `${date} 10:30:00` });
+        await insert('sunday_clinic_billings', { id: 5, mr_id: 'QA005', patient_id: 'QA0004', subtotal: 120000, total: 120000, status: 'confirmed', accounting_date: date, pending_changes: 0 });
+        await insert('sunday_clinic_billing_items', { id: 51, billing_id: 5, item_type: 'tindakan', item_code: 'T40', item_name: 'Layanan QA', quantity: 1, price: 120000, total: 120000 });
+        const paid5 = await markPaid('QA005', { expected_prepay_idr: 50000 });
+        assert.equal(paid5.statusCode, 200, JSON.stringify(paid5.body));
+        assert.deepEqual(paid5.body.prepay, { deduct_idr: 50000, remaining_due_idr: 70000 });
+        assert.equal(await liveBalance('QA0004'), 100000);
+        const transferred = await refundRequests.completeRequest({ id: second.id, actor });
+        assert.equal(transferred.status, 'done');
+        assert.equal(await scalar("SELECT COUNT(*) FROM patient_credit_refunds WHERE patient_id = 'QA0004'"), 2);
+        assert.equal(await ledger.getPendingRefundHold(pool, 'QA0004'), 0);
+        assert.equal(await liveBalance('QA0004'), 0);
+
         console.log(JSON.stringify({
             passed: true,
             tests: ['live saldo on mark-paid', 'sandbox never pays', '409 before stock', 'closing saldo split', 'retur back to saldo', 'refund once', 'deletion guard',
-                'legacy mapping to packages', 'new package pricing', 'unchanged re-save', 'order credits snapshot category', 'withdrawal hold caps mark-paid', 'complete request refunds once'],
+                'legacy mapping to packages', 'new package pricing', 'unchanged re-save', 'order credits snapshot category', 'withdrawal hold caps mark-paid', 'complete request refunds once',
+                'processing blocks cancel and keeps the hold'],
             clinicalWrites: 0
         }));
     } finally {

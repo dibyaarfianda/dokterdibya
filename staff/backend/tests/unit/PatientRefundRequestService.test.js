@@ -23,13 +23,18 @@ const KEY_B = 'req-key-bbbbbbbbbbbb';
 const ACTOR = { id: 'S1', name: 'Kasir' };
 const KEY_REUSED = 'Kunci pengajuan sudah dipakai untuk data berbeda. Muat ulang halaman lalu ajukan lagi.';
 const CANCELLED_BY_PATIENT = 'Pasien sudah membatalkan pengajuan ini. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.';
+const PROCESSING_NO_CANCEL = 'Pengajuan ini sedang ditransfer oleh klinik dan tidak dapat dibatalkan. Hubungi klinik bila ada yang perlu diubah.';
+const CANCELLED_DO_NOT_TRANSFER = 'Pasien sudah membatalkan pengajuan ini. Jangan transfer.';
 
 const liveRow = over => ({ patient_id: 'P1', category: 'obstetri', entry_type: 'prepay', amount_idr: 255000, gateway_mode: 'live', source_type: 'payment_order', source_id: '9', created_at: new Date('2026-11-20T07:48:00+07:00'), ...over });
 const REQUEST_DEFAULTS = {
     patient_id: 'P1', amount_idr: 200000, bank_name: 'BCA', account_number: ACCOUNT, account_holder: 'Siti Aminah',
-    status: 'pending', request_key: 'req-key-seeded-00001', refund_id: null, decision_note: null, decided_by: null,
-    decided_at: null, created_at: new Date('2026-11-21T09:00:00+07:00')
+    status: 'pending', processing_by: null, processing_at: null, request_key: 'req-key-seeded-00001', refund_id: null,
+    decision_note: null, decided_by: null, decided_at: null, created_at: new Date('2026-11-21T09:00:00+07:00')
 };
+// The statuses a "WHERE status = 'pending'" or "WHERE status IN ('pending','processing')" clause selects.
+const OPEN_IN_SQL = /status IN \('pending','processing'\)/;
+const openStatuses = sql => (OPEN_IN_SQL.test(sql) ? ['pending', 'processing'] : ['pending']);
 
 /**
  * In-memory stand-in for MySQL: one row lock per patient ledger (taken by the live-saldo
@@ -99,8 +104,9 @@ function harness({ ledger, requests = [], patients = { P1: 'Ny. Siti Aminah', P2
             return [state.requests.some(row => row.patient_id === params[0]) ? [{ 1: 1 }] : []];
         }
 
-        if (/^SELECT id, amount_idr, request_key FROM patient_credit_refund_requests WHERE patient_id = \? AND status = 'pending'/.test(sql)) {
-            return [state.requests.filter(row => row.patient_id === params[0] && row.status === 'pending')
+        if (/^SELECT id, amount_idr, request_key FROM patient_credit_refund_requests WHERE patient_id = \? AND status (= 'pending'|IN \('pending','processing'\))/.test(sql)) {
+            const open = openStatuses(sql);
+            return [state.requests.filter(row => row.patient_id === params[0] && open.includes(row.status))
                 .map(row => ({ id: row.id, amount_idr: row.amount_idr, request_key: row.request_key }))];
         }
         if (sql.includes('FROM patient_credit_refund_requests WHERE request_key = ?')) {
@@ -122,20 +128,33 @@ function harness({ ledger, requests = [], patients = { P1: 'Ny. Siti Aminah', P2
             return [copy(state.requests.filter(row => row.id === Number(params[0]) && (!withPatient || row.patient_id === params[1])))];
         }
         if (sql.startsWith('UPDATE patient_credit_refund_requests SET status = ?')) {
-            const [status, refund_id, decision_note, decided_by, id] = params;
-            const row = state.requests.find(entry => entry.id === Number(id) && entry.status === 'pending');
+            const [status, refund_id, decision_note, decided_by, id, from] = params;
+            // "AND status = 'pending'" (old form) or "AND status IN (?)" with the allowed list as the last param.
+            const allowed = /AND status IN \(\?\)$/.test(sql) ? from : ['pending'];
+            const row = state.requests.find(entry => entry.id === Number(id) && allowed.includes(entry.status));
             if (!row) return [{ affectedRows: 0 }];
             const before = { ...row };
             Object.assign(row, { status, refund_id, decision_note, decided_by, decided_at: new Date() });
             undo(() => Object.assign(row, before));
             return [{ affectedRows: 1 }];
         }
-        if (sql.includes("FROM patient_credit_refund_requests WHERE status = 'pending'")) {
-            return [copy(state.requests.filter(row => row.status === 'pending').sort((a, b) => a.created_at - b.created_at || a.id - b.id))];
+        if (sql.startsWith("UPDATE patient_credit_refund_requests SET status = 'processing', processing_by = ?, processing_at = NOW() WHERE id = ? AND status = 'pending'")) {
+            const [processing_by, id] = params;
+            const row = state.requests.find(entry => entry.id === Number(id) && entry.status === 'pending');
+            if (!row) return [{ affectedRows: 0 }];
+            const before = { ...row };
+            Object.assign(row, { status: 'processing', processing_by, processing_at: new Date() });
+            undo(() => Object.assign(row, before));
+            return [{ affectedRows: 1 }];
         }
-        if (sql.includes("FROM patient_credit_refund_requests WHERE status <> 'pending'")) {
+        if (/FROM patient_credit_refund_requests WHERE status (= 'pending'|IN \('pending','processing'\))/.test(sql)) {
+            const open = openStatuses(sql);
+            return [copy(state.requests.filter(row => open.includes(row.status)).sort((a, b) => a.created_at - b.created_at || a.id - b.id))];
+        }
+        if (/FROM patient_credit_refund_requests WHERE status (<> 'pending'|NOT IN \('pending','processing'\))/.test(sql)) {
+            const open = /NOT IN/.test(sql) ? ['pending', 'processing'] : ['pending'];
             const at = row => (row.decided_at || row.created_at).getTime();
-            return [copy(state.requests.filter(row => row.status !== 'pending').sort((a, b) => at(b) - at(a) || b.id - a.id).slice(0, 100))];
+            return [copy(state.requests.filter(row => !open.includes(row.status)).sort((a, b) => at(b) - at(a) || b.id - a.id).slice(0, 100))];
         }
         if (sql.includes('FROM patient_credit_refund_requests WHERE patient_id = ? ORDER BY id DESC')) {
             return [copy(state.requests.filter(row => row.patient_id === params[0]).sort((a, b) => b.id - a.id))];
@@ -230,7 +249,15 @@ describe('getPendingRefundHold and hasSaldoHistory', () => {
         expect(h.statements[0].sql).not.toMatch(/FOR UPDATE/);
         const connection = await h.db.getConnection();
         await Ledger.getPendingRefundHold(connection, 'P1', { forUpdate: true });
-        expect(h.statements[h.statements.length - 1].sql).toMatch(/status = 'pending' ORDER BY id FOR UPDATE$/);
+        expect(h.statements[h.statements.length - 1].sql).toMatch(/status IN \('pending','processing'\) ORDER BY id FOR UPDATE$/);
+    });
+
+    test('a request staff are transferring ("processing") still holds its amount', async () => {
+        const h = harness({ requests: [
+            { id: 1, amount_idr: 50000, status: 'processing', processing_by: 'Kasir' },
+            { id: 2, amount_idr: 70000, status: 'cancelled', request_key: 'req-key-seeded-00002' }
+        ] });
+        expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(50000);
     });
 
     test('a server without the requests table has no hold', async () => {
@@ -311,6 +338,13 @@ describe('createRequest', () => {
         const h = harness({ requests: [{ id: 1, amount_idr: 50000 }] });
         const { service } = build(h);
         await expect(service.createRequest(request({ amountIdr: 100000 }))).rejects.toMatchObject({ status: 409 });
+        expect(h.state.requests).toHaveLength(1);
+    });
+
+    test('a new request while staff transfer the previous one is refused with 409', async () => {
+        const h = harness({ requests: [{ id: 1, amount_idr: 50000, status: 'processing', processing_by: 'Kasir' }] });
+        const { service } = build(h);
+        await expect(service.createRequest(request({ amountIdr: 100000 }))).rejects.toMatchObject({ status: 409, code: 'REQUEST_PENDING' });
         expect(h.state.requests).toHaveLength(1);
     });
 
@@ -445,7 +479,9 @@ describe('completeRequest', () => {
         ] });
         const { service } = build(h);
         await expect(service.completeRequest({ id: 99, actor: ACTOR })).rejects.toMatchObject({ statusCode: 404 });
-        await expect(service.completeRequest({ id: 6, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: 'Pengajuan ini sudah ditutup.' });
+        await expect(service.completeRequest({ id: 6, actor: ACTOR })).rejects.toMatchObject({
+            statusCode: 409, message: 'Pengajuan ini sudah ditolak. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.'
+        });
         await expect(service.completeRequest({ id: 7, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: CANCELLED_BY_PATIENT });
         expect(h.state.refunds).toHaveLength(0);
         expect(everyConnectionClosed(h)).toBe(true);
@@ -482,6 +518,157 @@ describe('completeRequest', () => {
         const { service } = build(h);
         await expect(service.completeRequest({ id: 5, actor: ACTOR })).resolves.toMatchObject({ status: 'done' });
         expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(50000);
+    });
+});
+
+describe('startRequest ("Mulai transfer")', () => {
+    test('moves a pending request to processing under the saldo lock, records who, keeps the hold and logs masked', async () => {
+        const h = harness({ requests: [{ id: 5, amount_idr: 200000, request_key: KEY_A }] });
+        const { service } = build(h);
+        const result = await service.startRequest({ id: 5, actor: ACTOR });
+        expect(result).toEqual({ id: 5, status: 'processing', processing_by: 'Kasir', processing_at: expect.any(Date) });
+        expect(h.state.requests[0]).toMatchObject({ status: 'processing', processing_by: 'Kasir', refund_id: null, decided_at: null });
+        expect(h.state.refunds).toHaveLength(0);
+        expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(200000);
+
+        // Lock order: unlocked read, then live saldo, then the request FOR UPDATE, then the update.
+        const order = h.statements.map(s => `${s.owner}:${s.sql}`);
+        const unlocked = order.findIndex(s => /^pool:SELECT .* FROM patient_credit_refund_requests WHERE id = \?$/.test(s));
+        const saldoLock = order.findIndex(s => /^c1:SELECT category, amount_idr, created_at FROM patient_credit_ledger .* FOR UPDATE$/.test(s));
+        const requestLock = order.findIndex(s => /^c1:SELECT .* FROM patient_credit_refund_requests WHERE id = \? FOR UPDATE$/.test(s));
+        const update = order.findIndex(s => /^c1:UPDATE patient_credit_refund_requests SET status = 'processing'/.test(s));
+        expect(unlocked).toBeGreaterThanOrEqual(0);
+        expect(saldoLock).toBeGreaterThan(unlocked);
+        expect(requestLock).toBeGreaterThan(saldoLock);
+        expect(update).toBeGreaterThan(requestLock);
+
+        expect(activityLogger.log).toHaveBeenCalledWith('S1', 'Kasir', 'Pencairan Saldo', expect.stringContaining('mulai ditransfer'));
+        expect(activityLogger.log).toHaveBeenCalledWith('S1', 'Kasir', 'Pencairan Saldo', expect.stringContaining('•••• 7890'));
+        expect(JSON.stringify([activityLogger.log.mock.calls, Object.values(logger).map(fn => fn.mock.calls)])).not.toContain(ACCOUNT);
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('a second start is refused and names who started the transfer', async () => {
+        const h = harness({ requests: [{ id: 5, status: 'processing', processing_by: 'Kasir', processing_at: new Date() }] });
+        const { service } = build(h);
+        await expect(service.startRequest({ id: 5, actor: { id: 'S2', name: 'Bidan' } }))
+            .rejects.toMatchObject({ statusCode: 409, message: 'Pengajuan ini sudah mulai ditransfer oleh Kasir.' });
+        expect(h.state.requests[0].processing_by).toBe('Kasir');
+        expect(activityLogger.log).not.toHaveBeenCalled();
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('a start with no recorded name says "staf lain"', async () => {
+        const h = harness({ requests: [{ id: 5, status: 'processing', processing_by: null }] });
+        const { service } = build(h);
+        await expect(service.startRequest({ id: 5, actor: ACTOR }))
+            .rejects.toMatchObject({ statusCode: 409, message: 'Pengajuan ini sudah mulai ditransfer oleh staf lain.' });
+    });
+
+    test('cancelled says do not transfer; done or rejected is closed; unknown or malformed is 404', async () => {
+        const h = harness({ requests: [
+            { id: 6, status: 'cancelled', request_key: 'req-key-seeded-00006' },
+            { id: 7, status: 'done', refund_id: 30, request_key: 'req-key-seeded-00007' },
+            { id: 8, status: 'rejected', request_key: 'req-key-seeded-00008' }
+        ] });
+        const { service } = build(h);
+        await expect(service.startRequest({ id: 6, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: CANCELLED_DO_NOT_TRANSFER });
+        await expect(service.startRequest({ id: 7, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: 'Pengajuan ini sudah ditutup.' });
+        await expect(service.startRequest({ id: 8, actor: ACTOR })).rejects.toMatchObject({ statusCode: 409, message: 'Pengajuan ini sudah ditutup.' });
+        await expect(service.startRequest({ id: 99, actor: ACTOR })).rejects.toMatchObject({ statusCode: 404 });
+        await expect(service.startRequest({ id: '5 OR 1', actor: ACTOR })).rejects.toMatchObject({ statusCode: 404 });
+        expect(h.state.requests.map(row => row.status)).toEqual(['cancelled', 'done', 'rejected']);
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('two cashiers starting at once: exactly one wins, the other is told who', async () => {
+        const h = harness({ requests: [{ id: 5 }] });
+        const { service } = build(h);
+        const results = await Promise.allSettled([
+            service.startRequest({ id: 5, actor: ACTOR }),
+            service.startRequest({ id: 5, actor: { id: 'S2', name: 'Bidan' } })
+        ]);
+        expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);
+        const refused = results.filter(r => r.status === 'rejected');
+        expect(refused).toHaveLength(1);
+        expect(refused[0].reason).toMatchObject({ statusCode: 409, message: expect.stringMatching(/^Pengajuan ini sudah mulai ditransfer oleh (Kasir|Bidan)\.$/) });
+        expect(h.state.requests[0].status).toBe('processing');
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('the patient cancelling while staff press "Mulai transfer": exactly one wins', async () => {
+        const h = harness({ requests: [{ id: 5, amount_idr: 200000 }] });
+        const { service } = build(h);
+        const [cancel, start] = await Promise.allSettled([
+            service.cancelRequest({ patientId: 'P1', id: 5 }),
+            service.startRequest({ id: 5, actor: ACTOR })
+        ]);
+        expect([cancel.status, start.status].sort()).toEqual(['fulfilled', 'rejected']);
+        const finalStatus = h.state.requests[0].status;
+        if (cancel.status === 'fulfilled') {
+            expect(finalStatus).toBe('cancelled');
+            expect(start.reason).toMatchObject({ statusCode: 409, message: CANCELLED_DO_NOT_TRANSFER });
+            expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(0);
+        } else {
+            expect(finalStatus).toBe('processing');
+            expect(cancel.reason).toMatchObject({ status: 409, message: PROCESSING_NO_CANCEL });
+            expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(200000);
+        }
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+});
+
+describe('a request staff are transferring', () => {
+    const processingHarness = () => harness({ requests: [{ id: 5, amount_idr: 200000, status: 'processing', processing_by: 'Kasir', processing_at: new Date() }] });
+
+    test('cannot be cancelled by the patient; status and hold stay', async () => {
+        const h = processingHarness();
+        const { service } = build(h);
+        await expect(service.cancelRequest({ patientId: 'P1', id: 5 }))
+            .rejects.toMatchObject({ status: 409, code: 'REQUEST_PROCESSING', message: PROCESSING_NO_CANCEL });
+        expect(h.state.requests[0].status).toBe('processing');
+        expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(200000);
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('"Sudah ditransfer" records exactly one refund and releases the hold', async () => {
+        const h = processingHarness();
+        const { service } = build(h);
+        await expect(service.completeRequest({ id: 5, actor: ACTOR })).resolves.toEqual({ id: 5, status: 'done', refund_id: 30 });
+        expect(h.state.refunds).toHaveLength(1);
+        expect(h.state.requests[0]).toMatchObject({ status: 'done', refund_id: 30, processing_by: 'Kasir' });
+        expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(0);
+        await expect(service.completeRequest({ id: 5, actor: ACTOR })).resolves.toEqual({ id: 5, status: 'done', refund_id: 30 });
+        expect(h.state.refunds).toHaveLength(1);
+    });
+
+    test('"Tolak" closes it with the note and releases the hold', async () => {
+        const h = processingHarness();
+        const { service } = build(h);
+        await expect(service.rejectRequest({ id: 5, note: 'Transfer gagal, rekening tidak aktif', actor: ACTOR })).resolves.toEqual({ id: 5, status: 'rejected' });
+        expect(h.state.requests[0]).toMatchObject({ status: 'rejected', decision_note: 'Transfer gagal, rekening tidak aktif' });
+        expect(await Ledger.getPendingRefundHold(h.db, 'P1')).toBe(0);
+    });
+
+    test('"Sudah ditransfer" after a colleague pressed "Tolak" says who rejected it and to record a direct refund', async () => {
+        const h = processingHarness();
+        const { service } = build(h);
+        await service.rejectRequest({ id: 5, note: 'Rekening sepertinya salah', actor: { id: 'S2', name: 'Bidan' } });
+        await expect(service.completeRequest({ id: 5, actor: ACTOR })).rejects.toMatchObject({
+            statusCode: 409,
+            message: 'Pengajuan ini sudah ditolak oleh Bidan. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.'
+        });
+        expect(h.state.refunds).toHaveLength(0);
+        expect(everyConnectionClosed(h)).toBe(true);
+    });
+
+    test('a refund the live saldo no longer covers rolls back and keeps it processing', async () => {
+        const h = harness({ ledger: [liveRow({ amount_idr: 100000 })], requests: [{ id: 5, amount_idr: 200000, status: 'processing', processing_by: 'Kasir' }] });
+        const { service } = build(h);
+        await expect(service.completeRequest({ id: 5, actor: ACTOR })).rejects.toMatchObject({ statusCode: 400 });
+        expect(h.state.refunds).toHaveLength(0);
+        expect(h.state.requests[0].status).toBe('processing');
+        expect(everyConnectionClosed(h)).toBe(true);
     });
 });
 
@@ -550,16 +737,29 @@ describe('lists', () => {
         { id: 1, status: 'done', refund_id: 30, created_at: new Date('2026-11-01T09:00:00+07:00'), decided_at: new Date('2026-11-02T09:00:00+07:00'), request_key: 'req-key-seeded-00001' },
         { id: 2, patient_id: 'P2', account_holder: 'Budi Santoso', created_at: new Date('2026-11-21T10:00:00+07:00'), request_key: 'req-key-seeded-00002' },
         { id: 3, account_holder: 'Budi Santoso', created_at: new Date('2026-11-21T08:00:00+07:00'), request_key: 'req-key-seeded-00003' },
-        { id: 4, status: 'rejected', decision_note: 'Rekening salah', created_at: new Date('2026-11-05T09:00:00+07:00'), decided_at: new Date('2026-11-06T09:00:00+07:00'), request_key: 'req-key-seeded-00004' }
+        { id: 4, status: 'rejected', decision_note: 'Rekening salah', created_at: new Date('2026-11-05T09:00:00+07:00'), decided_at: new Date('2026-11-06T09:00:00+07:00'), request_key: 'req-key-seeded-00004' },
+        { id: 6, patient_id: 'P2', account_holder: 'Budi Santoso', status: 'processing', processing_by: 'Kasir', processing_at: new Date('2026-11-21T09:30:00+07:00'), created_at: new Date('2026-11-21T09:00:00+07:00'), request_key: 'req-key-seeded-00006' }
     ] });
 
-    test('staff see pending oldest first, then closed newest first, with the "nama berbeda" flag', async () => {
+    test('staff see open requests (pending and processing) oldest first, then closed newest first, with the "nama berbeda" flag', async () => {
         const { service } = build(seeded());
         const rows = await service.listForStaff({ canSeeAccount: true });
-        expect(rows.map(row => row.id)).toEqual([3, 2, 4, 1]);
+        expect(rows.map(row => row.id)).toEqual([3, 6, 2, 4, 1]);
         expect(rows.find(row => row.id === 3)).toMatchObject({ patient_name: 'Ny. Siti Aminah', name_differs: true, account_number: ACCOUNT });
         expect(rows.find(row => row.id === 2)).toMatchObject({ patient_name: 'Budi Santoso', name_differs: false });
         expect(rows.find(row => row.id === 1)).toMatchObject({ name_differs: false, refund_id: 30, status: 'done' });
+        expect(rows.find(row => row.id === 6)).toMatchObject({
+            status: 'processing', processing_by: 'Kasir', processing_at: new Date('2026-11-21T09:30:00+07:00')
+        });
+        expect(rows.find(row => row.id === 3)).toMatchObject({ processing_by: null, processing_at: null });
+    });
+
+    test('the patient sees when a transfer started, but not which staff member started it', async () => {
+        const { service } = build(seeded());
+        const rows = await service.listForPatient('P2');
+        const processing = rows.find(row => row.id === 6);
+        expect(processing).toMatchObject({ status: 'processing', processing_at: new Date('2026-11-21T09:30:00+07:00') });
+        expect(processing).not.toHaveProperty('processing_by');
     });
 
     test('without billing.reset the account number is masked', async () => {

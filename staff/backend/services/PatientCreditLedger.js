@@ -267,15 +267,16 @@ async function recordRefundRows(connection, { refundId, patientId, plan, actor }
 }
 
 // ---------------------------------------------------------------------------
-// Tahap 3. A pending withdrawal request (patient_credit_refund_requests) holds its amount:
-// every spend of live saldo uses live - hold. Lock order everywhere: lockLiveBalances(patient)
-// first, then the pending request rows FOR UPDATE, then ledger/refund writes.
+// Tahap 3. An open withdrawal request (patient_credit_refund_requests) holds its amount:
+// every spend of live saldo uses live - hold. Open = 'pending' (waiting) or 'processing'
+// (staff pressed "Mulai transfer"). Lock order everywhere: lockLiveBalances(patient) first,
+// then the open request rows FOR UPDATE, then ledger/refund writes.
 // ---------------------------------------------------------------------------
 
 /**
- * Pending withdrawal requests of one patient. Inside a transaction pass forUpdate: under
- * REPEATABLE READ a plain read can miss a request committed after the transaction's snapshot.
- * A server without the table (migration not run yet) has no requests.
+ * Open (pending or processing) withdrawal requests of one patient. Inside a transaction pass
+ * forUpdate: under REPEATABLE READ a plain read can miss a request committed after the
+ * transaction's snapshot. A server without the table (migration not run yet) has no requests.
  * @returns {Promise<Array<{id:number, amount_idr:number, request_key:string}>>}
  */
 async function getPendingRefundRequests(executor, patientId, { forUpdate = false } = {}) {
@@ -283,7 +284,7 @@ async function getPendingRefundRequests(executor, patientId, { forUpdate = false
         const [rows] = await executor.query(
             `SELECT id, amount_idr, request_key
                FROM patient_credit_refund_requests
-              WHERE patient_id = ? AND status = 'pending'
+              WHERE patient_id = ? AND status IN ('pending','processing')
               ORDER BY id${forUpdate ? ' FOR UPDATE' : ''}`,
             [patientId]
         );
@@ -295,7 +296,7 @@ async function getPendingRefundRequests(executor, patientId, { forUpdate = false
 }
 
 /**
- * Sum of the patient's pending withdrawal amounts. `excludeRequestId` leaves one request out
+ * Sum of the patient's open (pending or processing) withdrawal amounts. `excludeRequestId` leaves one request out
  * (completing that very request may spend its own hold).
  * @returns {Promise<number>}
  */
