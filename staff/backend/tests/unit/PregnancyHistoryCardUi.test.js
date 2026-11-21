@@ -234,3 +234,11 @@ test('#2 anamnesa keeps an unknown term from the pregnancy table as null', () =>
     const obs = fs.readFileSync(path.join(root, 'obstetri/anamnesa-obstetri.js'), 'utf8');
     expect(obs).toContain("clean.persalinan = entry.persalinan || (entry._fromPregnancy ? null : 'Aterm');");
 });
+
+test('cancelling the riwayat replace keeps the typed G/P/A', () => {
+    const obs = fs.readFileSync(path.join(root, 'obstetri/anamnesa-obstetri.js'), 'utf8');
+    const start = obs.indexOf('onHistoryChanged: async (data) => {');
+    const handler = obs.slice(start, obs.indexOf('}', obs.indexOf('prefillTotals', start)) + 1);
+    expect(handler).toContain('const replaced = await this.replaceRPFromPregnancies(');
+    expect(handler).toContain('if (replaced) Card.prefillTotals(data.totals, true);');
+});

@@ -321,8 +321,9 @@ export default {
                 category: 'obstetri',
                 onLoaded: (data) => Card.prefillTotals(data.totals),
                 onHistoryChanged: async (data) => {
-                    await this.replaceRPFromPregnancies(data.riwayat_persalinan || []);
-                    Card.prefillTotals(data.totals, true);
+                    // Cancelled replace keeps the typed riwayat, so keep the typed G/P/A too.
+                    const replaced = await this.replaceRPFromPregnancies(data.riwayat_persalinan || []);
+                    if (replaced) Card.prefillTotals(data.totals, true);
                 }
             });
         } catch (error) {

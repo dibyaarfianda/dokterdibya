@@ -542,6 +542,21 @@ describe('final review fixes', () => {
         expect(db.state.visits[0].pregnancy_id).toBeNull();
     });
 
+    test('startWithPreviousEnd with no ongoing pregnancy never restarts an ended one', async () => {
+        const end = { outcome: 'abortus', ended_on: '2026-03-01' };
+        const same = makeDb({ pregnancies: [endedBirth()], visits: [visit('DRD1', '2026-08-01 08:00:00')], anamnesa: { DRD1: { hpht: '2025-12-10' } } });
+        const r1 = await createPregnancyEpisodeService({ db: same, now: NOW }).startWithPreviousEnd('P1', 'DRD1', end, DOKTER);
+        expect(r1.action).toBe('none');
+        expect(same.state.pregnancies).toHaveLength(1);
+        expect(same.state.visits[0].pregnancy_id).toBe(1);
+
+        const mismatch = makeDb({ pregnancies: [endedBirth()], visits: [visit('DRD1', '2026-11-01 08:00:00')], anamnesa: { DRD1: { hpht: '2026-06-01' } } });
+        const r2 = await createPregnancyEpisodeService({ db: mismatch, now: NOW }).startWithPreviousEnd('P1', 'DRD1', end, DOKTER);
+        expect(r2.action).toBe('none');
+        expect(mismatch.state.pregnancies).toHaveLength(1);
+        expect(mismatch.state.pregnancies[0]).toMatchObject({ needs_review: 1, review_reason: 'HPHT kunjungan tidak cocok dengan kehamilan yang sudah selesai' });
+    });
+
     test('#1 an HPHT after the newest end date still starts a new pregnancy', async () => {
         const db = makeDb({ pregnancies: [endedBirth()], visits: [visit('DRD1', '2026-11-01 08:00:00')], anamnesa: { DRD1: { hpht: '2026-10-01' } } });
         const res = await createPregnancyEpisodeService({ db, now: NOW }).resolveFromVisit('P1', 'DRD1', DOKTER);
@@ -705,5 +720,13 @@ describe('final review fixes', () => {
         const rows = await createPregnancyEpisodeService({ db, now: NOW }).list('P1');
         expect(rows[0]).toMatchObject({ latest_mr_id: 'DRD3', latest_resume_mr_id: 'DRD2' });
         expect(db.state.sql.find(s => /^SELECT p\.\*/.test(s))).toMatch(/record_type = 'resume_medis'[\s\S]*ORDER BY r2\.created_at DESC, r2\.id DESC LIMIT 1\) AS latest_resume_mr_id/);
+    });
+
+    test('list resume lookup stays inside the patient (mr_id is not unique)', async () => {
+        const db = makeDb({ pregnancies: [endedBirth()], visits: [], resumes: [] });
+        await createPregnancyEpisodeService({ db, now: NOW }).list('P1');
+        const sql = db.state.sql.find(s => /^SELECT p\.\*/.test(s));
+        expect(sql).toMatch(/r2\.patient_id = p\.patient_id/);
+        expect(sql).toMatch(/m\.mr_id = r2\.mr_id AND m\.patient_id = r2\.patient_id AND m\.record_type = 'resume_medis'/);
     });
 });

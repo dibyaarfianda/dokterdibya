@@ -145,9 +145,13 @@ function normalizeMethod(raw) {
     if (!text) return { method: null, unrecognized: false };
     const t = text.toLowerCase();
     if (/\bsc\b/.test(t) || /caesar|sesar|sectio/.test(t)) return { method: 'SC (Caesar)', unrecognized: false };
-    if (/\bspt\b/.test(t) || /spontan|normal|pervaginam/.test(t)) return { method: 'Spt B (Spontan)', unrecognized: false };
+    // Instrumental before spontaneous: "pervaginam dengan vakum" is Vakum, not Spt B.
     if (/vakum|vacuum/.test(t) || /\bve\b/.test(t)) return { method: 'Vakum', unrecognized: false };
     if (/forcep/.test(t)) return { method: 'Forceps', unrecognized: false };
+    // "abnormal" / "tidak normal" are not a spontaneous birth.
+    const spontaneous = /\bspt\b/.test(t) || /spontan|pervaginam/.test(t)
+        || (/\bnormal\b/.test(t) && !/\b(?:tidak|tak|bukan)\s+normal\b/.test(t));
+    if (spontaneous) return { method: 'Spt B (Spontan)', unrecognized: false };
     return { method: null, unrecognized: true };
 }
 
