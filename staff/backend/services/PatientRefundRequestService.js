@@ -6,8 +6,12 @@
  * which records the refund (StaffPrepayService.createRefundWithin) in the same transaction.
  *
  * - Only live saldo can be withdrawn; sandbox saldo ("Saldo uji") never.
- * - A pending request HOLDS its amount: every spend uses live - hold (PatientCreditLedger).
- * - One pending request per patient. The client's request_key makes a retry safe.
+ * - Statuses: pending -> processing ("Mulai transfer", staff) -> done ("Sudah ditransfer"),
+ *   or rejected ("Tolak", from pending or processing), or cancelled (patient, pending only).
+ *   Staff press "Mulai transfer" before they transfer, so the patient cannot cancel mid-transfer.
+ * - An open (pending or processing) request HOLDS its amount: every spend uses live - hold
+ *   (PatientCreditLedger).
+ * - One open request per patient. The client's request_key makes a retry safe.
  * - Lock order everywhere: lockLiveBalances(patient), then the request rows FOR UPDATE,
  *   then ledger/refund writes.
  * - The full account number is returned only to its owner and to staff holding billing.reset
@@ -42,7 +46,10 @@ const REQUEST_ID_PATTERN = /^[1-9]\d{0,15}$/;
 const TITLE_PATTERN = /\b(?:ny|nn|tn|ibu|bapak|bpk|sdr|dr)\b\.?/gi;
 
 const REQUEST_COLUMNS = `id, patient_id, amount_idr, bank_name, account_number, account_holder, status,
-       request_key, refund_id, decision_note, decided_by, decided_at, created_at`;
+       processing_by, processing_at, request_key, refund_id, decision_note, decided_by, decided_at, created_at`;
+
+// Open requests hold their amount; staff may still close them with "Sudah ditransfer" or "Tolak".
+const OPEN_STATUSES = ['pending', 'processing'];
 
 const MESSAGES = Object.freeze({
     invalidPatient: 'Pasien tidak valid.',
@@ -57,8 +64,10 @@ const MESSAGES = Object.freeze({
     keyReused: 'Kunci pengajuan sudah dipakai untuk data berbeda. Muat ulang halaman lalu ajukan lagi.',
     notFound: 'Pengajuan pencairan tidak ditemukan.',
     notCancellable: 'Pengajuan ini sudah diproses dan tidak dapat dibatalkan.',
+    processing: 'Pengajuan ini sedang ditransfer oleh klinik dan tidak dapat dibatalkan. Hubungi klinik bila ada yang perlu diubah.',
     closed: 'Pengajuan ini sudah ditutup.',
     cancelledByPatient: 'Pasien sudah membatalkan pengajuan ini. Bila uang sudah ditransfer, catat sebagai refund langsung di tab Saldo.',
+    cancelledDoNotTransfer: 'Pasien sudah membatalkan pengajuan ini. Jangan transfer.',
     note: 'Alasan penolakan wajib diisi (3–500 karakter).'
 });
 
@@ -158,12 +167,13 @@ function createPatientRefundRequestService({
         return { id: Number(saved.id), status: saved.status };
     }
 
-    async function closeRequest(connection, id, { status, refundId = null, note = null, decidedBy = null }) {
+    // `from`: the statuses the request may still have (the guard against a concurrent change).
+    async function closeRequest(connection, id, { status, from, refundId = null, note = null, decidedBy = null }) {
         const [result] = await connection.query(
             `UPDATE patient_credit_refund_requests
                 SET status = ?, refund_id = ?, decision_note = ?, decided_by = ?, decided_at = NOW()
-              WHERE id = ? AND status = 'pending'`,
-            [status, refundId, note, decidedBy, id]
+              WHERE id = ? AND status IN (?)`,
+            [status, refundId, note, decidedBy, id, from]
         );
         return Boolean(result && result.affectedRows === 1);
     }
@@ -269,7 +279,10 @@ function createPatientRefundRequestService({
         return { id: outcome.id, status: outcome.status };
     }
 
-    /** The patient cancels their own pending request; the hold is released. */
+    /**
+     * The patient cancels their own pending request; the hold is released. Once staff pressed
+     * "Mulai transfer" (processing) the request can no longer be cancelled.
+     */
     async function cancelRequest({ patientId, id } = {}) {
         const requestId = parseRequestId(id);
         const owner = typeof patientId === 'string' && PATIENT_ID_PATTERN.test(patientId) ? patientId : null;
@@ -282,8 +295,9 @@ function createPatientRefundRequestService({
             const request = await findRequest(connection, requestId, { patientId: owner, forUpdate: true });
             if (!request) throw new PremiumError('REQUEST_NOT_FOUND', MESSAGES.notFound, 404);
             if (request.status === 'cancelled') return { id: requestId, status: 'cancelled', changed: false };
+            if (request.status === 'processing') throw new PremiumError('REQUEST_PROCESSING', MESSAGES.processing, 409);
             if (request.status !== 'pending') throw new PremiumError('REQUEST_CLOSED', MESSAGES.notCancellable, 409);
-            if (!await closeRequest(connection, requestId, { status: 'cancelled' })) {
+            if (!await closeRequest(connection, requestId, { status: 'cancelled', from: ['pending'] })) {
                 throw new PremiumError('REQUEST_CLOSED', MESSAGES.notCancellable, 409);
             }
             return { id: requestId, status: 'cancelled', changed: true, request };
@@ -297,9 +311,49 @@ function createPatientRefundRequestService({
     }
 
     /**
+     * Staff press "Mulai transfer" before they transfer by hand: pending -> processing, with who
+     * and when. From then on the patient cannot cancel and the amount stays held. A second start
+     * is refused with who started it, so two cashiers never transfer the same request.
+     */
+    async function startRequest({ id, actor = {} } = {}) {
+        const requestId = parseRequestId(id);
+        if (!requestId) throw serviceError(MESSAGES.notFound, 404);
+        const first = await findRequest(db, requestId);
+        if (!first) throw serviceError(MESSAGES.notFound, 404);
+        const by = decidedBy(actor);
+
+        const request = await inTransaction(async connection => {
+            await lockLiveBalances(connection, first.patient_id);
+            const locked = await findRequest(connection, requestId, { forUpdate: true });
+            if (!locked || String(locked.patient_id) !== String(first.patient_id)) throw serviceError(MESSAGES.notFound, 404);
+            if (locked.status === 'processing') {
+                throw serviceError(`Pengajuan ini sudah mulai ditransfer oleh ${locked.processing_by || 'staf lain'}.`, 409);
+            }
+            if (locked.status === 'cancelled') throw serviceError(MESSAGES.cancelledDoNotTransfer, 409);
+            if (locked.status !== 'pending') throw serviceError(MESSAGES.closed, 409);
+            const [updated] = await connection.query(
+                `UPDATE patient_credit_refund_requests
+                    SET status = 'processing', processing_by = ?, processing_at = NOW()
+                  WHERE id = ? AND status = 'pending'`,
+                [by, requestId]
+            );
+            if (!updated || updated.affectedRows !== 1) throw serviceError(MESSAGES.closed, 409);
+            return findRequest(connection, requestId);
+        });
+
+        const amount = toInt(request.amount_idr);
+        safeLog('info', '[PatientRefundRequest] Withdrawal transfer started', {
+            id: requestId, patient_id: request.patient_id, amount_idr: amount, account: maskAccount(request.account_number)
+        });
+        await safeActivity(actor, `Pengajuan pencairan #${requestId} mulai ditransfer: Rp ${rupiah(amount)} ke ${request.bank_name} ${maskAccount(request.account_number)} (pasien ${request.patient_id})`);
+        return { id: requestId, status: 'processing', processing_by: request.processing_by || null, processing_at: request.processing_at || null };
+    }
+
+    /**
      * Staff transferred the money ("Sudah ditransfer"): one transaction locks the saldo and the
      * request, records the refund (method transfer, the full amount) and closes the request.
-     * A second call returns the saved result.
+     * Accepted on processing and, for a staff page cached before "Mulai transfer" existed, on
+     * pending. A second call returns the saved result.
      */
     async function completeRequest({ id, actor = {} } = {}) {
         const requestId = parseRequestId(id);
@@ -315,7 +369,7 @@ function createPatientRefundRequestService({
             // Staff may already have transferred by hand: point them to a direct refund instead of
             // a bare "closed", or the payout is never recorded against the saldo.
             if (request.status === 'cancelled') throw serviceError(MESSAGES.cancelledByPatient, 409);
-            if (request.status !== 'pending') throw serviceError(MESSAGES.closed, 409);
+            if (!OPEN_STATUSES.includes(request.status)) throw serviceError(MESSAGES.closed, 409);
 
             const refund = await staffPrepay.createRefundWithin(connection, {
                 patientId: String(request.patient_id),
@@ -326,7 +380,7 @@ function createPatientRefundRequestService({
                 actor,
                 forRequestId: requestId
             });
-            if (!await closeRequest(connection, requestId, { status: 'done', refundId: refund.id, decidedBy: decidedBy(actor) })) {
+            if (!await closeRequest(connection, requestId, { status: 'done', from: OPEN_STATUSES, refundId: refund.id, decidedBy: decidedBy(actor) })) {
                 throw serviceError(MESSAGES.closed, 409);
             }
             return { refundId: refund.id, changed: true, request };
@@ -343,7 +397,10 @@ function createPatientRefundRequestService({
         return { id: requestId, status: 'done', refund_id: result.refundId };
     }
 
-    /** Staff refuse a pending request with a note ("Tolak"); the hold is released. */
+    /**
+     * Staff refuse an open request with a note ("Tolak"), also while it is being transferred
+     * (transfer failed, wrong account); the hold is released.
+     */
     async function rejectRequest({ id, note, actor = {} } = {}) {
         const requestId = parseRequestId(id);
         const cleanNote = typeof note === 'string' ? note.trim() : '';
@@ -357,8 +414,8 @@ function createPatientRefundRequestService({
             const request = await findRequest(connection, requestId, { forUpdate: true });
             if (!request || String(request.patient_id) !== String(first.patient_id)) throw serviceError(MESSAGES.notFound, 404);
             if (request.status === 'rejected') return { changed: false };
-            if (request.status !== 'pending') throw serviceError(MESSAGES.closed, 409);
-            if (!await closeRequest(connection, requestId, { status: 'rejected', note: cleanNote, decidedBy: decidedBy(actor) })) {
+            if (!OPEN_STATUSES.includes(request.status)) throw serviceError(MESSAGES.closed, 409);
+            if (!await closeRequest(connection, requestId, { status: 'rejected', from: OPEN_STATUSES, note: cleanNote, decidedBy: decidedBy(actor) })) {
                 throw serviceError(MESSAGES.closed, 409);
             }
             return { changed: true, request };
@@ -383,6 +440,8 @@ function createPatientRefundRequestService({
         account_number: row.account_number,
         account_holder: row.account_holder,
         status: row.status,
+        // When the clinic started the transfer; which staff member did is not the patient's business.
+        processing_at: row.processing_at || null,
         decision_note: row.decision_note || null,
         created_at: row.created_at,
         decided_at: row.decided_at || null
@@ -408,24 +467,25 @@ function createPatientRefundRequestService({
     }
 
     /**
-     * Staff tab "Pencairan": pending first (oldest first), then the last 100 closed (newest
-     * first). account_number is full only when the caller holds billing.reset (canSeeAccount).
+     * Staff tab "Pencairan": open requests (pending and processing) first, oldest first, then
+     * the last 100 closed (newest first). account_number is full only when the caller holds
+     * billing.reset (canSeeAccount).
      */
     async function listForStaff({ canSeeAccount = false } = {}) {
-        const [pending] = await db.query(
+        const [open] = await db.query(
             `SELECT ${REQUEST_COLUMNS}
                FROM patient_credit_refund_requests
-              WHERE status = 'pending'
+              WHERE status IN ('pending','processing')
               ORDER BY created_at, id`
         );
         const [closed] = await db.query(
             `SELECT ${REQUEST_COLUMNS}
                FROM patient_credit_refund_requests
-              WHERE status <> 'pending'
+              WHERE status NOT IN ('pending','processing')
               ORDER BY COALESCE(decided_at, created_at) DESC, id DESC
               LIMIT ${STAFF_CLOSED_LIMIT}`
         );
-        const rows = [...(pending || []), ...(closed || [])];
+        const rows = [...(open || []), ...(closed || [])];
         const names = await patientNames(rows.map(row => row.patient_id));
         return rows.map(row => {
             const fullName = names.get(String(row.patient_id));
@@ -440,6 +500,8 @@ function createPatientRefundRequestService({
                 account_holder: row.account_holder,
                 name_differs: holderNameDiffers(row.account_holder, hasName ? fullName : ''),
                 status: row.status,
+                processing_by: row.processing_by || null,
+                processing_at: row.processing_at || null,
                 decision_note: row.decision_note || null,
                 refund_id: toId(row.refund_id),
                 decided_by: row.decided_by || null,
@@ -491,6 +553,7 @@ function createPatientRefundRequestService({
     return {
         createRequest,
         cancelRequest,
+        startRequest,
         completeRequest,
         rejectRequest,
         listForPatient,
