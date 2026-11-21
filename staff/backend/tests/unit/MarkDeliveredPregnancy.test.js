@@ -71,3 +71,18 @@ describe('markPatientDelivered', () => {
         expect(db.conn.release).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('markPatientDelivered with episode errors', () => {
+    test('a status error from endOngoing is rethrown intact after rollback (route maps it)', async () => {
+        const { PregnancyEpisodeError } = require('../../services/PregnancyEpisodeService');
+        const { pregnancyErrorResponse } = require('../../services/PregnancyErrorResponse');
+        const db = makeDb();
+        const episodes = { endOngoing: jest.fn(async () => { throw new PregnancyEpisodeError(400, 'Tanggal selesai tidak boleh sebelum HPHT kehamilan tersebut'); }) };
+        let err;
+        try { await markPatientDelivered({ db, episodes, patientId: 'P1', actor, today: '2026-11-21' }); } catch (e) { err = e; }
+        expect(err).toBeInstanceOf(PregnancyEpisodeError);
+        expect(db.conn.rollback).toHaveBeenCalled();
+        expect(pregnancyErrorResponse(err, 'Gagal menandai pasien melahirkan'))
+            .toMatchObject({ status: 400, body: { success: false, message: 'Tanggal selesai tidak boleh sebelum HPHT kehamilan tersebut' } });
+    });
+});

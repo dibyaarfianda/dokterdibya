@@ -207,7 +207,7 @@ function createPregnancyOutcomeService({ db, now = () => new Date(), episodes } 
             if (!outcome.pregnancy_id) return;
 
             const [pregRows] = await conn.query(
-                'SELECT id, status, outcome, ended_on FROM pregnancies WHERE id = ? AND patient_id = ? FOR UPDATE',
+                'SELECT id, hpht, status, outcome, ended_on FROM pregnancies WHERE id = ? AND patient_id = ? FOR UPDATE',
                 [outcome.pregnancy_id, patientId]
             );
             const pregnancy = pregRows && pregRows[0];
@@ -217,12 +217,32 @@ function createPregnancyOutcomeService({ db, now = () => new Date(), episodes } 
                 && toDateString(pregnancy.ended_on) === toDateString(outcome.event_date);
             if (!endedByThis) return;
 
+            const flagReview = () => conn.query('UPDATE pregnancies SET needs_review = 1, updated_by = ? WHERE id = ?', [staffId, pregnancy.id]);
+
+            if (!pregnancy.hpht) {
+                // No start date: this row only exists because of the outcome, so never reopen it.
+                const count = async (sql, params) => {
+                    const [rowsN] = await conn.query(sql, params);
+                    return Number(rowsN && rowsN[0] ? rowsN[0].n : 0);
+                };
+                const visits = await count('SELECT COUNT(*) AS n FROM sunday_clinic_records WHERE pregnancy_id = ?', [pregnancy.id]);
+                const births = await count('SELECT COUNT(*) AS n FROM birth_congratulations WHERE pregnancy_id = ?', [pregnancy.id]);
+                const otherOutcomes = await count('SELECT COUNT(*) AS n FROM pregnancy_outcomes WHERE pregnancy_id = ? AND id <> ?', [pregnancy.id, outcome.id]);
+                if (visits + births + otherOutcomes === 0) {
+                    await conn.query('UPDATE pregnancy_outcomes SET pregnancy_id = NULL WHERE id = ?', [outcome.id]);
+                    await conn.query('DELETE FROM pregnancies WHERE id = ? AND patient_id = ?', [pregnancy.id, patientId]);
+                } else {
+                    await flagReview();
+                }
+                return;
+            }
+
             const [others] = await conn.query(
                 "SELECT id FROM pregnancies WHERE patient_id = ? AND status = 'ongoing' AND id <> ? FOR UPDATE",
                 [patientId, pregnancy.id]
             );
             if (others && others.length > 0) {
-                await conn.query('UPDATE pregnancies SET needs_review = 1, updated_by = ? WHERE id = ?', [staffId, pregnancy.id]);
+                await flagReview();
             } else {
                 await conn.query(
                     "UPDATE pregnancies SET status = 'ongoing', outcome = NULL, ended_on = NULL, ga_weeks_at_end = NULL, updated_by = ? WHERE id = ?",

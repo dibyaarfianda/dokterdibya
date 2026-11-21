@@ -6,19 +6,23 @@ const {
     OUTCOME_TYPES
 } = require('../../services/PregnancyOutcomeService');
 
-function makeDb({ patient = true, hpht = null, edd = null, insertId = 7, voidAffected = 1, outcomeRow, pregnancyRow, otherOngoing = false } = {}) {
+function makeDb({ patient = true, hpht = null, edd = null, insertId = 7, voidAffected = 1, outcomeRow, pregnancyRow, otherOngoing = false, linked = {} } = {}) {
     const calls = [];
     const conn = {
         async query(sql, params) {
             calls.push({ sql, params });
             if (sql.includes('INSERT INTO pregnancy_outcomes')) return [{ insertId }];
-            if (sql.includes('SELECT') && sql.includes('FROM pregnancy_outcomes')) {
+            if (sql.includes('FROM pregnancy_outcomes WHERE id = ?')) {
                 const row = outcomeRow === undefined
                     ? { id: 5, patient_id: 'P1', outcome_type: 'keguguran', event_date: '2026-07-10', pregnancy_id: null, voided_at: null }
                     : outcomeRow;
                 return [voidAffected === 0 || !row ? [] : [row]];
             }
             if (sql.includes('UPDATE pregnancy_outcomes')) return [{ affectedRows: voidAffected }];
+            if (sql.includes('FROM sunday_clinic_records WHERE pregnancy_id')) return [[{ n: linked.visits || 0 }]];
+            if (sql.includes('FROM birth_congratulations WHERE pregnancy_id')) return [[{ n: linked.births || 0 }]];
+            if (sql.includes('FROM pregnancy_outcomes WHERE pregnancy_id')) return [[{ n: linked.others || 0 }]];
+            if (sql.startsWith('DELETE FROM pregnancies')) return [{ affectedRows: 1 }];
             if (sql.includes("status = 'ongoing'")) return [otherOngoing ? [{ id: 99 }] : []];
             if (sql.includes('FROM pregnancies WHERE id')) return [pregnancyRow ? [pregnancyRow] : []];
             if (sql.includes('UPDATE pregnancies')) return [{ affectedRows: 1 }];
@@ -181,7 +185,7 @@ describe('PregnancyOutcomeService.record', () => {
 });
 
 describe('PregnancyOutcomeService.voidOutcome', () => {
-    const ended = (over = {}) => ({ id: 31, patient_id: 'P1', status: 'ended', outcome: 'abortus', ended_on: '2026-07-10', ...over });
+    const ended = (over = {}) => ({ id: 31, patient_id: 'P1', hpht: '2026-05-01', status: 'ended', outcome: 'abortus', ended_on: '2026-07-10', ...over });
     const linkedOutcome = { id: 5, patient_id: 'P1', outcome_type: 'keguguran', event_date: '2026-07-10', pregnancy_id: 31, voided_at: null };
 
     test('voids only the given id for the patient', async () => {
@@ -231,5 +235,33 @@ describe('PregnancyOutcomeService.voidOutcome', () => {
         const upd = db.calls.find(c => c.sql.includes('UPDATE pregnancies'));
         expect(upd.sql).toContain('needs_review = 1');
         expect(upd.sql).not.toContain("status = 'ongoing'");
+    });
+
+    test('no HPHT and nothing else linked: deletes the pregnancy and unlinks the outcome', async () => {
+        const db = makeDb({ outcomeRow: linkedOutcome, pregnancyRow: ended({ hpht: null }) });
+        await makeSvc(db).voidOutcome('P1', 5, 's1');
+        const sqls = db.calls.map(c => c.sql);
+        expect(sqls.some(s => s.startsWith('DELETE FROM pregnancies'))).toBe(true);
+        expect(sqls.some(s => s.includes('UPDATE pregnancy_outcomes SET pregnancy_id = NULL'))).toBe(true);
+        expect(db.calls.some(c => c.sql.includes("status = 'ongoing'") && c.sql.startsWith('UPDATE'))).toBe(false);
+        expect(db.conn.commit).toHaveBeenCalled();
+    });
+
+    test('no HPHT but linked visits: never reopens, never deletes, flags needs_review', async () => {
+        for (const linked of [{ visits: 1 }, { births: 1 }, { others: 1 }]) {
+            const db = makeDb({ outcomeRow: linkedOutcome, pregnancyRow: ended({ hpht: null }), linked });
+            await makeSvc(db).voidOutcome('P1', 5, 's1');
+            const sqls = db.calls.map(c => c.sql);
+            expect(sqls.some(s => s.startsWith('DELETE FROM pregnancies'))).toBe(false);
+            const upd = db.calls.find(c => c.sql.includes('UPDATE pregnancies'));
+            expect(upd.sql).toContain('needs_review = 1');
+            expect(upd.sql).not.toContain("status = 'ongoing'");
+        }
+    });
+
+    test('no HPHT never reopens even with no other ongoing pregnancy', async () => {
+        const db = makeDb({ outcomeRow: linkedOutcome, pregnancyRow: ended({ hpht: null }), linked: { visits: 2 } });
+        await makeSvc(db).voidOutcome('P1', 5, 's1');
+        expect(db.calls.some(c => c.sql.includes("SET status = 'ongoing'"))).toBe(false);
     });
 });

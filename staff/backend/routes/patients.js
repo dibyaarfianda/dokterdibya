@@ -27,6 +27,7 @@ const { loadEndEvents, pregnancyListFields, endedSqlCondition } = require('../se
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
 const { createPregnancyEpisodeService } = require('../services/PregnancyEpisodeService');
 const { markPatientDelivered } = require('../services/MarkDelivered');
+const { pregnancyErrorResponse } = require('../services/PregnancyErrorResponse');
 
 let pregnancyEpisodes = null;
 function getPregnancyEpisodes() {
@@ -1841,12 +1842,9 @@ router.post('/api/patients/:id/mark-delivered', verifyStaffToken, async (req, re
         }
         res.status(result.status).json(result.body);
     } catch (error) {
-        console.error('Error marking patient as delivered:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Gagal menandai pasien melahirkan',
-            error: error.message
-        });
+        const mapped = pregnancyErrorResponse(error, 'Gagal menandai pasien melahirkan');
+        if (mapped.log) logger.error('Error marking patient as delivered', { error: error.message });
+        res.status(mapped.status).json(mapped.body);
     }
 });
 
@@ -1854,11 +1852,9 @@ router.post('/api/patients/:id/mark-delivered', verifyStaffToken, async (req, re
 const pregnancyOutcomeService = createPregnancyOutcomeService({ db, episodes: getPregnancyEpisodes() });
 
 function handlePregnancyOutcomeError(error, res, context) {
-    if (error instanceof PregnancyOutcomeError) {
-        return res.status(error.status).json({ success: false, message: error.message });
-    }
-    logger.error('Pregnancy outcome failed', { context, error: error.message });
-    return res.status(500).json({ success: false, message: 'Gagal menyimpan penandaan kehamilan' });
+    const mapped = pregnancyErrorResponse(error, 'Gagal menyimpan penandaan kehamilan');
+    if (mapped.log) logger.error('Pregnancy outcome failed', { context, error: error.message });
+    return res.status(mapped.status).json(mapped.body);
 }
 
 router.post('/api/patients/:id/pregnancy-outcome', verifyStaffToken, async (req, res) => {
