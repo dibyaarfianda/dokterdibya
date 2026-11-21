@@ -730,3 +730,43 @@ describe('final review fixes', () => {
         expect(sql).toMatch(/m\.mr_id = r2\.mr_id AND m\.patient_id = r2\.patient_id AND m\.record_type = 'resume_medis'/);
     });
 });
+
+describe('PregnancyEpisodeService.flagReportedBirth', () => {
+    const REASON = 'Lahir dilaporkan, belum ditutup';
+
+    test('links the birth row and flags the ongoing pregnancy without closing it', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER);
+        expect(res).toEqual({ linked: true, pregnancy_id: 1 });
+        expect(db.state.pregnancies[0]).toMatchObject({ status: 'ongoing', needs_review: 1, review_reason: REASON });
+        expect(db.state.pregnancies[0].outcome).toBeNull();
+        expect(db.state.links).toContainEqual({ table: 'birth_congratulations', pregnancy_id: 1, id: 7 });
+        expect(db.state.tx).toMatchObject({ begin: 1, commit: 1, release: 1 });
+    });
+
+    test('no ongoing pregnancy is a no-op and writes nothing', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg({ status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-11-10' })] });
+        const before = JSON.stringify(db.state.pregnancies);
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER);
+        expect(res).toEqual({ linked: false });
+        expect(JSON.stringify(db.state.pregnancies)).toBe(before);
+        expect(db.state.links).toHaveLength(0);
+    });
+
+    test('is idempotent and uses the supplied connection', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        const svc = createPregnancyEpisodeService({ db, now: NOW });
+        const conn = await db.getConnection();
+        await svc.flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER, conn);
+        const again = await svc.flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER, conn);
+        expect(again).toEqual({ linked: true, pregnancy_id: 1 });
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.pregnancies[0]).toMatchObject({ status: 'ongoing', needs_review: 1, review_reason: REASON });
+        expect(db.state.tx.begin).toBe(0);
+    });
+
+    test('rejects an unknown link table', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        await expectError(createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'patients', 7, DOKTER), 400, 'Tabel tautan tidak valid');
+    });
+});
