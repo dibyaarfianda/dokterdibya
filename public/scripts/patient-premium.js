@@ -16,7 +16,7 @@
 
     var root = document.getElementById('premium-app');
     var heroStatus = document.getElementById('premium-hero-status');
-    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261122hamil1';
+    var QR_LIBRARY_URL = '/scripts/vendor/qrcode-1.5.4.min.js?v=20261122label1';
     var POLL_FAST_MS = 3000;
     var POLL_MEDIUM_MS = 10000;
     var POLL_SLOW_MS = 30000;
