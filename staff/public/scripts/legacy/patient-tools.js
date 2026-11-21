@@ -1096,7 +1096,7 @@
         return DibyaDateTime.date(d);
     }
 
-    const PREGNANCY_OUTCOME_LABELS = { keguguran: 'Keguguran', lahir_mati: 'Lahir Mati' };
+    const PREGNANCY_OUTCOME_LABELS = { keguguran: 'Keguguran', lahir_mati: 'Lahir Mati', selesai: 'Kehamilan selesai' };
 
     function jsStringEscape(value) {
         return String(value || '')

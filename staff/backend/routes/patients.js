@@ -23,7 +23,8 @@ const PatientListService = require('../services/PatientListService');
 const PatientAccountSuspensionService = require('../services/PatientAccountSuspensionService');
 const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
-const { loadEndEvents, pregnancyListFields, endedSqlCondition } = require('../services/PregnancyEnd');
+const { endedSqlCondition } = require('../services/PregnancyEnd');
+const { loadCurrentPregnancies, listFields } = require('../services/CurrentPregnancy');
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
 const { createPregnancyEpisodeService, assertCanClose } = require('../services/PregnancyEpisodeService');
 const { markPatientDelivered } = require('../services/MarkDelivered');
@@ -616,7 +617,7 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
         const appointmentHistorySet = new Set();
         const medicalHistorySet = new Set();
         const obstetriMap = {}; // patient_id -> hpht
-        let endEvents = new Map(); // patient_id -> end events (births + outcomes)
+        let currentPregnancies = new Map(); // patient_id -> { ongoing, lastEnded } from the pregnancies table
 
         const batchPromises = [];
 
@@ -698,12 +699,11 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
 
         await Promise.all(batchPromises);
 
-        // Batch 5: pregnancy end events (births + outcomes, only for obstetri patients)
-        const obstetriPatientIds = Object.keys(obstetriMap);
-        if (obstetriPatientIds.length > 0) {
+        // Batch 5: current pregnancy per patient (pregnancies table)
+        if (patientIds.length > 0) {
             try {
-                endEvents = await loadEndEvents(db, obstetriPatientIds, logger);
-            } catch (err) { _enrichFail('birthRecords', err); }
+                currentPregnancies = await loadCurrentPregnancies(db, patientIds);
+            } catch (err) { _enrichFail('currentPregnancy', err); }
         }
         const listToday = new Date();
         listToday.setHours(0, 0, 0, 0);
@@ -730,9 +730,9 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                 }
             }
 
-            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = pregnancyListFields(
-                obstetriMap[patient.id],
-                endEvents.get(patient.id) || [],
+            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = listFields(
+                currentPregnancies.get(String(patient.id)) || { ongoing: null, lastEnded: null },
+                Boolean(obstetriMap[patient.id]),
                 listToday
             );
 
@@ -955,7 +955,7 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
         // Batch-enrich: 3 parallel queries instead of N×3 correlated queries
         const lastVisitTypeMap = {};  // patient_id → mr_category
         const obstetriMap = {};       // patient_id → hpht string
-        let endEvents = new Map();    // patient_id -> end events (births + outcomes)
+        let currentPregnancies = new Map(); // patient_id -> { ongoing, lastEnded } from the pregnancies table
 
         if (patientIds.length > 0) {
             const ph = patientIds.map(() => '?').join(',');
@@ -993,10 +993,10 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                     .then(([r]) => r.forEach(row => { obstetriMap[row.patient_id] = row.hpht; }))
                     .catch(error => _enrichFail('obstetriHpl', error)),
 
-                // Batch 3: pregnancy end events (births + outcomes)
-                loadEndEvents(db, patientIds, logger)
-                    .then(map => { endEvents = map; })
-                    .catch(error => _enrichFail('birthRecords', error)),
+                // Batch 3: current pregnancy (pregnancies table)
+                loadCurrentPregnancies(db, patientIds)
+                    .then(map => { currentPregnancies = map; })
+                    .catch(error => _enrichFail('currentPregnancy', error)),
             ]);
         }
 
@@ -1008,9 +1008,9 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
 
         const mappedRows = uniqueRows.map((patient) => {
             const last_visit_type = lastVisitTypeMap[patient.id] || null;
-            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = pregnancyListFields(
-                obstetriMap[patient.id] || null,
-                endEvents.get(patient.id) || [],
+            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = listFields(
+                currentPregnancies.get(String(patient.id)) || { ongoing: null, lastEnded: null },
+                Boolean(obstetriMap[patient.id]),
                 today
             );
 

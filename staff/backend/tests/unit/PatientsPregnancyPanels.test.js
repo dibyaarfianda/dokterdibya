@@ -27,8 +27,13 @@ describe('patients.js uses the pregnancy end rule', () => {
         expect((source.match(/endedSqlCondition\(/g) || []).length).toBeGreaterThanOrEqual(2);
     });
 
-    test('both list endpoints use loadEndEvents and pregnancyListFields', () => {
-        expect((source.match(/loadEndEvents\(/g) || []).length).toBeGreaterThanOrEqual(2);
-        expect((source.match(/pregnancyListFields\(/g) || []).length).toBeGreaterThanOrEqual(2);
+    test('both list endpoints read the current pregnancy from the pregnancies table', () => {
+        for (const marker of ["router.get('/api/patients',", "router.get('/api/patients/search/advanced'"]) {
+            const body = handlerBody(marker);
+            expect(body).toMatch(/loadCurrentPregnancies\(/);
+            expect(body).toMatch(/listFields\(/);
+            expect(body).not.toMatch(/loadEndEvents\(/);
+            expect(body).not.toMatch(/pregnancyListFields\(/);
+        }
     });
 });

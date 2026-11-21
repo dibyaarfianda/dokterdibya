@@ -118,3 +118,8 @@ test('#11 a stale response for another patient is not rendered', async () => {
     expect(el('patient-earlier-pregnancies').innerHTML).not.toContain('2011');
     expect(el('patient-earlier-pregnancies').dataset.patientId).toBe('PB');
 });
+
+test('list badge labels a generic ended pregnancy (selesai) as "Kehamilan selesai"', () => {
+    const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/legacy/patient-tools.js'), 'utf8');
+    expect(source).toMatch(/PREGNANCY_OUTCOME_LABELS = \{[^}]*selesai: 'Kehamilan selesai'/);
+});
