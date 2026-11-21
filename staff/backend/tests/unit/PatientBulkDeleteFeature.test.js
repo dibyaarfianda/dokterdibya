@@ -107,6 +107,45 @@ describe('bulk patient deletion feature', () => {
         );
     });
 
+    test('the shared deletion worker removes pregnancy data child-first before sunday_clinic_records', async () => {
+        const connection = {
+            query: jest.fn(async sql => {
+                if (sql.includes('SELECT p.id, p.full_name')) {
+                    return [[{ id: 'P1', full_name: 'Patient One', email: 'one@example.test', user_id: 'P1' }]];
+                }
+                if (sql.includes('FROM information_schema.COLUMNS')) return [[]];
+                if (sql.includes('FOR UPDATE')) return [[]];
+                if (sql.startsWith('DELETE FROM contraction_events')) {
+                    const error = new Error("Table 'contraction_events' doesn't exist");
+                    error.code = 'ER_NO_SUCH_TABLE';
+                    throw error;
+                }
+                return [{ affectedRows: sql.includes('DELETE FROM patients') ? 1 : 0 }];
+            })
+        };
+
+        const result = await deletePatientWithRelationsOnConnection(connection, 'P1');
+
+        const sqls = connection.query.mock.calls.map(([sql]) => sql);
+        const expected = [
+            'DELETE FROM kick_counter_kicks WHERE session_id IN (SELECT id FROM kick_counter_sessions WHERE patient_id = ?)',
+            'DELETE FROM kick_counter_sessions WHERE patient_id = ?',
+            'DELETE FROM contraction_events WHERE session_id IN (SELECT id FROM contraction_sessions WHERE patient_id = ?)',
+            'DELETE FROM contraction_sessions WHERE patient_id = ?',
+            'DELETE FROM pregnancy_outcomes WHERE patient_id = ?',
+            'DELETE FROM birth_congratulations WHERE patient_id = ?',
+            'DELETE FROM pregnancies WHERE patient_id = ?',
+            'DELETE FROM sunday_clinic_records WHERE patient_id = ?'
+        ];
+        const positions = expected.map(sql => sqls.indexOf(sql));
+        positions.forEach(index => expect(index).toBeGreaterThan(-1));
+        expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+        expected.forEach(sql => expect(connection.query).toHaveBeenCalledWith(sql, ['P1']));
+        expect(sqls.findIndex(sql => sql.startsWith('DELETE FROM patients'))).toBeGreaterThan(positions[positions.length - 1]);
+        expect(result.deletedData.contraction_events).toBe(0);
+        expect(result.deletedData).toHaveProperty('pregnancies', 0);
+    });
+
     test('backend and staff shell expose doctor-only bulk deletion contracts', () => {
         const route = readRepoFile('staff', 'backend', 'routes', 'patients.js');
         const html = readRepoFile('staff', 'public', 'index-adminlte.html');
