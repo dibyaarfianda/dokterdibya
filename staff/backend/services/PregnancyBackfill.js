@@ -29,8 +29,12 @@ const REASONS = Object.freeze({
     END_UNKNOWN: 'Akhir kehamilan tidak diketahui',
     ORPHAN_EVENT: 'Kejadian tanpa data kehamilan',
     HISTORY_DIFFERS: 'Riwayat persalinan berbeda antar kunjungan',
-    NO_METHOD: 'Cara lahir belum diisi'
+    NO_METHOD: 'Cara lahir belum diisi',
+    UNKNOWN_METHOD: 'Cara lahir tidak dikenali',
+    TYPE_VS_GA: 'Jenis kejadian tidak sesuai usia kehamilan'
 });
+
+const VIABILITY_WEEKS = 20;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -132,6 +136,21 @@ function plausibleGa(hpht, endedOn) {
     return { weeks, implausible: false };
 }
 
+/**
+ * Free-text cara lahir from old anamnesa -> one of the DELIVERY_METHODS values.
+ * Returns { method, unrecognized }: unrecognized is true for non-empty text that maps to nothing.
+ */
+function normalizeMethod(raw) {
+    const text = raw === undefined || raw === null ? '' : String(raw).trim();
+    if (!text) return { method: null, unrecognized: false };
+    const t = text.toLowerCase();
+    if (/\bsc\b/.test(t) || /caesar|sesar|sectio/.test(t)) return { method: 'SC (Caesar)', unrecognized: false };
+    if (/\bspt\b/.test(t) || /spontan|normal|pervaginam/.test(t)) return { method: 'Spt B (Spontan)', unrecognized: false };
+    if (/vakum|vacuum/.test(t) || /\bve\b/.test(t)) return { method: 'Vakum', unrecognized: false };
+    if (/forcep/.test(t)) return { method: 'Forceps', unrecognized: false };
+    return { method: null, unrecognized: true };
+}
+
 function termFrom(persalinan) {
     if (persalinan === 'Aterm') return 'aterm';
     if (persalinan === 'Preterm') return 'preterm';
@@ -228,6 +247,14 @@ function planBackfill(patientData, options = {}) {
             p.needs_review = true;
             addReview(p.fingerprint, REASONS.GA_IMPLAUSIBLE);
         }
+        // Keep the recorded type, but a keguguran >= 20 weeks or a lahir mati < 20 weeks needs a look.
+        if (ev.kind === 'outcome' && ga.weeks !== null) {
+            const mismatch = ev.type === 'lahir_mati' ? ga.weeks < VIABILITY_WEEKS : ga.weeks >= VIABILITY_WEEKS;
+            if (mismatch) {
+                p.needs_review = true;
+                addReview(p.fingerprint, REASONS.TYPE_VS_GA);
+            }
+        }
     }
 
     function linkEvent(ev, fingerprint) {
@@ -311,12 +338,18 @@ function planBackfill(patientData, options = {}) {
                 target = unknownTargets.find(p =>
                     !merged.has(p) && Number(addDays(p.hpht, FULL_TERM_DAYS).slice(0, 4)) === year) || null;
             }
-            const method = entry.metode_persalinan ? String(entry.metode_persalinan).trim() || null : null;
+            const { method, unrecognized } = normalizeMethod(entry.metode_persalinan);
             if (target) {
                 merged.add(target);
                 if (target.outcome === 'unknown') target.outcome = entry.type === 'DELIVERY' ? 'lahir_hidup' : 'abortus';
                 if (entry.type === 'DELIVERY') {
-                    if (!target.delivery_method) target.delivery_method = method;
+                    if (!target.delivery_method) {
+                        target.delivery_method = method;
+                        if (unrecognized) {
+                            target.needs_review = true;
+                            addReview(target.fingerprint, REASONS.UNKNOWN_METHOD);
+                        }
+                    }
                     if (!target.term) target.term = termFrom(entry.persalinan);
                     if (!target.babies) {
                         const weight = parseWeight(entry.berat_lahir);
@@ -339,7 +372,7 @@ function planBackfill(patientData, options = {}) {
                 if (weight || sex) p.babies = [{ weight_g: weight, sex, alive: true }];
                 if (!method) {
                     p.needs_review = true;
-                    addReview(p.fingerprint, REASONS.NO_METHOD);
+                    addReview(p.fingerprint, unrecognized ? REASONS.UNKNOWN_METHOD : REASONS.NO_METHOD);
                 }
             } else {
                 p.outcome = 'abortus';
@@ -363,7 +396,9 @@ function planBackfill(patientData, options = {}) {
     pregnancies.sort((a, b) => a.sequence - b.sequence);
 
     if (historyDiffers && pregnancies.length) {
-        const newest = pregnancies[pregnancies.length - 1];
+        // The history list describes earlier pregnancies: review the newest ended one (newest overall if none ended).
+        const ended = pregnancies.filter(p => p.status === 'ended');
+        const newest = ended.length ? ended[ended.length - 1] : pregnancies[pregnancies.length - 1];
         newest.needs_review = true;
         addReview(newest.fingerprint, REASONS.HISTORY_DIFFERS);
     }
@@ -372,4 +407,4 @@ function planBackfill(patientData, options = {}) {
     return plan;
 }
 
-module.exports = { planBackfill, REASONS };
+module.exports = { planBackfill, normalizeMethod, REASONS };

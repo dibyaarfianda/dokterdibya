@@ -6,7 +6,8 @@
  *   node scripts/backfill-pregnancies.js --apply    writes, one transaction per patient
  * Prints ids, counts and reasons only (no names or clinical text).
  * Idempotent: a planned pregnancy whose (patient_id, fingerprint) exists is skipped, and
- * links are written only where the target pregnancy_id IS NULL.
+ * links are written only for pregnancies inserted in this run, and only where the target
+ * pregnancy_id IS NULL. Review reasons are stored in pregnancies.review_reason ('; '-joined).
  * A patient that already has a pregnancies row without a fingerprint (written by the live
  * app code) is skipped entirely and counted as skipped_live; no merging with live rows.
  *
@@ -19,6 +20,7 @@ const { planBackfill } = require('../services/PregnancyBackfill');
 const BATCH_SIZE = 200;
 const MAX_SAMPLES = 10;
 const LIVE_REASON = 'Sudah ada data kehamilan dari aplikasi';
+const REVIEW_REASON_MAX = 255;
 
 function parseArguments(args) {
     const unsupported = args.filter(argument => argument !== '--apply');
@@ -111,35 +113,47 @@ function toJson(value) {
     return value === null || value === undefined ? null : JSON.stringify(value);
 }
 
+function reviewReasonOf(plan, fingerprint) {
+    const reasons = [];
+    for (const r of plan.reviews) {
+        if (r.fingerprint === fingerprint && !reasons.includes(r.reason)) reasons.push(r.reason);
+    }
+    if (!reasons.length) return null;
+    const text = reasons.join('; ');
+    return text.length > REVIEW_REASON_MAX ? text.slice(0, REVIEW_REASON_MAX) : text;
+}
+
 async function writePlan(conn, patientId, plan, existing) {
-    const ids = new Map(existing);
+    // Only pregnancies inserted in this run get links; existing ones keep whatever links they have.
+    const ids = new Map();
     for (const p of plan.pregnancies) {
-        if (ids.has(p.fingerprint)) continue;
+        if (existing.has(p.fingerprint)) continue;
         const [result] = await conn.query(
             `INSERT INTO pregnancies
                 (patient_id, sequence, source, hpht, hpl, year, status, outcome, ended_on, ga_weeks_at_end,
                  delivery_method, delivery_indication, complications, babies, kuretase, term,
-                 needs_review, fingerprint, created_by, updated_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'backfill', 'backfill')`,
+                 needs_review, review_reason, fingerprint, created_by, updated_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'backfill', 'backfill')`,
             [patientId, p.sequence, p.source, p.hpht, p.hpl, p.year, p.status, p.outcome, p.ended_on, p.ga_weeks_at_end,
                 p.delivery_method, p.delivery_indication, toJson(p.complications), toJson(p.babies), p.kuretase, p.term,
-                p.needs_review ? 1 : 0, p.fingerprint]
+                p.needs_review ? 1 : 0, p.needs_review ? reviewReasonOf(plan, p.fingerprint) : null, p.fingerprint]
         );
         ids.set(p.fingerprint, result.insertId);
     }
-    for (const l of plan.visitLinks) {
+    const inserted = l => ids.has(l.fingerprint);
+    for (const l of plan.visitLinks.filter(inserted)) {
         await conn.query(
             'UPDATE sunday_clinic_records SET pregnancy_id = ? WHERE mr_id = ? AND patient_id = ? AND pregnancy_id IS NULL',
             [ids.get(l.fingerprint), l.mr_id, patientId]
         );
     }
-    for (const l of plan.outcomeLinks) {
+    for (const l of plan.outcomeLinks.filter(inserted)) {
         await conn.query(
             'UPDATE pregnancy_outcomes SET pregnancy_id = ? WHERE id = ? AND patient_id = ? AND pregnancy_id IS NULL',
             [ids.get(l.fingerprint), l.id, patientId]
         );
     }
-    for (const l of plan.birthLinks) {
+    for (const l of plan.birthLinks.filter(inserted)) {
         await conn.query(
             'UPDATE birth_congratulations SET pregnancy_id = ? WHERE id = ? AND patient_id = ? AND pregnancy_id IS NULL',
             [ids.get(l.fingerprint), l.id, patientId]

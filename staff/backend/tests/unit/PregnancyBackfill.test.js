@@ -221,10 +221,11 @@ describe('external history', () => {
             ]
         });
         expect(byFp(r, 'e:0:2010:DELIVERY').delivery_method).toBe('SC (Caesar)');
-        const newest = r.pregnancies[r.pregnancies.length - 1];
-        expect(newest.fingerprint).toBe('c:DRD2');
-        expect(newest.needs_review).toBe(true);
-        expect(r.reviews).toContainEqual({ fingerprint: 'c:DRD2', reason: REASONS.HISTORY_DIFFERS });
+        // The review goes to the newest ENDED pregnancy (c:DRD2 is ongoing).
+        expect(byFp(r, 'c:DRD2').status).toBe('ongoing');
+        expect(byFp(r, 'c:DRD1')).toMatchObject({ status: 'ended', needs_review: true });
+        expect(r.reviews).toContainEqual({ fingerprint: 'c:DRD1', reason: REASONS.HISTORY_DIFFERS });
+        expect(r.reviews).not.toContainEqual({ fingerprint: 'c:DRD2', reason: REASONS.HISTORY_DIFFERS });
     });
 
     test('a shorter earlier list that is a subset of the longest is not a conflict', () => {
@@ -338,5 +339,78 @@ describe('sequence and idempotent output', () => {
 
     test('empty input plans nothing', () => {
         expect(plan({})).toEqual({ pregnancies: [], visitLinks: [], outcomeLinks: [], birthLinks: [], reviews: [] });
+    });
+});
+
+describe('final review fixes (backfill)', () => {
+    test('#3 a history conflict reviews the newest ended pregnancy, never the ongoing one', () => {
+        const a = [{ type: 'ABORTUS', tahun: '2010' }];
+        const b = [{ type: 'ABORTUS', tahun: '2011' }];
+        const r = plan({
+            visits: [
+                visit('DRD1', '2026-08-01', '2026-03-01', { riwayat_persalinan: a }),
+                visit('DRD2', '2026-09-01', '2026-03-05', { riwayat_persalinan: b })
+            ]
+        });
+        const ended = r.pregnancies.filter(p => p.status === 'ended');
+        expect(ended.length).toBeGreaterThan(0);
+        expect(r.reviews.filter(x => x.reason === REASONS.HISTORY_DIFFERS)).toEqual([{ fingerprint: 'e:0:2011:ABORTUS', reason: REASONS.HISTORY_DIFFERS }]);
+        expect(ended[ended.length - 1].fingerprint).toBe('e:0:2011:ABORTUS');
+        expect(byFp(r, 'c:DRD1')).toMatchObject({ status: 'ongoing', needs_review: false });
+    });
+
+    test('#8 delivery methods are normalised; unknown text becomes null with a review (dry-run visible)', () => {
+        const { normalizeMethod } = require('../../services/PregnancyBackfill');
+        const cases = [
+            ['SC', 'SC (Caesar)'], ['sectio caesarea', 'SC (Caesar)'], ['Sesar', 'SC (Caesar)'], ['SC (Caesar)', 'SC (Caesar)'],
+            ['Spt B (Spontan)', 'Spt B (Spontan)'], ['normal', 'Spt B (Spontan)'], ['PERVAGINAM', 'Spt B (Spontan)'], ['spt', 'Spt B (Spontan)'],
+            ['Vakum', 'Vakum'], ['vacuum ekstraksi', 'Vakum'], ['VE', 'Vakum'], ['Forceps', 'Forceps'], ['forcep', 'Forceps']
+        ];
+        for (const [raw, method] of cases) expect(normalizeMethod(raw)).toEqual({ method, unrecognized: false });
+        expect(normalizeMethod('induksi')).toEqual({ method: null, unrecognized: true });
+        expect(normalizeMethod('  ')).toEqual({ method: null, unrecognized: false });
+        expect(normalizeMethod('disc')).toEqual({ method: null, unrecognized: true });
+
+        const r = plan({ visits: [visit('DRD1', '2026-08-01', '2026-03-01', { riwayat_persalinan: [
+            { type: 'DELIVERY', tahun: '2015', metode_persalinan: 'sectio' },
+            { type: 'DELIVERY', tahun: '2017', metode_persalinan: 'ditolong bidan' }
+        ] })] });
+        expect(byFp(r, 'e:0:2015:DELIVERY')).toMatchObject({ delivery_method: 'SC (Caesar)', needs_review: false });
+        expect(byFp(r, 'e:1:2017:DELIVERY')).toMatchObject({ delivery_method: null, needs_review: true });
+        expect(r.reviews).toContainEqual({ fingerprint: 'e:1:2017:DELIVERY', reason: REASONS.UNKNOWN_METHOD });
+    });
+
+    test('#8 a merged clinic birth gets the normalised method, or a review when unrecognised', () => {
+        const base = metode => plan({
+            visits: [
+                visit('DRD1', '2024-05-01', '2024-01-01'),
+                visit('DRD2', '2026-08-01', '2026-03-01', { riwayat_persalinan: [{ type: 'DELIVERY', tahun: '2024', metode_persalinan: metode }] })
+            ],
+            births: [{ id: 4, birth_date: '2024-10-07', created_at: '2024-10-07 10:00:00' }]
+        });
+        expect(byFp(base('caesar'), 'c:DRD1')).toMatchObject({ delivery_method: 'SC (Caesar)', needs_review: false });
+        const odd = base('xyz');
+        expect(byFp(odd, 'c:DRD1')).toMatchObject({ delivery_method: null, needs_review: true });
+        expect(odd.reviews).toContainEqual({ fingerprint: 'c:DRD1', reason: REASONS.UNKNOWN_METHOD });
+    });
+
+    test('#9 keguguran >= 20 weeks and lahir mati < 20 weeks keep their type but are reviewed', () => {
+        const late = plan({
+            visits: [visit('DRD1', '2025-02-01', '2025-01-01')],
+            outcomes: [{ id: 9, outcome_type: 'keguguran', event_date: '2025-06-01' }]
+        });
+        expect(byFp(late, 'c:DRD1')).toMatchObject({ outcome: 'abortus', ga_weeks_at_end: 21, needs_review: true });
+        expect(late.reviews).toContainEqual({ fingerprint: 'c:DRD1', reason: REASONS.TYPE_VS_GA });
+        const early = plan({
+            visits: [visit('DRD1', '2025-02-01', '2025-01-01')],
+            outcomes: [{ id: 9, outcome_type: 'lahir_mati', event_date: '2025-03-01' }]
+        });
+        expect(byFp(early, 'c:DRD1')).toMatchObject({ outcome: 'lahir_mati', ga_weeks_at_end: 8, needs_review: true });
+        expect(early.reviews).toContainEqual({ fingerprint: 'c:DRD1', reason: REASONS.TYPE_VS_GA });
+        const fine = plan({
+            visits: [visit('DRD1', '2025-02-01', '2025-01-01')],
+            outcomes: [{ id: 9, outcome_type: 'keguguran', event_date: '2025-03-01' }]
+        });
+        expect(byFp(fine, 'c:DRD1').needs_review).toBe(false);
     });
 });

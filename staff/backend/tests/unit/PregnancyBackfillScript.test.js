@@ -24,7 +24,7 @@ function makeDb() {
         }
         if (text.startsWith('INSERT INTO pregnancies')) {
             const id = state.nextId++;
-            state.pregnancies.push({ id, fingerprint: params[params.length - 1] });
+            state.pregnancies.push({ id, fingerprint: params[params.length - 1], review_reason: params[params.length - 2], needs_review: params[params.length - 3] });
             state.writes.push(text);
             return [{ insertId: id }];
         }
@@ -67,9 +67,12 @@ describe('backfill-pregnancies script', () => {
         expect(first).toMatchObject({ mode: 'apply', pregnancies: 2, failed: 0 });
         expect(state.pregnancies.map(p => p.fingerprint).sort()).toEqual(['c:DRD1', 'e:0:2019:ABORTUS']);
         expect(state.commits).toBe(1);
+        const writesBefore = state.writes.length;
         const second = await run({ db, apply: true, today: TODAY, logger: silent });
         expect(second).toMatchObject({ pregnancies: 0, skipped_existing: 2, failed: 0 });
         expect(state.pregnancies).toHaveLength(2);
+        // #7: no links are written for pregnancies that already existed.
+        expect(state.writes.slice(writesBefore)).toEqual([]);
     });
 
     test('one patient failing is logged by id and code only and counted', async () => {
@@ -96,5 +99,35 @@ describe('backfill-pregnancies script', () => {
         expect(state.writes).toEqual([]);
         expect(state.pregnancies).toHaveLength(1);
         expect(state.rollbacks).toBe(1);
+    });
+
+    test('#7 a partial re-run links only the pregnancies inserted in this run', async () => {
+        const { db, state } = makeDb();
+        state.pregnancies.push({ id: 50, fingerprint: 'c:DRD1' });
+        state.nextId = 51;
+        const summary = await run({ db, apply: true, today: TODAY, logger: silent });
+        expect(summary).toMatchObject({ pregnancies: 1, skipped_existing: 1, failed: 0 });
+        expect(state.writes.filter(w => w.startsWith('UPDATE'))).toEqual([]);
+        expect(state.writes.filter(w => w.startsWith('INSERT'))).toHaveLength(1);
+    });
+
+    test('#3 review reasons are stored on the inserted pregnancy', async () => {
+        const { db, state } = makeDb();
+        await run({ db, apply: true, today: TODAY, logger: silent });
+        // The visit history (2019 abortus) has no conflicts: nothing flagged, no reason stored.
+        expect(state.pregnancies.every(p => p.review_reason === null)).toBe(true);
+        const { db: db2, state: state2 } = makeDb();
+        const origQuery = db2.query;
+        db2.query = async (sql, params) => {
+            const text = sql.replace(/\s+/g, ' ');
+            if (text.startsWith('SELECT id, patient_id, birth_date')) return [[]];
+            return origQuery(sql, params);
+        };
+        const conn = await db2.getConnection();
+        db2.getConnection = async () => conn;
+        const summary = await run({ db: db2, apply: true, today: TODAY, logger: silent });
+        expect(summary.failed).toBe(0);
+        // Without the birth the clinic pregnancy (HPHT 2025-01-01) ends unknown and is reviewed.
+        expect(state2.pregnancies.find(p => p.fingerprint === 'c:DRD1')).toMatchObject({ needs_review: 1, review_reason: 'Akhir kehamilan tidak diketahui' });
     });
 });
