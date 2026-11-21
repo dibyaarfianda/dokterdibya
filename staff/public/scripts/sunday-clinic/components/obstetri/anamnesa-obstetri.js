@@ -320,8 +320,8 @@ export default {
             await Card.mount(state, {
                 category: 'obstetri',
                 onLoaded: (data) => Card.prefillTotals(data.totals),
-                onHistoryChanged: (data) => {
-                    this.replaceRPFromPregnancies(data.riwayat_persalinan || []);
+                onHistoryChanged: async (data) => {
+                    await this.replaceRPFromPregnancies(data.riwayat_persalinan || []);
                     Card.prefillTotals(data.totals, true);
                 }
             });
@@ -331,9 +331,29 @@ export default {
     },
 
     /**
-     * Replace the editor entries with the pregnancy-table history (no auto save).
+     * Entries typed in this visit's editor (not from the pregnancy table) that the fresh
+     * server list does not contain (compared by type + tahun).
      */
-    replaceRPFromPregnancies(list) {
+    unsavedRPEntries(list) {
+        const fresh = new Set((Array.isArray(list) ? list : []).map(e => `${e.type}|${String(e.tahun ?? '').trim()}`));
+        return (this._rpEntries || []).filter(e => !e._fromPregnancy && !fresh.has(`${e.type}|${String(e.tahun ?? '').trim()}`));
+    },
+
+    /**
+     * Replace the editor entries with the pregnancy-table history (no auto save).
+     * Asks first when that would discard entries typed in this visit. Returns true when replaced.
+     */
+    async replaceRPFromPregnancies(list) {
+        if (this.unsavedRPEntries(list).length > 0 && typeof Swal !== 'undefined') {
+            const ask = await Swal.fire({
+                icon: 'warning',
+                text: 'Riwayat yang diketik di kunjungan ini akan diganti dengan riwayat kehamilan. Lanjutkan?',
+                showCancelButton: true,
+                confirmButtonText: 'Ganti',
+                cancelButtonText: 'Batal'
+            });
+            if (!ask || !ask.isConfirmed) return false;
+        }
         const sexMap = { L: 'Laki-laki', P: 'Perempuan' };
         this._rpEntries = (Array.isArray(list) ? list : []).map(entry => ({
             ...entry,
@@ -342,6 +362,7 @@ export default {
             _id: this._rpNextId++
         }));
         this.renderAllRPCards(null);
+        return true;
     },
 
     /**
@@ -672,7 +693,7 @@ export default {
                 const clean = { type: entry.type, tahun: entry.tahun };
                 if (entry.type === 'DELIVERY') {
                     clean.bulan = entry.bulan || null;
-                    clean.persalinan = entry.persalinan || 'Aterm';
+                    clean.persalinan = entry.persalinan || (entry._fromPregnancy ? null : 'Aterm');
                     clean.metode_persalinan = entry.metode_persalinan || (entry._fromPregnancy ? null : 'Spt B (Spontan)');
                     clean.berat_lahir = entry.berat_lahir || null;
                     clean.jenis_kelamin = entry.jenis_kelamin || null;

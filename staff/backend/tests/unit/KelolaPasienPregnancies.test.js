@@ -5,8 +5,9 @@ const vm = require('vm');
 function load() {
     const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/legacy/patient-tools.js'), 'utf8');
     const elements = {};
-    const el = id => (elements[id] = elements[id] || { innerHTML: '', textContent: '' });
+    const el = id => (elements[id] = elements[id] || { innerHTML: '', textContent: '', dataset: {} });
     const context = {
+        __elements: elements,
         console, setTimeout, clearTimeout,
         hasAccountPermission: () => true,
         document: { readyState: 'loading', addEventListener: jest.fn(), getElementById: el },
@@ -88,4 +89,32 @@ test('markup and wiring exist', () => {
     const src = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/legacy/patient-tools.js'), 'utf8');
     expect(src).toContain('<div id="patient-earlier-pregnancies"></div>');
     expect(src).toContain('window.loadPregnancyReviewList();');
+});
+
+test('#13 "Lihat resume" uses latest_resume_mr_id, falling back to latest_mr_id', () => {
+    const { ctx } = load();
+    const html = ctx.renderEarlierPregnanciesHtml([
+        { id: 1, source: 'clinic', status: 'ended', outcome: 'lahir_hidup', year: 2020, latest_mr_id: 'DRD0009', latest_resume_mr_id: 'DRD0007' },
+        { id: 2, source: 'clinic', status: 'ended', outcome: 'abortus', year: 2018, latest_mr_id: 'DRD0003', latest_resume_mr_id: null }
+    ]);
+    expect(html).toContain('showPregnancyResume(&#39;DRD0007&#39;)');
+    expect(html).not.toContain('DRD0009');
+    expect(html).toContain('showPregnancyResume(&#39;DRD0003&#39;)');
+});
+
+test('#11 a stale response for another patient is not rendered', async () => {
+    const { ctx, el } = load();
+    let resolveA;
+    ctx.fetch.mockImplementationOnce(() => new Promise(r => { resolveA = r; }));
+    const first = ctx.loadEarlierPregnancies('PA');
+    // The modal now shows patient PB (new box element, as the modal body is replaced).
+    delete ctx.__elements['patient-earlier-pregnancies'];
+    ctx.fetch.mockResolvedValueOnce(ok({ pregnancies: [{ id: 2, source: 'clinic', status: 'ended', outcome: 'abortus', year: 2018 }] }));
+    await ctx.loadEarlierPregnancies('PB');
+    expect(el('patient-earlier-pregnancies').innerHTML).toContain('2018');
+    resolveA(ok({ pregnancies: [{ id: 1, source: 'clinic', status: 'ended', outcome: 'lahir_hidup', year: 2011 }] }));
+    await first;
+    expect(el('patient-earlier-pregnancies').innerHTML).toContain('2018');
+    expect(el('patient-earlier-pregnancies').innerHTML).not.toContain('2011');
+    expect(el('patient-earlier-pregnancies').dataset.patientId).toBe('PB');
 });

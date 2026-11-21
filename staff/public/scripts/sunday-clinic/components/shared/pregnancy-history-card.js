@@ -27,6 +27,11 @@ const OUTCOME_LABELS = {
     unknown: 'Tidak diketahui'
 };
 const DELIVERY_METHODS = ['Spt B (Spontan)', 'SC (Caesar)', 'Vakum', 'Forceps'];
+const TERMS = [
+    { code: 'aterm', label: 'Aterm' },
+    { code: 'preterm', label: 'Preterm' },
+    { code: 'postterm', label: 'Postterm' }
+];
 const SPONTANEOUS = 'Spt B (Spontan)';
 const LOAD_ERROR = 'Riwayat kehamilan belum dapat dimuat';
 const SAVE_HINT = 'Riwayat diperbarui — tekan Simpan Anamnesa untuk menyimpan ke kunjungan ini';
@@ -156,6 +161,8 @@ function endFormHtml(opts) {
         <label class="mr-3 mb-1"><input type="radio" name="peg-outcome" value="${esc(code)}" ${checked === code ? 'checked' : ''}> ${esc(OUTCOME_LABELS[code])}</label>`).join('');
     const methods = ['<option value="">Pilih cara lahir</option>'].concat(DELIVERY_METHODS.map(m =>
         `<option value="${esc(m)}" ${v.delivery_method === m ? 'selected' : ''}>${esc(m)}</option>`)).join('');
+    const terms = ['<option value="">–</option>'].concat(TERMS.map(t =>
+        `<option value="${esc(t.code)}" ${v.term === t.code ? 'selected' : ''}>${esc(t.label)}</option>`)).join('');
     const comps = COMPLICATIONS.map(c => `
         <label class="mr-3 mb-1"><input type="checkbox" name="peg-comp" value="${esc(c.code)}" ${(v.complications || []).includes(c.code) ? 'checked' : ''}> ${esc(c.label)}</label>`).join('');
     const babies = (Array.isArray(v.babies) ? v.babies : []).map(b => babyRowHtml(b)).join('');
@@ -165,7 +172,9 @@ function endFormHtml(opts) {
             <small class="text-muted" id="peg-suggest">${esc(suggestText(suggested))}</small></div>
         <div class="form-group"><label>Tanggal selesai</label><input type="date" id="peg-date" class="form-control" max="${todayLocal()}" value="${esc(v.ended_on || '')}"></div>
         <div class="form-group" id="peg-birth-block"><label>Cara lahir</label><select id="peg-method" class="form-control">${methods}</select>
-            <input type="text" id="peg-indication" class="form-control mt-1" maxlength="255" placeholder="Indikasi (wajib untuk SC/Vakum/Forceps)" value="${esc(v.delivery_indication || '')}"></div>
+            <input type="text" id="peg-indication" class="form-control mt-1" maxlength="255" placeholder="Indikasi (wajib untuk SC/Vakum/Forceps)" value="${esc(v.delivery_indication || '')}">
+            <label class="mt-2 mb-0">Usia kehamilan saat lahir</label><select id="peg-term" class="form-control">${terms}</select>
+            <small class="text-muted">Dihitung otomatis dari HPHT bila tanggal selesai diketahui.</small></div>
         <div class="form-group"><label>Komplikasi</label><div>${comps}</div>
             <textarea id="peg-comp-notes" class="form-control mt-1" maxlength="500" rows="2" placeholder="Catatan komplikasi">${esc(v.complication_notes || '')}</textarea></div>
         <div class="form-group" id="peg-babies-block"><label>Bayi (opsional)</label><div id="peg-babies">${babies}</div>
@@ -200,6 +209,8 @@ function readEndForm(root, opts) {
         if (method && method !== SPONTANEOUS && !indication) return { error: 'Indikasi wajib diisi untuk persalinan SC/Vakum/Forceps' };
         if (method) payload.delivery_method = method;
         if (indication) payload.delivery_indication = indication;
+        const term = (get('#peg-term') || {}).value || '';
+        if (term) payload.term = term;
         const alive = payload.outcome === 'lahir_hidup';
         const babies = Array.from(root.querySelectorAll('.peg-baby')).map(row => {
             const w = Number((row.querySelector('.peg-baby-weight') || {}).value);
@@ -224,7 +235,7 @@ function readEndForm(root, opts) {
     }
     if (opts && opts.edit) {
         // Edits must be able to clear fields: send every editable key.
-        const keys = { ended_on: null, delivery_method: null, delivery_indication: null, complication_notes: null, kuretase: null };
+        const keys = { ended_on: null, delivery_method: null, delivery_indication: null, complication_notes: null, kuretase: null, term: null };
         Object.keys(keys).forEach(k => { if (payload[k] === undefined) payload[k] = null; });
         if (!payload.babies) payload.babies = [];
         if (opts.external && payload.year === undefined) payload.year = null;
@@ -453,7 +464,7 @@ const PregnancyHistoryCard = {
         if (json && json.warning) toast('info', json.warning);
         const data = await this.mount(this._state, this._opts);
         if (data && this._opts && typeof this._opts.onHistoryChanged === 'function') {
-            this._opts.onHistoryChanged(data);
+            await this._opts.onHistoryChanged(data);
         }
         toast('info', SAVE_HINT);
     },
@@ -496,7 +507,7 @@ const PregnancyHistoryCard = {
             return 'start_failed';
         }
         const data = await this.mount(state, this._opts || { category: 'obstetri' });
-        if (data && this._opts && typeof this._opts.onHistoryChanged === 'function') this._opts.onHistoryChanged(data);
+        if (data && this._opts && typeof this._opts.onHistoryChanged === 'function') await this._opts.onHistoryChanged(data);
         toast('info', SAVE_HINT);
         return 'started';
     }

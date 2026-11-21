@@ -1182,8 +1182,9 @@
                 ? '<span class="badge badge-secondary ml-1">Luar</span>'
                 : '<span class="badge badge-info ml-1">Klinik</span>';
             const reviewBadge = p.needs_review ? '<span class="badge badge-warning ml-1">Perlu dicek</span>' : '';
-            const resumeBtn = (p.source !== 'external' && p.latest_mr_id)
-                ? ` <button type="button" class="btn btn-xs btn-outline-primary ml-1" onclick="${onclickCall('showPregnancyResume', [p.latest_mr_id])}"><i class="fas fa-file-medical mr-1"></i>Lihat resume</button>`
+            const resumeMrId = p.latest_resume_mr_id || p.latest_mr_id;
+            const resumeBtn = (p.source !== 'external' && resumeMrId)
+                ? ` <button type="button" class="btn btn-xs btn-outline-primary ml-1" onclick="${onclickCall('showPregnancyResume', [resumeMrId])}"><i class="fas fa-file-medical mr-1"></i>Lihat resume</button>`
                 : '';
             return `<li class="mb-1"><strong>${escapeHtmlSafe(yearSource || '-')}</strong> - ${escapeHtmlSafe(outcome)}`
                 + (method ? ` (${escapeHtmlSafe(method)})` : '')
@@ -1197,6 +1198,13 @@
     window.loadEarlierPregnancies = async function(patientId) {
         const box = document.getElementById('patient-earlier-pregnancies');
         if (!box) return;
+        // Stale-response guard: the modal may show another patient by the time this returns.
+        const owner = String(patientId);
+        if (box.dataset) box.dataset.patientId = owner;
+        const current = () => {
+            const el = document.getElementById('patient-earlier-pregnancies');
+            return el && el.dataset && el.dataset.patientId === owner ? el : null;
+        };
         try {
             const token = (window.getAuthToken ? window.getAuthToken() : '');
             const res = await fetch(`/api/pregnancies/patient/${encodeURIComponent(patientId)}?_=${Date.now()}`, {
@@ -1204,9 +1212,11 @@
             });
             const body = await res.json().catch(() => ({}));
             if (!res.ok || !body.success) throw new Error('gagal');
-            box.innerHTML = renderEarlierPregnanciesHtml(body.data && body.data.pregnancies);
+            const target = current();
+            if (target) target.innerHTML = renderEarlierPregnanciesHtml(body.data && body.data.pregnancies);
         } catch (error) {
-            box.innerHTML = '';
+            const target = current();
+            if (target) target.innerHTML = '';
         }
     };
 

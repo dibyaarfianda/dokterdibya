@@ -127,7 +127,8 @@ function fakeRoot(fields) {
     const els = {
         '#peg-date': { value: fields.date || '' }, '#peg-method': { value: fields.method || '' },
         '#peg-indication': { value: fields.indication || '' }, '#peg-comp-notes': { value: fields.notes || '' },
-        '#peg-kuretase': { value: fields.kuretase || '' }, '#peg-year': { value: fields.year || '' }
+        '#peg-kuretase': { value: fields.kuretase || '' }, '#peg-year': { value: fields.year || '' },
+        '#peg-term': { value: fields.term || '' }
     };
     return {
         querySelector: sel => sel === 'input[name="peg-outcome"]:checked' ? (fields.outcome ? { value: fields.outcome } : null) : (els[sel] || null),
@@ -172,4 +173,64 @@ test('abortus is pre-selected only when GA is under 20 weeks', async () => {
     const html30 = ctx.Swal.fire.mock.calls[1][0].html;
     expect(html30).not.toMatch(/name="peg-outcome" value="\w+" checked/);
     expect(html30).toContain('≥20 minggu: bila bayi meninggal, catat sebagai Lahir mati');
+});
+
+test('#2 birth form has a term select; payload carries term and edits clear it with null', () => {
+    const { Card } = context();
+    const html = Card.endFormHtml({ external: true, values: { outcome: 'lahir_hidup', term: 'preterm' } });
+    expect(html).toContain('id="peg-term"');
+    expect(html).toContain('<option value="preterm" selected>Preterm</option>');
+    expect(html).toContain('<option value="postterm" >Postterm</option>');
+    const { payload } = Card.readEndForm(fakeRoot({ outcome: 'lahir_hidup', year: '2019', method: 'Spt B (Spontan)', term: 'aterm' }), { external: true });
+    expect(payload.term).toBe('aterm');
+    const edit = Card.readEndForm(fakeRoot({ outcome: 'lahir_hidup', year: '2019', method: 'Spt B (Spontan)' }), { external: true, edit: true }).payload;
+    expect(edit.term).toBeNull();
+    const loss = Card.readEndForm(fakeRoot({ outcome: 'abortus', date: '2020-01-01', term: 'aterm' }), {}).payload;
+    expect(loss.term).toBeUndefined();
+});
+
+function loadAnamnesa(swalAnswer) {
+    const source = fs.readFileSync(path.join(root, 'obstetri/anamnesa-obstetri.js'), 'utf8')
+        .replace('export default {', 'globalThis.Comp = {');
+    const ctx = vm.createContext({
+        window: {}, document: { getElementById: () => null, querySelector: () => null, querySelectorAll: () => [], addEventListener() {} },
+        Swal: { fire: jest.fn(async () => swalAnswer) }, console, Date, AbortController, setTimeout
+    });
+    vm.runInContext(source, ctx);
+    const comp = ctx.Comp;
+    comp.renderAllRPCards = jest.fn();
+    return { ctx, comp };
+}
+
+const freshList = [{ type: 'DELIVERY', tahun: 2019, persalinan: null, metode_persalinan: 'SC (Caesar)', jenis_kelamin: 'L' }];
+
+test('#10 replacing the riwayat asks first when typed entries would be lost; cancel keeps them', async () => {
+    const { ctx, comp } = loadAnamnesa({ isConfirmed: false });
+    const typed = [{ type: 'ABORTUS', tahun: 2021, kuretase: 'Ya', _id: 1 }];
+    comp._rpEntries = typed.slice();
+    expect(await comp.replaceRPFromPregnancies(freshList)).toBe(false);
+    expect(ctx.Swal.fire).toHaveBeenCalledTimes(1);
+    expect(ctx.Swal.fire.mock.calls[0][0].text).toBe('Riwayat yang diketik di kunjungan ini akan diganti dengan riwayat kehamilan. Lanjutkan?');
+    expect(comp._rpEntries).toEqual(typed);
+
+    const ok2 = loadAnamnesa({ isConfirmed: true });
+    ok2.comp._rpEntries = typed.slice();
+    expect(await ok2.comp.replaceRPFromPregnancies(freshList)).toBe(true);
+    expect(ok2.comp._rpEntries).toHaveLength(1);
+    expect(ok2.comp._rpEntries[0]).toMatchObject({ type: 'DELIVERY', jenis_kelamin: 'Laki-laki', _fromPregnancy: true });
+});
+
+test('#10 no question when nothing typed would be lost', async () => {
+    const { ctx, comp } = loadAnamnesa({ isConfirmed: false });
+    comp._rpEntries = [
+        { type: 'DELIVERY', tahun: 2019, _id: 1 },
+        { type: 'ABORTUS', tahun: 2015, _fromPregnancy: true, _id: 2 }
+    ];
+    expect(await comp.replaceRPFromPregnancies(freshList)).toBe(true);
+    expect(ctx.Swal.fire).not.toHaveBeenCalled();
+});
+
+test('#2 anamnesa keeps an unknown term from the pregnancy table as null', () => {
+    const obs = fs.readFileSync(path.join(root, 'obstetri/anamnesa-obstetri.js'), 'utf8');
+    expect(obs).toContain("clean.persalinan = entry.persalinan || (entry._fromPregnancy ? null : 'Aterm');");
 });
