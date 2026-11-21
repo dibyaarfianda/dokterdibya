@@ -12,7 +12,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const FULL_TERM_DAYS = 280;
 const MAX_WEEKS = 42;
 const HPL_GRACE_DAYS = 14;
-const CANDIDATE_LIMIT = 20;
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -56,80 +55,6 @@ function gestationalWeeksOn(reference, onDate) {
     return { weeks: Math.floor(days / 7), days: days % 7 };
 }
 
-const TRIMESTER_NUMBER = { first: 1, second: 2, third: 3, 1: 1, 2: 2, 3: 3 };
-
-/** The EDD of a USG row: top-level edd, else the current trimester's, else the highest trimester holding one. */
-function pickUsgEdd(row) {
-    if (isValidDateString(row.edd)) return row.edd.trim();
-    const byTrimester = { 1: row.t1_edd, 2: row.t2_edd, 3: row.t3_edd };
-    const current = TRIMESTER_NUMBER[row.current_trimester];
-    if (current && isValidDateString(byTrimester[current])) return byTrimester[current].trim();
-    for (const n of [3, 2, 1]) {
-        if (isValidDateString(byTrimester[n])) return byTrimester[n].trim();
-    }
-    return null;
-}
-
-function timeOf(value) {
-    const ms = value instanceof Date ? value.getTime() : new Date(value).getTime();
-    return Number.isNaN(ms) ? 0 : ms;
-}
-
-/**
- * The newest HPHT/HPL the patient has on record. Newest record wins; HPL only decides a tie
- * (one anamnesa carrying both).
- */
-async function findPregnancyReference(db, patientId) {
-    const [anamnesaRows] = await db.query(
-        `SELECT JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) AS hpht,
-                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpl')) AS hpl,
-                COALESCE(mr.updated_at, mr.created_at) AS recorded_at
-           FROM medical_records mr
-           JOIN sunday_clinic_records scr ON mr.mr_id = scr.mr_id
-          WHERE mr.patient_id = ?
-            AND scr.patient_id = ?
-            AND mr.record_type = 'anamnesa'
-            AND scr.mr_category = 'obstetri'
-          ORDER BY COALESCE(mr.updated_at, mr.created_at) DESC
-          LIMIT ${CANDIDATE_LIMIT}`,
-        [patientId, patientId]
-    );
-    const [usgRows] = await db.query(
-        `SELECT JSON_UNQUOTE(JSON_EXTRACT(record_data, '$.edd')) AS edd,
-                JSON_UNQUOTE(JSON_EXTRACT(record_data, '$.current_trimester')) AS current_trimester,
-                JSON_UNQUOTE(JSON_EXTRACT(record_data, '$.trimester_1.edd')) AS t1_edd,
-                JSON_UNQUOTE(JSON_EXTRACT(record_data, '$.trimester_2.edd')) AS t2_edd,
-                JSON_UNQUOTE(JSON_EXTRACT(record_data, '$.trimester_3.edd')) AS t3_edd,
-                COALESCE(updated_at, created_at) AS recorded_at
-           FROM medical_records
-          WHERE patient_id = ?
-            AND record_type = 'usg'
-          ORDER BY COALESCE(updated_at, created_at) DESC
-          LIMIT ${CANDIDATE_LIMIT}`,
-        [patientId]
-    );
-
-    const candidates = [];
-    for (const row of anamnesaRows || []) {
-        if (isValidDateString(row.hpl)) candidates.push({ kind: 'hpl', date: row.hpl.trim(), recorded_at: row.recorded_at, source: 'anamnesa' });
-        if (isValidDateString(row.hpht)) candidates.push({ kind: 'hpht', date: row.hpht.trim(), recorded_at: row.recorded_at, source: 'anamnesa' });
-    }
-    for (const row of usgRows || []) {
-        const edd = pickUsgEdd(row);
-        if (edd) candidates.push({ kind: 'hpl', date: edd, recorded_at: row.recorded_at, source: 'usg' });
-    }
-    if (candidates.length === 0) return null;
-
-    let best = null;
-    for (const candidate of candidates) {
-        if (!best) { best = candidate; continue; }
-        const a = timeOf(candidate.recorded_at);
-        const b = timeOf(best.recorded_at);
-        if (a > b || (a === b && candidate.kind === 'hpl' && best.kind !== 'hpl')) best = candidate;
-    }
-    return best;
-}
-
 function compareBySortOrderThenId(a, b) {
     return (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0) || (Number(a.id) || 0) - (Number(b.id) || 0);
 }
@@ -152,6 +77,5 @@ function choosePackage(packages, weeks) {
 module.exports = {
     isValidDateString,
     gestationalWeeksOn,
-    findPregnancyReference,
     choosePackage
 };

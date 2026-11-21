@@ -6,6 +6,8 @@ const defaultDocBoardService = require('./DocBoardService');
 const defaultPushService = require('./DocBoardPushService');
 const defaultRulesService = require('./DocBoardCommandCenter');
 const { parseScheduleMessage, validDate } = require('./AssistantDafParsing');
+const { datingOf } = require('./CurrentPregnancy');
+const { toDateString } = require('./PregnancyEnd');
 
 const PROCEDURE_CATEGORIES = Object.freeze([
   'Pasang IUD',
@@ -178,7 +180,26 @@ function projectGestationalAge(anamnesa = {}, scheduleDate, options = {}) {
     return { label: '', weeks: null, days: null, source: '', warning: '' };
   }
 
+  // A linked pregnancy (sunday_clinic_records.pregnancy_id) is the reconciled dating source: when it has
+  // dating it is the only candidate, so a stale anamnesa HPHT cannot block the label. A pregnancy that
+  // ended on/before the schedule date has no gestational age at that date.
+  const linked = options.pregnancy || null;
+  const linkedDating = linked ? datingOf(linked) : null;
+  if (linked && linked.status === 'ended') {
+    const endedOn = toDateString(linked.ended_on);
+    if (endedOn && endedOn <= scheduleDate) {
+      return { label: '', weeks: null, days: null, source: '', warning: '' };
+    }
+  }
+
   const candidates = [];
+  if (linkedDating) {
+    candidates.push({ source: 'pregnancy', days: diffDays(linkedDating.hpht, scheduleDate) });
+    if (!Number.isInteger(candidates[0].days) || candidates[0].days < 0 || candidates[0].days > 315) {
+      return { label: '', weeks: null, days: null, source: '', warning: 'Usia kehamilan perlu diverifikasi.' };
+    }
+    return gestationalResult(candidates[0].days, 'pregnancy');
+  }
   const hpht = dateParts(anamnesa.hpht);
   const hpl = dateParts(anamnesa.hpl);
   if (hpht) candidates.push({ source: 'hpht', days: diffDays(hpht.text, scheduleDate) });
@@ -317,7 +338,7 @@ class DrdDocBoardRepository {
   async loadSnapshot(mrId, today) {
     const [visits] = await this.db.query(
       `SELECT scr.id, scr.mr_id, scr.patient_id, scr.mr_category, scr.visit_location,
-              scr.created_at, scr.updated_at, p.full_name, p.birth_date, p.age, p.allergy, p.is_pregnant
+              scr.created_at, scr.updated_at, p.full_name, p.birth_date, p.age, p.allergy, p.is_pregnant, scr.pregnancy_id
          FROM sunday_clinic_records scr
          LEFT JOIN patients p ON p.id = scr.patient_id
         WHERE scr.mr_id = ?
@@ -328,6 +349,14 @@ class DrdDocBoardRepository {
     if (!visits.length) return null;
     if (visits.length > 1) fail(409, 'AMBIGUOUS_DRD', 'DRD terhubung ke lebih dari satu kunjungan.');
     const visit = visits[0];
+    let linkedPregnancy = null;
+    if (visit.pregnancy_id) {
+      const [pregnancyRows] = await this.db.query(
+        `SELECT id, hpht, hpl, status, ended_on FROM pregnancies WHERE id = ? AND patient_id = ? LIMIT 1`,
+        [visit.pregnancy_id, visit.patient_id],
+      );
+      linkedPregnancy = pregnancyRows[0] || null;
+    }
     const [[medicalRows], [operationTypes]] = await Promise.all([
       this.db.query(
         `SELECT id, patient_id, mr_id, record_type, record_data, version, created_at, updated_at
@@ -366,6 +395,7 @@ class DrdDocBoardRepository {
       labResults: labSummary(sections.lab?.data || {}),
       usgResults: usgSummary(sections.usg?.data || {}),
       operationTypes,
+      pregnancy: linkedPregnancy,
     };
   }
 
@@ -389,6 +419,14 @@ class DrdDocBoardRepository {
     );
     return rows[0] || null;
   }
+}
+
+// A linked pregnancy only says "pregnant" while it has not ended on/before the given date.
+function linkedPregnancyActive(pregnancy, onDate) {
+  if (!pregnancy) return false;
+  if (pregnancy.status !== 'ended') return true;
+  const endedOn = toDateString(pregnancy.ended_on);
+  return Boolean(endedOn && onDate && endedOn > onDate);
 }
 
 function pregnancyLikely(snapshot, diagnosisText) {
@@ -460,9 +498,10 @@ class DrdDocBoardScheduleService {
     ));
     const suggestions = parsePlanningSuggestions(rencana, this.now(), operationTypes);
     const scheduleDate = requestedDate || suggestions.scheduleDate;
-    const pregnant = pregnancyLikely(snapshot, baseDiagnosis);
+    const pregnant = pregnancyLikely(snapshot, baseDiagnosis) || linkedPregnancyActive(snapshot.pregnancy, scheduleDate || today);
     const pregnancy = projectGestationalAge(snapshot.anamnesa, scheduleDate, {
       pregnant,
+      pregnancy: snapshot.pregnancy || null,
       sourceDate: snapshot.anamnesaRecordedAt || snapshot.visit?.createdAt,
     });
     const diagnosis = [

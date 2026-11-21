@@ -87,6 +87,24 @@ function computeObstetricTotals(pregnancies, { includeOngoing = false } = {}) {
     return totals;
 }
 
+/**
+ * Counts the automatic obstetric diagnosis needs beyond G/P/A/hidup. Ended deliveries only
+ * (clinic and external alike); ongoing pregnancies are never a delivery.
+ * preterm = term 'preterm'; every other delivery (aterm, postterm, unknown) counts as aterm so
+ * aterm + preterm always equals para. sc_count = deliveries by SC (Caesar).
+ */
+function computeDiagnosisCounts(pregnancies) {
+    const out = { aterm: 0, preterm: 0, sc_count: 0 };
+    for (const p of Array.isArray(pregnancies) ? pregnancies : []) {
+        if (!p || isOngoing(p)) continue;
+        if (p.outcome !== 'lahir_hidup' && p.outcome !== 'lahir_mati') continue;
+        // Unknown-term deliveries count as aterm here (never dropped from the P string).
+        if (p.term === 'preterm') out.preterm += 1; else out.aterm += 1;
+        if (p.delivery_method === 'SC (Caesar)') out.sc_count += 1;
+    }
+    return out;
+}
+
 function sortKey(p) {
     const day = dayNumber(p.ended_on);
     if (day !== null) return day;
@@ -149,5 +167,6 @@ module.exports = {
     decideEpisodeAction,
     isAfterFullTerm,
     computeObstetricTotals,
+    computeDiagnosisCounts,
     toRiwayatPersalinanList
 };

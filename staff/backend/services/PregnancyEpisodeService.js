@@ -27,6 +27,7 @@ const FULL_TERM_DAYS = 280;
 const TWIN_WINDOW_DAYS = 3;
 const REVIEW_ENDED_MISMATCH = 'HPHT kunjungan tidak cocok dengan kehamilan yang sudah selesai';
 const REVIEW_OLD_VISIT_HPHT = 'HPHT berbeda di kunjungan lama';
+const REVIEW_REPORTED_BIRTH = 'Lahir dilaporkan, belum ditutup';
 const LINKED_DELETE_MESSAGE = 'Kehamilan ini terhubung dengan data kelahiran/keguguran atau kunjungan dan tidak dapat dihapus';
 
 class PregnancyEpisodeError extends Error {
@@ -595,6 +596,24 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         });
     }
 
+    // A birth reported by the patient or typed in by staff never closes the pregnancy:
+    // it links the birth row and flags the ongoing pregnancy for a doctor/midwife to close.
+    async function flagReportedBirth(patientId, linkTable, linkId, actor, conn) {
+        if (!LINK_TABLES.includes(linkTable)) fail(400, 'Tabel tautan tidak valid');
+        return withConn(conn, async c => {
+            const rows = await lockPregnancies(c, patientId);
+            // A birth row already linked (e.g. by "Sudah Lahir") keeps its pregnancy: never move or flag.
+            const [linkRows] = await c.query(`SELECT pregnancy_id FROM ${linkTable} WHERE id = ? FOR UPDATE`, [linkId]);
+            const existingId = linkRows && linkRows[0] ? linkRows[0].pregnancy_id : null;
+            if (existingId) return { linked: true, already: true, pregnancy_id: existingId };
+            const ongoing = ongoingOf(rows);
+            if (!ongoing) return { linked: false };
+            await c.query(`UPDATE ${linkTable} SET pregnancy_id = ? WHERE id = ?`, [ongoing.id, linkId]);
+            await updateRow(c, ongoing.id, { needs_review: 1, review_reason: REVIEW_REPORTED_BIRTH }, actor);
+            return { linked: true, pregnancy_id: ongoing.id };
+        });
+    }
+
     function parseYear(value) {
         if (value === undefined || value === null || value === '') return null;
         const y = Number(value);
@@ -731,6 +750,7 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
         addExternal,
         removeExternal,
         endOngoing,
+        flagReportedBirth,
         assertCanClose
     };
 }

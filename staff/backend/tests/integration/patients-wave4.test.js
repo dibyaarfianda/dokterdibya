@@ -214,7 +214,7 @@ describe('GET /api/patients wave 4 additive contract', () => {
         db.query.mockImplementation(async sql => {
             if (sql.includes('COUNT(')) return [[{ total: 1 }]];
             if (sql.includes('FROM patients p')) return [[{ id: 'P1', full_name: 'Ani' }]];
-            if (sql.includes('FROM birth_congratulations')) throw new Error('synthetic enrichment failure');
+            if (sql.includes('FROM pregnancies')) throw new Error('synthetic enrichment failure');
             return [[]];
         });
         const response = await request(app).get('/api/patients/search/advanced?limit=1').expect(503);

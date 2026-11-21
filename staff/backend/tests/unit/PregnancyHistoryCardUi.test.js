@@ -242,3 +242,44 @@ test('cancelling the riwayat replace keeps the typed G/P/A', () => {
     expect(handler).toContain('const replaced = await this.replaceRPFromPregnancies(');
     expect(handler).toContain('if (replaced) Card.prefillTotals(data.totals, true);');
 });
+
+test('mount publishes totals scoped to the patient and clears them on failure', async () => {
+    const { ctx, Card } = context();
+    ctx.fetch.mockResolvedValueOnce(ok({ pregnancies: [clinicPregnancy], totals: { gravida: 2, sc_count: 1 }, riwayat_persalinan: [] }));
+    await Card.mount(state, { category: 'obstetri' });
+    expect(ctx.window.__pregnancyHistoryTotals).toEqual({ patient_id: 'P000000001', totals: { gravida: 2, sc_count: 1 }, sc_count: 1 });
+    ctx.fetch.mockRejectedValueOnce(new Error('boom'));
+    await Card.mount(state, { category: 'obstetri' });
+    expect(ctx.window.__pregnancyHistoryTotals).toBeNull();
+});
+
+describe('runAfterSave and the diagnosis totals holder', () => {
+    const published = { patient_id: 'P000000001', totals: { gravida: 1 }, sc_count: 0 };
+
+    test('holder is cleared before resolve and stays cleared when resolve fails', async () => {
+        const { ctx, Card } = context();
+        ctx.window.__pregnancyHistoryTotals = published;
+        let seen = 'unset';
+        ctx.fetch.mockImplementationOnce(async () => { seen = ctx.window.__pregnancyHistoryTotals; throw new Error('down'); });
+        expect(await Card.runAfterSave(state)).toBe('resolve_failed');
+        expect(seen).toBeNull();
+        expect(ctx.window.__pregnancyHistoryTotals).toBeNull();
+    });
+
+    test('holder is republished with fresh totals after resolve and re-mount', async () => {
+        const { ctx, Card } = context();
+        ctx.window.__pregnancyHistoryTotals = published;
+        ctx.fetch.mockResolvedValueOnce(ok({ action: 'none' }));
+        ctx.fetch.mockResolvedValueOnce(ok({ pregnancies: [ongoing], totals: { gravida: 2, sc_count: 0 }, riwayat_persalinan: [] }));
+        await Card.runAfterSave(state);
+        expect(ctx.window.__pregnancyHistoryTotals.totals.gravida).toBe(2);
+    });
+});
+
+test('save flow awaits runAfterSave before generating the diagnosis', () => {
+    const src = fs.readFileSync(path.join(root, '../main.js'), 'utf8');
+    const resolveAt = src.indexOf('await window.PregnancyHistoryCard.runAfterSave(');
+    const diagnosisAt = src.indexOf('await this.autoGenerateAndPersistDiagnosis({ anamnesa: data })');
+    expect(resolveAt).toBeGreaterThan(-1);
+    expect(diagnosisAt).toBeGreaterThan(resolveAt);
+});

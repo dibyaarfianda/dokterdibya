@@ -19,7 +19,7 @@ const express = require('express');
 const defaultLogger = require('../utils/logger');
 const { verifyStaffToken: defaultVerifyStaffToken } = require('../middleware/auth');
 const { PregnancyEpisodeError } = require('../services/PregnancyEpisodeService');
-const { computeObstetricTotals, toRiwayatPersalinanList } = require('../services/PregnancyEpisodeRules');
+const { computeObstetricTotals, computeDiagnosisCounts, toRiwayatPersalinanList } = require('../services/PregnancyEpisodeRules');
 
 const PATIENT_ID = /^[A-Za-z0-9_-]{1,50}$/;
 const NUMERIC_ID = /^[1-9]\d{0,15}$/;
@@ -85,7 +85,10 @@ function createPregnanciesRouter({
                 success: true,
                 data: {
                     pregnancies,
-                    totals: computeObstetricTotals(pregnancies, { includeOngoing: true }),
+                    totals: Object.assign(
+                        computeObstetricTotals(pregnancies, { includeOngoing: true }),
+                        computeDiagnosisCounts(pregnancies)
+                    ),
                     riwayat_persalinan: toRiwayatPersalinanList(pregnancies)
                 }
             });

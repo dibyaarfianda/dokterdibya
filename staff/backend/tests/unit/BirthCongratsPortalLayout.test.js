@@ -6,6 +6,7 @@ const patientMenu = fs.readFileSync(path.join(repoRoot, 'public', 'patient-menu.
 const patientMenuShell = fs.readFileSync(path.join(repoRoot, 'public', 'scripts', 'patient-menu-shell.js'), 'utf8');
 const patientPortalSource = `${patientMenu}\n${patientMenuShell}`;
 const patientRoutes = fs.readFileSync(path.join(repoRoot, 'staff', 'backend', 'routes', 'patients.js'), 'utf8');
+const pregnancyDataService = fs.readFileSync(path.join(repoRoot, 'staff', 'backend', 'services', 'PatientPregnancyData.js'), 'utf8');
 
 describe('Birth congratulations portal layout', () => {
     test('home congratulations card remains compact without clipping actions', () => {
@@ -150,7 +151,10 @@ describe('Birth congratulations portal layout', () => {
 
     test('patient birth photo routes use backend proxy urls instead of direct R2 signed links', () => {
         expect(patientRoutes).toContain("function getR2ProxyUrl(key)");
-        expect(patientRoutes).toContain('photoUrl = getR2ProxyUrl(birth.photo_r2_key);');
+        // pregnancy-data birth payload lives in PatientPregnancyData.js; patients.js injects the proxy builder
+        expect(patientRoutes).toMatch(/buildPregnancyData\(.*\{[^}]*getR2ProxyUrl[^}]*\}/);
+        expect(pregnancyDataService).toContain('getR2ProxyUrl(birth.photo_r2_key)');
+        expect(pregnancyDataService).not.toMatch(/getSignedDownloadUrl|signedUrl/);
         expect(patientRoutes).toContain('data.photo_url = getR2ProxyUrl(data.photo_r2_key);');
         expect(patientRoutes).toContain('const proxyUrl = getR2ProxyUrl(uploadResult.key);');
         expect(patientRoutes).toContain('photo_url: proxyUrl');

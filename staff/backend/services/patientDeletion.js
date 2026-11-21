@@ -133,6 +133,20 @@ async function deletePatientWithRelationsOnConnection(connection, patientId) {
             'sunday_clinic_billings'
         );
 
+        // Pregnancy data (sessions child-first: contraction_events has no FK cascade).
+        const pregnancyDeletes = [
+            ['kick_counter_kicks', 'DELETE FROM kick_counter_kicks WHERE session_id IN (SELECT id FROM kick_counter_sessions WHERE patient_id = ?)'],
+            ['kick_counter_sessions', 'DELETE FROM kick_counter_sessions WHERE patient_id = ?'],
+            ['contraction_events', 'DELETE FROM contraction_events WHERE session_id IN (SELECT id FROM contraction_sessions WHERE patient_id = ?)'],
+            ['contraction_sessions', 'DELETE FROM contraction_sessions WHERE patient_id = ?'],
+            ['pregnancy_outcomes', 'DELETE FROM pregnancy_outcomes WHERE patient_id = ?'],
+            ['birth_congratulations', 'DELETE FROM birth_congratulations WHERE patient_id = ?'],
+            ['pregnancies', 'DELETE FROM pregnancies WHERE patient_id = ?']
+        ];
+        for (const [key, sql] of pregnancyDeletes) {
+            await deleteOptionalChild(connection, sql, [patientId], deletedData, key);
+        }
+
         await deleteOptionalChild(connection,
             'DELETE FROM sunday_clinic_records WHERE patient_id = ?',
             [patientId],

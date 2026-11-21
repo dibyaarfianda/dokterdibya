@@ -23,10 +23,11 @@ const PatientListService = require('../services/PatientListService');
 const PatientAccountSuspensionService = require('../services/PatientAccountSuspensionService');
 const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
-const { loadEndEvents, pregnancyListFields, endedSqlCondition } = require('../services/PregnancyEnd');
+const { loadCurrentPregnancies, listFields } = require('../services/CurrentPregnancy');
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
 const { createPregnancyEpisodeService, assertCanClose } = require('../services/PregnancyEpisodeService');
 const { markPatientDelivered } = require('../services/MarkDelivered');
+const { buildPregnancyData } = require('../services/PatientPregnancyData');
 const { pregnancyErrorResponse } = require('../services/PregnancyErrorResponse');
 
 let pregnancyEpisodes = null;
@@ -52,6 +53,7 @@ const _enrichFailures = {
     resumeDocs: 0,
     usgDocs: 0,
     obstetriHpl: 0,
+    currentPregnancy: 0,
     birthRecords: 0,
     blocklist: 0,
     lastVisitType: 0,
@@ -616,7 +618,7 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
         const appointmentHistorySet = new Set();
         const medicalHistorySet = new Set();
         const obstetriMap = {}; // patient_id -> hpht
-        let endEvents = new Map(); // patient_id -> end events (births + outcomes)
+        let currentPregnancies = new Map(); // patient_id -> { ongoing, lastEnded } from the pregnancies table
 
         const batchPromises = [];
 
@@ -698,12 +700,11 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
 
         await Promise.all(batchPromises);
 
-        // Batch 5: pregnancy end events (births + outcomes, only for obstetri patients)
-        const obstetriPatientIds = Object.keys(obstetriMap);
-        if (obstetriPatientIds.length > 0) {
+        // Batch 5: current pregnancy per patient (pregnancies table)
+        if (patientIds.length > 0) {
             try {
-                endEvents = await loadEndEvents(db, obstetriPatientIds, logger);
-            } catch (err) { _enrichFail('birthRecords', err); }
+                currentPregnancies = await loadCurrentPregnancies(db, patientIds);
+            } catch (err) { _enrichFail('currentPregnancy', err); }
         }
         const listToday = new Date();
         listToday.setHours(0, 0, 0, 0);
@@ -730,9 +731,9 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                 }
             }
 
-            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = pregnancyListFields(
-                obstetriMap[patient.id],
-                endEvents.get(patient.id) || [],
+            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = listFields(
+                currentPregnancies.get(String(patient.id)) || { ongoing: null, lastEnded: null },
+                Boolean(obstetriMap[patient.id]),
                 listToday
             );
 
@@ -955,7 +956,7 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
         // Batch-enrich: 3 parallel queries instead of N×3 correlated queries
         const lastVisitTypeMap = {};  // patient_id → mr_category
         const obstetriMap = {};       // patient_id → hpht string
-        let endEvents = new Map();    // patient_id -> end events (births + outcomes)
+        let currentPregnancies = new Map(); // patient_id -> { ongoing, lastEnded } from the pregnancies table
 
         if (patientIds.length > 0) {
             const ph = patientIds.map(() => '?').join(',');
@@ -993,10 +994,10 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                     .then(([r]) => r.forEach(row => { obstetriMap[row.patient_id] = row.hpht; }))
                     .catch(error => _enrichFail('obstetriHpl', error)),
 
-                // Batch 3: pregnancy end events (births + outcomes)
-                loadEndEvents(db, patientIds, logger)
-                    .then(map => { endEvents = map; })
-                    .catch(error => _enrichFail('birthRecords', error)),
+                // Batch 3: current pregnancy (pregnancies table)
+                loadCurrentPregnancies(db, patientIds)
+                    .then(map => { currentPregnancies = map; })
+                    .catch(error => _enrichFail('currentPregnancy', error)),
             ]);
         }
 
@@ -1008,9 +1009,9 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
 
         const mappedRows = uniqueRows.map((patient) => {
             const last_visit_type = lastVisitTypeMap[patient.id] || null;
-            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = pregnancyListFields(
-                obstetriMap[patient.id] || null,
-                endEvents.get(patient.id) || [],
+            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = listFields(
+                currentPregnancies.get(String(patient.id)) || { ongoing: null, lastEnded: null },
+                Boolean(obstetriMap[patient.id]),
                 today
             );
 
@@ -1117,10 +1118,10 @@ router.post('/api/patients/fix-names', verifyStaffToken, async (req, res) => {
 // IMPORTANT: These routes MUST be defined BEFORE /api/patients/:id to avoid route conflicts
 
 // GET near-due pregnancies (37-40 weeks from HPHT, 3 weeks before due)
-// Returns unique patients (by patient_id), showing most recent obstetri record
+// Returns unique patients (by patient_id), from the ongoing pregnancy
 router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, res) => {
     try {
-        // Get the latest obstetri record per patient with valid HPHT
+        // Ongoing pregnancy per patient from the pregnancies table
         const query = `
             SELECT
                 p.id as patient_id,
@@ -1129,10 +1130,9 @@ router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, r
                 p.phone,
                 latest.mr_id,
                 latest.visit_location,
-                latest.hpht,
-                DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
-                FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
-                DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
+                DATE_FORMAT(cur.hpht_eff, '%Y-%m-%d') as hpht,
+                (280 - DATEDIFF(cur.hpl_eff, CURDATE())) as days_pregnant,
+                DATE_FORMAT(cur.hpl_eff, '%Y-%m-%d') as hpl,
                 latest.last_activity_at as last_visit,
                 (
                     SELECT COALESCE(
@@ -1148,24 +1148,27 @@ router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, r
             FROM patients p
             JOIN (
                 SELECT
-                    scr.patient_id,
+                    pg.id,
+                    pg.patient_id,
+                    COALESCE(pg.hpl, DATE_ADD(pg.hpht, INTERVAL 280 DAY)) as hpl_eff,
+                    COALESCE(pg.hpht, DATE_SUB(pg.hpl, INTERVAL 280 DAY)) as hpht_eff,
+                    ROW_NUMBER() OVER (PARTITION BY pg.patient_id ORDER BY sequence DESC, id DESC) as rn
+                FROM pregnancies pg
+                WHERE pg.status = 'ongoing'
+            ) cur ON cur.patient_id = p.id AND cur.rn = 1
+            LEFT JOIN (
+                SELECT
+                    scr.pregnancy_id,
                     scr.mr_id,
                     scr.visit_location,
                     scr.last_activity_at,
-                    JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
-                    ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
+                    ROW_NUMBER() OVER (PARTITION BY scr.pregnancy_id ORDER BY scr.last_activity_at DESC) as rn
                 FROM sunday_clinic_records scr
-                JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                    AND mr.record_type = 'anamnesa'
-                WHERE scr.mr_category = 'obstetri'
-                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
-            ) latest ON p.id = latest.patient_id AND latest.rn = 1
+                WHERE scr.pregnancy_id IS NOT NULL
+            ) latest ON latest.pregnancy_id = cur.id AND latest.rn = 1
             WHERE ${visiblePatientCondition('p')}
-            AND NOT ${endedSqlCondition('p.id', 'latest.hpht')}
-            AND DATEDIFF(CURDATE(), latest.hpht) >= 259
-            AND DATEDIFF(CURDATE(), latest.hpht) < 280
+            AND cur.hpl_eff IS NOT NULL
+            AND (280 - DATEDIFF(cur.hpl_eff, CURDATE())) BETWEEN 259 AND 279
             ORDER BY days_pregnant DESC
         `;
 
@@ -1211,10 +1214,10 @@ router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, r
 });
 
 // GET overdue pregnancies (>40 weeks from HPHT, not yet delivered)
-// Returns unique patients (by patient_id), showing most recent obstetri record
+// Returns unique patients (by patient_id), from the ongoing pregnancy
 router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, res) => {
     try {
-        // Get the latest obstetri record per patient with valid HPHT
+        // Ongoing pregnancy per patient from the pregnancies table
         const query = `
             SELECT
                 p.id as patient_id,
@@ -1223,10 +1226,9 @@ router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, re
                 p.phone,
                 latest.mr_id,
                 latest.visit_location,
-                latest.hpht,
-                DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
-                FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
-                DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
+                DATE_FORMAT(cur.hpht_eff, '%Y-%m-%d') as hpht,
+                (280 - DATEDIFF(cur.hpl_eff, CURDATE())) as days_pregnant,
+                DATE_FORMAT(cur.hpl_eff, '%Y-%m-%d') as hpl,
                 latest.last_activity_at as last_visit,
                 (
                     SELECT COALESCE(
@@ -1242,23 +1244,27 @@ router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, re
             FROM patients p
             JOIN (
                 SELECT
-                    scr.patient_id,
+                    pg.id,
+                    pg.patient_id,
+                    COALESCE(pg.hpl, DATE_ADD(pg.hpht, INTERVAL 280 DAY)) as hpl_eff,
+                    COALESCE(pg.hpht, DATE_SUB(pg.hpl, INTERVAL 280 DAY)) as hpht_eff,
+                    ROW_NUMBER() OVER (PARTITION BY pg.patient_id ORDER BY sequence DESC, id DESC) as rn
+                FROM pregnancies pg
+                WHERE pg.status = 'ongoing'
+            ) cur ON cur.patient_id = p.id AND cur.rn = 1
+            LEFT JOIN (
+                SELECT
+                    scr.pregnancy_id,
                     scr.mr_id,
                     scr.visit_location,
                     scr.last_activity_at,
-                    JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
-                    ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
+                    ROW_NUMBER() OVER (PARTITION BY scr.pregnancy_id ORDER BY scr.last_activity_at DESC) as rn
                 FROM sunday_clinic_records scr
-                JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                    AND mr.record_type = 'anamnesa'
-                WHERE scr.mr_category = 'obstetri'
-                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
-            ) latest ON p.id = latest.patient_id AND latest.rn = 1
+                WHERE scr.pregnancy_id IS NOT NULL
+            ) latest ON latest.pregnancy_id = cur.id AND latest.rn = 1
             WHERE ${visiblePatientCondition('p')}
-            AND NOT ${endedSqlCondition('p.id', 'latest.hpht')}
-            AND DATEDIFF(CURDATE(), latest.hpht) >= 280
+            AND cur.hpl_eff IS NOT NULL
+            AND (280 - DATEDIFF(cur.hpl_eff, CURDATE())) >= 280
             ORDER BY days_pregnant DESC
         `;
 
@@ -1369,130 +1375,8 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
     res.set('Expires', '0');
 
     try {
-        const patientId = req.patient.id;
-        console.log('[PREGNANCY_DEBUG] Endpoint called for patient:', patientId);
-
-        // Check if patient has given birth
-        const [birthRows] = await db.query(`
-            SELECT
-                baby_name,
-                DATE_FORMAT(birth_date, '%d %b %Y') as birth_date,
-                birth_time,
-                birth_weight,
-                birth_length,
-                photo_url,
-                photo_r2_key,
-                message as doctor_message
-            FROM birth_congratulations
-            WHERE patient_id = ? AND is_published = 1
-            ORDER BY created_at DESC
-            LIMIT 1
-        `, [patientId]);
-
-        if (birthRows.length > 0) {
-            const birth = birthRows[0];
-            console.log('[BIRTH_DEBUG] Found birth data for patient:', patientId, 'baby_name:', birth.baby_name);
-
-            // Use backend proxy URL to avoid direct R2 connectivity issues on patient devices
-            let photoUrl = birth.photo_url;
-            if (birth.photo_r2_key) {
-                photoUrl = getR2ProxyUrl(birth.photo_r2_key);
-            }
-
-            return res.json({
-                success: true,
-                data: {
-                    is_pregnant: false,
-                    has_given_birth: true,
-                    birth_date: birth.birth_date,
-                    birth_time: birth.birth_time,
-                    baby_name: birth.baby_name,
-                    baby_weight: birth.birth_weight,
-                    baby_length: birth.birth_length,
-                    baby_photo_url: photoUrl,
-                    doctor_message: birth.doctor_message
-                }
-            });
-        }
-
-        // Get HPHT from latest obstetri record
-        const [obstetriRows] = await db.query(`
-            SELECT
-                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
-            FROM sunday_clinic_records scr
-            JOIN medical_records mr ON mr.mr_id = scr.mr_id
-                AND mr.record_type = 'anamnesa'
-            WHERE scr.patient_id = ?
-                AND scr.mr_category = 'obstetri'
-                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
-            ORDER BY scr.last_activity_at DESC
-            LIMIT 1
-        `, [patientId]);
-
-        if (obstetriRows.length > 0 && obstetriRows[0].hpht) {
-            const hpht = new Date(obstetriRows[0].hpht);
-
-            if (!isNaN(hpht.getTime())) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const daysPregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-                const weeks = Math.floor(daysPregnant / 7);
-                const days = daysPregnant % 7;
-
-                // Calculate HPL (HPHT + 280 days)
-                const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                const hplFormatted = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-
-                // Calculate trimester
-                let trimester = 1;
-                if (weeks >= 13 && weeks < 27) trimester = 2;
-                else if (weeks >= 27) trimester = 3;
-
-                // Calculate progress (0.0 - 1.0)
-                const progress = Math.min(daysPregnant / 280, 1.0);
-
-                // Only return as pregnant if <= 42 weeks
-                if (weeks <= 42) {
-                    // Get baby size for current week
-                    const babySize = BABY_SIZES[weeks] || BABY_SIZES[Math.min(weeks, 40)] || { emoji: "👶", size: "Bayi", length: "-" };
-
-                    // Get tip for closest milestone week
-                    const milestoneWeeks = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40];
-                    const closestMilestone = milestoneWeeks.reduce((prev, curr) =>
-                        Math.abs(curr - weeks) < Math.abs(prev - weeks) ? curr : prev
-                    );
-                    const tip = PREGNANCY_TIPS[closestMilestone] || "";
-
-                    return res.json({
-                        success: true,
-                        data: {
-                            is_pregnant: true,
-                            has_given_birth: false,
-                            weeks: weeks,
-                            days: days,
-                            trimester: trimester,
-                            hpht: obstetriRows[0].hpht,
-                            hpl: hplFormatted,
-                            progress: progress,
-                            baby_size: babySize,
-                            tip: tip
-                        }
-                    });
-                }
-            }
-        }
-
-        // No pregnancy data
-        res.json({
-            success: true,
-            data: {
-                is_pregnant: false,
-                has_given_birth: false
-            }
-        });
+        const data = await buildPregnancyData(db, req.patient.id, new Date(), { getR2ProxyUrl, BABY_SIZES, PREGNANCY_TIPS });
+        res.json({ success: true, data });
     } catch (error) {
         console.error('Error fetching pregnancy data:', error);
         res.status(500).json({
@@ -2023,6 +1907,13 @@ router.post('/api/patient/birth-self-report', verifyPatientToken, async (req, re
             ]
         );
 
+        // Patient-reported birth never closes the pregnancy: link it and flag for review only.
+        try {
+            await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', insertResult.insertId, { id: null });
+        } catch (flagError) {
+            logger.warn('Birth self-report saved but pregnancy flag failed', { error: flagError.message, patientId });
+        }
+
         res.json({
             success: true,
             message: 'Data kelahiran berhasil disimpan',
@@ -2352,14 +2243,28 @@ router.post('/api/patients/:patientId/birth-congratulations', verifyStaffToken, 
                 WHERE patient_id = ?
             `, [baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color, patientId]);
 
+            for (const row of existing) {
+                try {
+                    await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', row.id, req.user);
+                } catch (flagError) {
+                    logger.warn('Birth congratulations updated but pregnancy flag failed', { error: flagError.message, patientId });
+                }
+            }
+
             res.json({ success: true, message: 'Birth congratulations updated' });
         } else {
             // Insert new
-            await db.query(`
+            const [insertResult] = await db.query(`
                 INSERT INTO birth_congratulations
                 (patient_id, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `, [patientId, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published || 0, theme_color || 'pink']);
+
+            try {
+                await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', insertResult.insertId, req.user);
+            } catch (flagError) {
+                logger.warn('Birth congratulations created but pregnancy flag failed', { error: flagError.message, patientId });
+            }
 
             res.json({ success: true, message: 'Birth congratulations created' });
         }

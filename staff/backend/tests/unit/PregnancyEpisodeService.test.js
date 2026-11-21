@@ -644,6 +644,8 @@ describe('final review fixes', () => {
         const baseQuery = db.query;
         const query = async (sql, params) => {
             if (sql.includes('FROM patients')) return [[{ id: 'P1', full_name: 'Ibu Ani' }]];
+            // No card is linked to the ongoing pregnancy before the first "Sudah Lahir".
+            if (/FROM birth_congratulations\s+WHERE patient_id = \? AND pregnancy_id = \?/.test(sql)) return [[]];
             if (sql.includes('MAX(child_number)')) return [[{ max_child: birthId - 40 }]];
             if (sql.includes('INSERT INTO birth_congratulations')) return [{ insertId: ++birthId }];
             return baseQuery(sql, params);
@@ -658,6 +660,43 @@ describe('final review fixes', () => {
             { table: 'birth_congratulations', pregnancy_id: 1, id: 41 },
             { table: 'birth_congratulations', pregnancy_id: 1, id: 42 }
         ]);
+    });
+
+    test('self-report then Sudah Lahir: still one card, no pending card, pregnancy ended lahir_hidup linked to it', async () => {
+        const { markPatientDelivered } = require('../../services/MarkDelivered');
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        // birth_congratulations rows: the patient self-report (published, data submitted).
+        const cards = [{ id: 41, patient_id: 'P1', child_number: 1, patient_data_submitted: 1, is_published: 1 }];
+        const baseQuery = db.query;
+        const query = async (sql, params) => {
+            if (sql.includes('FROM patients')) return [[{ id: 'P1', full_name: 'Ibu Ani' }]];
+            if (/FROM birth_congratulations\s+WHERE patient_id = \? AND pregnancy_id = \?/.test(sql)) {
+                const linkedTo = id => { const l = db.state.links.filter(x => x.table === 'birth_congratulations' && x.id === id).pop(); return l ? l.pregnancy_id : null; };
+                return [cards.filter(c => c.patient_id === params[0] && linkedTo(c.id) === params[1])
+                    .sort((a, b) => a.child_number - b.child_number).map(c => ({ id: c.id, child_number: c.child_number }))];
+            }
+            if (sql.includes('MAX(child_number)')) return [[{ max_child: Math.max(0, ...cards.map(c => c.child_number)) }]];
+            if (sql.includes('INSERT INTO birth_congratulations')) {
+                const card = { id: 100 + cards.length, patient_id: 'P1', child_number: params[1], patient_data_submitted: 0, is_published: 0 };
+                cards.push(card);
+                return [{ insertId: card.id }];
+            }
+            return baseQuery(sql, params);
+        };
+        const conn = { ...(await db.getConnection()), query };
+        const wrapped = { query, getConnection: async () => conn };
+        const episodes = createPregnancyEpisodeService({ db: wrapped, now: NOW });
+        await episodes.flagReportedBirth('P1', 'birth_congratulations', 41, DOKTER);
+        expect(db.state.pregnancies[0]).toMatchObject({ status: 'ongoing', needs_review: 1 });
+
+        const out = await markPatientDelivered({ db: wrapped, episodes, patientId: 'P1', actor: DOKTER, today: '2026-11-21' });
+        expect(out.body.child_number).toBe(1);
+        expect(cards).toHaveLength(1);
+        expect(cards.filter(c => c.patient_data_submitted === 0)).toHaveLength(0);
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.pregnancies[0]).toMatchObject({ status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-11-21' });
+        const last = db.state.links.filter(l => l.table === 'birth_congratulations' && l.id === 41).pop();
+        expect(last.pregnancy_id).toBe(1);
     });
 
     test('#5 removeExternal refuses with 409 when anything still links to the pregnancy', async () => {
@@ -728,5 +767,59 @@ describe('final review fixes', () => {
         const sql = db.state.sql.find(s => /^SELECT p\.\*/.test(s));
         expect(sql).toMatch(/r2\.patient_id = p\.patient_id/);
         expect(sql).toMatch(/m\.mr_id = r2\.mr_id AND m\.patient_id = r2\.patient_id AND m\.record_type = 'resume_medis'/);
+    });
+});
+
+describe('PregnancyEpisodeService.flagReportedBirth', () => {
+    const REASON = 'Lahir dilaporkan, belum ditutup';
+
+    test('links the birth row and flags the ongoing pregnancy without closing it', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER);
+        expect(res).toEqual({ linked: true, pregnancy_id: 1 });
+        expect(db.state.pregnancies[0]).toMatchObject({ status: 'ongoing', needs_review: 1, review_reason: REASON });
+        expect(db.state.pregnancies[0].outcome).toBeNull();
+        expect(db.state.links).toContainEqual({ table: 'birth_congratulations', pregnancy_id: 1, id: 7 });
+        expect(db.state.tx).toMatchObject({ begin: 1, commit: 1, release: 1 });
+    });
+
+    test('no ongoing pregnancy is a no-op and writes nothing', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg({ status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-11-10' })] });
+        const before = JSON.stringify(db.state.pregnancies);
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER);
+        expect(res).toEqual({ linked: false });
+        expect(JSON.stringify(db.state.pregnancies)).toBe(before);
+        expect(db.state.links).toHaveLength(0);
+    });
+
+    test('is idempotent and uses the supplied connection', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        const svc = createPregnancyEpisodeService({ db, now: NOW });
+        const conn = await db.getConnection();
+        await svc.flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER, conn);
+        const again = await svc.flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER, conn);
+        expect(again).toEqual({ linked: true, already: true, pregnancy_id: 1 });
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.pregnancies[0]).toMatchObject({ status: 'ongoing', needs_review: 1, review_reason: REASON });
+        expect(db.state.tx.begin).toBe(0);
+    });
+
+    test('an already-linked birth row keeps its pregnancy: nothing moves, nothing flagged', async () => {
+        const db = makeDb({ pregnancies: [
+            ongoingPreg({ id: 1, status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-11-10' }),
+            ongoingPreg({ id: 2, sequence: 2, hpht: '2026-12-01' })
+        ] });
+        db.state.links.push({ table: 'birth_congratulations', pregnancy_id: 1, id: 7 });
+        const res = await createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'birth_congratulations', 7, DOKTER);
+        expect(res).toEqual({ linked: true, already: true, pregnancy_id: 1 });
+        expect(db.state.pregnancies[1].needs_review).toBeUndefined();
+        expect(db.state.pregnancies[1].review_reason).toBeUndefined();
+        expect(db.state.links).toHaveLength(1);
+        expect(db.state.sql.some(s => /^UPDATE /.test(s))).toBe(false);
+    });
+
+    test('rejects an unknown link table', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg()] });
+        await expectError(createPregnancyEpisodeService({ db, now: NOW }).flagReportedBirth('P1', 'patients', 7, DOKTER), 400, 'Tabel tautan tidak valid');
     });
 });

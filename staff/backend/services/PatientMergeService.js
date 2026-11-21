@@ -12,6 +12,9 @@ const TRANSFER_EXCLUDED_TABLES = new Set([
     'patient_mr_history',
     'patient_password_reset_tokens'
 ]);
+const PREGNANCY_TABLE = 'pregnancies';
+const PREGNANCY_MERGE_REVIEW_REASON = 'Digabung dari pasien lain';
+const PREGNANCY_DUPLICATE_REVIEW_REASON = 'Kemungkinan duplikat setelah gabung pasien';
 
 class PatientMergeError extends Error {
     constructor(message, statusCode = 400, code = 'PATIENT_MERGE_ERROR', details = null) {
@@ -284,6 +287,29 @@ class PatientMergeService {
             let moved = 0;
             let conflictsDiscarded = 0;
 
+            if (metadata.tableName === PREGNANCY_TABLE) {
+                // UNIQUE (patient_id, fingerprint) would make UPDATE IGNORE skip a row and the
+                // leftover DELETE destroy it. Clear colliding fingerprints, then move every row
+                // with a plain UPDATE so any other conflict rolls the whole merge back.
+                const fingerprintsCleared = await this.clearCollidingPregnancyFingerprints(
+                    connection,
+                    targetPatientId,
+                    sourcePatientIds
+                );
+                const [updateResult] = await connection.query(
+                    `UPDATE ${table}
+                     SET patient_id = ?
+                     WHERE patient_id IN (${placeholders(sourcePatientIds)})`,
+                    [targetPatientId, ...sourcePatientIds]
+                );
+                summary[metadata.tableName] = {
+                    moved: affectedRows(updateResult),
+                    conflicts_discarded: 0,
+                    fingerprints_cleared: fingerprintsCleared
+                };
+                continue;
+            }
+
             if (metadata.hasUniquePatientKey) {
                 for (const sourcePatientId of sourcePatientIds) {
                     const setName = metadata.hasPatientName ? ', patient_name = ?' : '';
@@ -323,6 +349,90 @@ class PatientMergeService {
         }
 
         return { summary, tableMetadata };
+    }
+
+    async clearCollidingPregnancyFingerprints(connection, targetPatientId, sourcePatientIds) {
+        const [rows] = await connection.query(
+            `SELECT id, patient_id, fingerprint
+             FROM pregnancies
+             WHERE patient_id IN (${placeholders([targetPatientId, ...sourcePatientIds])})
+               AND fingerprint IS NOT NULL
+             ORDER BY id ASC`,
+            [targetPatientId, ...sourcePatientIds]
+        );
+        // The unique key compares case-insensitively and ignores trailing spaces.
+        const keyOf = row => String(row.fingerprint).trim().toLowerCase();
+        // patient_id also compares case-insensitively in SQL.
+        const idKey = value => String(value || '').trim().toUpperCase();
+        const seen = new Set(rows.filter(row => idKey(row.patient_id) === idKey(targetPatientId)).map(keyOf));
+        const clearIds = [];
+        for (const sourcePatientId of sourcePatientIds) {
+            for (const row of rows.filter(item => idKey(item.patient_id) === idKey(sourcePatientId))) {
+                const key = keyOf(row);
+                if (seen.has(key)) {
+                    clearIds.push(row.id);
+                } else {
+                    seen.add(key);
+                }
+            }
+        }
+        if (clearIds.length === 0) return 0;
+        await connection.query(
+            // Likely the same pregnancy recorded on both duplicates: keep it, but flag it so the
+            // G/P/A totals are checked. review_reason is assigned before needs_review because
+            // MariaDB evaluates SET left to right; an existing flagged reason is kept.
+            `UPDATE pregnancies
+             SET fingerprint = NULL,
+                 review_reason = CASE
+                     WHEN needs_review = 1 AND COALESCE(review_reason, '') <> '' THEN review_reason
+                     ELSE ?
+                 END,
+                 needs_review = 1
+             WHERE id IN (${placeholders(clearIds)})`,
+            [PREGNANCY_DUPLICATE_REVIEW_REASON, ...clearIds]
+        );
+        return clearIds.length;
+    }
+
+    async normalizeMergedPregnancies(connection, targetPatientId, transfer) {
+        const result = { renumbered: 0, ongoing_closed: [] };
+        if (Number(transfer?.summary?.[PREGNANCY_TABLE]?.moved || 0) <= 0) return result;
+
+        const [rows] = await connection.query(
+            `SELECT id, sequence, status
+             FROM pregnancies
+             WHERE patient_id = ?
+             ORDER BY (COALESCE(hpht, MAKEDATE(year, 1)) IS NULL) ASC,
+                      COALESCE(hpht, MAKEDATE(year, 1)) ASC, id ASC`,
+            [targetPatientId]
+        );
+        for (const [index, row] of rows.entries()) {
+            const sequence = index + 1;
+            if (Number(row.sequence) === sequence) continue;
+            await connection.query('UPDATE pregnancies SET sequence = ? WHERE id = ?', [sequence, row.id]);
+            result.renumbered += 1;
+        }
+
+        // Newest HPHT stays ongoing (HPHT derived from HPL when only HPL is known).
+        const [ongoing] = await connection.query(
+            `SELECT id
+             FROM pregnancies
+             WHERE patient_id = ? AND status = 'ongoing'
+             ORDER BY COALESCE(hpht, DATE_SUB(hpl, INTERVAL 280 DAY)) IS NULL ASC,
+                      COALESCE(hpht, DATE_SUB(hpl, INTERVAL 280 DAY)) DESC, id DESC`,
+            [targetPatientId]
+        );
+        const closeIds = ongoing.slice(1).map(row => row.id);
+        if (closeIds.length > 0) {
+            await connection.query(
+                `UPDATE pregnancies
+                 SET status = 'ended', outcome = 'unknown', needs_review = 1, review_reason = ?
+                 WHERE id IN (${placeholders(closeIds)})`,
+                [PREGNANCY_MERGE_REVIEW_REASON, ...closeIds]
+            );
+            result.ongoing_closed = closeIds;
+        }
+        return result;
     }
 
     async transferSecondaryPatientReferences(connection, targetPatientId, sourcePatientIds) {
@@ -656,6 +766,11 @@ class PatientMergeService {
                 normalized.sourcePatientIds,
                 targetName
             );
+            const pregnanciesNormalized = await this.normalizeMergedPregnancies(
+                connection,
+                normalized.targetPatientId,
+                transfer
+            );
             const secondarySummary = await this.transferSecondaryPatientReferences(
                 connection,
                 normalized.targetPatientId,
@@ -695,6 +810,7 @@ class PatientMergeService {
 
             const transferSummary = {
                 tables: transfer.summary,
+                pregnancies_normalized: pregnanciesNormalized,
                 secondary_references: secondarySummary,
                 patient_mr_history_rows: historyRows,
                 deleted_users: affectedRows(deletedUsers),
