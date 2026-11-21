@@ -23,3 +23,16 @@ export function isSuperadminUser(user) {
         || isSuperadminRoleId(user?.role_id)
         || user?.role === ROLE_NAMES.DOKTER;
 }
+
+// Closing a pregnancy (Sudah Lahir, Kehamilan Berakhir, completing history) is dokter/bidan only.
+// Mirrors isCloser() in staff/backend/services/PregnancyEpisodeService.js, which enforces it.
+export function isPregnancyCloserUser(user) {
+    if (!user) return false;
+    if (isSuperadminUser(user)) return true;
+    return Number(user.role_id) === ROLE_IDS.BIDAN || user.role === ROLE_NAMES.BIDAN;
+}
+
+// Classic scripts (legacy/patient-tools.js) cannot import this module.
+if (typeof window !== 'undefined') {
+    window.isPregnancyCloserUser = isPregnancyCloserUser;
+}

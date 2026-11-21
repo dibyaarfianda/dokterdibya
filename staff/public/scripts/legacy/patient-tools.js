@@ -2,6 +2,15 @@
         return typeof window.hasAccountPermission !== 'function' || window.hasAccountPermission(permission);
     }
 
+    // "Sudah Lahir" / "Kehamilan Berakhir" close a pregnancy: dokter/bidan only (the backend enforces it).
+    // When the role helper or the user is not known yet, show the button and let the server answer.
+    function canClosePregnancy() {
+        if (!hasPatientToolsPermission('patients.edit')) return false;
+        const user = window.currentStaffUser;
+        if (typeof window.isPregnancyCloserUser !== 'function' || !user) return true;
+        return window.isPregnancyCloserUser(user);
+    }
+
     function onPatientToolsReady(callback) {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', callback, { once: true });
@@ -1149,8 +1158,10 @@
             const riskBadge = riskType === 'overdue'
                 ? `<span class="badge badge-danger ml-1">Lewat HPL ${hplDate}</span>`
                 : `<span class="badge badge-warning ml-1">Mendekati HPL ${hplDate}</span>`;
-            const actionButton = `<button type="button" class="btn btn-xs btn-success" onclick="${onclickCall('markAsDelivered', [patientIdRaw, fullNameRaw], ', this')}" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`
-                + ` <button type="button" class="btn btn-xs btn-secondary" onclick="${pregnancyEndOnclick(patientIdRaw, fullNameRaw)}" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
+            const actionButton = canClosePregnancy()
+                ? `<button type="button" class="btn btn-xs btn-success" onclick="${onclickCall('markAsDelivered', [patientIdRaw, fullNameRaw], ', this')}" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i> Sudah Lahir</button>`
+                    + ` <button type="button" class="btn btn-xs btn-secondary" onclick="${pregnancyEndOnclick(patientIdRaw, fullNameRaw)}" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`
+                : '';
 
             return `
                 <tr>
@@ -1645,7 +1656,7 @@
         const canDelete = hasPatientToolsPermission('patients.delete');
         const canBulkDelete = hasPatientToolsPermission('patients.bulk_delete');
         let deliveryButton = '';
-        if (canEdit && patient.is_obstetri && !patient.pregnancy_end) {
+        if (canClosePregnancy() && patient.is_obstetri && !patient.pregnancy_end) {
             deliveryButton = `<button type="button" class="btn btn-sm btn-success js-delivery-btn" data-account-permission="patients.edit" onclick="${onclickCall('markAsDelivered', [patientIdRaw, patientNameRaw], ', this')}" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`
                 + `<button type="button" class="btn btn-sm btn-secondary js-pregnancy-end-btn" data-account-permission="patients.edit" onclick="${pregnancyEndOnclick(patient.id, patient.full_name)}" title="Kehamilan Berakhir (keguguran / lahir mati)"><i class="fas fa-ribbon"></i></button>`;
         }
@@ -2050,7 +2061,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     // Mark patient as delivered (create birth_congratulations entry)
     window.markAsDelivered = async function(patientId, patientName, btnEl) {
-        if (!hasPatientToolsPermission('patients.edit')) return;
+        if (!canClosePregnancy()) return;
 
         const confirmResult = await Swal.fire({
             title: 'Tandai Sudah Melahirkan?',
@@ -2119,7 +2130,7 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     // Mark pregnancy as ended without a birth (keguguran / lahir mati). Silent: never notifies the patient.
     window.markPregnancyEnded = async function(patientId, patientName, btnEl) {
-        if (!hasPatientToolsPermission('patients.edit')) return;
+        if (!canClosePregnancy()) return;
 
         const today = localDateString(new Date());
         const confirmResult = await Swal.fire({
@@ -2224,7 +2235,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         let outcome = {};
         try { outcome = typeof outcomeJson === 'string' ? JSON.parse(outcomeJson) : (outcomeJson || {}); } catch (_) { outcome = {}; }
         const label = PREGNANCY_OUTCOME_LABELS[outcome.type] || 'Kehamilan Berakhir';
-        const canEdit = Boolean(hasPatientToolsPermission('patients.edit') && outcome.id);
+        const canEdit = Boolean(canClosePregnancy() && outcome.id);
 
         const result = await Swal.fire({
             title: 'Kehamilan Berakhir',
