@@ -36,6 +36,10 @@ describe('patient route access policy', () => {
         ['GET', '/api/patient/checkup-prepay/status'],
         ['POST', '/api/patient/checkup-prepay/checkout'],
         ['GET', '/api/patient/checkup-prepay/orders/DPK-11111111-2222-3333-4444-555555555555'],
+        ['GET', '/api/patient/checkup-prepay/suggestion?date=2026-11-29&category=obstetri'],
+        ['GET', '/api/patient/checkup-prepay/saldo'],
+        ['POST', '/api/patient/checkup-prepay/refund-requests'],
+        ['POST', '/api/patient/checkup-prepay/refund-requests/12/cancel'],
         ['POST', '/api/patient-billing/bill-7/create-payment'],
         ['GET', '/api/announcements/active'],
         ['POST', '/api/announcements/9/like'],
@@ -103,6 +107,11 @@ describe('patient route access policy', () => {
         ['POST', '/api/patient/checkup-prepay/status'],
         ['DELETE', '/api/patient/checkup-prepay/orders/DPK-1'],
         ['GET', '/api/patient/checkup-prepay/admin/ledger'],
+        ['POST', '/api/patient/checkup-prepay/suggestion'],
+        ['POST', '/api/patient/checkup-prepay/saldo'],
+        ['GET', '/api/patient/checkup-prepay/refund-requests'],
+        ['POST', '/api/patient/checkup-prepay/refund-requests/abc/cancel'],
+        ['POST', '/api/patient/checkup-prepay/refund-requests/12/approve'],
         ['POST', '/api/webhooks/duitku/callback'],
         ['GET', '/api/polls/staff/list']
     ])('denies staff operation %s %s', (method, url) => {
@@ -132,5 +141,17 @@ describe('patient route access policy', () => {
         expect(isPatientAuthBootstrapRoute('POST', '/api/patients/login/anything')).toBe(false);
         expect(isPatientAuthBootstrapRoute('GET', '/api/patients/review-login')).toBe(false);
         expect(isPatientAuthBootstrapRoute('POST', '/api/patients/review-login/reset')).toBe(false);
+    });
+
+    test('every patient checkup-prepay route is reachable by a patient token', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const source = fs.readFileSync(path.join(__dirname, '../../routes/patient-checkup-prepay.js'), 'utf8');
+        const routes = [...source.matchAll(/router\.(get|post|put|patch|delete)\('([^']+)'/g)];
+        expect(routes.length).toBeGreaterThan(0);
+        for (const [, method, route] of routes) {
+            const url = '/api/patient/checkup-prepay' + route.replace(':orderRef', 'DPK-11111111-2222-3333-4444-555555555555').replace(':id', '12');
+            expect([method.toUpperCase(), url, isPatientAllowedRoute(method.toUpperCase(), url)]).toEqual([method.toUpperCase(), url, true]);
+        }
     });
 });

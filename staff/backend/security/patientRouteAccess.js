@@ -89,8 +89,8 @@ const PATIENT_ROUTE_RULES = [
     createRule('GET', /^\/api\/patient\/premium\/(?:plans|status|orders\/[^/]+)$/),
     createRule('POST', /^\/api\/patient\/premium\/checkout$/),
 
-    createRule('GET', /^\/api\/patient\/checkup-prepay\/(?:status|orders\/[^/]+)$/),
-    createRule('POST', /^\/api\/patient\/checkup-prepay\/checkout$/),
+    createRule('GET', /^\/api\/patient\/checkup-prepay\/(?:status|suggestion|saldo|orders\/[^/]+)$/),
+    createRule('POST', /^\/api\/patient\/checkup-prepay\/(?:checkout|refund-requests|refund-requests\/\d+\/cancel)$/),
 
     createRule('GET', /^\/api\/patient-billing\/(?:my-bills|[^/]+\/(?:details|payment-details)|[^/]+\/payment-status\/[^/]+)$/),
     createRule('POST', /^\/api\/patient-billing\/[^/]+\/(?:create-payment|create-insurance-payment)$/),
