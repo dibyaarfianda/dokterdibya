@@ -419,7 +419,8 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
                  WHERE r.pregnancy_id = p.id ORDER BY r.created_at DESC, r.mr_id DESC LIMIT 1) AS latest_mr_id,
                 (SELECT r2.mr_id FROM sunday_clinic_records r2
                  WHERE r2.pregnancy_id = p.id
-                   AND EXISTS (SELECT 1 FROM medical_records m WHERE m.mr_id = r2.mr_id AND m.record_type = 'resume_medis')
+                   AND r2.patient_id = p.patient_id
+                   AND EXISTS (SELECT 1 FROM medical_records m WHERE m.mr_id = r2.mr_id AND m.patient_id = r2.patient_id AND m.record_type = 'resume_medis')
                  ORDER BY r2.created_at DESC, r2.id DESC LIMIT 1) AS latest_resume_mr_id
              FROM pregnancies p WHERE p.patient_id = ?`,
             [patientId]
@@ -506,6 +507,20 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
             if (ongoing && withinSameWindow(ongoing.hpht, hpht)) {
                 await linkVisit(conn, ongoing.id, mrId, patientId);
                 return { action: 'start', pregnancy: ongoing, already: true };
+            }
+
+            // No ongoing pregnancy (direct POST, or a stale form after it ended elsewhere):
+            // same guard as resolveFromVisit, so an ended pregnancy is never started again.
+            if (!ongoing) {
+                const match = matchEnded(rows, hpht);
+                if (match && match.kind === 'same') {
+                    await linkVisit(conn, match.pregnancy.id, mrId, patientId);
+                    return { action: 'none', pregnancy: match.pregnancy };
+                }
+                if (match) {
+                    await updateRow(conn, match.pregnancy.id, { needs_review: 1, review_reason: REVIEW_ENDED_MISMATCH }, actor);
+                    return { action: 'none' };
+                }
             }
 
             let warning = null;

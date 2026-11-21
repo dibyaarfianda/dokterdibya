@@ -1572,7 +1572,7 @@ Spec: `docs/superpowers/specs/2026-11-21-pregnancy-episodes-design.md`. Plan: `d
 - **UI:** card "Riwayat Kehamilan Sebelumnya" in the obstetri anamnesa (gyn visits read-only when a clinic pregnancy exists); Kelola Pasien: "Kehamilan sebelumnya" in the visit-list modal (Lihat resume) and the "Riwayat perlu dicek" panel. Resume medis unchanged.
 - **Backfill** `scripts/backfill-pregnancies.js` (dry-run default, `--apply`, idempotent, skips patients already touched by the live code). Order: migration → dry-run → `--apply` → deploy the code.
 - **Stage 2 (not done):** Kelola Pasien HPL, panels, DocBoard and kick counter still use the date rule in `PregnancyEnd.js`. Portal tracker and prepay suggestion already date from `pregnancies` (section 48); their "ended" check still uses the date rule.
-- **Versions:** staff `v503`.
+- **Versions:** staff `v504`.
 
 ### 48. Portal Pregnancy Dating from `pregnancies` (22 November 2026)
 

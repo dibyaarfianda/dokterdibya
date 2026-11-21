@@ -370,6 +370,12 @@ describe('final review fixes (backfill)', () => {
         expect(normalizeMethod('induksi')).toEqual({ method: null, unrecognized: true });
         expect(normalizeMethod('  ')).toEqual({ method: null, unrecognized: false });
         expect(normalizeMethod('disc')).toEqual({ method: null, unrecognized: true });
+        // Final-review minors: "abnormal"/"tidak normal" are not Spt B; instrumental wins over "pervaginam".
+        expect(normalizeMethod('abnormal')).toEqual({ method: null, unrecognized: true });
+        expect(normalizeMethod('tidak normal')).toEqual({ method: null, unrecognized: true });
+        expect(normalizeMethod('lahir normal')).toEqual({ method: 'Spt B (Spontan)', unrecognized: false });
+        expect(normalizeMethod('pervaginam dengan vakum')).toEqual({ method: 'Vakum', unrecognized: false });
+        expect(normalizeMethod('pervaginam, forcep')).toEqual({ method: 'Forceps', unrecognized: false });
 
         const r = plan({ visits: [visit('DRD1', '2026-08-01', '2026-03-01', { riwayat_persalinan: [
             { type: 'DELIVERY', tahun: '2015', metode_persalinan: 'sectio' },
