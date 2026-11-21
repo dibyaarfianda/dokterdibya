@@ -23,6 +23,7 @@ const PatientListService = require('../services/PatientListService');
 const PatientAccountSuspensionService = require('../services/PatientAccountSuspensionService');
 const { limitOf, scopeOf, encodeCursor, decodeCursor, seekAfter, PatientCursorError } = require('../services/PatientListCursor');
 const { PatientMergeService, PatientMergeError } = require('../services/PatientMergeService');
+const { loadEndEvents, pregnancyListFields, endedSqlCondition } = require('../services/PregnancyEnd');
 const { createPregnancyOutcomeService, PregnancyOutcomeError } = require('../services/PregnancyOutcomeService');
 const {
     BulkPatientDeletionService,
@@ -606,7 +607,7 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
         const appointmentHistorySet = new Set();
         const medicalHistorySet = new Set();
         const obstetriMap = {}; // patient_id -> hpht
-        const birthSet = new Set();
+        let endEvents = new Map(); // patient_id -> end events (births + outcomes)
 
         const batchPromises = [];
 
@@ -688,18 +689,15 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
 
         await Promise.all(batchPromises);
 
-        // Batch 5: birth records (only for obstetri patients)
+        // Batch 5: pregnancy end events (births + outcomes, only for obstetri patients)
         const obstetriPatientIds = Object.keys(obstetriMap);
         if (obstetriPatientIds.length > 0) {
-            const bPlaceholders = obstetriPatientIds.map(() => '?').join(',');
             try {
-                const [birthRows] = await db.query(
-                    `SELECT DISTINCT patient_id FROM birth_congratulations WHERE patient_id IN (${bPlaceholders})`,
-                    obstetriPatientIds
-                );
-                birthRows.forEach(r => birthSet.add(r.patient_id));
+                endEvents = await loadEndEvents(db, obstetriPatientIds, logger);
             } catch (err) { _enrichFail('birthRecords', err); }
         }
+        const listToday = new Date();
+        listToday.setHours(0, 0, 0, 0);
 
         const blockedPatientNames = await getActiveBlockedPatientNames();
         const accountSuspensions = await PatientAccountSuspensionService.getActiveSuspensionMap();
@@ -723,24 +721,11 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                 }
             }
 
-            let hpl = null;
-            let days_pregnant = null;
-            let is_obstetri = false;
-            let has_delivered = false;
-
-            const hphtStr = obstetriMap[patient.id];
-            if (hphtStr) {
-                is_obstetri = true;
-                const hpht = new Date(hphtStr);
-                if (!isNaN(hpht.getTime())) {
-                    const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                    hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-                    has_delivered = birthSet.has(patient.id);
-                }
-            }
+            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = pregnancyListFields(
+                obstetriMap[patient.id],
+                endEvents.get(patient.id) || [],
+                listToday
+            );
 
             const hasAppointmentHistory = appointmentHistorySet.has(patient.id) || Boolean(patient.actual_last_visit);
             const hasMedicalHistory = medicalHistorySet.has(patient.id) || Boolean(patient.anamnesa_datetime);
@@ -760,6 +745,7 @@ router.get('/api/patients', verifyStaffToken, async (req, res) => {
                 days_pregnant,
                 is_obstetri,
                 has_delivered,
+                pregnancy_end,
                 is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames),
                 account_suspension: accountSuspensions.get(String(patient.id)) || null
             };
@@ -960,7 +946,7 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
         // Batch-enrich: 3 parallel queries instead of N×3 correlated queries
         const lastVisitTypeMap = {};  // patient_id → mr_category
         const obstetriMap = {};       // patient_id → hpht string
-        const birthSet = new Set();   // patient_id of those who delivered
+        let endEvents = new Map();    // patient_id -> end events (births + outcomes)
 
         if (patientIds.length > 0) {
             const ph = patientIds.map(() => '?').join(',');
@@ -998,9 +984,9 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                     .then(([r]) => r.forEach(row => { obstetriMap[row.patient_id] = row.hpht; }))
                     .catch(error => _enrichFail('obstetriHpl', error)),
 
-                // Batch 3: patients who have delivered
-                db.query(`SELECT DISTINCT patient_id FROM birth_congratulations WHERE patient_id IN (${ph})`, patientIds)
-                    .then(([r]) => r.forEach(row => birthSet.add(row.patient_id)))
+                // Batch 3: pregnancy end events (births + outcomes)
+                loadEndEvents(db, patientIds, logger)
+                    .then(map => { endEvents = map; })
                     .catch(error => _enrichFail('birthRecords', error)),
             ]);
         }
@@ -1013,20 +999,11 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
 
         const mappedRows = uniqueRows.map((patient) => {
             const last_visit_type = lastVisitTypeMap[patient.id] || null;
-            const hpht_str = obstetriMap[patient.id] || null;
-            const is_obstetri = !!hpht_str;
-            const has_delivered = birthSet.has(patient.id);
-
-            let hpl = null;
-            let days_pregnant = null;
-            if (hpht_str) {
-                const hpht = new Date(hpht_str);
-                if (!isNaN(hpht.getTime())) {
-                    const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                    hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-                    days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-                }
-            }
+            const { hpl, days_pregnant, is_obstetri, has_delivered, pregnancy_end } = pregnancyListFields(
+                obstetriMap[patient.id] || null,
+                endEvents.get(patient.id) || [],
+                today
+            );
 
             return {
                 ...patient,
@@ -1037,6 +1014,7 @@ router.get('/api/patients/search/advanced', verifyStaffToken, async (req, res) =
                 days_pregnant,
                 is_obstetri,
                 has_delivered,
+                pregnancy_end,
                 is_access_blocked: isPatientAccessBlocked(patient, blockedPatientNames),
                 account_suspension: accountSuspensions.get(String(patient.id)) || null
             };
@@ -1175,9 +1153,8 @@ router.get('/api/patients/near-due-pregnancies', verifyStaffToken, async (req, r
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
             ) latest ON p.id = latest.patient_id AND latest.rn = 1
-            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id
-            WHERE bc.id IS NULL
-            AND ${visiblePatientCondition('p')}
+            WHERE ${visiblePatientCondition('p')}
+            AND NOT ${endedSqlCondition('p.id', 'latest.hpht')}
             AND DATEDIFF(CURDATE(), latest.hpht) >= 259
             AND DATEDIFF(CURDATE(), latest.hpht) < 280
             ORDER BY days_pregnant DESC
@@ -1270,9 +1247,8 @@ router.get('/api/patients/overdue-pregnancies', verifyStaffToken, async (req, re
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
                 AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
             ) latest ON p.id = latest.patient_id AND latest.rn = 1
-            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id
-            WHERE bc.id IS NULL
-            AND ${visiblePatientCondition('p')}
+            WHERE ${visiblePatientCondition('p')}
+            AND NOT ${endedSqlCondition('p.id', 'latest.hpht')}
             AND DATEDIFF(CURDATE(), latest.hpht) >= 280
             ORDER BY days_pregnant DESC
         `;
