@@ -46,7 +46,7 @@
 - Produces: `startRequest({ id, actor }) -> { id, status: 'processing', processing_by, processing_at }`; staff list rows gain `processing_by`, `processing_at`; patient rows gain `processing_at`.
 
 - [ ] **Step 1: Write the failing tests**
-  - migration contract: file contains `ENUM('pending','processing','done','rejected','cancelled')`, `ADD COLUMN IF NOT EXISTS processing_by VARCHAR(64)`, `ADD COLUMN IF NOT EXISTS processing_at TIMESTAMP NULL`, no INSERT.
+  - migration contract: file contains `ENUM('pending','done','rejected','cancelled','processing')` (appended at the end: existing rows keep their index and MySQL needs no table copy; ruling made during implementation), `ADD COLUMN IF NOT EXISTS processing_by VARCHAR(64)`, `ADD COLUMN IF NOT EXISTS processing_at TIMESTAMP NULL`, no INSERT.
   - `getPendingRefundHold` counts `processing` rows; SQL ends `status IN ('pending','processing') ORDER BY id FOR UPDATE`.
   - `startRequest`: pending → processing with `processing_by` 'Kasir', saldo lock before request lock, activity log masked; second start → 409 with `sudah mulai ditransfer oleh Kasir`; cancelled → 409 `Jangan transfer`; done/rejected → 409 `sudah ditutup`; 404 for unknown id.
   - `cancelRequest` on processing → 409 with the processing message, status unchanged, hold unchanged.
@@ -61,7 +61,7 @@
   Expected: the new tests FAIL (no `startRequest`, no route, no migration).
 
 - [ ] **Step 3: Implement**
-  - Migration: `MODIFY COLUMN status ENUM(...) NOT NULL DEFAULT 'pending'`, then `ADD COLUMN IF NOT EXISTS` for both columns after `status`.
+  - Migration: `MODIFY COLUMN status ENUM('pending','done','rejected','cancelled','processing') NOT NULL DEFAULT 'pending'`, then `ADD COLUMN IF NOT EXISTS` for both columns after `status`.
   - Ledger: `status IN ('pending','processing')`.
   - Service: `closeRequest` takes the allowed from-statuses (cancel: pending only; done/rejected: pending or processing); `startRequest` as specified; REQUEST_COLUMNS add the two columns; staff list open-first SQL.
   - Route + registry override.

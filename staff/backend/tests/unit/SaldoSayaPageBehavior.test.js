@@ -70,6 +70,7 @@ async function loadPage(saldo, postResponses = []) {
     };
     const store = new Map();
     const posts = [];
+    let saldoLoads = 0;
     const queue = postResponses.slice();
     const sandbox = {
         setTimeout,
@@ -84,6 +85,7 @@ async function loadPage(saldo, postResponses = []) {
                 posts.push({ url, body: JSON.parse(init.body) });
                 return queue.length ? queue.shift() : jsonResponse(201, { success: true, data: { id: 1, status: 'pending' } });
             }
+            saldoLoads += 1;
             return jsonResponse(200, saldo);
         },
         document: {
@@ -110,6 +112,7 @@ async function loadPage(saldo, postResponses = []) {
         posts,
         store,
         byId,
+        saldoLoads: () => saldoLoads,
         form: () => findAll(root, node => node.tagName === 'FORM')[0] || null,
         error: () => findAll(root, node => node.hasClass('pm-error'))[0],
         fill(values) {
@@ -267,6 +270,20 @@ describe('Saldo Saya form states (real code)', () => {
         expect(controls(page).every(node => node.disabled)).toBe(true);
         expect(submitButton(page).disabled).toBe(true);
         expect(findAll(page.root, node => node.tagName === 'BUTTON' && node.textContent === 'Batalkan')).toHaveLength(0);
+    });
+
+    test('a cancel refused with 409 (the clinic started the transfer meanwhile) reloads the saldo to show the current state', async () => {
+        const refused = jsonResponse(409, { success: false, message: 'Pengajuan ini sedang ditransfer oleh klinik dan tidak dapat dibatalkan. Hubungi klinik bila ada yang perlu diubah.' });
+        const page = await loadPage(saldoBody({
+            available_idr: 0,
+            requests: [{ id: 7, amount_idr: 100000, bank_name: 'BCA', account_number: '1234567890', account_holder: 'Ani Wijaya', status: 'pending', decision_note: null, created_at: '2026-11-21 08:00:00' }]
+        }), [refused]);
+        expect(page.saldoLoads()).toBe(1);
+        findAll(page.root, node => node.tagName === 'BUTTON' && node.textContent === 'Batalkan')[0].fire('click');
+        await flush();
+        await flush();
+        expect(page.posts).toEqual([{ url: expect.stringContaining('/refund-requests/7/cancel'), body: {} }]);
+        expect(page.saldoLoads()).toBe(2);
     });
 
     test('no history and no requests gives the empty message and no form', async () => {
