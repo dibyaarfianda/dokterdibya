@@ -37,6 +37,7 @@ export default {
                     </button>
                 </div>
                 ${metaHtml}
+                <div id="pregnancy-history-card"></div>
 
                 ${chiefComplaint ? `
                 <div class="alert alert-info mb-3">
@@ -340,6 +341,9 @@ export default {
      * Setup event listeners after render
      */
     afterRender(state) {
+        import('../shared/pregnancy-history-card.js?v=' + encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev'))
+            .then(mod => mod.default.mount(state, { category: 'gyn', readOnly: true }))
+            .catch(error => console.error('[Anamnesa] Pregnancy history card failed:', error));
         const saveBtn = document.getElementById('anamnesa-save');
 
         if (saveBtn) {

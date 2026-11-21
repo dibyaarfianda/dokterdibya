@@ -486,6 +486,9 @@ app.use('/api/patients/review-login', createPatientReviewLoginRouter());
 // Patient authentication routes (must be before patientsRoutes to avoid conflicts)
 app.use('/api/patients', patientsAuthRoutes);
 
+// Pregnancy episodes (staff only; /api/pregnancies is not shadowed by the patients routers)
+app.use('/api/pregnancies', require('./routes/pregnancies'));
+
 // Legacy routes (keep for backward compatibility)
 app.use('/', tindakanRoutes);
 app.use('/', obatRoutes);

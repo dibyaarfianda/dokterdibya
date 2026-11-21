@@ -2302,6 +2302,16 @@ class SundayClinicApp {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
 
+            // Pregnancy episodes: only after a successful save, obstetri visits only.
+            // Failures here never undo or hide the saved anamnesa.
+            if (this.currentCategory === MR_CATEGORIES.OBSTETRI && window.PregnancyHistoryCard) {
+                try {
+                    await window.PregnancyHistoryCard.runAfterSave(stateManager.getState());
+                } catch (pregnancyError) {
+                    console.error('[SundayClinic] Pregnancy resolve failed:', pregnancyError);
+                }
+            }
+
         } catch (error) {
             console.error('Error saving anamnesa:', error);
             this.showError('Gagal menyimpan anamnesa: ' + error.message);

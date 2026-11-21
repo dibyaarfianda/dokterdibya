@@ -42,6 +42,7 @@ export default {
                     </button>
                 </div>
                 ${metaHtml}
+                <div id="pregnancy-history-card"></div>
                 <div class="form-group mb-3 sc-form-limit-md">
                     <label class="font-weight-bold text-primary">
                         <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
@@ -356,6 +357,9 @@ export default {
      * Setup event listeners after render
      */
     afterRender(state) {
+        import('../shared/pregnancy-history-card.js?v=' + encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev'))
+            .then(mod => mod.default.mount(state, { category: 'gyn', readOnly: true }))
+            .catch(error => console.error('[Anamnesa] Pregnancy history card failed:', error));
         const saveBtn = document.getElementById('anamnesa-save');
 
         if (saveBtn) {

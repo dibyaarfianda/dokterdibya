@@ -1167,11 +1167,115 @@
         }).join('');
     }
 
+    // ─── Kehamilan sebelumnya (Kelola Pasien) + panel "Riwayat perlu dicek" ───
+    const EARLIER_OUTCOME_LABELS = { lahir_hidup: 'Lahir hidup', lahir_mati: 'Lahir mati', abortus: 'Abortus', ektopik: 'Ektopik', unknown: 'Tidak diketahui' };
+
+    function renderEarlierPregnanciesHtml(pregnancies) {
+        const list = (Array.isArray(pregnancies) ? pregnancies : []).filter(p => p && p.status !== 'ongoing');
+        if (list.length === 0) return '';
+        const rows = list.map(p => {
+            const yearSource = p.year || (p.ended_on ? String(p.ended_on).slice(0, 4) : '');
+            const outcome = EARLIER_OUTCOME_LABELS[p.outcome] || 'Tidak diketahui';
+            const method = [p.delivery_method, p.delivery_indication].filter(Boolean).join(' - ');
+            const comps = Array.isArray(p.complications) ? p.complications : [];
+            const sourceBadge = p.source === 'external'
+                ? '<span class="badge badge-secondary ml-1">Luar</span>'
+                : '<span class="badge badge-info ml-1">Klinik</span>';
+            const reviewBadge = p.needs_review ? '<span class="badge badge-warning ml-1">Perlu dicek</span>' : '';
+            const resumeMrId = p.latest_resume_mr_id || p.latest_mr_id;
+            const resumeBtn = (p.source !== 'external' && resumeMrId)
+                ? ` <button type="button" class="btn btn-xs btn-outline-primary ml-1" onclick="${onclickCall('showPregnancyResume', [resumeMrId])}"><i class="fas fa-file-medical mr-1"></i>Lihat resume</button>`
+                : '';
+            return `<li class="mb-1"><strong>${escapeHtmlSafe(yearSource || '-')}</strong> - ${escapeHtmlSafe(outcome)}`
+                + (method ? ` (${escapeHtmlSafe(method)})` : '')
+                + (comps.length ? `, komplikasi: ${comps.length}` : '')
+                + `${sourceBadge}${reviewBadge}${resumeBtn}</li>`;
+        }).join('');
+        return `<div class="mb-3"><h6 class="mb-1"><i class="fas fa-baby mr-1"></i>Kehamilan sebelumnya</h6><ul class="pl-3 mb-0 small">${rows}</ul></div>`;
+    }
+    window.renderEarlierPregnanciesHtml = renderEarlierPregnanciesHtml;
+
+    window.loadEarlierPregnancies = async function(patientId) {
+        const box = document.getElementById('patient-earlier-pregnancies');
+        if (!box) return;
+        // Stale-response guard: the modal may show another patient by the time this returns.
+        const owner = String(patientId);
+        if (box.dataset) box.dataset.patientId = owner;
+        const current = () => {
+            const el = document.getElementById('patient-earlier-pregnancies');
+            return el && el.dataset && el.dataset.patientId === owner ? el : null;
+        };
+        try {
+            const token = (window.getAuthToken ? window.getAuthToken() : '');
+            const res = await fetch(`/api/pregnancies/patient/${encodeURIComponent(patientId)}?_=${Date.now()}`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || !body.success) throw new Error('gagal');
+            const target = current();
+            if (target) target.innerHTML = renderEarlierPregnanciesHtml(body.data && body.data.pregnancies);
+        } catch (error) {
+            const target = current();
+            if (target) target.innerHTML = '';
+        }
+    };
+
+    window.showPregnancyResume = async function(mrId) {
+        try {
+            const token = (window.getAuthToken ? window.getAuthToken() : '');
+            const res = await fetch(`/api/medical-records/resume/${encodeURIComponent(mrId)}?_=${Date.now()}`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || !body.success) throw new Error('Gagal memuat resume');
+            const text = body.data && body.data.resume ? String(body.data.resume) : '';
+            const html = text
+                ? `<pre style="white-space:pre-wrap;text-align:left;font-family:inherit">${escapeHtmlSafe(text)}</pre>`
+                : '<p>Belum ada resume</p>';
+            await Swal.fire({ title: 'Resume Medis', html, width: 700, confirmButtonText: 'Tutup' });
+        } catch (error) {
+            await Swal.fire({ icon: 'error', title: 'Gagal', text: error.message || 'Gagal memuat resume' });
+        }
+    };
+
+    function renderPregnancyReviewRows(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+            return '<tr><td colspan="2" class="text-center text-muted">Tidak ada riwayat yang perlu dicek.</td></tr>';
+        }
+        return items.map(item => {
+            const name = item.full_name || item.patient_id;
+            const onclick = onclickCall('showPatientMRList', [item.patient_id, name]);
+            return `<tr><td><a href="#" onclick="${onclick}; return false;">${escapeHtmlSafe(name)}</a></td><td>${escapeHtmlSafe(item.reason || 'Perlu dicek')}</td></tr>`;
+        }).join('');
+    }
+    window.renderPregnancyReviewRows = renderPregnancyReviewRows;
+
+    window.loadPregnancyReviewList = async function() {
+        const tbody = document.getElementById('pregnancy-review-tbody');
+        const count = document.getElementById('pregnancy-review-count');
+        if (!tbody) return;
+        try {
+            const token = (window.getAuthToken ? window.getAuthToken() : '');
+            const res = await fetch(`/api/pregnancies/needs-review?_=${Date.now()}`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Cache-Control': 'no-cache' }
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || !body.success) throw new Error('gagal');
+            const items = body.data || [];
+            if (count) count.textContent = String(items.length);
+            tbody.innerHTML = renderPregnancyReviewRows(items);
+        } catch (error) {
+            if (count) count.textContent = '0';
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">Riwayat tidak dapat dimuat.</td></tr>';
+        }
+    };
     window.loadHplRiskPatients = async function() {
         const nearTbody = document.getElementById('near-hpl-patients-tbody');
         const overdueTbody = document.getElementById('overdue-hpl-patients-tbody');
         const nearCount = document.getElementById('near-hpl-count');
         const overdueCount = document.getElementById('overdue-hpl-count');
+
+        if (typeof window.loadPregnancyReviewList === 'function') window.loadPregnancyReviewList();
 
         if (!nearTbody || !overdueTbody) return;
 
@@ -2100,7 +2204,11 @@ Apakah Anda yakin ingin melanjutkan?`;
                 window.loadHplRiskPatients();
             }
 
-            Swal.fire({ icon: 'success', title: 'Penandaan disimpan', timer: 2000, showConfirmButton: false });
+            if (result.warning) {
+                Swal.fire({ icon: 'info', title: 'Penandaan disimpan', text: result.warning });
+            } else {
+                Swal.fire({ icon: 'success', title: 'Penandaan disimpan', timer: 2000, showConfirmButton: false });
+            }
         } catch (error) {
             console.error('Error marking pregnancy ended:', error);
             Swal.fire({ icon: 'error', title: 'Gagal', text: error.message });
@@ -2731,11 +2839,13 @@ Apakah Anda yakin ingin melanjutkan?`;
                     <i class="fas fa-user mr-1"></i> ID Pasien: <strong>${patientId}</strong>
                     <span class="badge badge-info ml-2">${sortedRecords.length} rekam medis</span>
                 </p>
+                <div id="patient-earlier-pregnancies"></div>
                 ${recordsHtml}
             `;
 
             // Update only the modal body
             $('#patientMRListModal .modal-body').html(modalBodyContent);
+            if (typeof window.loadEarlierPregnancies === 'function') window.loadEarlierPregnancies(patientId);
 
             // Add footer if not exists
             if ($('#patientMRListModal .modal-footer').length === 0) {
