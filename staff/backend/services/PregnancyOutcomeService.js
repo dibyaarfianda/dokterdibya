@@ -6,7 +6,7 @@
  */
 
 const { toDateString, END_TOLERANCE_DAYS } = require('./PregnancyEnd');
-const { loadCurrentPregnancies, datingOf } = require('./CurrentPregnancy');
+const { loadCurrentPregnancies, datingOf, dayNumber } = require('./CurrentPregnancy');
 const { gaWeeksAt, lossTypeForGa } = require('./PregnancyEpisodeRules');
 
 const OUTCOME_TYPES = ['keguguran', 'lahir_mati'];
@@ -29,11 +29,6 @@ function localToday(date) {
 }
 
 /** Strict 'YYYY-MM-DD' only (round-trips through toDateString), else null. */
-function dayNumber(dateStr) {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    return Date.UTC(y, m - 1, d) / 86400000;
-}
-
 function parseEventDate(value) {
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return null;
     return toDateString(value.trim());
@@ -97,6 +92,8 @@ function createPregnancyOutcomeService({ db, now = () => new Date(), episodes } 
         const staffId = actorIdOf(actor);
         let hpht = null;
         const id = await inTransaction(async conn => {
+            // Lock first: a concurrent record (double-click) blocks here, then sees no ongoing row -> 400.
+            await conn.query('SELECT id FROM pregnancies WHERE patient_id = ? FOR UPDATE', [patientId]);
             // The outcome ends the patient's ongoing pregnancy row; read it on the same connection as the write.
             const current = (await loadCurrentPregnancies(conn, [patientId])).get(String(patientId));
             const dating = current && current.ongoing ? datingOf(current.ongoing) : null;

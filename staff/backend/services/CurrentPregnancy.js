@@ -136,4 +136,4 @@ function listFields(current, isObstetri, now = new Date()) {
     return out;
 }
 
-module.exports = { loadCurrentPregnancies, datingOf, listFields, PREGNANCY_END_TYPES };
+module.exports = { loadCurrentPregnancies, datingOf, dayNumber, listFields, PREGNANCY_END_TYPES };

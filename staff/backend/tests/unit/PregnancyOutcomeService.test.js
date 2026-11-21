@@ -12,6 +12,7 @@ function makeDb({ patient = true, hpht = null, hpl = null, insertId = 7, voidAff
         async query(sql, params) {
             calls.push({ sql, params });
             if (sql.includes('INSERT INTO pregnancy_outcomes')) return [{ insertId }];
+            if (sql.includes('WHERE patient_id = ? FOR UPDATE')) return [[]];
             if (sql.includes('WHERE patient_id IN (?)')) {
                 return [hpht || hpl ? [{ id: 31, patient_id: 'P1', sequence: 1, source: 'clinic', status: 'ongoing', outcome: null, hpht, hpl, ended_on: null }] : []];
             }
@@ -128,6 +129,24 @@ describe('PregnancyOutcomeService.record', () => {
         expect(res).toMatchObject({ id: 7, outcome_type: 'keguguran', event_date: '2026-07-10' });
         const ins = db.calls.find(c => c.sql.includes('INSERT INTO pregnancy_outcomes'));
         expect(ins.params).toEqual(['P1', 'keguguran', '2026-07-10', null, 'staff9']);
+    });
+
+    test('locks the patient pregnancies before reading the ongoing row and before any INSERT', async () => {
+        const db = makeDb({ hpht: '2026-05-01' });
+        await makeSvc(db).record('P1', { outcome_type: 'keguguran', event_date: '2026-07-10' }, 's1');
+        const sqls = db.calls.map(c => c.sql);
+        const lock = sqls.findIndex(s => s.includes('FROM pregnancies WHERE patient_id = ? FOR UPDATE'));
+        const read = sqls.findIndex(s => s.includes('WHERE patient_id IN (?)'));
+        const ins = sqls.findIndex(s => s.includes('INSERT INTO pregnancy_outcomes'));
+        expect(lock).toBeGreaterThan(sqls.indexOf('BEGIN'));
+        expect(lock).toBeLessThan(read);
+        expect(read).toBeLessThan(ins);
+    });
+
+    test('a second record after the ongoing row was ended -> 400, nothing written', async () => {
+        const db = makeDb();
+        await expectError(makeSvc(db).record('P1', { outcome_type: 'keguguran', event_date: '2026-07-10' }, 's1'), 400, 'Tidak ada kehamilan berjalan');
+        expect(db.calls.some(c => c.sql.includes('INSERT INTO'))).toBe(false);
     });
 
     test('anamnesa and USG rows are no longer queried', async () => {
