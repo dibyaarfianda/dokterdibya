@@ -177,3 +177,22 @@ describe('toRiwayatPersalinanList', () => {
         expect(out.map(e => e.persalinan)).toEqual([null, 'Aterm']);
     });
 });
+
+describe('computeDiagnosisCounts', () => {
+    const preg = [
+        { status: 'ended', outcome: 'lahir_hidup', term: 'aterm', delivery_method: 'SC (Caesar)' },
+        { status: 'ended', outcome: 'lahir_hidup', term: 'preterm', delivery_method: 'SC (Caesar)' },
+        { status: 'ended', outcome: 'lahir_mati', term: null, delivery_method: 'Spt B (Spontan)' },
+        { status: 'ended', outcome: 'abortus', delivery_method: 'SC (Caesar)' },
+        { status: 'ongoing', outcome: null, delivery_method: 'SC (Caesar)' }
+    ];
+
+    test('aterm/preterm/sc_count count ended deliveries only; unknown term counts as aterm', () => {
+        expect(rules.computeDiagnosisCounts(preg)).toEqual({ aterm: 2, preterm: 1, sc_count: 2 });
+    });
+
+    test('no SC and empty input give zeros', () => {
+        expect(rules.computeDiagnosisCounts([{ status: 'ended', outcome: 'lahir_hidup', term: 'aterm', delivery_method: 'Spt B (Spontan)' }]).sc_count).toBe(0);
+        expect(rules.computeDiagnosisCounts(null)).toEqual({ aterm: 0, preterm: 0, sc_count: 0 });
+    });
+});

@@ -8,6 +8,19 @@
  *   Bekas SC 2x
  */
 
+/**
+ * Pregnancy totals of this patient (set by pregnancy-history-card.js), or null when they are
+ * absent, belong to another patient or have no gravida. Then the per-visit logic applies.
+ */
+function pregnancyTotalsFor(state) {
+    const holder = (typeof window !== 'undefined' && window.__pregnancyHistoryTotals) || null;
+    if (!holder || !holder.totals) return null;
+    const record = (state && state.recordData && state.recordData.record) || {};
+    const patientId = record.patientId || record.patient_id || null;
+    if (!patientId || String(holder.patient_id) !== String(patientId)) return null;
+    return parseInt(holder.totals.gravida) > 0 ? holder : null;
+}
+
 export function generateObstetricDiagnosis(state) {
     const anamnesa = state.recordData?.anamnesa || {};
     const usg = state.recordData?.usg || {};
@@ -19,7 +32,16 @@ export function generateObstetricDiagnosis(state) {
     const rp = anamnesa.riwayat_persalinan;
     let gravida, aterm, preterm, abortusCount, living;
 
-    if (Array.isArray(rp) && rp.length > 0) {
+    const pregnancyTotals = pregnancyTotalsFor(state);
+
+    if (pregnancyTotals) {
+        const t = pregnancyTotals.totals;
+        gravida = parseInt(t.gravida) || 0;
+        preterm = parseInt(t.preterm) || 0;
+        aterm = t.aterm !== undefined ? (parseInt(t.aterm) || 0) : Math.max((parseInt(t.para) || 0) - preterm, 0);
+        abortusCount = parseInt(t.abortus) || 0;
+        living = parseInt(t.anak_hidup) || 0;
+    } else if (Array.isArray(rp) && rp.length > 0) {
         aterm = rp.filter(e => e.type === 'DELIVERY' && e.persalinan === 'Aterm').length;
         preterm = rp.filter(e => e.type === 'DELIVERY' && e.persalinan === 'Preterm').length;
         abortusCount = rp.filter(e => e.type === 'ABORTUS').length;
@@ -65,7 +87,9 @@ export function generateObstetricDiagnosis(state) {
 
     // --- Line 3: Previous C-section marker from obstetric history ---
     let previousScCount = 0;
-    if (Array.isArray(rp) && rp.length > 0) {
+    if (pregnancyTotals) {
+        previousScCount = parseInt(pregnancyTotals.sc_count) || 0;
+    } else if (Array.isArray(rp) && rp.length > 0) {
         previousScCount = rp.filter((entry) => {
             if (!entry || entry.type !== 'DELIVERY') return false;
             const method = String(entry.metode_persalinan || '').toLowerCase();

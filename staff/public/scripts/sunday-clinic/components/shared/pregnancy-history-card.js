@@ -370,6 +370,8 @@ const PregnancyHistoryCard = {
         this._state = state;
         this._opts = o;
         const patientId = this.patientIdOf(state);
+        // Never leave another patient's (or a stale) totals behind for the diagnosis generator.
+        this.clearTotals();
         if (!patientId) { container.innerHTML = this.renderError(); return null; }
         let data;
         try {
@@ -378,6 +380,7 @@ const PregnancyHistoryCard = {
             container.innerHTML = this.renderError();
             return null;
         }
+        this.publishTotals(patientId, data);
         const list = data.pregnancies || [];
         const hasClinic = list.some(p => p.source === 'clinic');
         if (o.category && o.category !== 'obstetri' && !hasClinic) {
@@ -394,6 +397,17 @@ const PregnancyHistoryCard = {
             try { o.onLoaded(data); } catch (e) { console.error('[PregnancyHistoryCard] onLoaded failed:', e); }
         }
         return data;
+    },
+
+    /** Automatic obstetric diagnosis reads these (scoped by patient_id). */
+    publishTotals(patientId, data) {
+        const totals = data && data.totals;
+        if (typeof window === 'undefined' || !totals) return;
+        window.__pregnancyHistoryTotals = { patient_id: patientId, totals, sc_count: totals.sc_count || 0 };
+    },
+
+    clearTotals() {
+        if (typeof window !== 'undefined') window.__pregnancyHistoryTotals = null;
     },
 
     /** Prefill G/P/A inputs only when empty. */

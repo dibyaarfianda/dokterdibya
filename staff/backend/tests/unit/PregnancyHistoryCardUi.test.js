@@ -242,3 +242,13 @@ test('cancelling the riwayat replace keeps the typed G/P/A', () => {
     expect(handler).toContain('const replaced = await this.replaceRPFromPregnancies(');
     expect(handler).toContain('if (replaced) Card.prefillTotals(data.totals, true);');
 });
+
+test('mount publishes totals scoped to the patient and clears them on failure', async () => {
+    const { ctx, Card } = context();
+    ctx.fetch.mockResolvedValueOnce(ok({ pregnancies: [clinicPregnancy], totals: { gravida: 2, sc_count: 1 }, riwayat_persalinan: [] }));
+    await Card.mount(state, { category: 'obstetri' });
+    expect(ctx.window.__pregnancyHistoryTotals).toEqual({ patient_id: 'P000000001', totals: { gravida: 2, sc_count: 1 }, sc_count: 1 });
+    ctx.fetch.mockRejectedValueOnce(new Error('boom'));
+    await Card.mount(state, { category: 'obstetri' });
+    expect(ctx.window.__pregnancyHistoryTotals).toBeNull();
+});
