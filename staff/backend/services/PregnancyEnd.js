@@ -150,13 +150,15 @@ function pregnancyListFields(hphtStr, events, today) {
     const out = { is_obstetri: false, hpl: null, days_pregnant: null, has_delivered: false, pregnancy_end: null };
     if (!hphtStr) return out;
     out.is_obstetri = true;
-    const hphtDay = toDateString(hphtStr);
-    const hpht = hphtDay ? parseDay(hphtDay) : null;
-    if (!hpht) return out;
-    out.hpl = addDays(hphtDay, FULL_TERM_DAYS);
-    const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    out.days_pregnant = Math.round((t.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-    const end = resolvePregnancyEnd(hphtDay, events);
+    // hpl/days_pregnant replicate routes/patients.js (new Date(hphtStr) + Math.floor) exactly.
+    const hpht = new Date(hphtStr);
+    if (isNaN(hpht.getTime())) return out;
+    const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+    out.hpl = `${hplDate.getFullYear()}-${pad(hplDate.getMonth() + 1)}-${pad(hplDate.getDate())}`;
+    const t = new Date(today.getTime());
+    t.setHours(0, 0, 0, 0);
+    out.days_pregnant = Math.floor((t.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
+    const end = resolvePregnancyEnd(hphtStr, events);
     if (end.ended) {
         out.pregnancy_end = { type: end.type, date: end.date };
         out.has_delivered = end.type === 'birth';

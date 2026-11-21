@@ -154,7 +154,10 @@ describe('PregnancyEnd.pregnancyListFields', () => {
         const r = PE.pregnancyListFields('2026-05-01', [{ type: 'birth', date: '2026-06-01' }], today);
         expect(r.is_obstetri).toBe(true);
         expect(r.hpl).toBe('2027-02-05');
-        expect(r.days_pregnant).toBe(40);
+        // Expectation computed the same way routes/patients.js does (TZ-independent).
+        const oldT = new Date(today.getTime());
+        oldT.setHours(0, 0, 0, 0);
+        expect(r.days_pregnant).toBe(Math.floor((oldT.getTime() - new Date('2026-05-01').getTime()) / 86400000));
         expect(r.has_delivered).toBe(true);
         expect(r.pregnancy_end).toEqual({ type: 'birth', date: '2026-06-01' });
     });
