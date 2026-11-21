@@ -6,12 +6,15 @@ const {
     OUTCOME_TYPES
 } = require('../../services/PregnancyOutcomeService');
 
-function makeDb({ patient = true, hpht = null, edd = null, insertId = 7, voidAffected = 1, outcomeRow, pregnancyRow, otherOngoing = false, linked = {} } = {}) {
+function makeDb({ patient = true, hpht = null, hpl = null, insertId = 7, voidAffected = 1, outcomeRow, pregnancyRow, otherOngoing = false, linked = {} } = {}) {
     const calls = [];
     const conn = {
         async query(sql, params) {
             calls.push({ sql, params });
             if (sql.includes('INSERT INTO pregnancy_outcomes')) return [{ insertId }];
+            if (sql.includes('WHERE patient_id IN (?)')) {
+                return [hpht || hpl ? [{ id: 31, patient_id: 'P1', sequence: 1, source: 'clinic', status: 'ongoing', outcome: null, hpht, hpl, ended_on: null }] : []];
+            }
             if (sql.includes('FROM pregnancy_outcomes WHERE id = ?')) {
                 const row = outcomeRow === undefined
                     ? { id: 5, patient_id: 'P1', outcome_type: 'keguguran', event_date: '2026-07-10', pregnancy_id: null, voided_at: null }
@@ -40,8 +43,6 @@ function makeDb({ patient = true, hpht = null, edd = null, insertId = 7, voidAff
         async query(sql, params) {
             calls.push({ sql, params });
             if (sql.includes('FROM patients')) return [patient ? [{ id: 'P1' }] : []];
-            if (sql.includes('sunday_clinic_records')) return [hpht ? [{ hpht }] : []];
-            if (sql.includes("record_type = 'usg'")) return [edd ? [{ record_data: JSON.stringify({ edd }) }] : []];
             throw new Error('unexpected sql: ' + sql);
         }
     };
@@ -102,26 +103,37 @@ describe('PregnancyOutcomeService.record', () => {
         await expectError(makeSvc(makeDb({ patient: false })).record('P1', { outcome_type: 'keguguran', event_date: '2026-07-10' }, 's1'), 404, 'Pasien tidak ditemukan');
     });
 
-    test('no HPHT source -> 400', async () => {
-        await expectError(makeSvc(makeDb()).record('P1', { outcome_type: 'keguguran', event_date: '2026-07-10' }, 's1'), 400, 'Pasien tidak punya data kehamilan (HPHT/HPL)');
+    test('no ongoing pregnancy -> 400 and no INSERT', async () => {
+        const db = makeDb();
+        await expectError(makeSvc(db).record('P1', { outcome_type: 'keguguran', event_date: '2026-07-10' }, 's1'), 400, 'Tidak ada kehamilan berjalan');
+        expect(db.calls.some(c => c.sql.includes('INSERT INTO pregnancy_outcomes'))).toBe(false);
+        expect(db.conn.rollback).toHaveBeenCalled();
     });
 
-    test('event earlier than HPHT -> 400', async () => {
-        await expectError(makeSvc(makeDb({ hpht: '2026-10-01' })).record('P1', { outcome_type: 'keguguran', event_date: '2026-09-01' }, 's1'), 400, 'Tanggal kejadian lebih awal dari HPHT kehamilan ini');
+    test('event 15 days before the ongoing HPHT -> 400, no INSERT', async () => {
+        const db = makeDb({ hpht: '2026-10-16' });
+        await expectError(makeSvc(db).record('P1', { outcome_type: 'keguguran', event_date: '2026-10-01' }, 's1'), 400, 'Tanggal kejadian lebih awal dari HPHT kehamilan ini');
+        expect(db.calls.some(c => c.sql.includes('INSERT INTO pregnancy_outcomes'))).toBe(false);
     });
 
-    test('USG EDD only: derives HPHT and inserts', async () => {
-        const db = makeDb({ edd: '2027-02-05' });
+    test('event exactly 14 days before the ongoing HPHT is accepted', async () => {
+        const db = makeDb({ hpht: '2026-10-16' });
+        const res = await makeSvc(db).record('P1', { outcome_type: 'keguguran', event_date: '2026-10-02' }, 's1');
+        expect(res).toMatchObject({ id: 7, event_date: '2026-10-02' });
+    });
+
+    test('HPL-only ongoing pregnancy derives HPHT (HPL - 280 days)', async () => {
+        const db = makeDb({ hpl: '2027-02-05' });
         const res = await makeSvc(db).record('P1', { outcome_type: 'keguguran', event_date: '2026-07-10', note: ' ' }, 'staff9');
         expect(res).toMatchObject({ id: 7, outcome_type: 'keguguran', event_date: '2026-07-10' });
         const ins = db.calls.find(c => c.sql.includes('INSERT INTO pregnancy_outcomes'));
         expect(ins.params).toEqual(['P1', 'keguguran', '2026-07-10', null, 'staff9']);
     });
 
-    test('anamnesa HPHT wins over USG: event before anamnesa HPHT is rejected', async () => {
-        const db = makeDb({ hpht: '2026-10-01', edd: '2027-02-05' });
-        await expectError(makeSvc(db).record('P1', { outcome_type: 'lahir_mati', event_date: '2026-09-01' }, 's1'), 400, 'Tanggal kejadian lebih awal dari HPHT kehamilan ini');
-        expect(db.calls.some(c => c.sql.includes('INSERT INTO pregnancy_outcomes'))).toBe(false);
+    test('anamnesa and USG rows are no longer queried', async () => {
+        const db = makeDb({ hpht: '2026-05-01' });
+        await makeSvc(db).record('P1', { outcome_type: 'keguguran', event_date: '2026-07-10' }, 's1');
+        expect(db.calls.some(c => c.sql.includes('sunday_clinic_records') || c.sql.includes('medical_records'))).toBe(false);
     });
 
     test('never touches birth_congratulations', async () => {
