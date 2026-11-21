@@ -43,7 +43,7 @@ function parseRecordData(raw) {
 }
 
 async function loadHphtSources(db, patientId) {
-    const sources = [];
+    const result = { anamnesa: null, usg: null };
 
     // Same shape as routes/patients.js obstetri HPHT, for a single patient.
     const [anamnesaRows] = await db.query(
@@ -62,7 +62,7 @@ async function loadHphtSources(db, patientId) {
     );
     if (anamnesaRows && anamnesaRows.length > 0) {
         const hpht = hphtFromReference({ kind: 'hpht', date: anamnesaRows[0].hpht });
-        if (hpht) sources.push(hpht);
+        if (hpht) result.anamnesa = hpht;
     }
 
     // Same shape as routes/patients-auth.js latest USG EDD.
@@ -81,10 +81,10 @@ async function loadHphtSources(db, patientId) {
     if (usgRows && usgRows.length > 0) {
         const data = parseRecordData(usgRows[0].record_data);
         const hpht = data ? hphtFromReference({ kind: 'hpl', date: data.edd }) : null;
-        if (hpht) sources.push(hpht);
+        if (hpht) result.usg = hpht;
     }
 
-    return sources;
+    return result;
 }
 
 function createPregnancyOutcomeService({ db, now = () => new Date() }) {
@@ -113,13 +113,14 @@ function createPregnancyOutcomeService({ db, now = () => new Date() }) {
             throw new PregnancyOutcomeError(404, 'Pasien tidak ditemukan');
         }
 
+        // The staff list uses the anamnesa HPHT, so the outcome must end that one when it exists;
+        // the USG-derived HPHT (EDD - 280) is only the fallback when there is no anamnesa HPHT.
         const sources = await loadHphtSources(db, patientId);
-        if (sources.length === 0) {
+        const hpht = sources.anamnesa || sources.usg;
+        if (!hpht) {
             throw new PregnancyOutcomeError(400, 'Pasien tidak punya data kehamilan (HPHT/HPL)');
         }
-        const accepted = sources.some(
-            hpht => resolvePregnancyEnd(hpht, [{ type: outcome_type, date: eventDate }]).ended
-        );
+        const accepted = resolvePregnancyEnd(hpht, [{ type: outcome_type, date: eventDate }]).ended;
         if (!accepted) {
             throw new PregnancyOutcomeError(400, 'Tanggal kejadian lebih awal dari HPHT kehamilan ini');
         }

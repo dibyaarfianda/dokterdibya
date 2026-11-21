@@ -132,8 +132,8 @@ async function loadEndEvents(db, patientIds, logger) {
     return map;
 }
 
-async function trackerEndState(db, patientId, hpht) {
-    const map = await loadEndEvents(db, [patientId]);
+async function trackerEndState(db, patientId, hpht, logger) {
+    const map = await loadEndEvents(db, [patientId], logger);
     const end = resolvePregnancyEnd(hpht, map.get(patientId) || []);
     return end.ended ? { ended_on: end.date } : null;
 }
@@ -161,6 +161,10 @@ function pregnancyListFields(hphtStr, events, today) {
     const end = resolvePregnancyEnd(hphtStr, events);
     if (end.ended) {
         out.pregnancy_end = { type: end.type, date: end.date };
+        if (end.type !== 'birth') {
+            if (end.id !== undefined) out.pregnancy_end.id = end.id;
+            if (end.note !== undefined) out.pregnancy_end.note = end.note;
+        }
         out.has_delivered = end.type === 'birth';
     }
     return out;

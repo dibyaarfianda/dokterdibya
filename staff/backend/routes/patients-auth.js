@@ -2459,7 +2459,7 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
         const daysExtra = daysPregnant % 7;
 
         // A recorded birth/miscarriage/stillbirth ends the pregnancy: hide the tracker without saying which
-        const ended = await trackerEndState(db, patientId, pregnancyDateString(hphtEstimate));
+        const ended = await trackerEndState(db, patientId, pregnancyDateString(hphtEstimate), logger);
         if (ended) {
             return res.json({
                 success: true,

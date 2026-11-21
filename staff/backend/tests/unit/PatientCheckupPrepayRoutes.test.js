@@ -221,7 +221,7 @@ describe('GET /suggestion', () => {
         const res = await request(buildApp({ service: {}, db, estimates, endState }))
             .get(`${URL}?date=2026-11-29&category=obstetri`).set('x-test-patient', 'P0001');
         expect(res.status).toBe(200);
-        expect(endState).toHaveBeenCalledWith(db, 'P0001', '2026-05-01');
+        expect(endState).toHaveBeenCalledWith(db, 'P0001', '2026-05-01', expect.anything());
         expect(res.body).toMatchObject({ success: true, weeks: null, days: null, source: null, suggested_code: null });
         expect(res.body.packages.map(p => p.code)).toEqual(['hamil_a']);
         expect(JSON.stringify(res.body)).not.toMatch(/ended|keguguran|lahir_mati|outcome/);
@@ -233,7 +233,7 @@ describe('GET /suggestion', () => {
         const endState = jest.fn().mockResolvedValue(null);
         const res = await request(buildApp({ service: {}, db, estimates, endState }))
             .get(`${URL}?date=2026-11-29&category=obstetri`).set('x-test-patient', 'P0001');
-        expect(endState).toHaveBeenCalledWith(db, 'P0001', '2026-06-14');
+        expect(endState).toHaveBeenCalledWith(db, 'P0001', '2026-06-14', expect.anything());
         expect(res.body).toMatchObject({ weeks: 24, suggested_code: 'hamil_a' });
     });
 

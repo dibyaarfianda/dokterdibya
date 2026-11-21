@@ -88,7 +88,7 @@ function createPatientCheckupPrepayRouter({
             let suggestedCode = null;
             if (category === 'obstetri') {
                 const reference = await findPregnancyReference(database(), req.patient.id);
-                const ended = reference ? await endState(database(), req.patient.id, hphtFromReference(reference)) : null;
+                const ended = reference ? await endState(database(), req.patient.id, hphtFromReference(reference), logger) : null;
                 age = reference && !ended ? gestationalWeeksOn(reference, date) : null;
                 if (age) {
                     source = reference.kind;

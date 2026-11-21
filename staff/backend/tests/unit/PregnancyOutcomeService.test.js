@@ -92,12 +92,12 @@ describe('PregnancyOutcomeService.record', () => {
         expect(ins.params).toEqual(['P1', 'keguguran', '2026-07-10', null, 'staff9']);
     });
 
-    test('accepts when only one of two sources is ended by the event', async () => {
-        // anamnesa HPHT 2026-10-01 is later than event; USG gives HPHT 2026-05-01
+    test('anamnesa HPHT wins over USG: event before anamnesa HPHT is rejected even if USG HPHT is ended', async () => {
+        // anamnesa HPHT 2026-10-01 is later than event+14d; USG gives HPHT 2026-05-01 (would be ended)
         const db = makeDb({ hpht: '2026-10-01', edd: '2027-02-05' });
         const svc = createPregnancyOutcomeService({ db, now: NOW });
-        const res = await svc.record('P1', { outcome_type: 'lahir_mati', event_date: '2026-09-01' }, 's1');
-        expect(res.outcome_type).toBe('lahir_mati');
+        await expectError(svc.record('P1', { outcome_type: 'lahir_mati', event_date: '2026-09-01' }, 's1'), 400, 'Tanggal kejadian lebih awal dari HPHT kehamilan ini');
+        expect(db.calls.some(c => c.sql.includes('INSERT INTO pregnancy_outcomes'))).toBe(false);
     });
 
     test('never touches birth_congratulations', async () => {

@@ -163,8 +163,14 @@ describe('PregnancyEnd.pregnancyListFields', () => {
     });
 
     test('keguguran is an end but not delivered', () => {
-        const r = PE.pregnancyListFields('2026-05-01', [{ type: 'keguguran', date: '2026-06-01', id: 1 }], today);
+        const r = PE.pregnancyListFields('2026-05-01', [{ type: 'keguguran', date: '2026-06-01', id: 1, note: 'catatan' }], today);
         expect(r.has_delivered).toBe(false);
-        expect(r.pregnancy_end).toEqual({ type: 'keguguran', date: '2026-06-01' });
+        expect(r.pregnancy_end).toEqual({ type: 'keguguran', date: '2026-06-01', id: 1, note: 'catatan' });
+    });
+
+    test('birth end has no id or note', () => {
+        const r = PE.pregnancyListFields('2026-05-01', [{ type: 'birth', date: '2026-06-01' }], today);
+        expect(r.pregnancy_end).toEqual({ type: 'birth', date: '2026-06-01' });
+        expect(r.pregnancy_end).not.toHaveProperty('id');
     });
 });

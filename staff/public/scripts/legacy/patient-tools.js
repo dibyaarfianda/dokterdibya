@@ -1977,7 +1977,8 @@ Apakah Anda yakin ingin melanjutkan?`;
                     if (hplCell) {
                         hplCell.innerHTML = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
                     }
-                    // Remove the delivery button
+                    // Remove the delivery and pregnancy-end buttons
+                    row.querySelectorAll('.js-delivery-btn, .js-pregnancy-end-btn').forEach(el => el.remove());
                     btnEl.remove();
                 }
             }
