@@ -19,9 +19,13 @@ const { SAME_PREGNANCY_DAYS, NEW_PREGNANCY_AFTER_DAYS, gaWeeksAt } = require('./
 const FULL_TERM_DAYS = 280;
 const TWIN_WINDOW_DAYS = 3;
 const MAX_GA_WEEKS = 45;
+const MIN_GA_WEEKS = 4;
+// A group does not claim events later than 45 weeks after its HPHT.
+const MAX_END_AFTER_HPHT_DAYS = MAX_GA_WEEKS * 7;
 const MIN_YEAR = 1990;
 
 const REASONS = Object.freeze({
+    GA_IMPLAUSIBLE: 'Usia kehamilan saat selesai tidak wajar',
     END_UNKNOWN: 'Akhir kehamilan tidak diketahui',
     ORPHAN_EVENT: 'Kejadian tanpa data kehamilan',
     HISTORY_DIFFERS: 'Riwayat persalinan berbeda antar kunjungan',
@@ -120,10 +124,12 @@ function emptyPregnancy(fingerprint, source) {
     };
 }
 
-function gaCapped(hpht, endedOn) {
-    if (!hpht || !endedOn) return null;
+/** GA in whole weeks, or null when it cannot be computed or is implausible (< 4 or > 45 weeks). */
+function plausibleGa(hpht, endedOn) {
+    if (!hpht || !endedOn) return { weeks: null, implausible: false };
     const weeks = gaWeeksAt(hpht, endedOn);
-    return Math.min(MAX_GA_WEEKS, Math.max(0, weeks === null ? 0 : weeks));
+    if (weeks === null || weeks < MIN_GA_WEEKS || weeks > MAX_GA_WEEKS) return { weeks: null, implausible: true };
+    return { weeks, implausible: false };
 }
 
 function termFrom(persalinan) {
@@ -216,7 +222,12 @@ function planBackfill(patientData, options = {}) {
         } else {
             p.outcome = ev.type === 'lahir_mati' ? 'lahir_mati' : 'abortus';
         }
-        p.ga_weeks_at_end = gaCapped(p.hpht, ev.date);
+        const ga = plausibleGa(p.hpht, ev.date);
+        p.ga_weeks_at_end = ga.weeks;
+        if (ga.implausible) {
+            p.needs_review = true;
+            addReview(p.fingerprint, REASONS.GA_IMPLAUSIBLE);
+        }
     }
 
     function linkEvent(ev, fingerprint) {
@@ -235,7 +246,8 @@ function planBackfill(patientData, options = {}) {
         const lower = addDays(g.hpht, -END_TOLERANCE_DAYS);
         const next = groups[i + 1];
         const upper = next ? addDays(next.hpht, -END_TOLERANCE_DAYS) : null;
-        const ev = events.find(e => !claimed.has(e) && e.date >= lower && (upper === null || e.date < upper));
+        const latest = addDays(g.hpht, MAX_END_AFTER_HPHT_DAYS);
+        const ev = events.find(e => !claimed.has(e) && e.date >= lower && e.date <= latest && (upper === null || e.date < upper));
         if (ev) {
             claimed.add(ev);
             applyEvent(p, ev);
@@ -287,15 +299,22 @@ function planBackfill(patientData, options = {}) {
         const bestSigs = new Set(best.list.map(entrySignature));
         historyDiffers = lists.some(l => l.list.some(e => !bestSigs.has(entrySignature(e))));
         const mergeTargets = pregnancies.filter(p => p.status === 'ended' && outcomeClass(p.outcome));
+        // Clinic pregnancies of unknown end match by the year of HPHT + 280 days.
+        const unknownTargets = pregnancies.filter(p => p.source === 'clinic' && p.status === 'ended' && p.outcome === 'unknown' && p.hpht);
         const merged = new Set();
         best.list.forEach((entry, index) => {
             const year = parseYear(entry.tahun, today);
             const cls = entry.type === 'DELIVERY' ? 'birth' : 'loss';
-            const target = year === null ? null : mergeTargets.find(p =>
+            let target = year === null ? null : mergeTargets.find(p =>
                 !merged.has(p) && outcomeClass(p.outcome) === cls && p.ended_on && Number(p.ended_on.slice(0, 4)) === year);
+            if (!target && year !== null) {
+                target = unknownTargets.find(p =>
+                    !merged.has(p) && Number(addDays(p.hpht, FULL_TERM_DAYS).slice(0, 4)) === year) || null;
+            }
             const method = entry.metode_persalinan ? String(entry.metode_persalinan).trim() || null : null;
             if (target) {
                 merged.add(target);
+                if (target.outcome === 'unknown') target.outcome = entry.type === 'DELIVERY' ? 'lahir_hidup' : 'abortus';
                 if (entry.type === 'DELIVERY') {
                     if (!target.delivery_method) target.delivery_method = method;
                     if (!target.term) target.term = termFrom(entry.persalinan);

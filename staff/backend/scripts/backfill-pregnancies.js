@@ -7,12 +7,18 @@
  * Prints ids, counts and reasons only (no names or clinical text).
  * Idempotent: a planned pregnancy whose (patient_id, fingerprint) exists is skipped, and
  * links are written only where the target pregnancy_id IS NULL.
+ * A patient that already has a pregnancies row without a fingerprint (written by the live
+ * app code) is skipped entirely and counted as skipped_live; no merging with live rows.
+ *
+ * Required order: migration (20261123_pregnancies.sql) -> dry run -> --apply -> deploy the
+ * live pregnancy code. Running --apply after the live code is in use skips touched patients.
  */
 
 const { planBackfill } = require('../services/PregnancyBackfill');
 
 const BATCH_SIZE = 200;
 const MAX_SAMPLES = 10;
+const LIVE_REASON = 'Sudah ada data kehamilan dari aplikasi';
 
 function parseArguments(args) {
     const unsupported = args.filter(argument => argument !== '--apply');
@@ -95,7 +101,10 @@ async function existingFingerprints(conn, patientId, { lock }) {
         `SELECT id, fingerprint FROM pregnancies WHERE patient_id = ?${lock ? ' FOR UPDATE' : ''}`,
         [patientId]
     );
-    return new Map(rows.filter(r => r.fingerprint).map(r => [r.fingerprint, r.id]));
+    return {
+        map: new Map(rows.filter(r => r.fingerprint).map(r => [r.fingerprint, r.id])),
+        hasLive: rows.some(r => !r.fingerprint)
+    };
 }
 
 function toJson(value) {
@@ -148,6 +157,7 @@ async function run({ db, apply = false, today = new Date(), batchSize = BATCH_SI
         ongoing: 0,
         needs_review: 0,
         skipped_existing: 0,
+        skipped_live: 0,
         failed: 0,
         samples: []
     };
@@ -165,7 +175,16 @@ async function run({ db, apply = false, today = new Date(), batchSize = BATCH_SI
                     conn = await db.getConnection();
                     await conn.beginTransaction();
                 }
-                const existing = await existingFingerprints(conn || db, patientId, { lock: apply });
+                const found = await existingFingerprints(conn || db, patientId, { lock: apply });
+                if (found.hasLive) {
+                    if (conn) await conn.rollback();
+                    summary.skipped_live += 1;
+                    if (summary.samples.filter(s => s.reason === LIVE_REASON).length < MAX_SAMPLES) {
+                        summary.samples.push({ patient_id: patientId, reason: LIVE_REASON });
+                    }
+                    continue;
+                }
+                const existing = found.map;
                 const fresh = plan.pregnancies.filter(p => !existing.has(p.fingerprint));
                 if (apply) {
                     await writePlan(conn, patientId, plan, existing);
@@ -179,7 +198,7 @@ async function run({ db, apply = false, today = new Date(), batchSize = BATCH_SI
                 summary.needs_review += fresh.filter(p => p.needs_review).length;
                 const freshFingerprints = new Set(fresh.map(p => p.fingerprint));
                 for (const review of plan.reviews) {
-                    if (freshFingerprints.has(review.fingerprint) && summary.samples.length < MAX_SAMPLES) {
+                    if (freshFingerprints.has(review.fingerprint) && summary.samples.filter(s => s.reason !== LIVE_REASON).length < MAX_SAMPLES) {
                         summary.samples.push({ patient_id: patientId, reason: review.reason });
                     }
                 }

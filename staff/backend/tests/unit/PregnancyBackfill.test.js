@@ -246,6 +246,75 @@ describe('external history', () => {
     });
 });
 
+describe('unknown-end merge and implausible GA', () => {
+    test('an unknown-end clinic pregnancy merges with an external entry of the year of HPHT + 280 days', () => {
+        const r = plan({
+            visits: [
+                visit('DRD1', '2023-05-01', '2023-01-10'),
+                visit('DRD2', '2026-08-01', '2026-03-01', {
+                    riwayat_persalinan: [{ type: 'DELIVERY', tahun: '2023', persalinan: 'Aterm', metode_persalinan: 'SC (Caesar)', berat_lahir: '3100', jenis_kelamin: 'P' }]
+                })
+            ]
+        });
+        expect(r.pregnancies.map(p => p.fingerprint)).toEqual(['c:DRD1', 'c:DRD2']);
+        expect(byFp(r, 'c:DRD1')).toMatchObject({
+            outcome: 'lahir_hidup', delivery_method: 'SC (Caesar)', term: 'aterm', needs_review: true, status: 'ended', source: 'clinic',
+            babies: [{ weight_g: 3100, sex: 'P', alive: true }]
+        });
+        expect(r.reviews).toContainEqual({ fingerprint: 'c:DRD1', reason: REASONS.END_UNKNOWN });
+    });
+
+    test('an unknown-end pregnancy is not merged with an entry of another year', () => {
+        const r = plan({
+            visits: [
+                visit('DRD1', '2023-05-01', '2023-01-10'),
+                visit('DRD2', '2026-08-01', '2026-03-01', { riwayat_persalinan: [{ type: 'DELIVERY', tahun: '2021', metode_persalinan: 'Vakum' }] })
+            ]
+        });
+        expect(r.pregnancies.map(p => p.fingerprint)).toEqual(['e:0:2021:DELIVERY', 'c:DRD1', 'c:DRD2']);
+        expect(byFp(r, 'c:DRD1').outcome).toBe('unknown');
+    });
+
+    test('a group does not claim an event more than 315 days after its HPHT', () => {
+        const r = plan({
+            visits: [visit('DRD1', '2023-05-01', '2023-01-01')],
+            births: [{ id: 5, birth_date: '2024-02-10', created_at: '2024-02-10 10:00:00' }] // 405 days
+        });
+        expect(byFp(r, 'c:DRD1')).toMatchObject({ outcome: 'unknown' });
+        expect(byFp(r, 'b:5')).toMatchObject({ outcome: 'lahir_hidup', ga_weeks_at_end: null });
+        expect(r.birthLinks).toEqual([{ id: 5, fingerprint: 'b:5' }]);
+    });
+
+    test('GA under 4 weeks or over 45 weeks is stored as NULL with a review; no capping', () => {
+        const early = plan({
+            visits: [visit('DRD1', '2024-02-01', '2024-01-01')],
+            outcomes: [{ id: 1, outcome_type: 'keguguran', event_date: '2024-01-10' }]
+        });
+        expect(byFp(early, 'c:DRD1')).toMatchObject({ outcome: 'abortus', ga_weeks_at_end: null, needs_review: true });
+        expect(early.reviews).toContainEqual({ fingerprint: 'c:DRD1', reason: REASONS.GA_IMPLAUSIBLE });
+
+        const late = plan({
+            visits: [visit('DRD1', '2024-02-01', '2024-01-01')],
+            births: [{ id: 2, birth_date: '2024-11-15', created_at: '2024-11-15 10:00:00' }] // 319 days
+        });
+        expect(byFp(late, 'c:DRD1').outcome).toBe('unknown');
+
+        const before = plan({
+            visits: [visit('DRD1', '2024-02-01', '2024-01-10')],
+            births: [{ id: 3, birth_date: '2024-01-05', created_at: '2024-01-05 10:00:00' }] // 5 days before HPHT
+        });
+        expect(byFp(before, 'c:DRD1')).toMatchObject({ ga_weeks_at_end: null, needs_review: true });
+        expect(before.reviews).toContainEqual({ fingerprint: 'c:DRD1', reason: REASONS.GA_IMPLAUSIBLE });
+    });
+
+    test('GA of exactly 4 and 45 weeks is kept', () => {
+        const a = plan({ visits: [visit('DRD1', '2024-02-01', '2024-01-01')], outcomes: [{ id: 1, outcome_type: 'keguguran', event_date: '2024-01-29' }] });
+        expect(byFp(a, 'c:DRD1')).toMatchObject({ ga_weeks_at_end: 4, needs_review: false });
+        const b = plan({ visits: [visit('DRD1', '2024-02-01', '2024-01-01')], births: [{ id: 2, birth_date: '2024-11-11', created_at: '2024-11-11 10:00:00' }] });
+        expect(byFp(b, 'c:DRD1')).toMatchObject({ outcome: 'lahir_hidup', ga_weeks_at_end: 45, needs_review: false });
+    });
+});
+
 describe('sequence and idempotent output', () => {
     test('every pregnancy has a non-null unique fingerprint and sequence 1..n', () => {
         const r = plan({

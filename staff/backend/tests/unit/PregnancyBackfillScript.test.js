@@ -86,4 +86,15 @@ describe('backfill-pregnancies script', () => {
         expect(summary.failed).toBe(1);
         expect(errors).toEqual(['[backfill-pregnancies] gagal untuk pasien P1: ER_FAKE']);
     });
+    test('a patient with a live-written pregnancy (NULL fingerprint) is skipped with no inserts', async () => {
+        const { db, state } = makeDb();
+        state.pregnancies.push({ id: 99, fingerprint: null });
+        state.nextId = 100;
+        const summary = await run({ db, apply: true, today: TODAY, logger: silent });
+        expect(summary).toMatchObject({ patients: 1, pregnancies: 0, skipped_live: 1, failed: 0 });
+        expect(summary.samples).toEqual([{ patient_id: 'P1', reason: 'Sudah ada data kehamilan dari aplikasi' }]);
+        expect(state.writes).toEqual([]);
+        expect(state.pregnancies).toHaveLength(1);
+        expect(state.rollbacks).toBe(1);
+    });
 });
