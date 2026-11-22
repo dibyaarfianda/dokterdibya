@@ -91,9 +91,24 @@ describe('PatientPregnancyReportRules', () => {
             expect(cols.term).toBe('aterm');
         });
 
-        test('ga_weeks_at_end is capped at 127 (signed TINYINT)', () => {
-            const { cols } = normalizePatientReport(birth(), { ...ctx, hpht: '2023-10-01' });
-            expect(cols.ga_weeks_at_end).toBe(127);
+        test('a date far after HPHT is rejected (stale row years past HPL)', () => {
+            expect400(birth(), { ...ctx, hpht: '2023-10-01' });
+            expect400({ answer: 'keguguran', ended_on: '2026-10-05' }, { ...ctx, hpht: '2023-10-01' });
+        });
+
+        test('birth GA window is 20–45 weeks inclusive', () => {
+            // HPHT 2026-01-01: 2026-05-20 = 19+6, 2026-05-21 = 20+0, 2026-11-17 = 45+5, 2026-11-19 = 46+0
+            expect400(birth({ ended_on: '2026-05-20' }));
+            expect(normalizePatientReport(birth({ ended_on: '2026-05-21' }), ctx).cols.ga_weeks_at_end).toBe(20);
+            expect(normalizePatientReport(birth({ ended_on: '2026-11-17' }), ctx).cols.ga_weeks_at_end).toBe(45);
+            expect400(birth({ ended_on: '2026-11-19' }));
+        });
+
+        test('losses: no lower bound, upper bound 45 weeks', () => {
+            expect(normalizePatientReport({ answer: 'keguguran', ended_on: '2026-01-20' }, ctx).cols.outcome).toBe('abortus');
+            expect(normalizePatientReport({ answer: 'ektopik', ended_on: '2026-11-17' }, ctx).cols.ga_weeks_at_end).toBe(45);
+            expect400({ answer: 'ektopik', ended_on: '2026-11-19' });
+            expect400({ answer: 'keguguran', ended_on: '2026-11-19' });
         });
 
         test('sc twins', () => {
@@ -147,8 +162,9 @@ describe('PatientPregnancyReportRules', () => {
         });
 
         test('ended_on equal to hpht and to today is accepted', () => {
-            expect(() => normalizePatientReport({ answer: 'ektopik', ended_on: HPHT }, ctx)).not.toThrow();
-            expect(() => normalizePatientReport({ answer: 'ektopik', ended_on: TODAY }, ctx)).not.toThrow();
+            const recent = { ...ctx, hpht: '2026-02-01' };
+            expect(() => normalizePatientReport({ answer: 'ektopik', ended_on: '2026-02-01' }, recent)).not.toThrow();
+            expect(() => normalizePatientReport({ answer: 'ektopik', ended_on: TODAY }, recent)).not.toThrow();
         });
     });
 });

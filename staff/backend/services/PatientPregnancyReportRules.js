@@ -12,6 +12,8 @@ const { gaWeeksAt, lossTypeForGa } = require('./PregnancyEpisodeRules');
 const REPORT_ANSWERS = Object.freeze(['lahir_sehat', 'keguguran', 'ektopik', 'masih_hamil']);
 const SNOOZE_DAYS = 7;
 const MAX_PLACE_LENGTH = 120;
+const MIN_BIRTH_GA_WEEKS = 20;
+const MAX_REPORT_GA_WEEKS = 45;
 const MIN_WEIGHT_G = 500;
 const MAX_WEIGHT_G = 6000;
 const MAX_BABIES = 3;
@@ -112,6 +114,14 @@ function normalizePatientReport(body, { hpht, today, patientId } = {}) {
     }
 
     const ga = gaWeeksAt(hpht, endedOn);
+    // Plausibility (user decision 22 Nov 2026): a birth must fall at 20–45 weeks and no ending
+    // after 45 weeks; anything else is almost certainly a wrong date or another pregnancy.
+    if (ga !== null && ga > MAX_REPORT_GA_WEEKS) {
+        throw fail('Tanggal tidak sesuai dengan usia kehamilan ini. Periksa kembali tanggalnya.');
+    }
+    if (answer === 'lahir_sehat' && ga !== null && ga < MIN_BIRTH_GA_WEEKS) {
+        throw fail('Tanggal lahir tidak sesuai dengan usia kehamilan ini. Periksa kembali tanggalnya.');
+    }
     const cols = {
         status: 'ended',
         ended_on: endedOn,
