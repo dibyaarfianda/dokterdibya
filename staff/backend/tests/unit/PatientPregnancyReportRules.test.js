@@ -129,6 +129,9 @@ describe('PatientPregnancyReportRules', () => {
             expect400(birth({ babies: [{ weight_g: 6001 }] }));
             expect400(birth({ babies: [{ weight_g: 3100.5 }] }));
             expect400(birth({ delivery: 'vakum' }));
+            for (const d of ['constructor', 'toString', 'valueOf', '__proto__', 'hasOwnProperty', 5, null, {}]) {
+                expect400(birth({ delivery: d }));
+            }
             expect400(birth({ ended_on: '2025-12-31' }));
             expect400(birth({ ended_on: '2026-11-23' }));
             expect400(birth({ ended_on: undefined }));

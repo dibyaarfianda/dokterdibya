@@ -125,7 +125,9 @@ function normalizePatientReport(body, { hpht, today, patientId } = {}) {
 
     if (answer === 'lahir_sehat') {
         if (!place) throw fail('Tempat bersalin wajib diisi.');
-        const method = DELIVERY_LABELS[b.delivery];
+        const method = typeof b.delivery === 'string' && Object.prototype.hasOwnProperty.call(DELIVERY_LABELS, b.delivery)
+            ? DELIVERY_LABELS[b.delivery]
+            : null;
         if (!method) throw fail('Cara persalinan tidak valid.');
         const babies = normalizeBabies(b.babies);
         return {
