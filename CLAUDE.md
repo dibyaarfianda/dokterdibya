@@ -1581,7 +1581,7 @@ Spec: `docs/superpowers/specs/2026-11-21-pregnancy-episodes-design.md`. Plan: `d
   - **Diagnosis** (obstetri anamnesa) uses `window.__pregnancyHistoryTotals` (G/P/A, aterm, preterm, previous SC from the pregnancy totals via `computeDiagnosisCounts`); the Private Clinic save waits for the resolve step before generating it.
   - **Patient merge** moves the `pregnancies` rows explicitly, re-numbers them (undated last), keeps one ongoing row (the other is closed and flagged 'Digabung dari pasien lain') and clears a colliding fingerprint with the flag 'Kemungkinan duplikat setelah gabung pasien'. **Patient deletion** removes the seven pregnancy/session tables.
   - **Deploy order:** run `20261124_session_pregnancy_id.sql` BEFORE the ff-merge (the session link code selects the column); then the staff asset staging and verifier as usual.
-- **Versions:** staff `v505`.
+- **Versions:** staff `v506`.
 
 ### 48. Portal Pregnancy Dating from `pregnancies` (22 November 2026)
 
