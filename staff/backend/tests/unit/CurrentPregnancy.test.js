@@ -189,6 +189,15 @@ describe('listFields', () => {
         expect(listFields(cur, true, new Date(2026, 10, 22, 12)).days_pregnant).toBe(128);
     });
 
+    test('ongoing dated row without an obstetri anamnesa HPHT still counts as obstetri', () => {
+        const cur = { ongoing: row({ id: 1, hpl: '2027-04-23' }), lastEnded: null };
+        const f = listFields(cur, false, new Date(2026, 10, 22, 12));
+        expect(f.is_obstetri).toBe(true);
+        expect(f.hpl).toBe('2027-04-23');
+        // an ongoing row with no dating keeps the passed-through flag
+        expect(listFields({ ongoing: row({ id: 2 }), lastEnded: null }, false, new Date()).is_obstetri).toBe(false);
+    });
+
     test('outcome -> pregnancy_end type mapping', () => {
         expect(PREGNANCY_END_TYPES).toEqual({
             lahir_hidup: 'birth', lahir_mati: 'lahir_mati', abortus: 'keguguran', ektopik: 'keguguran', unknown: 'selesai'

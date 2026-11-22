@@ -107,6 +107,34 @@ describe('bulk patient deletion feature', () => {
         );
     });
 
+    test('the shared deletion worker keeps the append-only medical_record_revisions history', async () => {
+        const connection = {
+            query: jest.fn(async sql => {
+                if (sql.includes('SELECT p.id, p.full_name')) {
+                    return [[{ id: 'P1', full_name: 'Patient One', email: 'one@example.test', user_id: 'P1' }]];
+                }
+                if (sql.includes('FROM information_schema.COLUMNS')) {
+                    return [[{ table_name: 'medical_record_revisions' }, { table_name: 'patient_activity_log' }]];
+                }
+                if (sql.includes('FOR UPDATE')) return [[]];
+                if (sql.includes('medical_record_revisions')) {
+                    const error = new Error('Medical revisions are immutable');
+                    error.code = 'ER_SIGNAL_EXCEPTION';
+                    throw error;
+                }
+                return [{ affectedRows: sql.includes('DELETE FROM patients') ? 1 : 0 }];
+            })
+        };
+
+        const result = await deletePatientWithRelationsOnConnection(connection, 'P1');
+
+        expect(result.patient.id).toBe('P1');
+        const sqls = connection.query.mock.calls.map(([sql]) => sql);
+        expect(sqls.some(sql => sql.includes('medical_record_revisions'))).toBe(false);
+        expect(sqls).toContain('DELETE FROM `patient_activity_log` WHERE patient_id = ?');
+        expect(sqls).toContain('DELETE FROM patients WHERE id = ?');
+    });
+
     test('the shared deletion worker removes pregnancy data child-first before sunday_clinic_records', async () => {
         const connection = {
             query: jest.fn(async sql => {
