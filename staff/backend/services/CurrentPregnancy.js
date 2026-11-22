@@ -142,6 +142,8 @@ function listFields(current, isObstetri, now = new Date()) {
 
     const dating = datingOf(current.ongoing);
     if (dating) {
+        // An ongoing pregnancy row is itself obstetric, even when no obstetri anamnesa has an HPHT.
+        out.is_obstetri = true;
         out.hpl = dating.hpl;
         const t = trackerDates(dating.hpl, now);
         out.days_pregnant = t ? t.daysPregnant : null;

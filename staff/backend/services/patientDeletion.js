@@ -361,6 +361,11 @@ async function deleteOptionalChild(connection, query, params, deletedData, key) 
     }
 }
 
+// Append-only history kept on purpose when a patient is deleted (a database trigger refuses
+// DELETE on it; see migrations/20260924_medical_record_versions.sql: "history must survive the
+// separately authorized full-visit deletion path").
+const RETAINED_HISTORY_TABLES = new Set(['medical_record_revisions']);
+
 async function deleteRemainingDirectPatientRows(connection, patientId, deletedData) {
     const [tables] = await connection.query(
         `SELECT TABLE_NAME AS table_name
@@ -376,6 +381,7 @@ async function deleteRemainingDirectPatientRows(connection, patientId, deletedDa
         if (!/^[A-Za-z0-9_]+$/.test(tableName)) {
             throw new Error(`Unsafe patient relation table name: ${tableName}`);
         }
+        if (RETAINED_HISTORY_TABLES.has(tableName)) continue;
         const [result] = await connection.query(
             `DELETE FROM \`${tableName}\` WHERE patient_id = ?`,
             [patientId]

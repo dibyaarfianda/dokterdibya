@@ -2289,6 +2289,12 @@ class SundayClinicApp {
             // Show success message
             this.showSuccess('Anamnesa berhasil disimpan!');
 
+            // The anamnesa is saved: restore the button now, so it does not keep saying
+            // "Menyimpan..." while the "Lengkapi kehamilan sebelumnya" dialog waits for staff.
+            // _savingAnamnesa stays set until the finally block, so a second click is still ignored.
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+
             // Update live queue status (fire-and-forget)
             this.updateQueueStatusSafe('anamnesa').catch(() => {});
 
