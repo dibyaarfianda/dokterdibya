@@ -1581,7 +1581,7 @@ Spec: `docs/superpowers/specs/2026-11-21-pregnancy-episodes-design.md`. Plan: `d
   - **Diagnosis** (obstetri anamnesa) uses `window.__pregnancyHistoryTotals` (G/P/A, aterm, preterm, previous SC from the pregnancy totals via `computeDiagnosisCounts`); the Private Clinic save waits for the resolve step before generating it.
   - **Patient merge** moves the `pregnancies` rows explicitly, re-numbers them (undated last), keeps one ongoing row (the other is closed and flagged 'Digabung dari pasien lain') and clears a colliding fingerprint with the flag 'Kemungkinan duplikat setelah gabung pasien'. **Patient deletion** removes the seven pregnancy/session tables.
   - **Deploy order:** run `20261124_session_pregnancy_id.sql` BEFORE the ff-merge (the session link code selects the column); then the staff asset staging and verifier as usual.
-- **Versions:** staff `v506`.
+- **Versions:** staff `v507`.
 
 ### 48. Portal Pregnancy Dating from `pregnancies` (22 November 2026)
 
@@ -1592,3 +1592,15 @@ Spec: `docs/superpowers/specs/2026-11-21-pregnancy-episodes-design.md`. Plan: `d
 - **Copy:** tracker source label is "Catatan dokter" / "HPL dari catatan dokter" (PR #48).
 - **Test patient:** "Test Pasien" `P2026669` (review account, login `/masuk-akun-uji.html`, password only in root-only `/root/akun-test-pasien.txt` on the VPS), visit DRD1650 G1 P0000 18+2 T/H. To view the portal without typing the password, serve `public/` locally with a read-only proxy that adds a token fetched on the VPS.
 - **Versions:** patient `20261122label1`.
+
+### 49. Laporan Akhir Kehamilan dari Pasien (22 November 2026)
+
+Spec: `docs/superpowers/specs/2026-11-22-patient-pregnancy-report-design.md`. Plan: `docs/superpowers/plans/2026-11-22-patient-pregnancy-report.md`.
+
+- **Who is asked:** a patient whose newest ongoing `pregnancies` row is past its HPL (`datingOf().hpl < today`, WIB) and not snoozed (`report_snoozed_until` null or `< today`). Shown on `public/patient-menu.html` (skipped while the birth-data modal is pending) and `public/album-usg.html` by `public/scripts/pregnancy-report-prompt.js`.
+- **Answers:** Lahir sehat (tempat, tanggal, Normal/SC, 1–3 bayi + berat 500–6000 g), Keguguran (GA < 20 wk → `abortus`, else `lahir_mati`), Hamil di luar kandungan (`ektopik`), Masih hamil (snooze 7 days). Summary + "Ya, benar" before sending. No birth card is created.
+- **Closing (user decision, replaces the stage-2 "patient never closes" rule for this flow only):** the answer closes the row at once (`status='ended'`, `ended_by_patient=1`, `delivery_place`, `needs_review=1`, `review_reason='Dilaporkan pasien'`, `ga_weeks_at_end` capped at 127). Old `birth-self-report` still only links and flags.
+- **Endpoints:** `GET /api/patient/pregnancy-report/status`, `POST /api/patient/pregnancy-report` (`routes/patient-pregnancy-report.js`, whitelisted in `security/patientRouteAccess.js`); service `services/PatientPregnancyReportService.js`, rules `services/PatientPregnancyReportRules.js`. Patient responses never name the outcome.
+- **Staff:** badge "Dilaporkan pasien" + place on the history card and Kelola Pasien; dokter/bidan "Buka kembali" (`POST /api/pregnancies/patient/:patientId/:pregnancyId/reopen`, newest patient-reported row only, refused if another pregnancy is ongoing) resets the end columns and snoozes the question 7 days. "Sudah Lahir" on a patient whose newest row was closed by her report returns 409 "Kehamilan sudah dilaporkan pasien. Muat ulang halaman."
+- **Migration:** `20261125_pregnancy_patient_report.sql` (3 columns) before the ff-merge.
+- **Versions:** patient `20261122lapor1`, staff `v507`.
