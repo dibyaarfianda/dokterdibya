@@ -58,6 +58,7 @@ const PRECACHE_FILES = [
   '/scripts/patient-native-app-guard.js',
   '/scripts/booking-break-display.js',
   '/scripts/patient-queue-view.js',
+  '/scripts/pregnancy-report-prompt.js',
   '/styles/patient-queue-view.css',
   '/scripts/clinic-booking-policy.js',
   '/scripts/patient-session.js',

@@ -636,6 +636,7 @@
         })();
     </script>
 
+    <script src="/scripts/pregnancy-report-prompt.js?v=20261122label1"></script>
     <script type="module">
         import { getToken, checkAuth, apiRequest, showToast, formatDate, formatDateLocal, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
 
@@ -663,6 +664,7 @@
 
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
+            window.PregnancyReportPrompt?.check();
         });
 
         // Load USG Images
