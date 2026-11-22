@@ -10,6 +10,7 @@
  * POST   /api/pregnancies/patient/:patientId/external     add pregnancy history from outside the clinic (anamnesa.edit)
  * PUT    /api/pregnancies/:pregnancyId                    { patient_id, ...fields } edit history (anamnesa.edit)
  * DELETE /api/pregnancies/:pregnancyId?patient_id=        remove an external entry (anamnesa.edit)
+ * POST   /api/pregnancies/patient/:patientId/:pregnancyId/reopen   undo a patient-reported ending (dokter/bidan only)
  *
  * Closing a pregnancy (start with previous_end, or any end field on PUT / external) is for dokter and
  * bidan only: the routes call service.assertCanClose(req.user) before touching data.
@@ -19,6 +20,7 @@ const express = require('express');
 const defaultLogger = require('../utils/logger');
 const { verifyStaffToken: defaultVerifyStaffToken } = require('../middleware/auth');
 const { PregnancyEpisodeError } = require('../services/PregnancyEpisodeService');
+const { PatientReportError } = require('../services/PatientPregnancyReportRules');
 const { computeObstetricTotals, computeDiagnosisCounts, toRiwayatPersalinanList } = require('../services/PregnancyEpisodeRules');
 
 const PATIENT_ID = /^[A-Za-z0-9_-]{1,50}$/;
@@ -41,6 +43,7 @@ function hasEndFields(body) {
 
 function createPregnanciesRouter({
     service,
+    reportService,
     verifyStaffToken = defaultVerifyStaffToken,
     logger = defaultLogger
 } = {}) {
@@ -55,8 +58,18 @@ function createPregnanciesRouter({
         return defaultService;
     };
 
+    let defaultReportService = null;
+    const reports = () => {
+        if (reportService) return reportService;
+        if (!defaultReportService) {
+            const { createPatientPregnancyReportService } = require('../services/PatientPregnancyReportService');
+            defaultReportService = createPatientPregnancyReportService({ db: require('../db') });
+        }
+        return defaultReportService;
+    };
+
     function fail(res, error) {
-        if (error instanceof PregnancyEpisodeError) {
+        if (error instanceof PregnancyEpisodeError || error instanceof PatientReportError) {
             return res.status(error.status).json({ success: false, message: error.message });
         }
         logger.error('[Pregnancies] Unexpected error', { message: error && error.message });
@@ -137,6 +150,18 @@ function createPregnanciesRouter({
             const body = { success: true, data };
             if (warning) body.warning = warning;
             res.status(201).json(body);
+        } catch (error) {
+            fail(res, error);
+        }
+    });
+
+    router.post('/patient/:patientId/:pregnancyId/reopen', verifyStaffToken, noStore, async (req, res) => {
+        try {
+            const patientId = patientIdOf(req.params.patientId);
+            if (!patientId) return bad(res, 'ID pasien tidak valid');
+            if (!NUMERIC_ID.test(req.params.pregnancyId)) return bad(res, 'ID kehamilan tidak valid');
+            const data = await reports().reopen(patientId, Number(req.params.pregnancyId), req.user);
+            res.json({ success: true, data });
         } catch (error) {
             fail(res, error);
         }

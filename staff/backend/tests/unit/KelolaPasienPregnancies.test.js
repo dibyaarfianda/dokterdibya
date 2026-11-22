@@ -123,3 +123,16 @@ test('list badge labels a generic ended pregnancy (selesai) as "Kehamilan selesa
     const source = fs.readFileSync(path.resolve(__dirname, '../../../public/scripts/legacy/patient-tools.js'), 'utf8');
     expect(source).toMatch(/PREGNANCY_OUTCOME_LABELS = \{[^}]*selesai: 'Kehamilan selesai'/);
 });
+
+test('earlier pregnancies mark patient reports and escape the place', () => {
+    const { ctx } = load();
+    const html = ctx.renderEarlierPregnanciesHtml([
+        { id: 1, source: 'clinic', status: 'ended', outcome: 'lahir_hidup', year: 2026, ended_by_patient: 1, delivery_place: evil },
+        { id: 2, source: 'clinic', status: 'ended', outcome: 'lahir_hidup', year: 2020, delivery_place: 'RS Lama' }
+    ]);
+    expect(html).toContain('(dilaporkan pasien)');
+    expect(html).toContain('di &lt;img src=x onerror=alert(1)&gt;');
+    expect(html).not.toContain('<img src=x');
+    expect(html.match(/dilaporkan pasien/g)).toHaveLength(1);
+    expect(html).toContain('di RS Lama');
+});

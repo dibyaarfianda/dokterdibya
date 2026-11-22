@@ -3144,6 +3144,7 @@ import { createPatientExitController } from './patient-shell/exit-controller.js?
             const pendingBirth = await checkBirthPending();
             const publishedBirth = await loadBirthCongratsHome();
             if (!pendingBirth && !publishedBirth) loadPregnancyTrackerHome();
+            if (!pendingBirth) window.PregnancyReportPrompt?.check();
             autoShowPatientInstallPrompt();
         }
 

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/date-time-format.js?v=20261122label1"></script>
-    <script defer src="/scripts/date-time-inputs.js?v=20261122label1"></script>
+    <script src="/scripts/date-time-format.js?v=20261122lapor1"></script>
+    <script defer src="/scripts/date-time-inputs.js?v=20261122lapor1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,9 +20,9 @@
     </script>
 
     <!-- PWA Manifest -->
-    <link rel="manifest" href="/patient-portal.webmanifest?v=20261122label1">
-    <script src="/scripts/socket-credentials.js?v=20261122label1"></script>
-    <script src="/scripts/patient-session.js?v=20261122label1"></script>
+    <link rel="manifest" href="/patient-portal.webmanifest?v=20261122lapor1">
+    <script src="/scripts/socket-credentials.js?v=20261122lapor1"></script>
+    <script src="/scripts/patient-session.js?v=20261122lapor1"></script>
     <meta name="application-name" content="SISIwanita">
     <meta name="apple-mobile-web-app-title" content="SISIwanita">
 
@@ -33,7 +33,7 @@
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=DM+Sans:wght@400;500;700&family=Crimson+Text:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link rel="stylesheet" href="/styles/landing-checkup-estimates.css?v=20261122label1">
+    <link rel="stylesheet" href="/styles/landing-checkup-estimates.css?v=20261122lapor1">
 
     <!-- Keep portal landing visuals identical to patient-menu without global portal-theme overrides. -->
 
@@ -5812,7 +5812,7 @@
 
             // Register dedicated landing-domain service worker only on the final landing host.
             if ('serviceWorker' in navigator && window.location.protocol !== 'file:' && isSisiwanitaHost) {
-                navigator.serviceWorker.register('/sw.js?v=20261122label1', { scope: '/' }).then(function(registration) {
+                navigator.serviceWorker.register('/sw.js?v=20261122lapor1', { scope: '/' }).then(function(registration) {
                     // Always check remote SW script so updates apply without hard reload.
                     registration.update().catch(function() {});
 
@@ -8124,6 +8124,6 @@
 
     </div><!-- End app-wrapper -->
 
-    <script type="module" src="/scripts/landing/bootstrap.js?v=20261122label1"></script>
+    <script type="module" src="/scripts/landing/bootstrap.js?v=20261122lapor1"></script>
 </body>
 </html>
