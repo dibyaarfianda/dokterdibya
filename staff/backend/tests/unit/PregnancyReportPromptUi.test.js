@@ -6,11 +6,13 @@ const repoRoot = path.join(__dirname, '../../../..');
 const scriptPath = path.join(repoRoot, 'public/scripts/pregnancy-report-prompt.js');
 
 // Minimal DOM: enough for the prompt (createElement, appendChild, textContent, attributes, events).
+// `children` is array-like WITHOUT forEach/map, like a real HTMLCollection.
 class FakeElement {
     constructor(tagName) {
         this.tagName = String(tagName).toUpperCase();
-        this.children = [];
+        this._kids = [];
         this.parentNode = null;
+        this.style = {};
         this.attributes = {};
         this.listeners = {};
         this.className = '';
@@ -23,22 +25,27 @@ class FakeElement {
     appendChild(child) {
         if (child.parentNode) child.parentNode.removeChild(child);
         child.parentNode = this;
-        this.children.push(child);
+        this._kids.push(child);
         return child;
     }
     removeChild(child) {
-        this.children = this.children.filter(c => c !== child);
+        this._kids = this._kids.filter(c => c !== child);
         child.parentNode = null;
         return child;
     }
     remove() { if (this.parentNode) this.parentNode.removeChild(this); }
-    get firstChild() { return this.children[0] || null; }
+    get firstChild() { return this._kids[0] || null; }
+    get children() {
+        const collection = { length: this._kids.length, item: i => this._kids[i] || null };
+        this._kids.forEach((c, i) => { collection[i] = c; });
+        return Object.freeze(collection);
+    }
     set textContent(value) {
-        this.children.forEach(c => { c.parentNode = null; });
-        this.children = [];
+        this._kids.forEach(c => { c.parentNode = null; });
+        this._kids = [];
         this._text = String(value);
     }
-    get textContent() { return this._text + this.children.map(c => c.textContent).join(''); }
+    get textContent() { return this._text + this._kids.map(c => c.textContent).join(''); }
     set innerHTML(value) { throw new Error('innerHTML must not be used: ' + value); }
     setAttribute(name, value) { this.attributes[name] = String(value); if (name === 'id') this.id = String(value); }
     getAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null; }
@@ -50,12 +57,14 @@ class FakeElement {
 
 function walk(node, out = []) {
     out.push(node);
-    node.children.forEach(c => walk(c, out));
+    node._kids.forEach(c => walk(c, out));
     return out;
 }
 
 function setup({ status = { success: true, ask: true, hpht: '2026-01-10' }, today = new Date(2026, 10, 22, 10, 0, 0) } = {}) {
     const body = new FakeElement('body');
+    body.style.overflow = 'auto';
+    const failTags = [];
     const head = new FakeElement('head');
     const fetch = jest.fn(async url => {
         if (String(url).startsWith('/api/patient/pregnancy-report/status')) {
@@ -72,7 +81,10 @@ function setup({ status = { success: true, ask: true, hpht: '2026-01-10' }, toda
         document: {
             body,
             head,
-            createElement: tag => new FakeElement(tag),
+            createElement: tag => {
+                if (failTags.includes(String(tag).toLowerCase())) throw new Error('render failed');
+                return new FakeElement(tag);
+            },
             getElementById: id => walk(body).concat(walk(head)).find(n => n.id === id) || null
         },
         location: { reload: jest.fn() },
@@ -92,7 +104,7 @@ function setup({ status = { success: true, ask: true, hpht: '2026-01-10' }, toda
     const respondPost = (statusCode, payload) => {
         fetch.mockImplementationOnce(async () => ({ ok: statusCode >= 200 && statusCode < 300, status: statusCode, json: async () => payload }));
     };
-    return { ctx, body, fetch, q, all, text, flush, respondPost };
+    return { ctx, body, fetch, q, all, text, flush, respondPost, failTags };
 }
 
 async function openPrompt(env) {
@@ -279,6 +291,32 @@ test('400 shows the server message in the form step; 409 closes and reloads', as
     await env.flush();
     expect(env.body.children).toHaveLength(0);
     expect(env.ctx.location.reload).toHaveBeenCalledTimes(1);
+});
+
+test('children is not an array in the fake DOM (HTMLCollection has no forEach)', () => {
+    const parent = new FakeElement('div');
+    parent.appendChild(new FakeElement('span'));
+    expect(parent.children.length).toBe(1);
+    expect(parent.children.forEach).toBeUndefined();
+    expect(parent.children.map).toBeUndefined();
+});
+
+test('open locks scrolling; a throw during render removes the overlay and restores overflow', async () => {
+    const env = await openPrompt(setup());
+    expect(env.body.style.overflow).toBe('hidden');
+    env.respondPost(200, { success: true });
+    env.q('answer-masih_hamil').click();
+    await env.flush();
+    env.q('close').click();
+    expect(env.body.style.overflow).toBe('auto');
+
+    const broken = setup();
+    broken.failTags.push('h2');
+    expect(await broken.ctx.PregnancyReportPrompt.check()).toBe(false);
+    expect(broken.body.children).toHaveLength(0);
+    expect(broken.body.style.overflow).toBe('auto');
+    broken.failTags.length = 0;
+    expect(await broken.ctx.PregnancyReportPrompt.check()).toBe(true);
 });
 
 test('script has no vh units and no innerHTML; both pages include it and call check()', () => {

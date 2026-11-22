@@ -137,7 +137,8 @@
 
     function collectButtons(node) {
         if (node.tagName === 'BUTTON') ui.buttons.push(node);
-        (node.children || []).forEach(collectButtons);
+        // Element.children is an HTMLCollection (no forEach in browsers).
+        Array.prototype.forEach.call(node.children || [], collectButtons);
     }
 
     function field(label, input) {
@@ -449,7 +450,13 @@
         body.appendChild(overlay);
         body.appendChild(card);
         if (body.style) body.style.overflow = 'hidden';
-        showChoose();
+        try {
+            showChoose();
+        } catch (error) {
+            // Never leave a locked page behind an empty overlay.
+            close(false);
+            throw error;
+        }
     }
 
     function check() {
