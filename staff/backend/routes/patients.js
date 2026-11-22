@@ -2215,19 +2215,23 @@ router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req,
 });
 
 // POST/PUT birth congratulations (Staff only)
+// Staff birth-card writes target one card (services/BirthCardTarget.js).
+const { resolveBirthCard: resolveBirthCardWith } = require('../services/BirthCardTarget');
+const resolveBirthCard = (patientId, rawBirthId) => resolveBirthCardWith(db, patientId, rawBirthId);
+
 router.post('/api/patients/:patientId/birth-congratulations', verifyStaffToken, async (req, res) => {
     try {
         const { patientId } = req.params;
         const { baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color } = req.body;
+        const createNew = req.body && req.body.new === true;
 
-        // Check if record exists
-        const [existing] = await db.query(
-            'SELECT id FROM birth_congratulations WHERE patient_id = ?',
-            [patientId]
-        );
+        const target = createNew ? { row: null } : await resolveBirthCard(patientId, req.body && req.body.birth_id);
+        if (target.status) {
+            return res.status(target.status).json({ success: false, message: target.message });
+        }
 
-        if (existing.length > 0) {
-            // Update existing
+        if (target.row) {
+            // Update only the chosen card
             await db.query(`
                 UPDATE birth_congratulations SET
                     baby_name = COALESCE(?, baby_name),
@@ -2240,25 +2244,28 @@ router.post('/api/patients/:patientId/birth-congratulations', verifyStaffToken, 
                     message = COALESCE(?, message),
                     is_published = COALESCE(?, is_published),
                     theme_color = COALESCE(?, theme_color)
-                WHERE patient_id = ?
-            `, [baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color, patientId]);
+                WHERE id = ? AND patient_id = ?
+            `, [baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color, target.row.id, patientId]);
 
-            for (const row of existing) {
-                try {
-                    await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', row.id, req.user);
-                } catch (flagError) {
-                    logger.warn('Birth congratulations updated but pregnancy flag failed', { error: flagError.message, patientId });
-                }
+            try {
+                await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', target.row.id, req.user);
+            } catch (flagError) {
+                logger.warn('Birth congratulations updated but pregnancy flag failed', { error: flagError.message, patientId });
             }
 
-            res.json({ success: true, message: 'Birth congratulations updated' });
+            res.json({ success: true, message: 'Birth congratulations updated', data: { birth_id: target.row.id } });
         } else {
-            // Insert new
+            // Insert a new card as the next child
+            const [existingBirths] = await db.query(
+                'SELECT MAX(child_number) AS max_child FROM birth_congratulations WHERE patient_id = ?',
+                [patientId]
+            );
+            const nextChildNumber = ((existingBirths && existingBirths[0] && existingBirths[0].max_child) || 0) + 1;
             const [insertResult] = await db.query(`
                 INSERT INTO birth_congratulations
-                (patient_id, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [patientId, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published || 0, theme_color || 'pink']);
+                (patient_id, child_number, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [patientId, nextChildNumber, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published || 0, theme_color || 'pink']);
 
             try {
                 await getPregnancyEpisodes().flagReportedBirth(patientId, 'birth_congratulations', insertResult.insertId, req.user);
@@ -2266,7 +2273,7 @@ router.post('/api/patients/:patientId/birth-congratulations', verifyStaffToken, 
                 logger.warn('Birth congratulations created but pregnancy flag failed', { error: flagError.message, patientId });
             }
 
-            res.json({ success: true, message: 'Birth congratulations created' });
+            res.json({ success: true, message: 'Birth congratulations created', data: { birth_id: insertResult.insertId } });
         }
     } catch (error) {
         console.error('Error saving birth congratulations:', error);
@@ -2285,6 +2292,14 @@ router.post('/api/patients/:patientId/birth-congratulations/photo', verifyStaffT
 
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No photo uploaded' });
+        }
+
+        const target = await resolveBirthCard(patientId, (req.body && req.body.birth_id) || req.query.birth_id);
+        if (target.status) {
+            return res.status(target.status).json({ success: false, message: target.message });
+        }
+        if (!target.row) {
+            return res.status(404).json({ success: false, message: 'Kartu kelahiran tidak ditemukan' });
         }
 
         // Resize image to max 1024px (width or height)
@@ -2312,8 +2327,8 @@ router.post('/api/patients/:patientId/birth-congratulations/photo', verifyStaffT
 
         // Store proxy URL plus R2 key so the image stays reachable on patient networks
         await db.query(
-            'UPDATE birth_congratulations SET photo_url = ?, photo_r2_key = ? WHERE patient_id = ?',
-            [proxyUrl, uploadResult.key, patientId]
+            'UPDATE birth_congratulations SET photo_url = ?, photo_r2_key = ? WHERE id = ? AND patient_id = ?',
+            [proxyUrl, uploadResult.key, target.row.id, patientId]
         );
 
         res.json({
@@ -2492,22 +2507,24 @@ router.delete('/api/patients/:patientId/birth-congratulations', verifyStaffToken
     try {
         const { patientId } = req.params;
 
-        // Get R2 key to delete photo
-        const [existing] = await db.query(
-            'SELECT photo_r2_key FROM birth_congratulations WHERE patient_id = ?',
-            [patientId]
-        );
+        const target = await resolveBirthCard(patientId, req.query.birth_id);
+        if (target.status) {
+            return res.status(target.status).json({ success: false, message: target.message });
+        }
+        if (!target.row) {
+            return res.json({ success: true, message: 'Birth congratulations deleted' });
+        }
 
-        if (existing.length > 0 && existing[0].photo_r2_key) {
+        if (target.row.photo_r2_key) {
             // Delete photo from R2
             try {
-                await r2Storage.deleteFile(existing[0].photo_r2_key);
+                await r2Storage.deleteFile(target.row.photo_r2_key);
             } catch (r2Error) {
                 console.error('Error deleting photo from R2:', r2Error);
             }
         }
 
-        await db.query('DELETE FROM birth_congratulations WHERE patient_id = ?', [patientId]);
+        await db.query('DELETE FROM birth_congratulations WHERE id = ? AND patient_id = ?', [target.row.id, patientId]);
 
         res.json({ success: true, message: 'Birth congratulations deleted' });
     } catch (error) {

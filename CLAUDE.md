@@ -1604,4 +1604,4 @@ Spec: `docs/superpowers/specs/2026-11-22-patient-pregnancy-report-design.md`. Pl
 - **Endpoints:** `GET /api/patient/pregnancy-report/status`, `POST /api/patient/pregnancy-report` (`routes/patient-pregnancy-report.js`, whitelisted in `security/patientRouteAccess.js`); service `services/PatientPregnancyReportService.js`, rules `services/PatientPregnancyReportRules.js`. Patient responses never name the outcome.
 - **Staff:** badge "Dilaporkan pasien" + place on the history card and Kelola Pasien; dokter/bidan "Buka kembali" (`POST /api/pregnancies/patient/:patientId/:pregnancyId/reopen`, newest patient-reported row only, refused if another pregnancy is ongoing) resets the end columns and snoozes the question 7 days. "Sudah Lahir" on a patient whose newest row was closed by her report returns 409 "Kehamilan sudah dilaporkan pasien. Muat ulang halaman."
 - **Migration:** `20261125_pregnancy_patient_report.sql` (3 columns) before the ff-merge.
-- **Versions:** patient `20261122lapor1`, staff `v507`.
+- **Versions:** patient `20261122lapor1`, staff `v508`.

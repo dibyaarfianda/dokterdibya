@@ -74,7 +74,8 @@ export async function loadBirthCongratsList() {
 
         const items = Array.isArray(result.data) ? result.data : [];
         birthCongratsData.clear();
-        items.forEach(item => birthCongratsData.set(String(item.patient_id), item));
+        // Keyed by card id: one patient can have a card per child.
+        items.forEach(item => birthCongratsData.set(String(item.id), item));
         syncLegacyBirthData();
 
         if (items.length === 0) {
@@ -91,6 +92,7 @@ export async function loadBirthCongratsList() {
 
         const cards = items.map(item => {
             const patientId = String(item.patient_id ?? '');
+            const birthId = String(item.id ?? '');
             const genderIcon = item.gender === 'male'
                 ? 'fa-mars text-info'
                 : item.gender === 'female'
@@ -132,10 +134,10 @@ export async function loadBirthCongratsList() {
                             ${message}
                         </div>
                         <div class="card-footer bg-white text-right">
-                            <button type="button" class="btn btn-outline-info btn-sm" data-action="birth-edit" data-patient-id="${escapeAttribute(patientId)}">
+                            <button type="button" class="btn btn-outline-info btn-sm" data-action="birth-edit" data-patient-id="${escapeAttribute(patientId)}" data-birth-id="${escapeAttribute(birthId)}">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
-                            <button type="button" class="btn btn-outline-danger btn-sm" data-action="birth-delete" data-patient-id="${escapeAttribute(patientId)}">
+                            <button type="button" class="btn btn-outline-danger btn-sm" data-action="birth-delete" data-patient-id="${escapeAttribute(patientId)}" data-birth-id="${escapeAttribute(birthId)}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -262,7 +264,10 @@ export async function saveBirthCongrats() {
         return;
     }
 
+    // bc-edit-id holds the card id while editing; empty means "Tambah" = a new card (next child).
+    const editingBirthId = document.getElementById('bc-edit-id')?.value || '';
     const data = {
+        ...(editingBirthId ? { birth_id: editingBirthId } : { new: true }),
         baby_name: document.getElementById('bc-baby-name')?.value || '',
         birth_date: document.getElementById('bc-birth-date')?.value || null,
         birth_time: document.getElementById('bc-birth-time')?.value || null,
@@ -276,14 +281,16 @@ export async function saveBirthCongrats() {
 
     const scope = startRequestScope('birth-save');
     try {
-        await scope.request(`/api/patients/${encodeURIComponent(patientId)}/birth-congratulations`, {
+        const saved = await scope.request(`/api/patients/${encodeURIComponent(patientId)}/birth-congratulations`, {
             method: 'POST',
             body: JSON.stringify(data)
         });
+        const savedBirthId = String(saved?.data?.birth_id || editingBirthId || '');
 
         const photo = document.getElementById('bc-photo')?.files?.[0];
         if (photo) {
             const formData = new FormData();
+            if (savedBirthId) formData.append('birth_id', savedBirthId);
             formData.append('photo', photo);
             try {
                 await scope.request(`/api/patients/${encodeURIComponent(patientId)}/birth-congratulations/photo`, {
@@ -307,10 +314,14 @@ export async function saveBirthCongrats() {
     }
 }
 
-export async function editBirthCongrats(patientId, existingData = null) {
+export async function editBirthCongrats(patientId, existingData = null, birthId = null) {
     await showAddBirthCongratsModal();
-    const data = existingData || birthCongratsData.get(String(patientId));
-    document.getElementById('bc-edit-id').value = patientId;
+    const data = existingData
+        || (birthId ? birthCongratsData.get(String(birthId)) : null)
+        || [...birthCongratsData.values()].find(item => String(item.patient_id) === String(patientId))
+        || null;
+    const cardId = birthId || (data && data.id) || '';
+    document.getElementById('bc-edit-id').value = cardId ? String(cardId) : '';
     document.getElementById('birthCongratsModalTitle').textContent = 'Edit Ucapan Kelahiran';
     document.getElementById('bc-patient-id').value = patientId;
     if (!data) return;
@@ -334,12 +345,13 @@ export async function editBirthCongrats(patientId, existingData = null) {
     }
 }
 
-export async function deleteBirthCongrats(patientId) {
-    if (!window.confirm('Hapus ucapan kelahiran untuk pasien ini?')) return;
+export async function deleteBirthCongrats(patientId, birthId = null) {
+    if (!window.confirm('Hapus kartu ucapan kelahiran ini?')) return;
 
+    const query = birthId ? `?birth_id=${encodeURIComponent(birthId)}` : '';
     const scope = startRequestScope('birth-delete');
     try {
-        await scope.request(`/api/patients/${encodeURIComponent(patientId)}/birth-congratulations`, {
+        await scope.request(`/api/patients/${encodeURIComponent(patientId)}/birth-congratulations${query}`, {
             method: 'DELETE'
         });
         notify('Ucapan kelahiran berhasil dihapus', 'success');
@@ -377,8 +389,8 @@ document.addEventListener('click', event => {
     if (action === 'birth-add') showAddBirthCongratsModal();
     if (action === 'birth-save') saveBirthCongrats();
     if (action === 'birth-color') selectBirthCongratsColor(target.dataset.color);
-    if (action === 'birth-edit') editBirthCongrats(target.dataset.patientId);
-    if (action === 'birth-delete') deleteBirthCongrats(target.dataset.patientId);
+    if (action === 'birth-edit') editBirthCongrats(target.dataset.patientId, null, target.dataset.birthId || null);
+    if (action === 'birth-delete') deleteBirthCongrats(target.dataset.patientId, target.dataset.birthId || null);
 });
 
 document.addEventListener('change', event => {
