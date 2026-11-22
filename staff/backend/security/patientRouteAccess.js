@@ -92,6 +92,9 @@ const PATIENT_ROUTE_RULES = [
     createRule('GET', /^\/api\/patient\/checkup-prepay\/(?:status|suggestion|saldo|orders\/[^/]+)$/),
     createRule('POST', /^\/api\/patient\/checkup-prepay\/(?:checkout|refund-requests|refund-requests\/\d+\/cancel)$/),
 
+    createRule('GET', /^\/api\/patient\/pregnancy-report\/status$/),
+    createRule('POST', /^\/api\/patient\/pregnancy-report$/),
+
     createRule('GET', /^\/api\/patient-billing\/(?:my-bills|[^/]+\/(?:details|payment-details)|[^/]+\/payment-status\/[^/]+)$/),
     createRule('POST', /^\/api\/patient-billing\/[^/]+\/(?:create-payment|create-insurance-payment)$/),
 

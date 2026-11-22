@@ -40,6 +40,8 @@ describe('patient route access policy', () => {
         ['GET', '/api/patient/checkup-prepay/saldo'],
         ['POST', '/api/patient/checkup-prepay/refund-requests'],
         ['POST', '/api/patient/checkup-prepay/refund-requests/12/cancel'],
+        ['GET', '/api/patient/pregnancy-report/status'],
+        ['POST', '/api/patient/pregnancy-report'],
         ['POST', '/api/patient-billing/bill-7/create-payment'],
         ['GET', '/api/announcements/active'],
         ['POST', '/api/announcements/9/like'],
@@ -112,6 +114,9 @@ describe('patient route access policy', () => {
         ['GET', '/api/patient/checkup-prepay/refund-requests'],
         ['POST', '/api/patient/checkup-prepay/refund-requests/abc/cancel'],
         ['POST', '/api/patient/checkup-prepay/refund-requests/12/approve'],
+        ['POST', '/api/patient/pregnancy-report/status'],
+        ['GET', '/api/patient/pregnancy-report'],
+        ['DELETE', '/api/patient/pregnancy-report'],
         ['POST', '/api/webhooks/duitku/callback'],
         ['GET', '/api/polls/staff/list']
     ])('denies staff operation %s %s', (method, url) => {
@@ -151,6 +156,18 @@ describe('patient route access policy', () => {
         expect(routes.length).toBeGreaterThan(0);
         for (const [, method, route] of routes) {
             const url = '/api/patient/checkup-prepay' + route.replace(':orderRef', 'DPK-11111111-2222-3333-4444-555555555555').replace(':id', '12');
+            expect([method.toUpperCase(), url, isPatientAllowedRoute(method.toUpperCase(), url)]).toEqual([method.toUpperCase(), url, true]);
+        }
+    });
+
+    test('every patient pregnancy-report route is reachable by a patient token', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const source = fs.readFileSync(path.join(__dirname, '../../routes/patient-pregnancy-report.js'), 'utf8');
+        const routes = [...source.matchAll(/router\.(get|post|put|patch|delete)\('([^']+)'/g)];
+        expect(routes.length).toBeGreaterThan(0);
+        for (const [, method, route] of routes) {
+            const url = '/api/patient/pregnancy-report' + (route === '/' ? '' : route);
             expect([method.toUpperCase(), url, isPatientAllowedRoute(method.toUpperCase(), url)]).toEqual([method.toUpperCase(), url, true]);
         }
     });

@@ -779,6 +779,8 @@ app.use('/api/patient/premium', createPatientPremiumRouter());
 // Optional prepayment of the estimated cost of a Klinik Privat visit (Duitku); becomes patient saldo
 const { createPatientCheckupPrepayRouter } = require('./routes/patient-checkup-prepay');
 app.use('/api/patient/checkup-prepay', createPatientCheckupPrepayRouter());
+const { createPatientPregnancyReportRouter } = require('./routes/patient-pregnancy-report');
+app.use('/api/patient/pregnancy-report', createPatientPregnancyReportRouter());
 
 // Public visit estimates for the sisiwanita.id home page (no login)
 const { createPublicCheckupEstimatesRouter } = require('./routes/public-checkup-estimates');
