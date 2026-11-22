@@ -163,6 +163,20 @@ describe('reopen', () => {
         await expectErr(svc(db).reopen('P1', 5, BIDAN), PatientReportError, 409, 'Hanya laporan pasien yang dapat dibuka kembali');
         expect(db.state.updates).toHaveLength(0);
     });
+    test('stamps updated_by with the staff actor and clears complications', async () => {
+        const db = makeDb([patientReported()]);
+        await svc(db).reopen('P1', 5, BIDAN);
+        const { sql, params } = db.state.updates[0];
+        expect(sql).toMatch(/complications = NULL/);
+        expect(sql).toMatch(/complication_notes = NULL/);
+        expect(sql).toMatch(/updated_by = \?/);
+        expect(params).toContain('u2');
+    });
+    test('only the newest pregnancy can be reopened', async () => {
+        const db = makeDb([patientReported(), preg({ id: 6, sequence: 2, status: 'ended', ended_by_patient: 0, outcome: 'abortus', ended_on: '2026-11-01' })]);
+        await expectErr(svc(db).reopen('P1', 5, BIDAN), PatientReportError, 409, 'Hanya kehamilan terakhir yang dapat dibuka kembali');
+        expect(db.state.updates).toHaveLength(0);
+    });
     test('another ongoing row -> 409, no UPDATE, rolled back', async () => {
         const db = makeDb([patientReported(), preg({ id: 6, sequence: 2 })]);
         await expectErr(svc(db).reopen('P1', 5, BIDAN), PatientReportError, 409, 'Pasien sudah punya kehamilan berjalan');

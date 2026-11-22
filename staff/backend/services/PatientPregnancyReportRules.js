@@ -115,7 +115,7 @@ function normalizePatientReport(body, { hpht, today, patientId } = {}) {
     const cols = {
         status: 'ended',
         ended_on: endedOn,
-        ga_weeks_at_end: ga,
+        ga_weeks_at_end: ga === null ? null : Math.min(ga, 127), // signed TINYINT column
         delivery_place: place,
         ended_by_patient: 1,
         needs_review: 1,

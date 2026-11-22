@@ -91,6 +91,11 @@ describe('PatientPregnancyReportRules', () => {
             expect(cols.term).toBe('aterm');
         });
 
+        test('ga_weeks_at_end is capped at 127 (signed TINYINT)', () => {
+            const { cols } = normalizePatientReport(birth(), { ...ctx, hpht: '2023-10-01' });
+            expect(cols.ga_weeks_at_end).toBe(127);
+        });
+
         test('sc twins', () => {
             const { cols } = normalizePatientReport(birth({ delivery: 'sc', babies: [{ weight_g: 2500 }, { weight_g: 2600 }] }), ctx);
             expect(cols.delivery_method).toBe('SC (Caesar)');

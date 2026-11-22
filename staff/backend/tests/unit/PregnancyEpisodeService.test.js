@@ -476,6 +476,30 @@ describe('PregnancyEpisodeService.endOngoing', () => {
         expect(db.state.pregnancies).toHaveLength(2);
     });
 
+    test('refuses (409) when the newest pregnancy was closed by the patient; nothing inserted', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg({ id: 1, status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-10-10', ended_by_patient: 1 })] });
+        const svc = createPregnancyEpisodeService({ db, now: NOW });
+        await expectError(svc.endOngoing('P1', { outcome: 'abortus', ended_on: '2026-11-01', linkTable: 'pregnancy_outcomes', linkId: 4 }, DOKTER), 409, 'Kehamilan sudah dilaporkan pasien. Muat ulang halaman.');
+        await expectError(svc.endOngoing('P1', { ...birth, ended_on: '2026-10-10' }, DOKTER), 409, 'Kehamilan sudah dilaporkan pasien. Muat ulang halaman.');
+        expect(db.state.pregnancies).toHaveLength(1);
+        expect(db.state.links).toHaveLength(0);
+    });
+
+    test('a clinic-closed newest pregnancy keeps the old behaviour (inserts)', async () => {
+        const db = makeDb({ pregnancies: [ongoingPreg({ id: 1, status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-03-10', ended_by_patient: 0 })] });
+        await createPregnancyEpisodeService({ db, now: NOW }).endOngoing('P1', { outcome: 'abortus', ended_on: '2026-11-01' }, DOKTER);
+        expect(db.state.pregnancies).toHaveLength(2);
+    });
+
+    test('an older patient-closed row does not block when a newer clinic row exists', async () => {
+        const db = makeDb({ pregnancies: [
+            ongoingPreg({ id: 1, sequence: 1, status: 'ended', outcome: 'lahir_hidup', ended_on: '2026-01-10', ended_by_patient: 1 }),
+            ongoingPreg({ id: 2, sequence: 2, status: 'ended', outcome: 'abortus', ended_on: '2026-03-10', ended_by_patient: 0 })
+        ] });
+        await createPregnancyEpisodeService({ db, now: NOW }).endOngoing('P1', { outcome: 'abortus', ended_on: '2026-11-01' }, DOKTER);
+        expect(db.state.pregnancies).toHaveLength(3);
+    });
+
     test('refuses an unknown link table and a date before HPHT', async () => {
         const db = makeDb({ pregnancies: [ongoingPreg()] });
         const svc = createPregnancyEpisodeService({ db, now: NOW });

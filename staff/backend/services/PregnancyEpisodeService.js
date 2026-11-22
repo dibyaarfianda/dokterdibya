@@ -555,6 +555,14 @@ function createPregnancyEpisodeService({ db, now = () => new Date() }) {
                 if (existingId) linked = rows.find(p => p.id === existingId) || null;
             }
             const ongoing = linked || ongoingOf(rows);
+            if (!ongoing && rows.length) {
+                // The patient already reported the end in the portal: staff must reopen/review it,
+                // never stack a second ended row on top of it.
+                const newest = rows[rows.length - 1]; // rows are ordered sequence ASC, id ASC
+                if (newest.status === 'ended' && Number(newest.ended_by_patient) === 1) {
+                    fail(409, 'Kehamilan sudah dilaporkan pasien. Muat ulang halaman.');
+                }
+            }
             // Mark-delivered / pregnancy-outcome callers may not know the delivery details yet:
             // the birth is flagged needs_review and completed later through updateHistory.
             const end = normalizeEnd(payload, { hpht: ongoing ? ongoing.hpht : null, requireBirthDetails: false });

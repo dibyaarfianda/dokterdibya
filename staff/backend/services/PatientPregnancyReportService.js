@@ -17,6 +17,7 @@ const { PatientReportError, isPastHpl, shouldAsk, snoozeUntil, normalizePatientR
 
 const STALE_MESSAGE = 'Data kehamilan sudah berubah. Muat ulang halaman.';
 const NOT_PATIENT_REPORT_MESSAGE = 'Hanya laporan pasien yang dapat dibuka kembali';
+const NOT_NEWEST_MESSAGE = 'Hanya kehamilan terakhir yang dapat dibuka kembali';
 const HAS_ONGOING_MESSAGE = 'Pasien sudah punya kehamilan berjalan';
 
 const SELECT_ALL = 'SELECT * FROM pregnancies WHERE patient_id = ? ORDER BY sequence ASC, id ASC';
@@ -24,8 +25,14 @@ const SELECT_ALL = 'SELECT * FROM pregnancies WHERE patient_id = ? ORDER BY sequ
 // Columns cleared when a patient report is reopened (status/flags are set explicitly below).
 const REOPEN_NULL_COLUMNS = [
     'outcome', 'ended_on', 'ga_weeks_at_end', 'delivery_method', 'delivery_indication',
-    'delivery_place', 'babies', 'term', 'kuretase'
+    'delivery_place', 'babies', 'term', 'kuretase', 'complications', 'complication_notes'
 ];
+
+function actorId(actor) {
+    if (!actor || typeof actor !== 'object') return null;
+    const id = actor.id !== undefined ? actor.id : (actor.user_id !== undefined ? actor.user_id : actor.new_id);
+    return id === undefined || id === null ? null : String(id).slice(0, 64);
+}
 
 function pad(n) {
     return String(n).padStart(2, '0');
@@ -105,13 +112,17 @@ function createPatientPregnancyReportService({ db, now = () => new Date() }) {
                 throw new PatientReportError(409, NOT_PATIENT_REPORT_MESSAGE);
             }
             if (list.some(r => r.status === 'ongoing')) throw new PatientReportError(409, HAS_ONGOING_MESSAGE);
+            const newest = list[list.length - 1]; // SELECT_ALL orders sequence ASC, id ASC
+            if (String(newest.id) !== String(target.id)) {
+                throw new PatientReportError(409, NOT_NEWEST_MESSAGE);
+            }
 
             await conn.query(
                 `UPDATE pregnancies SET ${REOPEN_NULL_COLUMNS.map(c => `${c} = NULL`).join(', ')},
                         status = 'ongoing', ended_by_patient = 0, needs_review = 0, review_reason = NULL,
-                        report_snoozed_until = ?
+                        report_snoozed_until = ?, updated_by = ?
                   WHERE id = ? AND status = 'ended' AND ended_by_patient = 1`,
-                [snoozeUntil(today()), target.id]
+                [snoozeUntil(today()), actorId(actor), target.id]
             );
             return { pregnancy_id: target.id };
         });
