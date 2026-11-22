@@ -8,6 +8,7 @@ jest.mock('../../middleware/auth', () => ({ verifyStaffToken: (req, res, next) =
 
 const { createPregnanciesRouter } = require('../../routes/pregnancies');
 const { PregnancyEpisodeError } = require('../../services/PregnancyEpisodeService');
+const { PatientReportError } = require('../../services/PatientPregnancyReportRules');
 
 const logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() };
 const USER = { id: 'U1', role: 'bidan', role_id: 3, is_superadmin: false };
@@ -34,10 +35,10 @@ function makeService(overrides = {}) {
     };
 }
 
-function buildApp(service) {
+function buildApp(service, reportService) {
     const app = express();
     app.use(express.json());
-    app.use('/api/pregnancies', createPregnanciesRouter({ service, verifyStaffToken: staffAuth, logger }));
+    app.use('/api/pregnancies', createPregnanciesRouter({ service, reportService, verifyStaffToken: staffAuth, logger }));
     return app;
 }
 
@@ -198,5 +199,47 @@ describe('pregnancy routes', () => {
         expect(res.body).toEqual({ success: false, message: 'Gagal memproses data kehamilan' });
         expect(JSON.stringify(res.body)).not.toMatch(/ER_SECRET/);
         expect(logger.error).toHaveBeenCalled();
+    });
+
+    describe('reopen a patient-reported pregnancy', () => {
+        const URL = '/api/pregnancies/patient/P0001/7/reopen';
+
+        test('requires a staff session', async () => {
+            const res = await request(buildApp(makeService(), { reopen: jest.fn() })).post(URL);
+            expect(res.status).toBe(401);
+        });
+
+        test('200 passes patient, pregnancy and actor to the service, never cached', async () => {
+            const report = { reopen: jest.fn().mockResolvedValue({ pregnancy_id: 7 }) };
+            const res = await auth(request(buildApp(makeService(), report)).post(URL));
+            expect(res.status).toBe(200);
+            expect(report.reopen).toHaveBeenCalledWith('P0001', 7, USER);
+            expect(res.body).toEqual({ success: true, data: { pregnancy_id: 7 } });
+            expect(res.headers['cache-control']).toMatch(/no-store/);
+        });
+
+        test('403 from the role check keeps its message', async () => {
+            const report = { reopen: jest.fn().mockRejectedValue(new PregnancyEpisodeError(403, 'Hanya dokter atau bidan yang dapat menutup kehamilan')) };
+            const res = await auth(request(buildApp(makeService(), report)).post(URL));
+            expect(res.status).toBe(403);
+            expect(res.body).toEqual({ success: false, message: 'Hanya dokter atau bidan yang dapat menutup kehamilan' });
+        });
+
+        test.each([[404, 'Kehamilan tidak ditemukan'], [409, 'Kehamilan lain sedang berjalan']])('%i from the report service passes through', async (status, message) => {
+            const report = { reopen: jest.fn().mockRejectedValue(new PatientReportError(status, message)) };
+            const res = await auth(request(buildApp(makeService(), report)).post(URL));
+            expect(res.status).toBe(status);
+            expect(res.body).toEqual({ success: false, message });
+        });
+
+        test('unknown errors become a generic 500 and bad ids a 400', async () => {
+            const report = { reopen: jest.fn().mockRejectedValue(new Error('ER_SECRET')) };
+            let res = await auth(request(buildApp(makeService(), report)).post(URL));
+            expect(res.status).toBe(500);
+            expect(JSON.stringify(res.body)).not.toMatch(/ER_SECRET/);
+            res = await auth(request(buildApp(makeService(), report)).post('/api/pregnancies/patient/P0001/abc/reopen'));
+            expect(res.status).toBe(400);
+            expect(report.reopen).toHaveBeenCalledTimes(1);
+        });
     });
 });

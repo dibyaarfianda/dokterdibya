@@ -283,3 +283,53 @@ test('save flow awaits runAfterSave before generating the diagnosis', () => {
     expect(resolveAt).toBeGreaterThan(-1);
     expect(diagnosisAt).toBeGreaterThan(resolveAt);
 });
+
+describe('patient-reported pregnancies', () => {
+    const reported = Object.assign({}, clinicPregnancy, {
+        id: 9, ended_by_patient: 1, delivery_place: '<b onclick=x>RS "Aman"</b>', delivery_indication: null
+    });
+
+    test('badge and escaped place are shown', () => {
+        const { Card } = context();
+        const html = Card.render(state, [reported]);
+        expect(html).toContain('Dilaporkan pasien');
+        expect(html).toContain('di &lt;b onclick=x&gt;RS &quot;Aman&quot;&lt;/b&gt;');
+        expect(html).not.toContain('<b onclick');
+        expect(Card.render(state, [clinicPregnancy])).not.toContain('Dilaporkan pasien');
+    });
+
+    test('reopen button only for patient-reported rows and only for closers', () => {
+        const { ctx, Card } = context();
+        let html = Card.render(state, [reported, clinicPregnancy]);
+        expect(html.match(/data-preg-action="reopen"/g)).toHaveLength(1);
+        expect(html).toContain('data-preg-action="reopen" data-preg-id="9"');
+        ctx.window.currentStaffUser = { role: 'admin' };
+        ctx.window.isPregnancyCloserUser = () => false;
+        html = Card.render(state, [reported]);
+        expect(html).not.toContain('data-preg-action="reopen"');
+        expect(html).toContain('Dilaporkan pasien');
+        ctx.window.isPregnancyCloserUser = () => true;
+        expect(Card.render(state, [reported])).toContain('data-preg-action="reopen"');
+    });
+
+    test('reopen asks first, then posts and re-mounts; cancel does nothing', async () => {
+        const { ctx, swalResults, Card } = context();
+        ctx.fetch.mockResolvedValueOnce(ok({ pregnancies: [reported], totals: {}, riwayat_persalinan: [] }));
+        await Card.mount(state, { category: 'obstetri' });
+        swalResults.push({ isConfirmed: false });
+        await Card.reopenReported(9);
+        expect(ctx.fetch).toHaveBeenCalledTimes(1);
+        const q = ctx.Swal.fire.mock.calls[0][0];
+        expect(q.title).toBe('Buka kembali kehamilan ini?');
+        expect(q.text).toBe('Laporan pasien akan dihapus.');
+
+        swalResults.push({ isConfirmed: true });
+        ctx.fetch.mockResolvedValueOnce(ok({ pregnancy_id: 9 }));
+        ctx.fetch.mockResolvedValueOnce(ok({ pregnancies: [], totals: {}, riwayat_persalinan: [] }));
+        await Card.reopenReported(9);
+        const [url, init] = ctx.fetch.mock.calls[1];
+        expect(init.method).toBe('POST');
+        expect(url).toContain('/api/pregnancies/patient/P000000001/9/reopen');
+        expect(ctx.fetch).toHaveBeenCalledTimes(3);
+    });
+});

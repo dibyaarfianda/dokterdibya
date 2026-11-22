@@ -1188,6 +1188,8 @@
             const yearSource = p.year || (p.ended_on ? String(p.ended_on).slice(0, 4) : '');
             const outcome = EARLIER_OUTCOME_LABELS[p.outcome] || 'Tidak diketahui';
             const method = [p.delivery_method, p.delivery_indication].filter(Boolean).join(' - ');
+            const place = p.delivery_place ? `, di ${p.delivery_place}` : '';
+            const reported = p.ended_by_patient ? ' (dilaporkan pasien)' : '';
             const comps = Array.isArray(p.complications) ? p.complications : [];
             const sourceBadge = p.source === 'external'
                 ? '<span class="badge badge-secondary ml-1">Luar</span>'
@@ -1198,7 +1200,9 @@
                 ? ` <button type="button" class="btn btn-xs btn-outline-primary ml-1" onclick="${onclickCall('showPregnancyResume', [resumeMrId])}"><i class="fas fa-file-medical mr-1"></i>Lihat resume</button>`
                 : '';
             return `<li class="mb-1"><strong>${escapeHtmlSafe(yearSource || '-')}</strong> - ${escapeHtmlSafe(outcome)}`
+                + escapeHtmlSafe(reported)
                 + (method ? ` (${escapeHtmlSafe(method)})` : '')
+                + escapeHtmlSafe(place)
                 + (comps.length ? `, komplikasi: ${comps.length}` : '')
                 + `${sourceBadge}${reviewBadge}${resumeBtn}</li>`;
         }).join('');

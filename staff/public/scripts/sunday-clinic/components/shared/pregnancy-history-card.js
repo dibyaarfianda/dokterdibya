@@ -106,11 +106,20 @@ function canEdit() {
     return !(typeof window.hasAccountPermission === 'function' && window.hasAccountPermission('anamnesa.edit') === false);
 }
 
+// Reopening a patient report is a closing-type action: dokter/bidan only (the backend enforces it).
+// When the role helper or the user is not known yet, show the button and let the server answer.
+function canClose() {
+    const user = typeof window.currentStaffUser !== 'undefined' ? window.currentStaffUser : null;
+    if (typeof window.isPregnancyCloserUser !== 'function' || !user) return true;
+    return !!window.isPregnancyCloserUser(user);
+}
+
 function describe(p) {
     const parts = [];
     if (p.delivery_method) {
         parts.push(p.delivery_indication ? `${p.delivery_method} (${p.delivery_indication})` : p.delivery_method);
     }
+    if (p.delivery_place) parts.push(`di ${p.delivery_place}`);
     return parts.join(' ');
 }
 
@@ -126,15 +135,19 @@ function renderRow(p, editable) {
         ? '<span class="badge badge-secondary">Luar</span>'
         : '<span class="badge badge-info">Klinik</span>';
     const review = p.needs_review ? ' <span class="badge badge-warning">Perlu dicek</span>' : '';
+    const reported = p.ended_by_patient ? ' <span class="badge badge-primary">Dilaporkan pasien</span>' : '';
+    const reopenBtn = editable && p.status !== 'ongoing' && p.ended_by_patient && canClose()
+        ? `<button type="button" class="btn btn-xs btn-outline-warning mr-1" data-preg-action="reopen" data-preg-id="${esc(p.id)}">Buka kembali</button>`
+        : '';
     const actions = editable && p.status !== 'ongoing'
-        ? `<button type="button" class="btn btn-xs btn-outline-primary mr-1" data-preg-action="edit" data-preg-id="${esc(p.id)}">Ubah</button>` +
+        ? reopenBtn + `<button type="button" class="btn btn-xs btn-outline-primary mr-1" data-preg-action="edit" data-preg-id="${esc(p.id)}">Ubah</button>` +
           (p.source === 'external'
               ? `<button type="button" class="btn btn-xs btn-outline-danger" data-preg-action="delete" data-preg-id="${esc(p.id)}">Hapus</button>`
               : '')
         : '';
     return `<tr>
         <td>${esc(year)}</td>
-        <td><strong>${esc(outcome)}</strong>${review}<br>${source}</td>
+        <td><strong>${esc(outcome)}</strong>${reported}${review}<br>${source}</td>
         <td>${esc(ga)}</td>
         <td>${esc(describe(p))}</td>
         <td>${esc(comps)}${p.complication_notes ? `<br><small>${esc(p.complication_notes)}</small>` : ''}</td>
@@ -436,6 +449,7 @@ const PregnancyHistoryCard = {
             if (action === 'add') await this.addExternal();
             else if (action === 'edit') await this.editHistory(id);
             else if (action === 'delete') await this.deleteHistory(id);
+            else if (action === 'reopen') await this.reopenReported(id);
         } catch (error) {
             toast('error', error.message || 'Gagal menyimpan riwayat');
         }
@@ -471,6 +485,21 @@ const PregnancyHistoryCard = {
         if (!ask || !ask.isConfirmed) return;
         const patientId = this.patientIdOf(this._state);
         const json = await api('DELETE', `/api/pregnancies/${id}?patient_id=${encodeURIComponent(patientId)}`);
+        await this.afterHistoryChange(json);
+    },
+
+    async reopenReported(id) {
+        const ask = await Swal.fire({
+            title: 'Buka kembali kehamilan ini?',
+            text: 'Laporan pasien akan dihapus.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Buka kembali',
+            cancelButtonText: 'Batal'
+        });
+        if (!ask || !ask.isConfirmed) return;
+        const patientId = this.patientIdOf(this._state);
+        const json = await api('POST', `/api/pregnancies/patient/${encodeURIComponent(patientId)}/${encodeURIComponent(id)}/reopen`);
         await this.afterHistoryChange(json);
     },
 
