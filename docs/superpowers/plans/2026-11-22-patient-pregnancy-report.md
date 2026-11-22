@@ -87,7 +87,7 @@
 - Modify: `staff/backend/routes/pregnancies.js` — `POST /patient/:patientId/:pregnancyId/reopen` (`verifyStaffToken`, noStore, id regexes as the other routes) → `reopen(...)`; update the header comment.
 - Modify: `staff/public/scripts/sunday-clinic/components/shared/pregnancy-history-card.js` — `renderRow`: badge `Dilaporkan pasien` when `p.ended_by_patient`; show `p.delivery_place` in the description; for `ended_by_patient` rows and `canClosePregnancy()` users, a `Buka kembali` button (`data-preg-action="reopen"`) → confirm dialog ("Buka kembali kehamilan ini? Laporan pasien akan dihapus.") → POST → re-mount.
 - Modify: `staff/public/scripts/legacy/patient-tools.js` (Kelola Pasien "Kehamilan sebelumnya", ~1181–1205): append "(dilaporkan pasien)" and the place when set.
-- Test: route test in `staff/backend/tests/unit/PregnanciesRoutes*.test.js` (find the existing file) for 403/409/200; UI assertions in `PregnancyHistoryCardUi.test.js` (badge, escaped place, button only for closers) and `KelolaPasienPregnancies.test.js`.
+- Test: route test in `staff/backend/tests/unit/PregnancyRoutes.test.js` for 403/409/200; UI assertions in `PregnancyHistoryCardUi.test.js` (badge, escaped place, button only for closers) and `KelolaPasienPregnancies.test.js`.
 
 - [ ] Steps 1–5 as usual (commit `feat(pregnancy): staff can reopen a patient-reported pregnancy`).
 
