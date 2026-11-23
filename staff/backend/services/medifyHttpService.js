@@ -465,10 +465,11 @@ class MedifyHttpSession {
                 const chunks = [];
                 res.on('data', chunk => chunks.push(chunk));
                 res.on('end', () => {
+                    const body = Buffer.concat(chunks);
                     resolve({
                         status: res.statusCode,
                         headers: res.headers,
-                        body: Buffer.concat(chunks).toString('utf-8')
+                        body: options.responseType === 'buffer' ? body : body.toString('utf-8')
                     });
                 });
             });
@@ -666,6 +667,38 @@ class MedifyHttpSession {
             clinicLabel: options.clinicLabel || 'Poli Obgyn',
             onlyToday: options.onlyToday !== false
         });
+    }
+
+    /**
+     * Download the "Pengeluaran Obat" xlsx of one pharmacy depot (read-only, no patient columns).
+     * Dates are dd/mm/yyyy, as the Medify form expects.
+     */
+    async fetchDrugUsageReport(depot, fromDmy, toDmy) {
+        if (!this.isLoggedIn) throw new Error('Not authenticated - call login() first');
+        if (!/^depo-[a-z-]+$/.test(String(depot))) throw new Error('Invalid depot');
+        if (![fromDmy, toDmy].every(date => /^\d{2}\/\d{2}\/\d{4}$/.test(String(date)))) {
+            throw new Error('Invalid report date');
+        }
+        const params = new URLSearchParams({
+            tanggal_awal: fromDmy,
+            tanggal_akhir: toDmy,
+            obat_bebas: 'on',
+            obat_resep: 'on',
+            export_as: 'xls'
+        });
+        const startedAt = Date.now();
+        const response = await this.request(this._buildUrl(`/farmasi/${depot}/laporan/pengeluaran-obat?${params}`), {
+            responseType: 'buffer',
+            timeout: 60000,
+            accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,*/*;q=0.8',
+            headers: { Referer: this._buildUrl(`/farmasi/${depot}/laporan`) }
+        });
+        return {
+            status: response.status,
+            buffer: response.body,
+            contentType: response.headers['content-type'] || '',
+            ms: Date.now() - startedAt
+        };
     }
 
     /**
