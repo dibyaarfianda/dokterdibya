@@ -100,7 +100,8 @@ const MENU_ACTIVITY_SOURCES = {
     'nav-booking-settings': [{ table: 'booking_settings' }],
     'nav-pengaturan': [{ table: 'settings' }],
     'nav-import-fields': [{ table: 'import_field_config' }],
-    'nav-medify-sync': [{ table: 'medify_import_jobs' }]
+    'nav-medify-sync': [{ table: 'medify_import_jobs' }],
+    'nav-melinda-drug-usage': [{ table: 'melinda_drug_usage_reports', columns: ['synced_at'] }]
 };
 
 module.exports = { MENU_ACTIVITY_SOURCES, DEFAULT_COLUMNS };
