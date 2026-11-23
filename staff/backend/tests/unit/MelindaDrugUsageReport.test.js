@@ -13,7 +13,7 @@ const HEAD_2 = ['', '', '', 'JML', 'HARGA', 'JML', 'HARGA', 'JML', 'HARGA', 'JML
 const line = (no, code, name, qty, value, ina = [0, 0]) => [String(no), code, name, qty, value, ina[0], ina[1], 0, 0, 0, 0];
 const total = (qty, value, ina = [0, 0]) => ['T O T A L', '', '', qty, value, ina[0], ina[1], 0, 0, 0, 0];
 
-async function workbook(rows, { head1 = HEAD_1, head2 = HEAD_2 } = {}) {
+async function workbook(rows, { head1 = HEAD_1, head2 = HEAD_2, merged = false } = {}) {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Sheet1');
     ws.getRow(1).values = ['RSIA Melinda Kediri DHAI'];
@@ -22,6 +22,11 @@ async function workbook(rows, { head1 = HEAD_1, head2 = HEAD_2 } = {}) {
     ws.getRow(9).values = head1;
     ws.getRow(10).values = head2;
     rows.forEach((row, index) => { ws.getRow(11 + index).values = row; });
+    if (merged) {
+        ['A9:A10', 'B9:B10', 'C9:C10', 'D9:E9', 'F9:G9', 'H9:I9', 'J9:K9'].forEach(range => ws.mergeCells(range));
+        const totalRow = 10 + rows.length;
+        ws.mergeCells(`A${totalRow}:C${totalRow}`);
+    }
     return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
@@ -43,6 +48,15 @@ describe('Melinda drug usage report parser', () => {
         expect(result.items[0]).toMatchObject({ code: 'B000000014', name: 'Cefadroxil 500mg Kaps', itemType: 'obat', qty: 1010, value: 9500 });
         expect(result.items[1]).toMatchObject({ inacbgQty: 43, inacbgValue: 1952286 });
         expect(result.totals).toMatchObject({ qty: 1092, value: 3732464 });
+    });
+
+    test('reads the merged header and total cells Medify exports', async () => {
+        const result = await parseDrugUsageReport(await workbook([
+            line(1, 'B1', 'Infus RL', 2, 17660),
+            total(2, 17660)
+        ], { merged: true }));
+        expect(result.items).toHaveLength(1);
+        expect(result.totals).toMatchObject({ qty: 2, value: 17660 });
     });
 
     test('keeps a drug without a code and sums the same name', async () => {

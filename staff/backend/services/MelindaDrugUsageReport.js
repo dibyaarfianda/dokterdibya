@@ -44,6 +44,8 @@ const cleanText = value => String(value ?? '').replace(/\s+/g, ' ').trim();
 const itemKeyOf = name => cleanText(name).toLowerCase().slice(0, 191);
 
 function cellValue(cell) {
+    // ExcelJS repeats the master value in merged cells; Medify merges its header and total labels.
+    if (cell.isMerged && cell.master.address !== cell.address) return '';
     const value = cell.value;
     if (value === null || value === undefined) return '';
     if (typeof value === 'object') {
