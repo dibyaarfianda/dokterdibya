@@ -1632,7 +1632,7 @@ GET https://simrs.melinda.co.id/farmasi/{depo}/laporan/pengeluaran-obat
 **Melinda drug usage scraper (user decision, 24 November 2026):**
 - **The RSIA Melinda scraper does not belong in dokterdibya.** Its page, menu, API, job, parser, schedule and migration were removed. Never add them back here or show this data in the Staff Panel or patient portal.
 - A separate RSIA Melinda app is deferred. Do not start it until the user asks.
-- Tables `melinda_drug_usage`, `melinda_drug_usage_reports` and `melinda_drug_usage_runs` may still exist in production. Drop them only after the user confirms.
+- Its three `melinda_drug_usage*` tables were dropped from production on 24 November 2026 with the user's confirmation.
 - A staff version bump must replace every `vNNN` reference in `index-adminlte.html`, not only `STAFF_CACHE_VERSION`.
 
 ### 51. Session Log - 23 November 2026 (Generic Order from Usage and Stock)
