@@ -1605,3 +1605,28 @@ Spec: `docs/superpowers/specs/2026-11-22-patient-pregnancy-report-design.md`. Pl
 - **Staff:** badge "Dilaporkan pasien" + place on the history card and Kelola Pasien; dokter/bidan "Buka kembali" (`POST /api/pregnancies/patient/:patientId/:pregnancyId/reopen`, newest patient-reported row only, refused if another pregnancy is ongoing) resets the end columns and snoozes the question 7 days. "Sudah Lahir" on a patient whose newest row was closed by her report returns 409 "Kehamilan sudah dilaporkan pasien. Muat ulang halaman."
 - **Migration:** `20261125_pregnancy_patient_report.sql` (3 columns) before the ff-merge.
 - **Versions:** patient `20261122lapor1`, staff `v508`.
+
+### 50. Session Log - 23 November 2026
+
+**RSIA Melinda Drug Usage vs Order Request (User Said "terimakasih")**
+
+**Usage source that worked (read-only, no patient columns):**
+```text
+GET https://simrs.melinda.co.id/farmasi/{depo}/laporan/pengeluaran-obat
+    ?tanggal_awal=dd/mm/yyyy&tanggal_akhir=dd/mm/yyyy&obat_bebas=on&obat_resep=on&export_as=xls
+```
+- Depots: `depo-rawat-jalan`, `depo-rawat-inap`, `depo-ruang-bayi`, `depo-vk`, `depo-ok`, `depo-aster`, `depo-icu`, `depo-hcu`.
+- Without `export_as=xls` the response is empty. The xlsx header is rows 9-10, data starts at row 11, the last row is `T O T A L`. `HARGA` is a line total.
+- One request per depot per month, 4 seconds apart, stop on an error or slow response. Avoid reloading `/farmasi/{depo}/laporan` (1.7 MB).
+- **Report price is not the receipt price.** On one bill, 14 of 15 pharmacy items were about 1.11x the report price.
+
+**Order urgency:** days until the ordered units run out = units ordered / (usage in period / days in period). Current stock is not included unless requested. Urgent is 14 days or less, high 30, normal 60.
+
+**Pack sizes:** check the written pack against price and marketplace before ranking. On the 23 Nov order, Lidodex was box 5 (written 10), Underpad 100 sheets (written 10), and Cefixim likely 50 (written 100, Dexa sells both).
+
+**Marketplace price rules:**
+- Tokopedia search with `&ob=3` sorts by lowest price, but the shown price is often the **smallest variant**. Open the product page before calling it cheaper (example: Alkohol "1 liter" at Rp12.000 was the 100 ml variant).
+- Count savings only when product, brand and pack match. Everything else is "Perlu dicek".
+- Injections, infusions, narcotics, psychotropics, precursors and misoprostol go through official distributors only; marketplace prices are at most a negotiation reference (BPOM Regulation 8/2020, verify current status at JDIH BPOM).
+
+**Status:** the nightly scraper design was approved on 23 Nov 2026, then deferred by the user. Do not build it until asked.
