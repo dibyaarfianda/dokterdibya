@@ -1635,3 +1635,37 @@ GET https://simrs.melinda.co.id/farmasi/{depo}/laporan/pengeluaran-obat
 - Services: `MelindaDrugUsageReport.js` (validates the xlsx), `MelindaDrugUsageSync.js` (4 s gap, stops on error or a response over 30 s, MySQL lock), `MelindaDrugUsageQuery.js` (page and Excel). The page never contacts Medify.
 - Tables from `migrations/20261126_melinda_drug_usage.sql`: `melinda_drug_usage`, `melinda_drug_usage_reports`, `melinda_drug_usage_runs`. Permission: `integrations.view`.
 - A staff version bump must replace every `v508`-style reference in `index-adminlte.html`, not only `STAFF_CACHE_VERSION`.
+
+### 51. Session Log - 23 November 2026 (Generic Order from Usage and Stock)
+
+**RSIA Melinda order adjusted to 1 or 3 months (User Said "terima kasih")**
+
+**Calculation that worked:**
+1. Group usage by active ingredient, then move brand items to the generic in the order.
+2. Need = usage in the data period / data days x target days.
+3. Usable stock = Medify stock minus batches already expired.
+4. Order = `ROUNDUP(MAX(0, need - usable stock) / units per pack)`.
+5. Items with no usage data keep the quantity pharmacy requested and stay flagged.
+
+**Read-only reports (add `export_as=xls`):**
+```text
+GET /farmasi/depo-rawat-jalan/laporan/laporan-persediaan-farmasi
+    ?tanggal=dd/mm/yyyy&farmasi_id=all&tipe_laporan=general&abaikan_stok_kosong=on
+GET /farmasi/gudang-farmasi/laporan/penerimaan-gudang
+    ?tgl_awal=dd/mm/yyyy&tgl_akhir=dd/mm/yyyy&pilihan_tgl=penerimaan&perusahaan=&is_farmasi=1&is_umum=1&is_aset=1
+```
+Use the `gudang-farmasi` path for receipts; a depot path shows only that depot. `/laporan/laporan-sisa-stok-v2` and `/laporan/laporan-penjualan-farmasi` returned 500.
+
+**Active-ingredient groups verified on 23 Nov:**
+- Metamizole: Norages, Antrain, Santagesik. Ibuprofen: Dofen Forte, Farsifen. Cefixime: Sporetik. Metronidazole: Trichodazol.
+- Mefenamic acid: Mefinal. Tranexamic acid: Plasminex. Cefazolin: Berfazolin. Ketamine: Ketanest, Ketages (user confirmed).
+- Lidodex and Regivell are hyperbaric spinal anesthetics. Never replace them with plain lidocaine or bupivacaine.
+
+**Data traps:**
+- Stock has negative rows, blank expiry dates and typos (Berfazolin expiry `31/03/0028`). Check these before trusting a total.
+- A tempo line can be goods already received. Check `penerimaan-gudang` before removing it (Benang Atramat: 20 sets received 11 Nov, so the debt stays even though no new order is needed).
+
+**User decisions for this request:**
+- Workbook has three sheets: Pengajuan Order Obat (by distributor), Pengajuan Hutang (tempo + dr. Dibya), Pengajuan Hutang Pinjaman Obat.
+- Assucryl, vaccines and Sutryl are not included. Loans use the user's list (Chromic 0 C28 from RS Kilisuci, Chromic 1 C55X from RS DKT), even where Medify differs.
+- The user signs in to Medify; Claude never types the password. Keep exported hospital files out of git.
