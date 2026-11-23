@@ -9,6 +9,11 @@
     #melinda-drug-usage-page .melinda-usage-note { font-size: 12px !important; color: #6b7280 !important; margin-bottom: 10px !important; }
     @media (max-width: 575px) {
         #melinda-drug-usage-page .melinda-usage-stats { grid-template-columns: 1fr !important; }
+        #melinda-drug-usage-page .melinda-usage-table th:nth-child(1),
+        #melinda-drug-usage-page .melinda-usage-table th:nth-child(3),
+        #melinda-drug-usage-page .melinda-usage-table td:nth-child(1):not([colspan]),
+        #melinda-drug-usage-page .melinda-usage-table td:nth-child(3) { display: none !important; }
+        #melinda-drug-usage-page .melinda-usage-table td:nth-child(2) { white-space: normal !important; overflow-wrap: anywhere !important; min-width: 120px !important; }
     }
 </style>
 <div class="row">
