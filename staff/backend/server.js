@@ -692,7 +692,6 @@ app.use('/api/inventory', inventoryRoutes);
 app.use('/api/inventory', require('./routes/inventory-orders'));
 app.use('/api/drug-audit', require('./routes/drug-audit'));
 app.use('/api/staff-prepay', require('./routes/staff-prepay'));
-app.use('/api/melinda-drug-usage', require('./routes/melinda-drug-usage'));
 
 // Obat Sales routes (medication sales for hospital patients)
 const obatSalesRoutes = require('./routes/obat-sales');

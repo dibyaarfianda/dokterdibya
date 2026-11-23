@@ -2,6 +2,8 @@
 
 Approved by the user on 2026-11-23. Build confirmed the same day.
 
+> **Superseded on 2026-11-24 by user decision:** the scraper serves RSIA Melinda and must stay separate from dokterdibya. The Staff Panel page, menu and API were removed, and the nightly job is disabled until a separate home is chosen.
+
 ## Why
 
 The user needs RSIA Melinda drug usage on demand, without Claude opening Medify and without loading Medify. The data supports pharmacy order decisions, such as which items are urgent by usage speed.

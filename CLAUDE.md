@@ -1629,12 +1629,12 @@ GET https://simrs.melinda.co.id/farmasi/{depo}/laporan/pengeluaran-obat
 - Count savings only when product, brand and pack match. Everything else is "Perlu dicek".
 - Injections, infusions, narcotics, psychotropics, precursors and misoprostol go through official distributors only; marketplace prices are at most a negotiation reference (BPOM Regulation 8/2020, verify current status at JDIH BPOM).
 
-**Nightly sync ("Pengeluaran Obat RS", staff `v509`):**
-- Spec: `docs/superpowers/specs/2026-11-23-melinda-drug-usage-sync-design.md`. Plan: `docs/superpowers/plans/2026-11-23-melinda-drug-usage-sync.md`.
-- Job: `staff/backend/scripts/melinda-drug-usage-sync.js` (root cron, 02:00 WIB, log `/var/log/melinda-drug-usage.log`). Backfill with `--from YYYY-MM --to YYYY-MM`. Days 1 to 5 also refresh the previous month.
-- Services: `MelindaDrugUsageReport.js` (validates the xlsx), `MelindaDrugUsageSync.js` (4 s gap, stops on error or a response over 30 s, MySQL lock), `MelindaDrugUsageQuery.js` (page and Excel). The page never contacts Medify.
-- Tables from `migrations/20261126_melinda_drug_usage.sql`: `melinda_drug_usage`, `melinda_drug_usage_reports`, `melinda_drug_usage_runs`. Permission: `integrations.view`.
-- A staff version bump must replace every `v508`-style reference in `index-adminlte.html`, not only `STAFF_CACHE_VERSION`.
+**Melinda drug usage scraper (user decision, 24 November 2026):**
+- **RSIA Melinda data must stay separate from dokterdibya.** Never show it in the Staff Panel or the patient portal. The page, menu and API from staff `v509` were removed in `v510`.
+- The nightly cron is disabled (commented out in root's crontab). Do not enable it or move the scraper until the user says where it belongs.
+- Parser and job remain for that move: `services/MelindaDrugUsageReport.js`, `services/MelindaDrugUsageSync.js`, `scripts/melinda-drug-usage-sync.js`.
+- Tables `melinda_drug_usage`, `melinda_drug_usage_reports` and `melinda_drug_usage_runs` still hold the Oct-Nov 2026 copy until the user decides to move or delete it.
+- A staff version bump must replace every `vNNN` reference in `index-adminlte.html`, not only `STAFF_CACHE_VERSION`.
 
 ### 51. Session Log - 23 November 2026 (Generic Order from Usage and Stock)
 

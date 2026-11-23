@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <script src="/scripts/patient-queue-view.js?v=v509"></script>
-    <script src="/staff/public/scripts/date-time-format.js?v=v509"></script>
-    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v509"></script>
+    <script src="/scripts/patient-queue-view.js?v=v510"></script>
+    <script src="/staff/public/scripts/date-time-format.js?v=v510"></script>
+    <script defer src="/staff/public/scripts/date-time-inputs.js?v=v510"></script>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Cache controlled via versioned URLs instead of no-cache headers -->
@@ -11,16 +11,16 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v509';
+        window.STAFF_CACHE_VERSION = 'v510';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
-    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v509">
-    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v509">
-    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v509">
-    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v509">
+    <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v510">
+    <link rel="apple-touch-icon" sizes="180x180" href="/staff/public/apple-touch-icon.png?v=v510">
+    <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png?v=v510">
+    <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png?v=v510">
 
     <!-- PWA Meta Tags -->
-    <link rel="manifest" href="/staff/public/manifest.json?v=v509">
+    <link rel="manifest" href="/staff/public/manifest.json?v=v510">
     <meta name="theme-color" content="#0d6efd">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,7 +28,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Dokter Dibya Staff">
     <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v509">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png?v=v510">
 
     <!-- Force mobile sidebar-collapse BEFORE AdminLTE init to prevent 250px margin -->
     <script>
@@ -57,7 +57,7 @@
         })();
     </script>
     <!-- Error Handler (load first) -->
-    <script src="scripts/error-handler.js?v=v509"></script>
+    <script src="scripts/error-handler.js?v=v510"></script>
 
     <!-- DNS prefetch for CDNs -->
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
@@ -72,10 +72,10 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v509">
+    <link rel="stylesheet" href="/staff/public/styles/staff-shell.css?v=v510">
 
         <!-- Mobile Responsive Styles -->
-        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v509">
+        <link id="mobile-responsive-stylesheet" rel="stylesheet" href="styles/mobile-responsive.css?v=v510">
 
     <!-- Mobile App Mode Detection -->
     <script>
@@ -723,12 +723,6 @@
                         <a href="#" class="nav-link" data-staff-call="showMedifySyncPage">
                             <i class="nav-icon fas fa-hospital-user"></i>
                             <p>MEDIFY Sync</p>
-                        </a>
-                    </li>
-                    <li class="nav-item dokter-only d-none" id="nav-melinda-drug-usage">
-                        <a href="#" class="nav-link" data-staff-call="showMelindaDrugUsagePage">
-                            <i class="nav-icon fas fa-pills"></i>
-                            <p>Pengeluaran Obat RS</p>
                         </a>
                     </li>
                 </ul>
@@ -2572,8 +2566,6 @@
                 <div id="invoice-history-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/invoice-history-page.html"></div>
                 <!-- PEMBAYARAN DI MUKA PAGE (lazy, bayar di muka Tahap 2) -->
                 <div id="prepay-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/prepay-page.html"></div>
-                <!-- PENGELUARAN OBAT RS PAGE (lazy) -->
-                <div id="melinda-drug-usage-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/melinda-drug-usage-page.html"></div>
 
                 <div id="analytics-page" class="d-none"></div>
 
@@ -3780,11 +3772,11 @@
 </div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
-<script defer src="scripts/shell/mobile-quick-menu.js?v=v509"></script>
-<script defer src="scripts/shell/actions.js?v=v509"></script>
-<script defer src="scripts/shell/compact-sidebar.js?v=v509"></script>
-<script defer src="scripts/shell/drd-links.js?v=v509"></script>
-<script defer src="scripts/patient-demo-manager.js?v=v509"></script>
+<script defer src="scripts/shell/mobile-quick-menu.js?v=v510"></script>
+<script defer src="scripts/shell/actions.js?v=v510"></script>
+<script defer src="scripts/shell/compact-sidebar.js?v=v510"></script>
+<script defer src="scripts/shell/drd-links.js?v=v510"></script>
+<script defer src="scripts/patient-demo-manager.js?v=v510"></script>
 
 <!-- Force mobile action bar visible in mobile-app-mode -->
 
@@ -3865,9 +3857,9 @@
 </div>
 
 <!-- Chat sounds (always play) -->
-<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v509" preload="auto"></audio>
-<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v509" preload="auto"></audio>
-<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v509" preload="auto"></audio>
+<audio id="chat-send-sound" src="/staff/public/sounds/send.mp3?v=v510" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3?v=v510" preload="auto"></audio>
+<audio id="tap-feedback-sound" src="/staff/public/sounds/tap.mp3?v=v510" preload="auto"></audio>
 
 
 <!-- Dependencies -->
@@ -3879,7 +3871,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.25"></script>
 
 <!-- RUM (Real User Monitoring) - lightweight web vitals tracker -->
-<script defer src="scripts/rum.js?v=v509"></script>
+<script defer src="scripts/rum.js?v=v510"></script>
 
 <!-- Core app modules -->
 <script>
@@ -4142,7 +4134,7 @@
 </script>
 
 
-<script type="module" src="scripts/shell/bootstrap.js?v=v509"></script>
+<script type="module" src="scripts/shell/bootstrap.js?v=v510"></script>
 
  <!-- Socket.IO initialization for chat -->
 
@@ -4295,7 +4287,7 @@
 
 
  <!-- Mobile Helper Script -->
- <script src="scripts/mobile-helper.js?v=v509"></script>
+ <script src="scripts/mobile-helper.js?v=v510"></script>
 
     <!-- Chat FAB: injected directly in HTML for guaranteed DOM presence (not via JS) -->
     <div id="chat-popup-container" style="position:fixed;bottom:80px;right:14px;z-index:99999;display:block;">
@@ -4307,8 +4299,8 @@
     </div>
 
     <!-- Global Chat Loader: sets up window.auth.currentUser from token -->
-    <script src="/staff/public/scripts/tap-feedback.js?v=v509"></script>
-    <script src="/staff/public/scripts/global-chat-loader.js?v=v509"></script>
+    <script src="/staff/public/scripts/tap-feedback.js?v=v510"></script>
+    <script src="/staff/public/scripts/global-chat-loader.js?v=v510"></script>
     <!-- Chat Popup is imported canonically by the shell bootstrap. -->
 
 <!-- Profile Completion Modal -->
