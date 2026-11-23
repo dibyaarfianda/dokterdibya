@@ -1622,7 +1622,7 @@ GET https://simrs.melinda.co.id/farmasi/{depo}/laporan/pengeluaran-obat
 
 **Order urgency:** days until the ordered units run out = units ordered / (usage in period / days in period). Current stock is not included unless requested. Urgent is 14 days or less, high 30, normal 60.
 
-**Pack sizes:** check the written pack against price and marketplace before ranking. On the 23 Nov order, Lidodex was box 5 (written 10), Underpad 100 sheets (written 10), and Cefixim likely 50 (written 100, Dexa sells both).
+**Pack sizes:** check the written pack against price and marketplace before ranking. On the 23 Nov order, Lidodex was box 5 (written 10), Underpad 100 sheets (written 10), and Cefixim Dexa 100 (user confirmed; a price comparison had wrongly suggested 50). A price ratio is only a hint, so confirm the pack with pharmacy or the distributor.
 
 **Marketplace price rules:**
 - Tokopedia search with `&ob=3` sorts by lowest price, but the shown price is often the **smallest variant**. Open the product page before calling it cheaper (example: Alkohol "1 liter" at Rp12.000 was the 100 ml variant).
