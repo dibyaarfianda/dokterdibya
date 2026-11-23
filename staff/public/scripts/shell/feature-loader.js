@@ -123,6 +123,10 @@ const featureLoaders = {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/prepay-page.js?v=${version}`);
     },
+    melindaDrugUsage: async () => {
+        const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
+        await import(`../pages/melinda-drug-usage-page.js?v=${version}`);
+    },
     contentModeration: async () => {
         const version = encodeURIComponent(window.STAFF_CACHE_VERSION || 'dev');
         await import(`../pages/content-moderation-page.js?v=${version}`);

@@ -11,7 +11,7 @@
 
     <!-- Favicon -->
     <script>
-        window.STAFF_CACHE_VERSION = 'v508';
+        window.STAFF_CACHE_VERSION = 'v509';
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
     <link rel="icon" type="image/x-icon" href="/staff/public/favicon.ico?v=v508">
@@ -723,6 +723,12 @@
                         <a href="#" class="nav-link" data-staff-call="showMedifySyncPage">
                             <i class="nav-icon fas fa-hospital-user"></i>
                             <p>MEDIFY Sync</p>
+                        </a>
+                    </li>
+                    <li class="nav-item dokter-only d-none" id="nav-melinda-drug-usage">
+                        <a href="#" class="nav-link" data-staff-call="showMelindaDrugUsagePage">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Pengeluaran Obat RS</p>
                         </a>
                     </li>
                 </ul>
@@ -2566,6 +2572,8 @@
                 <div id="invoice-history-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/invoice-history-page.html"></div>
                 <!-- PEMBAYARAN DI MUKA PAGE (lazy, bayar di muka Tahap 2) -->
                 <div id="prepay-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/prepay-page.html"></div>
+                <!-- PENGELUARAN OBAT RS PAGE (lazy) -->
+                <div id="melinda-drug-usage-page" class="d-none" data-page-fragment="/staff/public/fragments/pages/melinda-drug-usage-page.html"></div>
 
                 <div id="analytics-page" class="d-none"></div>
 

@@ -134,6 +134,11 @@ async function bootstrapStaffShell() {
         'prepayRejectRefundRequest'
     ].forEach(globalName => installLazyFeatureShim(globalName, 'prepay', 'prepay'));
     [
+        'showMelindaDrugUsagePage',
+        'melindaDrugUsageLoad',
+        'melindaDrugUsageExport'
+    ].forEach(globalName => installLazyFeatureShim(globalName, 'melindaDrugUsage', 'melinda-drug-usage'));
+    [
         'showArtikelKesehatanPage',
         'loadArticlesAdmin',
         'showAddArticleModal',

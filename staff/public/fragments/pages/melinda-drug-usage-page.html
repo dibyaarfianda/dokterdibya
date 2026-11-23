@@ -1,0 +1,81 @@
+<style>
+    #melinda-drug-usage-page .melinda-usage-stats { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 10px !important; margin-bottom: 12px !important; }
+    #melinda-drug-usage-page .melinda-usage-stat { border: 1px solid #e5e7eb !important; border-radius: 8px !important; padding: 10px 12px !important; min-width: 0 !important; }
+    #melinda-drug-usage-page .melinda-usage-stat span { display: block !important; font-size: 12px !important; color: #6b7280 !important; }
+    #melinda-drug-usage-page .melinda-usage-stat strong { display: block !important; font-size: 18px !important; overflow-wrap: anywhere !important; }
+    #melinda-drug-usage-page .melinda-usage-table th, #melinda-drug-usage-page .melinda-usage-table td { vertical-align: middle !important; }
+    #melinda-drug-usage-page .melinda-usage-number { text-align: right !important; white-space: nowrap !important; }
+    #melinda-drug-usage-page .melinda-usage-code { display: block !important; font-size: 11px !important; color: #6b7280 !important; }
+    #melinda-drug-usage-page .melinda-usage-note { font-size: 12px !important; color: #6b7280 !important; margin-bottom: 10px !important; }
+    @media (max-width: 575px) {
+        #melinda-drug-usage-page .melinda-usage-stats { grid-template-columns: 1fr !important; }
+    }
+</style>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between flex-wrap">
+                <h3 class="card-title mb-0"><i class="fas fa-pills mr-2"></i>Pengeluaran Obat RS</h3>
+                <button type="button" class="btn btn-sm btn-success ml-auto" id="melinda-usage-export" onclick="window.melindaDrugUsageExport()">
+                    <i class="fas fa-file-excel mr-1"></i>Unduh Excel
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning py-2" id="melinda-usage-warning" role="alert" hidden></div>
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <label for="melinda-usage-period" class="mb-1">Bulan</label>
+                        <select id="melinda-usage-period" class="form-control" onchange="window.melindaDrugUsageLoad()"></select>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label for="melinda-usage-depot" class="mb-1">Depo</label>
+                        <select id="melinda-usage-depot" class="form-control" onchange="window.melindaDrugUsageLoad()">
+                            <option value="all">Semua Depo</option>
+                            <option value="depo-rawat-jalan">Depo Rawat Jalan</option>
+                            <option value="depo-rawat-inap">Depo Rawat Inap</option>
+                            <option value="depo-ruang-bayi">Depo Ruang Bayi</option>
+                            <option value="depo-vk">Depo VK</option>
+                            <option value="depo-ok">Depo OK</option>
+                            <option value="depo-aster">Depo Aster</option>
+                            <option value="depo-icu">Depo ICU</option>
+                            <option value="depo-hcu">Depo HCU</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <label for="melinda-usage-type" class="mb-1">Jenis Barang</label>
+                        <select id="melinda-usage-type" class="form-control" onchange="window.melindaDrugUsageLoad()">
+                            <option value="all">Semua Barang</option>
+                            <option value="obat">Obat</option>
+                            <option value="alkes">Alkes/BHP</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="melinda-usage-stats mt-2">
+                    <div class="melinda-usage-stat"><span>Jenis Barang</span><strong id="melinda-usage-count">-</strong></div>
+                    <div class="melinda-usage-stat"><span>Jumlah Keluar</span><strong id="melinda-usage-qty">-</strong></div>
+                    <div class="melinda-usage-stat"><span>Nilai Laporan</span><strong id="melinda-usage-value">-</strong></div>
+                </div>
+                <p class="melinda-usage-note">
+                    <span id="melinda-usage-freshness">Memuat…</span>
+                    Nilai Laporan berasal dari Medify dan belum tentu sama dengan nilai kwitansi. Jenis barang adalah perkiraan.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover melinda-usage-table">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th>Nama Barang</th>
+                                <th>Jenis</th>
+                                <th class="melinda-usage-number">Jumlah</th>
+                                <th class="melinda-usage-number">Nilai Laporan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="melinda-usage-tbody">
+                            <tr><td colspan="5" class="text-center text-muted py-3">Memuat…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
