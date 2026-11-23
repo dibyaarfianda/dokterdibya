@@ -10,7 +10,8 @@ const baseline = {
     // 2026-11-22: sidebar red dots replace numeric badges, welcome card removed, Inbox Pasien,
     // Pembayaran di Muka, Audit Obat, Laboratorium, pregnancy review panel, advanced search
     // date range; patient menu: zoom lock, shared queue view, Pesan, Saldo, no app badge.
-    'staff/public/index-adminlte.html': 'dc9a14742e9b4ac4cdd242e7ce83f3c2c452ebf429e978e37a645bc33454bccf',
+    // 2026-11-23: doctor-only "Pengeluaran Obat RS" sidebar item and lazy page container.
+    'staff/public/index-adminlte.html': 'ca18ba9d56cc91ded6f28cb720612f4cd42603438b96e9052e45efd6a8638da5',
     'public/patient-menu.html': 'b263818b5c03a86f510ad5b661c4af58dadd2beb166c3b923f4180676471aba0'
 };
 
